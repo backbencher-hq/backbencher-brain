@@ -69,6 +69,28 @@ for (const a of args) {
 const key = (t: string, f: string, to: string, line?: number) =>
   line === undefined ? `${t}\u0000${f}\u0000${to}` : `${t}\u0000${f}\u0000${to}\u0000${line}`
 
+/**
+ * `--dump <path>` writes EVERY disagreement as JSONL, uncapped.
+ *
+ * The console output shows 8 examples per type because a human reads the first few. That
+ * is the right default and the wrong tool for triage: 6,048 disagreements cannot be
+ * classified from 40 of them, and PY-20 already showed what happens when a count and a
+ * sample are confused. Triage needs the whole population — a cluster that is 90% one
+ * shape is invisible in a sample of 8 and obvious in a dump.
+ *
+ * Each line carries the file, type, endpoints, the line, and the SIDE (`missing` = the
+ * tree says it exists and the analyzer did not emit it, `unexplained` = the analyzer
+ * emitted it and the tree does not support it), so the two populations stay separable
+ * even after they are in one file.
+ */
+/** The engine's own limit, mirrored so both sides of the comparison see identical bytes. */
+const PARSE_LIMIT = 1024 * 1024
+const truncatedFiles: string[] = []
+let nTruncated = 0
+
+const DUMP = process.env.BB_ORACLE_DUMP
+const dumpRows: any[] = []
+
 let n = 0
 let guessOk = 0
 let guessBad = 0
@@ -102,7 +124,30 @@ const sample = (m: Map<string, string[]>, t: string, s: string): void => {
 }
 
 for (const f of files) {
-  const content = fs.readFileSync(f, "utf8")
+  const raw = fs.readFileSync(f, "utf8")
+
+  // MIRROR THE ENGINE'S PREPROCESSING, or the two sides are not reading the same bytes.
+  //
+  // `ASTEngine.parseFile` truncates content at 1 MiB before parsing (PY-19), but this
+  // harness fed the FULL file to both: the analyzer saw the first 1,048,576 UTF-16 units
+  // and the oracle saw all 1,414,143. For every file under the limit that is invisible; for
+  // `cython/tests/run/extsubscript.py` it produced **619 "missing" edges that the analyzer
+  // could not have emitted**, because they live in a tail it never read — 25.5% of the whole
+  // lane's missing-edge population, reported as if it were analyzer error.
+  //
+  // A differential that compares different inputs is not a weaker differential, it is a
+  // wrong one, and the failure is invisible in aggregate because the number looks like a
+  // defect rate. So the truncation is reproduced EXACTLY — same limit, same unit — and a
+  // truncated file is COUNTED and named, because "we did not read this file" is a coverage
+  // fact the differential has to surface rather than absorb into its own error rate.
+  let content = raw
+  let truncatedBytes = 0
+  if (raw.length > PARSE_LIMIT) {
+    truncatedBytes = raw.length - PARSE_LIMIT
+    content = raw.substring(0, PARSE_LIMIT)
+  }
+  if (truncatedBytes > 0) { truncatedFiles.push(`${path.basename(f)} (${truncatedBytes} bytes unread)`); nTruncated++ }
+
   const res: any = await engine.ASTEngine.parseFile(f, content)
   if (res?.language !== "python") continue
   n++
@@ -128,7 +173,8 @@ for (const f of files) {
     const [t, from, to, line] = k.split("\u0000")
     const label = `${path.basename(f)} ${from} -> ${to}${line ? ` @L${line}` : ""}`
     if (analyzerKeys.has(k) || guessKeys.has(k)) count(agreed, t, 1)
-    else { count(missingN, t, 1); sample(missing, t, label) }
+    else { count(missingN, t, 1); sample(missing, t, label)
+      if (DUMP) dumpRows.push({ side: "missing", type: t, file: path.basename(f), from, to, line: line ? Number(line) : null }) }
   }
   for (const k of guessKeys) {
     if (truthKeys.has(k)) guessOk++
@@ -137,7 +183,8 @@ for (const f of files) {
   for (const k of analyzerKeys) {
     if (truthKeys.has(k)) continue
     const [t, from, to] = k.split("\u0000")
-    { count(unexplainedN, t, 1); sample(unexplained, t, `${path.basename(f)} ${from} -> ${to}`) }
+    { count(unexplainedN, t, 1); sample(unexplained, t, `${path.basename(f)} ${from} -> ${to}`)
+      if (DUMP) dumpRows.push({ side: "unexplained", type: t, file: path.basename(f), from, to, line: null }) }
   }
 }
 
@@ -157,3 +204,14 @@ for (const t of TYPES) {
   if (u?.length) { console.log(`\nUNEXPLAINED ${t} (${unexplainedN.get(t) ?? u.length} total, showing ${u.length}): the analyzer emitted these and the tree does not support them:`); for (const s of u) console.log(`   ${s}`) }
 }
 for (const [t, l] of guessBadEx) { console.log(`\nREFUTED GUESSES ${t} (${guessBadN.get(t) ?? l.length} total, showing ${l.length}):`); for (const s of l) console.log(`   ${s}`) }
+
+if (nTruncated > 0) {
+  console.log(`\nTRUNCATED INPUT (engine limit 1 MiB) — these files were compared only over the bytes the analyzer actually read:`)
+  for (const f of truncatedFiles) console.log(`   ${f}`)
+  console.log(`   ${nTruncated} file(s) truncated. Coverage of their unread tails is a PY-19 concern, NOT analyzer error.`)
+}
+
+if (DUMP) {
+  fs.writeFileSync(DUMP, dumpRows.map((r) => JSON.stringify(r)).join("\n") + "\n")
+  console.log(`\ndumped ${dumpRows.length} disagreement(s) to ${DUMP}`)
+}
