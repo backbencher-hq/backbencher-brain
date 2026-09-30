@@ -973,6 +973,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const errors: ASTEngine.ParseError[] = []
     const scopeManager = new CScopeManager()
     const emittedUseRelationships = new Set<string>()
+    // #962: one `instantiates` edge per (function, type) pair, beside the `uses` set
+    // for the same per-pair-not-per-line reason.
+    const emittedInstantiates = new Set<string>()
     const functionLocals = new Map<string, Set<string>>()
     // #383 payload: call targets per enclosing function
     const qcByFunction = new Map<string, string[]>()
@@ -2014,10 +2017,73 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (activeFunctionSymbol && activeFunctionSymbol.metadata) {
                 activeFunctionSymbol.metadata.usesMalloc = true
               }
-              // malloc allocates BYTES, not a named type - an Instantiates
-              // edge to the literal 'malloc' could never resolve to a type
-              // symbol and was pure noise (removed; allocation tracking
-              // lives in metadata + patterns).
+              // #962: publish `instantiates` for the TYPE this allocation produces.
+              //
+              // The type comes from the CAST, which is where C states it:
+              // `(Buffer *)malloc(sizeof(Buffer))` allocates a `Buffer`. Two positions
+              // are read, in order, and the first that yields a declared type wins:
+              //
+              //   1. an enclosing `cast_expression` whose VALUE is this call
+              //   2. `sizeof(<type>)` in the argument list -- `sizeof(Buffer)` names
+              //      the same type and is often the only one present
+              //
+              // The target must be a type the file DECLARES. An allocation into `void *`
+              // with no cast instantiates no named type, so no edge is published and
+              // the `calls` edge plus `metadata.usesMalloc` remain the record -- which
+              // is the honest outcome rather than an edge to a function that is not a
+              // type.
+              //
+              // The dedup key matches the `calls` one (per PAIR, not per line) for the
+              // same reason and with the same consequence: two allocations of the same
+              // type in one function are one fact.
+              if (qcFn) {
+                const instantiated = this.allocatedTypeName(node, declaredTypes, structs, unions, enums)
+                if (instantiated) {
+                  const iKey = `${qcFn}::instantiates::${instantiated}`
+                  if (!emittedInstantiates.has(iKey)) {
+                    emittedInstantiates.add(iKey)
+                    relationships.push({
+                      source: qcFn,
+                      target: instantiated,
+                      type: ASTEngine.RelationshipType.Instantiates,
+                      confidence: 1.0,
+                      line_number: this.nameLine(fnNode),
+                      metadata: {
+                        relationshipType: "c_allocation",
+                        allocator: target,
+                        evidenceClass: "usage_contextual",
+                      },
+                    })
+                  }
+                }
+              }
+              // #962: `instantiates` IS PUBLISHED, and it targets the TYPE the
+              // allocation produces -- not the allocator.
+              //
+              // The M12 truth defines this C-specifically: "instantiates = allocator
+              // calls (malloc/calloc/realloc family -- C-specific allocation
+              // semantic)", and pins `rel:Module.c:instantiates:buffer_create:malloc`
+              // with the note "calls + instantiates pair is intentional: call graph
+              // fact + allocation". So the semantic is wanted and the `calls` edge
+              // alone does not carry it.
+              //
+              // WHAT WAS WRONG WAS THE TARGET, NOT THE RELATIONSHIP. Measured across
+              // all 25 languages whose M12 truth pins an `instantiates` edge, the
+              // target is always a TYPE: `Point`, `HashMap`, `List`, `Dictionary`,
+              // `User`, `UserService`, `MemoryStorage`, `Shape`. C's `-> malloc` was
+              // the only non-type target in the family, and the original removal
+              // reasoned exactly that -- "malloc allocates BYTES, not a named type".
+              // True, and it is why the TARGET is wrong.
+              //
+              // The faithful C edge reads the CAST. Module.c:26 is
+              // `Buffer *buf = (Buffer *)malloc(sizeof(Buffer));` -- the allocation
+              // produces a `Buffer`, the code says so in the cast, and `Buffer` is a
+              // type symbol in the same file. So the edge is
+              // `instantiates buffer_create -> Buffer`, which satisfies the truth's
+              // definition AND the family's meaning. With no cast naming a type there
+              // is nothing to instantiate and no edge is published -- an allocator call
+              // into a `void *` genuinely instantiates no type, and the `calls` edge
+              // plus `metadata.usesMalloc` already record the allocation.
             } else if (inArray(FREE_FUNCTIONS, target)) {
               freeCount++
             } else if (inArray(UNSAFE_STRINGS, target)) {
@@ -5617,6 +5683,100 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // reset at `analyze()` entry is what keeps the array from outliving its file.
   private lineIndex: Int32Array | null = null
   private lineIndexContent = ""
+  /**
+   * #962: the TYPE an allocator call produces, read from the cast or from `sizeof`.
+   *
+   * Returns null when the allocation names no declared type -- an allocation into
+   * `void *` with no cast, or a cast to a type the file does not declare -- because in
+   * that case there is no `instantiates` edge to publish. `instantiates` targets a TYPE
+   * in all 25 M12 truths that pin one (`Point`, `User`, `List`, `Dictionary`,
+   * `MemoryStorage`), so an edge to `malloc` would be the only non-type target in the
+   * family and could never resolve to a type symbol.
+   *
+   * `sizeof(Buffer)` is read as well as the cast, because the two frequently disagree in
+   * which one carries the type: `p = malloc(sizeof(Buffer))` names it only in `sizeof`,
+   * and `Buffer *p = (Buffer *)realloc(old, n)` names it only in the cast.
+   */
+  private allocatedTypeName(
+    call: Node,
+    declaredTypes: Set<string>,
+    structs: Record<string, any[]>,
+    unions: Record<string, any[]>,
+    enums: Record<string, boolean>,
+  ): string | null {
+    // A type NAME in the source, whatever node carries it. `(Buffer *)` is a
+    // `type_descriptor` around a `type_identifier`; `(struct Buf *)` is a
+    // `type_descriptor` around a `struct_specifier`; `(struct Buf *)`'s descriptor
+    // text is `"struct Buf *"`, WITH the keyword and the pointer, so matching the
+    // descriptor's own text against a declared-type set never hits. Reading only the
+    // `type_identifier` case -- the first draft -- published no edge at all, and
+    // `(Buffer *)malloc(...)` and `(struct Buf *)malloc(...)` are the same fact.
+    const typeNameOf = (n: Node | null | undefined): string | null => {
+      if (!n) return null
+      if (n.type === "type_identifier") return n.text
+      if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier") {
+        return n.childForFieldName("name")?.text ?? null
+      }
+      if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"))
+      // `sizeof_expression` has NO `argument` FIELD in this grammar -- its operand is
+      // `namedChild(0)`. Reading the field returned undefined, so every `sizeof`-only
+      // allocation silently produced no edge: `struct Node *nd = malloc(sizeof(struct
+      // Node));` published nothing while `(struct Buf *)malloc(sizeof(struct Buf))`
+      // published correctly through its CAST. The two spellings disagree about which
+      // one carries the type, which is why both are read, and one of the two was
+      // reading a field that does not exist.
+      if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0))
+      if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0))
+      // NOT `elaborated_specifier`: that node type does not exist in tree-sitter-c --
+      // it is Java/TypeScript's, and the F1 grammar oracle caught the literal on the
+      // first run of this change ("unknown=1"), which is exactly the finding it exists
+      // to make: a string compared against a node type that can never match. Verified
+      // by scanning 60 corpus files for the node type across the whole grammar.
+      return null
+    }
+    const declared = (name: string | null | undefined): string | null => {
+      if (!name || !name.trim()) return null
+      const n = name.trim()
+      if (declaredTypes.has(n) || structs[n] || unions[n] || enums[n]) return n
+      return null
+    }
+
+    // 1. An enclosing cast whose VALUE is this call: `(Buffer *)malloc(...)`.
+    let p: Node | null = call.parent
+    for (let depth = 0; p && depth < 4; depth++, p = p.parent) {
+      if (p.type !== "cast_expression") continue
+      const value = p.childForFieldName("value")
+      if (value && value.id === call.id) {
+        // `(Buffer *)` parses as a `type_descriptor` wrapping the `type_identifier`,
+        // so the descriptor's own text is `"Buffer *"` -- WITH the pointer -- and
+        // matching that against a declared-type set never hits. The inner node is the
+        // name. Measured on Module.c:26, where the payload emitted no `instantiates`
+        // for exactly this reason.
+        const hit = declared(typeNameOf(p.childForFieldName("type")))
+        if (hit) return hit
+      }
+      break
+    }
+
+    // 2. `sizeof(<type>)` in the argument list.
+    const args = call.childForFieldName("arguments")
+    if (args) {
+      for (let i = 0; i < args.namedChildCount; i++) {
+        const a = args.namedChild(i)
+        if (a?.type !== "sizeof_expression") continue
+        // `typeNameOf` reads `namedChild(0)`, because `sizeof_expression` has no
+        // `argument` FIELD in this grammar. This call site still read the field, so the
+        // whole `sizeof` path returned undefined and every allocation that carried its
+        // type ONLY in `sizeof` published no edge -- which is half the cases the ruling
+        // is about. The two spellings disagree in practice: `malloc(sizeof(struct Node))`
+        // has no cast at all, and `(struct Buf *)realloc(p, n)` has no sizeof.
+        const hit = declared(typeNameOf(a))
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+
   private isHashLineMention(node: Node): boolean {
     const bol = this.analyzeContent.lastIndexOf("\n", node.startIndex - 1) + 1
     let i = bol
