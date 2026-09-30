@@ -20059,6 +20059,12 @@ async function main() {
       // what the gate compares.
       ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
     }
+
+    if (process.env.BB_F5_SHOW_SAMPLES) {
+      for (const h of samplesHeuristic.slice(0, 12)) {
+        console.log(`  [HEURISTIC] ${h.file} L${h.line} ${h.label}->${h.target}@${h.confidence} ${JSON.stringify(h.metadata ?? {})}`)
+      }
+    }
     if (sample.length === 0) {
       // Vacuous-pass guard: a repo with zero files of this language produces a
       // 0/0 row that "passes" without verifying anything. That dishonesty
