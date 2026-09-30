@@ -216,6 +216,58 @@ const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before 
   "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
   false)
 
+/**
+ * D9: a same-file read of a `#define`d name resolves to nothing.
+ *
+ * Stated HERE, independently of the analyzer's branch, for D8's reason: a gate
+ * that imports the code under test cannot be run against the code it gates.
+ * The analyzer mints the declaration in its `preproc_def` /
+ * `preproc_function_def` branch; the check below re-derives the name from the
+ * raw source text and asks only whether a symbol of that name exists.
+ *
+ * The scope is deliberately the SAME FILE and nothing else. Cross-file
+ * non-resolution is the documented per-file boundary of a single-TU graph, and
+ * counting it would be this check measuring itself — the mistake that made R1
+ * read 715 instead of 23. A name the same file `#define`s is a declaration the
+ * consumer can reach, so a read of it that resolves to nothing is a real gap.
+ */
+const D9 = cls("D9", "a read of a macro the SAME file defines resolves to no published symbol",
+  "A `#define` DECLARES a name whatever its body — that is the C lane's #901 ruling and this lane now shares it. A read of such a name in the same file must resolve to the declaration. Cross-file reads are out of scope: see D9's contract. The scope is further narrowed to definitions the GRAMMAR produced a `preproc_def`/`preproc_function_def` node for, because a definition the grammar destroyed is R2's defect and gating it here would be gating a thing the analyzer cannot fix.")
+
+/**
+ * D10: no file's content was truncated before the parser saw it.
+ *
+ * The engine used to cut any file over 1 MiB to its first 1 MiB, so the tail was
+ * not mis-parsed — it was simply ABSENT, and nothing downstream could tell that
+ * from a file that genuinely ends there. This lane spent a bisection, three dead
+ * ends and a withdrawn grammar patch chasing a "truncation" that was this cap:
+ * `basic_json` runs rows 26,011-32,291 in a 1.27 MB amalgamation, so it was cut
+ * at row 27,085 and no grammar could have finished it.
+ *
+ * The cap is now 16 MiB, which covers every file in this corpus, and the loss is
+ * COUNTED (`ASTEngine.parseTruncation`) so it can be failed rather than merely
+ * logged. This gate is that failure: it is 0 only while the cap is high enough,
+ * and it names the offenders when it is not.
+ */
+const D10 = cls("D10", "a file's content was truncated before the parser saw it",
+  "Truncation is silent data loss: every symbol in the dropped tail is missing with no error and no counter. The byte cap exists to bound a pathological parse, but the 120s `parseWithTimeout` and the 120s `parseBomb` self-destruct already do that, and tree-sitter is linear (~1.45 s/MB measured), so the cap only ever removes real code.")
+
+/**
+ * R2 (reported, not gated): a `#define` the grammar's ERROR recovery destroyed.
+ *
+ * The same argument as R1, applied to the preprocessor. All measured sites have
+ * one shape — a COMMENT between the `#if` and the `#define` — e.g.
+ * `unit-class_parser.cpp:2161-2163`, where `#if JSON_DIAGNOSTIC_POSITIONS` /
+ * `// Macro for all test cases…` / `#define SETUP_TESTCASES()` parses as an
+ * `ERROR` node over rows 2163-2168 that DOES carry `preproc_params` and
+ * `preproc_arg` children: the grammar recognised the shape and not the rule.
+ * With no node there is no declaration to mint, so the read cannot resolve and
+ * D9 must not be charged for it. Reported with its count, like R1.
+ */
+const R2 = cls("R2", "REPORTED, not gated: a `#define` the grammar's ERROR recovery destroyed, so its declaration cannot be published",
+  "A tree-sitter-cpp 0.23.4 limitation, same family as R1 and the same fix: the vendored fork. The analyzer cannot invent a node the grammar did not produce.",
+  false)
+
 let files = 0, syms = 0, rels = 0
 const t0 = Date.now()
 /**
@@ -304,6 +356,44 @@ for (const repo of REPOS) {
     for (const x of (r.relationships ?? []) as any[]) {
       if (x.type === "extends" && String(x.source) === String(x.target)) {
         add(D2, `self:${x.source}`, { repo, file: rel, line: x.line_number, source: x.source, target: x.target })
+      }
+    }
+    // D9 — a read of a macro THIS FILE defines, with no symbol of that name.
+    // The name is re-derived from the raw source (`#define NAME`, tolerating a
+    // function-like `#define NAME(...)`), not from the analyzer's output, so
+    // this cannot be satisfied by the branch it is gating. Cross-file is
+    // deliberately out of scope: see D9's contract.
+    {
+      const definedHere = new Set<string>()
+      const defRe = /^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)/gm
+      let dm: RegExpExecArray | null
+      while ((dm = defRe.exec(content))) definedHere.add(dm[1]!)
+      // Which of those the GRAMMAR kept. A definition it destroyed is R2's
+      // defect, and it is separated here rather than ignored: a name in
+      // `destroyed` and not in `grammarNodes` is counted under R2, so the
+      // split is visible in the register instead of being a silent exclusion.
+      const grammarNodes = new Set<string>()
+      const destroyed = new Set<string>()
+      const scanDefs = (n: any): void => {
+        if (n.type === "preproc_def" || n.type === "preproc_function_def") {
+          const nm = n.childForFieldName("name")?.text?.trim()
+          if (nm) grammarNodes.add(nm)
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) scanDefs(c) }
+      }
+      scanDefs(tree.rootNode)
+      for (const nm of definedHere) if (!grammarNodes.has(nm)) destroyed.add(nm)
+      const published = new Set<string>()
+      for (const s of (r.symbols ?? []) as any[]) published.add(String(s.name))
+      const seenD9 = new Set<string>()
+      for (const x of (r.relationships ?? []) as any[]) {
+        const t = String(x.target)
+        if (!definedHere.has(t) || published.has(t)) continue
+        if (seenD9.has(t)) continue
+        seenD9.add(t)
+        const site = { repo, file: rel, line: x.line_number, source: x.source, target: t, type: x.type }
+        if (destroyed.has(t)) add(R2, `destroyed-define:${t}`, { ...site, shape: "#define between a comment and its #if" })
+        else add(D9, `${x.type}:${t}`, site)
       }
     }
     // D3 — contains + references only, per file. `calls` excluded by contract.
@@ -440,8 +530,23 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} R1=${R1.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} R1=${R1.n} R2=${R2.n}\n`)
 }
+
+// D10 — the engine's own byte cap. Counted by the engine, not by this script, so
+// the gate is a read of what actually happened rather than a second opinion.
+try {
+  const trunc: any = (ASTEngine as any).parseTruncation
+  D10.n = trunc?.files ?? -1
+  D10.sites = (trunc?.worst ?? []).map((w: any) => ({
+    repo: "(engine)", file: w.filePath, bytesDropped: w.bytesDropped,
+  }))
+  if (trunc?.bytesDropped) {
+    // one entry per truncated file so the count and the site list agree
+    for (const w of trunc.worst) add(D10, `truncated:${w.filePath.split("/").pop()}`, { file: w.filePath, bytesDropped: w.bytesDropped })
+    D10.n = trunc.files
+  }
+} catch { D10.n = -1 }
 
 // D6 — the analyzer's own source, by the same shape the repo's census records.
 try {
