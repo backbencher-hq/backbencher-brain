@@ -124,7 +124,12 @@ Filed in the review, not fixed, each with the reason:
 
 - **PY-7** — the companion-index tier of the `overrides` contract is never populated; the
   0.5 guess tier absorbs its cases and is 0% precise.
-- **PY-9** — 22.67% of `calls` name a bare builtin method (`self.model.save()` → `save`). A
-  repository-wide leaf-name convention shared with the JS family, so not python's to change.
+- **PY-9** — a `calls` target is a **leaf**, never a receiver-qualified name: `self.model.save()`
+  becomes `save`. This is a repository-wide convention (typescript, java, ruby, go, csharp and
+  php all leaf-ify), and python has the most call edges of any lane, so it has the most to lose
+  from it. **46.0% of the lane's 90,870 call edges (41,777) are ambiguous** — more than one
+  project symbol shares the target name — and the store's name strategy requires uniqueness, so
+  those do not resolve. Much of that collision is coincidental with stdlib method names. A
+  caller doing a name-only lookup should know this before trusting the result.
 - **PY-16** — no `dialect` field exists in any lane, so Cython cannot be recorded honestly.
 - **PY-17** — two python framework tables with five overlapping entries, free to drift.
