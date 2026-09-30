@@ -74,7 +74,8 @@
       "document",
       "element",
       "elementdecl",
-      "prolog"
+      "prolog",
+      "ERROR"
     ],
     "reasons": {
       "AttDef": "a Property symbol plus a `contains` edge from the element it is declared for",
@@ -103,7 +104,8 @@
       "document": "walk root; the root element is reached through the walk",
       "element": "the document's structural unit: a symbol plus a `contains` edge from its parent element",
       "elementdecl": "a Type symbol for a DTD element declaration; its contentspec is the content model",
-      "prolog": "container: XMLDecl, doctypedecl and the misc PIs/comments under it are dispatched from here"
+      "prolog": "container: XMLDecl, doctypedecl and the misc PIs/comments under it are dispatched from here",
+      "ERROR": "counted, not walked: real-xml-analyzer.ts:629 reads node.isError to record a file's grammar-error count, so the analyzer consults it and the class is handled. ERROR is a tree-sitter pseudo-node, not a grammar construct — see internal_silent MISSING for the paired one."
     }
   },
   "pass_through_classified": {
@@ -189,7 +191,8 @@
       "XMLDecl",
       "children",
       "conditionalSect",
-      "content"
+      "content",
+      "MISSING"
     ]
   },
   "gap": {
