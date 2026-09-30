@@ -104,15 +104,15 @@
         "bytes": 45434
       },
       "grammars/tree-sitter-groovy/grammar.js": {
-        "sha256": "b4cf40fb11a57fc7a7964ea17bfed408cf7380a53ce4871a095514c92e770972",
-        "bytes": 76871
+        "sha256": "8e5f71231de857aacc47580519b73374e6b59c7c438b6a7dca790895991e5a46",
+        "bytes": 79498
       }
     },
-    "digest": "50eaebc8d4d3bcf310691152b021ff56e8902107812f7345fdddcf6af97b46b7",
+    "digest": "2514318ddee5b1ec0f5bbff6eccc62b4c30590ae65e0acc11a03e8e8f9766c4f",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-groovy_tree-sitter-groovy.wasm",
-      "sha256": "151eeee54d50e3f07e080c10c0ea798d7ad0323a6d147b50b082a2a6b46e72b9",
-      "bytes": 4382232
+      "sha256": "f1e68cb398e63f3498c63b1675bb65496a33bd194efb65ec461bb3f589cece04",
+      "bytes": 4388255
     },
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
@@ -168,8 +168,8 @@
         "bytes": 78748
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "5938d224adefca647ab487e250a7a5c276be8aea576ff1e5b31d19fd0f3b8024",
-        "bytes": 85473
+        "sha256": "a4d69495f5622944a77f2f6dc856885d17154d25a4fe41b28e91739720dfaddf",
+        "bytes": 88865
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "1394f4fa5b091691e69c558d135de69b563750b15cefda7281873623f80e9079",
@@ -216,12 +216,12 @@
         "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
-        "sha256": "5496fef69fb0b6961487e6754fa1f00f20fd439b5f0754766fe46866a680c8c2",
-        "bytes": 89056
+        "sha256": "a06dc65556f7ff9d14dddd47c550ffabfd3ae29c9e365752e153b50ab3d7acff",
+        "bytes": 96057
       },
       "src/ast/real-php-analyzer.ts": {
-        "sha256": "5439feacb0c4caaffaf1f0c02975bef3d8a59477cbc9cd6609a681c2651d98e0",
-        "bytes": 118704
+        "sha256": "5088062a5b884200818504337baaa239b8071c90f7b0960b91c41dc712f16a86",
+        "bytes": 124265
       },
       "src/ast/real-powershell-analyzer.ts": {
         "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
@@ -280,8 +280,8 @@
         "bytes": 76833
       },
       "src/ast/real-vue-analyzer.ts": {
-        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
-        "bytes": 58931
+        "sha256": "476799bfbe73613a698058387d436f2d577475957d828c4b6c368c3c36038815",
+        "bytes": 82742
       },
       "src/ast/real-xml-analyzer.ts": {
         "sha256": "dd9b0eac9cac040b5f8ec73a35c9833d541bf6bd84fb376a4ba0168aacdc0069",
@@ -511,11 +511,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:groovy",
-      "wallTimeMs": 218.249429,
-      "userCpuMs": 199.496,
-      "systemCpuMs": 6.804,
-      "peakRssBytes": 296759296,
-      "rssDeltaBytes": 2490368,
+      "wallTimeMs": 165.606697,
+      "userCpuMs": 309.762,
+      "systemCpuMs": 8.121,
+      "peakRssBytes": 272162816,
+      "rssDeltaBytes": 1703936,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
