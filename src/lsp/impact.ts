@@ -55,6 +55,17 @@
 //                Since M42.H4 the renderer lives in the ONE core
 //                (script/m26/graph-core.ts renderImpact) — this component
 //                owns the DATA; the core owns the DOM. Same law, one home.
+//   answered:    a root the engine resolved by EXACT name is answered even when
+//                its kind is outside the graph whitelist — an enum variant, a
+//                constant, a plain field. The whitelist exists so a request is
+//                never silently answered about a DIFFERENT symbol, and an
+//                exact-name root is not that. Measured: the engine rooted at the
+//                exact requested name and completed the walk in all seven cases
+//                the D5 ledger named (136–313 caller edges), and the door threw
+//                the answer away. `rootMatch.via` says `exact-exempt-kind` and
+//                `nameMatches` says how many stored symbols share the name, so
+//                the one substitution this DOES need disclosing — an ambiguous
+//                name — is disclosed by the same field D4 introduced.
 //   resolved:    member-name targets (the hover's server-resolved identity
 //                for a constructor or member symbol) resolve through their
 //                OWNING declaration when the member itself has no stored
@@ -206,7 +217,7 @@ export interface ImpactResult {
    *  lane's corpora — a real cost on the highest-stakes read surface, paid for
    *  a flag the `via` field already carries. This count is one indexed
    *  equality. */
-  rootMatch: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
+  rootMatch: { requested: string; via: "exact" | "exact-exempt-kind" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
   /** M63.T2: the rule this answer was MEASURED under, stated on the answer.
    *  A reader who wants to know why a `uses` or `references` relationship did
    *  not appear can read it here instead of inferring it, and the set and its
@@ -764,16 +775,77 @@ export async function computeImpact(
   // that decision for BOTH doors). Failures here are never silent: a
   // mismatched or unresolvable hint keeps the declared error.
   const rootType = (result.root as unknown as { symbolType?: string } | undefined)?.symbolType ?? ""
-  if (rootType && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
+  // M63.T2: the engine resolves exact names of ANY stored kind (M48.C1), so it
+  // roots at a `constant` or an `enum_member` and COMPLETES the walk whenever the
+  // name is an exact hit. Measured on the seven cases the D5 ledger named, the
+  // engine rooted at the exact requested name in all seven and produced 136–313
+  // caller edges — and the door below discarded every one of them, because
+  // `resolveMemberIdentity` rule 3 had correctly declined the owner fallback
+  // (graphql-js `map` has 221 declared-kind reverse edges of its own, so
+  // re-rooting would DROP dependencies) and `null` was read as "no answer".
+  //
+  // The whitelist's law is "never silently root at a DIFFERENT symbol", and an
+  // exact-name root satisfies that by construction: nothing was substituted, so
+  // there is nothing to refuse. What the door still refuses, unchanged, is a
+  // non-traversable root that is NOT the symbol asked for — a gravity pick, a
+  // containment match, a re-root through an owner — because THAT is a relabel.
+  //
+  // `resolveMemberIdentity` is not touched: its four rules still decide the
+  // fallback, and the M55 identity gate still holds. What changes is that the
+  // fallback being unnecessary no longer means there is no answer.
+  const rootedAtRequestedName = result.root?.name === symbolName
+  const kindOutsideWhitelist = rootType.length > 0 && !IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)
+  // A name match alone is NOT the symbol the caller asked for: the engine's
+  // any-type exact resolve gravity-picks among same-name rows, so a file-HINTED
+  // request for an ambiguous member name comes back rooted at a DIFFERENT file's
+  // copy — a silent relabel, and the one thing the graph whitelist exists to
+  // prevent. Measured by the gate the moment this condition was first written
+  // without the hint: `constructor` hinted at `main.ts` answered about
+  // `registry.ts`. So all three must hold.
+  const nameCandidates = listNameCandidates(db, projectId, symbolName)
+  const hintMatchesRoot =
+    memberFile !== undefined && typeof result.root?.file === "string" && memberFileMatches(memberFile, result.root.file)
+  const nameIsUnambiguous = nameCandidates.length === 1 || (nameCandidates.length > 1 && hintMatchesRoot)
+  // The exemption is scoped to the two kinds the D5 ledger MEASURED as
+  // unanswerable, and both are value-like: an enum VARIANT and a module-level
+  // `constant` are things a refactoring question is asked ABOUT, and their own
+  // dependents are the answer.
+  //
+  // It is deliberately NOT scoped to every non-traversable kind. `constructor`,
+  // `property`, `field` and the rest are the U5 law's subject (M44/M55): a hover
+  // that resolved a member's identity means the OWNING declaration is the
+  // question, and routing them through the owner is that law, not a workaround.
+  // Widening the scope is what broke M55's R5 the first time this was written —
+  // the m55 fixture's hinted `constructor` picks up a declared-kind row from the
+  // real indexer, so "has its own reverse edges" was true and the exemption
+  // answered about the constructor instead of `Store`. A measured allowlist of
+  // the two kinds that were measured is narrower and honest about its own
+  // evidence; "everything the whitelist excludes" was neither.
+  const VALUE_LIKE_KINDS = ["enum_member", "constant"]
+  const exemptKind =
+    kindOutsideWhitelist && rootedAtRequestedName && nameIsUnambiguous && VALUE_LIKE_KINDS.includes(rootType) ? rootType : null
+  if (kindOutsideWhitelist && exemptKind === null) {
     const owner = resolveImpactMemberOwner(db, projectId, symbolName, memberFile)
     if (owner === null) {
+      // A refusal that names what it could have answered is a different thing
+      // from a refusal that does not. The candidates are one indexed equality on
+      // `brain_sym_proj_name_idx`, already read for `rootMatch.nameMatches`, and
+      // they are what turns "you cannot ask about this" into "ask again with one
+      // of these".
+      const candidates =
+        nameCandidates.length > 1
+          ? ` — ${nameCandidates.length} stored symbols carry that name: ${nameCandidates
+              .slice(0, 8)
+              .map((c) => `${c.file || "?"}:${c.line}`)
+              .join(", ")}${nameCandidates.length > 8 ? `, +${nameCandidates.length - 8} more` : ""}; re-ask with a file`
+          : ""
       throw new Error(
         `bb/impact: symbol '${symbolName}' is not a traversable root (${rootType}) — no impact set exists` +
           ` (declared error: the symbol was not found as a traversable root${
             memberFile
               ? "; the hinted file does not disambiguate it — hover a symbol that was indexed"
               : "; run `bb index` or check the name"
-          })`,
+          }${candidates})`,
       )
     }
     result = await traverse(projectId, owner.name, walk)
@@ -1116,9 +1188,13 @@ export async function computeImpact(
         resolution.through === "owning-declaration"
           ? "owning-declaration"
           : result.root.name === symbolName
-            ? "exact"
+            ? exemptKind === null
+              ? "exact"
+              : "exact-exempt-kind"
             : "fuzzy-containment",
-      nameMatches: countExactNameMatches(db, projectId, symbolName),
+      // From the SAME rows the declared error lists, so the count a reader sees
+      // in the payload and the list they see in a refusal are one measurement.
+      nameMatches: nameCandidates.length > 0 ? nameCandidates.length : countExactNameMatches(db, projectId, symbolName),
     },
     rule: {
       relationshipTypes: [...relationshipTypes],
@@ -1269,6 +1345,37 @@ function boundaryHasDependents(
     )
     .get(projectId, ...relationshipTypes, ...boundary) as { any: number } | undefined
   return row !== undefined
+}
+
+/** Every stored symbol carrying exactly this name, with the file and line a
+ *  reader needs to disambiguate with. One indexed equality on
+ *  `brain_sym_proj_name_idx`, and the rows are already read for
+ *  `rootMatch.nameMatches` — so the count in the payload and the candidate list
+ *  in a declared error cannot disagree.
+ *
+ *  `countExactNameMatches` and this MUST agree: that one declares 1 when the
+ *  index cannot answer, and this one returns what it read. A null return means
+ *  "could not ask", which is treated as unambiguous rather than as a reason to
+ *  refuse: a refusal must rest on a measurement. */
+function listNameCandidates(
+  db: ImpactDb,
+  projectId: string,
+  symbolName: string,
+): Array<{ file: string; line: number }> {
+  try {
+    // A NULL `line_start` is the indexer's own state for a symbol it could not
+    // place, so it is shown as 0 rather than dropped: a candidate without a line
+    // is still a candidate, and dropping it would make the list incomplete.
+    return (
+      db
+        .prepare(
+          "SELECT COALESCE(f.relative_path, f.path, '') AS file, s.line_start AS line FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ? ORDER BY COALESCE(f.relative_path, f.path, ''), s.line_start LIMIT 32",
+        )
+        .all(projectId, symbolName) as Array<{ file: string; line: number | null }>
+    ).map((row) => ({ file: row.file, line: typeof row.line === "number" ? row.line : 0 }))
+  } catch {
+    return []
+  }
 }
 
 /** How many stored symbols carry exactly this name. One indexed equality —

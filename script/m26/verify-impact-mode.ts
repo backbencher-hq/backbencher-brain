@@ -26,6 +26,8 @@
 //   M15 depth correction off    (the first trace published as the shortest path)
 //   M16 range-folded unmarked   (a folded dependent rendered like a member)
 //   M17 unattributed unmarked   (a refusal rendered as a measurement)
+//   M18 the exemption removed   (an exact unambiguous constant refused again)
+//   M19 the ambiguity check off (an ambiguous name answered about one of them)
 //   M13 composition undeclared  (the cascade breakdown stops being published)
 //   M5 truncation state lost    (truncated flag always false)
 //
@@ -121,6 +123,10 @@ async function makeFixture(): Promise<{
   const { BrainDatabase } = await import(join(ROOT, "src", "brain", "database.ts"))
   const raw = await BrainDatabase.getRawInstance(projectId)
   raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`).run("file-1", projectId, join(ws, "main.ts"), "main.ts", "typescript", "w5-hash")
+  // M63.T2: a second file, so an AMBIGUOUS name can be seeded. The exemption
+  // below turns on the name being unambiguous, and that is only testable when two
+  // stored symbols share one.
+  raw.prepare(`INSERT INTO brain_file (id, project_id, path, relative_path, language, file_hash) VALUES (?,?,?,?,?,?)`).run("file-2", projectId, join(ws, "other.ts"), "other.ts", "typescript", "w5-hash-2")
   const sym = raw.prepare(`INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score) VALUES (?,?,?,?,?,?,?,?,?,?)`)
   // Flat fixture: root + 3 direct callers (differential sample) + 1 nested
   // child under caller1 (containment delta) + an unrelated symbol.
@@ -164,6 +170,29 @@ async function makeFixture(): Promise<{
   rel.run("w5-rel-8", projectId, "sym:other", "sym:hub2:mid", "calls", 0.9)
   rel.run("w5-rel-9", projectId, "sym:hub2", "sym:hub2:mid", "calls", 0.9)
   rel.run("w5-rel-10", projectId, "sym:other", "sym:klass:mem", "calls", 0.9)
+
+  // M63.T2 — the exemption: a root the graph whitelist excludes (a `constant`,
+  // an enum variant) is ANSWERED when the engine resolved the requested name
+  // exactly and that name is unambiguous. The whitelist exists so a request is
+  // never answered about a DIFFERENT symbol; an exact, unambiguous, substituted-
+  // for-nothing root is not that.
+  //
+  // Measured on the lane's corpora before this existed: graphql-js `map` (a
+  // constant with 221 declared-kind reverse edges), vue-core `isArray` (115) and
+  // vue-core `capitalize` (11) were all completed engine walks of 136-313 caller
+  // edges, discarded by the door over a kind check. The identity module had
+  // already declined the owner fallback for the right reason — re-rooting would
+  // DROP those dependencies — and `null` was read as "no answer".
+  sym.run("sym:konst", projectId, "file-1", "uniqConst", "constant", 30, 30, 200, 210, 7)
+  rel.run("w5-rel-konst", projectId, "sym:caller1", "sym:konst", "calls", 0.9)
+  // ...and the case the exemption must NOT take: the same kind, but TWO stored
+  // symbols share the name, so an answer would be about one of them and the
+  // reader could not tell which. Still a declared error, and the error NAMES the
+  // candidates.
+  sym.run("sym:amb1", projectId, "file-1", "ambConst", "constant", 31, 31, 211, 215, 6)
+  sym.run("sym:amb2", projectId, "file-2", "ambConst", "constant", 5, 5, 30, 34, 5)
+  rel.run("w5-rel-amb1", projectId, "sym:caller2", "sym:amb1", "calls", 0.9)
+  rel.run("w5-rel-amb2", projectId, "sym:caller3", "sym:amb2", "calls", 0.9)
 
   // M63.T2 — the shape that makes the ENGINE's depth and the ANSWER's depth
   // disagree, which is what the evidence re-read exists for. The engine's caller
@@ -261,6 +290,49 @@ async function main(): Promise<void> {
         .map((d: any) => `${d.name}@${d.depth}/ev@${d.evidenceAtDepth}/cross=${d.isCrossLanguage}`)
         .join(" ")}`,
     )
+    // M63.T2: the exemption answers the exact, unambiguous, non-whitelisted
+    // root — and answers it with the SAME walk every other root gets, which is
+    // the point: nothing was substituted, so nothing needs substituting.
+    const exempt = await impact.computeImpact(fx.raw, fx.projectId, "uniqConst")
+    check(
+      exempt.root?.name === "uniqConst" && exempt.rootMatch?.via === "exact-exempt-kind",
+      "R6: a constant the engine resolved by exact, unambiguous name is answered, and says the kind was exempt",
+      "fixture/uniqConst",
+      `root=${exempt.root?.name} via=${exempt.rootMatch?.via}`,
+    )
+    check(
+      exempt.impact.length === 1 && exempt.impact[0]?.name === "caller1" && exempt.impact[0]?.depth === 0,
+      "R6: the exempt root's set is its own dependents, not its owner's",
+      "fixture/uniqConst",
+      JSON.stringify(exempt.impact.map((d: any) => `${d.name}@${d.depth}`)),
+    )
+    check(
+      exempt.rootMatch?.nameMatches === 1,
+      "R6: the exemption reads the name's ambiguity from the same rows the refusal would list",
+      "fixture/uniqConst",
+      String(exempt.rootMatch?.nameMatches),
+    )
+    // ...and the case it must not take: an AMBIGUOUS name. Refusing is the
+    // identity module's law (M44 R1), and the error has to be actionable.
+    let ambiguousMessage = ""
+    try {
+      await impact.computeImpact(fx.raw, fx.projectId, "ambConst")
+    } catch (e: any) {
+      ambiguousMessage = e instanceof Error ? e.message : String(e)
+    }
+    check(
+      ambiguousMessage.includes("not a traversable root") || ambiguousMessage.includes("not found"),
+      "R6: an ambiguous non-whitelisted name is still a declared error, never a guess",
+      "fixture/ambConst",
+      ambiguousMessage.slice(0, 110),
+    )
+    check(
+      ambiguousMessage.includes("main.ts") && ambiguousMessage.includes("other.ts"),
+      "R6: the refusal NAMES the candidates, so the next question can be asked with a file",
+      "fixture/ambConst",
+      ambiguousMessage.slice(0, 150),
+    )
+
     const wideResult = await impact.computeImpact(fx.raw, fx.projectId, "wideFn")
     const twice = wideResult.impact.find((d: any) => d.id === "sym:twice")
     const twiceShape = twice ? `${twice.name}@${twice.depth}/ev@${twice.evidenceAtDepth}/cross=${twice.isCrossLanguage}` : "ABSENT"
@@ -649,6 +721,46 @@ async function main(): Promise<void> {
         },
       },
       {
+        name: "M18 the exemption removed (an exact, unambiguous constant is refused again)",
+        home: "component",
+        // M63.T2: the condition's scope was narrowed to the two VALUE-LIKE kinds
+        // after M55's R5 caught the first version answering about a hinted
+        // `constructor` instead of its owning class. The anchor follows the
+        // shipped condition, and the roster check reports a move rather than
+        // skipping the mutant.
+        from: "kindOutsideWhitelist && rootedAtRequestedName && nameIsUnambiguous && VALUE_LIKE_KINDS.includes(rootType) ? rootType : null",
+        to: "null",
+        // The measured capability hole: the engine roots at the exact name and
+        // completes the walk, and the door throws it away over a kind check.
+        // graphql-js `map` 268 caller edges, vue-core `isArray` 226.
+        probe: async (m) => {
+          try {
+            const r = await m.computeImpact(fx.raw, fx.projectId, "uniqConst")
+            return r.root?.name !== "uniqConst"
+          } catch {
+            return true
+          }
+        },
+      },
+      {
+        name: "M19 the ambiguity check dropped (a name several symbols share is answered about one of them)",
+        home: "component",
+        from: "const nameIsUnambiguous = nameCandidates.length === 1 || (nameCandidates.length > 1 && hintMatchesRoot)",
+        to: "const nameIsUnambiguous = true",
+        // The other half of the same condition. The M44 gate covers a HINTED
+        // ambiguous name; this covers the hint-less one, and without the check
+        // the engine's gravity pick among the two `ambConst` rows is a silent
+        // relabel — the one thing the graph whitelist exists to prevent.
+        probe: async (m) => {
+          try {
+            const r = await m.computeImpact(fx.raw, fx.projectId, "ambConst")
+            return r.impact.length >= 0
+          } catch {
+            return false
+          }
+        },
+      },
+      {
         name: "M5 truncation state lost",
         home: "component",
         from: "truncated = true\n      truncationReason = \"impact-node-budget-exhausted\"",
@@ -676,7 +788,7 @@ async function main(): Promise<void> {
     // equality still holds, and the summary reads BETTER than before while
     // testing less. (Measured: the M7 anchor was invalidated by a field added
     // to a return literal, the suite reported 10/10, and nothing failed.)
-    const EXPECTED_MUTANTS = 17
+    const EXPECTED_MUTANTS = 19
     let caught = 0
     let mutantsTotal = 0
     let skipped = 0
