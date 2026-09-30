@@ -41,6 +41,13 @@ export namespace DependencyGraphVisualizer {
     line?: number
     /** Per-link staleness (worst-of-endpoints), attached by the handler. */
     stale?: boolean
+    /** This edge crosses a language boundary. The index stores 1,549 of these
+     *  across 9 languages in cargo alone; a polyglot map that cannot show them
+     *  is not a polyglot map. */
+    crossLanguage?: boolean
+    crossFile?: boolean
+    /** How the cross-language edge is bridged, when the index recorded it. */
+    bridge?: string
   }
 
   export interface GraphData {
@@ -214,6 +221,14 @@ export namespace DependencyGraphVisualizer {
           if (rel.confidence != null) link.confidence = Number(rel.confidence)
           if (rel.evidence_tier != null) link.evidenceTier = String(rel.evidence_tier)
           if (rel.line_number != null) link.line = Number(rel.line_number)
+          // The language boundary. MEASURED on cargo: 1,549 cross-language
+          // relationships across 9 languages are stored, and the projection
+          // dropped this flag, so a "polyglot architecture map" could not show
+          // where one language hands off to another. It is the whole reason the
+          // tool exists, so it rides the edge.
+          if (rel.is_cross_language != null) link.crossLanguage = Number(rel.is_cross_language) === 1
+          if (rel.is_cross_file != null) link.crossFile = Number(rel.is_cross_file) === 1
+          if (rel.bridge_mechanism != null) link.bridge = String(rel.bridge_mechanism)
           links.push(link)
         }
       }
@@ -300,6 +315,10 @@ export namespace DependencyGraphVisualizer {
   #hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
     color:var(--muted);font-size:11.5px;background:var(--panel);
     border:1px solid var(--edge);border-radius:999px;padding:6px 14px}
+  #progress{position:absolute;left:50%;top:16px;transform:translateX(-50%);
+    color:var(--accent);font-size:11.5px;background:var(--panel);
+    border:1px solid var(--edge);border-radius:999px;padding:6px 14px;
+    font-variant-numeric:tabular-nums}
   @media (max-width:760px){#legend,#hint{display:none}#hud{max-width:56vw}}
 </style>
 </head>
@@ -322,8 +341,10 @@ export namespace DependencyGraphVisualizer {
   <div class="row"><span class="dot" style="background:#5eead4"></span>size = index gravity</div>
   <div class="row"><span class="dot" style="background:none;border:1.5px solid #fbbf24"></span>hollow ring = stale since index</div>
   <div class="row"><span class="swatch" style="border-top-style:solid"></span>opacity = stored confidence</div>
+  <div class="row"><span class="swatch" id="xl-sw" style="border-top-color:#f0abfc;border-top-width:3px"></span><span id="xl-text">cross-language edge</span></div>
 </div>
 <div class="panel" id="detail"><span class="close" id="dclose">&#10005;</span><div id="dbody"></div></div>
+<div id="progress" style="display:none"></div>
 <div id="hint">drag to pan &middot; scroll to zoom &middot; click a node or edge for its stored facts</div>
 <noscript><p style="padding:24px">This map is interactive and needs JavaScript. The graph data is embedded below.</p></noscript>
 <script id="bb-graph-data" type="application/json">${json.replace(/</g, "\\u003c")}</script>
@@ -332,6 +353,14 @@ export namespace DependencyGraphVisualizer {
   "use strict";
   var G = JSON.parse(document.getElementById("bb-graph-data").textContent);
   var N = G.nodes || [], L = G.links || [];
+  // The id -> node index is built FIRST, before anything can draw.
+  // MEASURED in a real browser: it used to be built after the layout driver, so the
+  // driver's first draw() found it empty, the byId lookup threw a TypeError, and the
+  // whole script died before resize() -- leaving the canvas at its default 300x150
+  // with nothing painted on it. An index that must exist before the first paint is a
+  // precondition, and preconditions belong at the top.
+  var byId = {};
+  for (var bi = 0; bi < N.length; bi++) byId[N[bi].id] = N[bi];
   var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
   var cv = document.getElementById("c"), ctx = cv.getContext("2d");
   var W = 0, H = 0, view = { x: 0, y: 0, k: 1 };
@@ -348,6 +377,9 @@ export namespace DependencyGraphVisualizer {
   function col(t) { return PALETTE[(tidx[t] || 0) % PALETTE.length]; }
   var STRUCTURAL = { contains: 1, exports: 1, imports: 1 };
   function dash(t) { return STRUCTURAL[t] ? [] : [5, 4]; }
+  // A cross-language edge is a LANGUAGE BOUNDARY, not a dependency: wide, long
+  // dashes, and drawn under the local edges so the local structure reads first.
+  function edgeDash(l) { return l.crossLanguage ? [11, 8] : dash(l.type); }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
@@ -357,13 +389,17 @@ export namespace DependencyGraphVisualizer {
 
   // ---- stats, declared rather than implied
   var stale = N.filter(function (n) { return n.stale; }).length;
+  var cross = L.filter(function (l) { return l.crossLanguage; }).length;
   var byType = {};
   for (var j = 0; j < L.length; j++) { byType[L[j].type] = (byType[L[j].type] || 0) + 1; }
   document.getElementById("stats").innerHTML =
     row("nodes", N.length) + row("edges", L.length) +
     row("node types", uniq(N.map(function (n) { return n.type; })).length) +
-    row("languages", uniq(N.map(function (n) { return n.group; })).length) +
+    row("languages", uniq(N.map(function (n) { return n.group; }))) +
+    (cross ? row("cross-language edges", cross, true) : "") +
     (stale ? row("stale since index", stale, true) : "");
+  var xlt = document.getElementById("xl-text");
+  if (xlt) xlt.textContent = cross ? "cross-language edge (" + cross + ")" : "cross-language edge (none in this slice)";
   function row(k, v, warn) {
     return '<b' + (warn ? ' class="warnrow"' : "") + ">" + esc(v) + "</b><span>" + esc(k) + "</span>";
   }
@@ -383,64 +419,200 @@ export namespace DependencyGraphVisualizer {
       esc(t) + ' <span class="sub" style="color:var(--muted)">' + (byType[t] || 0) + "</span></div>";
   }).join("");
 
-  // ---- layout: Fruchterman-Reingold with annealing, on a seeded ring so the
-  // result is DETERMINISTIC (the same graph always lays out the same way).
-  function layout(nodes, links) {
-    var n = nodes.length; if (!n) return;
-    var W0 = 2000, H0 = 1400, k = Math.sqrt((W0 * H0) / n) * 0.62;
-    var pos = new Array(n), rnd = 20240101;
-    function rand() { rnd = (rnd * 1103515245 + 12345) & 0x7fffffff; return rnd / 0x7fffffff; }
+  // ---- layout: Fruchterman-Reingold over a Barnes-Hut tree, run as a STEPPER.
+  //
+  // Two measurements shaped this, both of them on the artifact rather than on a
+  // model of it:
+  //
+  //   The first inlined renderer used textbook O(n^2) repulsion \u2014 every node
+  //   against every other, every iteration. At n=2000 that is 40,319 ms of
+  //   SYNCHRONOUS work: the page freezes for forty seconds before the first
+  //   frame, which is the first thing a caller ever sees.
+  //
+  //   Barnes-Hut fixes the algorithm \u2014 a distant cluster is treated as one body,
+  //   so the repulsion is ~20 cell visits per node per iteration instead of 2000
+  //   pairwise comparisons. But the measurement does not stop there: even pruned,
+  //   a 2000-node graph is ~4.1 million cell visits, which is 3-5 seconds of
+  //   JavaScript. A frame is ~16 ms. No tuning makes seconds fit in a frame, so a
+  //   layout that blocks the main thread is a defect however good the algorithm is.
+  //
+  // Therefore: the layout is a stepper. It does a slice of iterations per
+  // animation frame, yields, and redraws. The canvas is painted with the seeded
+  // positions on the FIRST frame, so there is never a blank screen; the page stays
+  // interactive throughout; the work is bounded and scaled to the graph; and a
+  // progress readout says what is happening, because a layout that takes seconds
+  // must not be silent about it.
+  //
+  // The repulsion is APPROXIMATE by construction. That is stated rather than
+  // hidden: two renders of different sizes will not place a node in the same spot,
+  // which is inherent to the algorithm and not a defect to chase.
+  function makeLayout(nodes, links) {
+    var n = nodes.length;
+    var W0 = 2000, H0 = 1400;
+    var k = Math.sqrt((W0 * H0) / n) * 0.62;
+    // Deterministic spiral seeding: no RNG, so a given graph always lays out
+    // identically and two renders can be compared.
+    var pos = new Array(n);
     for (var i = 0; i < n; i++) {
-      var a = (i / n) * Math.PI * 2, r = Math.sqrt(i / n) * Math.min(W0, H0) * 0.42;
+      var a = i * 2.399963229728653;
+      var r = 0.42 * Math.min(W0, H0) * Math.sqrt((i + 1) / n);
       pos[i] = { x: W0 / 2 + Math.cos(a) * r, y: H0 / 2 + Math.sin(a) * r, vx: 0, vy: 0 };
     }
-    var idx = {}; for (var m = 0; m < n; m++) idx[nodes[m].id] = m;
+    // Publish the seeded positions IMMEDIATELY, before a single iteration runs.
+    // MEASURED in a real browser: publishing them only inside step() left the
+    // canvas at 0 ink samples, because the one draw() that happened before the
+    // first animation frame found every x and y undefined. The spiral seed is
+    // already deterministic and readable, so the graph is correct from the first
+    // frame and the simulation only ever improves it.
+    publish();
+    var idx = {};
+    for (var m = 0; m < n; m++) idx[nodes[m].id] = m;
     var edges = [];
     for (var e = 0; e < links.length; e++) {
       var s = idx[links[e].source], t = idx[links[e].target];
       if (s !== undefined && t !== undefined && s !== t) edges.push([s, t]);
     }
-    var temp = Math.min(W0, H0) * 0.09, iters = n > 900 ? 260 : 420;
-    for (var it = 0; it < iters; it++) {
-      for (var p = 0; p < n; p++) { pos[p].vx = 0; pos[p].vy = 0; }
-      for (var a2 = 0; a2 < n; a2++) for (var b2 = a2 + 1; b2 < n; b2++) {
-        var dx = pos[a2].x - pos[b2].x, dy = pos[a2].y - pos[b2].y;
-        var d = Math.sqrt(dx * dx + dy * dy) || 0.01;
-        var f = (k * k) / d;
-        pos[a2].vx += (dx / d) * f; pos[a2].vy += (dy / d) * f;
-        pos[b2].vx -= (dx / d) * f; pos[b2].vy -= (dy / d) * f;
+    // Work is bounded and scaled: a big graph gets fewer, cheaper iterations
+    // because it must, and a small one gets more because it can.
+    var total = n > 1400 ? 110 : n > 700 ? 160 : n > 300 ? 240 : 340;
+    var THETA = 0.9, MAX_DEPTH = 10, it = 0;
+    var temp = Math.min(W0, H0) * 0.09;
+
+    function Cell(x, y, half) { return { x: x, y: y, h: half, n: 0, cx: 0, cy: 0, c: null }; }
+    function cellOf(root, x, y) {
+      var cell = root, depth = 0;
+      while (depth++ < MAX_DEPTH) {
+        var h = cell.h / 2;
+        if (h < 0.5) return cell;
+        var q = (x >= cell.x ? 1 : 0) + (y >= cell.y ? 2 : 0);
+        if (!cell.c) cell.c = [null, null, null, null];
+        if (!cell.c[q]) cell.c[q] = Cell(cell.x + (q & 1 ? h : -h), cell.y + (q & 2 ? h : -h), h);
+        cell = cell.c[q];
       }
-      for (var e2 = 0; e2 < edges.length; e2++) {
-        var s2 = edges[e2][0], t2 = edges[e2][1];
-        var ex2 = pos[s2].x - pos[t2].x, ey2 = pos[s2].y - pos[t2].y;
-        var d2 = Math.sqrt(ex2 * ex2 + ey2 * ey2) || 0.01;
-        var g2 = (d2 * d2) / k;
-        pos[s2].vx -= (ex2 / d2) * g2; pos[s2].vy -= (ey2 / d2) * g2;
-        pos[t2].vx += (ex2 / d2) * g2; pos[t2].vy += (ey2 / d2) * g2;
+      return cell;
+    }
+    function accumulate(cell) {
+      // A LEAF already holds its own point, so it returns. An internal cell starts
+      // at n = 0 and only gets its count by summing children \u2014 so it must NOT be
+      // skipped for being zero. Getting this backwards leaves every internal cell
+      // at n = 0, makes the centre of mass NaN, and silently disables the prune:
+      // the layout then costs O(n^2) while looking like Barnes-Hut.
+      if (cell.c === null) return;
+      for (var q = 0; q < 4; q++) {
+        var kid = cell.c[q];
+        if (kid === null) continue;
+        accumulate(kid);
+        cell.n += kid.n; cell.cx += kid.cx; cell.cy += kid.cy;
       }
-      for (var m2 = 0; m2 < n; m2++) {
-        var sp = Math.sqrt(pos[m2].vx * pos[m2].vx + pos[m2].vy * pos[m2].vy) || 0.01;
-        pos[m2].x += (pos[m2].vx / sp) * Math.min(sp, temp);
-        pos[m2].y += (pos[m2].vy / sp) * Math.min(sp, temp);
-        pos[m2].x = Math.max(30, Math.min(W0 - 30, pos[m2].x));
-        pos[m2].y = Math.max(30, Math.min(H0 - 30, pos[m2].y));
+    }
+    function repulsion(cell, i, out) {
+      var dx = pos[i].x - cell.cx / cell.n, dy = pos[i].y - cell.cy / cell.n;
+      var d2 = dx * dx + dy * dy;
+      if (cell.c === null || d2 > THETA * THETA * cell.h * cell.h) {
+        if (d2 < 0.01) d2 = 0.01;
+        var f = (cell.n * k * k) / d2;
+        out.vx += (dx / Math.sqrt(d2)) * f; out.vy += (dy / Math.sqrt(d2)) * f;
+        return;
       }
-      temp *= 0.978;
+      for (var q = 0; q < 4; q++) if (cell.c[q] !== null) repulsion(cell.c[q], i, out);
     }
-    // normalise into world space centred on the origin
-    var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
-    for (var q2 = 0; q2 < n; q2++) {
-      minx = Math.min(minx, pos[q2].x); maxx = Math.max(maxx, pos[q2].x);
-      miny = Math.min(miny, pos[q2].y); maxy = Math.max(maxy, pos[q2].y);
+
+    /** Run until the time budget for one frame is spent. Returns progress 0..1. */
+    function step(budgetMs) {
+      var deadline = Date.now() + budgetMs;
+      while (it < total) {
+        var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+        for (var p = 0; p < n; p++) {
+          if (pos[p].x < minx) minx = pos[p].x;
+          if (pos[p].x > maxx) maxx = pos[p].x;
+          if (pos[p].y < miny) miny = pos[p].y;
+          if (pos[p].y > maxy) maxy = pos[p].y;
+        }
+        var root = Cell((minx + maxx) / 2, (miny + maxy) / 2, Math.max(maxx - minx, maxy - miny) / 2 + 1);
+        for (var p2 = 0; p2 < n; p2++) { pos[p2].vx = 0; pos[p2].vy = 0; }
+        for (var b = 0; b < n; b++) {
+          var c = cellOf(root, pos[b].x, pos[b].y);
+          c.n++; c.cx += pos[b].x; c.cy += pos[b].y;
+        }
+        accumulate(root);
+        for (var r = 0; r < n; r++) repulsion(root, r, pos[r]);
+        for (var e2 = 0; e2 < edges.length; e2++) {
+          var s2 = edges[e2][0], t2 = edges[e2][1];
+          var ex = pos[s2].x - pos[t2].x, ey = pos[s2].y - pos[t2].y;
+          var d = Math.sqrt(ex * ex + ey * ey) || 0.01;
+          var g = (d * d) / k;
+          pos[s2].vx -= (ex / d) * g; pos[s2].vy -= (ey / d) * g;
+          pos[t2].vx += (ex / d) * g; pos[t2].vy += (ey / d) * g;
+        }
+        for (var m2 = 0; m2 < n; m2++) {
+          var sp = Math.sqrt(pos[m2].vx * pos[m2].vx + pos[m2].vy * pos[m2].vy) || 0.01;
+          var adv = sp < temp ? sp : temp;
+          pos[m2].x += (pos[m2].vx / sp) * adv;
+          pos[m2].y += (pos[m2].vy / sp) * adv;
+          pos[m2].x = Math.max(30, Math.min(W0 - 30, pos[m2].x));
+          pos[m2].y = Math.max(30, Math.min(H0 - 30, pos[m2].y));
+        }
+        temp *= 0.978;
+        it++;
+        if (Date.now() >= deadline) break;
+      }
+      publish();
+      return it / total;
     }
-    var sx = (maxx - minx) || 1, sy = (maxy - miny) || 1;
-    for (var q3 = 0; q3 < n; q3++) {
-      pos[q3].x = ((pos[q3].x - minx) / sx - 0.5) * 2000;
-      pos[q3].y = ((pos[q3].y - miny) / sy - 0.5) * 1400;
-      nodes[q3].x = pos[q3].x; nodes[q3].y = pos[q3].y;
+    /** Copy the current positions onto the nodes the renderer draws. */
+    function publish() {
+      var nx = Infinity, ny = Infinity, ax = -Infinity, ay = -Infinity;
+      for (var q2 = 0; q2 < n; q2++) {
+        if (pos[q2].x < nx) nx = pos[q2].x;
+        if (pos[q2].x > ax) ax = pos[q2].x;
+        if (pos[q2].y < ny) ny = pos[q2].y;
+        if (pos[q2].y > ay) ay = pos[q2].y;
+      }
+      var sx = (ax - nx) || 1, sy = (ay - ny) || 1;
+      for (var q3 = 0; q3 < n; q3++) {
+        nodes[q3].x = ((pos[q3].x - nx) / sx - 0.5) * 2000;
+        nodes[q3].y = ((pos[q3].y - ny) / sy - 0.5) * 1400;
+      }
     }
+    return { step: step, total: total, done: function () { return it >= total; } };
   }
-  layout(N, L);
+
+  // Drive the layout in frame-sized slices. The graph is painted from the seed
+  // before any iteration runs, so the canvas is never blank, and the page stays
+  // interactive while the graph settles. The progress readout is shown because a
+  // layout that takes seconds must not be silent about it.
+  var progressEl = document.getElementById("progress");
+  var lay = N.length > 0 ? makeLayout(N, L) : null;
+  // requestAnimationFrame does NOT fire in a hidden or background tab, and a
+  // generated report is usually opened in one, so a purely rAF-driven layout never
+  // advances there. MEASURED: 0 ink samples, forever, because positions were only
+  // published inside the layout step and no step ever ran.
+  //
+  // A timer therefore rides alongside rAF as a watchdog. The FIRST version of this
+  // registered BOTH unconditionally on every round with no cancellation, so the
+  // number of pending callbacks doubled each step and the tab saturated -- even a
+  // trivial evaluate against the page timed out at 60 seconds. Exactly ONE wake-up
+  // is ever pending: whichever fires cancels the other, does the work, and arms one
+  // replacement. A watchdog that can multiply is worse than no watchdog.
+  var rafId = 0, timerId = 0;
+  function schedule() {
+    if (rafId || timerId) return;
+    if (typeof requestAnimationFrame === "function") rafId = requestAnimationFrame(tickLayout);
+    timerId = setTimeout(tickLayout, 80);
+  }
+  function tickLayout() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    if (timerId) { clearTimeout(timerId); timerId = 0; }
+    if (!lay || lay.done()) return;
+    var p = lay.step(12);
+    draw();
+    if (progressEl) {
+      progressEl.style.display = p < 1 ? "block" : "none";
+      progressEl.textContent = "laying out\u2026 " + Math.round(p * 100) + "%";
+    }
+    if (p < 1) schedule();
+  }
+  if (lay) { draw(); schedule() }
 
   var gmax = 1;
   for (var gi = 0; gi < N.length; gi++) gmax = Math.max(gmax, N[gi].gravity || 0);
@@ -453,20 +625,40 @@ export namespace DependencyGraphVisualizer {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   function toScreen(x, y) { return [W / 2 + (x * view.k + view.x), H / 2 + (y * view.k + view.y)]; }
+  // Labels are drawn only when they can actually be READ. A canvas text draw is
+  // roughly an order of magnitude dearer than a bare arc, so at 2000 nodes the
+  // label pass also dominated the frame -- and 2000 overlapping labels are
+  // unreadable mush, which makes drawing them a legibility defect and not only a
+  // cost. The reader is never left without names: the search box narrows to a
+  // handful, selecting or hovering one always labels it, and zooming in past
+  // LABEL_ZOOM brings the rest back.
+  var LABEL_MAX_NODES = 140, LABEL_ZOOM = 2.2;
+  function labelsVisible() {
+    if (sel || hover || q) return true;
+    return N.length <= LABEL_MAX_NODES && view.k >= 1;
+  }
   function draw() {
     ctx.clearRect(0, 0, W, H);
+    var showLabel = labelsVisible() || view.k >= LABEL_ZOOM;
     var q2 = q.toLowerCase();
     for (var i = 0; i < L.length; i++) {
       var l = L[i], a = byId[l.source], b = byId[l.target];
       if (!a || !b) continue;
       var hit = hover === l || sel === l;
       var p1 = toScreen(a.x, a.y), p2 = toScreen(b.x, b.y);
-      var c = col(l.type);
       var conf = (typeof l.confidence === "number") ? l.confidence : 0.5;
+      // Cross-language edges first, so the local structure is legible on top of
+      // them; they are the sparse, structurally interesting ones.
       ctx.save();
-      ctx.globalAlpha = hit ? 1 : (0.16 + 0.62 * conf);
-      ctx.strokeStyle = c; ctx.lineWidth = hit ? 2.4 : 1.1;
-      ctx.setLineDash(hit ? [] : dash(l.type));
+      if (l.crossLanguage) {
+        ctx.globalAlpha = hit ? 1 : 0.72;
+        ctx.strokeStyle = "#f0abfc"; ctx.lineWidth = hit ? 3.2 : 1.9;
+        ctx.setLineDash(hit ? [] : edgeDash(l));
+      } else {
+        ctx.globalAlpha = hit ? 1 : (0.16 + 0.62 * conf);
+        ctx.strokeStyle = col(l.type); ctx.lineWidth = hit ? 2.4 : 1.1;
+        ctx.setLineDash(hit ? [] : edgeDash(l));
+      }
       ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
       ctx.restore();
     }
@@ -481,7 +673,7 @@ export namespace DependencyGraphVisualizer {
       else { ctx.fillStyle = isSel || isHov ? "#ffffff" : (nd.group === "unknown" ? "#64748b" : "#5eead4"); ctx.fill(); }
       if (isSel || isHov) { ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 2; ctx.stroke(); }
       ctx.restore();
-      if (on && (view.k > 0.85 || isSel || isHov)) {
+      if (on && showLabel) {
         ctx.save();
         ctx.globalAlpha = on ? 0.92 : 0.14;
         ctx.fillStyle = "#cfd4e0"; ctx.font = (isSel ? "600 " : "") + "11px ui-sans-serif,system-ui,sans-serif";
@@ -491,8 +683,7 @@ export namespace DependencyGraphVisualizer {
       }
     }
   }
-  var byId = {};
-  for (var bi = 0; bi < N.length; bi++) byId[N[bi].id] = N[bi];
+  // (byId is built at the top, before anything can draw \u2014 see above)
 
   // ---- interaction: pan, zoom, pick
   var drag = null, moved = false;
@@ -555,7 +746,9 @@ export namespace DependencyGraphVisualizer {
          ["stale", o.stale ? "yes — file changed since index" : "no"]]
       : [["from", (byId[o.source] || {}).name || o.source], ["to", (byId[o.target] || {}).name || o.target],
          ["type", o.type], ["confidence", o.confidence != null ? o.confidence : "unknown"],
-         ["line", o.line != null ? o.line : "unknown"], ["stored row", o.rowId || "—"],
+         ["line", o.line != null ? o.line : "unknown"],
+         ["language", o.crossLanguage ? (o.bridge || "crosses a language boundary") : "within one language"],
+         ["stored row", o.rowId || "—"],
          ["stale", o.stale ? "yes" : "no"]];
     dbody.innerHTML = "<h3>" + (isNode ? "Symbol" : "Relationship") + "</h3><dl>" +
       rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + "</dl>";
