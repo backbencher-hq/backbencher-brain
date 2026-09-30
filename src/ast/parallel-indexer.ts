@@ -1141,6 +1141,35 @@ export async function processWithWorkerPool(
 
     const workers = new Set<ChildProcess>()
     const idleWorkers: ChildProcess[] = []
+    /**
+     * Workers that have exited. Membership is what makes "is this worker still
+     * usable?" answerable, which the pool previously never asked.
+     *
+     * THE RACE THIS EXISTS TO CLOSE. A worker can exit before its `exit` event
+     * is delivered AND before a queued message from it is delivered. The two
+     * orderings are not guaranteed relative to each other, so:
+     *
+     *   1. the process exits        -> `exit` handler runs, `idleWorkers`
+     *                                  does not contain the worker yet, so its
+     *                                  splice is a no-op
+     *   2. a queued `engine_fail`   -> the handler runs LATER and does
+     *      message is delivered        `idleWorkers.push(worker)` unconditionally
+     *
+     * The dead worker is now in the idle pool. `scheduleNext` shifts it and calls
+     * `worker.send(...)` on a closed IPC channel, which raises EPIPE. On a
+     * ChildProcess that surfaces as an 'error' event, and nothing is listening,
+     * so Node terminates the whole index process and the in-flight batch is lost.
+     *
+     * Measured on this repository: the index reached 1,361 of 7,354 files and
+     * died; on `--resume` it reached 1,777, then 1,839, then 2,108. The trigger
+     * was always a large JSON file, and always after the pool had been running
+     * long enough for an engine-failure/exit race.
+     *
+     * Two independent guards, because either alone leaves a window: membership
+     * here stops a dead worker entering the pool, and the `send` try/catch below
+     * stops a dead worker that is already in it from taking the process down.
+     */
+    const deadWorkers = new Set<ChildProcess>()
 
     function handleWorkerTimeout(worker: ChildProcess, batchId: number) {
       try {
@@ -1310,8 +1339,17 @@ export async function processWithWorkerPool(
           } else if (msg.type === "engine_fail") {
             process.stderr.write(`[brain] worker ${msg.workerId} engine load FAILED: ${msg.error}\n`)
             clearStartupTimer(worker)
-            // Still add to idle — regex fallback can handle files without engine
-            idleWorkers.push(worker)
+            // Only pool this worker if it is still alive. This branch is exactly
+            // where a dead worker used to enter the pool: the message can be
+            // delivered after the `exit` event that already ran the splice
+            // below, and there the splice found nothing to remove. See
+            // deadWorkers for the full ordering.
+            if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+              log.warn("engine_fail arrived from a worker that had already exited; not pooling it", { workerId: msg.workerId })
+            } else {
+              // Still add to idle — regex fallback can handle files without engine
+              idleWorkers.push(worker)
+            }
             scheduleNext()
           } else if (msg.type === "file_start") {
             const batch = pendingBatches.get(msg.batchId)
@@ -1352,7 +1390,10 @@ export async function processWithWorkerPool(
               clearTimeout(batch.timeout)
               pendingBatches.delete(msg.batchId)
             }
-            idleWorkers.push(worker)
+            // Same guard as engine_fail, same race: a worker that finished a
+            // batch and died before the message was delivered must not be
+            // pooled.
+            if (!deadWorkers.has(worker) && worker.exitCode === null && !worker.killed) idleWorkers.push(worker)
             scheduleNext()
           }
         } catch (err) {
@@ -1363,6 +1404,10 @@ export async function processWithWorkerPool(
       worker.on("exit", (code, signal) => {
         try {
           clearStartupTimer(worker)
+          // Record the exit FIRST. Every path that puts a worker back into the
+          // idle pool checks this, so a message delivered after the exit is
+          // ignored rather than resurrecting a corpse.
+          deadWorkers.add(worker)
           workers.delete(worker)
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
@@ -1401,7 +1446,19 @@ export async function processWithWorkerPool(
         }
       })
 
-      worker.send({ type: "warmup", workerId })
+      // Same class of hazard as the dispatch path: this send can also hit a
+      // channel that closed during startup. It is wrapped for the same reason —
+      // an unhandled 'error' event here kills the process rather than the worker.
+      try {
+        worker.send({ type: "warmup", workerId })
+      } catch (err: any) {
+        log.warn("warmup send failed; treating the worker as dead", { workerId, error: String(err?.message ?? err) })
+        deadWorkers.add(worker)
+        startupFailures++
+        if (telemetry) telemetry.workerStartupFailures = startupFailures
+        try { worker.kill("SIGKILL") } catch {}
+        if (fileQueue.length > 0) scheduleNext()
+      }
     }
 
     function scheduleNext() {
@@ -1452,6 +1509,17 @@ export async function processWithWorkerPool(
           break
         }
         const worker = idleWorkers.shift()!
+        // A worker can die between being pooled and being dispatched. The splice
+        // in the `exit` handler cannot help here: the worker is already out of
+        // `idleWorkers`, so there is nothing left to remove and the send below
+        // would raise EPIPE on a closed IPC channel — which, on a ChildProcess
+        // with no 'error' listener, terminates the process.
+        if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+          log.warn("skipping a dead worker during dispatch", { batchId: ++batchCounter })
+          deadWorkers.delete(worker)
+          scheduleNext()
+          return
+        }
         const batchFiles = fileQueue.splice(0, batchSize)
         const batchId = ++batchCounter
 
@@ -1462,7 +1530,32 @@ export async function processWithWorkerPool(
           attempts: 1,
         })
 
-        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        try {
+          worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        } catch (err: any) {
+          // The send can still fail after the liveness checks — the channel can
+          // close between them. Treat it as the worker death it is: drop the
+          // batch, requeue its files, and carry on. Previously this threw out of
+          // the scheduler and killed the whole index.
+          log.warn("send to worker failed; treating the worker as dead", { batchId, error: String(err?.message ?? err) })
+          deadWorkers.add(worker)
+          const batch = pendingBatches.get(batchId)
+          pendingBatches.delete(batchId)
+          if (batch) clearTimeout(batch.timeout)
+          for (const f of batchFiles) {
+            const retries = (fileRetries.get(f) || 0) + 1
+            if (retries > MAX_FILE_RETRIES) {
+              results.push({ filePath: f, success: false, error: "Max retries exceeded (send failed)" })
+              processed++
+            } else {
+              fileRetries.set(f, retries)
+              fileQueue.unshift(f)
+            }
+          }
+          try { worker.kill("SIGKILL") } catch {}
+          if (workers.size < numWorkers && fileQueue.length > 0) createWorker(Date.now())
+          scheduleNext()
+        }
       }
     }
 
