@@ -81,17 +81,110 @@ grammar errors or missing tokens**.
 
 From `validation/m12/results/regex-census.json` (entries for this analyzer).
 
-**0 usages** — the C# analyzer is fully regex-free. The census gate
-confirms zero regex literal or `RegExp` nodes in the source (the previous
-analyzer had 1 regex — `replace(/"/g, "")` in Minimal API detection — which
-the rewrite eliminated with pure string operations and removed
-unnecessary detection paths).
+**0 usages** — the C# analyzer is fully regex-free. The previous analyzer had
+1 regex (`replace(/"/g, "")` in Minimal API detection), eliminated by the
+rewrite with pure string operations.
 
-Rule: **zero unclassified regex** — trivially satisfied (no regex remains).
+That claim was previously a `grep` someone ran once, which is not a gate: it
+does not run again, and it cannot see a pattern assembled at runtime. It is now
+`script/m14/verify-csharp-no-regex.ts`, on three layers:
+
+| layer | what it proves | measured |
+| --- | --- | --- |
+| parsed | no regex literal, and no regex-only call the source cannot rule out — the file is *parsed*, so `/a\/b/` and `a / b / c` are not confused | 0 literals, 0 calls needing justification |
+| runtime | `RegExp` is replaced with a recording subclass before the analyzer loads and runs, so a pattern built from a variable, an array, or JSON still has to construct one | 0 constructions over 20 files |
+| artifact | the shipped analyzer is hashed against the working copy, so a build step cannot make the source claim quietly untrue | no built artifact; the repo runs from source |
+
+Rule: **zero unclassified regex** — and the runtime figure is the load-bearing
+one. Replaying the shape that defeats the obvious checks (a pattern joined from
+array parts, so no literal exists and `new RegExp` takes a variable) fails the
+gate on the parsed *and* the runtime layer, with the assembled pattern printed.
+
+Gate: `bun script/m14/verify-csharp-no-regex.ts --list <paths>`.
+
+## Field-level gates (2026-09-29)
+
+Every other gate in this lane asks whether a relationship or a symbol EXISTS with the
+right label, target and name. None of them ask whether the *fields* of that row are
+right. Those are the fields a consumer is most likely to use, and being wrong there
+fails at the point of use rather than in CI, so each now has a gate that asserts
+properties rather than counts.
+
+### Line numbers — `verify-csharp-line-numbers.ts`
+
+200 roslyn files, **18,091 relationships, 0 out of bounds, 0 non-integer**:
+
+| label | n | null line |
+| --- | --- | --- |
+| references | 5,339 | 0 |
+| calls | 5,123 | 0 |
+| uses | 4,438 | 0 |
+| contains | 2,492 | 61 |
+| instantiates | 329 | 0 |
+| overrides | 228 | 0 |
+| extends | 124 | 0 |
+| implements | 18 | 0 |
+
+The 61 nulls are all `owner -> constructor`, and they are **correct**.
+`constructor` for a primary constructor and `Finalize` for a destructor are names
+the analyzer synthesises: the file writes `Widget()` and `~Widget()`, so no line
+can be the site of the string. `csharp/callsite-lines-825` pins exactly that.
+
+This was worth getting right, because the first response to "61 rows have no
+line" was to add a fallback to the owner's declaration line — and the fixture
+failed, correctly. Publishing the class's line for a member name that appears
+nowhere on it is the same defect M59.A7 fixed (the range-start stamp claimed a
+line the target was not written on for 653 of 23,924 relationships). So the gate
+asserts the *boundary* instead: a null line is permitted only for a synthesised
+name, and a null line on a name the file does write is a defect.
+
+### Symbol surface — `verify-csharp-symbols.ts`
+
+200 files, **2,692 symbols, 0 defects** across five properties:
+
+- the range lies inside the file (bytes and lines)
+- the range is ordered — `start <= end` on both axes
+- the name is non-empty, so nothing can name it in a relationship
+- the `ownerName` names a symbol in the same file
+- the name is actually **written** at its own range, except for synthesised names
+
+The owner assertion is the valuable one and the reason this is a separate gate.
+`contains` is derived *from* `ownerName`, so a symbol with the right name, the
+right kind and the wrong owner is invisible to F1 (name uniqueness) and F6 (node
+coverage) — and it does not corrupt one row, it fabricates an entire class of
+them downstream. Replaying a single corrupted `ownerName` produces 63 dangling
+owners, and 63 fabricated `contains` edges, from a one-token change.
+
+Kind *precision* is deliberately not asserted: `property` versus `field` is a
+modelling choice with defensible answers, and so is whether a nested type's owner
+is the outer type or the namespace. A gate that picked one would be enforcing a
+preference rather than a property.
+
+### Oracle wiring — `verify-oracle-coverage.ts`, `verify-csharp-oracle-regressions.ts`
+
+Two gates for the derivations rather than the analyzer, because F3 is structurally
+blind to them: a fixture asserts what the analyzer emits, so a perfect analyzer
+passes every fixture while the oracle judging it lies.
+
+- `verify-oracle-coverage.ts` checks that every compared label has an oracle and
+  every lane with an oracle has a compared set. It is a BASELINE gate, and it
+  catches a class of damage nothing else saw: csharp's compared set silently
+  reduced from four labels to two while F3, F4, F1, F6 and SPEC all stayed green,
+  because the compared set is a local expression in `differential.ts` and is not
+  exported.
+- `verify-csharp-oracle-regressions.ts` pins CS-D9 and CS-D10b in a 25-line file
+  and derives it in **1.2 seconds**, against the ~10 minutes of corpus rotation
+  that found them.
 
 ## Complexity envelope
 
-From `validation/m12/results/csharp-complexity.json`:
+> **STALE — these figures are not current and are not a budget.**
+> They are from `validation/m12/results/csharp-complexity.json`, measured before
+> D8 (parameter types published as reads), and are single runs taken on a host
+> that was not quiet. They are retained for history only. The re-pin is owed and
+> the reason it has not happened is stated below rather than left implicit.
+
+Historical, from M12:
 
 | Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -100,11 +193,30 @@ From `validation/m12/results/csharp-complexity.json`:
 
 Declared budget: fixtures < 2 s; 400-file corpus < 60 s.
 
-Hot-path audit: single-pass iterative traversal (explicit stack, no
-recursion depth risk); `symbolMap` (Map) gives O(1) owner/name lookups;
-the type-kind companion is a Map lookup per base type; override resolution
-uses the shared `findDeclaringParent` BFS over the (tiny) hierarchy. No
-O(n²) or per-symbol O(n) scans.
+**Why the re-pin has not been produced yet.** Through this round the host ran at
+load 30–40 on 12 cores — several concurrent F5 corpus runs plus other agents — and
+a single-run wall-clock number taken under that load is not a measurement of this
+analyzer, it is a measurement of the contention. The instrument
+(`script/m14/tmp/cs-deep-25-perf-envelope.ts`) reports **min over N runs** rather
+than a single run, and breaks the cost down per symbol and per relationship label,
+because "400 files in 10 s" cannot distinguish linear growth from a quadratic that
+has not yet bitten. Quoting a number before the host is quiet would repeat the
+error this lane has been correcting all round: asserting a measurement that does
+not support the claim attached to it.
+
+**What the shape claim rests on, and what it does not.** The hot path is
+single-pass iterative traversal (explicit stack, no recursion depth risk);
+`symbolMap` (Map) gives O(1) owner/name lookups; the type-kind companion is a Map
+lookup per base type; override resolution uses the shared `findDeclaringParent`
+BFS over the (tiny) hierarchy. That is an argument that no pass is O(n²), and it
+is an argument from the code, not a measurement. The per-label breakdown is what
+would confirm it, and it is the outstanding measurement.
+
+One structural fact does bound the worst case, and it is an argument rather than a
+measurement too: relationship emission is O(edges), not O(symbols × names), because
+owner resolution goes through the `symbolMap` and not a scan. The bare-identifier
+pass is the one place that sees every name in a file, and it is a single Map lookup
+per reference.
 
 ## Differential ground truth
 
@@ -268,6 +380,63 @@ Verification: 13-shape probe matrix (fixes + 8 controls + 1 declared
 limitation: I-named external CLASSES still follow the first-base rule).
 Fixture +4 pins/+2 forbids; 2 new mutants — 192/192 caught; F5 100%/0/0;
 F1/F2/F3/F4/F6/SPEC/CC1/honesty green.
+
+## 2026-09-29 round — three defects, two of them in the oracle
+
+The pattern of this round is worth recording as a pattern, not just as three
+entries: **two of the three defects were in the differential oracle, and F3 could
+not have found either one.** F3 asserts what the analyzer emits. A perfect
+analyzer passes every fixture while the oracle that judges it lies, so a defect in
+the oracle is invisible to the fixtures by construction. Both oracle defects were
+found by *deliberately writing a shape by hand and asking the oracle what it said*.
+
+### CS-D8 — parameter types were published as reads (analyzer)
+
+Every method and lambda parameter's type was published as a `references` edge to
+the type. A parameter's type is a **declaration site**, not a read of the type: the
+file does not read a symbol there, it names one in order to bind a new symbol to it.
+Nine sites across six files, in three shapes — method parameters, lambda and
+delegate parameter types, and primary-constructor parameters.
+
+This is the same conflation as CS-D1 (a qualified generic type split into a read of
+each segment) and CS-D7 (declared types and self-names fabricated as reads): the
+analyzer could not tell a position that *reads* a name from a position that
+*declares* one. The fix is `isDeclaredTypeSite`, and the honest statement is that
+one predicate now owns that distinction rather than three call sites each guessing
+it.
+
+Fixture `csharp/read-collides-with-call` carries the control and the forbidden row,
+because the defect was only visible as a COLLISION — a parameter named `Console`
+made the analyzer report a read of `Console` from a file that never reads `Console`
+at all.
+
+### CS-D9 — an in-file class was overruled by a corpus interface companion (oracle)
+
+`deriveCSharpTypeKind` looks up a type's kind by name across the corpus to decide
+whether an identifier is a type or a value. When the corpus happened to contain an
+`interface` with the same name as a class declared **in the same file**, the corpus
+entry won and the in-file declaration was ignored. Same name, same file: the file is
+the authority. Fixed by giving a declaration in the current file precedence over any
+corpus companion.
+
+### CS-D10 — a base list was published as a type (oracle)
+
+`base_list.argument_list` — the comma-separated list in `class C : A, B` — was
+published as a type named `"A, B"`. Nothing is named that; the list is not a type
+and the two arguments are.
+
+### CS-D10b — a primary-constructor base call was published as a call (oracle)
+
+`primary_constructor_base_type` produced a name of `Beast(Name)`. The *call* is
+real, but the **base type is `Beast`** — the `contains` edge pointed at
+`Beast(Name)`, which declares nothing, so the type is missing and a phantom symbol
+is created. Same file, exact reconciliation: 0 truth, 0 analyzer.
+
+D9 and D10b are the two that matter as process, because they were found in about a
+minute each by hand-writing a shape, and they had survived a full corpus rotation
+because the fixtures asserted the analyzer and never asked the oracle. Hence
+`verify-csharp-oracle-regressions.ts` (1.2 s) and `verify-oracle-coverage.ts` now
+exist as gates rather than as review notes.
 
 ## 2026-09-28 deep round — a type expression is not a name (5 defects, 2 of them in the oracle)
 
