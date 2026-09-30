@@ -1,0 +1,232 @@
+{
+  "analyzer": "objective-c",
+  "corpus": "$HOME/fixtures/repositories/afnetworking",
+  "corpusRepo": "afnetworking",
+  "revision": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
+  "extensions": [
+    "*.m",
+    "*.mm"
+  ],
+  "mode": "full-corpus",
+  "trackedFilesInCorpus": 49,
+  "measuredFiles": 49,
+  "samplePathsAbsentInCorpus": 0,
+  "errorFiles": 0,
+  "cleanFiles": 49,
+  "missingNodeFiles": 0,
+  "errorNodeFiles": 0,
+  "errorRates": {
+    "any": 0,
+    "missing": 0,
+    "error": 0
+  },
+  "grammarErrorFiles": 0,
+  "crashFiles": 49,
+  "pipelineMismatchCount": 0,
+  "pipelineMismatchFiles": [],
+  "wallMs": 63,
+  "missingTokens": {},
+  "errorLineSignatures": {},
+  "firstErrorLineSignatures": {},
+  "errorFileList": [],
+  "crashes": [
+    {
+      "file": "AFNetworking/AFHTTPSessionManager.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "AFNetworking/AFNetworkReachabilityManager.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "AFNetworking/AFSecurityPolicy.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "AFNetworking/AFURLRequestSerialization.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "AFNetworking/AFURLResponseSerialization.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "AFNetworking/AFURLSessionManager.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/Classes/Models/Post.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/Classes/Models/User.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/Classes/Networking Extensions/AFAppDotNetAPIClient.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/Today Extension Example/TodayViewController.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/iOS Example/AppDelegate.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/iOS Example/Controllers/GlobalTimelineViewController.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/iOS Example/Views/PostTableViewCell.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/macOS Example/AppDelegate.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/macOS Example/main.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/main.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/watchOS Example Extension/ExtensionDelegate.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Example/watchOS Example Extension/InterfaceController.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFAutoPurgingImageCacheTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFCompoundResponseSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFHTTPRequestSerializationTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFHTTPResponseSerializationTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFHTTPSessionManagerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFImageDownloaderTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFImageResponseSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFJSONSerializationTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFNetworkActivityManagerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFNetworkReachabilityManagerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFPropertyListRequestSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFPropertyListResponseSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFSecurityPolicyTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFTestCase.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFUIActivityIndicatorViewTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFUIButtonTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFUIImageViewTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFUIRefreshControlTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFURLSessionManagerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFWKWebViewTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFXMLDocumentResponseSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "Tests/Tests/AFXMLParserResponseSerializerTests.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/AFAutoPurgingImageCache.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/AFImageDownloader.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/AFNetworkActivityIndicatorManager.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/UIActivityIndicatorView+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/UIButton+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/UIImageView+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/UIProgressView+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/UIRefreshControl+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    },
+    {
+      "file": "UIKit+AFNetworking/WKWebView+AFNetworking.m",
+      "error": "Failed to determine WASM path for objc: Language objc parser not yet implemented. Add the WASM loading case."
+    }
+  ],
+  "passed": false,
+  "policy": "#897 derived-style audit. Every file in scope is audited through the production parseFile pipeline; the tree walk runs only under the rootNode.hasError gate the pipeline uses, and the two signals are cross-checked per file with disagreements recorded. Failure classes are derived from the parse tree; no hand-written limit map exists to drift."
+}
