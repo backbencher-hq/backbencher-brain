@@ -649,7 +649,16 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const elementSymbol: ASTEngine.UniversalSymbol = {
             name: symbolName,
             kind: ASTEngine.SymbolKind.Class,
-            range: this.nodeToRange(node),
+            // M19 (master review, 2026-09-29): a VOCABULARY DECLARATION is written
+            // on its `name=` attribute, not on the tag that opens it, and the two
+            // are routinely on DIFFERENT LINES. Measured over the 2,500-file
+            // blast radius: 4 of 19,852 declarations reported the tag's line, so
+            // a search for the symbol landed on `<xsl:with-param` rather than on
+            // `name="content"` a line below. The symbol's range therefore starts
+            // at the ATTRIBUTE, while `elementRange` below keeps the structural
+            // span so a reader can still find the element itself. Before this the
+            // two readings shared one field and one of them had to be wrong.
+            range: declaration ? this.nodeToRange(declaration.nameNode) : this.nodeToRange(node),
             visibility: "public",
             ownerName,
             ownerKind: ownerName ? ASTEngine.SymbolKind.Class : undefined,
@@ -662,8 +671,8 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // The DECLARED name, when the vocabulary puts it in the `name`
               // attribute. `tagName` stays the tag, so the structural reading is
               // carried rather than overwritten.
-              ...(declaredName
-                ? { isVocabDeclaration: true, declaredName, declarationKind: localName, declaredByAttribute: declaration!.attribute, namespaceUri: effectiveNamespace }
+              ...(declaration
+                ? { isVocabDeclaration: true, declaredName: declaration.name, declarationKind: localName, declaredByAttribute: declaration.attribute, namespaceUri: effectiveNamespace, elementRange: this.nodeToRange(node) }
                 : {}),
             },
           }
@@ -673,8 +682,12 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ownerName) {
             addRelationship(ownerName, symbolName, ASTEngine.RelationshipType.Contains, {
               role: "xml_element",
-              ...(declaredName ? { tagName: name, declarationKind: localName } : {}),
-            }, node)
+              ...(declaration ? { tagName: name, declarationKind: localName } : {}),
+            // M60 requires the edge's line to be the line the TARGET NAME is
+            // written on, and `addRelationship` already takes that node for
+            // exactly this reason (M59.A7). This call site was passing the
+            // ELEMENT, so a multi-line declaration pointed one line too high.
+            }, declaration ? declaration.nameNode : node)
           }
 
           for (let i = 0; i < tagNode.namedChildCount; i++) {
@@ -1595,8 +1608,26 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
    * `name` is data. An ANONYMOUS inline declaration (`<xs:complexType>` with no
    * `name` inside an `<xs:element>`) is also null, and correctly so: an inline
    * type has no name, and publishing the tag for it is the honest reading.
+   *
+   * `nameNode` is the node the NAME ITSELF is written on, which is the AttValue
+   * when the value is on a different line from the attribute keyword and the
+   * whole Attribute otherwise. It is not the same node in both cases, and
+   * picking the Attribute unconditionally was the whole of M19:
+   *
+   *     <xsd:element name=
+   *         "InvalidModificationFault"
+   *
+   * (cxf/wsn/wsdl/rp-2.xsd) — the Attribute starts on 233, where the line reads
+   * `<xsd:element name=` and carries no part of the name; the AttValue is on
+   * 234. Anchoring to the Attribute reported 233, so a search for the name
+   * landed one line above the string that spells it.
    */
-  private declaredNameOf(namespaceUri: string | undefined, localName: string, tagNode: Node): { name: string; attribute: string } | null {
+  private declaredNameOf(
+    namespaceUri: string | undefined,
+    localName: string,
+    tagNode: Node,
+  ): { name: string; attribute: string; /** The node the NAME is written on — AttValue when it is on another line. */
+    nameNode: Node } | null {
     if (!namespaceUri) return null
     const declaring = RealXmlAnalyzer.DECLARATION_VOCABULARIES[namespaceUri]
     if (!declaring || !declaring.has(localName)) return null
@@ -1604,12 +1635,18 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < tagNode.namedChildCount; i++) {
       const node = tagNode.namedChild(i)
       if (node?.type !== "Attribute") continue
-      const nameNode = this.findDirectChild(node, "Name")
-      if (nameNode?.text.trim() !== attribute) continue
+      const attrNameNode = this.findDirectChild(node, "Name")
+      if (attrNameNode?.text.trim() !== attribute) continue
       const valueNode = this.findDirectChild(node, "AttValue")
       if (!valueNode) return null
       const value = this.unquote(valueNode.text).trim()
-      return value.length > 0 && value.length <= 256 ? { name: value, attribute } : null
+      if (value.length === 0 || value.length > 256) return null
+      // The line the NAME is written on is the line carrying the VALUE. When the
+      // value sits on another line from the attribute keyword, that is the value
+      // node's line; when they share a line, both give the same answer and the
+      // whole Attribute is the wider, more useful anchor.
+      const anchor = valueNode.startPosition.row !== node.startPosition.row ? valueNode : node
+      return { name: value, attribute, nameNode: anchor }
     }
     return null
   }
