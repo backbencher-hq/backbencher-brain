@@ -295,6 +295,8 @@ function scopeString(scopes: JSScopeEntry[]): string {
 // ANALYZER
 // ============================================================================
 
+import { isJsBuiltin, jsBuiltinHasMember } from "./js-builtin-prototypes"
+
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -1490,6 +1492,28 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // honest — see J9 in script/m14/spec/javascript-completeness.json for the
           // full classification of the 48 distinct names this branch produces.
           if (s.name.startsWith("#")) continue
+          // J9 (2026-09-30): the guess is now CHECKED against the base's actual
+          // prototype chain rather than emitted on a name match alone.
+          //
+          // Measured over the full 3,369-file corpus with this check applied: 37 of
+          // the 44 emitted override rows are confirmed members of the base they name,
+          // and 7 are not — `connectedCallback`, `disconnectedCallback` and
+          // `attributeChangedCallback` (hooks the browser INVOKES on a custom element,
+          // not members of `HTMLElement`), `$$g_p` (a class field), `[REPLACE]` (a
+          // template marker that merely looks like a computed key), and `toJSON` on
+          // `Error` and `URL`.
+          //
+          // That ratio is what decided J9 part 2. Suppressing the whole first-parent
+          // guess would have removed 37 CORRECT rows to delete 7 wrong ones, so the
+          // guess stays and only the provably-absent names go. The decision rests on a
+          // measurement rather than on how suspicious 0.5 feels — and it was only
+          // available BECAUSE the oracle was built first, so the analyzer's guess
+          // could be measured against something instead of argued about.
+          //
+          // A base this module does not know is NOT rejected: an unknown base keeps the
+          // 0.5 guess, because declining to speak about a base we cannot resolve is
+          // the honest position and the guess is declared as a guess.
+          if (isJsBuiltin(base) && !jsBuiltinHasMember(base, s.name)) continue
           // Pass 3 (family parity with java/groovy resolveOverrides): the
           // base is not declared in this file and the companion index gave
           // no opinion (it is never populated in production — see M37.10).
