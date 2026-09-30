@@ -229,6 +229,8 @@ async function canonicalImpactReport(
     depthReached: 0,
     totalSymbols: 0,
     totalSymbolsIfKnown: null,
+    // No root, so no match — the same key set in every state.
+    root: null,
     notFoundReason: "absent",
     source: "impact@lsp-canonical (computeImpact, M48.P1) — no walk was performed",
     provenance: makeProvenance({
@@ -243,6 +245,17 @@ async function canonicalImpactReport(
   })
   let capturedEdges: Array<any> = []
   let capturedNodes: Record<string, any> = {}
+  // WHICH symbol the walk actually rooted at. `computeImpact` roots the same way
+  // the graph modes do — exact, then exact-any-kind, then a containment
+  // near-miss — and the report never said so, because this payload has no
+  // `root` at all. Measured on the atlas corpus: `target: "ub"` answered
+  // `found: true` with `directSymbols` and `affectedFiles` computed from
+  // `hub`, and there was no field anywhere naming `hub` or saying that `ub` was
+  // never a symbol. A risk level attached to an unnamed symbol cannot be checked
+  // or reproduced, which is the one thing a blast radius is for.
+  let capturedRoot: any = null
+  let capturedRootCandidates = 1
+  let capturedRootMatch: string | null = null
   // computeImpact draws its line at "traversable root / absent". A symbol that
   // IS indexed but is a namespace, constant, type alias or enum member is
   // neither, and reporting it as "absent" is a confident FALSE NEGATIVE.
@@ -260,6 +273,9 @@ async function canonicalImpactReport(
         const r = await graphTraversal(pid, symbol, opts)
         capturedEdges = r.callers ?? []
         capturedNodes = r.nodes ?? {}
+        capturedRoot = r.root ?? null
+        capturedRootCandidates = r.rootCandidates ?? 1
+        capturedRootMatch = r.rootMatch ?? null
         return r
       }) as any,
     })
@@ -349,6 +365,17 @@ async function canonicalImpactReport(
   return {
     target,
     found: true,
+    // The symbol every number below is about, and how the name resolved to it.
+    root: capturedRoot
+      ? {
+          name: capturedRoot.name,
+          symbolType: capturedRoot.symbolType,
+          file: capturedRoot.file,
+          line: capturedRoot.line,
+          candidates: capturedRootCandidates,
+          match: capturedRootMatch,
+        }
+      : null,
     scope: "transitive",
     directSymbols,
     affectedFiles,
