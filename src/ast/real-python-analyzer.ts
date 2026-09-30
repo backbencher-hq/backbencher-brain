@@ -978,14 +978,34 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // TypeVar are external — no in-file target to instantiate).
     const firstChar = targetName[0]
     const isUppercase = firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()
-    if (isUppercase) {
+    // PY-11. An uppercase callee became `instantiates` when the class is declared in
+    // this file and was DROPPED ENTIRELY otherwise. Both halves of that were wrong.
+    //
+    // Dropping was the serious half. Measured over 300 pinned corpus files: 1,152
+    // uppercase callees in the source, 263 became `instantiates`, and **889 — 77.2% —
+    // produced no relationship at all.** 368 of those name a class the file EXPLICITLY
+    // IMPORTS, so the most characteristic edge in an Ansible module was missing from the
+    // graph: `module = AnsibleModule(...)`, file after file, with nothing to show for
+    // it. A call is a call whether or not this analyzer can see the callee's class, and
+    // dropping it loses the fact rather than qualifying it.
+    //
+    // The instinct behind the drop was right and is kept: do not claim an INSTANTIATION
+    // of a class you have not read. `TypeVar(...)` and `Exception(...)` are not
+    // constructions of project classes and calling them one would be a fabrication. So
+    // the claim is narrowed, not the edge dropped:
+    //
+    //   uppercase callee that IS an in-file class/enum -> `instantiates` (a claim)
+    //   every other callee, uppercase or not            -> `calls`      (a fact)
+    //
+    // The second branch needs no new policy: it is the branch every lowercase callee
+    // already took, and a bare `Name(...)` is a call syntactically whatever its
+    // capitalisation says about intent.
+    if (isUppercase && ctx.declaredTypes.has(targetName)) {
       // O(1): declaredTypes holds exactly the in-file class/enum names.
-      if (ctx.declaredTypes.has(targetName)) {
-        this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
-          pythonSpecific: true,
-          qualified: fullCallee,
-        }, this.nodeLine(calleeLeaf))
-      }
+      this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
+        pythonSpecific: true,
+        qualified: fullCallee,
+      }, this.nodeLine(calleeLeaf))
       return
     }
 
