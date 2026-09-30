@@ -103,7 +103,19 @@ function calleeName(fn: any): string {
     // `f()()` — the callee is another call's result; recurse to its function.
     return calleeName(fn.childForFieldName("function"))
   }
-  if (fn.type === "subscript") return calleeLeaf(fn.text)
+  if (fn.type === "subscript") {
+    // `TABLE[key]()` CALLS WHATEVER THE SLOT HOLDS, and there is no name to record.
+    //
+    // The first version returned `calleeLeaf(fn.text)`, which produced the slot expression
+    // itself as a target — `PKG_MANAGERS[pkgmgr]`, `check['func']`, `op_dict[op]`,
+    // `m["f"]` — 48 relationships whose "name" is a subscript of a variable. It also
+    // disagreed with the analyzer, which emits NOTHING here, and the analyzer is right:
+    // `d[k]()` is a call to an unnamed value, so an edge with a fabricated name is worse
+    // than no edge, and a consumer resolving that name would find nothing that could
+    // possibly be it. `o.m["f"]()` additionally reads `o.m`, which the analyzer already
+    // records as a `uses` member read — the information is not lost by staying silent here.
+    return ""
+  }
   return calleeLeaf(fn.text)
 }
 
@@ -270,9 +282,28 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // at import time; it is metadata on the definition.
   const instanceAttrSeen = new Set<string>()
   const classAttrSeen = new Set<string>()
-  const walkBody = (n: any, scope: string | null, ownerClass: string | null): void => {
+  const walkBody = (n: any, scope: string | null, ownerClass: string | null, fnOwnerOfBody: string | null = null): void => {
     if (n.type === "decorator") return
-    if (n.type === "function_definition" || n.type === "class_definition") return
+    // A DEFINITION NESTED IN A BODY is delegated to `walkScopes`, not skipped.
+    //
+    // This line used to `return` on both `function_definition` and `class_definition`,
+    // which meant the oracle never descended into anything defined inside a method body.
+    // In `cython/Tools/dataclass_test_data/test_dataclasses.py` — where dataclass test
+    // classes are written INSIDE the test methods, which is the normal way to write them —
+    // that silently dropped every class: no `contains` for their fields, no `overrides` for
+    // their generated `__hash__`/`__post_init__`/`__init__`, no `instantiates` for
+    // `C()`. The analyzer extracts all of them, and correctly: a class defined in a method
+    // body is a real class with a real body, and Python gives it its own namespace.
+    //
+    // Delegating rather than returning is what makes both shapes come out right, because
+    // `walkScopes` already knows the rule that distinguishes them — a `def` opens a scope
+    // only when no function encloses it (`fnOwner`), while a `class` always opens one,
+    // because a class IS a symbol and carries `ownerName`. Handling the two shapes here
+    // instead would have meant re-deriving that rule in a third place.
+    if (n.type === "function_definition" || n.type === "class_definition") {
+      walkScopes(n, scope, ownerClass, fnOwnerOfBody)
+      return
+    }
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
       if (fn && scope) {
@@ -321,7 +352,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         }
       }
     }
-    for (let i = 0; i < n.namedChildCount; i++) walkBody(n.namedChild(i), scope, ownerClass)
+    for (let i = 0; i < n.namedChildCount; i++) walkBody(n.namedChild(i), scope, ownerClass, fnOwnerOfBody)
   }
 
   // A class BODY's assignments are class attributes — `BAD_STATES = (...)`,
@@ -398,7 +429,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       // "nearest enclosing function" means.
       const inner = fnOwner ?? nm
       const body = n.childForFieldName("body")
-      if (body) walkBody(body, inner, ownerClass)
+      if (body) walkBody(body, inner, ownerClass, inner)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c !== body) walkScopes(c, inner, ownerClass, inner)
