@@ -546,3 +546,288 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
   const namespace = timeline.length > 0 ? timeline[timeline.length - 1]!.name : ""
   return { edges, namespace }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// THE REMAINING FOUR CLASSES. `uses` and `contains` were derived above; these
+// close the rest, so that no relationship the clojure analyzer emits is
+// unexamined. Each is read from the tree for the same reason the first two are:
+// an unexamined class is not a class anyone can claim is complete.
+//
+//   references   the `ns` libspec edges — which namespace depends on which.
+//                `:require`/`:use`/`:import` name a LIB; `:refer`/`:only`/`:rename`
+//                name a SYMBOL in a lib, and the analyzer emits a reference to
+//                the lib for the first and nothing for the rest (`:refer :all`
+//                included — a whole-library refer has no single name to point
+//                at, and that is the honest reading rather than a wildcard).
+//   instantiates  a CONSTRUCTOR: `(new Class …)`, `(Class. …)`, and the `->Class`
+//                / `->>Class` ctor idiom. Distinct from `uses`, which is a member
+//                access, and from a static `Class/.member`, which is also a
+//                member access — a constructor names a class to BUILD.
+//   implements   `(deftype X A …)` / `(defrecord X A …)` declare supertypes and
+//                protocols; `(extend-type T P (m …))` and
+//                `(extend-protocol P T (m …))` declare an extension; `(proxy [A]
+//                T …)` and `(reify T …)` declare a supertype.
+//   extends      the `Object`-level supertype position, kept separate because the
+//                analyzer keeps it separate.
+// ══════════════════════════════════════════════════════════════════════════
+
+const LIB_KEYWORDS = new Set(["require", "use", "import", "refer-clojure", "require-macros", "use-macros"])
+
+/** A libspec symbol `lib`, `lib/sub` or `[lib :as a] …` → the LIB name. */
+function libNameOf(spec: Node): string {
+  if (spec.type === "sym_lit") {
+    const nm = symName(spec)
+    return nm
+  }
+  if (spec.type === "vec_lit") {
+    const first = spec.namedChild(0)
+    if (!first) return ""
+    if (first.type === "sym_lit") return symName(first)
+    if (first.type === "vec_lit") {
+      // `[[prefix [sub :as a] …]]` — a prefix list's own head.
+      const p0 = first.namedChild(0)
+      return p0 && p0.type === "sym_lit" ? symName(p0) : ""
+    }
+  }
+  return ""
+}
+
+/** Is this spec an alias-only entry (`:as-alias`), which registers no library? */
+function isAsAliasOnly(spec: Node): boolean {
+  if (spec.type !== "vec_lit") return false
+  for (let i = 0; i < spec.namedChildCount; i++) {
+    const c = spec.namedChild(i)
+    if (c && c.type === "kwd_lit") {
+      const k = c.childForFieldName("name")?.text ?? ""
+      if (k === "as-alias") return true
+    }
+  }
+  return false
+}
+
+export type RelEdge = { label: string; from: string; to: string; line: number }
+
+/**
+ * TRUTH for `references` — the namespace's own dependency edges.
+ *
+ * One edge per libspec entry, at the SPEC's line, from the namespace in force
+ * there. A `:refer :all` or a bare `:refer-clojure` with no `:exclude` names no
+ * single symbol, so it contributes no reference: publishing a wildcard target
+ * would be a name nothing can refer to.
+ */
+export function deriveClojureReferencesTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const seen = new Set<string>()
+  const st: Node[] = [root]
+  while (st.length > 0) {
+    const n = st.pop()!
+    if (n.type === "list_lit") {
+      const h = executionHead(n)
+      if (h && h.type === "sym_lit") {
+        const nm = symName(h)
+        if ((nm === "ns" || nm === "in-ns") && n.namedChildCount > 1) {
+          const v = namespaceNameOf(n.namedChild(1))
+          for (let i = 1; i < n.namedChildCount; i++) {
+            const clause = n.namedChild(i)
+            if (!clause || clause.type !== "list_lit") continue
+            const ck = executionHead(clause)
+            const kw = ck && ck.type === "kwd_lit" ? (ck.childForFieldName("name")?.text ?? "") : ""
+            if (!LIB_KEYWORDS.has(kw)) continue
+            for (let k = 1; k < clause.namedChildCount; k++) {
+              const spec = clause.namedChild(k)
+              if (!spec) continue
+              if (spec.type === "kwd_lit") {
+                const key = spec.childForFieldName("name")?.text ?? ""
+                // A `:refer`/`:only`/`:exclude`/`:as` KEY is not a lib, and its
+                // value list was already read as the previous spec.
+                if (key === "refer" || key === "only" || key === "exclude" || key === "as" || key === "as-alias" || key === "rename" || key === "refer-clojure") continue
+                continue
+              }
+              if (isAsAliasOnly(spec)) continue
+              const lib = libNameOf(spec)
+              if (!lib) continue
+              const line = spec.startPosition.row + 1
+              const id = `${v}->${lib}@${line}`
+              if (seen.has(id)) continue
+              seen.add(id)
+              out.push({ label: "references", from: v, to: lib, line })
+            }
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+  }
+  return out
+}
+
+/** The ctor class of a form, or null: `(new C …)`, `(C. …)`, `(->C …)`. */
+function ctorClassOf(node: Node): string | null {
+  const h = executionHead(node)
+  if (!h || h.type !== "sym_lit") return null
+  const form = symName(h)
+  if (form === "new") {
+    const arg = node.namedChild(1)
+    return arg && arg.type === "sym_lit" ? symName(arg) : null
+  }
+  if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) return form.slice(0, -1)
+  if (form.startsWith("->") && form.length > 2 && form !== "->>") {
+    const cls = form.slice(2)
+    const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
+    const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
+    const c0 = lastSeg.charCodeAt(0)
+    if (c0 >= 65 && c0 <= 90) return cls
+  }
+  return null
+}
+
+/** A class the record/type/protocol names as a supertype, or null. */
+function supertypeArgOf(node: Node, from: number): string | null {
+  for (let i = from; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (!c) return null
+    if (c.type === "sym_lit") {
+      const nm = symName(c)
+      // A docstring, an attribute map or a class NAME position.
+      if (i === from) return null
+      return nm
+    }
+    if (c.type === "str_lit" || c.type === "map_lit" || c.type === "meta_lit") continue
+    return null
+  }
+  return null
+}
+
+/**
+ * TRUTH for `instantiates` and the type/protocol class.
+ *
+ * `instantiates` is a CONSTRUCTOR: the class is BUILT. A `uses` edge is a member
+ * READ, so the two never overlap — `(java.io.File. "x")` instantiates and
+ * `(.getName f)` uses, and a static `File./getName` uses without instantiating.
+ * The ctor class of `->Class` must end in an uppercase segment, which is the
+ * same test the analyzer uses and the reason `->` is not mistaken for the
+ * threading macro.
+ */
+export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const seen = new Set<string>()
+  walk(root, (node, owner) => {
+    if (node.type !== "list_lit") return
+    if (isLibspecSite(node) || isCaseConstant(node)) return
+    const h = executionHead(node)
+    if (!h || h.type !== "sym_lit") return
+    const form = symName(h)
+    if (form === "comment" || form === "quote") return
+    const cls = ctorClassOf(node)
+    if (!cls) return
+    const line = h.startPosition.row + 1
+    const id = `${owner}->${cls}@${line}`
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ label: "instantiates", from: owner, to: cls, line })
+  })
+  return out
+}
+
+/**
+ * TRUTH for `implements` / `extends` — what a type or extension declares.
+ *
+ * A `deftype`/`defrecord` names SUPER TYPES after its own name; a protocol's
+ * first method names a method, not a type, so only the TYPE POSITION counts.
+ * `extend-type` and `extend-protocol` name a target type and a protocol;
+ * `proxy`/`reify` name supertypes positionally.
+ *
+ * Both labels are derived because the analyzer emits both and neither had a
+ * gate. `extends` is the `Object`-level position and is kept distinct, which is
+ * the analyzer's own convention.
+ */
+export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
+  const out: RelEdge[] = []
+  const seen = new Set<string>()
+  const add = (label: string, from: string, to: string, line: number) => {
+    if (!from || !to) return
+    const id = `${label}|${from}->${to}@${line}`
+    if (seen.has(id)) return
+    seen.add(id)
+    out.push({ label, from, to, line })
+  }
+  walk(root, (node, owner) => {
+    if (node.type !== "list_lit") return
+    if (isLibspecSite(node) || isCaseConstant(node)) return
+    const h = executionHead(node)
+    if (!h || h.type !== "sym_lit") return
+    const form = symName(h)
+    const line = h.startPosition.row + 1
+    if (form === "deftype" || form === "defrecord" || form === "definterface") {
+      const own = defNameOf(node)
+      if (!own) return
+      // position 0 head, 1 name, 2.. supertypes (past metadata/docstring/map)
+      for (let i = 2; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "str_lit" || c.type === "map_lit" || c.type === "meta_lit") continue
+        if (c.type === "sym_lit") {
+          const sup = symName(c)
+          add(i === 2 ? "extends" : "implements", own, sup, line)
+          continue
+        }
+        break
+      }
+      return
+    }
+    if (form === "extend-type") {
+      // (extend-type T & P (m …)) — T is the target, P the protocol.
+      for (let i = 1; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "kwd_lit") continue
+        if (c.type !== "sym_lit") break
+        const nm = symName(c)
+        if (i === 1) add("implements", nm, owner, line)
+        else add("implements", owner, nm, line)
+        if (i >= 2) break
+      }
+      return
+    }
+    if (form === "extend-protocol") {
+      const proto = node.namedChild(1)
+      const protoName = proto && proto.type === "sym_lit" ? symName(proto) : ""
+      if (!protoName) return
+      for (let i = 2; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "kwd_lit") continue
+        if (c.type !== "sym_lit") break
+        add("implements", symName(c), protoName, line)
+        break
+      }
+      return
+    }
+    if (form === "reify" || form === "proxy") {
+      let from = 1
+      if (form === "proxy") {
+        // (proxy [Super …] Name …) — the vector is supertypes, the NEXT is the
+        // class being built.
+        const supVec = node.namedChild(1)
+        const cls = node.namedChild(2)
+        if (supVec && supVec.type === "vec_lit" && cls && cls.type === "sym_lit") {
+          const clsName = symName(cls)
+          for (let i = 0; i < supVec.namedChildCount; i++) {
+            const s = supVec.namedChild(i)
+            if (s && s.type === "sym_lit") add("extends", clsName, symName(s), line)
+          }
+          return
+        }
+        from = 1
+      }
+      for (let i = from; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) break
+        if (c.type === "str_lit" || c.type === "map_lit" || c.type === "meta_lit" || c.type === "vec_lit") continue
+        if (c.type === "sym_lit") { add("extends", owner, symName(c), line); continue }
+        break
+      }
+    }
+  })
+  return out
+}
