@@ -161,27 +161,53 @@ export function positiveCount(h: SecurityHarness, label: string, n: number, deta
  * it is given and rejects the shapes that are structurally unfalsifiable.
  */
 export function auditForAutoPass(h: SecurityHarness, label: string, sources: Array<{ file: string; text: string }>): void {
+  /**
+   * Strip everything that is not CODE before scanning: line comments, block
+   * comments, string literals, and template literals. Without this the audit
+   * flags itself — the harness's own detector contains the banned literals, and
+   * every verifier NAMES the banned pattern in a failure message (e.g.
+   * `XR6: script/verify-security.ts no longer asserts ">= 0" on a count`). Those
+   * are documentation, not assertions, and a detector that cannot tell the
+   * difference reports its own prose as a defect.
+   */
+  // Named so the LINE-PRESERVING property is testable from outside: a stripper
+  // that deleted a comment would shift every `file:line` the audit reports,
+  // pointing the reader at the wrong source line.
+  const blank = (m: string): string => m.replace(/[^\n]/g, " ")
+
+  const codeOnly = (src: string): string =>
+    src
+      .replace(/\/\*[\s\S]*?\*\//g, blank)
+      .replace(/\/\/[^\n]*/g, blank)
+      .replace(/`(?:\\.|[^`\\])*`/g, blank)
+      .replace(/"(?:\\.|[^"\\\n])*"/g, blank)
+      .replace(/'(?:\\.|[^'\\\n])*'/g, blank)
+
+  // The three detector literals are ASSEMBLED FROM PARTS, so this function's own
+  // source does not contain the sequences it searches for. Assembled inline, the
+  // audit would flag its own detector on every run — a detector that reports
+  // itself cannot be trusted to report anything else.
+  const UNCONDITIONAL = new RegExp("\\b(?:h\\.)?(?:ck|nk|check|negative)\\([^)]*,\\s*" + "true" + "\\s*[,)]")
+  const ZERO_THRESHOLD = new RegExp(">" + "=\\s*" + "0\\b")
+  const OR_TRUE = new RegExp("\\|\\|\\s*" + "true" + "\\b")
+  const ASSERTION_CALL = /\b(?:h\.)?(?:ck|nk|check|negative)\s*\(/
+  const desc = (s: string) => "satisfied by an empty set: " + s
+
   for (const { file, text } of sources) {
-    // Strip line comments so a prohibition named in prose is not self-flagged.
-    const code = text.replace(/\/\/[^\n]*/g, "")
-    const lines = code.split("\n")
-    lines.forEach((line, i) => {
+    const code = codeOnly(text)
+    // The audit only means something if it scans assertions, so a file with no
+    // recognisable assertion call is itself reported.
+    h.ck(`${label}: ${file} contains assertions to audit`, ASSERTION_CALL.test(code), "no ck/nk/check/negative call found — the audit would be vacuous on this file")
+
+    code.split("\n").forEach((line, i) => {
       const at = `${file}:${i + 1}`
-      h.nk(
-        `${label}: ${at} has no unconditional assertion`,
-        !/\b(?:ck|nk|check|negative)\([^)]*,\s*true\s*[,)]/.test(line),
-        `unconditional assertion: ${line.trim().slice(0, 90)}`,
-      )
-      h.nk(
-        `${label}: ${at} has no zero-true threshold`,
-        !/>=\s*0\b/.test(line),
-        `>= 0 is satisfied by an empty set: ${line.trim().slice(0, 90)}`,
-      )
-      h.nk(
-        `${label}: ${at} has no || true escape`,
-        !/\|\|\s*true\b/.test(line),
-        `|| true makes the assertion unfalsifiable: ${line.trim().slice(0, 90)}`,
-      )
+      h.nk(`${label}: ${at} has no unconditional assertion`, !UNCONDITIONAL.test(line), `unconditional assertion: ${line.trim().slice(0, 90)}`)
+      // The detail text is assembled too: writing the banned operator into a
+      // message literal is fine for a human and a self-flag for this audit,
+      // because a detector that matches its own prose matches nothing else
+      // reliably either.
+      h.nk(`${label}: ${at} has no zero-true threshold`, !ZERO_THRESHOLD.test(line), desc(`a zero-inclusive bound: ${line.trim().slice(0, 80)}`))
+      h.nk(`${label}: ${at} has no or-true escape`, !OR_TRUE.test(line), desc(`an or-true escape: ${line.trim().slice(0, 80)}`))
     })
   }
 }
