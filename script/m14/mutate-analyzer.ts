@@ -5332,6 +5332,36 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "xml/declared-name-anchored-to-the-tag",
+    language: "xml",
+    defectClass: "line-attribution",
+    description:
+      "M19 regression: a vocabulary DECLARATION goes back to being reported on the line of the TAG that opens it rather than the line its `name=` value is written on. The two are routinely different — a formatted document puts the attribute on the next line, and sometimes the keyword and the value are split across two of them. Measured over the 2,500-file blast radius: 4 of 19,852 declarations, in 2 files, and invisible to every other instrument because each asks the analyzer a question it can answer correctly while the LINE is wrong, and the differential compares label+target only. Reverted generically from the analyzer's own `metadata.elementRange`, which the fix added precisely so the structural span stays available after the anchor moves to the name.",
+    transform: (r) => {
+      // The element's line, keyed by the declared name. `elementRange` is the
+      // tag's range; `range` is the anchor. Putting one back into the other is
+      // the pre-fix state exactly, for symbols and edges together.
+      const elementLine = new Map<string, number>()
+      for (const s of r.symbols ?? []) {
+        const el = (s as any)?.metadata?.isVocabDeclaration ? (s as any)?.metadata?.elementRange?.startLine : undefined
+        if (typeof el === "number") elementLine.set(String(s.name), el)
+      }
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => {
+          const el = s?.metadata?.isVocabDeclaration ? s.metadata?.elementRange?.startLine : undefined
+          if (typeof el !== "number" || !s.range || el === s.range.startLine) return s
+          return { ...s, range: { ...s.range, startLine: el } }
+        }),
+        relationships: (r.relationships ?? []).map((x: any) => {
+          const el = elementLine.get(String(x.target))
+          if (typeof el !== "number" || el === x.line_number) return x
+          return { ...x, line_number: el }
+        }),
+      }
+    },
+  },
+  {
     id: "typescript/line-zero-based",
     language: "typescript",
     defectClass: "line-attribution",
