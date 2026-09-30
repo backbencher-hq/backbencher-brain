@@ -2488,8 +2488,17 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             )
             for (let i = 0; i < nameIdx; i++) {
               const c = kids[i]
+              // `record_type` joins the list for DARTGAP3. A Dart 3 record is a
+              // real declared type and it is spelled as a leading child exactly
+              // like the other four, so `void f((int, String) p)` degraded its
+              // parameter to `dynamic` and the record vanished from the graph.
+              // The type text is taken verbatim from the node, so positional
+              // `($1, $2)` and named `({int a, String b})` both survive with the
+              // spelling the file used — no normalization, because a record's
+              // field NAMES are part of its type.
               if (c.type === "type_identifier" || c.type === "function_type" ||
-                  c.type === "nullable_type" || c.type === "void_type") {
+                  c.type === "nullable_type" || c.type === "void_type" ||
+                  c.type === "record_type") {
                 typeText = c.text
                 break
               }
@@ -2538,7 +2547,11 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const c = node.namedChild(i)
       if (!c) continue
       if (nameNode && c.startIndex === nameNode.startIndex && c.endIndex === nameNode.endIndex) break
-      if (c.type === "type_identifier" || c.type === "void_type") return c.text
+      // `record_type` for DARTGAP3, same reason as the parameter extractor: a
+      // record RETURN type was silently lost, so `({int a, String b}) f()` published
+      // no return type at all and the function looked untyped. Verbatim text, so the
+      // field names inside the record survive as written.
+      if (c.type === "type_identifier" || c.type === "void_type" || c.type === "record_type") return c.text
     }
     return undefined
   }
@@ -2558,7 +2571,10 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < cand.namedChildCount; i++) {
         const c = cand.namedChild(i)
         if (!c) continue
-        if (c.type === "type_identifier" || c.type === "void_type") {
+        // `record_type` for DARTGAP3 — `late (int, String) pair;` is a leading
+        // child exactly like `late int n;`, so the direct-child rule was right and
+        // the node-type list was the only thing missing.
+        if (c.type === "type_identifier" || c.type === "void_type" || c.type === "record_type") {
           return c.text
         }
       }
