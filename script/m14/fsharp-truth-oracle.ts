@@ -241,6 +241,32 @@ function firstDeclarationLeft(node: any): any | undefined {
   return undefined
 }
 
+/**
+ * The interface name an `interface_implementation` node NAMES.
+ *
+ * A descendant search cannot answer this. `interface IMultiThreadableTask with` may carry a
+ * whole member body, and the first `long_identifier` inside it belongs to that body rather
+ * than to the clause — `member val TaskEnvironment = TaskEnvironment.Fallback with get, set`
+ * made the oracle publish `implements GenerateILLinkSubstitutions -> Fallback`, reading a
+ * value out of a property initialiser as the interface.
+ *
+ * Two things had to be right and the first version had neither: the name is a DIRECT child
+ * of the clause, and this oracle's `descendantsOfType` walks a LIFO stack, so `[0]` is the
+ * LAST node in document order rather than the first. The two faults pointed in opposite
+ * directions and cancelled often enough to look like agreement on a small sample.
+ */
+function interfaceNameOf(impl: any): string | null {
+  const direct =
+    firstChildOfType(impl, "long_identifier") ??
+    firstChildOfType(impl, "identifier") ??
+    firstChildOfType(impl, "long_identifier_or_op")
+  if (direct?.text) return direct.text
+  const deep = descendantsOfType(impl, "long_identifier", 3)
+    .concat(descendantsOfType(impl, "identifier", 3))
+    .sort((a: any, b: any) => a.startIndex - b.startIndex)
+  return deep.length ? deep[0]!.text : null
+}
+
 function leafOf(text: string): string {
   return text.includes(".") ? (text.split(".").pop() as string) : text
 }
@@ -404,8 +430,8 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
         // which the ANALYZER reads only under a type_definition body. Derived here by
         // walking the whole subtree, so the two differ if that is a defect.
         for (const impl of descendantsOfType(node, "interface_implementation", 10)) {
-          const iface = descendantsOfType(impl, "long_identifier", 3)[0] ?? descendantsOfType(impl, "identifier", 3)[0]
-          if (iface) emit("implements", name, leafOf(iface.text), iface)
+          const ifaceText = interfaceNameOf(impl)
+          if (ifaceText) emit("implements", name, leafOf(ifaceText), impl)
         }
       }
     } else if (t === "type_extension") {
@@ -416,8 +442,8 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
       // does not reach it (its arm fires only under a type_definition body).
       const extName = typeNameOf(tn)
       for (const impl of descendantsOfType(node, "interface_implementation", 6)) {
-        const iface = descendantsOfType(impl, "long_identifier", 3)[0] ?? descendantsOfType(impl, "identifier", 3)[0]
-        if (iface && extName) emit("implements", extName, leafOf(iface.text), iface)
+        const extIface = interfaceNameOf(impl)
+        if (extIface && extName) emit("implements", extName, leafOf(extIface), impl)
       }
     } else if (t === "import_decl") {
       // FS-A1 (analyzer side) established that `open X` in F# is an `import_decl` and
@@ -472,26 +498,41 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
         // analyzer reaches the same node by a different mechanism (findDescendant with a
         // generous bound, then the last identifier inside it); the traversal differs, which
         // is the part that makes a disagreement mean something.
-        const carrier =
-          descendantsOfType(node, "dot_expression", 6)[0] ??
-          descendantsOfType(node, "typed_expression", 6)[0] ??
-          descendantsOfType(node, "long_identifier_or_op", 6)[0] ??
-          descendantsOfType(node, "long_identifier", 6)[0]
-        const written = (carrier?.text ?? "").split("<")[0]!.trim()
-        // The LAST identifier IN DOCUMENT ORDER — which is NOT the last element of the
-        // array this oracle's own `descendantsOfType` returns. That helper walks a LIFO
-        // stack, so siblings come out reversed, and `out[out.length - 1]` is the FIRST
-        // identifier in the name. The symptom is a leaf that reads like a plausible
-        // segment: `System.Collections.Generic.IEqualityComparer` came back as `System`,
-        // which is the same wrong answer the analyzer's own first fix produced, reached
-        // by an unrelated route. Ordering by `startIndex` is the only thing in the array
-        // that means "later in the source".
-        const carrierIdents = (carrier ? descendantsOfType(carrier, "identifier", 6) : [])
-          .slice()
-          .sort((a: any, b: any) => a.startIndex - b.startIndex)
-        const ifaceLeaf = carrierIdents.length ? carrierIdents[carrierIdents.length - 1]!.text : written
+        // The name the `new` TOKEN introduces — a DIRECT child of the object expression, not
+        // a descendant. The previous rule searched descendants, which is right for a
+        // QUALIFIED name (whose carrier holds the whole dotted path) and wrong for an
+        // unqualified one, where no carrier exists and the search ran on into the member
+        // bodies: `{ new TextWriter() with member x.Encoding = Encoding.UTF8 }` published
+        // `implements OutputCollector -> UTF8`, reading a value out of a member body as the
+        // interface. The target resolved to a name that exists and is not an interface, which
+        // is the hardest kind of wrong to see.
+        //
+        // A direct child is what makes the rule total: the `new` keyword's operand is always
+        // one, whether it is spelled `TextWriter()`, `System.IDisposable` or
+        // `System.Collections.Generic.IEqualityComparer<T>`.
+        const carrier = namedChildren(node).find((c: any) =>
+          ["typed_expression", "application_expression", "dot_expression", "long_identifier_or_op", "long_identifier", "identifier"].includes(c.type),
+        )
+        // `new TextWriter()` — the operand is an APPLICATION, and the name is its callee, not
+        // its text. Taking the text would publish `TextWriter()` with the parentheses.
+        const named = carrier?.type === "application_expression" ? firstChildOfType(carrier, "long_identifier_or_op") ?? firstChildOfType(carrier, "long_identifier") ?? firstChildOfType(carrier, "identifier") : carrier
+        const written = (named?.text ?? "").split("<")[0]!.trim()
+        // The leaf is the last dot-segment of the WRITTEN name, and it is computed from the
+        // text rather than from a node descent.
+        //
+        // Two earlier versions walked for the last identifier. The first did not order the
+        // result, and this oracle's `descendantsOfType` walks a LIFO stack, so it returned
+        // the FIRST segment — `System` for `System.Collections.Generic.IEqualityComparer`. The
+        // second ordered it correctly and then hit the opposite problem: the carrier is a
+        // `typed_expression`, so its subtree also contains the TYPE ARGUMENTS, and
+        // `{ new System.Collections.Generic.IEqualityComparer<Foo> with … }` published the
+        // interface as `Foo`.
+        //
+        // The operand of `new` already holds the whole dotted name, so there is nothing a
+        // descent adds: the type arguments are gone from `written` because it is split at `<`.
+        const ifaceLeaf = written ? written.split(".").pop()! : ""
         const owner = cur.length ? cur[cur.length - 1] : undefined
-        if (written && owner) emit("implements", owner, ifaceLeaf || leafOf(written), carrier ?? node)
+        if (written && owner) emit("implements", owner, ifaceLeaf, named ?? node)
         // The object's MEMBERS belong to the object, so its scope is opened here. The
         // analyzer opens the same scope (FS-D7); deriving it independently is what makes
         // an `overrides Owner.VisitPat` inside `{ new SyntaxVisitorBase with … }` a
@@ -525,17 +566,29 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
           // binding to a call source. See Frame.suppressCalls.
           body = true
         }
+        // `overrides` is HERITAGE, and heritage is not a call.
+        //
+        // The property-getter contract says an expression-bodied property publishes no CALLS,
+        // because its body is a value evaluated on read. It says nothing about whether the
+        // member OVERRIDES something: `override _.ToolName = "fsc.exe"` is an override
+        // whatever its body evaluates to, and the fact belongs to the class's shape rather
+        // than to anything that runs.
+        //
+        // These emits were inside the `name && !isExpressionProperty` gate, so the contract
+        // suppressed them along with the calls — and the differential reported 18 unexplained
+        // `overrides` rows per 120 corpus files that were not a spelling disagreement at all
+        // but three members in Fsc.fs whose edges the oracle never derived. A rule about what
+        // executes was quietly governing what the type IS.
+        if (t === "member_defn" && name && firstTokenIs(node, "override")) {
+          const ownerName = cur.length ? cur[cur.length - 1] : undefined
+          if (ownerName) {
+            const base = baseTypeOfThisFile(node, cur)
+            emit("overrides", `${ownerName}.${name}`, base ? `${base}.${name}` : name, node)
+          }
+        }
         if (name && !isExpressionProperty) {
           owner = name
           body = true
-          // overrides — the `override` keyword is a TOKEN, read off the node
-          if (t === "member_defn" && firstTokenIs(node, "override")) {
-            const ownerName = cur.length ? cur[cur.length - 1] : undefined
-            if (ownerName) {
-              const base = baseTypeOfThisFile(node, cur)
-              emit("overrides", `${ownerName}.${name}`, base ? `${base}.${name}` : name, node)
-            }
-          }
         }
       }
     } else if (t === "import_decl") {
