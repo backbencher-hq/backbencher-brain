@@ -842,6 +842,61 @@ function bindingReachable(obj: any): string | null {
   }
 }
 
+// --- MODULE IDENTITY: ruled, and it was an open question for most of this work.
+const moduleSymbolCount = ((await analyze("module-identity", "export const a = 1\n"))?.symbols ?? [])
+  .filter((x: any) => String(x.kind) === "module").length
+
+// --- CONFIDENCE TIERS: every tier the analyzer emits must be DECLARED.
+//
+// M12 reports an `unknown` count, and for a long time that number was a bare
+// integer with nothing behind it — 69 for javascript, which reads as 69
+// unaccounted outputs and is not. `unknown` is the harness's bucket for anything
+// below 0.7 confidence (verify-analyzer.ts:103), so it is a statement about a
+// deliberate tier rather than about coverage. But a tier nobody has enumerated is
+// indistinguishable from a leak, and the reader cannot tell which.
+//
+// So the same rule the reserved-base gate uses is applied to CONFIDENCE: measure
+// the tiers the analyzer actually emits over the corpus, and require every one to
+// be declared. A new tier appearing unannounced is a gate failure, which is the
+// only way "69 unknown" stops being a number nobody can act on.
+const TIER_DISPOSITIONS = new Map<string, string>([
+  ["1", "certain — syntax-directed with no ambiguity (declarations, extends, imports, exports)"],
+  ["0.95", "high — pattern-directed (new_expression, instanceof)"],
+  ["0.9", "high — call and bare-read positions"],
+  ["0.85", "high — field-access chain segments and template substitutions"],
+  ["0.6", "DECLARED HESITATION — three distinct shapes, all deliberate: call-receiver roots (X10's tier, where `calls` names only the leaf so the receiver is named by nothing else), field-access roots, and whole-module forms (namespace import, re-export, CJS require/dynamic import — a namespace binds an object, not a declaration, so there is nothing to resolve TO: JD-J12/JD2b)"],
+  ["0.5", "low — overrides whose base could not be resolved across files"],
+])
+const tierCounts = new Map<string, number>()
+const tierShapes = new Map<string, Set<string>>()
+{
+  const corpus = CORPORA[0]
+  const all = walkFiles(corpus.root).sort()
+  const parser = await (getParser as any)("javascript")
+  for (const f of all.filter((_, i) => i % 7 === 0).slice(0, 260)) {
+    let src = ""
+    try { if (fs.statSync(f).size > MAX_FILE_BYTES) continue; src = fs.readFileSync(f, "utf8") } catch { continue }
+    if (!src.trim()) continue
+    let r: any
+    try { r = await ASTEngine.parseFile(f, src) } catch { continue }
+    for (const e of (r?.relationships ?? []) as any[]) {
+      const c = typeof e.confidence === "number" ? e.confidence : 1
+      const k = String(c)
+      tierCounts.set(k, (tierCounts.get(k) ?? 0) + 1)
+      const shape = e.metadata?.callReceiver ? "uses/callReceiver"
+        : e.metadata?.isTemplateInterpolation ? "uses/templateSubstitution"
+        : e.metadata?.isFieldAccess ? "uses/fieldAccess"
+        : e.metadata?.isReExport ? "imports/reExport"
+        : e.metadata?.isRequire ? "imports/require"
+        : e.metadata?.unresolved ? "imports/namespace"
+        : e.type
+      const set = tierShapes.get(k) ?? new Set<string>()
+      set.add(`${e.type}${e.metadata?.callReceiver ? "/callReceiver" : e.metadata?.isFieldAccess ? "/fieldAccess" : e.metadata?.isTemplateInterpolation ? "/templateSub" : e.metadata?.isRequire ? "/require" : e.metadata?.isReExport ? "/reExport" : e.metadata?.unresolved ? "/namespace" : ""}`)
+      tierShapes.set(k, set)
+    }
+  }
+}
+
 // --- HONESTY GATES ---------------------------------------------------------
 
 // Hoisted: gate 4 measures the leaves the corpus hangs off each reserved base,
@@ -852,6 +907,57 @@ const observedByReservedBase: Record<string, string[]> = {}
 
 const failures: string[] = []
 const gates: { id: string; pass: boolean; detail: string }[] = []
+
+// 0a. MODULE IDENTITY. Ruled rather than left dangling: this was an open question
+// from the first audit pass — the analyzer emits no Module symbol for a file — and
+// it was carried as a possible gap for most of this work without ever being
+// checked against the family.
+//
+// It is the family contract, and Clojure is the outlier for a real language
+// reason. Measured across the analyzers: real-clojure-analyzer emits SymbolKind.Module
+// (5 sites) because a Clojure namespace IS a first-class value that code names.
+// real-javascript, real-typescript, real-svelte and real-vue emit ZERO, and carry
+// module identity on the `exports` and `imports` edges instead — which is why every
+// import in this lane has a SOURCE that is the file's module name. So a missing
+// Module symbol is not an omission here; adding one would invent a node the sibling
+// lanes do not have and that the family derives module identity without.
+{
+  const pass = moduleSymbolCount === 0
+  if (!pass) {
+    failures.push(
+      `the analyzer now emits ${moduleSymbolCount} Module symbol(s); the family contract (javascript/typescript/svelte/vue ` +
+      `carry module identity on the exports/imports edges; only clojure emits a Module) says it should not`,
+    )
+  }
+  gates.push({
+    id: "census-js-module-identity",
+    pass,
+    detail:
+      `no Module symbol for a file, matching typescript/svelte/vue; module identity is carried by the source of ` +
+      `every exports/imports edge. Clojure is the outlier because a namespace is a first-class value there.`,
+  })
+}
+
+// 0b. CONFIDENCE TIERS. Every tier the analyzer emits must be declared.
+{
+  const undeclared = [...tierCounts.keys()].filter((t) => !TIER_DISPOSITIONS.has(t)).sort()
+  const pass = undeclared.length === 0 && tierCounts.size > 0
+  if (!pass) {
+    if (undeclared.length > 0) {
+      failures.push(`UNDECLARED confidence tiers emitted by the analyzer: ${undeclared.join(", ")} — a new tier must say what it means before it is used`)
+    } else {
+      failures.push("no confidence tiers measured, so the tier census is vacuous")
+    }
+  }
+  gates.push({
+    id: "census-js-confidence-tiers",
+    pass,
+    detail:
+      [...tierCounts.entries()].sort((a, b) => Number(b[0]) - Number(a[0]))
+        .map(([t, n]) => `${t}:${n}${TIER_DISPOSITIONS.has(t) ? "" : " UNDECLARED"} [${[...(tierShapes.get(t) ?? [])].slice(0, 3).join(",")}]`)
+        .join("; "),
+  })
+}
 
 // 1. every declaration node type the corpus contains is classified
 {
@@ -1226,6 +1332,16 @@ const artifact = {
     pct: orphanPct,
     samples: orphanSamples,
     disposition: "DECLARED AND MEASURED — not closed by this gate; closing it is a separate change with its own blast radius",
+  },
+  moduleIdentity: {
+    moduleSymbolsEmitted: moduleSymbolCount,
+    family: "javascript / typescript / svelte / vue emit no Module symbol; only clojure does",
+    ruling: "module identity is carried by the SOURCE of every exports/imports edge, which is the file's module name",
+  },
+  confidenceTiers: {
+    dispositions: Object.fromEntries(TIER_DISPOSITIONS),
+    measured: Object.fromEntries([...tierCounts.entries()].map(([t, n]) => [t, { count: n, shapes: [...(tierShapes.get(t) ?? [])] }])),
+    note: "M12 reports a bare `unknown` count for anything below 0.7. These are the tiers that count feeds, measured and named, so the number is auditable rather than merely reported.",
   },
   declarationWitnesses: witnessResults,
   probes: probeLog,
