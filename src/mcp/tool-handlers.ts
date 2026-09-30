@@ -527,6 +527,13 @@ const handlers: Record<string, ToolHandler> = {
             // SearchResults and populated by searchContent; carried here because a
             // disclosure that stops at the search layer is not a disclosure.
             ...(results.matchMode ? { matchMode: results.matchMode } : {}),
+            // Which words carried the match, when the answer is a keyword
+            // coincidence rather than the phrase that was asked for. This was
+            // computed, declared in SearchResults, and then dropped here — so
+            // the comment above ("a disclosure that stops at the search layer
+            // is not a disclosure") was true of every OTHER field on this
+            // object and false of this one.
+            ...(results.termMatch ? { termMatch: results.termMatch } : {}),
             ...(results.bodyCoverage ? { bodyCoverage: results.bodyCoverage } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
