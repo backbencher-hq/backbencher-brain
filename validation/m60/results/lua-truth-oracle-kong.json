@@ -21,9 +21,9 @@
     }
   ],
   "totals": {
-    "truthEdges": 60998,
-    "observedEdges": 58616,
-    "missing": 2383,
+    "truthEdges": 60989,
+    "observedEdges": 60990,
+    "missing": 0,
     "missingFromAnalyzer": [],
     "exportsDirectPath": {
       "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
@@ -73,8 +73,8 @@
     "relationshipsDirectPath": {
       "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
       "filesProbed": 150,
-      "truth": 8347,
-      "hit": 8347,
+      "truth": 8344,
+      "hit": 8344,
       "missed": 0,
       "spurious": 0,
       "loopCoincidenceExempted": 0,
@@ -88,57 +88,45 @@
       "note": "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
       "filesProbed": 150,
       "cap": 150,
-      "provenDiscarded": [
-        "exports"
-      ],
+      "provenDiscarded": [],
       "observedOnBothSides": [
         "calls",
         "contains",
+        "exports",
         "extends",
         "imports",
         "instantiates"
       ]
     },
     "missingByPipelineDiscard": {
-      "total": 1580,
-      "byLabel": [
-        {
-          "shape": "return <identifier> at file scope",
-          "n": 1580
-        }
-      ],
-      "labelsAbsentFromPipeline": [
-        "exports"
-      ]
+      "total": 0,
+      "byLabel": [],
+      "labelsAbsentFromPipeline": []
     },
-    "missingByPipelineNoiseFilter": 803,
-    "noiseTargetsHit": [
-      "parent",
-      "text",
-      "type"
-    ],
+    "missingByPipelineNoiseFilter": 0,
+    "noiseTargetsHit": [],
     "unexplained": 1,
-    "lineChecked": 58615,
-    "lineExact": 58615,
+    "lineChecked": 60989,
+    "lineExact": 60989,
     "lineWrong": 0,
     "lineAccuracy": 1
   },
   "byLabel": {
     "calls": {
       "truth": 26313,
-      "observed": 25650,
-      "missing": 663,
+      "observed": 26313,
+      "missing": 0,
       "unexplained": 0,
       "precision": 1,
-      "recall": 0.9748
+      "recall": 1
     },
     "contains": {
-      "truth": 29483,
-      "observed": 29346,
-      "missing": 138,
+      "truth": 29474,
+      "observed": 29475,
+      "missing": 0,
       "unexplained": 1,
       "precision": 1,
-      "recall": 0.9953
+      "recall": 1
     },
     "extends": {
       "truth": 87,
@@ -166,11 +154,11 @@
     },
     "exports": {
       "truth": 1582,
-      "observed": 0,
-      "missing": 1582,
+      "observed": 1587,
+      "missing": 0,
       "unexplained": 0,
       "precision": 1,
-      "recall": 0
+      "recall": 1
     }
   },
   "missingByShape": [],
@@ -184,217 +172,16 @@
   "analyzerAttributableUnexplainedSample": [
     {
       "label": "contains",
-      "from": "Schema:errors_to_string",
+      "from": "errors_to_string",
       "target": "err",
       "rel": "kong/db/schema/init.lua"
     }
   ],
-  "missingSample": [
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "data",
-      "line": 43,
-      "rule": "return-id",
-      "rel": "autodoc/cli/data.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "nav",
-      "line": 5,
-      "rule": "return-table-member",
-      "rel": "autodoc/pdk/ldoc/filters.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "json",
-      "line": 18,
-      "rule": "return-table-member",
-      "rel": "autodoc/pdk/ldoc/filters.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "_M",
-      "line": 35,
-      "rule": "return-id",
-      "rel": "kong/admin_gui/init.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "_M",
-      "line": 32,
-      "rule": "return-id",
-      "rel": "kong/admin_gui/utils.lua"
-    },
-    {
-      "label": "contains",
-      "from": "global",
-      "target": "type",
-      "line": 16,
-      "rule": "local-decl",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "parse_value",
-      "target": "type",
-      "line": 44,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "_M.normalize_nested_params",
-      "target": "type",
-      "line": 96,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "global",
-      "target": "type",
-      "line": 186,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "_M.before_filter",
-      "target": "type",
-      "line": 260,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "new_db_on_error",
-      "target": "type",
-      "line": 354,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "on_error",
-      "target": "type",
-      "line": 399,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "_M.handle_error",
-      "target": "type",
-      "line": 553,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "calls",
-      "from": "_M.is_new_db_routes",
-      "target": "type",
-      "line": 571,
-      "rule": "call",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "_M",
-      "line": 578,
-      "rule": "return-id",
-      "rel": "kong/api/api_helpers.lua"
-    },
-    {
-      "label": "contains",
-      "from": "global",
-      "target": "type",
-      "line": 15,
-      "rule": "local-decl",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "calls",
-      "from": "combine_arg",
-      "target": "type",
-      "line": 112,
-      "rule": "call",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "calls",
-      "from": "combine",
-      "target": "type",
-      "line": 139,
-      "rule": "call",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "calls",
-      "from": "infer_value",
-      "target": "type",
-      "line": 155,
-      "rule": "call",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "calls",
-      "from": "parse_multipart_stream",
-      "target": "type",
-      "line": 351,
-      "rule": "call",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "calls",
-      "from": "load",
-      "target": "type",
-      "line": 546,
-      "rule": "call",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "load",
-      "line": 587,
-      "rule": "return-table-member",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "infer_value",
-      "line": 588,
-      "rule": "return-table-member",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "decode",
-      "line": 589,
-      "rule": "return-table-member",
-      "rel": "kong/api/arguments.lua"
-    },
-    {
-      "label": "exports",
-      "from": "global",
-      "target": "_infer",
-      "line": 590,
-      "rule": "return-table-member",
-      "rel": "kong/api/arguments.lua"
-    }
-  ],
+  "missingSample": [],
   "unexplainedSample": [
     {
       "label": "contains",
-      "from": "Schema:errors_to_string",
+      "from": "errors_to_string",
       "target": "err",
       "rel": "kong/db/schema/init.lua"
     }
