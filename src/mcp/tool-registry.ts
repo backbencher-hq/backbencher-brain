@@ -113,7 +113,15 @@ const descriptors = [
   },
   {
     name: "bb_security",
-    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
+    // Corrected against the code, not paraphrased. The previous text claimed
+    // "hardcoded secrets" (no writer emits any secret vulnerability type — that
+    // rule lives in bb_patterns, not here) and "weak crypto" (emitted only as an
+    // isolated sink with no co-located source, so it is classified `unresolved`
+    // and reported as an unvalidated observation, never as a finding).
+    // "Cross-language" is retained because cross-file taint resolution exists
+    // and is reported, but docs/BB_SECURITY.md now states precisely what the
+    // flag does and does not mean.
+    description: "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injection, path traversal, insecure deserialization, SSRF, open redirect and code execution. Flows whose endpoints both resolve to indexed symbols are findings; one-sided flows are reported separately as unvalidated observations, never as confirmed exploits. Findings whose underlying file changed after indexing carry a staleness marker.",
     inputSchema: { type: "object", properties: { history: { type: "boolean", description: "return persisted security history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, limit: { type: "number", description: "history run limit (default 20)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -121,7 +129,7 @@ const descriptors = [
     plannedModes: ["flow", "summary", "hotspots"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "analysis", summary: "Cross-language findings with optional persisted run history.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
+    documentation: { category: "analysis", summary: "Taint-flow findings over the index, with optional persisted run history. A flow is a finding only when both endpoints resolve to indexed symbols; one-sided flows are reported as unvalidated observations. Every response states the census so a capped scan is never mistaken for a complete one. Not detected: hardcoded secrets; genuine cross-language taint; standalone weak crypto.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
   },
   {
     name: "bb_visualize",
