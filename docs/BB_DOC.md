@@ -115,6 +115,30 @@ a directory prefix, and a bare file name (with or without its extension) all
 resolve. An absent path and an unresolved one are distinguishable, and the
 latter says which of the four forms it tried.
 
+**What `risks` is built from**, and why it is not "the analysis findings":
+three sources, all read from the index, all cited. Open
+`brain_analysis_finding` rows, files with recorded parser errors, and symbols at
+a measured complexity at or above a stated threshold. A required section that is
+always empty is a placeholder, not a measurement — and it WAS always empty,
+because no read path in this tool produces an analysis finding while the index
+held, on one measured corpus, 1 099 files with recorded parser errors and
+185 477 symbols carrying a measured complexity. When all three sources are
+empty, the section says exactly that, because the absence of evidence is not
+evidence of absence.
+
+**Docstrings are read from disk, and only where a comment is a comment.** A
+markdown symbol's name is a heading and `*` is the BOLD delimiter, so a
+comment scanner above a heading reads the previous English line as a JSDoc
+block; measured on this repository's own index, 79 of 3 598 markdown symbols
+received a fabricated docstring at `extracted` / `1.0`. Languages whose symbol
+names are prose are therefore excluded by asking
+`language-detection.ts` — the registry that admits a file to an analyzer — so
+the doc lane and the router cannot drift. The remaining limit is stated rather
+than papered over: the scanner knows `/**`, ` * ` and `//`, and not `#`, `;` or
+`--`, so a symbol in Ruby, Python, Perl, shell, Clojure, Lisp, SQL or Lua
+reports "not observed" instead of a guess. Teaching it those belongs to the
+analyzer lane, which knows each grammar.
+
 ## Fact And Prose Rules
 
 - **Extracted** facts are directly present in indexed source or tables: names,
@@ -193,7 +217,10 @@ interface QualityReport {
    `maxTokens`. Over budget, the largest sections are trimmed and every drop is
    declared as an `output-budget` unknown. A budget too small for the required
    sections is reported as unmet, with the shortfall named; it is never met by
-   dropping a required section.
+   dropping a required section. The figure is measured with a same-width
+   placeholder in the field and that measurement is what is reported, so
+   `estimatedTokens * 4` is never smaller than the payload it describes — the
+   figure a caller budgets from must not be an under-count.
 4. **completeness** — every declared section for the mode is present.
 
 Stale evidence is a **warning**, not a failure: the spec makes it a failure for
@@ -201,6 +228,20 @@ current-behavior claims, and this result makes no such claim. Unknowns are
 counted in `completeness.unknown` and are always listed; they do not by
 themselves fail the gate, because declaring a gap is the tool working, not
 failing.
+
+**Two bounds shorten a document, and they compose.** The per-section evidence
+cap (`detail` × `limit`) and the output budget each report what they removed,
+and the three numbers close:
+
+```
+availableBeforeCap = notSelectedByCap + afterCap
+afterCap          = droppedByBudget + emitted
+```
+
+An earlier version announced both from the same list, so a 12-of-24
+documentation map reported "18 more dropped" — 36 accounted for out of 24, on
+every section of a real document. A count a reader can check and finds wrong is
+worse than no count, because it condemns the whole quality block.
 
 ## Website Reference Metadata
 
