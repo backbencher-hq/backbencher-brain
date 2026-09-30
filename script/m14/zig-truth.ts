@@ -1,4 +1,4 @@
-import { stripZigQuoting } from "../../src/ast/real-zig-analyzer"
+import { stripZigQuoting, ZIG_DECLARED_TYPE_BUILTINS } from "../../src/ast/real-zig-analyzer"
 
 /**
  * ZIG WAVE 4 — the lane's TRUTHS, in one lane-owned module.
@@ -18,8 +18,14 @@ import { stripZigQuoting } from "../../src/ast/real-zig-analyzer"
  * sanctions it; a rule that needs the analyzer's own output to state is not a
  * mirror (that lesson cost three findings: Z24, Z25 and Z26).
  *
- * ONE thing IS imported, and it is worth being explicit about why: the published
- * name canonicalization. A mirror derives from the TREE, but the comparison is
+ * The `references` oracle below (Z14) was committed into the SHARED differential
+ * and the 2026-09-29 merge deleted it — along with zig's compared-label set, so the lane
+ * was reporting coverage of a class it was no longer auditing, and nobody noticed
+ * because the number still looked like a pass. It lives here now, for the same
+ * reason the others do: a lane's gates must not be one merge away from gone.
+ *
+ * TWO things are imported here, and both are for the same reason — a copied rule
+ * drifts. The published name canonicalization: A mirror derives from the TREE, but the comparison is
  * against the PUBLISHED surface, and since #924's E half those two spellings
  * differ — `@"1Monochrome"` in the tree, `1Monochrome` published. The first
  * version of the `contains` truth re-implemented the rule and read 75 PHANTOM
@@ -96,7 +102,11 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
     const owner = stripZigQuoting(rawOwner)
     const member = stripZigQuoting(rawMember)
     if (!owner || !member || member === "_") return
-    const k = `${owner}\u0000${member}`
+    // `~~` cannot occur inside a zig identifier, so the composite key is
+    // unambiguous. A literal NUL would do the same job and did — but it made this
+    // file BINARY to git, and an oracle nobody can read as text is an oracle
+    // nobody reviews.
+    const k = `${owner}~~${member}`
     if (seen.has(k)) return
     seen.add(k)
     out.push({ label: "contains", from: owner, target: member })
@@ -458,4 +468,612 @@ export function deriveZigExports(root: any): { label: string; from: string; targ
   }
   walk(root)
   return out
+}
+
+/**
+ * ZIG WAVE 2 — the `references` ORACLE source, kept as a probe so the text
+ * survives a /tmp cleaner: the canonical copy lives in
+ * `script/m14/differential.ts` as `deriveZigReferenceEdges`, and this file is
+ * what was spliced in. Kept because the oracle is the lane's only second
+ * opinion for its largest emitted class, and an oracle that exists only in a
+ * patch is an oracle nobody can review.
+ *
+ * WHY THIS EXISTS. Until now the zig lane's differential derived `calls` and
+ * `uses` and nothing else, so the `references` class — declared-type
+ * dependencies and import edges, the largest emitted class on the zig corpora —
+ * was compared against NOTHING. The allowlist that keeps the comparison honest
+ * dropped the analyzer's own `references` edges from the compared side, so a
+ * fabricated declared-type reference, a lost one, and a corrupted one were all
+ * invisible: the lane reported 100% coverage with a phantom type reference in
+ * the graph.
+ *
+ * The three measured defects this oracle now audits, all of which the class's
+ * own gates could not see:
+ *   - the default VALUE was the declared type (`size: Size = .byte` published
+ *     `-> byte`);
+ *   - a type that names nothing published its FIELD name or its error member;
+ *   - the local annotation position was absent from the collector.
+ *
+ * INDEPENDENCE. Every POSITION and every LEAF is re-derived here with its own
+ * traversal. The one shared object with the analyzer is
+ * `ZIG_DECLARED_TYPE_BUILTINS`, the type-name vocabulary, IMPORTED rather than
+ * re-typed (the #916 lesson: a second copy of a name set is a second answer,
+ * and two copies that cancel out of every count is how a self-agreeing edge
+ * survives a year of gates). The leaf rules below MIRROR the analyzer's rather
+ * than importing them, so the two implementations can disagree — and the
+ * red-team in `zigw-oracle-check.ts` is what proves they do.
+ */
+export function deriveZigReferenceEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string, from: string) => {
+    const t = String(target ?? "")
+    if (!t) return
+    if (ZIG_DECLARED_TYPE_BUILTINS.has(t)) return
+    // the analyzer's digit-head refusal (`123abc`-style heads are not types)
+    const c0 = t.charCodeAt(0)
+    if (c0 >= 48 && c0 <= 57) return
+    const key = "references:" + t
+    if (seen.has(key)) return
+    seen.add(key)
+    edges.push({ label: "references", from, target: t })
+  }
+
+  const direct = (p: any, type: string): any | null => {
+    if (!p) return null
+    for (let i = 0; i < p.namedChildCount; i++) {
+      const c = p.namedChild(i)
+      if (c && c.type === type) return c
+    }
+    return null
+  }
+  const fieldOf = (n: any, name: string): any | null =>
+    n && typeof n.childForFieldName === "function" ? n.childForFieldName(name) ?? null : null
+
+  // ── imports: `@import("x")` as a declaration RHS, or a usingnamespace ──────
+  // The module path is a `string` under `arguments`; the quotes are stripped
+  // because the published target is a module NAME. A builtin inside an ERROR
+  // node is not a direct child, so the error-recovered
+  // `const x = usingnamespace @import("y.zig")` (invalid in current Zig) yields
+  // no import on EITHER side — which is the analyzer's own rule, mirrored.
+  const importTarget = (callOrBuiltin: any): string | null => {
+    const bi = direct(callOrBuiltin, "builtin_identifier")
+    if (!bi || (bi.text !== "@import" && bi.text !== "@cImport")) return null
+    const args = direct(callOrBuiltin, "arguments")
+    const str = args ? direct(args, "string") ?? direct(args, "string_content") : null
+    if (!str) return null
+    const raw = String(str.text ?? "")
+    if (raw.length >= 2 && ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'")))) {
+      return raw.slice(1, -1)
+    }
+    return raw
+  }
+
+  // ── declared types: the grammar's `type` FIELD, never a walk ───────────────
+  // Mirrors the analyzer's `leafOfTypeNode`:
+  //   - a container literal in a type position is ANONYMOUS (fields, no name);
+  //   - an `error_type` is an unnamed set;
+  //   - `!T` keeps its dependency in the `ok` half;
+  //   - a labeled_type_expression names nothing knowable without its block;
+  //   - otherwise the last `identifier` at or under the type node.
+  const leaf = (t: any, depth = 0): string | null => {
+    if (!t || depth > 6) return null
+    if (t.type === "identifier") return String(t.text ?? "")
+    if (t.type === "error_union_type") {
+      const ok = fieldOf(t, "ok")
+      return ok ? leaf(ok, depth + 1) : null
+    }
+    if (t.type === "error_type" || t.type === "labeled_type_expression") return null
+    if (t.type === "struct_declaration" || t.type === "union_declaration" || t.type === "enum_declaration" || t.type === "error_set_declaration") return null
+    let found: string | null = null
+    const stack: any[] = [t]
+    let guard = 0
+    while (stack.length > 0 && guard++ < 200) {
+      const n = stack.pop()!
+      if (n.type === "identifier") found = String(n.text ?? "")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return found
+  }
+  const typeLeafFor = (decl: any): string | null => {
+    const tf = fieldOf(decl, "type")
+    if (tf) return leaf(tf)
+    if (decl.type === "container_field" || decl.type === "variable_declaration") return null
+    // parameter: a fn-TYPE parameter has no name and its child is the type; a
+    // NAMED parameter with no type field is a recovered shape, where the type is
+    // the first identifier after the name.
+    const nameF = fieldOf(decl, "name")
+    if (!nameF) return leaf(decl)
+    const stack: any[] = []
+    for (let i = decl.namedChildCount - 1; i >= 0; i--) {
+      const c = decl.namedChild(i)
+      if (c && c.id !== nameF.id) stack.push(c)
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "identifier") return String(n.text ?? "")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const t = n.type
+    if (t === "function_declaration" || t === "function_signature") {
+      const params = direct(n, "parameters")
+      if (params) {
+        for (let i = 0; i < params.namedChildCount; i++) {
+          const p = params.namedChild(i)
+          if (p && p.type === "parameter") push(typeLeafFor(p), "(declared-type)")
+        }
+      }
+      // the return type is the grammar's `type` field (37,129 of 37,129 corpus
+      // functions carry one); the positional fallback mirrors the analyzer's
+      const ret = fieldOf(n, "type")
+      if (ret) {
+        push(leaf(ret), "(declared-type)")
+      } else {
+        const kids: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) kids.push(c)
+        }
+        for (let i = kids.length - 1; i >= 0; i--) {
+          const c = kids[i]
+          if (c.type === "block" || c.type === "parameters" || c.type === "block_expression") continue
+          if (i === 0 && c.type === "identifier") continue
+          if (c.type === "calling_convention") continue
+          push(leaf(c), "(declared-type)")
+          break
+        }
+      }
+    } else if (t === "container_field" || t === "variable_declaration") {
+      push(typeLeafFor(n), "(declared-type)")
+    }
+    if (t === "variable_declaration") {
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) kids.push(c)
+      }
+      const rhs = kids.length > 0 ? kids[kids.length - 1] : null
+      if (rhs && (rhs.type === "call_expression" || rhs.type === "builtin_function")) {
+        const target = importTarget(rhs)
+        if (target) push(target, "(global)")
+      }
+    }
+    if (t === "using_namespace_declaration") {
+      const target = importTarget(direct(n, "builtin_function"))
+      if (target) push(target, "(global)")
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
+// ── Z37: the two EDGE truths, moved here and given a SOURCE ───────────────────
+// `calls`, field-path `uses` and bare-identifier `uses` — 24,743 of this lane's 38,271
+// relationships over 400 corpus files, and the two classes the shared matcher CANNOT
+// fully adjudicate, because it keys on `label + normTarget(target)` and DISCARDS
+// `from`. A read attributed to the wrong function is a wrong graph, and a name-level
+// gate cannot see it: that is the Z22 shape, one class up.
+//
+// They lived in the shared differential, where a merge could restore a STALE copy:
+// on 2026-09-29 the file came back with a THIRD variant of the bare-read truth —
+// no Z15 operator test, no Z24 branch scoping, and Z25\u0027s node-identity test reverted
+// to "first identifier child" — which is why the seven-class F5 draw read 17 MISSING
+// and 43 unexplained while a direct per-file comparison against this lane\u0027s own
+// truth agreed exactly. A mirror kept in a file other lanes rewrite is a mirror that
+// will be wrong in a way nobody notices, so the definitions live here and the harness
+// imports them. `zigw-uses-calls.ts` then compares the SOURCE as well as the name.
+
+function zigPlainAssignment(n: any): boolean {
+  for (let i = 0; i < n.childCount; i++) {
+    const c = n.child(i)
+    if (c && !c.isNamed && c.type === "=") return true
+  }
+  return false
+}
+
+export function deriveZigEdgesWithSource(
+  root: any,
+): { label: string; from: string; target: string; line: number }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seenCalls = new Set<string>()
+  const seenUses = new Set<string>()
+  // ZGD1/ZGD5/ZGD5b oracle mirroring (zig wave M37 #600): F5 previously only
+  // compared calls/uses here, so these facets were gate-invisible on BOTH
+  // sides. Now the oracle is the independent derivation the differential
+  // was always meant to be.
+  const TYPE_POSITIONS = new Set(["parameter", "container_field", "function_declaration"])
+  const leafOf = (fe: any): string | undefined => {
+    if (!fe) return undefined
+    const last = fe.namedChildCount > 0 ? fe.namedChild(fe.namedChildCount - 1) : null
+    if (last && last.type === "identifier") return last.text
+    return undefined
+  }
+  // Z37: the ENCLOSING FUNCTION, carried as a stack, so every row names the symbol
+  // the edge is attributed to. The harness matcher keys on `label + normTarget`
+  // and discards `from`, so the source was never adjudicated — which is the Z22
+  // shape for the two classes that are 83% of this lane's edges (uses 13,278 +
+  // calls 11,465 of 38,271 over 400 corpus files). A read attributed to the wrong
+  // function is a wrong graph, and no name-level gate can see it.
+  const enclosing = (n: any, fn: string | null): string | null => {
+    if (n.type === "function_declaration" || n.type === "test_declaration") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") return String(c.text)
+      }
+    }
+    return fn
+  }
+  const stack: any[] = [{ n: root, fn: null }]
+  while (stack.length > 0) {
+    const { n, fn } = stack.pop()!
+    if (n.type === "call_expression") {
+      const callee = n.namedChildCount > 0 ? n.namedChild(0) : null
+      let leaf: string | undefined
+      if (callee && callee.type === "identifier") leaf = callee.text
+      else if (callee && callee.type === "field_expression") leaf = leafOf(callee)
+      // ZGD4 mirror: usingnamespace is an import operator, not a user symbol.
+      if (leaf === "usingnamespace") leaf = undefined
+      // Z37: the dedupe key carries the SOURCE, because the analyzer's does
+      // (`${source}->${leaf}`). Keyed on the leaf alone, the first call site claims
+      // the name and every later call to the same name from a different function is
+      // suppressed — so the mirror not only missed those rows, it attributed the
+      // ones it kept to the WRONG function, which is the same defect as the one it
+      // was built to find.
+      const src = fn ?? "(global)"
+      if (leaf && !seenCalls.has(`call:${src}:${leaf}`)) {
+        seenCalls.add(`call:${src}:${leaf}`)
+        edges.push({ label: "calls", from: src, target: stripZigQuoting(leaf), line: (n.startPosition?.row ?? 0) + 1 })
+      }
+    }
+    if (n.type === "field_expression") {
+      const parent = (n as any).parent
+      const isCallee = !!parent && parent.type === "call_expression"
+      // ZGD5: single-named-child field_expression is `.bad` enum literal /
+      // `.{...}` init field — no base, not a member read.
+      const isEnumLiteral = n.namedChildCount < 2
+      // ZGD1: zig assignments parse as variable_declaration, LHS = first
+      // named child (probe-verified). An assignment LHS is a WRITE.
+      // ZGD1: zig assignments parse as variable_declaration, LHS = first
+      // named child (probe-verified). An assignment LHS is a WRITE.
+      // Z15 mirror (2026-09-28): the gate tests the OPERATOR and the assignment
+      // node type too. A plain `=` writes without reading; `+=`/`|=`/`*%=` read
+      // their left side as well, and `while (i < n) : (i += 1)` is Zig's own
+      // idiom for it; an `assignment_expression` LHS is the `.field = value` key
+      // of a struct literal, which is a write as well. Without this mirror the
+      // oracle and the analyzer disagreed about exactly those two shapes — a
+      // 200-file draw read 28 MISSING and 3 UNEXPLAINED before the mirror and
+      // 6,866/6,866 covered after it.
+      const isAssignLhs =
+        !!parent &&
+        (parent.type === "variable_declaration" || parent.type === "assignment_expression") &&
+        parent.namedChild(0)?.id === n.id &&
+        zigPlainAssignment(parent)
+      // ZGD5b: type-annotation positions are declared-type facts, not reads.
+      // Z38 mirror, field-pass site: this was the ORIGINAL direct-parent test, and
+      // it is the shape that let every segment of a dotted type path through — the
+      // analyzer's own copy was the same one-level rule. It now walks the chain the
+      // same way, so the two sides cannot disagree about which nodes are TYPE
+      // FACTS rather than reads. Both mirrors are taught by the same finding, which
+      // is the point: one rule, and the gate that convicts a copy of it.
+      const VALUE_BOUNDARY = new Set([
+        "call_expression", "block", "block_expression", "arguments",
+        "assignment_expression", "assignment_statement",
+        "compound_assignment_statement", "struct_initializer",
+        "anonymous_struct_initializer", "initializer_list",
+        "composite_literal", "variable_declaration", "return_expression",
+        "if_expression", "switch_expression", "while_expression", "for_expression",
+      ])
+      const isTypePos = (() => {
+        let cur: any = parent
+        let hops = 0
+        while (cur && hops < 8) {
+          if (TYPE_POSITIONS.has(cur.type) || cur.type === "function_signature") return true
+          if (VALUE_BOUNDARY.has(cur.type)) return false
+          cur = cur.parent
+          hops++
+        }
+        return false
+      })()
+      if (!isCallee && !isEnumLiteral && !isAssignLhs && !isTypePos) {
+        const leaf = stripZigQuoting(leafOf(n) ?? "")
+        if (leaf && !seenUses.has(`use:${fn ?? "(global)"}:${leaf}`)) {
+          seenUses.add(`use:${fn ?? "(global)"}:${leaf}`)
+          edges.push({ label: "uses", from: fn ?? "(global)", target: stripZigQuoting(leaf), line: (n.startPosition?.row ?? 0) + 1 })
+        }
+      }
+    }
+    const nextFn = enclosing(n, fn)
+    for (let k = n.namedChildCount - 1; k >= 0; k--) {
+      const c = n.namedChild(k)
+      if (c) stack.push({ n: c, fn: nextFn })
+    }
+  }
+  return edges
+}
+
+export function deriveZigBareUsesWithSource(
+  root: any,
+  symbols: any[] = [],
+): { label: string; from: string; target: string; line: number }[] {
+  // Z3 mirror (zig review): bare value reads (`return MAX`) — the analyzer
+  // and this oracle were BOTH blind to them. Same contract as the analyzer,
+  // rule for rule: file-scope const/var/fn/enum-member resolution (plus the
+  // global error-member set for `error.X` value leaves), declaration
+  // positions (first-identifier rule), call-callee span climb, member
+  // leaves (field path owns them), qualified non-leaves, labels, blank,
+  // LHS writes, shadowing via walk-order lexical scopes.
+  const edges: { label: string; from: string; target: string; line: number }[] = []
+  const seen = new Set<string>()
+  const fileValues = new Set<string>()
+  const enumMembers = new Set<string>()
+  // Name inventory comes from the analyzer's own symbols (passed by the
+  // lane): file-scope Constant/Variable/Function/EnumMember kinds plus ALL
+  // EnumMember names globally. Truth still derives every EDGE independently
+  // from tree structure (positions, gates, shadowing) — only the name
+  // inventory is shared ground truth, exactly like the grammar itself. This
+  // permanently closes the pre-pass-divergence class (owner-blindness,
+  // kind-dispatch order, container attribution) that produced 70+ phantom
+  // MISSING edges when the oracle re-derived declarations on its own.
+  for (const s of symbols ?? []) {
+    if (!s || typeof s.name !== "string") continue
+    const k = String(s.kind ?? "");
+    const isEnumMember = k === "EnumMember" || k === "enummember" || k === "enum_member";
+    if (isEnumMember) enumMembers.add(s.name);
+    const isValue = k === "Constant" || k === "constant" || k === "Variable" || k === "variable" || k === "Function" || k === "function" || isEnumMember;
+    if (isValue && !s.ownerName && !s.owner) fileValues.add(s.name);
+  }
+  const scopes: Array<Set<string>> = []
+  const shadowed = (name: string): boolean => {
+    for (let i = scopes.length - 1; i >= 0; i--) if (scopes[i].has(name)) return true
+    return false
+  }
+  const bindIds = (node: any, out: Set<string>): void => {
+    const w: any[] = [node]
+    while (w.length > 0) {
+      const m = w.pop()!
+      if (m !== node && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal" || m.type === "block" || m.type === "block_expression")) continue
+      if (m.type === "identifier" && m.text !== "_") out.add(m.text)
+      for (let i = m.namedChildCount - 1; i >= 0; i--) { const c = m.namedChild(i); if (c) w.push(c) }
+    }
+  }
+  // Z7 mirror: a parameter binds its declared NAME only (see the analyzer).
+  const bindFirstIdent = (node: any, out: Set<string>): void => {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c && c.type === "identifier") {
+        if (c.text !== "_") out.add(c.text)
+        return
+      }
+    }
+  }
+  const isDefining = (n: any): boolean => {
+    const p = n.parent
+    if (!p) return false
+    // Error sets declare EVERY direct member (mirrors the analyzer).
+    if (p.type === "error_set_declaration" && n.type === "identifier") return true
+      // Z15 mirror (2026-09-28): a COMPOUND assignment is a read-modify-write,
+      // not a definition — `counter += 1` reads the file-scope `counter` before
+      // writing it. A plain `=` stays a definition.
+      //
+      // Z24 (2026-09-29): that operator test belongs to the ASSIGNMENT-shaped
+      // parents ONLY. Written as a bare early `return false` for every parent,
+      // it short-circuited the declaration branch below it, so the truth derived
+      // a bare read for the NAME OF EVERY FUNCTION AND FIELD it walked past —
+      // `uses (expr) -> init` at the `pub fn init(` line itself. F5 read ~970
+      // MISSING on a 200-file draw and the analyzer was blameless: it had never
+      // emitted those edges, correctly. The size is one phantom row per
+      // file-scope declaration, so the number moves with the DRAW (6,866-edge
+      // draw: 0 missing; 10,635-edge draw: 970) and reads like a sampling
+      // artefact rather than like a gate defect. Provenance of every one of them
+      // was the declaration site, never a use.
+      if (
+        p.type === "variable_declaration" || p.type === "assignment_expression" ||
+        p.type === "compound_assignment_statement" || p.type === "assignment_statement"
+      ) {
+        if (!zigPlainAssignment(p)) return false
+        // Z25 mirror (2026-09-29): the LHS test is NODE IDENTITY with the
+        // first named child, not "the first child of type `identifier`". In a
+        // struct literal the KEY is a `field_identifier` (`.id = base_id`), so
+        // the first IDENTIFIER child is the VALUE — and the old test read
+        // `.id = base_id` as *defining* `base_id`, dropping a genuine bare read of
+        // a file-scope name. Same rule as the ZGD1 field-path mirror above, which
+        // already used node identity: one rule, two places.
+        const lhs = p.namedChild(0)
+        return !!lhs && lhs.id === n.id
+      }
+    if (
+      p.type === "function_declaration" || p.type === "test_declaration" ||
+      p.type === "struct_item" || p.type === "enum_item" ||
+      p.type === "union_item" || p.type === "type_item" ||
+      p.type === "mod_item" || p.type === "package_clause" ||
+      p.type === "container_field"
+    ) {
+      for (let i = 0; i < p.namedChildCount; i++) {
+        const c = p.namedChild(i)
+        if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+          return c.startIndex === n.startIndex && c.endIndex === n.endIndex
+        }
+      }
+    }
+    return false
+  }
+  const isCallee = (n: any): boolean => {
+    let top: any = n
+    let p: any = n.parent
+    while (p && p.type !== "call_expression" && p.type !== "block" && p.type !== "function_declaration") {
+      top = p
+      p = p.parent
+    }
+    if (!p || p.type !== "call_expression") return false
+    const first = p.namedChildCount > 0 ? p.namedChild(0) : null
+    return !!first && top.startIndex >= first.startIndex && top.endIndex <= first.endIndex
+  }
+  const hasToken = (n: any, tok: string): boolean => {
+    for (let i = 0; i < (n.childCount ?? 0); i++) {
+      const c = n.child(i)
+      if (c && !c.isNamed && c.type === tok) return true
+    }
+    return false
+  }
+  const stack: any[] = [{ n: root, exit: false, pushed: false }]
+  while (stack.length > 0) {
+    const { n, exit, pushed, fn } = stack.pop()!
+    if (exit) {
+      if (pushed) scopes.pop()
+      continue
+    }
+    const t = n.type
+    let pushedScope = false
+    if (t === "function_declaration") {
+      const frame = new Set<string>()
+      const pw: any[] = [n]
+      while (pw.length > 0) {
+        const m = pw.pop()!
+        if (m.type !== "function_declaration" || m === n) {
+          if (m.type === "parameter") bindFirstIdent(m, frame)
+          for (let i = m.namedChildCount - 1; i >= 0; i--) {
+            const c = m.namedChild(i)
+            if (c && c.type !== "block" && c.type !== "block_expression" && c.type !== "function_declaration") pw.push(c)
+          }
+        }
+      }
+      scopes.push(frame)
+      pushedScope = true
+    } else if (t === "block" || t === "block_expression") {
+      scopes.push(new Set<string>())
+      pushedScope = true
+    } else if (t === "switch_case") {
+      // Z6 mirror: captures are scoped to their own switch arm (see the
+      // analyzer). Same push/pop mechanics, same empty-at-entry property.
+      scopes.push(new Set<string>())
+      pushedScope = true
+    } else if (t === "payload") {
+      if (scopes.length > 0) bindIds(n, scopes[scopes.length - 1])
+    } else if (t === "variable_declaration") {
+      if (scopes.length > 0 && (hasToken(n, "var") || hasToken(n, "const"))) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            if (c.text !== "_") scopes[scopes.length - 1].add(c.text)
+            break
+          }
+          break
+        }
+      }
+    } else if (t === "identifier") {
+      const name = n.text
+      const p = n.parent
+      let inError = false
+      if (p && p.type === "error_type" && p.namedChildCount > 0) {
+        const last = p.namedChild(p.namedChildCount - 1)
+        if (last && last.startIndex === n.startIndex && last.endIndex === n.endIndex) {
+          let q: any = p.parent
+          let typePos = false
+          while (q) {
+            if (q.type === "parameter" || q.type === "container_field") { typePos = true; break }
+            if (
+              q.type === "variable_declaration" || q.type === "arguments" ||
+              q.type === "return_expression" || q.type === "call_expression" ||
+              q.type === "function_declaration" || q.type === "block" ||
+              q.type === "block_expression"
+            ) break
+            q = q.parent
+          }
+          if (!typePos) inError = true
+        }
+      }
+      const isLabel = p && (p.type === "labeled_statement" || p.type === "label_name" || p.type === "block_label" || p.type === "break_label" || p.type === "continue_label")
+      let qualified = false
+      {
+        let cur: any = n.parent
+        while (cur) {
+          if (cur.type === "qualified_type") { qualified = true; break }
+          if (
+            cur.type === "call_expression" || cur.type === "field_declaration" ||
+            cur.type === "function_declaration" || cur.type === "block" ||
+            cur.type === "block_expression" || cur.type === "composite_literal" ||
+            cur.type === "variable_declaration" || cur.type === "assignment_statement"
+          ) break
+          cur = cur.parent
+        }
+      }
+      let lhsWrite = false
+      if (p && p.type === "field_expression") {
+        lhsWrite = true
+      } else if (p && (p.type === "assignment_statement" || p.type === "compound_assignment_statement")) {
+        const lhs = p.namedChild(0)
+        lhsWrite = !!lhs && lhs.startIndex === n.startIndex && (lhs.endIndex ?? 0) >= n.endIndex
+      }
+      // Field path owns member leaves AND objects (leaf-only contract,
+      // mirroring the analyzer's parent check exactly).
+      // LEAF-ONLY, UNCONDITIONALLY. A field path owns its member leaf and the
+      // objects along it, so the BASE of `std.debug.assert` is not a read of a
+      // value named `std` — it is a read of the member `assert`, which the field
+      // pass publishes under the leaf contract.
+      //
+      // This was briefly rewritten to the Z38 type-position WALK, which was wrong:
+      // the two rules are different. Z38 belongs to the FIELD pass, where the leaf
+      // of a dotted TYPE path in a signature is a declared-type fact; here the base
+      // of a dotted VALUE path is owned by the leaf, always. Conflating them made
+      // the mirror publish 58 file-scope `uses -> std` rows the analyzer correctly
+      // does not — and it is the mirror that was wrong, twice over: once for the
+      // rule, and once for assuming a fix in one pass implied the same rule in the
+      // other. One rule per site, and the site that owns it.
+      const underField = !!p && p.type === "field_expression"
+      if (
+        name && name !== "_" && !name.startsWith("$") &&
+        !isDefining(n) && !isCallee(n) && !underField && !qualified && !isLabel &&
+        !shadowed(name) &&
+        (fileValues.has(name) || (inError && enumMembers.has(name)))
+      ) {
+        // Z37: the dedupe key carries the SOURCE, because the analyzer's does
+        // (`${src}::uses::${name}`). Keyed on the name alone, the first read of a
+        // name claims the row and every later read of the same name from a
+        // different function is suppressed — which is what the first run of the
+        // source-keyed gate reported: 592 phantom `uses` in 200 files, every one of
+        // them a read the analyzer attributes to a function the mirror had already
+        // spent the name on at file scope. A mirror that dedupes differently from
+        // the thing it mirrors does not report disagreements, it invents them.
+        const src = fn ?? "(global)"
+        const k = "uses|" + src + "|" + stripZigQuoting(name)
+        if (!seen.has(k)) {
+          seen.add(k)
+          // Z37: the source is the enclosing function, read from the walk\u0027s own
+          // stack entry rather than re-derived by a second rule. The harness matcher
+          // discards `from`, so before this the attribution of every bare read was
+          // unaudited — which is 83% of the lane\u0027s edges in the unadjudicated state.
+          edges.push({ label: "uses", from: src, target: stripZigQuoting(name), line: (n?.startPosition?.row ?? 0) + 1 })
+        }
+      }
+    }
+    stack.push({ n, exit: true, pushed: pushedScope, fn })
+    let nextFn: string | null = fn
+    if (t === "function_declaration" || t === "test_declaration") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") { nextFn = String(c.text); break }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) stack.push({ n: c, exit: false, pushed: false, fn: nextFn })
+    }
+  }
+  return edges
 }
