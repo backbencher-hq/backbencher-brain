@@ -2051,7 +2051,20 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // A parent whose kind is Function/Method/Closure means we are inside a
     // function body — skip those. A parent of a function itself (the symbol
     // pushed by handleFunction) is also a body marker.
-    if (parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
+    //
+    // RUST-MR: that comment says `let`, and `let` is the only one of the three
+    // the rule is true for. A function-local `const`/`static` is not a mutable
+    // local: it is a NAMED declaration with a type, a value and a line
+    // (`const DETERMINISTIC_TIMESTAMP: u64 = 1153704088;` inside
+    // `assert_deterministic_mtime`), and it is published everywhere else — the
+    // guard was the only thing standing between the form and the graph. Measured
+    // in the corpus census: 43 function-local `const` and 22 function-local
+    // `static`, 0% covered, against 200/200 module-level `const` and 15/15
+    // associated ones. The spec lists both node types as handled_verified, so
+    // the exclusion made that claim false at the site level. `let` keeps the
+    // skip (M11.11's closure boundary, and a local binding genuinely declares
+    // nothing outside its body).
+    if (node.type === "let_declaration" && parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
       return
     }
 
