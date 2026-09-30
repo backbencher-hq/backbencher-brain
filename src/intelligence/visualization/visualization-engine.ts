@@ -65,29 +65,64 @@ function bounded(value: unknown, fallback: number, max: number): number {
 
 /** How many symbols the scope and filters match, ignoring every output bound.
  *  Counted with the SAME predicate as the symbol query so the two cannot drift. */
-function countAvailableSymbols(raw: any, projectId: string, scope: VisualizationScope, target: string, request: VisualizationRequest): number {
-  const langClause = request.languages?.length
-    ? ` AND f.language IN (${request.languages.map(() => "?").join(",")})`
-    : ""
-  const langParams: unknown[] = request.languages ?? []
+/** The SQL clause and parameters for the language filter.
+ *
+ *  MEASURED on cargo: `bb_visualize({languages: ["javascript"]})` returned 0
+ *  nodes and declared the project had none, while the index held 56 javascript
+ *  symbols in real files. The engine selected `LIMIT maxNodes*2` symbols ordered
+ *  by gravity and then filtered them in memory, so any language whose symbols were
+ *  not already in that slice was cut before the filter ran. The tool even
+ *  contradicted itself: the declared total counted the language in SQL while the
+ *  returned nodes came from the empty in-memory result.
+ *
+ *  Built in one place and used by BOTH the symbol query and the count query, so
+ *  the two can never disagree about what was asked for — which is how the
+ *  contradiction above arose in the first place. */
+function languageClause(request: VisualizationRequest): { where: string; params: unknown[] } {
+  const wanted = request.languages?.filter((l) => typeof l === "string" && l.length > 0) ?? []
+  if (wanted.length === 0) return { where: "", params: [] }
+  return {
+    where: ` AND f.language IN (${wanted.map(() => "?").join(",")})`,
+    params: wanted,
+  }
+}
+
+
+function countAvailableSymbols(
+  raw: any,
+  projectId: string,
+  scope: VisualizationScope,
+  target: string,
+  request: VisualizationRequest,
+): number {
+  // The SAME predicate the symbol query uses, so the declared true size and the
+  // returned answer can never describe different sets. This is not a nicety:
+  // when the two drifted, one reply declared 56 javascript symbols available and
+  // returned none of them.
+  const stripped = target.replace(/\/$/, "")
   let where = "1=1"
-  const params: unknown[] = [projectId, ...langParams]
+  const params: unknown[] = []
   if (scope === "file") {
     where = "(f.relative_path=? OR f.path=? OR f.relative_path LIKE ?)"
-    params.push(target, target, segmentPrefix(target.replace(/\/$/, "")))
+    params.push(target, target, segmentPrefix(stripped))
   } else if (scope === "module") {
     where = "(f.relative_path LIKE ? OR f.relative_path LIKE ?)"
-    params.push(segmentPrefix(target.replace(/\/$/, "")), segmentPrefix((target.replace(/\/$/, "").split("/").pop() ?? target)))
+    params.push(segmentPrefix(stripped), segmentPrefix(stripped.split("/").pop() ?? stripped))
   } else if (scope === "symbol") {
     where = "(s.name=? OR s.qualified_name=?)"
     params.push(target, target)
   } else if (scope === "feature") {
+    const needle = `%${escapeLike(target.toLowerCase())}%`
     where = "(lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?)"
-    params.push(`%${escapeLike(target.toLowerCase())}%`, `%${escapeLike(target.toLowerCase())}%`)
+    params.push(needle, needle)
   }
+  const lang = languageClause(request)
   const row = raw
-    .prepare(`SELECT COUNT(*) AS c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND ${where}${langClause}`)
-    .get(...params) as { c: number }
+    .prepare(
+      `SELECT COUNT(*) AS c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id
+        WHERE s.project_id = ? AND ${where}${lang.where}`,
+    )
+    .get(projectId, ...lang.params, ...params) as { c: number }
   return Number(row?.c ?? 0)
 }
 
@@ -97,13 +132,18 @@ export async function visualizeProject(projectId: string, request: Visualization
   const target = String(request.target ?? "")
   const maxNodes = bounded(request.maxNodes, 200, 2000)
   const maxLinks = bounded(request.maxLinks, 5000, 20000)
+  // The language filter is applied in SQL, BEFORE the LIMIT — see languageClause above for
+  // what that costs when it is applied afterwards instead.
+  const lang = languageClause(request)
   let symbols: any[]
-  if (scope === "file") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY s.line_start LIMIT ?").all(projectId, target, target, segmentPrefix(target.replace(/\/$/, "")), maxNodes * 2) as any[]
-  else if (scope === "module") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY f.relative_path,s.line_start LIMIT ?").all(projectId, segmentPrefix(target.replace(/\/$/, "")), segmentPrefix((target.replace(/\/$/, "").split("/").pop() ?? target)), maxNodes * 2) as any[]
-  else if (scope === "symbol") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?").all(projectId, target, target, maxNodes * 2) as any[]
-  else if (scope === "feature") symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY s.gravity_score DESC,s.line_start LIMIT ?").all(projectId, `%${escapeLike(target.toLowerCase())}%`, `%${escapeLike(target.toLowerCase())}%`, maxNodes * 2) as any[]
-  else symbols = raw.prepare("SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? ORDER BY s.gravity_score DESC,s.line_start LIMIT ?").all(projectId, maxNodes * 2) as any[]
-  if (request.languages?.length) symbols = symbols.filter((symbol) => request.languages?.includes(symbol.language))
+  const stripped = target.replace(/\/$/, "")
+  const leaf = stripped.split("/").pop() ?? stripped
+  const needle = `%${escapeLike(target.toLowerCase())}%`
+  if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY s.line_start LIMIT ?`).all(projectId, ...lang.params, target, target, segmentPrefix(stripped), maxNodes * 2) as any[]
+  else if (scope === "module") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY f.relative_path,s.line_start LIMIT ?`).all(projectId, ...lang.params, segmentPrefix(stripped), segmentPrefix(leaf), maxNodes * 2) as any[]
+  else if (scope === "symbol") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?`).all(projectId, ...lang.params, target, target, maxNodes * 2) as any[]
+  else if (scope === "feature") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY s.gravity_score DESC,s.line_start LIMIT ?`).all(projectId, ...lang.params, needle, needle, maxNodes * 2) as any[]
+  else symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} ORDER BY s.gravity_score DESC,s.line_start LIMIT ?`).all(projectId, ...lang.params, maxNodes * 2) as any[]
   const ids = new Set(symbols.map((symbol) => symbol.id))
   // `id` and the stored classification are selected because the projection carries
   // them: an edge with no row id cannot be traced to the stored row that justifies it,
