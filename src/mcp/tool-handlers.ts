@@ -1527,11 +1527,16 @@ const handlers: Record<string, ToolHandler> = {
       return textResult("bb_graph relationshipTypes must name at least one relationship kind", true)
     }
     const crossLangArg = args.includeCrossLanguage === undefined ? undefined : args.includeCrossLanguage !== false
+    const maxEdgesArg = args.maxEdges === undefined ? undefined : Number(args.maxEdges)
+    if (maxEdgesArg !== undefined && (!Number.isFinite(maxEdgesArg) || maxEdgesArg < 1)) {
+      return textResult("bb_graph maxEdges must be a positive number", true)
+    }
     let result
     try {
       result = await graphTraversal(projectId as any, symbol, {
         maxDepth,
         edgeLimit: edgeLimitArg,
+        maxEdges: maxEdgesArg,
         direction: directionArg as any,
         relationshipTypes: relTypesArg,
         includeCrossLanguage: crossLangArg,
