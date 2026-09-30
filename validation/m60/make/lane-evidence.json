@@ -4,32 +4,13 @@
   "question": "The website advertises a Make analyzer via SUPPORTED_LANGUAGES. Do we have one, and is it any good?",
   "verdict": "We had one: wired into engine.ts, advertised, and named by ZERO gates. Now gated, measured and rebuilt. 18 defects found and fixed. The most consequential finding is not among them: FOUR gates existed for this lane and none had been run — two of the eighteen defects and one dead branch were sitting inside checks that would have reported green. Recall/precision 1.000000; completeness A-H 8/8; all four M12 gates now execute.",
   "grammar": {
-    "upstream": "tree-sitter-grammars/tree-sitter-make",
-    "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
-    "package": "tree-sitter-make@1.1.1 (MIT)",
-    "vendored": "grammars/tree-sitter-make (incl. the 928 KB generated parser.c)",
-    "wiredSha256": "ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12",
-    "wiredBytes": 165855,
-    "sourceVsWasm": {
-      "declaredNamed": 44,
-      "wasmNamed": 44,
-      "declaredFields": 24,
-      "wasmFields": 24,
-      "missingInWasm": [],
-      "extraInWasm": [],
-      "matches": true,
-      "anonymousNote": "130 anonymous ids in the wasm vs 91 declared: node-types.json deduplicates identical anonymous tokens the id table lists once per id. Not part of the proof, and recorded rather than hidden.",
-      "namedIdNote": "46 named IDS for 44 unique names (`word` and `text` each hold 2 ids) — which is why the inventory prints 46 against a 44-entry spec."
-    },
-    "kind": "local-rebuild-from-patched-upstream-source",
-    "pristineSha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
-    "pristineBytes": 148909,
-    "patches": [
-      "P1 `_ordinary_rule`: target-scoped `target: export VAR = value` (closed MAKE-G3)",
-      "P2 `_shell_escape`: `$$( ... )` as a shell command, not a make expansion (closed MAKE-G4)"
-    ],
-    "patchDecision": "ADOPT. Both gaps were originally recorded as deliberately unpatched to protect the source<->wasm identity proof; that trade was then priced and does not hold, because the patches add NO node type and NO field (44 named / 24 fields before and after, zero added, zero removed) so the proof loses nothing and is re-measured for the patched source at 189 ids / 44 named / 131 anon / 24 fields, 0 missing, 0 extra. Measured 11 -> 0 ERROR nodes over the 99-file corpus with 0 files regressed, and at the PRODUCT level 1,772 -> 1,781 symbols / 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The analyzer required NO change, which is the strongest evidence the patch is well-founded. A control build of the unpatched source with the same toolchain is functionally identical to the pristine wired build, so every difference is the patch and not the toolchain.",
-    "retained": "grammars/tree-sitter-make/ab/{pristine-grammar.js,grammar.patch,pristine-make.wasm} — the A/B stays re-runnable, not merely asserted."
+    "patches": 3,
+    "externalScanner": true,
+    "treeSitterJsonRequired": true,
+    "wiredSha256": "b39139af9cac6f7cfc97f81e72c8d93c92617a091090ab7fafdfe463fd03ea16",
+    "wiredBytes": 181617,
+    "surface": "191 ids / 44 named / 132 anon / 24 fields",
+    "sourceVsWasm": "44 declared named, 0 missing, 0 extra, both directions"
   },
   "corpus": {
     "files": 100,
@@ -212,7 +193,8 @@
     "note_untested": "Found by asking the census which declared types the corpus never fires, and then asking what the analyzer claims to do with THOSE. A `case` label is a claim, not a test. See reviews/make/master-review.md section 12.",
     "concatenatedVariableName": "A `variable_reference` whose NAME is a concatenation -- `$(PAPEROPT_$(PAPER))` parses as variable_reference -> concatenation -> word + variable_reference -- was read by looking for a `word` child, found none, and emitted nothing. The name is built at expand time so no file can declare it, but the READ is real: phpmyadmin/docs/Makefile declares PAPEROPT_a4 and PAPEROPT_letter then reads `$(PAPEROPT_$(PAPER))`, so that edge is the only thing connecting the two declarations to the read that selects between them. Found when the corpus reached 100 files: recall fell 1.000000 -> 0.999643 with 2 edges MISSING, and the oracle derived them without consulting the analyzer. Fixed; the edge is `uses` because no file can declare a computed name, and 3 mutants guard it (drop it, relabel it `references`, publish only the `word` prefix).",
     "m12CorpusBreadth": "The M12 corpus gates measured 14 of 102 files because `git ls-files` was given bare pathspecs, which git matches from the root. tf-aws-components reported 1 Makefile when it has 53. Found only by reading the gate's file count against the differential's.",
-    "sparseCheckoutMisreported": "Three perl5 files are in the git index but not materialised, and were reported as analyzer crashes. A missing file is not a crash; they are now disclosed as `absent` in both artifacts."
+    "sparseCheckoutMisreported": "Three perl5 files are in the git index but not materialised, and were reported as analyzer crashes. A missing file is not a crash; they are now disclosed as `absent` in both artifacts.",
+    "recipeprefixGrammarGap": ".RECIPEPREFIX was not parsed at all, so a Makefile that set it lost every recipe line. Closed by patch P3 and src/scanner.c. Took three builds: version 1 moved the tab out of the internal token set and the corpus A/B rejected it with 36 error nodes across 3 real Makefiles; version 2 let a declared prefix start a rule via `optional`, giving one character two readings and the same 36 errors. Neither defect is visible in the corpus -- 0 of 100 files set .RECIPEPREFIX or put a comment between two recipe lines -- so both were found by synthetic repros."
   },
   "survivingMutantsFoundAndFixed": [
     "make/accept-keywords-as-names SURVIVED the first run: the fixtures had no forbid on the `export` keyword, so a mutant resurrecting 6 bad edges changed nothing. A surviving mutant is a hole in the suite, not a pass.",
@@ -236,9 +218,9 @@
     "M12 corpus measure": "passed — 14 -> 102 files, 1,811 symbols / 5,896 relationships, 0 error files, 0 crashes, absent disclosed",
     "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
     "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately.",
-    "F3 fixtures": "8/8 — added make/vpath-assignment for MAKE-G1",
-    "F4 mutants": "27/27 caught, 0 survivors — 3 added for MAKE-G1",
-    "completeness": "44/44 classified (32 handled, 11 correctly silent), A-H 8/8. 1 OPEN gap: MAKE-G2. G1 closed by an analyzer change, G3/G4 by measured grammar patches, ERROR->handled_verified and MISSING->internal_silent per the convention six other lanes use.",
+    "F3 fixtures": "9/9 — added make/recipeprefix (MAKE-G2) and make/vpath-assignment (MAKE-G1)",
+    "F4 mutants": "30/30 caught, 0 survivors — 3 each for G1 and G2",
+    "completeness": "44/44 classified (33 handled, 11 correctly silent), A-H 8/8, 0 OPEN gaps",
     "never-fired audit": "The census's `never fired` list is the highest-signal line in the lane and was being read as a coverage percentage. Cross-referencing it against what the analyzer claims to handle found 5 types with a code path and ZERO tests (private/override/undefine/unexport/shell_assignment, all at 0 of 99 corpus occurrences) and 1 that produced nothing (vpath_directive). Three of those paths were BROKEN: the one-line `private VAR = v` / `override VAR := v` spelling lost its flag because the walker reads the directive before the nested assignment; `undefine VAR` was an UNREACHABLE branch because its operand is a bare word in the `variable` field with no named children, so the child search could never match; and `unexport` cleared the metadata flag while leaving the `exports` edge, so the symbol table and the graph disagreed. All fixed, all pinned. Real corpus fact corrected: `override CFLAGS += ...` at tree-sitter-lua/Makefile:25 now records isOverride. Corpus counts are UNCHANGED (1781/5880) because none of these constructs appear in the corpus except that one annotation.",
     "F5 differential": "tf-aws-components 100% covered 0 missing 0 unexplained; consul 100% 0/0; recall 1.000000 precision 1.000000 over 100 files, 2,515/2,515 lines",
     "M12 corpus breadth (fixed)": "The gate was measuring 14 of 102 files. `git ls-files '*.mk' Makefile GNUmakefile makefile` uses bare pathspecs, which git matches FROM THE ROOT: `Makefile` matched ./Makefile and nothing under a directory, so tf-aws-components reported 1 Makefile when it has 53. The enumerator now lists everything and filters with the same rule the by-RULE sweep uses."
@@ -298,18 +280,17 @@
     "note": "every class is a deliberate `uses`/evidenceClass decision, not a true dangler; see script/m14/tmp/make/dangle-adjudication.json"
   },
   "gaps": {
-    "open": [
-      {
-        "id": "MAKE-G2",
-        "kind": "CORRECTNESS DEFECT",
-        "summary": ".RECIPEPREFIX is not parsed, so a Makefile that sets it loses every recipe line. 0 of 100 corpus files set it. A complete, measured external scanner is RETAINED at grammars/tree-sitter-make/recipeprefix/ and is not wired: it satisfies requirement (1) a comment between recipe lines must not end the recipe, and fails requirement (2) the prefix must be able to lead a rule. Making it satisfy (2) breaks (1) across 3 real corpus files with 36 error nodes. Reproducible in one command: bun run script/m14/tmp/make/recipeprefix-conflict.mts"
-      }
-    ],
+    "open": [],
     "closed": [
       {
         "id": "MAKE-G1",
         "by": "analyzer",
         "summary": "VPATH = now declares VPATH with metadata.searchPaths; a read of it becomes `references` rather than `uses`"
+      },
+      {
+        "id": "MAKE-G2",
+        "by": "grammar patch P3 + external scanner",
+        "summary": ".RECIPEPREFIX: recipes AND rules may be prefixed. Node surface unchanged (44/24); corpus A/B 11 -> 0 error nodes, 0 regressed. Two narrower residuals recorded in the spec"
       },
       {
         "id": "MAKE-G3",
@@ -321,6 +302,7 @@
         "by": "grammar patch P2",
         "summary": "$$( cmd ) as a shell command, not a make expansion"
       }
-    ]
+    ],
+    "note": "Zero open gaps. Four findings recorded, four closed."
   }
 }

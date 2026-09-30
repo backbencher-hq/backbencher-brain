@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-30T01:49:41.279Z",
-  "commit": "923f01b6a33c2285dfb301c311b4f9402bc5e27f",
+  "generatedAt": "2026-09-30T07:41:10.082Z",
+  "commit": "3742a533063e9f8319deafc3684d690437c58e71",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here CONSOLIDATED 2026-09-28: this record is the union of the grammar-governance line and m48-recovery, so every lane either side pinned is present. Lanes both sides changed are marked with a mergeNote and keep the side whose bytes the gate verifies.",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -1761,6 +1761,128 @@
         "allowedWasmExtras": [],
         "namedOnlyInWasm": []
       }
+    },
+    "make": {
+      "wired": {
+        "file": "wasm/tree-sitter-make.wasm",
+        "sha256": "b39139af9cac6f7cfc97f81e72c8d93c92617a091090ab7fafdfe463fd03ea16",
+        "bytes": 181617
+      },
+      "surface": {
+        "ids": 191,
+        "uniqueNames": 175,
+        "namedIds": 47,
+        "namedUnique": 44,
+        "anonIds": 144,
+        "anonUnique": 132,
+        "fieldCount": 24,
+        "idOrderDigest": "2281eee82beefda527ef639385230573ddbf2a75b17d4563579277c2805cfbf8",
+        "typeSetDigest": "21b2733f14a59c232943a3a48a949431baf8cef1ed457c481df495617489d0b2",
+        "fieldSetDigest": "92babc5a63edcab9b4372f39cb9a2a5f9f9b45f846fd13612acdd21ea2a544a2"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-make.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-make",
+        "files": {
+          "ab/grammar.patch": {
+            "sha256": "203c4f87d5d52f6728f61ee65343aca2f8541c6daa3a99f150b335e3e01b5b8e",
+            "bytes": 10911
+          },
+          "ab/pristine-grammar.js": {
+            "sha256": "951a109b093ae8bf197a58b8f3c65b22ba06621d65dfb1b8c75301669f925edd",
+            "bytes": 13658
+          },
+          "ab/pristine-make.wasm": {
+            "sha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
+            "bytes": 148909
+          },
+          "grammar.js": {
+            "sha256": "257f00d63c42d72d15b1446e51ab0d8f4671628c018a97b2039c0dfea65665f1",
+            "bytes": 22554
+          },
+          "LICENSE": {
+            "sha256": "28eecdb75b6de2d9020603531461444bf54db827ee2fb345a8fcf4dbee7c2ad1",
+            "bytes": 1076
+          },
+          "package.json": {
+            "sha256": "44cd00cbcbffa6f862e715ba2ed9ff81f346b08836ea75947f890a7f417a7a85",
+            "bytes": 1159
+          },
+          "PIN.md": {
+            "sha256": "88e4617928a122afab8a2e4b73f2933f360f819d2b9ea05c17303c442bc49581",
+            "bytes": 9035
+          },
+          "recipeprefix/grammar.patch": {
+            "sha256": "797f31f60d59b62828f5d64893af2293fad6b2ec89d47a1a15ba2f2d4723b9d0",
+            "bytes": 5992
+          },
+          "recipeprefix/grammar.with-recipeprefix.js": {
+            "sha256": "1a7f8e5da30e9e4d882ad97da355cb3b118839a76edcce741cb4e1a9c352d9cf",
+            "bytes": 21404
+          },
+          "recipeprefix/README.md": {
+            "sha256": "17610a609c35665859e10ea47965e3762f2cc4fd6669b3ed74df835c4d7b9d96",
+            "bytes": 7630
+          },
+          "recipeprefix/scanner.c": {
+            "sha256": "45d96c6a38f7fc35e95dd3a29d92c288c064c85a004e776eb219c1a2962ec676",
+            "bytes": 9533
+          },
+          "src/grammar.json": {
+            "sha256": "6776eebf224a305734360cb84e098ae24e989ab58b2e4d7c6855c5eceb974d6a",
+            "bytes": 121708
+          },
+          "src/node-types.json": {
+            "sha256": "a83879f8ada41149aa1c7b9ac435ed3353635966e73638685b124d6a3e7a2cff",
+            "bytes": 47818
+          },
+          "src/parser.c": {
+            "sha256": "660dee9f7f49a884b3db474847e4ff5ac28807d530f2e4db9f0e5af29d48c81f",
+            "bytes": 1198066
+          },
+          "src/scanner.c": {
+            "sha256": "45d96c6a38f7fc35e95dd3a29d92c288c064c85a004e776eb219c1a2962ec676",
+            "bytes": 9533
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "5bdf6ed1a78e3409fd443e085ca967a64c188a5d082aaf7f819bccd53a471c94",
+            "bytes": 10431
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "11b654fbba7770b1c710cc14b169be2deb5d89c0f87233d4605037c26c1ff657",
+            "bytes": 7678
+          },
+          "tree-sitter.json": {
+            "sha256": "479fd60dabddd95947cb79ae9c85a801c7d9827dc1e570209f125b0b3a233040",
+            "bytes": 646
+          }
+        },
+        "digest": "91a346635dc30c728c725cc0e1ff757806a07baf41c3fe023ba4f46d15fc02af",
+        "fileCount": 19
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-make/src/node-types.json",
+        "declaredNamedTypes": 44,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 44,
+        "wasmUniqueNames": 175,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
     }
   },
   "decisions": {
@@ -2590,6 +2712,52 @@
           "why": "upstream's own parse tests; the lane's corpus is the reference implementation plus two independent repositories, tracked in the manifest"
         }
       ]
+    },
+    "make": {
+      "provenance": {
+        "kind": "local-rebuild-from-patched-upstream-source",
+        "package": "tree-sitter-make",
+        "version": "1.1.1",
+        "upstream": {
+          "repo": "tree-sitter-grammars/tree-sitter-make",
+          "version": "1.1.1",
+          "rev": "70613f3d812cbabbd7f38d104d60a409c4008b43",
+          "builtWith": "tree-sitter-cli generate + build --wasm (rebuildable from grammars/tree-sitter-make)"
+        },
+        "patches": [
+          "P1 (grammar.js `_ordinary_rule`): a second branch for the TARGET-SCOPED form `target: export VAR = value`. `variable_assignment` already accepts an optional leading `list ':'` so `target: VAR = value` parsed, but `export_directive` places the `export` keyword BEFORE the assignment and nothing allowed it after the colon. Measured: 8 of the corpus's 11 ERROR nodes, and 9 variable names the analyzer could not see (BOUNDARY_INSTALL_BINARY, SKIP_PLUGIN_BUILD, UI_CLONE_DIR, UI_COMMITISH, UI_DEFAULT_BRANCH, UI_VERSION_FILE, GOOS, GOARCH).",
+          "P2 (grammar.js `_shell_escape`): `$$( ... )` is Make's ESCAPED dollar — Make does not expand it and hands `$( ... )` to the shell. The grammar routed `$$` into variable_reference / substitution_reference / automatic_variable / function_call, none of which can parse a shell command head (spaces, pipes). A hidden rule keyed on `$$` ONLY, so `$(FOO)` is still a variable reference, with the variable_reference/_paren_text ambiguity DECLARED as a conflict and resolved by dynamic precedence rather than a static one.",
+          false
+        ],
+        "patchEvidence": "Surface A/B over all 99 pinned corpus files, plus a PRODUCT-level A/B through RealMakefileAnalyzer: 11 -> 0 error nodes, 3 files improved, 0 regressed; 1,772 -> 1,781 symbols and 5,870 -> 5,880 relationships, with all 19 lost facts being error-recovery garbage or a reference re-attributed to its correct owner. The named node-type set and the field set are IDENTICAL before and after (44 / 24, zero added, zero removed), which is why no analyzer change was required. A control build of the UNPATCHED source with the same toolchain is functionally identical to the wired pristine build (same 188 ids, 44 named, 24 fields, 6 error files, 11 error nodes), so every difference is the patch and not the toolchain. Re-runnable IN-REPO: script/m14/tmp/make/grammar-ab.mts over grammars/tree-sitter-make/ab/pristine-make.wasm. P3 MEASURED SEPARATELY, same basis: node surface UNCHANGED at 44 named / 24 fields (only the token ids move, 189 -> 191, and the anonymous count 131 -> 132, both a consequence of the two new external tokens), and the corpus A/B goes 11 -> 0 error nodes with 3 files improved and 0 regressed — so the source<->wasm proof is untouched by the one patch that changes the token set. Its two residuals are recorded rather than left to be discovered, and BOTH WERE ALREADY ERRORS BEFORE THE PATCH, so neither is a regression: a comment between two PREFIXED rules still errors on the second rule prefix, and an ATTACHED recipe on a prefixed rule line (`>a: ;cmd`) is not recognised. Pinned by make/recipeprefix with 2 forbidden shapes and 3 mutants (0 -> 3 failures). Note that ab/grammar.patch CANNOT express P3 on its own: a new source file is not an edit, so src/scanner.c ships beside the patch and conformance checks it separately.",
+        "retained": "grammars/tree-sitter-make/ab/{pristine-grammar.js,grammar.patch,pristine-make.wasm} — IN THE REPO, not a scratch dir, so the A/B above can be repeated from a clone rather than believed. The ab dir is 167 KB and is re-checked by grammar-conformance.mts on every run: pristine-grammar.js + grammar.patch must regenerate the wired grammar.js byte for byte, and pristine-make.wasm must be the sha recorded above."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-make",
+        "note": "grammar.js (PATCHED — it is the patched grammar.js that is vendored, because the pin must describe what is actually wired) + package.json + LICENSE + PIN.md + tree-sitter.json + src/ (grammar.json, node-types.json, parser.c, scanner.c, tree_sitter/ headers). scanner.c is LOAD-BEARING for P3, not decoration. tree-sitter.json is also load-bearing and this lane did not have one: without it the CLI falls back to ABI 14 and silently emits a parser that differs from the wired one, so the first build of P3 came out different from the one that was actually tested — 17 other vendored grammars carry the file and this one did not. src/parser.c IS vendored (1,084,442 bytes) so the source<->wasm proof is re-checkable offline; unlike the xml/sql lanes this lane's central claim IS that proof."
+      },
+      "decision": "ADOPT the patched local build, and keep the pristine one forever. The pristine build is not merely 'not good enough' — it loses 9 declarations the product can see and invents facts like a `?` used as a variable name. The patches add no node type and no field, so the source<->wasm identity proof is fully preserved and re-measured for the patched source: 191 ids / 44 named / 132 anonymous / 24 fields against 44 declared named types and 24 declared fields, zero missing and zero extra in both directions. All THREE patches leave the named/field surface untouched, which is the property that makes the proof survive them. Adopting an upstream SWAP was never on the table — 1.1.1 is the current HEAD of the only maintained tree-sitter-make, so the pin's value is correctness of the model, not novelty of the version.",
+      "alternatives": [
+        {
+          "option": "keep the pristine build and the two gaps open",
+          "measured": "REJECTED on measurement, having been the lane's position for a day. 11 ERROR nodes over 99 files, 9 invisible variable declarations, and error-recovery artefacts published as facts (a `?` as a name; `BOUNDARY_INSTALL_BINARY=1` as a name). The argument for it — that patching costs the identity proof — is answered by the patches adding no node type and no field, so the proof costs nothing.",
+          "artifact": "fixtures/make/out/grammar-ab.json"
+        },
+        {
+          "option": "hand-repair the wasm the way groovy's was repaired",
+          "measured": "unnecessary and wrong here: that repair exists because a vendored wasm had drifted from its source. This lane regenerates from source with a recorded toolchain and keeps the pristine build for A/B, so the drift cannot recur unobserved.",
+          "artifact": "fixtures/make/out/grammar-ab.json"
+        }
+      ],
+      "evidence": [
+        "fixtures/make/out/grammar-ab.json",
+        "fixtures/make/out/grammar-ab-product.json",
+        "fixtures/make/out/grammar-conformance.json",
+        "grammars/tree-sitter-make/PIN.md",
+        "reviews/make/master-review.md"
+      ],
+      "notVendored": null
     }
   }
 }
