@@ -67,7 +67,8 @@
       "anonymous_function_use_clause",
       "dynamic_variable_name",
       "subscript_expression",
-      "variadic_placeholder"
+      "variadic_placeholder",
+      "ERROR"
     ]
   },
   "internal_silent": {
@@ -176,22 +177,19 @@
       "var_modifier",
       "variadic_unpacking",
       "visibility_modifier",
-      "yield_expression"
+      "yield_expression",
+      "MISSING"
     ]
   },
   "gap": {
-    "gaps": [
-      {
-        "node_type": "php_tag, text_interpolation, text, encapsed_string, heredoc, nowdoc",
-        "missing": "HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque",
-        "issue": "php wave (#268 family)"
-      },
-      {
-        "node_type": "preprocessor, ini_section, ini_entry, shell_comment, hash_bang_line",
-        "missing": "ini directives and shell hash-bang lines are not parsed as symbols or decision points",
-        "issue": "php wave (#268 family)"
-      }
-    ]
+    "gaps": [],
+    "adjudicatedFromGaps": {
+      "note": "Both gaps declared by the php wave (#268 family) were adjudicated 2026-09-29 and promoted to RULED decisions PHPD31/PHPD32. The lane now declares 0 gaps. Neither was a coverage or extraction defect: both described a deliberate language boundary (text outside <?php, and ini/shell constructs) that the old wording recorded as unfinished work.",
+      "promoted": [
+        "PHPD31",
+        "PHPD32"
+      ]
+    }
   },
   "design_decision": {
     "decisions": [
@@ -409,6 +407,20 @@
         "status": "FIXED",
         "question": "Second review: `$gw->authorize()` emitted no read for `$gw` (wave-1 `receivers excluded` held for the single-link base while PHP-A chains already read links — incoherent), and class-level const reads (property/const/enum/attribute/default initializers) sourced global instead of the class.",
         "resolution": "Receiver BASE variables read as ordinary bare values (the object value loads to dispatch); the exclusion now holds only on the MEMBER side (no uses-read of the method name — payload-and-complexity authorize/dispatch forbids). Class-level reads attribute to the owner (inFunction || owner || global). The wave-1 blanket `uses->gateway` forbid encoded the old contract and is replaced by member-side forbids + variable-side expects; php/emit-write-as-uses is retargeted to file-scope writes (its old fabrication became legitimate output). Gated by payload-and-complexity expects/forbids + php/emit-receiver-member-read mutant + owner-attribution pins in bare-value-reads (Reader->LIMIT/RUN_NAME/FALLBACK, Level->RUN_NAME)."
+      },
+      {
+        "id": "PHPD31",
+        "node_type": "php_tag, text_interpolation, text, encapsed_string, heredoc, nowdoc",
+        "status": "RULED",
+        "question": "The php wave (#268 family) declared this a gap: 'HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque'. Is that a gap or a ruling?",
+        "resolution": "RULED, not a gap. A `use`d requirement of this lane is a SYMBOL CONTRACT over PHP declarations, and the text outside `<?php ... ?>` is not PHP: it is the template that PHP is embedded in, and its `$var` slots belong to whatever templating engine wrote them (Twig, Blade, Smarty), not to PHP's grammar. Emitting symbols for interpolated HTML would invent PHP declarations that do not exist. The string-interpolation half of the old gap text is separately adjudicated and IS handled: \"hello $name\" (simple), \"{$o->p}\" (object/member), and \"{$n['k']}\" style forms are read for VALUE flow by the in-PHP rules, pinned by php/bare-value-reads and php/header-reads. The old wording conflated two different things — a correct boundary on out-of-PHP text, and an unfinished job on in-PHP interpolation that was in fact finished. Recording it as a `gap` therefore reported finished work as outstanding forever."
+      },
+      {
+        "id": "PHPD32",
+        "node_type": "preprocessor, ini_section, ini_entry, shell_comment, hash_bang_line",
+        "status": "RULED",
+        "question": "The php wave (#268 family) declared this a gap: 'ini directives and shell hash-bang lines are not parsed as symbols or decision points'. Is that a gap or a ruling?",
+        "resolution": "RULED, not a gap. `ini_section`/`ini_entry` are .ini FILES parsed by PHP's own INI machinery, not by this analyzer — no PHP declaration exists in them to miss, and the same applies to a `#!` hash-bang line, which is the OS's interpreter directive. The `preprocessor`/`shell_comment` nodes that appear in a .php file are likewise not PHP declarations. Declaring symbols for any of these would put non-PHP constructs into a PHP symbol graph. The grammar emits these node types for these files and the analyzer correctly declares nothing for them, which is a boundary, not unfinished work."
       }
     ]
   }
