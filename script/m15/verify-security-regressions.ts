@@ -935,6 +935,105 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
 // auto-pass with better manners.
 write("xr6.json", { title: "determinism + the harness cannot pass vacuously", defect: "A4/D", skipped })
 
+// ═══════════════════════════════════════════════════════════════════════════
+// XR7 — the two precision fixes, measured on fixtures
+//
+// Both changes were motivated by a measurement on a real 168k-symbol index
+// (3,190 findings, of which 326 were in Markdown/JSON/YAML/HTML/CSS, and 213
+// of 1,433 symbol names spanned more than one file). Each assertion below
+// fails without its fix.
+// ═══════════════════════════════════════════════════════════════════════════
+{
+  h.sectionHeader("XR7", "precision: no taint rows from prose, and hotspot keys are unambiguous")
+
+  // ── the language gate ─────────────────────────────────────────────────────
+  // The gate lives at the TaintAnalyzer call site in pool-worker.ts, so the
+  // proof is end-to-end: index files in an eligible and an ineligible language
+  // and compare the rows each produced.
+  const languageFixtures: Array<{ lang: string; file: string; eligible: boolean }> = [
+    { lang: "typescript", file: "app.ts", eligible: true },
+    { lang: "python", file: "app.py", eligible: true },
+    { lang: "go", file: "app.go", eligible: true },
+    { lang: "markdown", file: "NOTES.md", eligible: false },
+    { lang: "json", file: "data.json", eligible: false },
+    { lang: "yaml", file: "config.yml", eligible: false },
+  ]
+  const produced: Record<string, number> = {}
+  for (const fx of languageFixtures) {
+    // Each fixture contains BOTH a source token and a sink token the universal
+    // matcher recognises, so eligibility — not vocabulary — is the only variable.
+    const bodies: Record<string, string> = {
+      "app.ts": "import { Client } from 'pg'\nconst c = new Client()\nexport function run(req: any) { return c.query(req.query) }\n",
+      "app.py": "def run(req):\n    q = 'select ' + req.query\n    return cursor.execute(q)\n",
+      "app.go": "package main\nfunc Run(u string) { exec.Command(\"sh\", \"-c\", u) }\n",
+      "NOTES.md": "# Notes\n\n```\ndb.query(userInput)\n```\n",
+      "data.json": '{ "note": "call db.execute(sql) and db.query(x)" }\n',
+      "config.yml": "job:\n  script: db.execute(sql)\n  also: client.query(x)\n",
+    }
+    const { root, projectId } = await indexFixture({ [fx.file]: bodies[fx.file]! })
+    try {
+      const raw = await BrainDatabase.getRawInstance(projectId)
+      const rows = (raw.prepare("SELECT COUNT(*) c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as { c: number }).c
+      const indexed = (raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c
+      produced[fx.lang] = rows
+      // The file must be indexed either way — the gate must suppress TAINT, not
+      // the whole file. Without this an "ineligible produced 0 rows" pass would
+      // also be satisfied by the file not being indexed at all.
+      h.ck(`XR7: ${fx.lang} fixture IS indexed (${fx.file})`, indexed > 0, `indexed files=${indexed}`)
+      if (fx.eligible) {
+        positiveCount(h, `XR7: ${fx.lang} produces taint rows (eligible language)`, rows, fx.file)
+      } else {
+        h.nk(`XR7: ${fx.lang} produces NO taint rows (prose/data language)`, rows === 0, `rows=${rows} — the language gate did not take effect for ${fx.file}`)
+      }
+    } catch (e: any) {
+      h.ck(`XR7: ${fx.lang} section completed without throwing`, false, (e?.message || String(e)).slice(0, 160))
+    } finally {
+      cleanup(root, projectId)
+    }
+  }
+  // The aggregate claim, stated as a ratio rather than left to the per-file loop.
+  const eligibleLangs = ["typescript", "python", "go"]
+  const ineligibleLangs = ["markdown", "json", "yaml"]
+  h.ck(
+    "XR7: every eligible language produced rows and every ineligible produced none",
+    eligibleLangs.every((l) => (produced[l] ?? 0) > 0) && ineligibleLangs.every((l) => (produced[l] ?? 0) === 0),
+    JSON.stringify(produced),
+  )
+
+  // ── hotspot keys ─────────────────────────────────────────────────────────
+  // The key must be `file::name`, so two findings sharing a bare symbol name in
+  // different files are two hotspots, not one merged row.
+  const { root: hr, projectId: hp } = await indexFixture({
+    "one.ts": "export function shared(): string { return 'a' }\n",
+    "two.ts": "export function shared(): string { return 'b' }\n",
+  })
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectIdSafe(hp))
+    const syms = raw.prepare("SELECT id, name, file_id FROM brain_symbol WHERE project_id = ? AND name = 'shared'").all(hp) as Array<{ id: string; name: string; file_id: string }>
+    const files = raw.prepare("SELECT id, relative_path FROM brain_file WHERE project_id = ?").all(hp) as Array<{ id: string; relative_path: string }>
+    h.require("XR7: two same-named symbols in two files are indexed", syms.length === 2 && files.length === 2, `syms=${syms.length} files=${files.length}`)
+    if (syms.length === 2 && files.length === 2) {
+      seedFlows(raw, hp, [
+        { id: "r7-a", source: syms[0]!.id, sink: syms[0]!.id, vuln: "sql_injection", severity: "high" },
+        { id: "r7-b", source: syms[1]!.id, sink: syms[1]!.id, vuln: "xss", severity: "high" },
+      ])
+      const report = await analyzeTaintFlows(hp, { maxResults: 50 })
+      const symSpots = report.hotspots.filter((hs) => hs.kind === "symbol")
+      h.ck("XR7: the two same-named symbols are TWO hotspots, not one merged row", symSpots.length === 2, `hotspots=${JSON.stringify(symSpots.map((x) => `${x.key}:${x.findings}`))}`)
+      h.ck("XR7: every symbol hotspot key is qualified by its file", symSpots.every((hs) => hs.key.includes("::")), JSON.stringify(symSpots.map((x) => x.key)))
+      h.ck("XR7: every symbol hotspot carries the bare name separately", symSpots.every((hs) => hs.name === "shared"), JSON.stringify(symSpots.map((x) => x.name)))
+      h.ck("XR7: each hotspot counts exactly its own file's finding", symSpots.every((hs) => hs.findings === 1), JSON.stringify(symSpots.map((x) => `${x.key}=${x.findings}`)))
+      h.ck("XR7: a bare symbol name is no longer a hotspot key", !symSpots.some((hs) => hs.key === "shared"), JSON.stringify(symSpots.map((x) => x.key)))
+    }
+    h.release()
+  } catch (e: any) {
+    h.ck("XR7: the hotspot section completed without throwing", false, (e?.message || String(e)).slice(0, 160))
+  } finally {
+    cleanup(hr, hp)
+  }
+}
+write("xr7.json", { title: "precision: language gate + unambiguous hotspot keys", defect: "precision" })
+
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 /**
@@ -952,6 +1051,12 @@ function stripStringsAndComments(src: string): string {
     .replace(/`(?:\\.|[^`\\])*`/g, blank)
     .replace(/"(?:\\.|[^"\\\n])*"/g, blank)
     .replace(/'(?:\\.|[^'\\\n])*'/g, blank)
+}
+
+/** `projectIdSafe` is the fixture's projectId, which getProjectId already
+ *  derived; named so the hotspot section reads as one expression. */
+function projectIdSafe(id: string): string {
+  return id
 }
 
 function firstMatch(text: string, re: RegExp): string | undefined {

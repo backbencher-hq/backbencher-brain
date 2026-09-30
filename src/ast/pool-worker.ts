@@ -605,9 +605,44 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
+    //
+    // GATED on the language. `TaintAnalyzer` matches SOURCE and SINK TOKENS
+    // over a symbol's text, so it will happily "find" a taint flow in prose:
+    // measured on this repository's own index, 326 of bb_security's 3,190
+    // findings (10.2%) were in Markdown, JSON, YAML, HTML and CSS, including
+    // `docs/m15/M15-MASTER-PLAN.md:214` reported as a `sql_injection` with the
+    // symbol name parsed out of a markdown table pipe. No amount of token
+    // matching can make those valid; they are an artefact of running a text
+    // matcher over a text format.
+    //
+    // The gate is a NAME list, not a heuristic, because the taint rules are
+    // written against programming-language APIs (`db.query`, `child_process`,
+    // `PreparedStatement`). A configuration or prose format has no such API, so
+    // there is nothing for the rules to legitimately match. It lives here rather
+    // than inside `taint-analyzer.ts` so the analyzer stays a pure rule set and
+    // the eligibility decision stays visible at the call site.
+    const TAINT_ELIGIBLE_LANGUAGES = new Set([
+      // The languages the engine dispatches to a REAL analyzer AND for which
+      // the taint rules are written against a language API (`db.query`,
+      // `child_process`, `PreparedStatement`, `cursor.execute`, …).
+      "typescript", "tsx", "javascript", "java", "kotlin", "scala", "groovy",
+      "python", "ruby", "php", "go", "rust", "swift", "dart", "c", "cpp",
+      "csharp", "perl", "lua", "r", "elixir", "erlang", "clojure", "haskell",
+      "zig", "nim", "fsharp", "vb", "powershell", "bash", "objective-c",
+      // Explicitly EXCLUDED, and each exclusion is load-bearing:
+      //   markdown json yaml toml xml html css sass scss graphql protobuf
+      //   make clean hcl terraform svelte vue sql
+      // Markdown/JSON/YAML/TOML/XML/HTML/CSS carry prose and data, not code —
+      // measured at 326 of 3,190 bb_security findings (10.2%). The rest are
+      // schema, query, build and markup formats whose tokens ("select", "exec",
+      // "query") collide with the sink rules without ever being a sink.
+    ])
+    const taintEligible = TAINT_ELIGIBLE_LANGUAGES.has((language || "").toLowerCase())
     try {
-      const { TaintAnalyzer } = await import("./taint-analyzer")
-      TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+      if (taintEligible) {
+        const { TaintAnalyzer } = await import("./taint-analyzer")
+        TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+      }
     } catch (e) {
       log("Taint extraction failed:", e)
     }

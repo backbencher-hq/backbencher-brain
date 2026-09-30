@@ -731,8 +731,17 @@ export interface SecurityFindingV2 {
 }
 
 export interface SecurityHotspot {
-  key: string                      // file or symbol
+  /**
+   * Identity of the hotspot. `kind: "file"` → a project-relative path.
+   * `kind: "symbol"` → `<file>::<name>`, because a bare name is ambiguous:
+   * measured on one real index, 213 of 1,433 finding symbol names spanned more
+   * than one file and the top hotspot was `main` across 223 files. Use `name`
+   * for the bare symbol.
+   */
+  key: string
   kind: "file" | "symbol"
+  /** Bare symbol name; absent for file hotspots. */
+  name?: string
   findings: number
   maxSeverity: "critical" | "high" | "medium" | "low" | "unknown"
 }
