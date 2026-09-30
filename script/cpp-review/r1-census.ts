@@ -97,6 +97,25 @@ function naiveClassEnd(content: string, from: number): number {
   return -1
 }
 
+/** Brace depth at `index`, scanning from `from`. 1 = the body closed early. */
+const depthAt = (content: string, from: number, index: number): number => {
+  let depth = 0, i = from
+  while (i < index && i < content.length) {
+    const c = content[i]
+    if (c === '"' || c === "'") {
+      const q = c; i++
+      while (i < content.length) { if (content[i] === "\\") { i += 2; continue } if (content[i] === q) { i++; break } i++ }
+      continue
+    }
+    if (c === "/" && content[i + 1] === "/") { const nl = content.indexOf("\n", i); i = nl === -1 ? content.length : nl; continue }
+    if (c === "/" && content[i + 1] === "*") { const cl = content.indexOf("*/", i + 2); i = cl === -1 ? content.length : cl + 2; continue }
+    if (c === "{") depth++
+    else if (c === "}") depth--
+    i++
+  }
+  return depth
+}
+
 const rowOf = (content: string, index: number): number => {
   let r = 0
   for (let i = 0; i < index && i < content.length; i++) if (content[i] === "\n") r++
@@ -133,6 +152,8 @@ type Site = {
   rowsOutside: number; charsOutside: number
   verdict: "real" | "artifact"
   naiveRowsOutside: number
+  /** 1 = the grammar closed the body one level early (a `}` short). */
+  depthAtNodeEnd: number
 }
 
 const sites: Site[] = []
@@ -170,6 +191,7 @@ for (const repo of REPOS) {
             rowsOutside: srcRow - gRow, charsOutside: aware - n.endIndex,
             verdict: naive === aware ? "real" : "artifact",
             naiveRowsOutside: naive === -1 ? -1 : rowOf(content, naive) - gRow,
+            depthAtNodeEnd: depthAt(content, n.startIndex, n.endIndex),
           }
           sites.push(s)
           if (s.verdict === "real") { acc.real++; acc.rows += s.rowsOutside }
@@ -181,6 +203,7 @@ for (const repo of REPOS) {
             grammarEndRow: rowOf(content, n.endIndex) + 1, sourceEndRow: rowOf(content, naive) + 1,
             rowsOutside: rowOf(content, naive) - rowOf(content, n.endIndex),
             charsOutside: naive - n.endIndex, verdict: "artifact", naiveRowsOutside: -1,
+            depthAtNodeEnd: depthAt(content, n.startIndex, n.endIndex),
           })
           acc.artifact++
         }
@@ -213,6 +236,7 @@ console.log(`\n--- worst 15 by rows lost (real) ---`)
 for (const s of real.slice(0, 15)) {
   console.log(`  ${String(s.rowsOutside).padStart(6)} rows  ${s.repo}/${s.file}:${s.line}  ${s.kind} ${s.name}`)
   console.log(`           grammar ends row ${s.grammarEndRow}, source ends row ${s.sourceEndRow} (${s.charsOutside} chars)`)
+  console.log(`           brace depth at the grammar's end: ${s.depthAtNodeEnd}  (1 = the body closed a level early)`)
 }
 
 const outDir = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
