@@ -1823,6 +1823,17 @@ const handlers: Record<string, ToolHandler> = {
         ? `'${symbol}' matches ${reach.matchedNames.length} indexed symbol name(s), but no indexed file matches the path '${givenPath}', so NO editor surface will show this note: the hover scopes notes to the file under the cursor. It is stored under that spelling and readable through bb_annotations.`
         : reach.statement
     const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
+    // Read what currently holds this location BEFORE the upsert. One note per
+    // location is the right model (the location UNIQUE index enforces it), but
+    // "last writer wins, silently" is not: measured on a real corpus, two agents
+    // writing the same symbol+path left ONE row, the first agent's note gone,
+    // and NEITHER agent told. The second writer now learns whose note it is
+    // replacing — and receives the previous body, so it can merge instead of
+    // clobbering.
+    const prior = raw.prepare(
+      "SELECT author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')",
+    ).get(projectId, symbol, annotationPath) as { author_class: string; tool_identity: string; body: string; time_created: number; time_updated: number } | undefined
+    const isReplacement = prior !== undefined && prior.body !== body
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
@@ -1837,6 +1848,24 @@ const handlers: Record<string, ToolHandler> = {
       stored: true,
       annotation: updated,
       provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed; tool_identity is the caller's own label, recorded verbatim and never verified",
+      ...(isReplacement
+        ? {
+            // A note is kept per location, so a second writer REPLACES the first.
+            // That is the declared model, but the replacement is now on the
+            // record: whose note it was, when it was written, and what it said,
+            // so the writer can merge instead of silently clobbering a
+            // colleague's finding — and so an agent that lost a note can see that
+            // it was replaced rather than never stored.
+            replaced: {
+              authorClass: prior.author_class,
+              toolIdentity: prior.tool_identity,
+              previousBody: prior.body,
+              previousCreatedAt: prior.time_created,
+              previousUpdatedAt: prior.time_updated,
+              note: `this location already held a note written by '${prior.tool_identity}'; it has been replaced. Read it above and merge if both matter — only one note is kept per location by design.`,
+            },
+          }
+        : {}),
       surfacing: {
         editor: surfaced,
         nameMatched: reach.surfaced,
