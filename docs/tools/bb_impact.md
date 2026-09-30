@@ -73,7 +73,7 @@ Bounded reverse-dependency impact for one symbol via the same component the edit
 
 ## Performance
 
-Complete answers stay under ~250 ms on the lane's corpora. A truncated hub pays for an unbounded counting walk so the declared total is honest: 0.5–2.0 s, bounded by two declared ceilings (50 000 scanned rows, 2 000 expansions) past which the total is a declared `null` rather than a number paid for with seconds.
+Two costs, bounded by different things, measured over 41 hub and mid-fan-in answers on eight real repositories (a machine that was NOT idle, so these are an upper bound): cold p50 298 ms / p95 1 777 ms / max 4 207 ms, warm p50 427 ms / p95 2 047 ms / max 3 488 ms; slowest cargo `all` 4 207/3 488 ms, cargo `file` 1 777/2 436 ms, svelte `flushSync` 1 508/2 047 ms. A COMPLETE answer pays for one engine walk and nothing else — the completeness verification is not paid for at all, because a node can only be lost at the depth boundary, so one query over the last level's nodes decides whether anything was and the unbounded walk runs only when that says maybe. A PREFIX answer additionally pays for the counting walk that makes the declared total honest: one statement per LEVEL rather than one per symbol, bounded by two WORK ceilings (50 000 scanned rows, 2 000 expansions) past which the total is a declared `null` rather than a number paid for with seconds, and by a 4 000 ms circuit breaker that no measured corpus reaches. The expansion ceiling is not what makes it fast or slow: eleven of twelve hubs give an exact total at 300 expansions at the same wall time as at 2 000, and the ones that stay unknown do so at every ceiling because their closures are wide rather than deep.
 
 ## Safety
 
