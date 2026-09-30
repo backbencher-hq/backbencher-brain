@@ -193,6 +193,18 @@ function typePositionNodes(root: any): Set<string> {
   const mark = (n: any): void => {
     if (!n) return
     out.add(`${n.startIndex}:${n.endIndex}:${n.type}`)
+    // A parameter inside a TYPE-POSITION signature binds a name in a type; it
+    // does not mention one. `type IndexRunner = (root: string, env: Env) =>
+    // Promise<R>` SPELLS `root` and `env` as bindings, and the analyzer emits no
+    // reference for either — the first draft of this oracle marked the whole
+    // signature subtree and so claimed `IndexRunner->root` and
+    // `IndexRunner->env`, which is how a signature's parameter names were read as
+    // mentions of module-level declarations that happen to share them. Only the
+    // parameter's TYPE is a mention; its name slot is a binder.
+    if (n.type === "required_parameter" || n.type === "optional_parameter") {
+      mark(n.childForFieldName?.("type"))
+      return
+    }
     for (const c of named(n)) mark(c)
   }
   const visit = (n: any): void => {
@@ -355,14 +367,25 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
     const t = n.type
 
     // A nested function-like scope binds its own parameters and locals, which
-    // shadow for its extent only.
+    // shadow for its extent only. A TYPE's signature binds too: `type R = (root:
+    // string) => void` declares a parameter named `root` inside the type, and a
+    // mention of `root` inside that type is that parameter, not a module-level
+    // `root` the type happens to share a name with. Omitting the signature forms
+    // was what made the first draft claim `R->root` — a signature's parameter
+    // names are bindings the type spells, not mentions of anything.
     const pushes =
       t === "function_declaration" ||
       t === "function_expression" ||
       t === "arrow_function" ||
       t === "generator_function" ||
       t === "generator_function_declaration" ||
-      t === "method_definition"
+      t === "method_definition" ||
+      t === "function_type" ||
+      t === "method_signature" ||
+      t === "abstract_method_signature" ||
+      t === "call_signature" ||
+      t === "construct_signature" ||
+      t === "function_signature"
     if (pushes) {
       const fp = n.childForFieldName?.("parameters")
       const next = new Set(bound)
