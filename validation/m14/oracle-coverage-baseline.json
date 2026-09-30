@@ -29,7 +29,10 @@
     "calls",
     "contains",
     "references",
-    "uses"
+    "uses",
+    "extends",
+    "implements",
+    "instantiates"
   ],
   "css": [
     "contains",

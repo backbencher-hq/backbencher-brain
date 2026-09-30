@@ -20621,7 +20621,20 @@ async function main() {
    // is deliberately absent: the lane does not derive it, and admitting it would charge every
    // real call edge as unexplained.
 ...(lang === "fsharp" ? ["contains"] : []),
-...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+// 2026-09-29: the compared set was FOUR labels while the oracle derived EIGHT. `extends`,
+// `implements` and `instantiates` were pushed into truth and then dropped here by the
+// allowlist, so they were derived at real cost and compared by nothing — and a lane
+// reporting "100% covered, MISSING=0" was silent about half its own labels.
+//
+// `overrides` is NOT added here, and the asymmetry is deliberate: it is excluded on BOTH
+// sides (the truth-side skip in deriveCSharpEdges, and the analyzer-side allowlist below)
+// under C923, with independent evidence in script/m60/verify-c923-interface-members.ts.
+// Adding it to this side alone would read every true edge as MISSING — the same desync the
+// truth-side comment warns about. The three labels added here measured 100% under the
+// HARNESS's own matcher before being added, so this widens what is CHECKED without
+// changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
+// measurement, and it is what found the gap in the first place.
+...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
