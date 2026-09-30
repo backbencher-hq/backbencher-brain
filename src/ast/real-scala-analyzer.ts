@@ -2675,6 +2675,48 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `calls → add` edge — emitting here too would produce the noise target
         // `self.add(1)` AND a duplicate `add` edge.
         if (fnNode.type === "call_expression") return
+        // M60/S11: a `calls` / `instantiates` TARGET MUST BE A NAME, so the CALLEE must
+        // be a name-bearing shape. `calledName = fnNode.text` below is a NAME only
+        // for those shapes; for anything else it is the callee EXPRESSION, and the
+        // edge becomes unmatchable garbage — the class the analyzer already
+        // documents and fixed for `throw` (SCD4, "the raw node.text embedded the
+        // whole construction with its arguments ... became a single unmatchable
+        // References target") and had not fixed here.
+        //
+        // Two shapes were live on the corpora:
+        //   instance_expression         a CURRIED CONSTRUCTION — `new
+        //     LensRef[F, A, B](ref)(get, set)` parses as a call_expression whose
+        //     function is the instance_expression, so the target was
+        //     `new LensRef(ref)`. handleInstantiation already publishes the
+        //     `instantiates` edge for the construction itself, so nothing is lost.
+        //   infix_expression / parenthesized_expression — dotty's right-associative
+        //     `/:` reads `deps /: f(x)` as a call whose function is the infix
+        //     expression, so the target was the WHOLE expression, newlines and all
+        //     (`!inIntersection\n || accountsFor(elem)\n || ...`).
+        //
+        // The allowlist is the census, not a guess
+        // (script/m14/tmp/scala-callee-shape-census.ts, 400 files each):
+        //   identifier 25081 / field_expression 18842 / call_expression 1824 /
+        //   generic_function 300 / instance_expression 15 / infix_expression 10 /
+        //   parenthesized_expression 9 / wildcard 4 / prefix_expression 2 /
+        //   operator_identifier 1        (scala3)
+        //   identifier 8063 / field_expression 9477 / call_expression 1560 /
+        //   generic_function 711 / wildcard 12 / instance_expression 8   (cats-effect)
+        // `wildcard` is excluded: `_(x)` applies a PLACEHOLDER lambda, and `_` is
+        // not a name in the graph.
+        //
+        // This was a SHARED BLIND SPOT with deriveScalaEdges, which fell back to
+        // the same node text, so the differential reported 0 unexplained while
+        // both sides published the same garbage — the J3 class a differential
+        // cannot catch by construction. Measured before the fix: 8 analyzer rows
+        // on cats-effect and 34 on scala3 whose target contains a space or a
+        // parenthesis, and every one of them was in the oracle too. A name cannot
+        // contain a space or a parenthesis, so the census test is exact.
+        const CALLEE_NAME_SHAPES = new Set([
+          "identifier", "field_expression", "generic_function", "operator_identifier",
+          "type_identifier", "stable_type_identifier",
+        ])
+        if (!CALLEE_NAME_SHAPES.has(fnNode.type)) return
         // S1.10 (M49 #715): a GENERIC function node (`generic_function`, e.g.
         // `foo.bar[Baz](1)`) is a call whose leaf must be extracted BEFORE the
         // bracket strip — the old code fell through with fnNode.text

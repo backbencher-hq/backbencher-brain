@@ -3961,7 +3961,31 @@ export function deriveScalaEdges(root: any): { label: string; from: string; targ
           // Curried wrapper: the INNER call is visited separately; deriving
           // from the wrapper would double-count (SCD7).
           if (fnNode.type !== "call_expression") {
-            // M49.S1 #715 lockstep mirror: generic_function callees
+            // M60/S11: a `calls` / `instantiates` target must be a NAME, so the
+            // CALLEE must be a name-bearing shape. `calledName = fnNode.text` is a
+            // name only for those; for anything else it is the callee EXPRESSION.
+            // Two shapes were live on the corpora — `instance_expression` (a
+            // curried construction, whose `instantiates` edge the arm below
+            // already publishes) and `infix_expression` /
+            // `parenthesized_expression` (dotty's right-associative `/:` reads
+            // `deps /: f(x)` as a call whose function is the infix expression, so
+            // the target was the whole expression, newlines and all). `wildcard` is
+            // excluded because `_(x)` applies a PLACEHOLDER and `_` is not a name.
+            // The allowlist is the census, not a guess
+            // (script/m14/tmp/scala-callee-shape-census.ts).
+            //
+            // This was a SHARED BLIND SPOT: the analyzer derived the same
+            // expression targets, so the differential reported 0 unexplained while
+            // both sides were wrong together — the J3 class a differential cannot
+            // catch by construction. Before the fix: 8 analyzer rows on cats-effect
+            // and 34 on scala3 whose target contains a space or a parenthesis,
+            // every one of them also in the oracle.
+            const CALLEE_NAME_SHAPES = new Set([
+              "identifier", "field_expression", "generic_function", "operator_identifier",
+              "type_identifier", "stable_type_identifier",
+            ])
+            if (CALLEE_NAME_SHAPES.has(fnNode.type)) {
+              // M49.S1 #715 lockstep mirror: generic_function callees
             // (`foo.bar[Baz](1)`) extract the LAST identifier leaf BEFORE the
             // bracket strip — mirrors RealScalaAnalyzer.handleCall's S1.10
             // fix. Both sides emitted the dotted "foo.bar" before (shared
@@ -4000,9 +4024,10 @@ export function deriveScalaEdges(root: any): { label: string; from: string; targ
             } while (calledName !== prevCalled)
             const first = calledName.charCodeAt(0)
             const isCapitalized = first >= 65 && first <= 90
-            if (calledName) {
-              if (isCapitalized && !isQualified) push("instantiates", calledName)
-              else push("calls", calledName)
+              if (calledName) {
+                if (isCapitalized && !isQualified) push("instantiates", calledName)
+                else push("calls", calledName)
+              }
             }
           }
         }
