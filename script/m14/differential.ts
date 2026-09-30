@@ -3213,6 +3213,153 @@ function jsContainerIsNameable(member: any): boolean {
   return false
 }
 
+/**
+ * M60/J7 (2026-09-28): the JAVASCRIPT IMPORT ORACLE.
+ *
+ * WHY IT EXISTS. `imports` was the last javascript relationship class with NO
+ * truth on either side of the differential. The allowlist compares a label
+ * exactly when the lane's oracle derives it, and `deriveJavaScriptEdges` derived
+ * calls, contains, exports, uses and references — never imports. So every
+ * analyzer import edge was silently dropped from the comparison and the lane's
+ * import surface was verified by nothing: no fixture pins the target FORMAT, and
+ * PIPE proves the edges reach the database, not that they are right.
+ *
+ * That is the X1 blind-spot class exactly. X1 hid a whole edge class behind an
+ * agreement; this one was never in the comparison at all, which is quieter still
+ * because the row simply has no content.
+ *
+ * THE CONTRACT, measured from the analyzer's own output over every ESM and CJS
+ * shape rather than read off its source:
+ *
+ *   import def from "m1.js"           ->  m1.js:def   @1.0
+ *   import { a, b as c } from "m2.js" ->  m2.js:a, m2.js:c   @1.0
+ *   import * as ns from "m3.js"       ->  m3.js:*     @0.6
+ *   import "side.js"                  ->  NOTHING
+ *   import def2, { d } from "m4.js"   ->  m4.js:def2, m4.js:d   @1.0
+ *   export { e } from "m5.js"         ->  m5.js:*     @0.6
+ *   export * from "m6.js"             ->  m6.js:*     @0.6
+ *   export * as ns2 from "m7.js"      ->  m7.js:*     @0.6
+ *   require("c1.js")                 ->  c1.js:*     @0.6
+ *   import("c2.js")                  ->  c2.js:*     @0.6
+ *
+ * THREE THINGS IN THAT TABLE ARE EASY TO GET WRONG, so each is decided from the
+ * measured behaviour above and not from what reads naturally:
+ *
+ * 1. THE TARGET IS THE LOCAL BINDING, NOT THE ORIGINAL NAME. `import { b as c }`
+ *    yields `m2.js:c`, not `m2.js:b`. The `declaredName` metadata carries `b`
+ *    separately for the resolver; the edge target is the name the importing file
+ *    actually writes. Deriving `m2.js:b` would be defensible and wrong, and the
+ *    difference is invisible until an aliased import is compared.
+ * 2. A BARE SIDE-EFFECT IMPORT EMITS NOTHING. `import "side.js"` has no
+ *    `import_clause`, so there is no local binding and no name to point at; the
+ *    analyzer records the import in its `imports` metadata and pushes no edge.
+ *    A truth that emitted `side.js:*` here would report a MISSING that the
+ *    language does not ask for.
+ * 3. EVERY WHOLE-MODULE FORM IS `path:*` AT 0.6 — namespace imports, re-exports
+ *    and both CJS forms. The 0.6 is deliberate (JD-J12/JD2b): a namespace binds
+ *    an object, not a declaration in the target module, so there is genuinely
+ *    nothing to resolve TO. It also means these edges land in the harness's
+ *    `heuristic` bucket unless the truth derives them, which is the whole reason
+ *    this function exists — without it, 0.6 import edges read as suspicion.
+ *
+ * DERIVED BY TREE DESCENT, NOT TEXT SLICING. The module path comes from the
+ * grammar's own `string_fragment` child, so a path containing quotes, spaces or
+ * a template hole cannot be guessed at. The CSS import oracle records the same
+ * lesson from the other direction — a grandchild node it missed left four of six
+ * imports silently absent from the truth while the lane read 100%.
+ */
+export function deriveJavaScriptImportEdges(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const push = (target: string) => {
+    const k = "imports|" + target
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ label: "imports", from: "(module)", target })
+  }
+  // The unquoted payload. `string_fragment` is the grammar's own answer; the
+  // text fallback is for a string with no fragment child, which is the only case
+  // where slicing is safe because there is nothing to slice around.
+  const modulePath = (str: any): string => {
+    if (!str) return ""
+    const frag = str.namedChildCount > 0 ? str.namedChild(0) : null
+    if (frag && frag.type === "string_fragment") return frag.text
+    return String(str.text ?? "").replace(/^["'`]|["'`]$/g, "")
+  }
+  const firstStringChild = (n: any): any => {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "string") return c
+    }
+    return null
+  }
+
+  const walk = (n: any): void => {
+    const t = n.type
+    if (t === "import_statement") {
+      // The `source` FIELD is the module string. Reading the field rather than
+      // the first string child is what keeps `import "x"` (which has no clause)
+      // from being confused with the clause's own nodes.
+      const src = n.childForFieldName("source")
+      const modPath = modulePath(src)
+      const clause = (() => {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "import_clause") return c
+        }
+        return null
+      })()
+      // No clause => bare side-effect import => no local binding => no edge.
+      if (modPath && clause) {
+        for (let i = 0; i < clause.namedChildCount; i++) {
+          const c = clause.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") {
+            // default import: the local binding is the clause's own identifier
+            push(`${modPath}:${c.text}`)
+          } else if (c.type === "namespace_import") {
+            // `* as ns` binds a namespace object, not a declaration: `*`
+            push(`${modPath}:*`)
+          } else if (c.type === "named_imports") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const spec = c.namedChild(j)
+              if (!spec || spec.type !== "import_specifier") continue
+              // LOCAL BINDING: the alias when present, else the name. The
+              // grammar orders them name-then-alias, and `alias` is the field
+              // that says which is which — `namedChild(1)` alone would read an
+              // alias out of a specifier that has none.
+              const alias = spec.childForFieldName("alias")
+              const name = spec.childForFieldName("name") ?? spec.namedChild(0)
+              const local = alias ?? name
+              if (local) push(`${modPath}:${local.text}`)
+            }
+          }
+        }
+      }
+    } else if (t === "export_statement") {
+      // A re-export declares a module EDGE, not a local name, so the whole
+      // module is the target whatever the clause says — `export { e } from`,
+      // `export * from` and `export * as ns from` all reduce to `path:*`.
+      const src = n.childForFieldName("source")
+      const modPath = modulePath(src)
+      if (modPath) push(`${modPath}:*`)
+    } else if (t === "call_expression") {
+      const fn = n.childForFieldName("function")
+      const args = n.childForFieldName("arguments")
+      if (fn && args && (fn.type === "import" || (fn.type === "identifier" && fn.text === "require"))) {
+        const modPath = modulePath(firstStringChild(args))
+        if (modPath) push(`${modPath}:*`)
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
 export function deriveJavaScriptEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -18726,6 +18873,13 @@ async function main() {
         for (const e of deriveJavaScriptEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // The IMPORT oracle, lost to a rebuild of the LANGS block and restored with
+        // it. `imports` was the last javascript relationship class with no truth on
+        // either side, so every analyzer import edge was dropped from the comparison
+        // and the lane's import surface was verified by nothing.
+        for (const e of deriveJavaScriptImportEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "vue" || lang === "svelte") {
         // M37.21 #611: web-embedded-script CALLS truth (the JD-oracle gap).
@@ -19441,7 +19595,7 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references", "imports"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -21121,6 +21275,20 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   // .nimble manifest, which language-detection.ts does NOT route to nim and which
   // is therefore not swept: claiming a corpus the router would skip is the inert-
   // pin class #884 documents.
+  // M60 MAKE wave. The entry was reconstructed once from the analyzer file, the
+  // router's extension list and the pinned wasm, and then LOST — a later repair of
+  // this file's parse error rebuilt the LANGS block from a different base and
+  // dropped it. Restored, because the truncated form is what made this file
+  // unparseable in the first place: the committed text was `make: {` with no body
+  // and no closing brace, which is a brace imbalance, not a style problem.
+  //   analyzerFile/className <- src/ast/real-makefile-analyzer.ts exports
+  //                             `class RealMakefileAnalyzer` — the filename is
+  //                             `real-makefile-analyzer`, not `real-make-analyzer`.
+  //   ext                   <- every key language-detection.ts maps to "make".
+  //   wasm                  <- wasm/tree-sitter-make.wasm, pinned.
+  // The lane is real, not a stub: validation/m14/fixtures/make and
+  // script/m14/spec/make-completeness.json both exist, so only the declaration was lost.
+  make: { wasm: "tree-sitter-make.wasm", analyzerFile: "real-makefile-analyzer", className: "RealMakefileAnalyzer", ext: "mk,mak,makefile,gnumakefile,.makefile,.gnumakefile" },
   nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims" },
 
   // M14.6 perl wave (2026-09-26): perl had NO lane at all — 25 gated languages,
