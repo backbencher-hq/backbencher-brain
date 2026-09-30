@@ -306,12 +306,34 @@ Minimal reproduction, and it took four attempts because the first three were too
 | attribute on a **property**, positional argument | `Low` | *(nothing)* |
 
 Declaration order is irrelevant. **The discriminator is method versus property**: the oracle
-derives attribute-argument uses under a method declaration and not under a property declaration,
-so the property's attributes are evidently resolved in a scope where the class's own consts are
-not visible. The walk itself is not skipping the subtree — it has five branches and none of them
-skip children — so the failure is the push condition's scope, not the traversal. Fixing it means
-resolving an attribute's argument list in the enclosing type scope rather than the one the
-property opens.
+derives attribute-argument uses under a method declaration and not under a property declaration.
+
+**CORRECTION: how this was first described here was wrong, and in a confident direction.** An
+earlier version said "the walk has five branches and none of them skip children". That is true of
+`deriveCCalls` — the **C++** oracle — which sits at a similar offset in the file and which I read
+by mistake. The csharp walk is `deriveCSharpBareUses`, 664 lines, with explicit attribute handling.
+The repro and the adjudication are unaffected; only the mechanism was wrong, and it is now the
+mechanism rather than a guess.
+
+Two pieces interact:
+
+- `isDesignator` treats the FIRST identifier of an `attribute_argument` as a designator — a name
+  that NAMES a member and never reads one (`differential.ts:6697`). That is right for
+  `[Parameter(ParameterSetName = X)]`, where `ParameterSetName` is the designator and `X` is the
+  value, and it is why the positional form is genuinely ambiguous.
+- But the positional form reconciles under a *method* and fails under a *property*, so the
+  designator rule cannot be the whole story. The other half is scope: the oracle's scope helper
+  treats `property_declaration` as a scope boundary and names that scope after the property
+  (relative line 117 of the function). Inside it, the enclosing class's own consts stop resolving,
+  so an attribute's value fails the membership test before the designator rule is consulted at all.
+
+That makes the fix narrower than "resolve attributes in the type scope": a `property_declaration`
+should not open a scope for the purpose of resolving an **attribute's** arguments — those resolve
+in the enclosing type — while still opening one for the property's own initialiser and accessors.
+The accessors genuinely do need the property's scope, so that distinction is the whole content of
+the change. Written up as located, not as fixed: the lines are named and the change is described,
+but it has not been made, and nothing here claims the residual is closed. It is 7 edges in 14,000
+on one lane.
 
 Two things are deliberately NOT claimed here. The scope mechanism is inferred from the symptom,
 not read out of the code, so the fix is named rather than written. And a `uses`-labelled edge for
