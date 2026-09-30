@@ -88,7 +88,8 @@
       "elsif_directive": "control flow, walked",
       "endif_directive": "control flow, walked",
       "string": "a quoted value; recorded as the value of its assignment",
-      "raw_text": "a macro body; recorded as the macro's value and not scanned for references, because Make does not expand it in place"
+      "raw_text": "a macro body; recorded as the macro's value and not scanned for references, because Make does not expand it in place",
+      "ERROR": "a tree-sitter built-in, not a grammar type: `completeness-inventory.ts` appends the universal pair ERROR/MISSING to every lane's type list because the wasm ABI does not list them, and a spec that classifies them is correct rather than grammar drift. The analyzer consults it through the engine's tree-error collector, and this lane pins the corpus residual in ERROR nodes: script/m12/make-corpus-errors.ts reports 0 across 14 tracked files and the standalone census reports 0 files with ERROR/MISSING across all 99. Follows the convention bash, fsharp, html, java, javascript and kotlin all use."
     },
     "types": [
       "arguments",
@@ -122,14 +123,16 @@
       "unexport_directive",
       "variable_assignment",
       "variable_reference",
-      "word"
+      "word",
+      "ERROR"
     ],
     "_verification": {
       "shell_assignment": "fixture make/directive-flags (DYNAMIC on line 15); 0 corpus occurrences",
       "unexport_directive": "fixture make/directive-flags (EXPORTED, lines 7-8: the `exports` edge must be RETRACTED, not just the flag cleared); 0 corpus occurrences",
       "override_directive": "fixture make/directive-flags (OVERRIDDEN, line 12); MEASURED on the corpus at tree-sitter-lua/Makefile line 25, where CFLAGS now records isOverride",
       "private_directive": "fixture make/directive-flags (SECRET, line 10); 0 corpus occurrences",
-      "undefine_directive": "fixture make/directive-flags (GONE, line 14); 0 corpus occurrences. This branch was a PHANTOM before the fixture: `undefine VAR` carries a bare word in its `variable` FIELD and has no named children, so the search for a nested variable_assignment could never match."
+      "undefine_directive": "fixture make/directive-flags (GONE, line 14); 0 corpus occurrences. This branch was a PHANTOM before the fixture: `undefine VAR` carries a bare word in its `variable` FIELD and has no named children, so the search for a nested variable_assignment could never match.",
+      "ERROR": "measured: 0 files with ERROR/MISSING across the 99-file corpus; 0 across the 14 tracked files in script/m12/make-corpus-errors.ts"
     }
   },
   "internal_silent": {
@@ -144,7 +147,8 @@
       "pattern_list": "only ever produced INSIDE an ERROR node, by the grammar's partial recovery on target-specific variables; carrying it as silent rather than handled is deliberate, because the analyzer cannot act on a node the grammar itself rejected",
       "archive": "declared by the grammar, 0 occurrences in this corpus, and names no declaration",
       "paths": "the operand list of a vpath; 0 occurrences, and its parent vpath_directive already records the fact",
-      "vpath_directive": "reason (b): `vpath %.c src` names DIRECTORIES and a wildcard pattern that the file does not declare, so it produces no symbol and no edge by design -- inventing either would assert a declaration that does not exist. It is not silent, though: it is recorded as the `Make vpath` pattern, and BOTH directions are pinned by make/directive-flags (the pattern present, no symbol invented). Before that fixture it produced nothing at all and nothing asserted it, and an unasserted silence is indistinguishable from an unimplemented construct."
+      "vpath_directive": "reason (b): `vpath %.c src` names DIRECTORIES and a wildcard pattern that the file does not declare, so it produces no symbol and no edge by design -- inventing either would assert a declaration that does not exist. It is not silent, though: it is recorded as the `Make vpath` pattern, and BOTH directions are pinned by make/directive-flags (the pattern present, no symbol invented). Before that fixture it produced nothing at all and nothing asserted it, and an unasserted silence is indistinguishable from an unimplemented construct.",
+      "MISSING": "a tree-sitter built-in paired with ERROR, and deliberately NOT modelled: a MISSING node marks where the parser inserted a recovery token, so it can declare nothing and publish no symbol. It is still COUNTED -- the corpus gates separate real ERROR/MISSING nodes from the engine's generic hasError-without-a-node warning -- which is why it belongs in this bucket rather than being ignored."
     },
     "types": [
       "archive",
@@ -156,8 +160,12 @@
       "recipe",
       "recipe_line",
       "shell_text",
-      "vpath_directive"
-    ]
+      "vpath_directive",
+      "MISSING"
+    ],
+    "_verification": {
+      "MISSING": "measured: 0 across the same two corpora; and structurally unproducible as a declaration, which is the reason for this bucket"
+    }
   },
   "gap": {
     "_description": "Two findings, both recorded here rather than left for a reader to discover: two declared grammar features that are unmodelled and unexercised (MAKE-G1, MAKE-G2). The two GRAMMAR LIMITATIONS previously recorded here as MAKE-G3 and MAKE-G4 are FIXED — the residual in script/m12/make-corpus-errors.ts and make-corpus-measure.ts is now EMPTY, pinned to zero real ERROR/MISSING nodes. Those two pins went RED when the patched grammar dropped the residual from 2 files / 9 nodes to 0, which is the point of a pin: it failed on an improvement rather than being edited to match one.",

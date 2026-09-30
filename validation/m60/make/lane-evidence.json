@@ -32,11 +32,11 @@
     "retained": "grammars/tree-sitter-make/ab/{pristine-grammar.js,grammar.patch,pristine-make.wasm} — the A/B stays re-runnable, not merely asserted."
   },
   "corpus": {
-    "files": 99,
-    "repositories": 15,
-    "lines": 5575,
+    "files": 100,
+    "repositories": 16,
+    "lines": 5773,
     "nodes": 23406,
-    "fileSetHash": "2f065ba43659a3aed8dc426fb2cd8da495051072e29ff341180e743537123c19",
+    "fileSetHash": "4b0e389a36be893d",
     "rule": "filenames in {Makefile, makefile, GNUmakefile, Makefile.am, Makefile.in} or suffix .mk; skipping .git, node_modules, vendor, target, dist, build, .venv, deps",
     "pins": {
       "DISMTools": "93f3fa2a22df7bf64d0a75e64513343fb8253d45",
@@ -76,26 +76,28 @@
       "tree-sitter-lua": "10fe0054734eec83049514ea2e718b2a56acd0c9",
       "vault": "ae269540b773f0f81fc8c34c36c75d15515e4ec4",
       "waypoint": "b81cf848b44f57b95cb2e9766839582cc625d9c2"
-    }
+    },
+    "note": "grew from 99/15 when phpmyadmin/docs/Makefile entered the set, and that one file exposed a real defect (below)"
   },
   "differential": {
-    "recall": 1,
-    "precision": 1,
+    "recall": 1.0,
+    "precision": 1.0,
     "missing": 0,
     "spurious": 0,
-    "truthEdges": 5456,
-    "lineAgreement": "2418/2418",
+    "truthEdges": 5609,
+    "lineAgreement": "2515/2515",
     "harnessF5": {
       "tf-aws-components": "100% covered, 0 missing, 0 unexplained",
       "consul": "100% covered, 0 missing, 0 unexplained"
     },
     "independence": "the oracle derives names by a THIRD route (node text + delimiters, regex for assignments) and is two-phase with a per-frame owner; of the 5 rounds it took to reach 1.0, FOUR were oracle bugs and ONE was a real analyzer defect (the ${VAR} form), which is the argument for running it.",
-    "files": 99,
-    "nodes": 23488
+    "files": 100,
+    "nodes": 23488,
+    "covered": 5609
   },
   "census": {
-    "symbols": 1781,
-    "relationships": 5880,
+    "symbols": 1814,
+    "relationships": 6079,
     "imports": 4,
     "unknownKind": 0,
     "emptyName": 0,
@@ -103,14 +105,14 @@
     "badRange": 0,
     "ownerless": 0,
     "symbolFree": 0,
-    "relNoLineNumber": "0/5880",
+    "relNoLineNumber": "0/6079",
     "operatorInName": 0,
     "sameSiteDuplicates": 0,
     "relTypes": {
-      "contains": 1752,
-      "references": 1976,
-      "exports": 1357,
-      "uses": 790,
+      "contains": 1784,
+      "references": 2114,
+      "exports": 1381,
+      "uses": 795,
       "imports": 4,
       "calls": 1
     },
@@ -121,7 +123,8 @@
     },
     "danglingEndpoints": 342,
     "filesWithErrorOrMissing": 0,
-    "undeclaredNodeTypesSeen": "(none)"
+    "undeclaredNodeTypesSeen": "(none)",
+    "danglingTargetEnds": 331
   },
   "dangleAdjudication": {
     "classes": {
@@ -184,7 +187,7 @@
     "withdrawnClaim": "the first version bucketed by QUARTILES and printed a 1.208 'spread' with n=1 and n=0 buckets. 50 of 99 files sit within a few nodes of each other, so quartiles cannot work here; a spread over an empty bucket is not a measurement."
   },
   "defects": {
-    "total": 18,
+    "total": 22,
     "inAnalyzer": 15,
     "inSharedHarness": 2,
     "headline": [
@@ -206,7 +209,8 @@
       "three M12 gates hardcoded an `elixir` corpus that is not on this machine and died with `fatal: cannot change to ...` before measuring anything. The corpus now comes from script/m12/make-corpus.ts, a missing checkout is skipped and RECORDED, and both corpus gates pin the grammar residual instead of demanding zero errors."
     ],
     "untestedCodePaths": 3,
-    "note_untested": "Found by asking the census which declared types the corpus never fires, and then asking what the analyzer claims to do with THOSE. A `case` label is a claim, not a test. See reviews/make/master-review.md section 12."
+    "note_untested": "Found by asking the census which declared types the corpus never fires, and then asking what the analyzer claims to do with THOSE. A `case` label is a claim, not a test. See reviews/make/master-review.md section 12.",
+    "concatenatedVariableName": "A `variable_reference` whose NAME is a concatenation -- `$(PAPEROPT_$(PAPER))` parses as variable_reference -> concatenation -> word + variable_reference -- was read by looking for a `word` child, found none, and emitted nothing. The name is built at expand time so no file can declare it, but the READ is real: phpmyadmin/docs/Makefile declares PAPEROPT_a4 and PAPEROPT_letter then reads `$(PAPEROPT_$(PAPER))`, so that edge is the only thing connecting the two declarations to the read that selects between them. Found when the corpus reached 100 files: recall fell 1.000000 -> 0.999643 with 2 edges MISSING, and the oracle derived them without consulting the analyzer. Fixed; the edge is `uses` because no file can declare a computed name, and 3 mutants guard it (drop it, relabel it `references`, publish only the `word` prefix)."
   },
   "survivingMutantsFoundAndFixed": [
     "make/accept-keywords-as-names SURVIVED the first run: the fixtures had no forbid on the `export` keyword, so a mutant resurrecting 6 bad edges changed nothing. A surviving mutant is a hole in the suite, not a pass.",
@@ -230,10 +234,11 @@
     "M12 corpus measure": "passed — 630 symbols / 2,490 relationships",
     "M12 corpus errors (residual pin behaviour)": "the two M12 corpus pins went RED when the patched grammar took the residual from 2 files / 9 nodes to 0. A pin that fails on an improvement rather than being edited to match one is the behaviour worth keeping, and the pre-patch values are recorded in both gates and in fixtures/make/out/grammar-ab.json.",
     "grammar A/B (99 files)": "pristine 188 ids / 44 named / 24 fields, 6 error files, 11 error nodes; patched 189 ids / 44 named / 24 fields, 5 error files, 0 error nodes. 3 files improved, 0 regressed. Note the 6->5 in 'error files' is NOT an improvement claim: the remaining 5 are files whose rootNode.hasError is set by a hidden recovery token with zero traversable ERROR or MISSING nodes, which engine.ts:1264 reports generically and the corpus gates classify separately.",
-    "F3 fixtures": "7/7 — the 7th (make/directive-flags) covers five constructs that previously had a code path and no test",
-    "F4 mutants": "21/21 caught — 3 added, one per defect found by that fixture, including one that REPRODUCES the pre-fix output rather than reverting a line, because after the fix the defective relationship no longer exists to mutate",
-    "completeness": "44/44 classified (32 handled, 10 correctly silent), sections A-H 8/8 — and the bucket RULE was amended after five types were found sitting in handled_verified with neither a fixture nor a corpus occurrence",
-    "never-fired audit": "The census's `never fired` list is the highest-signal line in the lane and was being read as a coverage percentage. Cross-referencing it against what the analyzer claims to handle found 5 types with a code path and ZERO tests (private/override/undefine/unexport/shell_assignment, all at 0 of 99 corpus occurrences) and 1 that produced nothing (vpath_directive). Three of those paths were BROKEN: the one-line `private VAR = v` / `override VAR := v` spelling lost its flag because the walker reads the directive before the nested assignment; `undefine VAR` was an UNREACHABLE branch because its operand is a bare word in the `variable` field with no named children, so the child search could never match; and `unexport` cleared the metadata flag while leaving the `exports` edge, so the symbol table and the graph disagreed. All fixed, all pinned. Real corpus fact corrected: `override CFLAGS += ...` at tree-sitter-lua/Makefile:25 now records isOverride. Corpus counts are UNCHANGED (1781/5880) because none of these constructs appear in the corpus except that one annotation."
+    "F3 fixtures": "7/7 — substitution-and-automatic extended with the concatenated-name shape",
+    "F4 mutants": "24/24 caught, 0 survivors",
+    "completeness": "44/44 classified (33 handled, 11 correctly silent), A-H 8/8 — ERROR added to handled_verified and MISSING to internal_silent, the convention bash/fsharp/html/java/javascript/kotlin all use, after completeness-inventory began appending the universal pair",
+    "never-fired audit": "The census's `never fired` list is the highest-signal line in the lane and was being read as a coverage percentage. Cross-referencing it against what the analyzer claims to handle found 5 types with a code path and ZERO tests (private/override/undefine/unexport/shell_assignment, all at 0 of 99 corpus occurrences) and 1 that produced nothing (vpath_directive). Three of those paths were BROKEN: the one-line `private VAR = v` / `override VAR := v` spelling lost its flag because the walker reads the directive before the nested assignment; `undefine VAR` was an UNREACHABLE branch because its operand is a bare word in the `variable` field with no named children, so the child search could never match; and `unexport` cleared the metadata flag while leaving the `exports` edge, so the symbol table and the graph disagreed. All fixed, all pinned. Real corpus fact corrected: `override CFLAGS += ...` at tree-sitter-lua/Makefile:25 now records isOverride. Corpus counts are UNCHANGED (1781/5880) because none of these constructs appear in the corpus except that one annotation.",
+    "F5 differential": "tf-aws-components 100% covered 0 missing 0 unexplained; consul 100% 0/0; recall 1.000000 precision 1.000000 over 100 files, 2,515/2,515 lines"
   },
   "notClosed": {
     "gaps": [
@@ -278,5 +283,15 @@
   },
   "issue": "M60 make wave — 17 defects, 44/44 types, A-H 8/8, differential 1.000000/1.000000",
   "fixtures": 7,
-  "mutants": 21
+  "mutants": 24,
+  "dangle": {
+    "classes": {
+      "filePath": 241,
+      "automaticVariable": 212,
+      "externalVariable": 171,
+      "builtinVariable": 162,
+      "shellVariable": 12
+    },
+    "note": "every class is a deliberate `uses`/evidenceClass decision, not a true dangler; see script/m14/tmp/make/dangle-adjudication.json"
+  }
 }
