@@ -61,7 +61,16 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "../..")
-const SAMPLE_PER_CORPUS = 500
+// FULL CORPUS, with a cap that is above the largest corpus rather than a fraction
+// of it. The cap was 500, which covered 14.8% of the svelte corpus (500 of 3,382)
+// — and it was not buying anything: the whole census runs in 13.7s at 500, so
+// covering 3,382 costs about a minute. A census that samples the seventh of a
+// corpus and calls the result complete is making a coverage claim it has not
+// earned, and for a lane carrying Node/Next traffic that is the wrong place to be
+// frugal. The cap stays, as a guard against a corpus growing without bound, and
+// `coverage` below reports the fraction actually walked so a future shrink to the
+// cap is visible rather than silent.
+const SAMPLE_PER_CORPUS = 4000
 const MAX_FILE_BYTES = 400_000
 
 const CORPORA: { name: string; root: string }[] = [
@@ -208,8 +217,14 @@ const RESERVED_KEYWORDS = new Set([
 // the table below states the real contract. That doc defect is reported by gate
 // 5 rather than silently absorbed here — the alternative is editing the table to
 // match a wrong document, which is how a doc error becomes permanent.
+// The analyzer suppresses console by PATTERN, not by enumeration — probed across 13
+// console methods, every one of them yields `uses->console` and no `calls-><leaf>`.
+// So this list DESCRIBES observed behaviour rather than driving it, which means it
+// must be complete against the corpus or the gate reports a gap that does not
+// exist. `groupCollapsed` was exactly that: the only undeclared leaf at full
+// coverage, and it is suppressed like its siblings.
 const DECLARED_SUPPRESSED = new Map<string, string[]>([
-  ["console", ["log", "warn", "error", "info", "debug", "trace", "dir", "table", "time", "timeEnd", "group", "groupEnd", "count", "assert", "clear"]],
+  ["console", ["log", "warn", "error", "info", "debug", "trace", "dir", "table", "time", "timeEnd", "group", "groupCollapsed", "groupEnd", "count", "assert", "clear"]],
 ])
 
 // Declared NAMED bases: every leaf the CORPUS hangs off a reserved base, with the
@@ -230,21 +245,35 @@ const DECLARED_SUPPRESSED = new Map<string, string[]>([
 // until they are enumerated. GATE 9 goes further and PROBES a leaf of every
 // non-console reserved base to confirm it really is named, so this table
 // cannot rot into asserting suppression that no longer happens.
+//
+// REGENERATED AT FULL CORPUS COVERAGE, and the reason is worth keeping. At the old
+// 500-file cap — 14.8% of the svelte corpus — this table was COMPLETE: gate 4
+// reported 0 undeclared leaves across 634 bases. Raising the cap to walk all
+// 3,369 files reported 119 undeclared leaves across 1,460 bases, because a
+// sevenfold sample is seven times the chance of meeting a global nobody had
+// listed. A completeness table that is complete only where nobody looked is the
+// most dangerous shape a gate can have: it reports the coverage of the sample and
+// is graded as the coverage of the lane.
 const DECLARED_NAMED_BASES = new Map<string, string[]>([
   ["Array", ["__svelte_cleanup", "call", "from", "includes", "indexOf", "isArray", "prototype", "push", "slice", "sort"]],
   ["Boolean", ["prototype", "toJSON"]],
+  ["Buffer", ["from"]],
+  ["Error", ["captureStackTrace", "stackTraceLimit"]],
   ["JSON", ["parse", "stringify"]],
-  ["Math", ["E", "abs", "ceil", "floor", "log", "max", "min", "pow", "random", "round"]],
-  ["Number", ["MAX_VALUE", "prototype", "toJSON", "toString"]],
-  ["Object", ["apply", "call", "create", "defineProperties", "defineProperty", "entries", "getOwnPropertyDescriptor", "getOwnPropertyDescriptors", "getOwnPropertySymbols", "getPrototypeOf", "hasOwnProperty", "isExtensible", "keys", "propertyIsEnumerable", "prototype", "toString"]],
-  ["Promise", ["all", "reject", "resolve"]],
+  ["Map", ["prototype"]],
+  ["Math", ["E", "LN10", "LN2", "LOG10E", "LOG2E", "PI", "SQRT1_2", "SQRT2", "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh", "cbrt", "ceil", "clz32", "cos", "cosh", "exp", "expm1", "f16round", "floor", "fround", "imul", "log", "log10", "log1p", "log2", "max", "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt", "tan", "tanh", "trunc"]],
+  ["Number", ["MAX_VALUE", "isFinite", "isInteger", "isNaN", "isSafeInteger", "parseFloat", "parseInt", "prototype", "toJSON", "toString"]],
+  ["Object", ["apply", "assign", "call", "create", "defineProperties", "defineProperty", "entries", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyDescriptors", "getOwnPropertyNames", "getOwnPropertySymbols", "getPrototypeOf", "hasOwn", "hasOwnProperty", "is", "isExtensible", "keys", "propertyIsEnumerable", "prototype", "toString", "values"]],
+  ["Promise", ["all", "reject", "resolve", "withResolvers"]],
+  ["Reflect", ["get", "getOwnPropertyDescriptor", "has", "ownKeys", "set"]],
+  ["Set", ["prototype"]],
   ["String", ["call", "fromCharCode", "fromCodePoint", "prototype", "toJSON"]],
-  ["Symbol", ["iterator", "prototype"]],
+  ["Symbol", ["asyncIterator", "iterator", "prototype"]],
   ["WeakMap", ["name"]],
-  ["document", ["activeElement", "appendChild", "baseURI", "body", "childNodes", "createDocumentFragment", "createElement", "documentMode", "getElementById", "querySelectorAll", "removeChild", "title"]],
-  ["globalThis", ["Date", "Map", "Set", "URL", "URLSearchParams", "createPolicy", "frag", "trustedTypes", "window"]],
-  ["process", ["CI", "argv", "env", "execPath", "exit"]],
-  ["window", ["Backbone", "Event", "InputEvent", "KeyboardEvent", "MouseEvent", "_", "activeElement", "addEventListener", "body", "dispatchEvent", "document", "getComputedStyle", "head", "history", "innerHTML", "location", "name", "pageYOffset", "querySelector", "querySelectorAll", "removeEventListener", "scrollTo", "scrollX", "title", "ui"]],
+  ["document", ["activeElement", "addEventListener", "appendChild", "baseURI", "body", "childNodes", "createComment", "createDocumentFragment", "createElement", "createElementNS", "createTextNode", "dispatchEvent", "documentMode", "getElementById", "head", "importNode", "querySelector", "querySelectorAll", "removeChild", "title"]],
+  ["globalThis", ["Buffer", "Date", "Map", "Set", "URL", "URLSearchParams", "contentType", "createPolicy", "crypto", "delayed", "digest", "document", "frag", "from", "includes", "process", "subtle", "trustedTypes", "versions", "webcontainer", "window"]],
+  ["process", ["BENCH_PROFILE_DIR", "BENCH_SINGLE", "CI", "FRAGMENTS", "NODE_ENV", "PORT", "SHOULD_UPDATE_EXPECTED", "SVELTE_NO_ASYNC", "TMP_VAR", "argv", "cwd", "env", "execPath", "exit", "includes", "isTTY", "on", "platform", "slice", "stderr", "stdin", "stdout", "version", "write"]],
+  ["window", ["Backbone", "Event", "HTMLDivElement", "HTMLParagraphElement", "HTMLSpanElement", "InputEvent", "KeyboardEvent", "MouseEvent", "_", "__svelte", "activeElement", "addEventListener", "body", "createElement", "createTextNode", "devicePixelRatio", "dispatchEvent", "document", "getBoundingClientRect", "getComputedStyle", "getElementById", "h", "head", "history", "includes", "innerHTML", "innerHeight", "innerWidth", "location", "matchMedia", "name", "outerHeight", "outerWidth", "pageYOffset", "prototype", "querySelector", "querySelectorAll", "removeEventListener", "screenLeft", "screenTop", "scrollTo", "scrollX", "scrollY", "setTimeout", "title", "ui", "uid"]],
 ])
 
 // --- helpers ---------------------------------------------------------------
@@ -279,6 +308,7 @@ const memberBases: Counts = new Map()
 const memberLeavesByBase = new Map<string, Set<string>>()
 const moduleForms: Counts = new Map()
 const filesWalked: Record<string, number> = {}
+const filesAvailable: Record<string, number> = {}
 let filesWithNonCodeOnly = 0
 
 function discover(root: any): void {
@@ -323,6 +353,7 @@ for (const corpus of CORPORA) {
   const stride = Math.max(1, Math.floor(all.length / SAMPLE_PER_CORPUS))
   const sample = all.filter((_, i) => i % stride === 0).slice(0, SAMPLE_PER_CORPUS)
   filesWalked[corpus.name] = sample.length
+  filesAvailable[corpus.name] = all.length
   const parser = await (getParser as any)("javascript")
   for (const f of sample) {
     let src = ""
@@ -859,6 +890,28 @@ const gates: { id: string; pass: boolean; detail: string }[] = []
   })
 }
 
+// 0. COVERAGE. A census that walks 14.8% of a corpus and reports PASS has made a
+// coverage claim it has not earned. The floor is declared here so shrinking the
+// sample is a gate failure rather than a quiet reduction in what the lane checks.
+{
+  const thin = Object.entries(filesAvailable)
+    .filter(([k, avail]) => filesWalked[k] / Math.max(1, avail) < 0.9)
+    .map(([k, avail]) => `${k} ${filesWalked[k]}/${avail}`)
+  const capped = Object.entries(filesAvailable)
+    .filter(([k, avail]) => avail > SAMPLE_PER_CORPUS)
+    .map(([k, avail]) => `${k} (${avail} files, cap ${SAMPLE_PER_CORPUS})`)
+  const pass = thin.length === 0
+  if (!pass) failures.push(`corpus coverage below the declared 90% floor: ${thin.join("; ")}`)
+  gates.push({
+    id: "census-js-corpus-coverage",
+    pass,
+    detail:
+      Object.entries(filesAvailable)
+        .map(([k, avail]) => `${k} ${filesWalked[k]}/${avail} (${((100 * filesWalked[k]) / Math.max(1, avail)).toFixed(1)}%)`)
+        .join(", ") + (capped.length ? `; CAPPED, raise SAMPLE_PER_CORPUS: ${capped.join(", ")}` : "; nothing capped"),
+  })
+}
+
 // 1b. every DECLARED form is a node this grammar can actually produce, and every
 // declared form carries a snippet that reaches it. This gate exists because five
 // dispositions were declared for five forms nobody probed, and probing them found
@@ -1112,6 +1165,17 @@ const artifact = {
   generatedAt: new Date().toISOString(),
   independence:
     "Discovery reads the CORPUS and the GRAMMAR only. Neither the analyzer's tables nor the oracle is consulted for discovery, because a construct both of them forgot cannot appear as a disagreement — that is the X1 shape. The analyzer is consulted only for the probes.",
+  coverage: Object.fromEntries(
+    Object.keys(filesWalked).map((k) => [
+      k,
+      {
+        walked: filesWalked[k],
+        available: filesAvailable[k] ?? 0,
+        fraction: filesAvailable[k] ? +((100 * filesWalked[k]) / filesAvailable[k]).toFixed(1) : null,
+        capped: (filesAvailable[k] ?? 0) > SAMPLE_PER_CORPUS,
+      },
+    ]),
+  ),
   sample: {
     perCorpus: SAMPLE_PER_CORPUS,
     maxFileBytes: MAX_FILE_BYTES,
