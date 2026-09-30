@@ -85,8 +85,6 @@ const DECL_DISPOSITIONS = new Map<string, string>([
   ["field_definition", "Property symbol; `#x` private form collapses to x"],
   ["variable_declarator", "Constant for const, Variable for let/var; Function when the value is a function"],
   ["formal_parameters", "parameters recorded on the owner, never symbols"],
-  ["required_parameter", "parameters recorded on the owner, never symbols"],
-  ["optional_parameter", "parameters recorded on the owner, never symbols"],
   ["rest_pattern", "rest parameter name recorded, never a symbol"],
   ["assignment_pattern", "default-value parameter name recorded, never a symbol"],
   ["object_pattern", "destructuring targets recorded, never symbols"],
@@ -119,6 +117,53 @@ const MODULE_DISPOSITIONS = new Map<string, string>([
 // The order matters: the callee position is checked before the receiver position,
 // because a member callee's leaf is a CALL and its root is a USE — the same chain
 // yields both, and getting that order wrong is what X1 was.
+// A DECLARED DISPOSITION MUST BE WITNESSED, or it is a phantom.
+//
+// The gate previously reported "declared but not sampled" as INFORMATIONAL, on the
+// reasoning that a form the sample happened not to contain is a fact about the
+// sample. That reasoning is right for a form the grammar CAN produce and wrong for
+// one it CANNOT, and the two are indistinguishable without asking the grammar —
+// so two phantoms sat in the table the whole time. `required_parameter` and
+// `optional_parameter` are not node types in tree-sitter-javascript at all:
+// parameters arrive as `formal_parameters` > identifier / assignment_pattern /
+// rest_pattern. Five dispositions existed for five forms nobody had probed, and
+// probing them found two live defects (X10 a generator expression published the
+// wrong symbol kind, X11 a named class expression published a dangling
+// containment owner) which no gate could see.
+//
+// So each declared form now carries the snippet that must produce it. A snippet
+// that does not produce its node is a PHANTOM and fails the gate, which is the
+// only way a declaration table can be held to the grammar it claims to describe.
+const DECLARATION_WITNESSES: [string, string][] = [
+  ["function_declaration", "function f() {}"],
+  ["generator_function_declaration", "function* g() {}"],
+  ["class_declaration", "class C {}"],
+  ["class", "const C = class { m() {} }"],
+  ["function_expression", "const f = function () {}"],
+  ["generator_function", "const g = function* () {}"],
+  ["arrow_function", "const a = () => {}"],
+  ["method_definition", "class C { m() {} }"],
+  ["field_definition", "class C { #x = 1; y = 2 }"],
+  ["variable_declarator", "const a = 1"],
+  ["variable_declaration", "var a = 1"],
+  ["lexical_declaration", "const a = 1"],
+  ["formal_parameters", "function f(a, b = 1, ...c) {}"],
+  ["rest_pattern", "function f(...c) {}"],
+  ["assignment_pattern", "function f(a = 1) {}"],
+  ["object_pattern", "const { a, b } = o"],
+  ["array_pattern", "const [a, b] = arr"],
+  ["pair_pattern", "const { a: { b } } = o"],
+  ["object_assignment_pattern", "const { a = 1 } = o"],
+  ["shorthand_property_identifier_pattern", "const { a } = o"],
+  ["catch_clause", "try {} catch (e) {}"],
+  ["for_in_statement", "for (const k in o) {}"],
+  ["import_clause", 'import a from "m.js"'],
+  ["export_clause", 'const a = 1; export { a }'],
+  ["else_clause", "if (a) {} else {}"],
+  ["finally_clause", "try {} finally {}"],
+  ["regex_pattern", "const r = /x/g"],
+]
+
 const READ_POSITIONS = new Map<string, string>([
   ["bare-read", "uses @0.9 — `return config`, `if (flag)`"],
   ["field-access", "uses @0.85 — `title.length` publishes the chain root and each segment"],
@@ -461,6 +506,48 @@ const probe = (id: string, expect: string, actual: string) => {
   probe("noncode:real-still-there", "yes", all.has("real") ? "yes" : "no")
 }
 
+// --- WITNESSING (gate 1b): is every declared form a node this grammar has? -----
+// The parser is already loaded for the orphan measurement below; reuse it.
+const witnessParser = await (getParser as any)("javascript")
+const witnessResults: { form: string; witnessed: boolean; snippet: string }[] = []
+const phantomForms: string[] = []
+const unwitnessedForms: string[] = []
+for (const [form, snippet] of DECLARATION_WITNESSES) {
+  let witnessed = false
+  try {
+    const t = witnessParser.parse(snippet)
+    const stack: any[] = t ? [t.rootNode] : []
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === form) { witnessed = true; break }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+  } catch {
+    witnessed = false
+  }
+  witnessResults.push({ form, witnessed, snippet })
+  if (!witnessed) {
+    // Two failure modes, and only one of them is a phantom. A form the GRAMMAR has
+    // but the snippet fails to reach is a bad witness, not a bad disposition — and
+    // the two must not be conflated, or the fix is to weaken the witness until the
+    // gate goes quiet.
+    let grammarHasIt = false
+    try {
+      const t2 = witnessParser.parse(snippet)
+      if (t2) {
+        const st: any[] = [t2.rootNode]
+        while (st.length > 0) {
+          const n = st.pop()!
+          if (n.type === form) { grammarHasIt = true; break }
+          for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+        }
+      }
+    } catch { /* unreachable: the loop above already parsed it */ }
+    if (grammarHasIt) unwitnessedForms.push(form)
+    else phantomForms.push(form)
+  }
+}
+
 // --- ORPHAN MEASUREMENT (declared gap, gate 8) -----------------------------
 // M49 JD3: ownerName is set only for CLASS scopes, so every object-literal
 // method and class-expression member is a containment orphan. This gate asserts
@@ -639,6 +726,32 @@ const gates: { id: string; pass: boolean; detail: string }[] = []
     id: "census-js-declaration-dispositions",
     pass,
     detail: `${discoveredCandidates.length}/${DECL_CANDIDATES.size} declared forms seen in the sample; ${unseen.length} declared but not sampled (informational); ${shapeCandidates.length} unclassified declaration-shaped node types`,
+  })
+}
+
+// 1b. every DECLARED form is a node this grammar can actually produce, and every
+// declared form carries a snippet that reaches it. This gate exists because five
+// dispositions were declared for five forms nobody probed, and probing them found
+// two live defects (X10, X11). A declaration table held to nothing is worse than
+// no table, because it reads as coverage.
+{
+  const pass = phantomForms.length === 0 && unwitnessedForms.length === 0
+  if (!pass) {
+    if (phantomForms.length > 0) {
+      failures.push(
+        `PHANTOM dispositions — the grammar produces no such node, so the table claims coverage of nothing: ${phantomForms.join(", ")}`,
+      )
+    }
+    if (unwitnessedForms.length > 0) {
+      failures.push(`declared forms whose witness snippet does not reach them: ${unwitnessedForms.join(", ")}`)
+    }
+  }
+  gates.push({
+    id: "census-js-declarations-witnessed",
+    pass,
+    detail:
+      `${witnessResults.filter((w) => w.witnessed).length}/${DECLARATION_WITNESSES.length} declared forms witnessed by their own snippet; ` +
+      `${phantomForms.length} phantom, ${unwitnessedForms.length} unwitnessed`,
   })
 }
 
@@ -877,6 +990,7 @@ const artifact = {
     samples: orphanSamples,
     disposition: "DECLARED AND MEASURED — not closed by this gate; closing it is a separate change with its own blast radius",
   },
+  declarationWitnesses: witnessResults,
   probes: probeLog,
   gates,
   failures,
