@@ -3,7 +3,13 @@
 ## Language
 
 - Analyzer file: `src/ast/real-groovy-analyzer.ts`
-- Parser: patched `tree-sitter-groovy` (WASM in `wasm/tree-sitter-groovy.wasm`; grammar source vendored at `grammars/tree-sitter-groovy/`, rebuilt with `tree-sitter-cli 0.22.6` + `emscripten 3.1.64` for the web-tree-sitter `env`-import ABI; also mirrored to `~/.bb/wasm`)
+- Parser: patched `tree-sitter-groovy` (WASM in `wasm/tree-sitter-groovy.wasm`; grammar source vendored at `grammars/tree-sitter-groovy/`; also mirrored to `~/.bb/wasm`)
+- Build toolchain (verified, replaces an earlier unverified claim): **`tree-sitter-cli` 0.25.1 + `tree-sitter-java` 0.23.5**, then `tree-sitter generate && tree-sitter build --wasm`. No emscripten: the CLI's bundled WASI toolchain is sufficient. `grammar.js` does `require("tree-sitter-java/grammar.js")`, so the grammar **cannot be generated at all** without that package installed.
+- **Reproducibility check.** `tree-sitter build --wasm` is *not* byte-reproducible — two builds of identical source differ, and the same offset separates a rebuild from the shipped artifact — so the artifact is verified by **behaviour**, not by hash. `script/m59/groovy-grammar-ab.mts` parses every corpus file with both wasms and compares the ERROR/MISSING count and a hash of the node-type sequence. Current result: **7,114 files, 7,114 identical parse trees, 0 differences, 1,232 ERROR/MISSING on both sides.** Run it before trusting any grammar change:
+  ```
+  npx tsx script/m59/groovy-grammar-ab.mts /tmp/rebuild.wasm
+  ```
+- Parse-error triage: `script/m59/groovy-parse-triage.mts` groups the 218 corpus failures by normalised first-error signature, separating templates from real source. Current split: 56 template / 162 real-source files, 437 / 795 ERROR/MISSING nodes, 100 distinct signatures.
 - Language detection: extension `.groovy` / `.gradle` → `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealGroovyAnalyzer`
 
@@ -201,6 +207,49 @@ override resolution uses the shared `findDeclaringParent` BFS over the
   `grails-data-hibernate7` (520) and `grails-spring-security` (390). The sample
   measured 62.5% while covering 6% of the corpus; the corpus measures 59.0%.
   See `script/m14/tmp/groovy-sample-bias.ts`.
+
+## Differential status
+
+`npx tsx script/m12/verify-analyzer.ts groovy`, against the 130 hand-audited facts in
+`validation/m12/ground-truth/groovy.json` (5 fixtures):
+
+| | TP | FP | FN | precision | recall |
+|---|---|---|---|---|---|
+| before | 111 | 46 | 19 | 0.707 | 0.854 |
+| now | **130** | **3** | **0** | **0.977** | **1.000** |
+
+All 130 expected facts are matched. The 3 residual false positives are **not** defects, and
+each is recorded at its emission site in the analyzer rather than deleted:
+
+- `Features.groovy:uses:describe:name` and `Negative.groovy:uses:bump:count` — reads of
+  `${name}` / `${count}` inside a GString. The G7 contract is that an interpolated name **is**
+  a read; measured over 300 grails-core files, 123 of 2,275 `uses` edges (5.4%, across 41
+  files) are interpolation reads, and removing them is how 2,115 files once contributed zero
+  reads. The fixture's rule 6 ("String interpolation identifiers ($name) are NOT symbols/uses")
+  and this truth disagree. Note the disagreement is narrow: `describe -> toUpperCase`,
+  `describe -> collect` and `bump -> info` are all matched, so it is about the interpolated
+  *identifier*, not about calls made in the same method.
+- `Features.groovy:overrides:Robot.walk:Walkable.walk` — `class Robot implements Walkable`
+  really does supply `walk()`. All four `overrides` rows truth expects cite `@Override`; the
+  implicit tier (an un-annotated method with a *verified* exact in-file signature match) is
+  deliberate java JAO1 parity and stops a missing annotation from erasing a real edge.
+
+Resolving either would trade real corpus coverage for 1–2 fixture rows, which is a lane-owner
+decision, not a bug fix.
+
+### Corpus pin and declared exclusions
+
+The corpus is pinned by absolute path to a real checkout,
+`$HOME/fixtures/xml/repos/grails-core` (7,114 tracked `.groovy` files). The earlier
+pin named a directory that did not exist, so the lane audited **0 files** and reported a clean
+result over an empty measurement; the audit now fails on a zero-file universe.
+
+`excludeDirs` in `script/m14/differential.ts` declares the non-source population — Grails
+scaffolding templates and every `skeleton/` root (all seven profile skeletons plus the
+`grails-spring-security` test-app skeletons). The excluded count is reported beside the lane's
+numbers so a quietly-emptied universe stays visible. `geb` was named as this lane's second
+corpus and has no checkout anywhere on this machine; the pin was removed, so **the groovy lane
+is single-corpus and its two-corpus gate is not running.**
 
 ## Evidence pointers
 
