@@ -22,6 +22,7 @@ import { runLang, LANGS } from "./run-fixtures"
 import { FSHARP_MUTANTS } from "./fsharp-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
 import { SCSS_MUTANTS } from "../m60/scss-mutants"
+import { SOLIDITY_MUTANTS } from "../m60/solidity-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2406,6 +2407,14 @@ export const MUTANTS: Mutant[] = [
   // lane whose mutants live in a separate file, and confirm the count is non-zero.
   ...CSS_MUTANTS,
   ...SCSS_MUTANTS,
+  // M60 Solidity lane. 24 mutants, every one a faithful revert of a shape THIS
+  // lane was measured to emit while being built — including two measured ZEROS
+  // (no `instantiates` anywhere, no Yul path reads over 2,640 corpus nodes) that
+  // no count reported, because a metric that counts what exists cannot report a
+  // class that does not exist. Written generically off the result's own fields;
+  // one first draft read a set off `globalThis`, was always undefined, and would
+  // have been a no-op mutant reported as passing.
+  ...SOLIDITY_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
