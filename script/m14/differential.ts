@@ -14087,6 +14087,28 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   }
   // CLJ-D6: forms whose direct list children are METHOD DEFINITIONS.
   const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"])
+  // CLJ-D30/D32/D36 mirrors: the analyzer's character tests, spelled the same way
+  // so the two derivations cannot drift on a spelling.
+  const isDefLikeHead = (head: string): boolean => {
+    if (head.length < 3) return false
+    if (head.charCodeAt(0) !== 100 || head.charCodeAt(1) !== 101 || head.charCodeAt(2) !== 102) return false
+    if (head.length === 3) return true
+    const c3 = head.charCodeAt(3)
+    if (c3 !== 45 && c3 !== 95) return !(head.startsWith("default") || head.startsWith("define"))
+    return true
+  }
+  // BOTH dot positions: `Class/.member` and `Class./member`. A plain `Class/member`
+  // is a NAMESPACE-qualified call and stays one.
+  const staticInteropMember = (head: string): string | null => {
+    const slash = head.lastIndexOf("/")
+    if (slash <= 0) return null
+    const member = head.slice(slash + 1)
+    if (member.length === 0) return null
+    const afterDot = head.charCodeAt(slash + 1) === 46
+    const beforeDot = head.charCodeAt(slash - 1) === 46
+    if (!afterDot && !beforeDot) return null
+    return afterDot ? head.slice(slash + 2) : member
+  }
   // CLJ-D7: the direct list children of a libspec site are DATA.
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
@@ -14216,9 +14238,14 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             if (kw === "as-alias") hasAsAlias = true
           }
           // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls.
-          if (kw === "refer" && k + 1 < spec.namedChildCount) {
+          // CLJ-D21 mirror: `:only` is `:refer`'s legacy twin and means exactly
+          // the same thing, and CLJ-D21b: the name list is a LIST as often as a
+          // vector. `(:use [clojure.java.browse :only (browse-url)])` registered
+          // NO refer name here while the analyzer registered it, so every
+          // `(browse-url …)` call dangled on one side only.
+          if ((kw === "refer" || kw === "only") && k + 1 < spec.namedChildCount) {
             const refVec = spec.namedChild(k + 1)
-            if (refVec && refVec.type === "vec_lit") {
+            if (refVec && (refVec.type === "vec_lit" || refVec.type === "list_lit"))          if (refVec && refVec.type === "vec_lit") {
               for (let r = 0; r < refVec.namedChildCount; r++) {
                 const rn = refVec.namedChild(r)
                 if (rn && rn.type === "sym_lit") refers.set(symName(rn), libName)
@@ -14353,7 +14380,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         continue
       }
       let pushedFrame = false
-      if (form === "ns") {
+      if (form === "in-ns") {
+        // CLJ-D31 mirror: `(in-ns 'a.b)` DECLARES A NAMESPACE — it takes a
+        // QUOTED symbol, switches the namespace for the rest of the file, and
+        // emits no call. The alias/refer tables are NOT reset: `in-ns` switches
+        // namespace without re-running `ns`.
+        const arg = n.namedChild(1)
+        const inner = arg && (arg.type === "quoting_lit" || arg.type === "syn_quoting_lit") ? execHead(arg) : arg
+        const v = inner && inner.type === "sym_lit" ? symName(inner) : ""
+        if (v) nsName = v
+      } else if (form === "ns") {
         const nm = symName(n.namedChild(1))
         if (nm) nsName = nm
         // F2/F12 mirror: refer-clojure is data (never a libspec); read-cond
@@ -14474,6 +14510,23 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
         const c0 = lastSeg.charCodeAt(0)
         if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), resolveQualified(cls))
+      } else if (staticInteropMember(form) !== null) {
+        // CLJ-D32 mirror: `(String/.toUpperCase s)` and `(java.io.File./getName f)`
+        // are MEMBER ACCESSES, not calls to a function with that name; the
+        // analyzer emits two `uses` edges and no `calls` edge, and `uses` is
+        // audited by its own gate. Consuming the branch here is what keeps these
+        // out of `calls` — the edge `f -> String/.toUpperCase` was a dangling
+        // target that both sides agreed on.
+      } else if (isDefLikeHead(form) && n.namedChild(1)?.type === "sym_lit") {
+        // CLJ-D30 mirror: a def-like head in def position DEFINES a name, so it
+        // is a frame and a local binding, never a call. This branch only runs
+        // for a head none of the explicit cases above claimed.
+        const dn = symName(n.namedChild(1))
+        if (dn) {
+          localNames.add(dn)
+          frames.push({ name: dn, isFn: true })
+          pushedFrame = true
+        }
       } else if (form === "new") {
         // F14 mirror: `(new Class args…)` instantiates the named class.
         const clsName = symName(n.namedChild(1))
