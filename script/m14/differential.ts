@@ -335,6 +335,12 @@ export const LANG_REPOS_SECOND: Record<string, string> = {
   json: "otp",
 }
 export const LANG_REPOS: Record<string, string> = {
+    // M60 Make wave (2026-09-27). tf-aws-components holds 53 of the 99 Makefiles in
+    // this corpus set and is written in a different idiom from consul's (per-component
+    // targets, deep variable files, computed targets), so it is the stronger primary of
+    // the two. A differential with ONE corpus cannot tell an idiom-specific bug from a
+    // general one, which is why the second corpus below exists rather than a comment.
+    make: "tf-aws-components",
   // M14.6 R wave: R was absent from every M14 surface -- no LANGS entry, so
   // script/m60/lane-surface-audit.ts exited 2 "unknown language r" and the repo's own
   // line-number audit had never looked at this lane. The lane verified the same property
@@ -547,6 +553,11 @@ export const LANG_REPOS: Record<string, string> = {
 // release. Each repo is an independent git checkout under CORPUS_ROOT whose
 // pin is recorded in corpusPins.
 export const SECOND_CORPUS: Record<string, string> = {
+  // consul's Makefile is the opposite idiom to tf-aws-components: a hand-written build
+  // for one Go program, with order-only prerequisites, pattern rules and shell
+  // functions. A differential with ONE corpus cannot separate an idiom-specific bug
+  // from a general one, and both measure 0 missing / 0 unexplained.
+  make: "consul",
   // M14 (#288): html's second corpus is `sqlite` — 21 files, 21/21 of them FULL
   // hand-written documents (ext/wasm demos: tables, forms, framesets, canvas),
   // which is the property `svelte` and `vue-core` lack. A defect with zero
@@ -1636,8 +1647,9 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
     const t = String(text ?? "").trim()
     if (!t) return false
     if (t.includes("$") || t.includes("->") || t.includes("{") || t.includes("}") || /\s/.test(t)) return false
-    if (t.startsWith("&")) return false
-    return /^(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
+    // The leading `&` and leading `::` cases are written-name shapes; see the
+    // analyzer's copy of this predicate for the measured cost of omitting them.
+    return /^&?(?:::)?(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
   }
 
   const namesAClass = (n: any): boolean => {
@@ -1825,6 +1837,9 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
       if (n.type === "ambiguous_function_call_expression" || n.type === "function_call_expression") {
         const fnNode = n.childForFieldName?.("function") || byType(n, "function")
         const target = fnNode?.text ?? ""
+        // The same written-name rule the in-sub chain applies, stated in BOTH because
+        // they are separate branches and stating it once cost a mojo row.
+        const named = isWrittenName(target)
         if (target === "has") {
           const argNodes = argumentNodes(n)
           const first = argNodes[0]
@@ -1857,6 +1872,7 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
           }
         } else if (
           target &&
+          named &&
           // Same rule as the in-sub chain below: a `&`-sigil callee with no
           // argument syntax is a code-slot reference (`defined &builtin::is_bool`
           // is a definedness test), not an invocation. This handler is the
@@ -1948,8 +1964,18 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
       // `calls -> $method` and `calls -> ${ ... }`, targets no line in the file
       // supports. 68 such rows across mojo and plack, every one of them MISSING
       // once the analyzer stopped publishing them.
-      if (fnNode && !isWrittenName(fnNode.text ?? "")) return src()
+      // NOT an early return. The first version of this was `return src()`, and the
+      // cost was 32 truth rows on Moo alone and 155 on Moose: `return` leaves
+      // `walk` before its child loop, so refusing to NAME a callee also stopped
+      // the children being walked, and every real call inside a deref or after a
+      // variable-method dispatch vanished from the truth side. The analyzer's
+      // equivalent is a `break` out of a `switch`, which falls through to its
+      // child loop -- and that asymmetry is exactly the kind two implementations
+      // are supposed to catch, except here both were wrong in the same direction
+      // and the differential could not see it. Refusing the TARGET must not cost
+      // the code around it.
       const target = fnNode?.text ?? ""
+      const named = isWrittenName(target)
       if (target === "new") {
         // M14.6 perl: the whole `has` / `with` / `extends` / `new` block above
         // sits inside `if (!inSub)`, so at FILE SCOPE it derived these and
@@ -1967,6 +1993,7 @@ export function derivePerlEdges(root: any): { label: string; from: string; targe
         }
       } else if (
         target &&
+        named &&
         // A `&`-sigil callee with NO argument syntax is a code-slot REFERENCE,
         // not an invocation: `defined &DynaLoader::boot_DynaLoader` is a
         // definedness test and `new POSIX::SigSet &SIGINT` passes a handler
@@ -10230,6 +10257,19 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     if (!seen.has(k)) { seen.add(k); edges.push({ label, from: "(expr)", target }) }
   }
 
+  // A module dependency is owned by the compilation unit, not by whatever
+  // expression encloses the require/include. RealPhpAnalyzer.emitInclude
+  // attributes it to file scope (`ns || "global"`), and the M12 truth
+  // (rel:Service.php:imports:global:helpers.php) plus the include-paths
+  // fixture both encode "global" as that owner. The two-arg push hardcodes
+  // the generic `(expr)` sentinel, so truth and analyzer described the same
+  // include node under two different owners and the differential reported it
+  // MISSING -- a false coverage gap of one edge per require/include sampled.
+  const pushFrom = (label: string, from: string, target: string) => {
+    const k = key(label, target)
+    if (!seen.has(k)) { seen.add(k); edges.push({ label, from, target }) }
+  }
+
   // PHP2 mirror helpers: bare-name extraction, bind-site test, scope
   // collectors. Mirror the analyzer's variableBareName / isPhpBindSite /
   // collectPhpScopeBinds exactly (same shapes, same order).
@@ -10666,10 +10706,17 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     }
     if (t === "require_once_expression" || t === "include_once_expression" ||
         t === "require_expression" || t === "include_expression") {
-      // Mirror the analyzer's emitInclude: references -> the include path
+      // Mirror the analyzer's emitInclude: imports -> the include path
       // (cleanString/collapseWhitespace equivalents).
+      // M12.PHP-IMPORTS: this was `references`. The analyzer now files every
+      // PHP module dependency under `imports` (a `use` clause and an include
+      // path alike), because src/lsp/graph_request.ts:256 keys the file-level
+      // reader on `relationship_type IN ('imports','exports')`. While the mirror
+      // said `references` the differential reported a MISSING edge for every
+      // require/include in the sample — a false coverage gap, since both sides
+      // were describing the same node under two different names.
       const p = extractPhpIncludePath(n)
-      if (p) push("references", p)
+      if (p) pushFrom("imports", "global", p)
     }
     if (t === "function_call_expression") {
       // R10 (#835): the analyzer's OWN callee rule, not a mirror. A variable
@@ -16030,6 +16077,221 @@ export function deriveRustDeclaredTypeRefs(root: any): { label: string; from: st
 export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const edges: TreeEdge[] = []
   const TYPE = /type_identifier|scoped_type_identifier|generic_type|^identifier$/
+  if (lang === "make") {
+    // The coverage match below is SITE-AGNOSTIC — it compares label+target and
+    // never the source line — so the oracle's line numbers are not part of the
+    // contract and are not carried. The call sites below pass one anyway, because
+    // they are written to be read next to the tree they came from; the parameter
+    // is accepted and dropped rather than every call site being rewritten to
+    // look like it lost information it never had.
+    const push = (from: string, label: string, target: string, _line?: number): void => {
+      if (!from || !target || from === target) return
+      edges.push({ label, from, target })
+    }
+    const BUILTIN_FN = new Set([
+      "subst", "patsubst", "strip", "findstring", "filter", "filter-out", "sort", "word", "wordlist",
+      "words", "firstword", "lastword", "dir", "notdir", "suffix", "basename", "addsuffix", "addprefix",
+      "join", "wildcard", "realpath", "abspath", "if", "or", "and", "foreach", "file", "call", "value",
+      "eval", "origin", "flavor", "shell", "error", "warning", "info",
+    ])
+    const KW = new Set([
+      "export", "unexport", "override", "private", "define", "endef", "include", "-include", "sinclude",
+      "vpath", "undefine", "ifeq", "ifneq", "ifdef", "ifndef", "else", "endif",
+    ])
+    const allDigits = (t: string) => t.length > 0 && [...t].every((c) => c >= "0" && c <= "9")
+    /** Strip Make's expansion delimiters. A `$(` that does not CLOSE at the end
+     *  is a glued path (`$(git-dir)/hooks/pre-push`), not a reference. */
+    const delims = (text: string): string => {
+      const t = (text ?? "").trim()
+      if (t.startsWith("$(") && !t.endsWith(")")) return t
+      if (t.startsWith("${") && !t.endsWith("}")) return t
+      if ((t.startsWith("$(") && t.endsWith(")")) || (t.startsWith("${") && t.endsWith("}"))) return t.slice(2, -1).trim()
+      if (t.startsWith("$")) return t.slice(1).trim()
+      return t
+    }
+    /** An assignment's name. A regex is fine in the oracle and forbidden in the
+     *  analyzer; the fall-back to the `word` child covers the target-scoped
+     *  shape `build: TAGS+=ui`, where the whole line is ONE variable_assignment
+     *  and a start-anchored pattern cannot see past the leading target. */
+    const assignName = (n: any): string => {
+      const m = /^[\s]*([A-Za-z0-9_.${}()\-/]+?)\s*(::=|:=|\?=|\+=|!=|=)/.exec(n.text ?? "")
+      if (m && !KW.has(m[1].trim())) return m[1].trim()
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c?.type !== "word") continue
+        const t = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+        if (t && !KW.has(t)) return t
+      }
+      return ""
+    }
+
+    // ---- phase 1: declarations only, no labels decided ----
+    const declared = new Set<string>()
+    const targets = new Set<string>()
+    const exported = new Set<string>()
+    {
+      const st: any[] = [root]
+      while (st.length) {
+        const n = st.pop()
+        if (!n) continue
+        // The oracle does not model the grammar's partial recovery inside an
+        // ERROR node, so anything the analyzer recovers there is outside its
+        // model; saying so explicitly beats letting it show up as a phantom
+        // difference in both directions.
+        if (n.type === "ERROR") continue
+        if (n.type === "variable_assignment" || n.type === "shell_assignment") {
+          const nm = assignName(n)
+          if (nm) declared.add(nm)
+        } else if (n.type === "define_directive") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c?.type !== "word") continue
+            const nm = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+            if (nm) declared.add(nm)
+          }
+        } else if (n.type === "rule") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const tg = n.namedChild(i)
+            if (tg?.type !== "targets") continue
+            for (let j = 0; j < tg.namedChildCount; j++) {
+              const c = tg.namedChild(j)
+              const t = (c?.text ?? "").trim()
+              if (c?.type === "word" && t && !KW.has(t) && !t.startsWith(".")) { targets.add(t); declared.add(t) }
+            }
+          }
+        } else if (n.type === "export_directive") {
+          let li: any = null
+          for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "list") { li = n.namedChild(i); break }
+          if (li) {
+            for (let i = 0; i < li.namedChildCount; i++) {
+              const t = (li.namedChild(i)?.text ?? "").trim().replace(/[?!+:]+$/, "")
+              if (t && !KW.has(t)) { declared.add(t); exported.add(t) }
+            }
+          } else {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const a = n.namedChild(i)
+              if (a?.type !== "variable_assignment" && a?.type !== "shell_assignment") continue
+              const nm = assignName(a)
+              if (nm) { declared.add(nm); exported.add(nm) }
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+      }
+    }
+
+    // ---- phase 2: edges, owner per frame ----
+    const mod = "makefile"
+    type Frame = { n: any; owner: string }
+    const st2: Frame[] = [{ n: root, owner: mod }]
+    while (st2.length) {
+      const { n, owner } = st2.pop()!
+      if (!n) continue
+      if (n.type === "ERROR") continue
+      const line = n.startPosition.row + 1
+      let childOwner = owner
+      if (n.type === "variable_assignment" || n.type === "shell_assignment") {
+        const nm = assignName(n)
+        if (nm) childOwner = nm
+      } else if (n.type === "define_directive") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type !== "word") continue
+          const nm = (c.text ?? "").trim().replace(/[?!+:]+$/, "")
+          if (nm) { childOwner = nm; break }
+        }
+      } else if (n.type === "rule") {
+        const lits: string[] = []
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const tg = n.namedChild(i)
+          if (tg?.type !== "targets") continue
+          for (let j = 0; j < tg.namedChildCount; j++) {
+            const c = tg.namedChild(j)
+            const t = (c?.text ?? "").trim()
+            if (c?.type === "word" && t && !KW.has(t) && !t.startsWith(".")) lits.push(t)
+            else if (c && (c.type === "variable_reference" || c.type === "substitution_reference" || c.type === "function_call")) {
+              const nm = delims(c.text)
+              if (nm && !allDigits(nm)) push(mod, declared.has(nm) ? "references" : "uses", nm, c.startPosition.row + 1)
+            }
+          }
+        }
+        // Every `|`-separated prerequisite group, order-only included. A rule
+        // whose target is an EXPRESSION declares no literal name, so the owner
+        // falls back to the module — the same fallback the analyzer makes. The
+        // M12 contract probe is what forced it: `$(BIN): $(OBJS) | builddir`
+        // published no prereq edge at all before, and had the oracle kept the
+        // same blind spot it would have reported that fix as spurious — which is
+        // what it did, 47 unexplained on consul and 4 on tf-aws-components,
+        // before this line existed.
+        const owners = lits.length ? lits : [mod]
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const pr = n.namedChild(i)
+          if (pr?.type !== "prerequisites") continue
+          for (let j = 0; j < pr.namedChildCount; j++) {
+            const pc = pr.namedChild(j)
+            const nm = delims(pc?.text ?? "")
+            if (!nm || KW.has(nm)) continue
+            for (const t of owners) push(t, declared.has(nm) ? "references" : "uses", nm, pc.startPosition.row + 1)
+          }
+        }
+        if (lits.length) childOwner = lits[0]
+      } else if (n.type === "include_directive") {
+        let li: any = null
+        for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "list") { li = n.namedChild(i); break }
+        const kids: any[] = []
+        if (li) for (let i = 0; i < li.namedChildCount; i++) kids.push(li.namedChild(i))
+        else for (let i = 1; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+        for (const c of kids) {
+          if (!c) continue
+          const t = (c.text ?? "").trim()
+          // A literal path is a `word` and is recorded as itself. A COMPUTED one
+          // (`include $(shell …)`) names no file this parse can know, and the
+          // documented contract is that the EXPRESSION is recorded and flagged
+          // rather than dropped — an unresolved import is a fact, a silently
+          // absent one is not. The wrapper is part of that expression, so the
+          // oracle records the node's own text. Stripping the delimiters here
+          // would model the IMPLEMENTATION instead of the contract, and the two
+          // disagreed on exactly the 1 residual row of 1,997.
+          const target = c.type === "word" ? t : t
+          if (target && !KW.has(target)) push(mod, "imports", target, c.startPosition.row + 1)
+        }
+      } else if (n.type === "variable_reference" || n.type === "substitution_reference") {
+        const par = n.parent ? String(n.parent.type) : ""
+        if (par !== "prerequisites" && par !== "targets" && !(n.text ?? "").startsWith("$$")) {
+          // a SUBSTITUTION names its variable in the first `word` child; the
+          // `:pattern=replacement` tail is the spec, not part of any name
+          let nm = ""
+          if (n.type === "substitution_reference") {
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c?.type === "word") { nm = (c.text ?? "").trim(); break }
+            }
+          }
+          if (!nm) nm = delims(n.text)
+          if (nm && !allDigits(nm)) push(owner, declared.has(nm) ? "references" : "uses", nm, line)
+        }
+      } else if (n.type === "automatic_variable") {
+        push(owner, "uses", (n.text ?? "").trim(), line)
+      } else if (n.type === "function_call") {
+        let args: any = null
+        for (let i = 0; i < n.namedChildCount; i++) if (n.namedChild(i)?.type === "arguments") { args = n.namedChild(i); break }
+        const nameEnd = args ? args.startIndex - n.startIndex : Math.max(0, (n.text ?? "").length - 1)
+        const head = ((n.text ?? "").slice(2, nameEnd).trim().split(/[\s,(]/)[0] ?? "")
+        if (head === "call") {
+          const callee = ((args?.text ?? "").split(",")[0] ?? "").trim()
+          if (callee && !BUILTIN_FN.has(callee) && !allDigits(callee)) push(owner, "calls", callee, line)
+        } else if (head && !BUILTIN_FN.has(head)) {
+          push(owner, declared.has(head) ? "references" : "uses", head, line)
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) st2.push({ n: c, owner: childOwner }) }
+    }
+    for (const d of declared) push(mod, "contains", d, 0)
+    for (const t of targets) push(mod, "exports", t, 0)
+    for (const e of exported) push(mod, "exports", e, 0)
+
+    return edges.filter((e, i) => edges.findIndex((x) => x.label === e.label && x.target === e.target) === i)
+  }
   const collect = (x: any, label: string, clsName: string) => {
     if (!x) return
     // DAD3 fix (dart): the flat dart parse (`_i1.SmartFake` -> two adjacent
@@ -19879,7 +20141,22 @@ async function main() {
         const p = path.join(d, e.name)
         if (e.isDirectory()) { if (!/^(\.|node_modules|build|target)/.test(e.name)) scan(p) }
         else {
-          if (!cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))) continue
+          // `fileNames` admits a build file that carries NO extension. A `.ext`
+          // rule alone matches none of them, so the lane reads as EMPTY rather than
+          // as unchecked -- and the vacuous-pass guard then throws "corpus repo
+          // contains no <lang> files" against a repo that plainly contains 53 of
+          // them. `Makefile`, `Dockerfile` and `CMakeLists.txt` are the common
+          // shape; the Make lane's own two corpora are 53 and 5 such files. The
+          // form is ADDITIVE and opt-in -- a lane with no `fileNames` matches
+          // exactly what it matched before, so restoring it cannot change another
+          // lane's sample.
+          //
+          // Restored after the m48-recovery merge dropped this clause while leaving
+          // `fileNames` declared in the LANGS type and populated for the Make lane:
+          // a declared, populated, UNREAD field, which is how a dead field hides a
+          // broken route.
+          if (!(cfg.ext.split(",").some((x: string) => e.name.endsWith("." + x))
+            || (cfg.fileNames ?? []).includes(e.name))) continue
           // A content-routed extension cannot be admitted by name. `h` is C, C++
           // and Objective-C at once: language-detection.ts sniffs
           // @interface/@protocol and hands the file to objective-c. Admitting
@@ -21134,9 +21411,26 @@ async function main() {
         // derives it from the signature graph; while it was the product's largest
         // UNVERIFIED class (37% of all published edges, agreed with by no second
         // implementation) auditing it was the manufactured red on the other side.
+        // M60 Make wave (2026-09-27): all SIX labels the make oracle derives are
+        // comparable, so all six are audited. Partial registration is the #910
+        // failure in its other direction and it reads exactly like a broken lane:
+        // a truth edge whose label is dropped from the ANALYZER side can never be
+        // covered, so it is counted MISSING. With no make entry at all the lane
+        // reported 1,628 of 1,628 truth edges MISSING on 53 files the analyzer
+        // was fully covering. `exports` is the one worth naming: it is the only
+        // label whose source is the analyzer's module node, so dropping it would
+        // leave the lane unable to audit the one relationship that answers "what
+        // does this Makefile offer?".
+        ...(lang === "make" ? ["contains", "references", "uses", "imports", "exports", "calls"] : []),
         ...(lang === "vb" ? ["calls", "contains", "imports", "references", "overrides"] : []),
         ...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []),
-        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+        // M12.PHP-IMPORTS: php now also emits `imports` (use clauses and
+        // include/require paths — one kind for every PHP module dependency, and
+        // the kind src/lsp/graph_request.ts keys the file-level reader on). The
+        // php entry still listed only "references", i.e. the pre-imports
+        // taxonomy, so the lane did not audit the kind it actually emits.
+        ...(lang === "php" ? ["references", "imports"] : []),
+        ...(lang === "swift" || lang === "objc" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -21281,7 +21575,7 @@ async function main() {
       // above is gated on BB_F5_STRICT: a canonical run's artifact must stay
       // byte-identical to what the gate compares, and this is triage evidence,
       // not a scored dimension.
-      ...(process.env.BB_F5_SHOW_SAMPLES ? { heuristicSamples: samplesHeuristic } : {}),
+      ...(process.env.BB_F5_SHOW_SAMPLES ? { heuristicSamples: samplesHeuristic, diffSamples: samples } : {}),
       // BB_F5_STRICT only, so a canonical run's artifact stays byte-identical to
       // what the gate compares.
       ...(BB_F5_STRICT ? { strict: { coveredAsWritten: strictCovered, strictMissing, hidden: strictHidden, hard: strictHard, soft: strictSoft } } : {}),
@@ -21354,6 +21648,17 @@ async function main() {
     // called out separately from UNEXPLAINED so the two are never confused: a
     // HEURISTIC row is declared suspicion (confidence < 0.7), not a counted
     // fabrication.
+    // The MISSING/UNEXPLAINED `samples` rows have been collected since the
+    // split point and, like the heuristic bucket, had no output path — a
+    // coverage gap could only be triaged by re-deriving the lane by hand.
+    // Gated on the same flag, and it changes no gate: a canonical run's
+    // artifact does not carry these rows.
+    if (process.env.BB_F5_SHOW_SAMPLES && (row as any).diffSamples?.length > 0) {
+      for (const s of (row as any).diffSamples.slice(0, 40)) {
+        console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.line ? ` (line ${s.line})` : ""}`)
+      }
+      if ((row as any).diffSamples.length > 40) console.log(`    … +${(row as any).diffSamples.length - 40} more diff sample(s)`)
+    }
     if (process.env.BB_F5_SHOW_SAMPLES && (row as any).heuristicSamples?.length > 0) {
       for (const s of (row as any).heuristicSamples.slice(0, 40)) {
         console.log(`    ${s.dir} ${s.file} :: ${s.label} ${s.from ?? "?"} -> ${s.target}${s.confidence !== undefined ? ` (conf ${s.confidence})` : ""}${s.line ? ` (line ${s.line})` : ""}`)
