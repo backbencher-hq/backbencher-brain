@@ -79,21 +79,26 @@ Detect orphaned code, framework patterns, and anti-patterns, ranked by evidence-
 
 ## Limitations
 
-- Orphan status is static incoming-reference evidence, not proof that code is unused
-- Framework and anti-pattern detection is heuristic and confidence-qualified
-- Candidates are derived from analyzer-extracted symbols and relationships; the same graph gaps (dynamic/reflection wiring, unresolved cross-file references) that limit the analyzers also constrain these detections
+- A finding is not a deletion instruction. The tool reports what the index does and does not record; where the index is silent, the finding says so on its face rather than presenting absence of evidence as evidence of absence.
+- Confidence is derived from measured evidence classes, not assigned per rule. It spans 0.30-0.70 for orphans (the published cap) and 0.60-0.90 for anti-patterns. Name-unique symbols measured a 0.0% false-positive rate against a source-text oracle; ambiguous names measured 14.4%.
+- A relationship only counts as usage evidence if it is not a self-loop, its published evidenceClass is not "inferred", and its confidence is at least 0.7. Refused rows are counted in `summary.unverifiedUsageEdges` and itemised on the findings they would have cleared.
+- A finding whose symbol had no recorded incoming reference while its file did carries a COVERAGE GAP INDICATOR. That is the signature of an analyzer that reached the file and not the symbol, and such a finding may be a coverage gap rather than dead code.
+- Dynamic dispatch, reflection, and string-keyed lookups are invisible. The engine never fabricates a resolved edge for them, so a symbol reached only that way is reported.
+- False-positive rate is 0.0-27.8% by corpus, measured against a source-text oracle that cannot see reflection or template indirection — so the true rate is higher, and the number is a lower bound.
+- Test files are excluded from candidates but not from evidence: a production symbol called only from a test is not reported, and a production file imported only by a test is not reported. `includeTests: true` means "also report test symbols", not "ignore tests when looking for users".
+- Framework and anti-pattern detection is heuristic and confidence-qualified.
 
 ## Performance
 
-The result limit and confidence threshold bound reporting; history access is separately limited.
+The scan is index-bound and single-pass; the anti-pattern rules use a correlated COUNT over the member index, so cost grows with symbol count and not with the square of it. A default `bb_patterns {}` measured 6.7s on a 45,018-symbol repository, down from 330s before the query was fixed. `limit` bounds the displayed page; the census in the header is the full candidate count, and `raise \`limit\`` is named when the page is short.
 
 ## Safety
 
-Source is read-only. recordRun writes only analysis-history records in the brain database.
+Source is read-only. recordRun writes only analysis-history records in the brain database, and persists the whole census rather than the displayed page so the auto-resolve pass cannot mark live findings as gone.
 
 ## Evidence Semantics
 
-Every finding is confidence-qualified and tied to indexed files, symbols, or relationships.
+Every finding is confidence-qualified, carries an evidence array naming what was checked, and carries a limitations array. Two channels are kept distinct: an anchored edge from an identified symbol is decisive, while a name match clears a candidate only when the name is unambiguous in the reporting scope. `summary.suppressedByReason` accounts for every candidate the scan discarded, and `summary.importResolution` states how far the import channel could be carried.
 
 ## Relationship to other tools
 
