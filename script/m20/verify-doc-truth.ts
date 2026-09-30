@@ -565,9 +565,15 @@ try {
     // The failure detail must name EVERY placeholder, not a sample: a gate that
     // showed 6 of 24 findings hid three quarters of the evidence it was written
     // to surface, which is how the rest of them survived two review rounds.
+    // An entry reads "<mode>/<detail>:<section> <verdict>", so the section name
+    // is what follows the colon whose prefix holds a slash. Scanned, not
+    // matched: this project carries no regex.
     const bySection = new Map<string, number>()
     for (const entry of placeholders) {
-      const key = entry.replace(/^[a-z]+\/[a-z]+:/, "").split(" ")[0]
+      const colon = entry.indexOf(":")
+      const prefix = colon === -1 ? "" : entry.slice(0, colon)
+      const rest = colon === -1 ? entry : entry.slice(colon + 1)
+      const key = prefix.includes("/") ? rest.split(" ")[0] : prefix
       bySection.set(key, (bySection.get(key) ?? 0) + 1)
     }
     check("T20: no required section is empty without an unknown naming THAT section", placeholders.length === 0,
