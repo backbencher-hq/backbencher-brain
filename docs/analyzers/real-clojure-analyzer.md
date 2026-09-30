@@ -206,3 +206,70 @@ was 2 (`/\.$/` constructor tests), both eliminated in the M12.04 grammar rewrite
 last, `/^%(\d+|&)?$/`, was removed in the M60 deep round with the equivalence proof above
 (CLJ-D20). Every remaining string surgery in the file is a char scan or a `Set` lookup, and the
 conversions carry their equivalence argument inline.
+
+## The relationship classes, and the two that had no gate
+
+The analyzer emits **seven** relationship labels: `calls`, `contains`, `references`, `uses`, `instantiates`, `implements`, `extends`. F5 compared **four** of them.
+
+`uses` and `contains` were excluded, and `script/m14/differential.ts` documents the reason exactly: *"a label the truth side does not derive cannot be compared, because every analyzer edge of that label would be counted as fabrication (the #910 lesson)."* The rule is right. Its consequence was never written down: **two of seven relationship classes had no gate, no oracle and no residual, while the lane reported 100% completeness.**
+
+`script/m14/clojure-truth.ts` derives both from the tree, so the comparison became possible without inventing a second opinion. Both are now at **zero residual in every direction**:
+
+| class | truth | emitted | covered | missed | fabricated |
+|---|---|---|---|---|---|
+| `uses` | 2,650 | 2,650 | 100.00% | 0 | 0 |
+| `contains` | 6,145 | 7,762 | 100.00% | 0 | — |
+| owner audit | — | — | — | 0 not-a-symbol / 0 not-spanning | — |
+| consistency | — | — | — | 0 target-missing / 0 line-wrong / 0 duplicated | — |
+
+On metabase (4,253 files) `uses` is **100.00% / 0 / 0** and `contains` **100.00%** with 2 residuals, recorded below.
+
+`uses` is judged **owner-free** on `(target, line, arity)` and its owner audited **separately**, because a naive walk attributes an access to the enclosing `defn` where the analyzer attributes it to a real `lambda_55_12` symbol — a disagreement about attribution, not about whether the edge exists. Neither half can see the other's failures.
+
+`contains` is checked **twice**, because a per-symbol owner makes a re-derivation tautological:
+- **(a) an independent minimum from the tree** — every def names a var, so a containment is derivable without reading the analyzer's own `ownerName`;
+- **(b) consistency against the symbol table as a second input** — the target must be a real declaration, at that exact start line, once per owner→name.
+
+The gate is **proven able to fail**: `--prove` runs ten negative proofs — a member access dropped, an edge with no access behind it, a misplaced line, a dropped arity overload, a def with no containment, a contains target missing from symbols, a contains line that is not the declaration line, a duplicated contains, `..` as a member, and the exact-match baseline. **10/10.** A gate nobody has shown can fail is not a gate.
+
+### What making the classes measurable found
+
+Nine defect classes — `CLJ-D30` … `CLJ-D38`, all in the spec — and each was found by a measurement, never by a guess. The two largest:
+
+- **`CLJ-D30`** — `defcurried` was unhandled, so **1,136 top-level definitions** across the four corpora recorded *nothing*: no symbol, no `contains`, no export. All ten of clojure/core/reducers.clj's core vars, produced zero output. The rule is general rather than a list — any def-like head in def position defines its first symbol — and it also covers 1,043 metabase sites including **local macros no per-file analyzer could be taught** (`def-aset`, `definline`, `defblockingop`) and a third-party one (`defprotocol+`). F1's node-type census is *structurally* blind to this class, because an unrecognized def form parses as an ordinary `list_lit`, i.e. a call.
+- **`CLJ-D31`** — `in-ns` is a namespace form. `(in-ns 'clojure.pprint)` left `currentNamespace` at `user`, stranding **484 definitions across 17 files** — the whole of clojure's own pretty-printer. It is an *absence*, not a wrong value, which is why no per-class claim could see it: a file with an unknown namespace still emits a full, plausible symbol table.
+
+The rest: **`D32`** static `Class/.member` emitted `calls -> String/.toUpperCase`, a target that is no symbol — a dangling edge, invisible to F5 *because* the `calls` truth derives calls and the analyzer emitted a call; **`D33`** `contains` determinism (667 edges) with a definition always displacing a forward declaration or a spec annotation; **`D34`** `user` is an ordinary namespace; **`D35`** a spec names a var, so `(s/fdef 1 :args)` minted a symbol called `1`; **`D36`** a `comment` inside a `case` shifts child parity so a *body* is dropped — and the mirror had the identical bug, so both sides agreed on a body neither walked; **`D37`** `#js` evaluates its *values* and not its keys; **`D38`** one name exported twice under two kinds.
+
+**Two of the nine were found by the fixtures while being written**, and one of those reversed a rule I had just invented: `CLJ-D34`. I had distinguished a file that *declares* `(in-ns 'user)` from one that merely *falls back* to `user`, and skipped containment for the second. The fixture pair refused it — the export pass's own invariant fired with *"export `undeclared-fn` does not resolve to a top-level symbol (membership rides Contains)"*. Withholding the membership while keeping the export is the one option that cannot be made consistent, and Clojure *does* intern into the ambient namespace, so the simpler rule is also the true one.
+
+### The four classes that are measured but not yet enforced
+
+`references`, `instantiates`, `implements` and `extends` are derived and printed with their residuals, but they do **not** decide the gate's verdict. Their derivations are real and incomplete — `implements` reads 26 truth edges against 444 emitted, which indicts the rule, not the analyzer — and enforcing an incomplete oracle produces a gate that fails on correct output, and a gate that cries wolf gets muted and then catches nothing. `--strict` enforces them for whoever works on them.
+
+`calls` is the one label this gate does not touch: it has its own F5 differential, whose truth lives in the **shared** harness.
+
+## CLJ-D39 / CLJ-D40 — the derived `calls` oracle
+
+`calls` is no longer described by a hand-rolled implementation. It is DERIVED from
+the parse tree in `script/m14/clojure-truth.ts` and checked against the analyzer
+in both directions. Building it is what found the last two defect classes, and
+both are about questions asked in the wrong order.
+
+**The shadow gate (CLJ-D39).** The gate asks "is this bare head the standard
+library, or a local definition?" and the order is the whole ruling: a local
+definition wins over the core list from the point its form completes; a
+definition does not reach backwards; a name in def-name position inside a quote
+or a `#_` discard binds nothing. Asking "is this core" first dropped 401 edges in
+`clojure/core.clj` — a file made almost entirely of core-named definitions.
+
+**The alias timeline (CLJ-D40).** `(require '[lib :as a])` registers the alias. The
+quote is the convention, not an exception, and a top-level require's children are
+the spec vecs themselves rather than `ns`-style clauses, so one spec reader serves
+both shapes. Before this, `jio` at `core.clj:7248`, `str/replace` and
+`ns/find-namespaces-in-dir` were the last unresolved targets in the corpus.
+
+On the 143-file clojure corpus the derived oracle and the previous hand-rolled
+implementation agree edge for edge (4,693 edges; 38 missing, 221 unexplained),
+which is the point: the remaining disagreement is now a single question about the
+analyzer rather than two implementations drifting apart.
