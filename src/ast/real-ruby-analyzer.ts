@@ -177,6 +177,42 @@ export const RUBY_BUILTINS = new Set([
  * regex literal previously drifted into junk targets on the oracle side.
  */
 /**
+ * Is this node inside a `defined?(…)` probe?
+ *
+ * `defined?(@a)` TESTS whether an ivar is set. It never reads the value, so
+ * publishing `uses:@a` with `memberRead: true` claims a read that does not
+ * happen. In a Rails model the shape is everywhere:
+ *
+ *     validates :registrations_mode, inclusion: { … }, if: -> { defined?(@registrations_mode) }
+ *
+ * and this branch published 18 such edges over the corpus — every one an
+ * `UNEXPLAINED` row whose example carried `memberRead: true`.
+ *
+ * The oracle has always declined these, and its comment claimed it "mirrors the
+ * analyzer". That claim was FALSE: verified directly, `defined?(@a)` gives
+ * `analyzer[uses:@a]  oracle[-]`, while a plain `@a` read agrees on both sides.
+ * A one-sided defect with the oracle right and its comment wrong — so the fix
+ * belongs here, after which the comment becomes true.
+ *
+ * Walked rather than read off the parent, because the probe is usually nested:
+ * `if: -> { defined?(@a) }` puts the `unary` several ancestors up, behind a
+ * `lambda`, a `pair` and a `body_statement`.
+ */
+function isInsideDefinedProbe(node: any): boolean {
+  let n: any = node
+  for (let depth = 0; n && depth < 12; depth++) {
+    const p: any = n.parent
+    if (!p) return false
+    if (p.type === "unary") {
+      const op = p.childCount > 0 ? p.child(0) : null
+      if (op && !op.isNamed && op.type === "defined?") return true
+    }
+    n = p
+  }
+  return false
+}
+
+/**
  * Is this instance_variable node a WRITE target rather than a READ?
  *
  * RUBD1/RUBD5/SCD1 already say the answer for the single-target forms: both
@@ -865,7 +901,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // use, so analyzer and truth stay in parity on spec/DSL-heavy corpora
       // (rack wave: @content_type/@app reads in minitest specs).
       if (type === "instance_variable") {
-        if (!isRubyInstanceVariableWrite(node)) {
+        if (!isRubyInstanceVariableWrite(node) && !isInsideDefinedProbe(node)) {
           relationships.push({
             source: owner || FILE_SCOPE_OWNER,
             target: node.text,
