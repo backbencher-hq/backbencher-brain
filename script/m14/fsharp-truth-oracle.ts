@@ -234,6 +234,32 @@ function fileScopeName(root: any): string | null {
  * The rule is DOCUMENT ORDER over both left types, not a preference between them. Child 0
  * precedes child 2 in the source, and the source is what names the binding.
  */
+/**
+ * A `static let` / `static member val` member's name, read from the declaration it wraps.
+ *
+ * The header form (`member _.Name`) has no counterpart here, so `thisBindingName` answers null
+ * and every position inside the member lost its owner. `static let` also nests the binding one
+ * level deeper than the shape suggests — the member's child is a `value_declaration` and the
+ * `function_or_value_defn` whose left-hand side carries the name is inside THAT — so a first
+ * version that stopped at the `value_declaration` found no declaration-left child and returned
+ * null as well. Both misses looked identical from the residual: a row that is not there.
+ */
+function declaredNameInsideMember(member: any): string | null {
+  const declared =
+    firstChildOfType(member, "function_or_value_defn") ??
+    descendantsOfType(member, "function_or_value_defn", 3)[0] ??
+    (() => {
+      const vd = firstChildOfType(member, "value_declaration")
+      return vd ? descendantsOfType(vd, "function_or_value_defn", 2)[0] : undefined
+    })()
+  if (!declared) return null
+  const left = firstDeclarationLeft(declared)
+  const pat = left ? firstChildOfType(left, "identifier_pattern") : null
+  if (!pat) return firstChildOfType(left ?? declared, "identifier")?.text ?? null
+  const idents = descendantsOfType(pat, "identifier", 3).sort((a: any, b: any) => a.startIndex - b.startIndex)
+  return idents.length ? idents[0]!.text : null
+}
+
 function firstDeclarationLeft(node: any): any | undefined {
   for (const c of namedChildren(node)) {
     if (c.type === "function_declaration_left" || c.type === "value_declaration_left") return c
@@ -922,7 +948,17 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
     const decl = parentIsDecl(parent) ? parent : ancestorOfType(parent, "member_defn", 14) ?? ancestorOfType(parent, "function_or_value_defn", 14) ?? ancestorOfType(parent, "value_declaration", 14)
     if (!decl) return null
     if (decl.type === "member_defn") {
-      const name = thisBindingName(decl)
+      // A `static let` in a module has no `method_or_prop_defn` header, so the header lookup
+      // answers null and every position inside the member loses its owner:
+      //
+      //     static let reportConflictingWellKnownMetadata (log: TaskLoggingHelper) …
+      //       member_defn -> value_declaration -> function_or_value_defn
+      //
+      // Two rows per file in MapSourceRoots.fs, and the same shape throughout the corpus: the
+      // parameter types of every `static let` in every module, dropped silently. The member's
+      // own declaration is the fallback, and it is a name the analyzer publishes — which is
+      // the only property an edge source has to have.
+      const name = thisBindingName(decl) ?? declaredNameInsideMember(decl)
       if (!name) return null
       return { source: name, declaredOn: inArgs ? "parameter" : "return_type" }
     }

@@ -283,8 +283,8 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 
 | Gate | Result |
 | --- | --- |
-| F1 dead-literal / unknown-symbol | `PASS refs=63 unknown=0 unknownFields=0` |
-| F3 fixtures | 6/6 PASS |
+| F1 dead-literal / unknown-symbol | `PASS refs=64 unknown=0 unknownFields=0` |
+| F3 fixtures | 7/7 PASS |
 | F4 mutants | 14/14 CAUGHT — and the registration itself was a defect |
 | oracle vs analyzer, fixtures | 106 truth, 0 MISSING, 0 UNEXPLAINED |
 | F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
@@ -315,7 +315,7 @@ the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained
 | | count | dominant classes |
 |---|---|---|
 | MISSING (truth derives, analyzer does not) | 13 | 6 `declared_type(parameter)`, 3 `implements`, 2 `calls`/source-other, 1 `overrides`, 1 `declared_type(return)` |
-| UNEXPLAINED (analyzer emits, truth does not) | 68 | 16 `declared_type(parameter)`, 14 `declared_type(local_annotation)`, 9 `declared_type(record_field)`, 7 `implements`, 7 `calls`/source-other, 7 `declared_type(return)` |
+| UNEXPLAINED (analyzer emits, truth does not) | 66 | 14 `declared_type(local_annotation)`, 14 `declared_type(parameter)`, 9 `declared_type(record_field)`, 7 `implements`, 7 `calls`/source-other, 7 `declared_type(return)` |
 
 Two rules account for 65 of the 123 unexplained rows, and neither is about F# — they are both
 about **who is allowed to own an edge**. A depth-bounded ancestor search (`findAncestor(decl,
