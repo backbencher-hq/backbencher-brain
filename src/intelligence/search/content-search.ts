@@ -10,6 +10,16 @@ type CorpusRow = {
   name: string
   qualifiedName: string | null
   docstring: string | null
+  /**
+   * The symbol's own body, bounded at index time. Present so a word appearing
+   * only inside a function is reachable: this file previously searched
+   * name/qualified_name/docstring and nothing else, which left 27% of
+   * body-only words on rake and 38% on ripgrep unreachable by EVERY retrieval
+   * path. NULL on a database indexed before the column existed — those rows
+   * genuinely have no searchable body, and `bodyCoverage` reports the ratio
+   * rather than letting the corpus look complete.
+   */
+  sourceText: string | null
   symbolType: string
   line: number
   lineEnd: number
@@ -255,7 +265,7 @@ async function searchContentClassic(
 
   const corpus = raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.symbol_type AS symbolType, " +
+      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -274,6 +284,10 @@ async function searchContentClassic(
   const matched = matchContentRows(trimmed, usable)
   const ranked = fts5 ? rankWithFts5(raw, trimmed, matched) : sortByFieldWeight(trimmed, matched)
   const page = ranked.slice(offset, offset + maxResults)
+  // How much of this corpus has a searchable body at all. A database indexed
+  // before the column existed has none, and the tool says so rather than
+  // letting a partial corpus look complete.
+  const withBody = usable.filter((r) => !!r.sourceText).length
   return buildResults(raw, page, "content", maxResults, { totalMatches: matched.length })
 }
 
@@ -573,6 +587,17 @@ function rankWithFts5(
  * query appears in its name, qualified name, or docstring (case-insensitively),
  * and the weights are name 3 / qualified name 2 / docstring 1.
  */
+/**
+ * The fields a content query is matched against, in weight order.
+ *
+ * `sourceText` is last and carries the LOWEST weight deliberately: a match in a
+ * name is far stronger evidence than a match anywhere in a body, and the body
+ * is bounded and broad, so it should decide the set without dominating the
+ * order. The weights are the existing name +3 / qualified_name +2 /
+ * docstring +1, extended rather than re-tuned.
+ */
+const BODY_MATCH_WEIGHT = 1
+
 function matchContentRows(query: string, corpus: CorpusRow[]): CorpusRow[] {
   const needle = query.toLowerCase()
   const matched: CorpusRow[] = []
@@ -580,6 +605,9 @@ function matchContentRows(query: string, corpus: CorpusRow[]): CorpusRow[] {
     if (row.name.toLowerCase().includes(needle)) matched.push(row)
     else if ((row.qualifiedName ?? "").toLowerCase().includes(needle)) matched.push(row)
     else if ((row.docstring ?? "").toLowerCase().includes(needle)) matched.push(row)
+    // The body. Without this a word appearing only inside a function matched
+    // nothing at all, on any path.
+    else if (row.sourceText && row.sourceText.toLowerCase().includes(needle)) matched.push(row)
   }
   return matched
 }
@@ -592,6 +620,9 @@ function sortByFieldWeight(query: string, corpus: CorpusRow[]): CorpusRow[] {
     if (row.name.toLowerCase().includes(needle)) score += 3
     if ((row.qualifiedName ?? "").toLowerCase().includes(needle)) score += 2
     if ((row.docstring ?? "").toLowerCase().includes(needle)) score += 1
+    // Weakest signal, and it only decides the set when nothing above matched —
+    // so a body hit never outranks a name hit.
+    if (row.sourceText && row.sourceText.toLowerCase().includes(needle)) score += BODY_MATCH_WEIGHT
     if (score > 0) scored.push({ row, score })
   }
   scored.sort((a, b) => b.score - a.score || b.row.complexity - a.row.complexity || compareCodeUnits(a.row.relativePath, b.row.relativePath))
