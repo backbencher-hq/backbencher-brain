@@ -239,6 +239,23 @@ affects.
 - **Extracted** facts are directly present in indexed source or tables: names,
   signatures, line bounds, imports, exports, relationship types, and measured
   complexity.
+- **A signature reports the arguments the index holds, and claims none it does
+  not.** A signature was rendered `name()` whenever the `parameters` column was
+  empty, which asserts the symbol takes no arguments. Reading the declaration off
+  disk for every sampled callable with an empty column, across six languages:
+  **1 218 of 1 218 have a real parameter list**, excluding declarations whose
+  list is genuinely empty or C's explicit `(void)`. `Malloc(size_t size)` was
+  rendered `Malloc()`; `application(app)` in Ruby was rendered `application()`.
+  14 267 `function` and 2 702 `method` symbols across the eight corpora were
+  affected, and the fixture could not have caught it — it holds one callable with
+  a parameter list and none without.
+  An absent list now renders as an absent list: the parentheses are omitted, and
+  the caveat rides on the signature itself rather than only in `limitations`,
+  because that fact is rendered as this mode's API and as `feature` mode's Entry
+  points and a bare name invites exactly the wrong reading. The caveat is scoped
+  to the symbol kinds that take arguments, measured per kind: `function` is 18%
+  empty and `property` is 99% empty, so a caveat attached to a field or a class
+  would be nonsense.
 - **Inferred** facts are bounded conclusions supported by multiple evidence
   items, such as “this symbol is an entry point because it is exported and has
   incoming route-like references.” They include confidence and citations.
