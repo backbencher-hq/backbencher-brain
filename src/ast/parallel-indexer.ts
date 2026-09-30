@@ -5233,8 +5233,18 @@ export async function reindexFilesParallel(
   // client dies with "Header must provide a Content-Length property" —
   // found live by M25.E5). stdio callers MUST pass a stderr logger.
   options?: { logger?: { log: (...args: any[]) => void; write: (s: string) => void } },
-): Promise<{ indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
-  const result: { indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0 }
+): Promise<{ indexed: number; deleted: number; errors: number; /** Files the caller named that the indexer declined — unsupported or binary
+   *  types, and files whose parse produced nothing. It used to be indistinguishable
+   *  from a file that was indexed: a binary file answered `indexed: 0, deleted: 0,
+   *  errors: 0`, which to a caller is indistinguishable from "already current". */
+  skipped: number; skippedReason?: string; /** WHICH files failed and WHY. The delegated
+   *  `indexProjectParallel` has always collected `{ file, error }` per failure and
+   *  returned it; reindexFilesParallel counted them and dropped them. A write tool
+   *  reporting "3 errors" tells its caller nothing it can act on — not which file,
+   *  not whether to retry, and not whether the failure is transient. Bounded, so a
+   *  large failure cannot become a large payload. */
+  errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
   // lock scope — a concurrent indexer must never interleave between our
@@ -5304,6 +5314,20 @@ export async function reindexFilesParallel(
       })
       result.indexed = indexResult.successFiles
       result.errors += indexResult.errorFiles
+      // `skippedFiles` was being computed by the delegated run and thrown away.
+      // It is the difference between "this file is not indexable" and "this file
+      // is already current", and the report could not tell them apart.
+      result.skipped += indexResult.skippedFiles ?? 0
+      // The per-file failures the delegated run already collected. Bounded at 20
+      // with the true total still in `errors`, so a caller learns which file to
+      // look at without a pathological failure becoming a huge answer.
+      for (const e of indexResult.errors ?? []) {
+        if (result.errorDetail.length >= 20) break
+        result.errorDetail.push({ file: String(e.file ?? "?"), error: String(e.error ?? "unknown") })
+      }
+      if ((indexResult.skippedFiles ?? 0) > 0 && result.indexed === 0) {
+        result.skippedReason = `${indexResult.skippedFiles} of the requested file(s) hold nothing the indexer extracts (binary or unsupported type)`
+      }
       // Bounded-pass telemetry (surfaced to tool callers; never silent).
       result.derived = {
         pass: indexResult.summary?.derivedPass ?? "deferred",
@@ -5311,10 +5335,10 @@ export async function reindexFilesParallel(
         repairedInEdges: indexResult.m40Bounded?.repairedInEdges ?? 0,
         touchedSymbols: indexResult.m40Bounded?.touchedSymbols ?? 0,
       }
-      if (result.derived.pass === "deferred") {
-        // Empty-file-set or all-skipped runs defer honestly rather than lie.
-        result.errors += 0
-      }
+      // `deferred` means the heavy phases were not run for this call. It is
+      // published in `derived.pass` and there is nothing to count, so the
+      // `result.errors += 0` that used to stand here was a statement about
+      // intent dressed as a statement about the count.
     } catch (error) {
       log.error("failed to reindex files", { error })
       result.errors++

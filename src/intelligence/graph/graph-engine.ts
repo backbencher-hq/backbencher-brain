@@ -367,6 +367,9 @@ export async function traverseGraph(
    *  is declared on both sides: what it was, and whether it fired. */
   timeBudgetMs: number
   timeBudgetExhausted: boolean
+  /** Stored rows the noise policy removed, per direction. See the public
+   *  `GraphTraversalResult.noiseFiltered` for why this is not a bound. */
+  noiseFiltered: { callers: number; callees: number }
   /** M59.A12 (#888): the declared per-query site limit in force for this run. */
   edgeLimit: number
   /** The total-edge bound in force for this run, and whether it was reached.
@@ -500,6 +503,24 @@ export async function traverseGraph(
 
   /** The same noise filters the edge loops apply, so a declared total counts
    *  exactly what a caller WOULD receive if no limit existed. */
+  // Rows the noise policy removed, counted per direction.
+  //
+  // The walk has always dropped vendored/generated/fixture paths and noise
+  // symbol names inline with `continue`, and said nothing. The answer then read
+  // as complete: measured, `callers` for a symbol in `vendor/` answered
+  // `found: true` with 0 caller and 0 callee edges and `truncated: false` —
+  // "nobody uses this, and that is the whole set", for a set that was emptied
+  // by a policy rather than measured to be empty. `bb_search` already declares
+  // this ("scan was cut short (noise-filter) over some candidate rows"); the
+  // graph did not.
+  //
+  // This is deliberately NOT a truncation reason. A bound means the walk stopped
+  // early; a filter means it finished and removed rows by policy. Reporting the
+  // second as the first would make `truncated` mean two different things, which
+  // is the defect this whole review exists to remove.
+  let noiseFilteredCallers = 0
+  let noiseFilteredCallees = 0
+
   const survivesFilters = (row: EdgeRow, name: string | null, includeCrossLanguage: boolean): boolean => {
     if (!name || AnalysisExclusions.isNoiseSymbolName(name)) return false
     if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) return false
@@ -700,8 +721,8 @@ export async function traverseGraph(
 
     const children: string[] = []
     for (const row of rows) {
-      if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) continue
-      if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
+      if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) { noiseFilteredCallers++; continue }
+      if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) { noiseFilteredCallers++; continue }
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
       // The bound on the WHOLE answer, as distinct from the per-query site
       // limit. Checked BEFORE any bookkeeping for this row, so `emittedCallerRows`
@@ -925,8 +946,8 @@ export async function traverseGraph(
     const children: Array<{ id: string; file: string; line: number }> = []
     for (const row of rows) {
       const targetName = row.symName || row.extName || ""
-      if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) continue
-      if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
+      if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) { noiseFilteredCallees++; continue }
+      if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) { noiseFilteredCallees++; continue }
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
       // Before the dedupe bookkeeping, for the same reason as the callers side:
       // the emitted-row set must describe what was emitted.
@@ -1035,6 +1056,7 @@ export async function traverseGraph(
     maxDepth,
     timeBudgetMs,
     timeBudgetExhausted,
+    noiseFiltered: { callers: noiseFilteredCallers, callees: noiseFilteredCallees },
     edgeLimit,
     maxEdges,
     totalEdgeLimitReached: totalLimitReached,
@@ -1201,6 +1223,7 @@ export async function graphTraversal(
     maxDepth,
     timeBudgetMs,
     timeBudgetExhausted,
+    noiseFiltered,
     edgeLimit,
     maxEdges,
     totalEdgeLimitReached: totalLimitReached,
@@ -1236,7 +1259,20 @@ export async function graphTraversal(
     callers,
     callees,
     nodes,
-    provenance: makeProvenance({ evidenceClass: "inferred", engine: "graph@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Traversal is bounded and unresolved external nodes cannot be recursively traversed."], truncated }),
+    provenance: makeProvenance({
+      evidenceClass: "inferred",
+      engine: "graph@intelligence",
+      engineVersion: "m10.02",
+      projectId,
+      source: "brain_relationship",
+      limitations: ["Traversal is bounded and unresolved external nodes cannot be recursively traversed."],
+      truncated,
+      unknowns: [
+        ...(noiseFiltered.callers + noiseFiltered.callees > 0
+          ? [`noise-policy: ${noiseFiltered.callers} caller and ${noiseFiltered.callees} callee stored rows were removed because they live in a vendored, generated, fixture, snapshot, dist or build path, or carry a generated name. They are excluded by POLICY, not absent: an empty edge set here does not mean nothing references this symbol. Applies to bb_search, bb_impact and the test-intelligence modes too, and NOT to mode "complexity", which applies no noise filter — so the same symbol can be unmeasurable there and unmentioned here.`]
+          : []),
+      ],
+    }),
     summary: {
       totalCallers: callers.length,
       totalCallees: callees.length,
@@ -1244,6 +1280,10 @@ export async function graphTraversal(
       maxDepth,
       timeBudgetMs,
       timeBudgetExhausted,
+      // How many stored rows the vendored/generated/fixture/noise policy removed
+      // before any bound applied. Non-zero means the edge sets above are
+      // smaller than the store's, BY POLICY — not because nothing was found.
+      noiseFiltered,
       crossLanguageEdges,
       truncated,
       truncationReason,
