@@ -559,6 +559,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // CrosschainLinked.sol:59 and `root` at MerkleTreeMock.sol:15 are both real
       // Solidity identifiers the shared filter drops.
       if (STORE_REFUSED_SYMBOL_NAMES.has(clean)) {
+        // Counted here, at the single point every declaration kind goes through.
+        // The state-variable path checks FIRST so it can also suppress the
+        // SOL-3 getter; it returns before reaching this line, so there is no
+        // double count.
         storeRefusedDeclarations++
         return
       }
@@ -1023,6 +1027,14 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           declareSymbol(name, kind, node, line, meta, collectParameters(node))
           noteMember(top().owner, name)
+          // SOL-12, a stated boundary rather than an accident: a file-scope FREE
+          // FUNCTION is deliberately NOT added to the module's `exports` surface.
+          // `solc` emits an ABI and an abstraction for each contract/interface in
+          // a source unit and for nothing else — a free function lives in the
+          // unit's bytecode and contributes no ABI entry, so calling it an export
+          // would claim a surface the language does not define. Counted in
+          // `module-owner-sol1`'s expectRelationshipCount, so widening the
+          // boundary is visible rather than silent.
           // SOL-13 — the frame's OWNER is the function itself, not the contract.
           // PowerShell PS3 deliberately keeps a method's owner as the class so a
           // `contains` edge from inside names the class; that is right for
@@ -1139,12 +1151,28 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!nameNode) break
           const name = nameNode.text
           const line = nameNode.startPosition.row + 1
-          const meta = modifiersOf(node)
+const meta = modifiersOf(node)
           meta.declaredType = typeTextOf(node.childForFieldName("type"))
           if (node.childForFieldName("location")) {
             meta.stateLocation = node.childForFieldName("location")!.text
           }
-          // SOL-3 — the synthesised getter, published under its external name.
+          // SOL-14, checked BEFORE the getter so the two cannot disagree. The
+          // fixture that found this had `root` refused as a declaration while
+          // `root()` was still published and still linked by
+          // `references root -> root()` — an edge whose SOURCE was not a symbol,
+          // which is the same dangling shape SOL-14 exists to prevent, reached
+          // through the getter path because the getter is published by
+          // `pushSymbol` and the refusal lived in `declareSymbol`.
+          if (STORE_REFUSED_SYMBOL_NAMES.has(name)) {
+            storeRefusedDeclarations++
+            // `break`, NOT `return`: this is a `switch` case inside the walk's
+            // `while`, so `return` would exit `analyze` itself and the whole file
+            // would come back as `undefined` — which `JSON.stringify` renders as a
+            // clean-looking absence rather than an error (M60 §5.5). Measured by
+            // running it: `r.relationships` was not an object at all.
+            break
+          }
+          // SOL-3 — the synthesised getter, published under its real name.
           if (meta.visibility === "public") {
             meta.getterSynthesised = true
             meta.getterVisibility = "public"
@@ -1159,9 +1187,24 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
                 ? { stateMutability: meta.stateMutability ?? "view" }
                 : {}),
             })
-            void getter
             if (getter) {
               getterSymbols++
+              // SOL-13 — the getter's owner is the CONTRACT, so `contains
+              // Contract -> balance()` is emitted here. Without it the getter was
+              // a symbol no containment edge reached: measured on the fixture that
+              // wrote this decision down, `contains Vault -> balance()` was
+              // absent while `balance()` existed as a symbol, so the contract's
+              // member surface — the thing a reader opens the contract for — was
+              // missing a function the contract really has. SOL-12's boundary is
+              // about the MODULE's export surface and says nothing about contract
+              // membership, so this edge is not in tension with it.
+              const getterOwner = top().owner
+              if (getterOwner && getterOwner !== getterName) {
+                addRel(getterOwner, getterName, ASTEngine.RelationshipType.Contains, 1.0, line, {
+                  isSynthesisedGetter: true,
+                  getterOfVariable: name,
+                })
+              }
               // The pair is a WALK, not two adjacent rows.
               addRel(name, getterName, ASTEngine.RelationshipType.References, 1.0, line,
                 { isGetterFor: true, getterOfVariable: name })
