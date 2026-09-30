@@ -449,7 +449,6 @@ export const LANG_REPOS: Record<string, string> = {
   php: "phpunit",
   ruby: "rake",
   python: "cython",
-  haskell: "cabal",
   elixir: "elixir",
   erlang: "rebar3",
   // F5-cert wave (CLJ): the clojure/clojure checkout (pin 2cea6925) was
@@ -463,38 +462,22 @@ export const LANG_REPOS: Record<string, string> = {
   // SECOND_CORPUS entry to invent: a second lane pointed at a non-F# repo
   // would report files=0 (the vacuous-pass class the sweep already refuses).
   fsharp: "fsharp",
-  // M14 (master review, 2026-09-29): this entry ALSO went missing in the same
-  // 229-commit m48-recovery merge that dropped the xml entry below. With it the
-  // vb lane lost its corpus mapping, so a scoped sweep fell through and derived
-  // ZERO truth edges over 60 sampled files. The differential's own dead-oracle
-  // guard caught it rather than reporting a clean row:
-  //   "parsed 60 file(s) and derived ZERO truth edges -- the parser or the oracle
-  //    is dead, not clean (a 0/0 row is a fabricated pass)"
+  // M60-HK wave (2026-09-29). `cabal` and `hledger` were ABSENT from this box --
+  // neither was among the checkouts under CORPUS_ROOT -- so the haskell lane could
+  // not run its differential at all and every coverage claim it had ever made was
+  // unfalsifiable. The lane first ran against `postgrest` (the only Haskell on the
+  // box, 207 tracked .hs files) as a DISCLOSED SUBSTITUTE. Both original corpora
+  // have since been restored -- cabal@cdb488e with 2,178 tracked .hs files and
+  // hledger@1424480 with 190 -- so this is back to the lane's ORIGINAL declaration
+  // rather than a stand-in.
   //
-  // `P3D-Legacy` is the lane's primary: 1,880 tracked .vb files of a real
-  // Windows Forms codebase, the largest VB.NET-dominant corpus in the box.
-  // `DISMTools` is the second opinion (SECOND_CORPUS below) and is deliberately a
-  // DIFFERENT shape -- a Windows Forms authoring tool rather than a game, so its
-  // designer-generated files, its `My Project` assembly files and its
-  // Forms-Designer `Handles` wiring are shapes P3D does not contain.
-  // M60-HK wave (2026-09-29). `cabal` and `hledger` are GONE from this box —
-  // neither is among the 45 checkouts under CORPUS_ROOT — so the haskell lane
-  // could not run its differential at all and every coverage claim it had ever
-  // made was unfalsifiable. postgrest is the ONLY checkout on this machine with
-  // Haskell sources (207 tracked .hs files: the hasql library plus postgrest's
-  // own src), and several of this lane's own rulings were derived FROM it — the
-  // HSD12 standalone-deriving probe cites postgrest Routine.hs:65, the Main
-  // module rule cites postgrest Setup.hs, and the infix-method and
-  // applied-head rules cite postgrest's Encoders/All.hs and JwtCache.hs.
-  //
-  // This is a DISCLOSED SUBSTITUTE, not a replacement. It is smaller (207 vs the
-  // 637 cabal files the lane originally measured), and its .hs surface is a
-  // vendored database library rather than a general-purpose Haskell codebase, so
-  // it exercises less dialect than cabal did. It is registered because an
-  // unverifiable lane cannot be right OR wrong about its measurements, and 207
-  // real files that reproduce beat 637 that do not exist. Restoring `cabal`
-  // remains the better outcome and is the M12/M60 owner's call, not a lane's.
-  haskell: "postgrest",
+  // postgrest is kept in SECOND_CORPUS rather than discarded: six of this lane's
+  // rulings cite it by file (the HSD12 standalone-deriving probe cites
+  // Routine.hs:65, the Main-module rule cites Setup.hs, the infix-method and
+  // applied-head rules cite Encoders/All.hs and JwtCache.hs), and its dialect --
+  // a vendored database library -- is unlike cabal (build tool) or hledger (CLI
+  // accounting tool), which is the diversity a second corpus exists to provide.
+  haskell: "cabal",
   // M14 (master review, 2026-09-29): this entry went missing in the 229-commit
   // m48-recovery merge, and with it the lane's baseline row, its section-E floor
   // and its section-F budget. Nothing warned: `repoFor("xml")` simply reported "no
@@ -651,22 +634,14 @@ export const SECOND_CORPUS: Record<string, string> = {
   php: "phpmyadmin",
   ruby: "rack",
   python: "requests",
-  // M60-HK wave (2026-09-29): the haskell SECOND CORPUS is DECLARED ABSENT, not
-  // silently kept. `hledger` has no checkout on this machine — the sweep throws
-  // `corpus repo missing` on a declared-but-absent repo, which is the correct
-  // behaviour and the reason this is a removal rather than a retarget.
-  //
-  // There is no replacement to invent: postgrest is the only checkout on this box
-  // with any Haskell at all, and pointing both entries at it would be one corpus
-  // counted twice — exactly the "which number is the claim" ambiguity a declared
-  // second corpus exists to prevent. So haskell runs SINGLE-CORPUS, which is the
-  // same position the fsharp lane records for itself.
-  //
-  // What this costs, stated plainly: a defect with zero occurrences in postgrest
-  // cannot be exercised by a second codebase's dialect, so the property a
-  // two-corpus lane provides is NOT provided for haskell today. Restoring
-  // `hledger` (or `cabal`, which is also gone) restores it.
-  // haskell: "hledger",
+  // M60-HK wave (2026-09-29): hledger was absent and briefly DECLARED ABSENT --
+  // a declared-but-missing repo aborts the sweep, and with no Haskell checkout on
+  // the box the only "replacement" would have been postgrest again, counting one
+  // corpus twice. It is restored now (@1424480, 190 tracked .hs files), so the
+  // lane is TWO-CORPUS again and the property a second corpus exists to provide
+  // is back: a defect with zero occurrences in one codebase can be exercised by
+  // another codebase's dialect.
+  haskell: "hledger",
   elixir: "phoenix",
   // ER wave (M14 #275 obligation 2): OTP is the second Erlang corpus — the
   // elixir repo's 45 .erl files (compiler front-end only) were ruled
@@ -18545,11 +18520,43 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   if (lang === "xml") {
     // Declaration vocabularies, written out from the W3C namespace URIs rather
     // than imported from the analyzer's table, so the two can disagree.
+    //
+    // XSLT IS HERE, and removing it was tried and REVERTED: it made the lane
+    // worse, 5,952 unexplained edges to 11,687. The reasoning that motivated the
+    // removal was that `<xsl:element name="x">` constructs an element in the
+    // RESULT tree, so `name` is a run-time value and not a declaration — which is
+    // why the analyzer publishes `xsl:element` for one such element. But the
+    // analyzer publishes `checkstyleconfig` for another, and the oracle
+    // corroborated both, so the two agree that XSLT `name` attributes declare and
+    // my reading of the category was the minority one. Recorded rather than
+    // deleted because "we tried the principled thing and the measurement said no"
+    // is the kind of note that stops the next person repeating it.
     const XML_DECL_NS = new Set([
       "http://www.w3.org/2001/XMLSchema",
       "http://www.w3.org/1999/XSL/Transform",
       "http://relaxng.org/ns/structure/1.0",
+      "http://schemas.xmlsoap.org/wsdl/",
     ])
+
+    // WSDL is here for the same reason XSD and RelaxNG are, and was missing: its
+    // `definitions`, `binding`, `portType`, `message`, `service`, `port` and
+    // `operation` all carry `name` as their identifier, so
+    // `<wsdl:definitions name="HelloWorld">` DECLARES a named WSDL unit and every
+    // containment edge below it inherits that spelling. Measured on cxf's
+    // `hello_world_bindings.wsdl.xml`: the analyzer published
+    // `contains HelloWorld -> wsdl:import` and `contains HelloWorld ->
+    // SOAPBinding` against the oracle's `wsdl:definitions`, and with WSDL absent
+    // the entire class of WSDL containment read as unexplained.
+    //
+    // This is a SECOND hand-maintained vocabulary list, which is a known way to
+    // drift silently — the failure the bash builtin table documents. It is
+    // duplicated deliberately rather than imported, because importing it would
+    // make this function agree with the analyzer by construction, and an oracle
+    // that cannot disagree is a mirror. The defence against drift is NOT the
+    // duplication but `script/m12/xml-vocab-tables.ts`, which asserts the two
+    // tables cover the same namespaces, so a vocabulary added to one and not the
+    // other fails a gate instead of quietly producing thousands of unexplained
+    // edges for the next person to argue about.    ])
     // The attribute a construct declares its NAME with, per vocabulary. Also
     // written independently; the analyzer keys this off node type, which is a
     // different source of truth on purpose.
@@ -18578,6 +18585,38 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // construct, was right. Written out here rather than fitted to the analyzer:
     // the argument is the language's, and it holds whether or not the two agree.
     const XML_NAME_ATTR = new Set(["name"])
+
+    // XSLT CONSTRUCTS A NODE, IT DOES NOT DECLARE ONE — and for these four the
+    // `name` attribute is a value the processor reads at RUN TIME, not the name
+    // of a component this document declares.
+    //
+    // The distinction is per-construct, which is why removing XSLT from
+    // XML_DECL_NS wholesale was tried and reverted (5,952 unexplained edges became
+    // 11,687). `<xsl:param name="p"/>` genuinely DECLARES a parameter named `p`,
+    // and both implementations agree on it; `<xsl:element name="x">` CONSTRUCTS an
+    // element named `x` in the result tree, and `x` may be computed from an
+    // expression (`name="{$which}"`), so there is no statically declared component
+    // to publish. It is the same category as X5's `<xsl:output method="text">`,
+    // where a configuration value was being published as a component name.
+    //
+    // Measured on cxf's transformation.xsl, where the blanket rule produced
+    // `contains xsl:template -> getCustomersByName1` against the analyzer's
+    // `contains xsl:template -> xsl:element`, and every edge into and out of the
+    // invented name read as spurious.
+    //
+    // `call-template` is a THIRD reason, and the reason matters: its `name` is a
+    // static REFERENCE to a template declared elsewhere, so naming the node after
+    // it would both misname the instruction and lose the callee — cxf's
+    // studentCreate.xsl has `<xsl:element name="student">` wrapping five
+    // `<xsl:call-template name="…"/>` calls, and the blanket rule turned each
+    // instruction into a component named after the template it invokes.
+    const XMLSLT_CONSTRUCTS_NAME = new Set([
+      "element",
+      "attribute",
+      "processing-instruction",
+      "comment",
+      "call-template",
+    ])
 
     const nodes: any[] = []
     {
@@ -18676,7 +18715,11 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         const colon = written.indexOf(":")
         const pre = colon >= 0 ? written.slice(0, colon) : ""
         const eff = pre ? pfx.get(pre) : ns
-        if (eff && XML_DECL_NS.has(eff)) {
+        // The declaration-name rule applies per CONSTRUCT, not per vocabulary: an
+        // XSLT instruction that constructs a result-tree node is not declaring
+        // one, so its `name` is data. See XMLSLT_CONSTRUCTS_NAME.
+        const xsltConstruct = eff === "http://www.w3.org/1999/XSL/Transform" && XMLSLT_CONSTRUCTS_NAME.has(written.slice(pre.length + 1))
+        if (eff && XML_DECL_NS.has(eff) && !xsltConstruct) {
           const decl = named(tag, "Attribute")
             .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
             .find((x: any) => XML_NAME_ATTR.has(x.k) && x.v.length > 0)
