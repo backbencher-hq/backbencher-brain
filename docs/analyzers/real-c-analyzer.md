@@ -764,6 +764,57 @@ consequences of the pattern rather than of the individual rows.
 hierarchy). `instantiates` is the one C-specific type the truth asks for and the
 analyzer does not emit, and that is the second open question below.
 
+### CGD20: a function-local type is not an execution artifact (OPEN RULING, #959)
+
+Adjudicating the last two `contains` misses from `contains-vs-clang.ts` —
+`listpack.c:1920`'s `struct pick` — turned up a **class**, not an instance. CGD20
+(real-c-analyzer.ts:1512) reads:
+
+```
+// CGD20: function-local struct definitions are execution artifacts
+// (C-D1) — no scope, no symbol, no field registration.
+if (scopeManager.isInsideFunction()) break
+```
+
+Measured over the three declared corpora: **20 function-local named types carrying
+65 members, across 15 files, none published** — 7 in redis (41 members), 12 in curl
+(23), 1 in libgit2 (1). The instances that make the ruling matter are **used, not
+decoration**: `deps/jemalloc/test/unit/malloc_io.c:14` `struct test_s` (6 members, 4
+references), `src/ebuckets.c:2230` `struct TestParams` (the parameter table for the
+benchmark below it), `deps/jemalloc/src/ctl.c:990` `struct container_s`.
+
+"Execution artifact" does not survive contact with C. A struct definition emits no
+code. The **local variable** is the execution artifact; the struct is a compile-time
+type definition whose *type* is fully determined, and the block merely limits its
+*visibility*. Under the current rule a consumer cannot answer how large the type is or
+who reads its members.
+
+**The sharpest evidence is in this lane's own output.** The payload already publishes
+
+```
+uses local_type_in_use -> index
+uses local_type_in_use -> order
+```
+
+— uses of members of a type it declines to declare. Either the type is a real type and
+belongs in the graph, or those edges are dangling, and both cannot be right at once. A
+lane that declines to publish a type is not consistent about declining to publish uses
+**of** it. (A first pass counted two curl types as published; re-checked, that was a
+member name coinciding with the type name — 0 of 20 are published.)
+
+**Not fixed here, deliberately.** CGD20 is not a C-local slip. It is mirrored at three
+sites in the shared `script/m14/differential.ts` (struct, enum and typedef branches)
+and cited by name in the cpp lane's documentation, so un-mirroring it changes what the
+oracle expects in every lane that has a function-local type. That is a contract change
+with an owner, not a defect fix with a fixture.
+
+`c/function-local-type-959` records the measurement, the evidence rows and the controls,
+and deliberately puts `contains local_type_in_use -> index` in neither
+`expectRelationships` nor `forbidRelationships`: asserting it either way would encode a
+decision that has not been made. The controls pin what must not move — file-scope
+structs, typedef'd anonymous structs, function-local **variables** (C-D1 is right about
+those), and file-scope members read from inside a block that also declares a local type.
+
 ### Two open questions, both needing an owner's ruling
 
 1. **Is a write to a field a `uses`?** The truth says yes, the analyzer says no,
@@ -897,7 +948,7 @@ The containment check exists because of that, not because of the two rows it fix
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **29/29 pass** (18 pre-existing + 11 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **31/31 pass** (18 pre-existing + 11 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
 | C-lane gate (properties + mutants + cost) | **14 properties, 35/35 live mutants caught, 4 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
