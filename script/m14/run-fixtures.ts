@@ -51,6 +51,12 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
+  // protobuf's `ext` is `proto`, which is what language-detection.ts routes, and
+  // its `wasm` is the GRAMMAR's name, the same relationship every other row here
+  // has. This row is also the F3 fixture-lane gate's completeness check: a
+  // `validation/m14/fixtures/<dir>/` with no row here is reported as an ORPHAN and
+  // exits 6, because an expectation file nothing executes is evidence of nothing.
+  protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   // M14.6 perl wave: the lane had no fixture directory at all, so none of its
   // defects were pinned. `ext` carries the whole production surface: the

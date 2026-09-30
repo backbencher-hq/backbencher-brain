@@ -105,8 +105,11 @@ a second one here would be a phantom.
 **A `oneof` is a symbol; its fields still belong to the message.** A field
 number lives in the *message's* space and `msg.field` is how every protobuf tool
 refers to them, so reassigning ownership to the oneof would be wrong. The oneof
-is a `union` with a `contains` edge to each member, and each member carries
-`metadata.oneof`.
+is a `union` reached from the message by one `contains` edge, and there is
+deliberately **no** edge from the oneof to its own fields — membership and
+grouping are different relations, and a second `contains` edge would make one
+type mean both. Each member carries `metadata.oneof`, and the absence is asserted
+as a negative control in the m14 fixture lane rather than left as a claim.
 
 **A proto2 `group` declares both a type and a field, and they need two ids.**
 `optional group G = 4 { … }` declares a nested type `G` *and* a field `G` of

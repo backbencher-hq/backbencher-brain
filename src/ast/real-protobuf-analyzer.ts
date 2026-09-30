@@ -694,10 +694,21 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (ctx.owner) addRel(ctx.owner, id, RelationshipTypeContains, lineOf(node), { member: "oneof" })
           // Fields inside a oneof are members of the MESSAGE, not of the oneof:
           // the field number lives in the message's own space and
-          // `msg.field` is how every protobuf tool refers to them. The oneof is
-          // recorded on each field as `metadata.oneof` and carries a `contains`
-          // edge to each of them, so the grouping is navigable without
-          // reassigning ownership.
+          // `msg.field` is how every protobuf tool refers to them, so
+          // reassigning ownership to the oneof would be wrong.
+          //
+          // The oneof therefore emits exactly ONE edge — the message contains
+          // the oneof — and there is deliberately NO edge from the oneof to its
+          // fields. An earlier version of this comment claimed one, and the
+          // comment was wrong: the code never emitted it. That was caught by
+          // writing the m14 fixture lane, which asserts the absence as a
+          // `forbidRelationship` rather than leaving the claim to be believed.
+          //
+          // The reason it is right to leave it out: membership and grouping are
+          // different relations, and a second `contains` edge would make one
+          // edge type mean both. The grouping is carried as `metadata.oneof` on
+          // each field, which is queryable and cannot be confused with
+          // ownership.
           const inner: Ctx = { ...ctx, oneof: name }
           pushAll(kids(node), inner)
           return
