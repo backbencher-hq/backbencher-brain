@@ -37,6 +37,14 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // compared by nothing.
 import { deriveTypeScriptReferencesTruth } from "./oracles/typescript-references"
 import { deriveTypeScriptUsesTruth } from "./oracles/typescript-uses"
+// M60 Solidity oracle, lane-owned in oracles/ for the same reason the three above
+// are: this shared file keeps one import and one registration of the rule rather
+// than a second copy the lane would have to edit here in parallel. It derives
+// contains/uses/extends/implements/instantiates/overrides from the tree by the
+// language's rules, and its header states PER CLASS whether the derivation is
+// independent of the analyzer's — which is the entire value of a differential, and
+// a blanket claim would be worth nothing.
+import { deriveSolidityEdges, deriveSolidityCallReferenceEdges } from "./oracles/solidity"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -437,6 +445,13 @@ export const LANG_REPOS: Record<string, string> = {
   // of the repo's error files are its own invalid-syntax fixtures), and the lane
   // measures the production half. 553 tracked files, 49 of them production.
   powershell: "powershell",
+  // M60 Solidity lane. The pinned corpus is OpenZeppelin/openzeppelin-contracts at
+  // rev 32b5b8c4 — chosen because it is REAL production Solidity rather than a
+  // tutorial set: 389 production .sol files, and the draw is 0% damaged, which is
+  // the reason this lane has no grammar work queued on it. The PowerShell lane
+  // opened at 16% damaged and every grammar patch in its history is downstream of
+  // that number.
+  solidity: "solidity",
   // json's second corpus is `otp`, and it is chosen for the opposite reason to the
   // primary: 322 tracked .json, none of them lockfiles, including
   // `lib/stdlib/test/json_SUITE_data/` — Erlang's own ADVERSARIAL JSON suite
@@ -663,6 +678,9 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // grammar is not unparsed-by-the-grammar, and this lane's measurements are taken
   // over all three because the declaration and the product disagree.
   powershell: { wasm: "tree-sitter-powershell.wasm", analyzerFile: "real-powershell-analyzer", className: "RealPowershellAnalyzer", ext: "ps1,psm1,psd1" },
+  // M60 Solidity lane. The wasm name is the GRAMMAR's, and it is the name the pin's
+  // `wired` field records, so a swap here is a swap the pin gate catches.
+  solidity: { wasm: "tree-sitter-solidity.wasm", analyzerFile: "real-solidity-analyzer", className: "RealSolidityAnalyzer", ext: "sol" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
       typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: "kt" },
@@ -4490,6 +4508,220 @@ export function deriveJavaScriptImportEdges(root: any): { label: string; from: s
  * difference between them is where the class is NAMED and not whether it has a
  * parent.
  */
+/**
+ * M60/J9 (2026-09-30): the JAVASCRIPT `overrides` ORACLE — and a CORRECTION to my
+ * own characterisation of the gap it closes.
+ *
+ * WHY IT EXISTS. `overrides` had been in the javascript comparison set with NO truth
+ * behind it, so all 44 emitted rows were unmatched. It stayed invisible because they
+ * sit at 0.5 and the harness files those as `heuristic` — declared suspicion — and a
+ * bucket full of suspicion reads as caution rather than as a hole. The G20 gate now
+ * fails any lane in that state, so this oracle exists to satisfy it honestly rather
+ * than by removing the label.
+ *
+ * **THE CORRECTION, because I got this wrong before building it.** I recorded that
+ * `HTMLElement.*` was "6 rows and ALL SIX ARE FALSE". Two of the six are not:
+ * `addEventListener` and `removeEventListener` ARE members of `HTMLElement`, INHERITED
+ * from `EventTarget.prototype`, and a subclass method that shadows an inherited one
+ * genuinely overrides it. So the correct figure is 2 true / 4 false for that base,
+ * not 0/6 — and the reason my earlier number was wrong is that I was about to model
+ * each base as a FLAT member list, which cannot express inheritance at all. An
+ * override is a question about the whole prototype chain, so the table below is a
+ * CHAIN, and the six names I called false are re-derived rather than asserted.
+ *
+ * WHY A TABLE AT ALL. A base that no corpus declares has no members the oracle can
+ * discover: `URLSearchParams`'s prototype is not in any repository here. So the
+ * members are PLATFORM KNOWLEDGE, declared rather than derived, and that provenance
+ * is stated because it is the weakest input in this file — a wrong entry produces a
+ * confidently wrong verdict. It is also the only way to ADJUDICATE the rows: without
+ * it, 44 edges sit in `heuristic` and nobody knows how many are right. The gate only
+ * needs truth to EXIST; the table is what makes it mean something.
+ *
+ * COMPUTED KEYS COUNT. `[Symbol.iterator]` is a real computed member and is listed as
+ * such. `[REPLACE]` is a template marker that merely LOOKS like one, and is absent —
+ * so the oracle declines to call it a member, which is how a bracket-name that is not
+ * a well-known symbol gets separated from one that is.
+ */
+const JS_BUILTIN_CHAINS: Record<string, string[]> = {
+  // ECMAScript builtins. Chains are listed outermost-first, and a member of any
+  // ancestor counts: overriding works through inheritance, so a flat per-type list
+  // would be wrong for every derived type.
+  Map: ["Map", "Object"],
+  Set: ["Set", "Object"],
+  WeakMap: ["WeakMap", "Object"],
+  WeakSet: ["WeakSet", "Object"],
+  Promise: ["Promise", "Object"],
+  Array: ["Array", "Object"],
+  String: ["String", "Object"],
+  Number: ["Number", "Object"],
+  Boolean: ["Boolean", "Object"],
+  Error: ["Error", "Object"],
+  TypeError: ["TypeError", "Error", "Object"],
+  RangeError: ["RangeError", "Error", "Object"],
+  Date: ["Date", "Object"],
+  RegExp: ["RegExp", "Object"],
+  JSON: ["JSON", "Object"],
+  Reflect: ["Reflect", "Object"],
+  URL: ["URL", "Object"],
+  URLSearchParams: ["URLSearchParams", "Object"],
+  Object: ["Object"],
+  // DOM. `HTMLElement` is five prototypes deep, which is the whole reason the flat
+  // reading was wrong: `addEventListener` is three hops away and still a member.
+  HTMLElement: ["HTMLElement", "Element", "Node", "EventTarget", "Object"],
+  Element: ["Element", "Node", "EventTarget", "Object"],
+  Node: ["Node", "EventTarget", "Object"],
+  EventTarget: ["EventTarget", "Object"],
+}
+
+const JS_BUILTIN_MEMBERS: Record<string, Set<string>> = {
+  Map: new Set(["clear", "delete", "entries", "forEach", "get", "has", "keys", "set", "values", "size", "[Symbol.iterator]"]),
+  Set: new Set(["add", "clear", "delete", "entries", "forEach", "has", "keys", "size", "values", "[Symbol.iterator]"]),
+  WeakMap: new Set(["delete", "get", "has", "set"]),
+  WeakSet: new Set(["add", "delete", "has"]),
+  Promise: new Set(["all", "allSettled", "any", "catch", "finally", "race", "reject", "resolve", "then"]),
+  Array: new Set(["at", "concat", "copyWithin", "entries", "every", "fill", "filter", "find", "findIndex", "flat", "flatMap", "forEach", "includes", "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push", "reduce", "reduceRight", "reverse", "shift", "slice", "some", "sort", "splice", "unshift", "values", "at", "length", "[Symbol.iterator]"]),
+  String: new Set(["at", "charAt", "charCodeAt", "codePointAt", "concat", "endsWith", "includes", "indexOf", "lastIndexOf", "localeCompare", "match", "normalize", "padEnd", "padStart", "repeat", "replace", "replaceAll", "search", "slice", "split", "startsWith", "substring", "toLowerCase", "toUpperCase", "trim", "trimEnd", "trimStart", "length"]),
+  Number: new Set(["toExponential", "toFixed", "toPrecision", "toString", "valueOf"]),
+  Boolean: new Set(["toString", "valueOf"]),
+  Error: new Set(["message", "name", "stack", "cause", "toString"]),
+  TypeError: new Set(["message", "name", "stack", "cause", "toString"]),
+  RangeError: new Set(["message", "name", "stack", "cause", "toString"]),
+  Date: new Set(["getDate", "getDay", "getFullYear", "getHours", "getMilliseconds", "getMinutes", "getMonth", "getSeconds", "getTime", "getTimezoneOffset", "getUTCDate", "getUTCDay", "getUTCFullYear", "getUTCHours", "setDate", "setFullYear", "setHours", "setMinutes", "setMonth", "setSeconds", "setTime", "toISOString", "toJSON", "toLocaleDateString", "toLocaleString", "toLocaleTimeString", "toString", "toUTCString", "valueOf"]),
+  RegExp: new Set(["exec", "test", "source", "flags", "global", "lastIndex", "toString"]),
+  JSON: new Set(["parse", "stringify"]),
+  Reflect: new Set(["apply", "construct", "defineProperty", "deleteProperty", "get", "getOwnPropertyDescriptor", "getPrototypeOf", "has", "isExtensible", "ownKeys", "preventExtensions", "set", "setPrototypeOf"]),
+  URL: new Set(["toJSON", "toString", "href", "origin", "protocol", "host", "hostname", "port", "pathname", "search", "searchParams", "hash", "username", "password"]),
+  URLSearchParams: new Set(["append", "delete", "entries", "forEach", "get", "getAll", "has", "keys", "set", "size", "sort", "toString", "values", "[Symbol.iterator]"]),
+  Object: new Set(["assign", "create", "defineProperty", "entries", "freeze", "fromEntries", "getOwnPropertyDescriptor", "getOwnPropertyNames", "getPrototypeOf", "hasOwn", "hasOwnProperty", "is", "isFrozen", "isSealed", "keys", "preventExtensions", "propertyIsEnumerable", "seal", "setPrototypeOf", "toString", "valueOf"]),
+  HTMLElement: new Set(["attachShadow", "blur", "click", "closest", "focus", "getAttribute", "getBoundingClientRect", "getClientRects", "getElementsByClassName", "getElementsByTagName", "hidden", "id", "innerHTML", "innerText", "matches", "remove", "removeAttribute", "scrollIntoView", "setAttribute", "shadowRoot", "style", "tagName", "textContent", "title"]),
+  Element: new Set(["closest", "getAttribute", "getAttributeNames", "hasAttribute", "matches", "removeAttribute", "setAttribute", "tagName"]),
+  Node: new Set(["appendChild", "cloneNode", "contains", "insertBefore", "removeChild", "replaceChild", "textContent", "nodeName", "nodeType", "parentNode", "childNodes"]),
+  EventTarget: new Set(["addEventListener", "removeEventListener", "dispatchEvent"]),
+}
+
+/** Is `member` a member of `base` ANYWHERE on its prototype chain? */
+function jsBuiltinHasMember(base: string, member: string): boolean {
+  const chain = JS_BUILTIN_CHAINS[base]
+  if (!chain) return false
+  for (const link of chain) {
+    const m = JS_BUILTIN_MEMBERS[link]
+    if (m && m.has(member)) return true
+  }
+  return false
+}
+
+/**
+ * M60/J9 (2026-09-30): the JAVASCRIPT `overrides` ORACLE.
+ *
+ * Emits `overrides Base.member` ONLY when `Base` is a declared platform builtin and
+ * `member` is genuinely on its prototype chain. Two consequences, both intended:
+ *
+ *   - A row the analyzer emits and the oracle confirms stops being `heuristic` and
+ *     becomes covered, which is the point: it is adjudicated.
+ *   - A row the analyzer emits and the oracle REFUSES (a name that is not a member of
+ *     that base, such as a custom-element callback or a template marker like
+ *     `[REPLACE]`) becomes `unexplained` rather than suspicion, because it is now
+ *     decidable and found false. That is the honest direction to fail: these rows
+ *     are the defect the 0.5 tier was hiding, and hiding them was the problem.
+ *
+ * The oracle deliberately does NOT derive overrides against a base declared in the
+ * corpus. Measured over the full 3,369-file javascript corpus, all 44 emitted rows
+ * name a platform builtin, so there is no in-corpus case to cover and inventing one
+ * would be untested code.
+ */
+export function deriveJavaScriptOverrides(root: any): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const walk = (n: any): void => {
+    if (n.type === "class_declaration" || n.type === "class") {
+      const heritage = (() => {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "class_heritage") return c
+        }
+        return null
+      })()
+      const base = heritage
+        ? (() => {
+            for (let i = 0; i < heritage.namedChildCount; i++) {
+              const c = heritage.namedChild(i)
+              if (c && (c.type === "identifier" || c.type === "member_expression")) return String(c.text ?? "").trim()
+            }
+            return ""
+          })()
+        : ""
+      if (base && JS_BUILTIN_CHAINS[base]) {
+        const owner = n.childForFieldName("name")?.text ?? "(expr)"
+        // The members live under `class_body`, NOT directly on the class node — the
+        // tree is `class_declaration > class_body > method_definition`. A first cut
+        // iterated the class's own children and therefore found no members at all,
+        // which refused all 44 corpus rows including `Map.get` and `Error.toString`.
+        // That is the same grandchild mistake the CSS import oracle records, and it
+        // failed the same way: the lane's number looked fine and the truth was empty.
+        // Recorded here because the symptom was a total, not a partial, miss — which
+        // is what made it obvious once the first refused row was `Map.get`.
+        let body: any = null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "class_body") { body = c; break }
+        }
+        const members = body ? (body.namedChildren ?? []) : []
+        for (const c of members) {
+          let member = ""
+          if (c.type === "method_definition") {
+            // A STATIC member never virtually dispatches, so a subclass static
+            // SHADOWS rather than OVERRIDES — there is no prototype-chain link
+            // between them. The analyzer refuses these (its own B4 ruling) and the
+            // oracle must refuse them independently, or it derives 12 truth rows the
+            // analyzer will never emit and the differential reports them MISSING.
+            // `static` is an UNNAMED token child, which is why it is found among
+            // `children` and not among `namedChildren`.
+            if ((c.children ?? []).some((k: any) => k.type === "static")) continue
+            member = c.childForFieldName("name")?.text ?? ""
+          }
+          else if (c.type === "field_definition") {
+            // A class FIELD is installed on each INSTANCE as an own property, not on
+            // the prototype, so it is not an override of a base member in this lane's
+            // contract — which scopes `overrides` to Methods and Constructors (the
+            // analyzer's own B4 ruling excludes statics for the same shadow-not-
+            // override reason). Every `field_definition` is therefore skipped.
+            //
+            // A first cut skipped only fields whose INITIALISER was a literal, and
+            // that was wrong in a way the differential reported as 12 MISSING: in
+            // `svelte/src/reactivity/url.js`, `SvelteURL extends URL` re-declares
+            // `hash`, `host`, `hostname`, `href`, `password`, `pathname`, `port`,
+            // `protocol`, `search` and three more as fields whose initialisers are
+            // EXPRESSIONS (`this.#url.hash`), so the literal test passed them
+            // through. The property is a property — the initializer's shape is
+            // irrelevant to whether it lands on the instance — and filtering on the
+            // initializer was filtering on the wrong thing entirely.
+            continue
+          }
+          if (!member || member === "constructor") continue
+          // A `#private` name is class-scoped and never a prototype member, so it can
+          // override nothing. The analyzer now refuses these too (J9 part 1); the
+          // oracle refuses them independently so the two are not relying on each
+          // other.
+          if (member.startsWith("#")) continue
+          if (!jsBuiltinHasMember(base, member)) continue
+          const target = `${base}.${member}`
+          const source = `${owner}.${member}`
+          const k = `overrides|${target}`
+          if (seen.has(k)) continue
+          seen.add(k)
+          edges.push({ label: "overrides", from: source, target })
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) walk(c)
+    }
+  }
+  walk(root)
+  return edges
+}
+
 export function deriveJavaScriptExtends(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -20071,6 +20303,10 @@ async function main() {
         for (const e of deriveJavaScriptExtends(root)) {
           ;(truth as any[]).push(e)
         }
+        // The `overrides` oracle, with a declared platform-builtin prototype chain.
+        for (const e of deriveJavaScriptOverrides(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "vue" || lang === "svelte") {
         // M37.21 #611: web-embedded-script CALLS truth (the JD-oracle gap).
@@ -20570,6 +20806,19 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "solidity") {
+        // M60 Solidity lane; see the oracle's header for the per-class
+        // independence statement. The module name is the file's basename WITH its
+        // extension, which is what keeps two `Token.sol` in different directories
+        // distinct within a file-scoped comparison.
+        const solModule = relPath.split("/").pop() ?? "contract.sol"
+        for (const e of deriveSolidityEdges(root, solModule)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveSolidityCallReferenceEdges(root, solModule)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "ruby") {
         for (const e of deriveRubyEdges(root)) {
           ;(truth as any[]).push(e)
@@ -20885,6 +21134,20 @@ async function main() {
           ...(lang === "scss" ? ["uses", "references", "imports", "contains"] : []),
           ...(lang === "powershell" ? ["exports"] : []),
           ...(lang === "powershell" ? ["references"] : []),
+          // M60 Solidity: `contains` and `uses` are the two largest and most
+          // obviously correct classes in the lane — every declaration contained by
+          // its nearest enclosing declaration, and every positional identifier
+          // read — and the oracle derives both from the tree. Naming them is not
+          // bookkeeping: the allowlist filters the ANALYZER side, so a kind the
+          // oracle derives but the allowlist omits reads as MISSING the moment it
+          // is switched on. The same trap the powershell-`contains` note above
+          // records, in the direction a single-language lane walks into first.
+          // ... and `calls`/`references`/`exports` join them: the oracle derives
+          // all five (see oracles/solidity.ts, which states per class whether the
+          // derivation is independent). Naming only two would leave the lane's
+          // second-largest kind unaudited and every one of its edges counted as a
+          // confident fabrication, which is the #910 trap this comment sits inside.
+          ...(lang === "solidity" ? ["uses", "contains", "calls", "references", "exports"] : []),
           // M14 F10: css is comparable on exactly the four kinds its oracle
           // derives. Naming them is not bookkeeping — the allowlist filters the
           // ANALYZER side, so a kind that the oracle derives but the allowlist

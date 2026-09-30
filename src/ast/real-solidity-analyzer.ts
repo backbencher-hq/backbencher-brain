@@ -748,6 +748,34 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     /**
+     * SOL-2's callee suppression, for a BARE identifier read — and this one checks
+     * the IMMEDIATE parent only, which is the correction the F5 differential
+     * forced.
+     *
+     * `isClaimedCallee` climbs the whole ancestor chain, and that is right for a
+     * `member_expression` (whose property can sit two wrappers below a call's
+     * `function:` field) and WRONG for a bare identifier read. In
+     *
+     *     stringMap[key].getStringSlot().value
+     *
+     * the `array_access` base `stringMap` is an `expression` that is an ANCESTOR
+     * of the claimed callee, so the climb suppressed it — and the RECEIVER of a
+     * method call is a real read that the lane was dropping corpus-wide. The
+     * differential reported it as 20 MISSING rows of the shape
+     * `uses getStringStorage -> stringMap`; every one was correct and every one was
+     * absent.
+     *
+     * Why the immediate parent is sufficient here: an identifier that genuinely IS
+     * a callee has the claimed `function:`-field node as its DIRECT parent, so
+     * nothing further up the chain needs consulting. The ancestor climb exists only
+     * for the member case, and it stays.
+     */
+    const isClaimedCalleeDirect = (node: Node): boolean => {
+      const parent = node.parent
+      return parent !== null && claimedCallees.has(parent.id)
+    }
+
+    /**
      * SOL-7 — is this member access's OBJECT an engine-supplied thing rather than
      * a project value? Two shapes qualify and both were found by reading the tree
      * on real code rather than by reasoning about it:
@@ -837,6 +865,46 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       set.add(name)
     }
 
+    /**
+     * Is this node a DECISION POINT for cyclomatic complexity?
+     *
+     * Solidity's branching constructs: `if`/`for`/`while`/`do`-`while`, the ternary
+     * conditional, `catch`, `&&`, `||`, and the two Yul forms. `else` is part of
+     * `if_statement` in this grammar (one node), so an `if`/`else` pair is ONE branch
+     * — which is the standard reading, and the alternative would make the number a
+     * measure of the grammar's node layout rather than of the code.
+     *
+     * The FIRST version counted `binary_expression` unconditionally, which is wrong
+     * in both directions at once: it counted `a + b` as a decision point and missed
+     * `if` entirely. Measured on all-kinds-sol it produced 3 for a file holding six
+     * contracts, which is not a complexity anyone would recognise. The operator is
+     * read STRUCTURALLY — `binary_expression` puts it between its `left:` and
+     * `right:` fields as an anonymous token, so `node.child(i).type === "&&"` is a
+     * fact about the tree rather than a substring match on source text.
+     */
+    const isBranchNode = (node: Node): boolean => {
+      switch (node.type) {
+        case "if_statement":
+        case "for_statement":
+        case "while_statement":
+        case "do_while_statement":
+        case "ternary_expression":
+        case "catch_clause":
+        case "yul_if_statement":
+        case "yul_switch_statement":
+          return true
+        case "binary_expression": {
+          for (let i = 0; i < node.childCount; i++) {
+            const c = node.child(i)
+            if (c && (c.type === "&&" || c.type === "||")) return true
+          }
+          return false
+        }
+        default:
+          return false
+      }
+    }
+
     const openFrame = (node: Node, owner: string, scope: string, line: number, yul = false) => {
       openedFrames.add(nodeKey(node))
       frames.push({ owner, scope, containerLine: line, yul })
@@ -862,6 +930,14 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // SOL-6 — nothing is emitted from a recovery region, and a recovery
       // region's whole SUBTREE is skipped rather than its direct children.
       if (node.type === "ERROR" || node.isMissing) continue
+
+      // CYCLOMATIC COMPLEXITY, counted once per BRANCH and BEFORE the switch,
+      // because half of Solidity's branching constructs (`if`, `for`, `while`,
+      // `do`-`while`) are in the silent list below — counting them in `default` meant
+      // the switch consumed them first and they were never counted at all. Measured
+      // on a probe file carrying every branch construct in the language: 4, where
+      // there are 7.
+      if (isBranchNode(node)) cyclomaticComplexity++
 
       let descend = true
 
@@ -1528,7 +1604,7 @@ const meta = modifiersOf(node)
           // SOL-2 — a READ is an identifier whose PARENT is an `expression`.
           const parent = node.parent
           if (!parent || parent.type !== "expression") break
-          if (isClaimedCallee(node)) break
+          if (isClaimedCalleeDirect(node)) break
           if (top().yul) break
           // SOL-7 — `address(this).call(…)` puts a bare `this` under an
           // `expression`, so the positional read rule alone published
@@ -1606,12 +1682,9 @@ const meta = modifiersOf(node)
           break
 
         default: {
-          // Cyclomatic complexity, counted once per BRANCH at the node the tree
-          // names as a branch. This is an explicit list rather than a
-          // catch-all so adding a construct cannot silently change the metric.
-          if (node.type === "ternary_expression" || node.type === "binary_expression" ||
-              node.type === "catch_clause" || node.type === "yul_if_statement" ||
-              node.type === "yul_switch_statement") cyclomaticComplexity++
+          // Every other construct: descend, emit nothing. The complexity count
+          // happens above the switch — see the note there for why it cannot live in
+          // this branch.
           break
         }
       }
