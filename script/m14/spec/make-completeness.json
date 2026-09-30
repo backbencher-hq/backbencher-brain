@@ -180,9 +180,10 @@
       {
         "id": "MAKE-G2",
         "node_type": "RECIPEPREFIX_assignment",
-        "status": "OPEN",
-        "description": "A real correctness defect, and the only open gap in this lane that is one. `.RECIPEPREFIX = >` is GNU Make 3.82+; the pinned grammar hardcodes the recipe prefix to a tab and leaves `// TODO external parser for .RECIPEPREFIX` where the value belongs, so a Makefile that sets it has every recipe line parsed as an ERROR node and the analyzer reports a build file that does nothing. 0 of the 100 pinned corpus files set it, which is a fact about the corpus and not about the language.\n\nWHY IT IS STILL OPEN, PRECISELY. A finished external scanner is retained under grammars/tree-sitter-make/recipeprefix/ and the conflict is reproducible in one command (`bun run script/m14/tmp/make/recipeprefix-conflict.mts`). The two requirements are in direct conflict:\n  (1) a comment between two recipe lines must not end the recipe -- an ordinary makefile shape, present in 3 of the 100 corpus files;\n  (2) the declared prefix must be able to LEAD A RULE (`>a: deps`), because make strips it there too and that is the normal way to write the feature at all.\nThe scanner satisfies (1) and fails (2): the recipe-only variant passes the corpus with zero regressions. Adding `optional(prefix)` to `_ordinary_rule` satisfies (2) and BREAKS (1) -- the corpus A/B rejected it with 36 new error nodes across boundary/Makefile (12), nomad/GNUmakefile (17) and tf-aws-components/Makefile (10). Neither half is wired: half-supporting a construct is worse than declaring the gap, because a reader cannot tell which half works. This is a tree-sitter LEX-STATE problem rather than scanner logic, and the next attempt has a written direction.",
-        "attempted": "A complete external scanner was written, built and measured, and is retained at grammars/tree-sitter-make/recipeprefix/ (scanner.c, the patched grammar, and the diff). It is NOT wired, and the reason is precise rather than a dead end: see the README there. Measured with it: node surface unchanged at 44 named / 24 fields, corpus A/B over all 100 files 0 error nodes with 0 files regressed, and every recipe-line shape measured clean. It is unwired because it satisfies only HALF the feature."
+        "status": "FIXED",
+        "description": "CLOSED by a third grammar patch and an external scanner (`grammars/tree-sitter-make/src/scanner.c`). `.RECIPEPREFIX` is GNU Make 3.82+; the grammar hardcoded the recipe prefix to a tab and left `// TODO external parser for .RECIPEPREFIX` where the value belonged, so a file that set it lost every recipe line and the analyzer reported a build file that does nothing. 0 of the 100 pinned corpus files set it.\n\nThe scanner learns the prefix from the assignment's value and DECLINES everything it cannot vouch for — a variable reference, an empty value, or a value longer than one character all fall through to the unchanged internal `_assignment_text` token, so only the single-literal-character case behaves differently. Its state is serialized, because an incremental reparse that resumed mid-file with a default tab would produce a different, wrong tree depending on which edit triggered it.\n\nTWO SHAPES MATTER AND BOTH ARE PINNED. The tab stays an INTERNAL token and the declared prefix is the external alternative, so a makefile that never mentions `.RECIPEPREFIX` lexes through exactly the token set it always did. And a declared prefix may also lead a RULE, because make strips it there too — as a SEPARATE grammar alternative, never an `optional` head: a nullable head changes the reduce decision after a recipe's newline and loses the tab following an ordinary comment.\n\nMeasured: node surface UNCHANGED at 44 named / 24 fields, so the source<->wasm proof is untouched; corpus A/B over all 100 files 11 -> 0 error nodes, 3 files improved, 0 regressed.\n\nKNOWN RESIDUALS, both narrower than the feature was: (1) a comment between two PREFIXED rules still yields an ERROR on the second rule's prefix; (2) an ATTACHED recipe on a prefixed rule line (`>a: ;cmd`) is not recognised. Both were already errors before this patch, so neither is a regression, and both are recorded rather than left to be discovered. Pinned by make/recipeprefix with 2 forbidden shapes and 3 mutants.",
+        "attempted": "A complete external scanner was written, built and measured, and is retained at grammars/tree-sitter-make/recipeprefix/ (scanner.c, the patched grammar, and the diff). It is NOT wired, and the reason is precise rather than a dead end: see the README there. Measured with it: node surface unchanged at 44 named / 24 fields, corpus A/B over all 100 files 0 error nodes with 0 files regressed, and every recipe-line shape measured clean. It is unwired because it satisfies only HALF the feature.",
+        "fixedBy": "grammar patch P3 + src/scanner.c (external scanner); pinned by make/recipeprefix and 3 mutants"
       },
       {
         "id": "MAKE-G3",
@@ -201,17 +202,20 @@
     ],
     "summary": {
       "declared_named_types": 44,
-      "unmodelled_or_unexercised_open": [
-        "MAKE-G2"
-      ],
+      "unmodelled_or_unexercised_open": [],
       "fixed_by_measured_grammar_patch": [
         "MAKE-G3",
         "MAKE-G4"
       ],
       "residual_error_nodes": 0,
-      "note": "ONE gap remains open: MAKE-G2, a real correctness defect (.RECIPEPREFIX) with a finished, measured, retained patch that cannot yet be wired because two requirements conflict -- documented and reproducible at grammars/tree-sitter-make/recipeprefix/README.md and script/m14/tmp/make/recipeprefix-conflict.mts. G1, G3 and G4 are closed.",
+      "note": "NO OPEN GAPS. G1 closed by an analyzer change, G2/G3/G4 by measured grammar patches (G2 with an external scanner). Corpus ERROR residual is 0 and pinned to 0. Two narrower residuals of G2 are recorded in the gap entry itself.",
       "fixed_by_analyzer_change": [
         "MAKE-G1"
+      ],
+      "fixed_by_grammar_patch": [
+        "MAKE-G2",
+        "MAKE-G3",
+        "MAKE-G4"
       ]
     }
   },
