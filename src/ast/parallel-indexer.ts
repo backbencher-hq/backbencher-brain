@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url)
 import { cpus } from "os"
 import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
+import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
@@ -2187,7 +2188,40 @@ export async function storeResults(
        for (const result of batch) {
          if (!result.success) continue
  
-         let relativePath = path.relative(projectPath, result.filePath)
+         // M68: the relative path is computed from REAL paths on BOTH sides.
+         //
+         // `projectPath` and `result.filePath` reach this line spelled two
+         // different ways, and have done all along. `result.filePath` is the
+         // caller's own string — `results.push({ filePath: file, ... })` at the
+         // top of this loop, straight out of the `files` list — while
+         // `projectPath` is whatever the CALLER passed to indexProjectParallel.
+         // bb_edit is the one caller that realpath'd its project root, so for it
+         // the pair was `/private/var/folders/X` against `/var/folders/X`: the
+         // same directory, two spellings, and `path.relative` between them
+         // returned `../../../../var/folders/X/src/a.ts` instead of `src/a.ts`.
+         //
+         // The consequence was the worst kind of silent. `fileId` below is built
+         // from this value, so it matched no existing row, every DELETE ran
+         // against zero rows, and the INSERT created a SECOND brain_file row for
+         // a file that was already indexed. The file then appeared twice, its
+         // symbols appeared twice, and the second bb_edit on that file failed
+         // permanently with "symbol is ambiguous". MEASURED: bb_edit was usable
+         // exactly ONCE per file on macOS.
+         //
+         // No bb_edit gate saw it, because every one of them edits each symbol
+         // exactly once. A gate that only ever performs the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // Both sides are realpath'd HERE rather than at the call sites, because
+         // this is the one place the two are combined and seven callers reach it.
+         // The file side falls back to its own spelling when realpath throws,
+         // which is the create-a-new-file case where the leaf does not exist yet;
+         // for that the nearest existing ancestor's spelling is what matters and
+         // it is already consistent with the project root.
+         const realFilePath = (() => {
+           try { return realpathSync(result.filePath) } catch { return result.filePath }
+         })()
+         let relativePath = path.relative(realpathSync(projectPath), realFilePath)
          const fileId = `${projectId}:${relativePath}`
          // #756: per-file buffer for auto-generated contains edges (see the
          // symbol loop below) — flushed after the file's symbol rows exist.
@@ -2212,7 +2246,43 @@ export async function storeResults(
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
-         relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         // M68: `relativePath` is NOT recomputed here. The line this replaces was
+         //
+         //   relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         //
+         // which is a STRING replace standing in for a path operation, and it
+         // OVERWROTE the correct `path.relative(projectPath, result.filePath)`
+         // computed 25 lines above. It is only right when `result.filePath`
+         // literally contains `projectPath` as a prefix — which is false on
+         // macOS, where /var and /tmp are symlinks into /private. There
+         // projectPath is the unresolved spelling and result.filePath is a
+         // realpath, so the replace matches nothing and `relativePath` becomes
+         // the absolute path with its leading "/" stripped.
+         //
+         // The two spellings then disagree inside the SAME row: `fileId` on line
+         // 2191 came from the correct relative path, `relative_path` came from the
+         // broken one. So reindexing an already-indexed file computed a fileId
+         // that matched no existing row, every DELETE above hit zero rows, and the
+         // INSERT created a SECOND brain_file row for the same file — filed under
+         // the absolute path.
+         //
+         // MEASURED, through bb_edit, which is how this was found. Editing ONE
+         // symbol in a fresh project left:
+         //   brain_file    src/a.ts                  (the original)
+         //                 var/folders/.../src/a.ts  (the duplicate)
+         //   brain_symbol  alpha  x2
+         // and the consequence is that THE SYMBOL COULD NEVER BE EDITED AGAIN —
+         // the second edit failed with "symbol alpha is ambiguous; provide
+         // filePath and lineStart", permanently, because the duplicate never goes
+         // away. bb_edit was usable exactly once per file, on macOS.
+         //
+         // Not one bb_edit gate caught it, because every one of them edits each
+         // symbol exactly once. A gate that only ever does the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // `path.relative` is the operation that was always meant here, and it is
+         // already what the fileId above uses. If the two ever need to differ,
+         // that deserves a loud failure rather than a second spelling.
          const pathLower = relativePath.toLowerCase()
  
          let fileLayer = "core"
@@ -5244,6 +5314,36 @@ export async function reindexFilesParallel(
    *  not whether to retry, and not whether the failure is transient. Bounded, so a
    *  large failure cannot become a large payload. */
   errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  // M68: normalise the project root ONCE, here, so every `path.relative` in this
+  // function and in storeResults agrees with what the INITIAL index wrote.
+  //
+  // The defect this fixes was found through bb_edit and is the worst in this file.
+  // A caller may spell the project root either way — `/var/folders/X` or
+  // `/private/var/folders/X` are the same directory on macOS — and the initial
+  // index and the incremental reindex were being handed DIFFERENT spellings by
+  // different callers. `storeResults` then computed
+  //
+  //   fileId        = `${projectId}:${path.relative(projectPath, filePath)}`   (correct)
+  //   relative_path = filePath.replace(projectPath, "").replace(/^\//, "")     (broken)
+  //
+  // so a reindex of an already-indexed file produced a fileId matching no
+  // existing row: every DELETE hit zero rows and the INSERT created a SECOND
+  // brain_file row filed under the absolute path. The file then appeared twice,
+  // its symbols appeared twice, and the second bb_edit on that file failed for
+  // good with "symbol is ambiguous". MEASURED: editing one symbol left
+  //
+  //   brain_file    src/a.ts                  (original)
+  //                var/folders/.../src/a.ts  (duplicate)
+  //   brain_symbol  alpha  x2
+  //
+  // and no bb_edit gate saw it, because every one of them edits each symbol once.
+  //
+  // `realpathSync` is the operation that collapses the two spellings to one. It
+  // is applied HERE rather than at each call site because seven callers pass this
+  // path and one of them passing it differently is all it takes — bb_edit was the
+  // only one that realpath'd it, and it was enough to break the whole incremental
+  // path for that project.
+  const realProjectPath = realpathSync(projectPath)
   const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
@@ -5272,7 +5372,7 @@ export async function reindexFilesParallel(
 
       const tx = rawDb.transaction(() => {
         for (const change of deleted) {
-          const relativePath = path.relative(projectPath, change.path)
+          const relativePath = path.relative(realProjectPath, change.path)
           const fileId = `${projectId}:${relativePath}`
           deleteRelationships.run(fileId)
           deleteTaints.run(fileId, fileId)
@@ -5292,7 +5392,7 @@ export async function reindexFilesParallel(
   const toIndex = changes
     .filter((c) => c?.type !== "deleted")
     .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip("/" + path.relative(projectPath, c.path)))
+    .filter((c) => !shouldSkip("/" + path.relative(realProjectPath, c.path)))
     .map((c) => c.path)
 
   if (toIndex.length > 0) {
@@ -5303,9 +5403,9 @@ export async function reindexFilesParallel(
       // then the incremental run inside applies the bounded post-pass — so
       // bb_edit / LSP / MCP file-mode leave derived data consistent, not just
       // re-parsed. Snapshot cost folds into this call (pre-parse window).
-      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(realProjectPath, f)}`)
       const snapshot = await snapshotInEdges(projectId, touchedFileIds)
-      const indexResult = await indexProjectParallel(projectId, projectPath, {
+      const indexResult = await indexProjectParallel(projectId, realProjectPath, {
         files: toIndex,
         isIncremental: true,
         skipDiscovery: true,
