@@ -1189,12 +1189,46 @@ export namespace CrossLanguageMigrationAssistant {
           detail:
             files.size === 1
               ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
-              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); re-run against one file's symbol id or rename to disambiguate`,
+              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); pass symbolIds with the id you mean, or restrict the request to one file with paths, or rename to disambiguate`,
           candidates,
         },
       }
     }
     return buildPlan(matches[0], targetLanguage, source)
+  }
+
+  /**
+   * Plan a component by its INDEXED SYMBOL ID, which is the only unambiguous
+   * identity a symbol has.
+   *
+   * This exists because two of the tool's own behaviours were previously
+   * impossible to act on:
+   *
+   *   - The ambiguity refusal said "re-run against one file's symbol id", and
+   *     there was no way to do that — the advice named a capability that did not
+   *     exist.
+   *   - A `paths` cohort could not plan two components that share a name in
+   *     different files, because planning was name-keyed: resolving the cohort to
+   *     names collapsed them to one, and the caller was never told. Measured on a
+   *     one-file cobra cohort, 100 distinct names resolved to 209 symbols, and
+   *     the cohort could only ever plan 100 of them.
+   *
+   * A symbol id is unique in a project, so no resolution rule is needed here and
+   * none is applied: a match is found or it is not.
+   */
+  export async function planMigrationById(
+    symbolId: string,
+    targetLanguage: string,
+    source: MigrationSource,
+  ): Promise<MigrationOutcome> {
+    const wanted = String(symbolId ?? "").trim()
+    log.debug(`planMigrationById: '${wanted}' -> '${targetLanguage}'`)
+    if (!wanted) return { ok: false, refusal: { reason: "missing-symbol", detail: "no symbol id was given" } }
+    const match = source.symbols.find((s) => String(s.id) === wanted)
+    if (!match) {
+      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol with id "${wanted}" is part of this request` } }
+    }
+    return buildPlan(match, targetLanguage, source)
   }
 
   /**

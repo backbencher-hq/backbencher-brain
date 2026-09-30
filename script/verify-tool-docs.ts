@@ -156,12 +156,12 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     evidence: "Nodes and links resolve to canonical indexed entities; links with omitted endpoints are not emitted.",
   },
   bb_migrate: {
-    returns: ["Dependency-ordered migration plans", "Effort methodology, library mappings, and risks", "Explicit unsupported and truncation results"],
-    errors: ["Missing targetLanguage", "No symbolName or symbolNames", "Unknown option"],
-    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit", "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan"],
-    performance: "Requests are capped at 100 symbols and dependency traversal is bounded.",
+    returns: ["Dependency-ordered migration plans, grouped into parallel-workable waves", "Scope completeness: how much of the cited integration surface the request actually covers", "Cohort rollup by source file and by wave", "Effort methodology, library mappings, and risks", "Explicit unsupported and truncation results, naming the symbols the cap dropped"],
+    errors: ["Missing targetLanguage", "No symbolName, symbolNames or paths", "A path that matches no indexed file (the tool says so rather than returning an empty plan set)", "Unknown option"],
+    limitations: ["Plans are estimates, not translated source", "Library mappings are advisory and unsupported routes remain explicit", "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan", "The index records no per-file imports, so a component's library dependencies are UNKNOWN rather than empty; this is stated on every affected plan", "A request names a bounded set of symbols, and the cited integration surface is usually much larger: measured 98.6-99.8% out of scope on cobra for requests of 1-16 symbols. The `scope` block reports this on every result", "56 of 486 dictionary rows (11.5%) are not import specifiers — API idioms, a framework, Flutter widget class names, display names with a space, and a mis-keyed dart->typescript block — so they cannot be reached by an import lookup. Audited by script/m20/verify-migration-dictionary.ts"],
+    performance: "Work is bounded by the requested symbols' own fan-in and fan-out, not by repository size. A request is capped at 100 symbols; the dropped names are reported in `truncation.cappedNames`.",
     safety: "Read-only. It does not generate, replace, or compile target-language source.",
-    evidence: "Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates.",
+    evidence: "Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates. Relationship line, confidence, cross-language flag and bridge mechanism are read from the index; none is synthesized.",
   },
   bb_edit: {
     returns: ["Structured mutation result or dry-run preview", "Validation, formatting, rollback, and reindex status", "Affected paths and caller protection outcomes"],
