@@ -88,7 +88,9 @@
     "verify:m57": "npx tsx script/m57/verify-governance.ts && npx tsx script/m57/verify-gate-selftest.ts && bun run script/m57/verify-t1-classifier.ts && bun run script/m57/verify-t2-consumers.ts && bun run script/m57/verify-t3-scope-all.ts && bun run script/m57/verify-t4-corpus-identity.ts && bun run script/m57/verify-t5-predicate-unity.ts && bun run script/m57/verify-closure.ts",
     "verify:m60-sql-resync": "bun run script/m60/verify-sql-resync.ts",
     "verify:m60-sql-perf": "bun run script/m60/sql-perf-gate.ts",
-    "verify:patterns": "bun run script/verify-patterns.ts && bun run script/m13/verify-patterns-orphans.ts && bun run script/m13/verify-patterns-rules.ts && bun run script/m13/verify-patterns-contract.ts && bun run script/m20/verify-patterns-parameter-scan.ts && bun run script/m20/verify-patterns-pagination-history.ts && bun run script/m57/verify-t3-scope-all.ts && bun run script/m64/verify-patterns-evidence-gate.ts && bun run script/m64/verify-gate-selftest.ts"
+    "verify:patterns": "bun run script/verify-patterns.ts && bun run script/m13/verify-patterns-orphans.ts && bun run script/m13/verify-patterns-rules.ts && bun run script/m13/verify-patterns-contract.ts && bun run script/m20/verify-patterns-parameter-scan.ts && bun run script/m20/verify-patterns-pagination-history.ts && bun run script/m57/verify-t3-scope-all.ts && bun run script/m64/verify-patterns-evidence-gate.ts && bun run script/m64/verify-gate-selftest.ts",
+    "verify:health-deep": "npx tsx script/m64/verify-sample-coverage.ts && npx tsx script/m64/verify-refresh-integrity.ts && npx tsx script/m64/verify-health-deep.ts",
+    "verify:health": "npx tsx script/verify-health.ts && npm run verify:health-deep"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
