@@ -1493,6 +1493,12 @@ const handlers: Record<string, ToolHandler> = {
         // fallback that upgrades a measured fact into a permitted one is worse
         // than an explicit unknown, so the unknown is what ships.
         maxDepthReached: result.summary?.maxDepthReached ?? null,
+        // The depth bound this run actually used, paired with
+        // `maxDepthReached`. The engine computes and declares it; the agent
+        // surface dropped it, so a reader holding `maxDepthReached: 2` could
+        // not tell "the walk finished at depth 2" from "the walk was stopped at
+        // depth 2" — which is the distinction the engine added this field for.
+        maxDepth: result.summary?.maxDepth ?? null,
         crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,

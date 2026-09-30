@@ -348,7 +348,16 @@ export async function traverseGraph(
   }
 }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const maxDepth = Math.min(options.maxDepth || DEFAULT_MAX_DEPTH, 10)
+  // Clamped at BOTH ends, and the lower clamp is the one that matters.
+  // `Math.min(options.maxDepth || DEFAULT, 10)` leaves a negative depth intact,
+  // and `depth >= maxDepth` is then true at depth 0 — so a caller passing
+  // `maxDepth: -1` got zero edges, `truncated: false` and `maxDepthReached: 0`:
+  // an empty answer presented as a complete one. bb_graph's own handler rejects
+  // `maxDepth < 1` so the tool cannot reach it, but `graphTraversal` is the
+  // shared engine behind bb_impact, the test-intelligence suggestions and the
+  // LSP graph panel, and a trap that is unreachable from one door is still a
+  // trap for the other three.
+  const maxDepth = Math.max(1, Math.min(Math.floor(options.maxDepth || DEFAULT_MAX_DEPTH), 10))
   const relTypes = options.relationshipTypes?.length ? options.relationshipTypes : DEFAULT_REL_TYPES
   // DECLARE the filter, whether it is the caller's or the default. Every other
   // bound this function applies reports itself through `reasons`, and a caller
