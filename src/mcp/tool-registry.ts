@@ -231,7 +231,7 @@ const descriptors = [
           type: "array",
           items: { type: "string" },
           description:
-            "stored relationship kinds to include. Default: calls, instantiates, extends, implements. Pass e.g. ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction. A kind that is not listed is never reported, so this is how you exclude the type-level 'uses'/'references' rows that make up roughly half of what a typical index stores.",
+            "stored relationship kinds to include. Default: EVERY kind the index stores (calls, extends, implements, uses, instantiates, overrides, contains, references, imports, exports) — deliberately not narrowed, because a narrower default silently drops a fifth of the graph and cannot descend a class hierarchy: 'contains' is the parent-to-member edge, so excluding it means a traversal rooted at a class cannot reach that class's own methods. The cost is size — the type-level 'uses'/'references'/'contains' rows are roughly half of what a typical index stores, so a hub symbol's default answer is 2.5-4.8x larger than a filtered one (measured: lodash 487 KiB against 101 KiB, ripgrep 795 against 321). Pass relationshipTypes: ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction; a kind you do not list is never reported, and a filter you supply is recorded in the answer's truncationReason so a filtered answer is never read as the whole graph.",
         },
         includeCrossLanguage: {
           type: "boolean",
