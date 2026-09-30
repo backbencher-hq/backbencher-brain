@@ -1876,7 +1876,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(sym)
         newContext.symbolRef = sym
-      } else if (type === "compound_statement" && enclosingFunctionScope() === null && macroDeclaredBody(node)) {
+      } else if (
+        type === "compound_statement" && enclosingFunctionScope() === null &&
+        macroDeclaredBody(node) &&
+        // D8: a trailing ANNOTATION's body reaches this branch looking exactly like
+        // a macro-declared heading's body, and publishing it here is what produced
+        // `function GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom:
+        // "macro-heading"` — a symbol for a macro, carrying the REAL function's
+        // statements. The `function_definition` branch refuses the annotation
+        // itself; this is the second half of the same suppression, because the body
+        // is a SEPARATE node and arrives here on its own.
+        //
+        // The body's statements are still walked (the branch is only skipped, not
+        // the subtree), so its reads keep a real owner instead of a macro's.
+        !this.isTrailingAnnotationMacro(node.parent as Node, content)
+      ) {
         // #919: the body of a macro-declared heading (see `macroDeclaredBody`).
         // Publishing the definition the heading WRITES — the heading text
         // itself, never an invented identifier (`TEST(format_test, enum)`
@@ -2012,6 +2026,25 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         const fnParameters = declaratorParameters(fnDeclarator)
         const fnReturnType = declaredReturnType(node, fnDeclarator)
 
+        // D8: a TRAILING ANNOTATION is not a declaration, so it is refused HERE,
+        // before `funcDetails` — and the placement is load-bearing, not tidiness.
+        // `getFunctionDetails` returns null for a node with no return type, and the
+        // macro-shape check below lives INSIDE `if (funcDetails)`, so an annotation
+        // (which has no return type by construction) skipped it entirely and was
+        // published as a real method. The first cut of this fix put the rule beside
+        // the existing macro check, where it could not fire, and the fixture still
+        // published `method GTEST_LOCK_EXCLUDED_`.
+        if (type === "function_definition" && this.isTrailingAnnotationMacro(node, content)) {
+          // Its body is empty by construction, so there is nothing to walk into a
+          // scope; the children are still pushed so a nested declaration inside an
+          // argument would still be seen.
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext })
+          }
+          continue
+        }
+
         if (funcDetails) {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator, nameNode: funcNameNode } = funcDetails
 
@@ -2078,7 +2111,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // decorator fragments) keeps the anonymous scope, because there is no
           // heading to read.
           if (!isDestructor && this.isMacroFunctionShape(node, funcName)) {
-            const macroHeading = this.macroHeadingText(node, content, funcName)
+            // D8: a trailing ANNOTATION macro is not a function definition at
+            // all — it decorates the definition immediately before it and
+            // declares nothing, so it earns NO symbol and NO scope. Publishing
+            // it made `GTEST_LOCK_EXCLUDED_` and `GTEST_EXCLUSIVE_LOCK_REQUIRED_(m)`
+            // members of the class they annotate, one fabricated method per
+            // annotated method, and the argument list in the second case became
+            // part of the published NAME.
+            //
+            // A test-macro HEADING is the opposite case and is deliberately kept:
+            // `TEST(Suite, Name) { …body… }` genuinely defines the function it is
+            // named after, and its body holds the statements. The discriminator
+            // is the body — an annotation's is empty, a heading's is not — and it
+            // lives in `isMacroFunctionShape`, which is where the shape is decided.
+            const annotation = this.isTrailingAnnotationMacro(node, content)
+            const macroHeading = annotation ? null : this.macroHeadingText(node, content, funcName)
             let sym: ASTEngine.UniversalSymbol | null = null
             if (macroHeading) {
               sym = {
@@ -3052,10 +3099,66 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * Is this `function_definition` actually a MACRO INVOCATION?
+   *
+   * Two independent signals, and the second is the one that catches the annotation
+   * class. The first is the historical one: an ALL-CAPS name whose parameters are
+   * typeless (`TEST(a, b) { … }`).
+   *
+   * D8: a THREAD-SAFETY ANNOTATION is recovered as a whole extra function
+   * definition. Given
+   *
+   *     virtual void SetReaction(int obj, long r) GTEST_LOCK_EXCLUDED_(mu) {}
+   *
+   * the grammar emits the real definition AND a second, phantom one whose entire
+   * text is `GTEST_LOCK_EXCLUDED_(mu) {}` — the annotation, parsed as a function
+   * named after the macro. The analyzer published that phantom as a real method,
+   * so `GTEST_LOCK_EXCLUDED_` and `GTEST_EXCLUSIVE_LOCK_REQUIRED_(m)` became
+   * members of the class. (In the second one the published name even carried the
+   * argument list, because the declarator is an identifier followed by a
+   * parenthesised argument the grammar reads as a function-pointer declarator.)
+   *
+   * Why the existing parameter test could not see it: the argument of an
+   * annotation is an EXPRESSION — a mutex variable, a member name — and
+   * `internal::g_mutex` is spelled exactly like a parameter that has a type, so
+   * `paramHasType` said yes and the function-shape test bailed. Testing the
+   * parameter was always a proxy for "is this a macro invocation", and the
+   * RETURN TYPE is the real thing: **C++ has no function definition without one.**
+   * A constructor or destructor has no return type either, but its declarator
+   * names the class, and a class name spelled in all caps is not a shape this
+   * codebase has to survive. Measured on this lane's corpora: the annotation
+   * phantoms are uniformly `type=(NONE)` while every real definition carries
+   * `primitive_type`, `sized_type_specifier`, `qualified_identifier` or a
+   * `macro_prefixed_type_specifier`.
+   */
   private isMacroFunctionShape(node: Node, funcName: string): boolean {
-    if (!this.isAllCapsName(funcName)) return false
     const decl = this.findChild(node, "function_declarator")
     if (!decl) return false
+    // D8: the all-caps test must run on the BARE declarator name, not on
+    // `funcName`. For an annotation the two differ, because the declarator is an
+    // identifier followed by a parenthesised argument the grammar reads as a
+    // function-pointer declarator — so `funcName` arrives as
+    // `GTEST_LOCK_EXCLUDED_(internal::g_mutex)`, which contains `(`, `:` and
+    // lower case and therefore FAILS an all-caps test. Testing the whole string
+    // is why this class slipped past a check that was otherwise working.
+    const bare = this.bareDeclaratorName(decl) ?? funcName
+    if (!this.isAllCapsName(bare)) return false
+
+    // D8 arm 1: NO return type at all. C++ has no function definition without
+    // one, and a constructor/destructor names its class rather than being
+    // all-caps. The empty body is what separates a TRAILING ANNOTATION from a
+    // test-macro heading: `GTEST_LOCK_EXCLUDED_(mu) {}` is an annotation that
+    // decorates the definition before it and declares nothing, whereas
+    // `TEST(Suite, Name) { …body… }` is a macro that genuinely defines the
+    // function it is named after, and that one still earns its heading symbol.
+    if (!node.childForFieldName?.("type")) {
+      const body = this.findChild(node, "compound_statement")
+      if (this.findChild(decl, "parameters") && body && body.namedChildCount === 0) return true
+    }
+
+    // D8 arm 0 (historical): ALL-CAPS name with TYPELESS parameters — the
+    // `TEST(a, b) { … }` test-macro shape.
     const params = decl.childForFieldName("parameters")
     if (!params || params.namedChildCount === 0) return false
     for (let i = 0; i < params.namedChildCount; i++) {
@@ -3065,6 +3168,150 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.paramHasType(p)) return false
     }
     return true
+  }
+
+  /**
+   * The BARE name a declarator chain declares: the first `identifier` /
+   * `field_identifier` down the chain, with no argument list and no qualifier.
+   * For `GTEST_LOCK_EXCLUDED_(mu)` that is `GTEST_LOCK_EXCLUDED_`; for
+   * `namespace::detail::Widget` it is `Widget`. Returns null when the chain has
+   * no spelled name, so a caller can fall back to the name it already has.
+   */
+  /**
+   * D8: is this no-return-type `function_definition` a TRAILING ANNOTATION — one
+   * that decorates the declaration immediately before it and declares nothing?
+   *
+   * The shape is fixed by the grammar. Given
+   *
+   *     void SetReaction(int obj, long r) GTEST_LOCK_EXCLUDED_(mu) { …body… }
+   *
+   * the grammar ends the `declaration` at the `)` and starts a SECOND
+   * `function_definition` whose declarator is the annotation and whose BODY is the
+   * real function's body. So the node is not a phantom with an empty body — it
+   * carries the statements — and publishing it as a method both invents a symbol
+   * and misattributes every read in that body to the macro.
+   *
+   * The discriminator is structural and it is the only one that held up against
+   * the corpus. Everything else tried was confounded by real data:
+   *
+   *   * the annotation's ARGUMENT looks like a parameter type
+   *     (`internal::g_gmock_mutex`), so the historical "params are typeless" test
+   *     cannot see it
+   *   * the body's being empty does not hold — this node HAS the body
+   *   * the character before the macro in the SOURCE does not hold: it is `)` for
+   *     some sites and `t` (of a trailing `const`) for others, and a `TEST` macro
+   *     preceded by a comment ending in `)` reads as `)` too
+   *   * `prevNamedSibling` is `null` throughout this grammar
+   *
+   * What does hold: the annotation's immediately preceding NAMED SIBLING is the
+   * `declaration`/`field_declaration` of the function it decorates, and that
+   * declaration carries a `function_declarator` — the grammar cut it at the `)`.
+   * A `TEST(Suite, Name) { …body… }` heading has no such predecessor: it is the
+   * first thing in its statement, so its previous named sibling is a comment, a
+   * brace, or another `function_definition`. The `function_declarator` requirement
+   * is what keeps `int x;` immediately before a `TEST` from being read as a
+   * continuation.
+   *
+   * Node-only on purpose: it must be decidable WITHOUT `getFunctionDetails`, which
+   * is null for exactly the nodes this rule is about.
+   */
+  private isTrailingAnnotationMacro(node: Node, content: string): boolean {
+    if (node.childForFieldName?.("type")) return false
+    const body = this.findChild(node, "compound_statement")
+    if (!body) return false
+    const decl = this.findChild(node, "function_declarator")
+    if (!decl || !this.findChild(decl, "parameter_list")) return false
+    const bare = this.bareDeclaratorName(decl)
+    if (bare === null || !this.isAllCapsName(bare)) return false
+    return this.continuesADeclaration(node.startIndex, content)
+  }
+
+  /**
+   * D8's discriminator, and the only formulation that held up against the corpus:
+   * does this macro invocation CONTINUE the declaration in front of it?
+   *
+   * Everything structural was confounded by real data, and each was tried and
+   * measured before being dropped:
+   *
+   *   * the annotation's ARGUMENT looks like a parameter type
+   *     (`internal::g_gmock_mutex`), so the historical "params are typeless" test
+   *     cannot see it
+   *   * the body's being empty does not hold — the node CARRIES the real body
+   *   * the previous named sibling is unreliable: `prevNamedSibling` is `null`
+   *     throughout this grammar, and finding the predecessor by index in the
+   *     parent's child list yields `declaration` for a real annotation AND for a
+   *     `TEST` that happens to follow a function declaration — that version
+   *     deleted every gtest heading, which is the largest single loss available
+   *   * `TEST` is itself spelled in all caps, so the macro-name test cannot
+   *     separate the two families
+   *
+   * What separates them is where the invocation SITS. An annotation is trailing:
+   * it follows the parameter list (and possibly a trailing `const`/`&`/`noexcept`)
+   * of the declaration it decorates. A heading is a statement in its own right.
+   * So scan back over whitespace and comments; if the previous significant
+   * character could END a statement, this macro OPENS one and is not an
+   * annotation.
+   *
+   * Comments must be skipped, and that is not a refinement — the first attempt
+   * did not skip them and read a `TEST` preceded by a comment ending in `)` as an
+   * annotation, which is how the first version of this rule deleted the whole
+   * gtest suite's worth of headings.
+   */
+  private continuesADeclaration(startIndex: number, content: string): boolean {
+    let j = startIndex - 1
+    while (j >= 0) {
+      const c = content[j]
+      if (c === " " || c === "\t" || c === "\r" || c === "\n") { j--; continue }
+      break
+    }
+    if (j < 0) return false
+
+    // If a comment sits between the macro and whatever precedes it, the macro was
+    // written at STATEMENT position. This check is what makes the rest of the rule
+    // safe to read backwards: the first attempt tried to skip comments while
+    // scanning backwards, which cannot work — the scan meets the comment's TEXT
+    // before its `//`, so a comment ending in a letter read as a continuation and
+    // every `TEST` preceded by a comment was deleted.
+    const tail = content.slice(Math.max(0, j - 40), startIndex)
+    if (tail.indexOf("//") !== -1 || tail.indexOf("/*") !== -1) return false
+
+    const c = content[j]
+    // the end of a parameter list, or a declarator suffix
+    if (c === ")" || c === "&" || c === ">" || c === "*") return true
+    // a trailing return-type / specifier SUFFIX, which sits between the parameter
+    // list and the annotation: `int f() const GTEST_LOCK_EXCLUDED_(mu)`. Read
+    // backwards, so the word appears reversed.
+    // …and the word ENDS at the character we stopped on, so the window must include
+    // it. An off-by-one here reads "cons" instead of "const" and silently drops
+    // every annotation written after a trailing `const` — which is the majority of
+    // the gmock sites.
+    const upTo = content.slice(Math.max(0, j - 12), j + 1).toLowerCase()
+    let letters = ""
+    for (let k = 0; k < upTo.length; k++) {
+      const ch = upTo[k]
+      if (ch >= "a" && ch <= "z") letters += ch
+    }
+    for (const kw of ["const", "noexcept", "override", "final", "mutable", "volatile"]) {
+      if (letters.endsWith(kw)) return true
+    }
+    return false
+  }
+
+  private bareDeclaratorName(decl: Node): string | null {
+    let cur: Node | null = decl
+    for (let i = 0; i < 8 && cur; i++) {
+      if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+      const next: Node | null = cur.childForFieldName?.("declarator") ?? null
+      if (!next) {
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type === "identifier" || c.type === "field_identifier")) return c.text
+        }
+        return null
+      }
+      cur = next
+    }
+    return null
   }
 
   // #915: a bare top-level macro must not become a `variable`. Two consecutive
