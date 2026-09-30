@@ -16385,6 +16385,32 @@ export const MUTANTS: Mutant[] = [
     }),
   },
 
+  // ───────────────────────────────────────────────────────────────────────
+  // PERL-MR14 — the cross-file override companion. The rule was written, wired
+  // and never exercised, and building the instrument that exercises it found a
+  // guard that DELETED a relationship label.
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: "perl/partial-companion-deletes-guesses",
+    language: "perl",
+    defectClass: "edge-absence",
+    description: "M14.6 regression: a companion index that has never heard of a base SILENTLY DELETES that class's override edges instead of leaving them as guesses. The guard read `else if (!context?.overrideCompanion)` -- whether a companion OBJECT was supplied, not whether it had an opinion about THIS base -- so passing any companion at all silenced the first-parent guess for every uncovered base. Measured on a 120-file draw per corpus: 2,235 guessed edges, and 1,928 of them disappeared while every gate stayed green. A companion is a PARTIAL view by construction (a sample, a subset, an incremental index, one worker's share), and 'I have never heard of this base' is not 'this base does not declare the method'. Caught by perl/override-companion, whose two `overrides` rows are the per-file default this mutant removes. The python lane already reads it correctly (`else if (!overrideCompanion?.has(base))`).",
+    transform: (r: any) => {
+      // Re-apply the pre-fix guard from the RESULT: every guessed override whose
+      // base is not covered is dropped, which is what the old condition did to the
+      // whole label the moment a companion was supplied.
+      const covered = new Set<string>(["Remote::Base", "Moose::Object", "Moo::Role", "Exporter"])
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((e: any) => {
+          if (e.type !== "overrides") return true
+          if (e.metadata?.reasonCode !== "first-parent-guess") return true
+          const base = String(e.target ?? "").split(".")[0]
+          return covered.has(base)
+        }),
+      }
+    },
+  },
   {
     id: "perl/symbolic-deref-callee-published-as-a-name",
     language: "perl",
