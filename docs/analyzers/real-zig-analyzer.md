@@ -134,58 +134,25 @@ substring of the expression text (`x + standard + order` must not count).
 `metadata.complexity` on the symbol and `metadata.cyclomaticComplexity` on the
 file both carry the real number.
 
-## Relationship types: what is emitted, and what is ruled (ZIG.D.1, wave 4)
+## What is deliberately NOT emitted (ZIG.D.1, ZIG.GAP.*)
 
-Every type the engine defines is either emitted and independently gated here, or
-ruled out with a reason — and `script/m14/zig-relationship-census.ts` reads the
-type list **from the engine's source enums** and fails on anything unclassified, so
-adding a type to the engine turns the gate red until its owning lane rules it.
+- No `extends`/`implements`/`overrides`: Zig has no class inheritance and no
+  interface with an implements clause.
+- No `instantiates`: composition is expressed through struct fields and opaque
+  vtables, and generics are monomorphized without a runtime dispatch to
+  attribute. The `instantiates` branch in `classifyEvidenceTier` is therefore
+  unreachable in this file and says so.
+- No `calls`/`uses` edge for a type used in a value position with no annotation
+  (`Point{ … }`) — the family alternative is `instantiates`, ruled above, so the
+  gap is declared and counted (ZIG.GAP.3) rather than left silent.
+- No declared-type reference for a type that names nothing (ZIG.GAP.3/4 above).
 
-| type | verdict | measured |
-|---|---|---|
-| `calls` | emitted + gated | 11,465 / 400 files |
-| `uses` | emitted + gated | 13,278 / 400 files |
-| `contains` | emitted + gated **owner-keyed** | 5,523 / 400 files; the F5 matcher keys on name, so the owner half is the lane's own bidirectional gate |
-| `references` | emitted + gated | 4,371 / 400 files (Z14 oracle) |
-| `imports` | emitted + gated | 1,918 sites / 400 files (Z30) |
-| `exports` | emitted + gated | 1,584 / 400 files (Z33) |
-| `instantiates` | emitted + gated | 132 / 400 files (Z32) |
-| `extends` / `implements` / `overrides` | **not applicable** | Zig has no class inheritance, no interface with an implements clause, and no override keyword |
-| `depends_on` | not applicable | yaml owns it as a DATA key; `engine.ts` lists it as a legacy alias of `references`, and zig's dependency surface is `imports` |
-| `similar_to` / `relates_to_pattern` / `part_of_feature` / `affected_by` | **not an analyzer's class** | inferred above the analyzer from similarity, patterns, feature grouping and blast radius |
-
-### `instantiates` is now emitted, and the old ruling is superseded
-
-ZIG.D.1 originally ruled this type out: *"composition is expressed through struct
-fields and opaque vtables, and generics are monomorphized without a runtime
-dispatch to attribute"*. The first half is right and the conclusion was wrong.
-Two classes need no dispatch and no monomorphization knowledge at all:
-
-- a call to an in-file `fn … type` — that IS a declaration in the file (55 sites);
-- a construction of an in-file type, `TypeName{ … }` (77 sites) — which is
-  exactly the class ZIG.GAP.3 asked for, and the family's mechanism for it is this
-  very type (c/cpp with `isConstructor`, clojure, clean).
-
-Both are written the way those lanes write it: the target must be declared **in
-this file** (so the edge is proven, not inferred: `isExternalTarget: false`,
-confidence 1.0), the source is the enclosing symbol or `(global)`, and the line is
-the head node's. Nothing was reclassified — the `uses`/`references` edges these
-sites already carried stay.
-
-### Still deliberately not emitted
-
-- `instantiates` for **external or qualified** targets: `std.ArrayList(u8)` is a
-  real instantiation and neither the analyzer nor the mirror publishes it, because
-  the in-file inventory cannot know the type. Measuring that class needs a
-  cross-file type index — a different instrument, stated rather than implied.
-- A declared-type reference for a type that names nothing (ZIG.GAP.3/4).
-
-## Verification (re-run at HEAD, 2026-09-29)
+## Verification (re-run at HEAD, 2026-09-28)
 
 | gate | instrument | result |
 |---|---|---|
-| F1 grammar audit | `audit-analyzer-grammar.ts` | **PASS** — 45 refs, 0 unknown node types, 0 unknown fields |
-| F3 fixtures | the project's own `runLang("zig")` | **7 / 7 pass** — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners`, `declared-type-leaf`, `relationship-classes` |
+| F1 grammar audit | `audit-analyzer-grammar.ts` | **PASS** — 43 refs, 0 unknown node types, 0 unknown fields |
+| F3 fixtures | `run-fixtures.ts --lang zig` | **6 / 6 pass** — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners` (Z11/Z12/Z19/R1), `declared-type-leaf` (Z13/Z16/Z18) |
 | F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **46 / 46 CAUGHT** (23 from the previous waves, 18 added here — one per fixed class plus three payload reverts) |
 | F5 differential, 200-file draw | `differential.ts --repo zig --sample 200` | see `reviews/zig/master-review.md` for the measured row; the `references` class is compared against an independent oracle (Z14) |
 | oracle red-team (M14 §5.7) | `zigw-oracle-check.ts` | the same comparison against a pre-fix leaf convicts it — 702 unexplained / 660 missing per 400 files — so the audit is not a tautology |
