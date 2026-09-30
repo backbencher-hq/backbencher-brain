@@ -278,6 +278,25 @@ Every tree-sitter grammar emits these two node types and no per-language
 "the parse failed" fits none of them. Section A therefore cannot pass for any tree-sitter lane,
 and the FAIL says nothing about how complete any analyzer is.
 
+**A second, separable one-directional gate — found here because csharp's own gap was an instance of
+it.** `verify-oracle-coverage.ts` asserts *compared label implies an oracle exists*. It does not
+assert the converse, and so it cannot see a lane that derives truth and compares none of it. Two
+independent instances of exactly that:
+
+- **csharp**, until this round: 8 labels derived, 4 compared. Fixed by widening to 7.
+- **json**: `deriveJsonEdges` is wired and invoked (differential.ts:20293-20304), and json has **no
+  entry in `oracle-coverage-baseline.json` and no compared set at all** — so its truth is computed
+  on every run and checked by nothing. The gate is silent on it, correctly by its own rule and
+  uselessly in practice.
+
+The converse rule is cheap and would have caught both: a lane that pushes an oracle and has an empty
+compared set should be reported, exactly as a compared label with no oracle is. Not added here
+because the gate is shared infrastructure three agents are editing, and adding a rule to a gate
+changes what "green" means for every lane at once — that is a decision for whoever owns the
+completeness system, made once, deliberately. It is recorded here because the evidence for it is
+now two-for-two and it is the same failure the honesty system exists to prevent: a number computed
+at real cost that no one ever checks.
+
 **The fix is a fifth bucket, and it belongs to the completeness system rather than to any lane.**
 Something like `parser_recovery`: types that are not constructs, require no handler, and are
 counted and surfaced rather than classified. That keeps the gate's own rule — silence is guilt —
