@@ -261,6 +261,24 @@ export interface ImpactDependent {
   /** The walk node this row was found at, kept because deciding `via` needs it
    *  and for no other reason. Internal: the door does not publish it. */
   tracedId?: string
+  /** The depth the QUOTED EVIDENCE belongs to. Normally the same as `depth`,
+   *  because the evidence is re-read from the row at the reported depth.
+   *
+   *  It was not always. `depth` is the MEASURED shortest path (breadth-first, so
+   *  minimal by construction) while the evidence fields — tier, cross-language
+   *  flag, bridge, position, kind, confidence — came from the row the ENGINE
+   *  quoted, and the engine walks depth-first and stamps the first trace. When
+   *  the first trace is not the shortest one, the entry describes TWO different
+   *  stored rows: the depth of one and the evidence of another. Measured: 340 of
+   *  4 258 rows on nine repositories (7.98%), found by the suite's cross-language
+   *  law catching a dependent reported at depth 0 and cross-language whose own
+   *  direct row is not cross-language.
+   *
+   *  So the evidence is re-read from the row at the reported depth. If no such
+   *  row can be found, every evidence field is null and so is this one: "could
+   *  not attribute" is not "the row says this", and only one of them is a
+   *  measurement. */
+  evidenceAtDepth: number | null
   /** M63.T1: whether this dependent's FILE changed since it was indexed.
    *  Set by the surface that can answer it (the MCP door, over the component's
    *  file rows); absent from a component-level answer, which never touches
@@ -378,6 +396,13 @@ export interface ImpactTotalCount {
   /** The walk's composition by HOW each dependent is a dependent, measured
    *  under the same rule as `total`. See `ImpactResult.cascade`. */
   cascade: { exact: number; member: number; rangeFolded: number } | null
+  /** For each dependent, the walk node whose expansion FOUND it — so the
+   *  shortest path to it is one edge from that node, and the stored row behind
+   *  that edge is one indexed lookup away. First discovery wins, and the walk is
+   *  breadth-first, so this is the SHORTEST path's parent and not merely some
+   *  parent. This is what lets the answer quote a row at its own reported depth
+   *  rather than the engine's first-trace row. */
+  parents: Map<string, string>
 }
 
 /** The owner-cascade id range: everything owned by `symbolId` sorts between
@@ -446,7 +471,7 @@ export function countImpactDependents(
   //     zero on all six measured hubs, at 1.4-1.7x the speed.
   const BATCH = 200
   const levelSql = (ids: number, ranges: number) =>
-    "SELECT s.id AS id, s.name AS name, f.relative_path AS file " +
+    "SELECT s.id AS id, s.name AS name, f.relative_path AS file, r.target_symbol_id AS targetId " +
     "FROM brain_relationship r " +
     "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
     "JOIN brain_file f ON f.id = s.file_id " +
@@ -465,6 +490,7 @@ export function countImpactDependents(
     // `range-folded` if neither and the cascade RANGE let it in anyway.
     const opened = new Set<string>()
     const visited = new Set<string>()
+    const parents = new Map<string, string>()
     let frontier: Array<{ id: string; depth: number }> = [{ id: rootSymbolId, depth: 0 }]
     let direct = 0
     let rowsScanned = 0
@@ -515,7 +541,10 @@ export function countImpactDependents(
         }
         const params: unknown[] = [projectId, ...relTypes, projectId, ...batch.map((entry) => entry.id)]
         for (const prefix of ranges.values()) params.push(prefix, prefix + ";")
-        const rows = db.prepare(levelSql(batch.length, ranges.size)).all(...params) as Array<{ id: string; name: string; file: string }>
+        // `targetId` is the walk node this row actually matched — the member's
+        // own id, or a symbol inside a member's cascade range — so the SHORTEST
+        // path's parent is recorded rather than "some node in this batch".
+        const rows = db.prepare(levelSql(batch.length, ranges.size)).all(...params) as Array<{ id: string; name: string; file: string; targetId: string }>
         rowsScanned += rows.length
         if (rowsScanned > scanCeiling) {
           hitScanCeiling = true
@@ -530,6 +559,11 @@ export function countImpactDependents(
           if (found.has(row.id)) continue
           found.add(row.id)
           depths.set(row.id, frontier[0]!.depth)
+          // The walk node whose expansion found this one, at the depth recorded.
+          // With the flat-list statement one batch can hold several walk nodes,
+          // so the parent is the target the row actually matched — the member's
+          // own id, or a symbol inside a member's cascade range.
+          parents.set(row.id, row.targetId)
           if (frontier[0]!.depth === 0) direct++
           if (frontier[0]!.depth + 1 < maxDepth) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })
         }
@@ -544,6 +578,7 @@ export function countImpactDependents(
       hitScanCeiling,
       timedOut,
       depths,
+      parents,
       cascade: classifyCascade(db, projectId, [...found], opened),
     }
   } catch {
@@ -556,6 +591,7 @@ export function countImpactDependents(
       hitScanCeiling: false,
       timedOut: false,
       depths: new Map(),
+      parents: new Map(),
       cascade: null,
     }
   }
@@ -748,6 +784,10 @@ export async function computeImpact(
       symbolType: node?.symbolType ?? "",
       language: node?.language ?? "",
       depth: edge.depth,
+      // Provisional, and rewritten below wherever `depth` moved: the evidence
+      // below belongs to the engine's row, and the engine's row may not be the
+      // one at the shortest path this entry reports.
+      evidenceAtDepth: edge.depth,
       relationshipType: edge.relationshipType,
       confidence: edge.confidence,
       // The ONE server-side classifier (M55.T5's owner). A second derivation
@@ -866,6 +906,7 @@ export async function computeImpact(
         hitScanCeiling: false,
         timedOut: false,
         depths: new Map<string, number>(),
+        parents: new Map<string, string>(),
         cascade: null,
       }
   // The measured depths are the shortest paths, so the answer reports them
@@ -879,6 +920,57 @@ export async function computeImpact(
       if (measured !== undefined && measured !== entry.depth) entry.depth = measured
     }
     impact.sort((a, b) => a.depth - b.depth || a.id.localeCompare(b.id))
+    // M63.T2: `depth` is now the measured shortest path, and the evidence on
+    // each entry is the ENGINE's row, which sits on its first trace — a
+    // different path whenever that trace was not the shortest one. Measured: 340
+    // of 4 258 rows across nine repositories (7.98%), and the suite's
+    // cross-language law caught one of them: a dependent reported at depth 0 and
+    // labelled cross-language, whose own direct row is not cross-language at all.
+    //
+    // So every entry whose depth moved gets its evidence re-read from the stored
+    // row at ITS depth — the counting walk recorded the parent it was found
+    // through, so the row is `(source = this dependent, target = that parent)`.
+    // If there is no such row, the evidence fields are nulled: a field the tool
+    // cannot attribute is not a field it should publish.
+    const reread = new Map<string, ReturnType<typeof storedRowEvidence> | null>()
+    for (const entry of impact as Array<ImpactDependent & { evidenceAtDepth: number | null }>) {
+      if (entry.evidenceAtDepth === entry.depth) continue
+      const parent = counts.parents.get(entry.id)
+      if (parent === undefined) {
+        entry.relationshipType = null as never
+        entry.tier = null as never
+        entry.isCrossLanguage = null as never
+        entry.bridgeMechanism = null
+        entry.confidence = null as never
+        entry.evidenceAtDepth = null
+        continue
+      }
+      const key = `${entry.id} ${parent}`
+      if (!reread.has(key)) reread.set(key, storedRowEvidence(db, projectId, entry.id, parent, relationshipTypes))
+      const row = reread.get(key)
+      if (!row) {
+        entry.relationshipType = null as never
+        entry.tier = null as never
+        entry.isCrossLanguage = null as never
+        entry.bridgeMechanism = null
+        entry.confidence = null as never
+        entry.evidenceAtDepth = null
+        continue
+      }
+      entry.relationshipType = row.relationshipType
+      entry.confidence = row.confidence
+      entry.isCrossLanguage = row.isCrossLanguage
+      entry.bridgeMechanism = row.bridgeMechanism
+      entry.line = row.line
+      // The ONE server-side classifier, on the row being quoted (M55.T5's law: a
+      // second derivation here would be the defect that module exists to prevent).
+      entry.tier = classifyTier({
+        relationshipType: row.relationshipType,
+        confidence: row.confidence,
+        evidenceClass: row.evidenceClass,
+      })
+      entry.evidenceAtDepth = entry.depth
+    }
   }
   // A count that cannot be trusted is worse than no count: when the counting
   // walk hit its ceiling BOTH numbers are null (declared unknown), never a
@@ -966,6 +1058,64 @@ export async function computeImpact(
     },
     cascade,
     countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect },
+  }
+}
+
+/** M63.T2: the stored row that makes `dependent` a dependent of `parent`, and
+ *  the evidence it carries. One indexed equality on a unique pair, memoised per
+ *  `(dependent, parent)` by the caller.
+ *
+ *  Null when there is no such row, which is a finding and not a failure: the
+ *  answer then publishes no evidence for that entry rather than evidence from
+ *  the wrong path. `evidenceClass` is lifted out of the row's metadata so the
+ *  ONE classifier decides the tier, from the row being quoted. */
+function storedRowEvidence(
+  db: ImpactDb,
+  projectId: string,
+  dependentId: string,
+  parentId: string,
+  relTypes: readonly string[],
+):
+  | {
+      relationshipType: string
+      confidence: number
+      isCrossLanguage: boolean
+      bridgeMechanism: string | null
+      line: number
+      evidenceClass: string | null
+    }
+  | null {
+  try {
+    const row = db
+      .prepare(
+        "SELECT r.relationship_type AS relType, r.confidence AS confidence, r.is_cross_language AS isCross, " +
+          "r.bridge_mechanism AS bridge, r.line_number AS line, r.metadata AS meta " +
+          "FROM brain_relationship r WHERE r.project_id = ? AND r.source_symbol_id = ? AND r.target_symbol_id = ? " +
+          "AND r.relationship_type IN (" + relTypes.map(() => "?").join(",") + ") LIMIT 1",
+      )
+      .get(projectId, dependentId, parentId, ...relTypes) as
+      | { relType: string; confidence: number | null; isCross: number | null; bridge: string | null; line: number | null; meta: string | null }
+      | undefined
+    if (!row) return null
+    let evidenceClass: string | null = null
+    if (row.meta) {
+      try {
+        const parsed = JSON.parse(row.meta) as { evidenceClass?: unknown }
+        if (typeof parsed.evidenceClass === "string") evidenceClass = parsed.evidenceClass
+      } catch {
+        evidenceClass = null
+      }
+    }
+    return {
+      relationshipType: row.relType,
+      confidence: typeof row.confidence === "number" ? row.confidence : 0,
+      isCrossLanguage: row.isCross === 1,
+      bridgeMechanism: row.bridge ?? null,
+      line: typeof row.line === "number" ? row.line : 0,
+      evidenceClass,
+    }
+  } catch {
+    return null
   }
 }
 
