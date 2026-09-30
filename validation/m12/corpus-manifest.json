@@ -439,23 +439,47 @@
       "corpusTarget": "clyde",
       "status": "measured",
       "candidates": [
-        "flutter@68dc5cf4(dirty)",
-        "clyde@8fec41dd(clean)",
-        "afnetworking@d9f589cc(clean)"
+        "sdwebimage@c3ad5e1a(clean)",
+        "afnetworking@d9f589cc(clean)",
+        "clyde@8fec41dd(clean)"
       ],
       "measured": {
-        "revision": "8fec41dd6ee03f863643aa958425c8bb4a6673ae",
-        "sample": "7 tracked *.m/*.h files (entire Clyde@8fec41dd Objective-C inventory: NoodleLineNumber*, NSTextView+JSDExtensions, NSWindow+DvA — a real macOS text-editor codebase, language-representative)",
-        "fixtures": 4,
+        "revision": "c3ad5e1a9bf55c9b76d4c362430b5fcded96c502",
+        "sample": "329 tracked files the ROUTER admits (ext m, mm by name, plus .h content-sniffed for @interface|@protocol|@implementation) across THREE pinned repositories, NO sampling. Per repository: sdwebimage 247 of 263 tracked (.h 143/159 admitted); afnetworking 75 of 80 tracked (.h 26/31 admitted); Clyde 7 of 7 tracked (.h 3/3 admitted). [CORRECTED 2026-09-29: this row previously read '7 tracked *.m/*.h files (entire Clyde@8fec41dd Objective-C inventory)' with corpusSymbols=100, corpusRelationships=333 and grammarErrorFiles=0. Those numbers were TRUE of Clyde's seven files and FALSE of the language: the lane's own two production corpora, named in script/m14/differential.ts as objc: \"sdwebimage\" and objc: \"afnetworking\", were never in the instrument. clyde is 2.1% of the admitted universe and is RETAINED because it is the M11.10/M12.19 corpus target these rows were built on; corpusTarget moves to sdwebimage, the largest admitted corpus, with clyde kept as a measured member. Measured at full scale: 470 ERROR nodes across 50 of 329 files BEFORE the M60 grammar wave, against 158 in 15 files after — so grammarErrorFiles: 0 was a seven-file fact that had become a language-level claim.]",
+        "fixtures": 9,
         "fixtureFacts": 73,
         "precision": 1,
         "recall": 1,
-        "corpusSymbols": 100,
-        "corpusRelationships": 333,
-        "grammarErrorFiles": 0,
+        "corpusSymbols": 5095,
+        "corpusRelationships": 24114,
+        "grammarErrorFiles": 36,
         "note": "Analyzer verified to the M11 Objective-C contract (protocols -> interface with methods -> method, @interface/@implementation -> class with properties -> property and methods -> method, @interface Class (Category) -> extension named after the class, ivars -> property, C functions -> function, file-scope statics -> variable) and brought to the Java-family relationship ontology. Fixed defects found during audit: the 2 baseline regexes eliminated (#import/#include extraction regex -> pure AST preproc_include walking with system_lib_string/string_literal children; the /[\\\"<>]/g strip -> pure-String slice; census 97 -> 95); message-expression selector resolution fixed (target = first identifier AFTER the receiver child: [NSString stringWithFormat:] -> stringWithFormat not NSString, [super init] -> init not super, [message uppercaseString] -> uppercaseString not message — the old code grabbed the receiver); [[Foo alloc] init]/[Foo new] now emit instantiates to the class receiver (was: calls to the receiver); the +/- method sign comes from the anonymous token child (pure AST, no node.text.startsWith); import lineNumber now real (was hardcoded 0); relationship dedup key includes type (was source->target, which would collapse calls vs instantiates for the same pair). 0 grammar errors across the entire pinned corpus (7/7 files) — no grammar upgrade needed (npm 3.0.2 behaviorally identical, shape-safe with only dead defensive refs like category_interface/protocol_list/selector that the grammar never emits). The modern typedef NS_ENUM(...) macro form is a genuine grammar gap (ERROR node) recorded honestly in docs.",
         "measuredAt": "2026-08-17T19:32:00.000Z",
-        "undeclaredDrawRecheckNote": "[corrected 2026-09-26 (M60 corpus-claims H7): this lane's own evidence artifact validation/m12/results/objective-c-corpus-errors.json was measured at afnetworking@d9f589cc(clean), which NO candidate row declared — the manifest did not name the draw its own numbers came from. The declaration is added from the artifact's recorded corpusRevision (sha verified to resolve in $HOME/fixtures/repositories/afnetworking), not invented. H7 now compares each artifact's corpusRevision against the manifest's declared candidates, so a future artifact measured on an undeclared draw is red rather than silent."
+        "undeclaredDrawRecheckNote": "[corrected 2026-09-26 (M60 corpus-claims H7): this lane's own evidence artifact validation/m12/results/objective-c-corpus-errors.json was measured at afnetworking@d9f589cc(clean), which NO candidate row declared — the manifest did not name the draw its own numbers came from. The declaration is added from the artifact's recorded corpusRevision (sha verified to resolve in $HOME/fixtures/repositories/afnetworking), not invented. H7 now compares each artifact's corpusRevision against the manifest's declared candidates, so a future artifact measured on an undeclared draw is red rather than silent.",
+        "corpusTarget": "sdwebimage",
+        "corpusImports": 918,
+        "grammarErrorFilesMeasuredOver": 329,
+        "crashFiles": 0,
+        "relationshipsWithLine": 24114,
+        "relationshipsWithEvidenceClass": 24114,
+        "symbolsWithComplexity": 5095,
+        "importsWithLine": 918,
+        "importTypeHistogram": {
+          "include": 918
+        },
+        "unknownSentinels": 0,
+        "duplicateIdFiles": 0,
+        "universeAdmittedFiles": 329,
+        "routerExtensions": [
+          "m",
+          "mm"
+        ],
+        "grammarPin": "pinned — validation/m14/grammar-pins.json[\"objective-c\"], a local rebuild of a PATCHED vendored source (upstream 3.0.2 + 4 rules); identity claimed on surface+behaviour over 329 files, not by hash",
+        "corpusRevisions": {
+          "sdwebimage": "c3ad5e1a9bf55c9b76d4c362430b5fcded96c502",
+          "afnetworking": "d9f589cc2c1fe9d55eb5eea00558010afea7a41e",
+          "Clyde": "8fec41dd6ee03f863643aa958425c8bb4a6673ae"
+        }
       }
     },
     {
