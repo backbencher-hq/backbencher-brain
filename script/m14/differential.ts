@@ -23,6 +23,7 @@ import * as os from "os"
 import * as path from "path"
 import { createHash } from "crypto"
 import { detectLanguageFromPath } from "../../src/ast/language-detection"
+import { deriveClojureCallsTruth } from "./clojure-truth.ts"
 import { execSync, spawnSync } from "child_process"
 // The typescript CONTAINMENT oracle is lane-owned, like the JSON one: it lives in
 // oracles/ so this shared file keeps one import and one registration of it rather
@@ -14054,7 +14055,14 @@ export function deriveErlangEdges(root: any): { label: string; from: string; tar
 // shared by import (the php/ruby/python precedent above). Independent rules,
 // shared name list — list drift is a transcription hazard, rule drift is
 // what the differential exists to catch.
-export function deriveClojureEdges(root: any): { label: string; from: string; target: string }[] {
+export function deriveClojureEdges(root: any, _c?: string, _f?: string): { label: string; from: string; target: string }[] {
+  const rest = deriveClojureEdgesLegacy(root)
+  const CORE = CLOJURE_CORE_BUILTINS
+  const calls = deriveClojureCallsTruth(root, (h: string) => Boolean(CORE[h]), Object.keys(CORE))
+  return rest.filter((e) => e.label !== "calls").concat(calls)
+}
+
+function deriveClojureEdgesLegacy(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const push = (label: string, from: string, target: string) => {
