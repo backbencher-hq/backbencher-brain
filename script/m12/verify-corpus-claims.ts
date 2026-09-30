@@ -261,8 +261,26 @@ for (const a of manifest.analyzers) {
   if (!existsSync(artPath)) continue
   const art = JSON.parse(readFileSync(artPath, "utf8"))
   // A union corpus pins several revisions through a map; that is a pin.
-  const rev: string | null = art.corpusRevision ?? art.revision ?? null
-  const revMap: Record<string, string> | null = art.revisions ?? null
+  //
+  // The map has been spelled THREE ways across the artifacts, and this gate only knew
+  // two of them. `art.revisions` (plural) is the union form and has its own branch below.
+  // `art.corpusRevision` / `art.revision` are read as single pins — but objective-c draws
+  // from SEVERAL repositories and records that map under the SINGULAR `corpusRevision`, so
+  // `rev` received an object and `rev.startsWith(sha)` threw a TypeError. That is not a
+  // wrong verdict, it is NO verdict: the exception escaped the loop and H1-H7 stopped for
+  // all 42 analyzers, which is the worst shape a gate failure can take, because a gate
+  // that dies mid-run is indistinguishable from one that passed.
+  //
+  // So the pin is NORMALISED by type rather than by key: a string is a single pin and
+  // goes down the existing branch, and anything else is folded into the map the union
+  // branch already understands. Reading the key alone was the actual defect — a fourth
+  // spelling would break it again, whereas a type test cannot be defeated by a name.
+  const rawSingle = art.corpusRevision ?? art.revision ?? null
+  const rev: string | null = typeof rawSingle === "string" ? rawSingle : null
+  const singleMap: Record<string, string> =
+    rawSingle && typeof rawSingle === "object" ? (rawSingle as Record<string, string>) : {}
+  const revMap: Record<string, string> | null =
+    art.revisions ?? (Object.keys(singleMap).length > 0 ? singleMap : null)
   if (rev == null && revMap == null) {
     corpusIdentities.push({ language: lg, status: "artifact-pins-no-corpus" })
     knownGapPins.push(lg)
@@ -301,7 +319,14 @@ for (const a of manifest.analyzers) {
       )
     }
   } else {
-    corpusIdentities.push({ language: lg, revisions: Object.keys(revMap!), status: "union-pinned" })
+    corpusIdentities.push({
+      language: lg,
+      revisions: Object.keys(revMap!),
+      // WHICH KEY the map arrived under, so a producer that renames it shows up here as a
+      // diff in the evidence rather than as a TypeError in the verifier.
+      mapKey: art.revisions ? "revisions" : "corpusRevision",
+      status: "union-pinned",
+    })
   }
 }
 
