@@ -350,11 +350,10 @@ async function searchContentBounded(
   let truncated = false
 
   // 1. exact name (indexed via the NOCASE index).
-  if (byId.size < pageBudget) {
-    bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
-  }
+  bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
+
   // 2. name prefix (indexed range scan) — capped, and the cap is declared.
-  if (byId.size < pageBudget) {
+  {
     const rows = selectJoined(
       raw,
       projectId,
@@ -364,8 +363,15 @@ async function searchContentBounded(
     if (rows.length >= cap) truncated = true
     bump(rows, 3)
   }
+
   // 3. inner substring, over name / qualified name / docstring.
-  if (byId.size < pageBudget) {
+  //
+  // This phase is NOT gated on the page already being full. It used to be, and
+  // that made recall a function of the page size: a symbol reachable only by a
+  // docstring match was in the answer for limit=200 and absent for limit=15,
+  // because the exact phase alone filled the 15-slot budget. Measured on
+  // phpunit, the top 15 of 7,256 substring matches lost 995 rows this way.
+  {
     const lowerNeedle = trimmed.toLowerCase()
     const push = (rows: CorpusRow[]) => {
       for (const row of rows) {
