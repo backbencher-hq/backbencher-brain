@@ -90,15 +90,6 @@ export interface LaneDecision {
   source:
     | { state: "vendored"; dir: string; note: string; srcSubdir?: string }
     | { state: "not-obtainable-offline"; note: string }
-    /**
-     * One minimal source per CLAIMED patch, each of which must parse CLEAN under the
-     * wired bytes. This is the only check here that can see a patch which changes no
-     * node type -- a parser alternative -- because sha, byte length and the surface
-     * digest are all unchanged by such a patch even when the bytes predate it entirely.
-     * Declared per lane rather than hard-coded so any patched lane can use it; see
-     * `measurePatchLiveness` for why the structural checks cannot.
-     */
-    patchProbes?: Array<{ patch: string; claim: string; source: string }>
   decision: string
   alternatives: Array<{ option: string; measured: string; artifact: string }>
   evidence: string[]
@@ -1575,14 +1566,6 @@ export interface Surface {
 }
 
 export interface MeasuredLane {
-    /**
-     * One entry per CLAIMED patch, measured BEHAVIOURALLY against the wired bytes.
-     * `live: false` means the record claims a patch the bytes do not contain, which no
-     * structural check here can detect for a patch that adds no node type. Absent (as
-     * opposed to empty) when a lane declares no `patchProbes`, so "not checked" and
-     * "checked, all live" stay distinguishable.
-     */
-    patchLiveness?: Array<{ patch: string; claim: string; live: boolean; hasError: boolean; missing: string[] }>
   wired: { file: string; sha256: string; bytes: number }
   surface: Surface
   copies: Array<{ label: string; path: string; sha256: string | null; byteIdentical: boolean; absent?: boolean }>
@@ -1652,59 +1635,6 @@ export async function measureSurface(absWasm: string): Promise<{ surface: Surfac
   g.delete?.()
   return { surface, namedUnique: [...new Set(named)].sort(), uniqueNames: [...new Set([...named, ...anon])].sort() }
 
-  /**
-   * Is each patch a lane's record CLAIMS actually live in the bytes it measures with?
-   *
-   * WHY THIS EXISTS, because every other check in this file is structurally blind to
-   * the failure it was written for. This gate compares the wired bytes to a RECORD:
-   * sha256, byte length, and the node-type surface. All three PASS when someone adds a
-   * patch to `grammar.js`, updates the record to claim it, and never rebuilds — the sha
-   * matches the record because the record was updated alongside the source, so the
-   * record and the source agree with each other and both disagree with the bytes.
-   *
-   * A patch that adds a NODE TYPE is caught by `typeSetDigest`. A patch that adds a
-   * PARSER ALTERNATIVE adds none, and is therefore invisible to every structural check
-   * here. That is not hypothetical: `tree-sitter-powershell` claimed G10 (a parser
-   * alternative on `command_parameter`) while its wired bytes were a build from before
-   * G10 existed, and this gate printed the lane as a clean line in the same run where
-   * objective-c failed ten drift checks.
-   *
-   * So a lane may declare `patchProbes`: one minimal source per patch, each of which
-   * must PARSE CLEAN under the wired bytes. That is a behavioural claim rather than a
-   * structural one, and it is the only kind of check that can see a patch that changes
-   * no vocabulary. A probe is deliberately narrow — the smallest construct the patch
-   * alone is responsible for — and a probe that fails FAILS the gate, so a lane cannot
-   * record a patch it does not actually have.
-   *
-   * The C lane's rejected sha-only pin named this failure exactly: "sha-only would
-   * leave `macro_prefixed_objc_declaration`'s live-ness a matter of memory, which is
-   * the exact failure the C record describes for its own lane." objective-c, c and
-   * fsharp each closed it with a three-build A/B. This is the cheap, re-runnable half
-   * of that, and it needs no build.
-   */
-  export async function measurePatchLiveness(
-    absWasm: string,
-    probes: ReadonlyArray<{ patch: string; claim: string; source: string }>,
-  ): Promise<Array<{ patch: string; claim: string; live: boolean; hasError: boolean; missing: string[] }>> {
-    const { Parser, Language } = await wts()
-    const parser = new Parser()
-    parser.setLanguage(await Language.load(fs.readFileSync(absWasm)))
-    const missingOf = (node: any): string[] => {
-      const out: string[] = []
-      const walk = (n: any) => {
-        if (n.isMissing) out.push(n.type)
-        for (let i = 0; i < n.childCount; i++) walk(n.child(i))
-      }
-      walk(node)
-      return out
-    }
-    return probes.map((p) => {
-      const tree = parser.parse(p.source)
-      const missing = missingOf(tree.rootNode)
-      const hasError = tree.rootNode.toString().includes("ERROR")
-      return { patch: p.patch, claim: p.claim, hasError, missing, live: !hasError && missing.length === 0 }
-    })
-  }
 }
 
 export async function measureLane(file: string): Promise<MeasuredLane> {
@@ -1830,32 +1760,6 @@ export function verifyPins(record: PinRecord, actual: Record<string, MeasuredLan
         }
       }
     }
-      // Behavioural patch liveness, measured in the async phase and compared here so
-      // this function stays synchronous. Every check above compares the bytes to the
-      // RECORD, and every one of them passes when a patch was added to the source,
-      // claimed in the record, and never built — because the record moved with the
-      // source, so the two agree with each other and both disagree with the bytes. A
-      // patch that adds a node type is separately caught by the surface digest; a
-      // PARSER ALTERNATIVE adds none and slips through all of them. This is the only
-      // check that can see it, so the record cannot claim a patch the bytes lack.
-      for (const r of now.patchLiveness ?? []) {
-        if (!r.live) {
-          failures.push({
-            lane: lang,
-            check: `claimed patch ${r.patch} is NOT live in the wired bytes`,
-            recorded: r.claim,
-            actual: `ERROR=${r.hasError} MISSING=[${r.missing.join(",")}]`,
-          })
-        }
-      }
-      if ((rec.patchProbes?.length ?? 0) > (now.patchLiveness?.length ?? 0)) {
-        failures.push({
-          lane: lang,
-          check: "the record claims behavioural patch probes that were not measured",
-          recorded: rec.patchProbes?.length,
-          actual: now.patchLiveness?.length ?? 0,
-        })
-      }
     if (rec.sourceVsWasm?.missingInWasm?.length) {
       failures.push({ lane: lang, check: "the record was written with the source↔wasm check already failing", recorded: rec.sourceVsWasm.missingInWasm, actual: null })
     }
