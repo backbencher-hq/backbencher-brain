@@ -630,6 +630,16 @@ export async function traverseGraph(
       if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // The bound on the WHOLE answer, as distinct from the per-query site
+      // limit. Checked BEFORE any bookkeeping for this row, so `emittedCallerRows`
+      // means "emitted" and does not claim a row the bound then discarded — the
+      // two orderings happen to behave the same today because the loop breaks
+      // either way, and "happens to" is not a property worth depending on.
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       // M59 (#895): one stored row must emit at most one edge per direction —
       // the cascade re-queries it once per traced ancestor (measured depths
       // [0,2,3]). Row-level dedupe is exact: same rowId = same everything.
@@ -648,15 +658,6 @@ export async function traverseGraph(
           continue
         }
         emittedCallerSites.add(siteKey)
-      }
-      // The bound on the WHOLE answer, as distinct from the per-query site
-      // limit. Checked before the emit, not after, so a full answer never grows
-      // past `maxEdges`; `break` leaves this symbol's remaining rows un-emitted
-      // and the flag stops the other direction on its next turn.
-      if (callers.length + callees.length >= maxEdges) {
-        totalLimitReached = true
-        noteReason("total-edge-limit")
-        break
       }
       if (depth > 0) deeperCallers++
       else if (cascadeMatch(row, symbolId) === "exact") exactCallers++
@@ -831,6 +832,13 @@ export async function traverseGraph(
       if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // Before the dedupe bookkeeping, for the same reason as the callers side:
+      // the emitted-row set must describe what was emitted.
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       // M59 (#895): same stored row must not emit once per cascade depth.
       if (emittedCalleeRows.has(row.rowId)) {
         collapsedCascadeRepeats++
@@ -845,11 +853,6 @@ export async function traverseGraph(
           continue
         }
         emittedCalleeSites.add(calleeKey)
-      }
-      if (callers.length + callees.length >= maxEdges) {
-        totalLimitReached = true
-        noteReason("total-edge-limit")
-        break
       }
       if (depth > 0) deeperCallees++
       else if (cascadeMatch(row, symbolId) === "exact") exactCallees++
