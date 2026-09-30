@@ -209,3 +209,17 @@ grammars/tree-sitter-yaml/src/parser.c
 !grammars/tree-sitter-xml/xml/src/node-types.json
 !grammars/tree-sitter-xml/xml/src/parser.c
 !grammars/tree-sitter-xml/xml/src/scanner.c
+
+# M60 — the Solidity lane vendors the generated pair, for the same reason the C and
+# GraphQL lanes above do: the pin gate's source<->wasm check (check 6) needs
+# src/node-types.json + src/grammar.json to exist on disk, and `grammars/tree-sitter-*/src/*`
+# excludes the whole directory. Without the pair this lane's pin cannot be checked
+# against its own source at all.
+#
+# This is the gap that let the PowerShell pin go dishonest: its generated src/ is
+# gitignored, its record says the source is vendored, and the check that would have
+# compared the two never runs. Its record claims 8 patches; the bytes contain 7.
+# src/parser.c stays ignored -- it is tens of megabytes of build output and
+# `tree-sitter generate` rebuilds it deterministically from grammar.js.
+!grammars/tree-sitter-solidity/src/grammar.json
+!grammars/tree-sitter-solidity/src/node-types.json
