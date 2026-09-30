@@ -126,8 +126,8 @@
       {
         "id": "ZIG.GAP.3",
         "node_type": "struct_initializer (construction)",
-        "severity": "counted-limitation",
-        "missing": "A type used in a VALUE position with no type annotation \u2014 `const p = Point{ .x = 1 };` \u2014 publishes no edge. The family alternative is `instantiates` with `isConstructor` (c/cpp, and the branch still sits unused in this file's own classifyEvidenceTier), which ZIG.D.1 rules out for Zig. Measured: 84 sites in 400 corpus files (~800 projected over the three pinned corpora). Ruled as a limitation with the count attached rather than silently absent, because deciding it would change a RULED design decision and needs the family."
+        "severity": "partially closed by Z32; the remainder is measured",
+        "missing": "A type used in a VALUE position with no type annotation \u2014 `const p = Point{ .x = 1 };` \u2014 published no edge. Z32 closed the in-file half by publishing it as `instantiates` with `isConstructorApplication`, which is exactly the family alternative this gap named (`instantiates` with `isConstructor`, as c/cpp emit). REMAINDER, measured over 400 corpus files: an in-file inventory cannot resolve a QUALIFIED callee, and there are 19,318 call sites whose callee is a field_expression (`std.ArrayList(u8)`, `self.allocator.alloc(...)`) plus 381 whose callee is an identifier that is not a symbol in this file at all. Classifying those needs a CROSS-FILE type index \u2014 a different instrument, not a fix in this one \u2014 so the gap is stated as the population it is, and the number moves only if that index is built."
       },
       {
         "id": "ZIG.GAP.4",
