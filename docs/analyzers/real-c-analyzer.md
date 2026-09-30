@@ -771,11 +771,47 @@ Pinned by `c/call-in-directive-condition-956` (authored from the **damaged** sha
 a clean `#if defined(X)` emits no `call_expression` at all, so a tidy fixture would
 pass the fix without testing it) and the `c/call-in-directive-condition` mutant.
 
-**Residual, and not yet adjudicated: 6 over-emissions in `curl/lib`**
-(`http.c:691/692/737/738/739`, `openldap.c:937`) and 6 under-emissions in curl,
-1 in libgit2. The over-emissions are the *neighbours* of a mid-expression
-`#ifndef`: both sides see `Curl_checkProxyheaders@691`, so the analyzer's edge is
-correct and the probe's multiset is what does not balance. Not fixed, not dismissed.
+### `calls` is now 100.00% on all three corpora — and the probe was wrong twice more to get there
+
+| corpus | judged call sites | agreement |
+|---|---|---|
+| `redis/src` | 43,995 | **100.00%** |
+| `libgit2/src` | 23,747 | **100.00%** |
+| `curl/lib` | 22,487 | **100.00%** |
+
+Two more probe defects had to be found to reach that, and **both pointed at correct
+analyzer behaviour**:
+
+1. **The probe's walk was not a complete census of the parse, and did not know it.**
+   It reported 6 over-emissions — `Curl_checkProxyheaders@691/738`, `STRCONST@692/739`,
+   `Curl_creds_has_user_or_pass@737`, `ssl_installed@937` — and the analyzer was right
+   about every one. `http.c:686-704` sits inside a `preproc_ifdef` whose `if_statement`
+   687-702 contains a `parenthesized_expression` 688-694 holding the calls, and the
+   walk never reached them. Diagnosing it took a dozen instruments because the symptom
+   was a *confident* number (`parse=0` for a call that plainly exists) rather than a
+   missing one. The fix is a **containment check**: an independent unrestricted census
+   of every `call_expression` in the tree, and any file where the walk cannot account
+   for it is EXCLUDED and produces no verdict. An instrument that cannot see a region
+   must not testify about it. The first version of that check was a ratio and was wrong
+   in both directions — it flagged two files that legitimately contain no calls, and
+   it would have passed a file missing a whole region as long as the region was small.
+2. **A call through a function-pointer array is not a named call.** The probe followed
+   a `subscript_expression` callee to its base identifier and reported 6 MISSING calls
+   (`recv[sockindex](...)` cfilters.c:1011/1042, `state_enter[state](...)` multi.c:193,
+   `parse[len-2](...)` protocol.c:623, `setopt_call[i](...)` setopt.c:1289/2532). The
+   family contract filters computed/dynamic calls and the analyzer is right: the callee
+   is chosen at runtime, so no static name exists, and recovering the array's base name
+   would be a fabrication of the same class as a parenthesized-callee cast.
+
+**Caveat, stated rather than hidden: 2 of 200 curl files are excluded** (`http.c`,
+`openldap.c`) because the probe's walk cannot account for their parse. That is a
+**known hole in the probe, not a clean bill for those files** — and closing it means
+fixing the walk, not widening the threshold.
+
+This is the **sixth and seventh** confident wrong number this instrument has produced.
+The pattern is consistent enough to name: every one was a node-type or
+traversal assumption, and in every case the analyzer was right and the probe was not.
+The containment check exists because of that, not because of the two rows it fixed.
 
 ## Corpus validation
 
