@@ -1603,6 +1603,88 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isTypeAlias: true, nameLine: this.nodeLine(typeId) },
           })
         }
+      } else if (type === "preproc_def" || type === "preproc_function_def") {
+        // D9: a `#define` DECLARES a name, and this lane published none.
+        //
+        // Measured on the six pinned C++ corpora (1,722 files, 238,191 edges):
+        // **53,765 edges target a name spelled like a macro** and the lane
+        // published **0** symbols with kind `macro` — 51,113 of those edges
+        // named a macro with no published symbol anywhere. Cross-file
+        // (47,243) is the documented per-file scope, but **3,870 edges in 82
+        // files** name a macro the SAME file `#define`s, and 0 of those 3,870
+        // were function-like: they are object-like constants (`NOMINMAX`,
+        // `WIN32_LEAN_AND_MEAN`, `JSON_DIAGNOSTICS`) and a `calls` edge to a
+        // constant cannot be right. Those 3,870 edges name a declaration that
+        // was sitting in the same file, unresolvable.
+        //
+        // The contract is not new and the fix is not mine: the C lane already
+        // implements it (`real-c-analyzer.ts` `extractMacro`), with the rule
+        // written out — "a `#define` DECLARES a name whatever its body …
+        // minting the symbol is what makes the read resolvable; the
+        // alternative — leaving the name unresolvable so the read stays
+        // silent — is a missing true edge, and the family's contract is that a
+        // missing edge is a defect while a DECLARATION is not an edge". The
+        // kinds are the C lane's exactly: function-like is `Macro`,
+        // object-like is `Constant`.
+        //
+        // Two guards, both from measured collisions:
+        //   * A name the file ALREADY publishes at global scope gets no macro
+        //     symbol. ATL's `DECLARE_INTERFACE_`/`STDMETHOD_` and
+        //     `__declspec`-style `SHSTDAPI_` GENERATE the class or method, so
+        //     the analyzer already publishes a symbol carrying that name; two
+        //     symbols of one name is a graph collision, and the generated
+        //     declaration is the more useful of the two.
+        //   * Only when nothing else claims the name, which is why the minted
+        //     count is 2,999 rather than the 3,031 `#define`s on this corpus.
+        //
+        // Blast radius: +2,999 symbols (1,578 `Macro` + 1,421 object-like
+        // `Constant`) and +2,999 `contains` edges on the six pinned corpora —
+        // exactly one containment edge per minted symbol (`global -> NAME`),
+        // which is the declaration's own place in the graph. That was MEASURED,
+        // not assumed: the first draft of this comment claimed the branch
+        // minted no edge at all, and the count said otherwise. No
+        // `calls`/`uses`/`references` edge is added or removed here, so the
+        // branch can only make existing reads resolvable, never invent one.
+        // Macro BODIES are still never walked as code (`isPreprocText`), so a
+        // read inside a macro body stays silent exactly as before.
+        //
+        // 3,870 -> 21, and the 21 are a GRAMMAR limit, not this branch: a
+        // `#define` the ERROR recovery swallowed yields no
+        // `preproc_function_def` to mint from. All 5 remaining names share one
+        // shape — a COMMENT between the `#if` and the `#define`. At
+        // `unit-class_parser.cpp:2161-2163`, `#if JSON_DIAGNOSTIC_POSITIONS`
+        // / `// Macro for all test cases…` / `#define SETUP_TESTCASES()`
+        // parses as an `ERROR` node over rows 2163-2168 that DOES carry
+        // `preproc_params` and `preproc_arg` children: the grammar recognised
+        // the shape and not the rule. Same family as R1, same fix — the
+        // vendored fork.
+        const nameNode = node.childForFieldName("name")
+        const macroName = nameNode?.text?.trim()
+        if (macroName && isCppSpelledName(macroName) && !symbols.some((s) => s.name === macroName)) {
+          const isFunctionLikeMacro = type === "preproc_function_def"
+          const parameters: ASTEngine.Parameter[] = []
+          if (isFunctionLikeMacro) {
+            const paramsNode = node.childForFieldName("parameters") ?? this.findChild(node, "preproc_params")
+            if (paramsNode) {
+              for (let i = 0; i < paramsNode.childCount; i++) {
+                const param = paramsNode.child(i)
+                if (param && param.isNamed) parameters.push({ name: param.text, type: "any" })
+                else if (param && (param.type === "..." || param.text === "...")) {
+                  parameters.push({ name: "...", type: "variadic", modifiers: [] })
+                }
+              }
+            }
+          }
+          symbols.push({
+            name: macroName,
+            kind: isFunctionLikeMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Constant,
+            range: this.nodeToRange(node),
+            scope: "global",
+            visibility: "public",
+            parameters: isFunctionLikeMacro ? parameters : undefined,
+            metadata: { isMacro: true, isFunctionLikeMacro, nameLine: this.nodeLine(nameNode) },
+          })
+        }
       } else if (type === "preproc_include") {
         const text = node.text
         // Family contract (c wave): ImportInfo canonical fields are
@@ -2038,6 +2120,43 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Its body is empty by construction, so there is nothing to walk into a
           // scope; the children are still pushed so a nested declaration inside an
           // argument would still be seen.
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext })
+          }
+          continue
+        }
+
+        // A class DEFINITION is never a function's return type, so a
+        // `function_definition` whose `type` field is a class/struct/union
+        // specifier WITH A BODY is the recovery's invention, not a declaration.
+        //
+        // This is fork patch 4's side effect, and it is the half of patch 4 that
+        // the analyzer has to absorb. tree-sitter-cpp's
+        // `macro_prefixed_type_specifier` (fork patch 2) lets a bare macro stand
+        // before a class specifier in type position, and nlohmann writes exactly
+        // that:
+        //
+        //   NLOHMANN_BASIC_JSON_TPL_DECLARATION
+        //   class basic_json { ... 2,600+ lines ... };
+        //   ...
+        //   basic_json(initializer_list_t init, ...) { ... }   <- a CONSTRUCTOR
+        //
+        // Once patch 4 (the macro access-specifier label) recovered the rest of
+        // that class body, the parser could reach the constructor, and it completed
+        // the shape by reading the WHOLE CLASS as the return type:
+        //
+        //   function_definition[26010-27617]
+        //     type:       macro_prefixed_type_specifier[26010-27550]  <- the class
+        //     declarator: function_declarator[27554-27556]            <- the ctor
+        //     body:       compound_statement[27557-27617]
+        //
+        // Publishing that invents a function whose "return type" is 2,540 lines of
+        // class body, and it cost the class its identity: `basic_json` stopped
+        // publishing as a `class` and became a `variable`. The class is still fully
+        // parsed — this drops the FUNCTION, not the class, and the children are
+        // still walked so the class and its members are seen.
+        if (type === "function_definition" && this.returnTypeIsClassDefinition(node)) {
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
             if (child) stack.push({ node: child, parentContext })
@@ -3215,6 +3334,44 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Node-only on purpose: it must be decidable WITHOUT `getFunctionDetails`, which
    * is null for exactly the nodes this rule is about.
    */
+  /**
+   * Is this `function_definition`'s return type a class DEFINITION?
+   *
+   * C++ has no such thing: a function cannot return a class *definition*, only a
+   * class type (by name, or an elaborated `class X` with no body). So a
+   * `function_definition` whose `type` field resolves to a `class_specifier` /
+   * `struct_specifier` / `union_specifier` that CARRIES A BODY is the recovery's
+   * invention.
+   *
+   * The unwrap matters: fork patch 2's `macro_prefixed_type_specifier` puts the
+   * class one level down, so the `type` field is that node and the specifier is its
+   * child. Requiring a body is what separates this from the legal
+   * `class X f() { ... }` (an elaborated return type), which has no body and must
+   * keep publishing its function.
+   */
+  private returnTypeIsClassDefinition(node: Node): boolean {
+    const t = node.childForFieldName?.("type")
+    if (!t) return false
+    const spec =
+      t.type === "macro_prefixed_type_specifier"
+        ? (t.namedChildren ?? []).find(
+            (c: any) =>
+              c.type === "class_specifier" || c.type === "struct_specifier" || c.type === "union_specifier",
+          )
+        : t
+    if (!spec) return false
+    if (
+      spec.type !== "class_specifier" &&
+      spec.type !== "struct_specifier" &&
+      spec.type !== "union_specifier"
+    ) {
+      return false
+    }
+    return (spec.namedChildren ?? []).some(
+      (c: any) => c.type === "class_body" || c.type === "field_declaration_list",
+    )
+  }
+
   private isTrailingAnnotationMacro(node: Node, content: string): boolean {
     if (node.childForFieldName?.("type")) return false
     const body = this.findChild(node, "compound_statement")
