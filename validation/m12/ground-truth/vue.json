@@ -139,11 +139,11 @@
    }
   },
   {
-   "id": "sym:Card.vue:11:property:title",
+   "id": "sym:Card.vue:12:property:title",
    "layer": "ast_extraction",
    "kind": "symbol",
    "file": "Card.vue",
-   "line": 11,
+   "line": 12,
    "attributes": {
     "name": "title",
     "symbolKind": "property"
@@ -154,11 +154,11 @@
    }
   },
   {
-   "id": "sym:Card.vue:11:property:body",
+   "id": "sym:Card.vue:13:property:body",
    "layer": "ast_extraction",
    "kind": "symbol",
    "file": "Card.vue",
-   "line": 11,
+   "line": 13,
    "attributes": {
     "name": "body",
     "symbolKind": "property"
