@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "committedAt": "2026-09-29T01:27:42-04:00",
+  "commit": "fbb8bf20f7ca05a59f967864f2b999d914c6d80c",
+  "committedAt": "2026-09-29T03:25:56-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -869,9 +869,9 @@
         "fieldless": false,
         "oracleFieldCount": 48,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 554,
+        "oracleNodeTypeCount": 560,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 60,
+        "referencedTypeLiterals": 61,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1244,14 +1244,14 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 98,
+        "referencedTypeLiterals": 100,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5393,
+            "line": 5431,
             "literal": "default_export_expression"
           }
         ],
@@ -1404,8 +1404,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T05:36:53.645Z",
-  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
+  "regeneratedAt": "2026-09-29T07:36:20.636Z",
+  "regeneratedAtCommit": "fbb8bf20f7ca05a59f967864f2b999d914c6d80c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
