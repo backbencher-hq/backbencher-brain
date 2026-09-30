@@ -119,21 +119,47 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 ## Corpus validation
 
+> **REPRODUCIBILITY WARNING (2026-09-29 master review).** The two corpora this
+> lane is registered against — `cabal` and `hledger` — **do not exist on this
+> machine**, so the corpus differential cannot run and every corpus coverage
+> figure below is currently **unreproducible**. This is not a claim that has been
+> disproved; it is a claim nothing can check, which is a different and worse
+> state. `bun run script/m14/differential.ts --lang haskell --repo cabal` fails
+> with `corpus repo missing: $HOME/fixtures/repositories/cabal`.
+> Restoring a registered corpus is the highest-value action available to this
+> lane. The one corpus figure that *is* still checkable is `postgrest` (the 208
+> `.hs` files reachable on this box, not a registered corpus) — see
+> `reviews/haskell/master-review.md` §0 and §1.
+>
+> Two further corrections from that review, both about claims below being weaker
+> than they read:
+> - The **"34/35 node-type refs"** shape-safety result has **no committed
+>   artifact** (`validation/m12/results/haskell-node-types-compare.json` does not
+>   exist) and the script that produced it is **unrunnable** — it hardcodes a
+>   checkout path absent from this machine. It is also a *typo check* (do the
+>   types the analyzer references exist in the grammar?), not a coverage check
+>   (does the analyzer handle every type the grammar emits?). The second question
+>   is the one that found three real recall holes, and it had never been asked.
+> - The **"75/75 facts, precision 1.000, recall 1.000"** figure is a **two-file
+>   fixture** differential (`Service.hs` + `Negative.hs`). It is not corpus
+>   coverage, and under the warning above no corpus coverage number here is
+>   currently verifiable.
+
 `validation/m12/results/haskell-differential.json` (via
 `script/m12/verify-analyzer.ts haskell`):
 
 - Fixtures: `Service.hs` (positive) + `Negative.hs` (negative)
 - **75/75 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown**
+  (two files — see the warning above)
 - Corpus error scan (`script/m12/haskell-corpus-errors.ts`): all 637 .hs files
   ≥ 1KB — **7 grammar-error files (1.1%), 0 crashes, 0 timeouts**. All 7
   classified honestly as grammar limitations: 3 template files with
   `{{placeholder}}` syntax (not real Haskell), 2 TemplateHaskell quasiquote
   files (`[d| ... |]` brackets unparseable without TH), 1 CRLF multi-line
   string continuation file, 1 GADTs pattern file.
-- Shape-safety (`script/m12/haskell-node-types-compare.ts`): 34/35 analyzer
-  node-type refs live against the pinned grammar's actual emitted types (193
-  distinct types from 2,151 corpus files); the 1 remaining (`MISSING`) is the
-  defensive tree-sitter error-path check that only fires on syntax errors.
+  *Re-measured 2026-09-29 over the 208 `.hs` files on this box: **0 files with a
+  parse error, 0 ERROR/MISSING nodes** — a strictly better profile, on a
+  different and smaller file set.*
 
 ## Supported / unsupported constructs
 
@@ -189,8 +215,14 @@ Gate hardening: fixture extended with pins + forbids for every fixed class
 `comment` keys on expectation entries are documentation, not match
 constraints (harness bug found when new forbids silently never fired).
 
-Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
-0 missing, 0 unexplained** (samples 200). Grammar pin: tree-sitter-haskell
+> **UNREPRODUCIBLE (2026-09-29).** `cabal` and `hledger` — the two corpora this
+> lane is registered against — are absent from this machine, so this row cannot
+> currently be regenerated. The figures are what was measured when the corpora
+> were present; nothing here can confirm or refute them today. See the
+> reproducibility warning under `## Corpus validation` above.
+>
+> Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
+> 0 missing, 0 unexplained** (samples 200). Grammar pin: tree-sitter-haskell
 v0.23.1 stays (latest release; M12.25 behavioral identity on full corpus;
 upstream main has an unreleased full rewrite — re-run F1 + wasm-compare when
 it ships).

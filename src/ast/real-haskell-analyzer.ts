@@ -245,9 +245,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = this.processClass(node, ctx, scopeStack)
       } else if (node.type === "instance") {
         pushedScope = this.processInstance(node, ctx, scopeStack)
-      } else if (node.type === "data_type" || node.type === "newtype") {
-        pushedScope = this.processData(node, ctx, scopeStack)
-      } else if (node.type === "deriving_instance") {
+    } else if (node.type === "data_type" || node.type === "newtype") {
+      pushedScope = this.processData(node, ctx, scopeStack)
+    } else if (node.type === "type_synomym") {
+      pushedScope = this.processTypeSynonym(node, ctx, scopeStack)
+    } else if (node.type === "foreign_import") {
+      pushedScope = this.processForeignImport(node, ctx, scopeStack)
+    } else if (node.type === "deriving_instance") {
+
         // HSD12 (probe 2026-09-03, postgrest Routine.hs:65): standalone
         // `deriving instance Show Foo` parses as deriving_instance → name
         // (class) + type_patterns → name (target) and previously emitted
@@ -928,6 +933,98 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+  // A type synonym is a first-class declaration — `type Result = [Int64]` names
+  // a type that other code can annotate with, so omitting it left every use of
+  // the name with nothing to resolve to. The grammar's node is spelled
+  // `type_synomym` (the upstream typo is in the node NAME, not this comment), and
+  // its shape is `name` + right-hand side, so the name is the first `name` child.
+  private processTypeSynonym(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
+    ctx.patterns["Type Synonyms"] = true
+    const nameNode = this.findNamedChildByType(node, ["name"])
+    const name = nameNode?.text ?? ""
+    if (!name) return false
+    const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Type,
+      range: this.nodeToRange(node),
+      scope: currentScope?.name || "",
+      ownerName: currentScope?.name || ctx.currentModule,
+      visibility: "public",
+      metadata: { haskellSpecific: true, isTypeSynonym: true },
+    })
+    if (currentScope) {
+      this.pushRel(
+        ctx,
+        currentScope.name,
+        name,
+        ASTEngine.RelationshipType.Contains,
+        1.0,
+        { evidenceClass: "structural" },
+        this.lineOf(node),
+      )
+    }
+    return true
+  }
+
+  // FFI declarations. `foreign import capi "libpq-fe.h PQresultStatus"`
+  // parses as foreign_import → calling_convention, entity (the C symbol),
+  // signature → variable (the HASKELL name) → function (its type). Nothing in
+  // the tree above the module carried the Haskell-side binding, so a file whose
+  // entire content is FFI published one symbol: the module. postgrest's
+  // `Hasql/LibPq14/Ffi.hs` is exactly that file — 6 declarations, 0 published.
+  // The Haskell name is `signature → variable`; the C entity is kept as metadata
+  // and as a `references` edge, because that string is how a reader finds the
+  // symbol in the C headers and nothing else in the graph points at it.
+  private processForeignImport(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
+    ctx.patterns["Foreign Imports"] = true
+    const sig = this.findNamedChildByType(node, ["signature"])
+    const varNode = sig ? this.findNamedChildByType(sig, ["variable"]) : null
+    const name = varNode?.text ?? ""
+    if (!name) return false
+    const entity = this.findNamedChildByType(node, ["entity"])?.text ?? ""
+    const convention = this.findNamedChildByType(node, ["calling_convention"])?.text ?? ""
+    const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.nodeToRange(node),
+      scope: currentScope?.name || "",
+      ownerName: currentScope?.name || ctx.currentModule,
+      visibility: "public",
+      metadata: {
+        haskellSpecific: true,
+        isForeignImport: true,
+        ...(entity ? { foreignEntity: entity } : {}),
+        ...(convention ? { callingConvention: convention } : {}),
+      },
+    })
+    const owner = currentScope?.name || ctx.currentModule
+    if (owner) {
+      this.pushRel(
+        ctx,
+        owner,
+        name,
+        ASTEngine.RelationshipType.Contains,
+        1.0,
+        { evidenceClass: "structural", isForeignImport: true },
+        this.lineOf(node),
+      )
+      if (entity) {
+        this.pushRel(
+          ctx,
+          name,
+          entity,
+          ASTEngine.RelationshipType.References,
+          0.9,
+          { evidenceClass: "foreign_symbol", isForeignEntity: true },
+          this.lineOf(node),
+        )
+      }
+    }
+    return true
+  }
+
   private processData(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
     ctx.patterns["Algebraic Data Types"] = true
     // Pinned grammar: data_type/newtype → name (probe 2026-09-03). The
@@ -958,12 +1055,26 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Data constructors → Constructor symbols owned by the type. The grammar
     // nests them: data_type → data_constructors → data_constructor → prefix/
     // record; newtype → newtype_constructor directly.
+    //
+    // GADTs nest DIFFERENTLY: `data Expr a where` puts its constructors under
+    // `gadt_constructors` → `gadt_constructor`, never under `data_constructors`.
+    // Searching only for the latter published the TYPE and dropped every GADT
+    // constructor, so on postgrest's `Hasql/Decoders/All.hs:116` the type
+    // `NullableOrNot` appeared with neither `NonNullable` nor `Nullable` — and
+    // because those constructors carry the types, the `nonNullable`/`nullable`
+    // FUNCTIONS were the only surviving symbols, which reads as if the GADT had
+    // no constructors at all. `extractConstructorName` already resolves them: its
+    // `["constructor", "name"]` fallback finds a gadt_constructor's own
+    // `constructor` child. They only had to be COLLECTED.
     const ctorNodes: Node[] = []
-    const ctorGroup = this.findNamedChildByType(node, ["data_constructors"])
-    if (ctorGroup) {
-      for (const c of this.collectNamedChildrenByType(ctorGroup, ["data_constructor"])) ctorNodes.push(c)
+    for (const group of ["data_constructors", "gadt_constructors"]) {
+      const g = this.findNamedChildByType(node, [group])
+      if (!g) continue
+      for (const c of this.collectNamedChildrenByType(g, ["data_constructor", "gadt_constructor"])) {
+        if (!ctorNodes.includes(c)) ctorNodes.push(c)
+      }
     }
-    for (const c of this.collectNamedChildrenByType(node, ["newtype_constructor", "data_constructor"])) {
+    for (const c of this.collectNamedChildrenByType(node, ["newtype_constructor", "data_constructor", "gadt_constructor"])) {
       if (!ctorNodes.includes(c)) ctorNodes.push(c)
     }
     for (const cNode of ctorNodes) {
