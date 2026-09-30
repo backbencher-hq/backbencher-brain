@@ -12152,6 +12152,32 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "python/owner-name-stripped",
+    language: "python",
+    defectClass: "identity-loss",
+    description:
+      "The class-member OWNER is dropped from every symbol. Nothing in the analyzer fails when this " +
+      "happens — the result still parses, still extracts every symbol, and still emits every " +
+      "`overrides` edge with its correct `Owner.method` source string. The damage is one layer down, " +
+      "in the store: `parallel-indexer.ts` builds `nameToSymbol` with TWO keys per symbol, `name` " +
+      "and `${s.scope || s.ownerName}.${name}`, and the owner-qualified key is the one that makes an " +
+      "`overrides` source resolve to the RIGHT method when several classes in a file declare the same " +
+      "name. Strip `ownerName` and every one of those edges falls back to a bare leaf lookup, which is " +
+      "first-wins. This is the surviving half of the retracted PY-3: the dependency is real and it is " +
+      "load-bearing, so the pin has to be checked rather than assumed. Caught by the `contains` " +
+      "derivation, which reads the same field — which is the honest reason this mutant is caught at " +
+      "all, and worth stating plainly rather than discovering later that the override path itself is " +
+      "unpinned.",
+    transform: r => ({
+      ...r,
+      symbols: ((r.symbols ?? []) as any[]).map((s) => {
+        const y: any = { ...s }
+        delete y.ownerName
+        return y
+      }),
+    }),
+  },
+  {
     id: "python/framework-import-order-pick",
     language: "python",
     defectClass: "nondeterministic-primary-pick",
