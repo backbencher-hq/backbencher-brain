@@ -178,45 +178,55 @@ passes every fixture while the oracle judging it lies.
 
 ## Complexity envelope
 
-> **STALE — these figures are not current and are not a budget.**
-> They are from `validation/m12/results/csharp-complexity.json`, measured before
-> D8 (parameter types published as reads), and are single runs taken on a host
-> that was not quiet. They are retained for history only. The re-pin is owed and
-> the reason it has not happened is stated below rather than left implicit.
+> **The linearity claim in this section is an ARGUMENT FROM CODE, not a measurement, and the
+> measurement does not support it.** The previous wording here said "no O(n^2) or per-symbol O(n)
+> scans" as though it were established. It is not established, and the attempt to establish it
+> produced a number too unstable to publish. That is a withdrawal, not a revision.
 
-Historical, from M12:
+Measured 2026-09-29 on 12 cores, `bun 1.4.2`, roslyn, estimator = minimum per-file average over 5
+timed runs with a warm parser:
 
-| Run | files | symbols | relationships | wall ms | symbols/s | relationships/s | peak RSS |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| fixtures | 5 | 66 | 101 | 576.9 | 114 | 175 | 222.6 MB |
-| corpus_subset | 400 | 4,451 | 17,563 | 10,311.3 | 432 | 1,703 | 281.7 MB |
+| files | sym/file | min ms/file | min ms/sym | symbols/s | peak RSS MB |
+| --- | --- | --- | --- | --- | --- |
+| 50 | 17.8 | 39.4 | 2.21 | 453 | 441 |
+| 100 | 14.9 | 43.1 | 2.90 | 345 | 487 |
+| 200 | 13.5 | 48.3 | 3.59 | 279 | 535 |
+| 400 | 11.2 | 36.8 | 3.30 | 303 | 1059 |
 
-Declared budget: fixtures < 2 s; 400-file corpus < 60 s.
+**Read the per-SYMBOL column, not the per-file column.** The pinned list is a PREFIX of a corpus,
+not a size-sorted sample, so symbols/file swings 11.2 to 17.8 across the sizes — a 60% spread. A
+per-file number therefore measures the sample's composition, not the analyzer. That is the same
+class of error as the stale M12 table, in a new place: a number whose denominator moves with the
+numerator.
 
-**Why the re-pin has not been produced yet.** Through this round the host ran at
-load 30–40 on 12 cores — several concurrent F5 corpus runs plus other agents — and
-a single-run wall-clock number taken under that load is not a measurement of this
-analyzer, it is a measurement of the contention. The instrument
-(`script/m14/tmp/cs-deep-25-perf-envelope.ts`) reports **min over N runs** rather
-than a single run, and breaks the cost down per symbol and per relationship label,
-because "400 files in 10 s" cannot distinguish linear growth from a quadratic that
-has not yet bitten. Quoting a number before the host is quiet would repeat the
-error this lane has been correcting all round: asserting a measurement that does
-not support the claim attached to it.
+**AND THE SCALING MEASUREMENT IS NOT REPRODUCIBLE ON THIS HOST.** Three runs of the identical
+instrument over identical input, per-symbol cost from 50 files to 400 files (891 -> 4,460 symbols):
 
-**What the shape claim rests on, and what it does not.** The hot path is
-single-pass iterative traversal (explicit stack, no recursion depth risk);
-`symbolMap` (Map) gives O(1) owner/name lookups; the type-kind companion is a Map
-lookup per base type; override resolution uses the shared `findDeclaringParent`
-BFS over the (tiny) hierarchy. That is an argument that no pass is O(n²), and it
-is an argument from the code, not a measurement. The per-label breakdown is what
-would confirm it, and it is the outstanding measurement.
+| run | 1-min load | ratio | reported drift |
+| --- | --- | --- | --- |
+| 1 | 8.14 | 1.493 | 49% |
+| 2 | 8.14 | 1.913 | 91% |
+| 3 | 17.62 | 1.545 | 54% |
 
-One structural fact does bound the worst case, and it is an argument rather than a
-measurement too: relationship emission is O(edges), not O(symbols × names), because
-owner resolution goes through the `symbolMap` and not a scan. The bare-identifier
-pass is the one place that sees every name in a file, and it is a single Map lookup
-per reference.
+The DIRECTION is consistent — per-symbol cost rises with the sample in all three runs, so a
+super-linear term probably exists. The MAGNITUDE is not measurable here: runs 1 and 2 shared a
+load average and still differed by nearly 2x, so min-over-5-runs does not converge on this box the
+way the F5 harness's min-over-runs does on its. Peak RSS also grew 441 -> 1059 MB across sizes, so
+GC pressure is inside the measurement and is not separable from it at this scale.
+
+So the honest position is narrow, and it is all that survives:
+
+- **There is likely a super-linear term.** Direction is reproducible; magnitude is not.
+- **The claim "no O(n^2) or per-symbol O(n) scans" is not supported by any measurement and has
+  been withdrawn.** The only thing supporting it is a structural argument from the code: a
+  single-pass iterative traversal (explicit stack, no recursion depth risk), `symbolMap` for O(1)
+  owner/name lookup, a Map lookup per base type for the type-kind companion, and
+  `findDeclaringParent` BFS over the (tiny) class hierarchy. One structural fact does bound the
+  worst case — relationship emission resolves owners through `symbolMap` rather than a scan, so
+  emission is O(edges), not O(symbols x names) — and the bare-identifier pass, which is the only
+  place that sees every name in a file, is a single Map lookup per reference.
+- **A published envelope needs a quiet host and a larger min-N than 5.** Until then the honest
+  budget is the structural argument, labelled as an argument.
 
 ## Differential ground truth
 
