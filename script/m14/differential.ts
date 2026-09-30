@@ -3219,6 +3219,68 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     "enum_definition",
   ])
 
+  // The nearest enclosing DECLARATION, for attributing an anonymous class and a
+  // method's local definitions. A function wins over its enclosing type, which is
+  // what makes `new Runnable { ... }` inside a def belong to the def and the same
+  // expression in a val belong to the class.
+  const resolveOwner = (start: any): string => {
+    let p: any = start
+    while (p) {
+      if (p.type === "function_definition" || p.type === "function_declaration") {
+        const nm = declName(p)
+        if (nm) return nm
+      }
+      if (TYPE_DECLS.has(p.type)) {
+        const nm = declName(p)
+        if (nm) return nm
+      }
+      p = p.parent
+    }
+    return ""
+  }
+  // An anonymous class expression: `new T { ... }`. Detected STRUCTURALLY — a
+  // node carrying a `new` token AND a template_body — because the pinned grammar
+  // wraps the type differently for a plain (`type_identifier`) and a qualified
+  // or generic (`generic_type`) supertype, and a text or node-type test would
+  // have to enumerate the shapes.
+  const isAnonymousClassNode = (n: any): boolean => {
+    if (namedChildOf(n, "template_body") === null) return false
+    for (let i = 0; i < n.childCount; i++) {
+      const c = n.child(i)
+      if (c && c.type === "new") return true
+    }
+    return false
+  }
+  // `anonymous_<T>` where T is the supertype as written with its type ARGUMENTS
+  // stripped: `new java.util.concurrent.Callable[String] { ... }` publishes
+  // `anonymous_java.util.concurrent.Callable`.
+  const anonymousName = (n: any): string => {
+    let typeText = ""
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (!c || c.type === "template_body") continue
+      if (c.type === "type_identifier" || c.type === "generic_type" || c.type === "stable_type_identifier") {
+        typeText = c.text
+        break
+      }
+    }
+    const bracket = typeText.indexOf("[")
+    if (bracket >= 0) typeText = typeText.slice(0, bracket)
+    return `anonymous_${typeText || "object"}`
+  }
+  // The members a body declares, as a list of names.
+  const bodyMembers = (body: any): string[] => {
+    const out: string[] = []
+    for (let i = 0; i < body.namedChildCount; i++) {
+      const d = body.namedChild(i)
+      if (d && MEMBER_DECLS.has(d.type)) {
+        const nm = declName(d)
+        if (nm) out.push(nm)
+      }
+    }
+    return out
+  }
+
   const walk = (n: any): void => {
     if (TYPE_DECLS.has(n.type)) {
       const owner = declName(n)
@@ -3258,15 +3320,39 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
           }
         }
         const body = namedChildOf(n, "template_body")
-        if (body) {
-          for (let i = 0; i < body.namedChildCount; i++) {
-            const d = body.namedChild(i)
-            if (!d || !MEMBER_DECLS.has(d.type)) continue
+        if (body) for (const nm of bodyMembers(body)) push(owner, nm)
+      }
+    }
+    // OWNER KIND 2 — a METHOD owns its local definitions. A local `def` is
+    // extracted and attributed to the enclosing function (`m contains loc1`);
+    // a local `val`/`var` is NOT extracted at all, so deriving one here would
+    // invent a row the analyzer does not publish. The asymmetry is real and was
+    // measured on both halves: `def m() = { def loc1 = 1; val loc2 = 2 }` gives
+    // `m->loc1` and nothing for loc2.
+    if (n.type === "function_definition" || n.type === "function_declaration") {
+      const fname = declName(n)
+      const blk = namedChildOf(n, "block")
+      if (fname && blk) {
+        for (let i = 0; i < blk.namedChildCount; i++) {
+          const d = blk.namedChild(i)
+          if (d && d.type === "function_definition") {
             const nm = declName(d)
-            if (nm) push(owner, nm)
+            if (nm) push(fname, nm)
           }
         }
       }
+    }
+    // OWNER KIND 3 — an ANONYMOUS class is contained by its nearest enclosing
+    // declaration AND contains its own members. Both halves publish: a val in a
+    // class gives `E->anonymous_Runnable` and `anonymous_Runnable->body`, while
+    // the same expression inside a def gives `m->anonymous_Runnable` — which is
+    // why the owner has to be resolved by declaration, not by the class.
+    if (isAnonymousClassNode(n)) {
+      const anon = anonymousName(n)
+      const owner = resolveOwner(n.parent)
+      if (owner) push(owner, anon)
+      const body = namedChildOf(n, "template_body")
+      if (body) for (const nm of bodyMembers(body)) push(anon, nm)
     }
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
