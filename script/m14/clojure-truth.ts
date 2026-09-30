@@ -425,9 +425,6 @@ function defNameOf(node: Node): string {
   return ""
 }
 
-/** C9: forms whose DIRECT list children are METHOD DEFINITIONS, never calls. */
-const METHOD_IMPL_FORMS = new Set(["reify", "extend-type", "extend-protocol", "proxy", "defrecord", "deftype", "defprotocol", "definterface"])
-
 /** Is this list a DIRECT child of the file root? That is what "top level" means. */
 function isTopLevelChild(n: Node): boolean {
   const p = n.parent
@@ -668,59 +665,23 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
 
 const LIB_KEYWORDS = new Set(["require", "use", "import", "refer-clojure", "require-macros", "use-macros"])
 
-/**
- * The reference TARGET of a libspec entry, and the LINE the edge carries.
- *
- * Four syntactic shapes, and the analyzer treats the twins identically on
- * purpose — `(:import [java.util Date])` and `(:import (java.util Date))` both
- * reference the PACKAGE, and the class is an import, not a reference:
- *
- *   `[clojure.string :as str]`  → `clojure.string`, at the vector's line
- *   `clojure.core`              → `clojure.core`,  at the symbol's line
- *   `[:require (java.util Date)]` the PAREN form: index 0 is the package and it
- *   `[:import (java.lang Character Date)]`  is referenced at the PACKAGE's line
- *   `[[clojure [string :as s]]]` a PREFIX list: the head is the prefix, and each
- *                                `[sub :as a]` additionally references `prefix.sub`
- *
- * The paren form was the whole of 1,113 fabrications: `libNameOf` returned "" for
- * it, so `(:import (java.lang Character))` produced no edge where the analyzer
- * produced one.
- */
+/** A libspec symbol `lib`, `lib/sub` or `[lib :as a] …` → the LIB name. */
 function libNameOf(spec: Node): string {
-  if (spec.type === "sym_lit") return symName(spec)
-  if (spec.type === "list_lit") {
-    // `(:import (java.util Date UUID))` — index 0 is the package.
-    const pkg = spec.namedChild(0)
-    return pkg && pkg.type === "sym_lit" ? symName(pkg) : ""
+  if (spec.type === "sym_lit") {
+    const nm = symName(spec)
+    return nm
   }
   if (spec.type === "vec_lit") {
     const first = spec.namedChild(0)
     if (!first) return ""
     if (first.type === "sym_lit") return symName(first)
     if (first.type === "vec_lit") {
+      // `[[prefix [sub :as a] …]]` — a prefix list's own head.
       const p0 = first.namedChild(0)
       return p0 && p0.type === "sym_lit" ? symName(p0) : ""
     }
   }
   return ""
-}
-
-/** A PREFIX list's `prefix.sub` targets — `[[clojure [string :as s]]]` → `clojure.string`. */
-function prefixSubTargets(spec: Node): string[] {
-  if (spec.type !== "vec_lit") return []
-  const first = spec.namedChild(0)
-  if (!first || first.type !== "vec_lit") return []
-  const prefix = first.namedChild(0)
-  const prefixName = prefix && prefix.type === "sym_lit" ? symName(prefix) : ""
-  if (!prefixName) return []
-  const out: string[] = []
-  for (let q = 1; q < first.namedChildCount; q++) {
-    const c = first.namedChild(q)
-    if (!c || c.type !== "vec_lit") continue
-    const sub = c.namedChild(0)
-    if (sub && sub.type === "sym_lit") out.push(`${prefixName}.${symName(sub)}`)
-  }
-  return out
 }
 
 /** Is this spec an alias-only entry (`:as-alias`), which registers no library? */
@@ -746,7 +707,7 @@ export type RelEdge = { label: string; from: string; to: string; line: number }
  * single symbol, so it contributes no reference: publishing a wildcard target
  * would be a name nothing can refer to.
  */
-export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: string) => boolean = () => false): RelEdge[] {
+export function deriveClojureReferencesTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
   const st: Node[] = [root]
@@ -778,41 +739,13 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
       const mark = (name: string, line: number) => {
         const slash = name.indexOf("/")
         if (slash <= 0) return
-        // A SUPPRESSED call emits no edge of any label — the analyzer's core gate
-        // fires before the reference, so `Math/abs` and `Integer/parseInt`, which
-        // are in the derived core list as uncurried interop statics, are not
-        // dependencies on anything. Without this the truth derived 426 edges the
-        // analyzer deliberately does not publish.
-        if (isSuppressed(name)) return
-        // A QUALIFIED HEAD REFERENCES ITS NAMESPACE, whether or not the name is
-        // a known alias. The analyzer reads the head's `namespace` field and
-        // resolves it as `namespaceAliases[alias] || alias`, so `(clojure.lang.RT/conj x)`
-        // in clojure/core.clj publishes `clojure.core -> clojure.lang.RT` — a real
-        // dependency on a Java class, arrived at by the same rule as an alias.
-        //
-        // My first version required the prefix to BE a declared alias, which is
-        // the stricter reading and the wrong one: it dropped every Java
-        // interop head, because a class name is never in the alias table. 1,062
-        // fabrications, and the fix is one `??`.
-        const prefix = name.slice(0, slash)
-        const resolved = al.get(prefix) ?? prefix
-        if (resolved === ns) return
+        const resolved = al.get(name.slice(0, slash))
+        if (!resolved || resolved === ns) return
         const id = `references|${ns}->${resolved}@${line}`
         if (seen.has(id)) return
         seen.add(id)
         out.push({ label: "references", from: ns, to: resolved, line })
       }
-      // NOT yet restricted to call-shaped positions. Restricting it traded 31
-      // fewer misses for 653 MORE fabrications — a worse net residual (894
-      // against 631) — which is the signature of a rule still not understood
-      // rather than of a missing case. The honest state is measured and left
-      // alone: the class is REPORTED, not enforced, and the residual is written
-      // down instead of being tuned until the number looks good. Two things are
-      // known and not yet modelled: a qualified SYMBOL in a binding vector, map
-      // value or vector element is a NAME and not a dependency, and a
-      // method-impl position (the direct list children of reify/extend-type/
-      // defrecord — C9) is a definition and not a call. Both are recorded in the
-      // gate's output as the class's remaining rules.
       mark(form, h.startPosition.row + 1)
       if (form === "->" || form === "->>" || form === "some->" || form === "some->>" || form === "cond->" || form === "cond->>" || form === "doto") {
         for (let i = 2; i < node.namedChildCount; i++) {
@@ -851,20 +784,12 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
               }
               if (isAsAliasOnly(spec)) continue
               const lib = libNameOf(spec)
+              if (!lib) continue
               const line = spec.startPosition.row + 1
-              if (lib) {
-                const id = `${v}->${lib}@${line}`
-                if (!seen.has(id)) { seen.add(id); out.push({ label: "references", from: v, to: lib, line }) }
-              }
-              // A PREFIX list references each `prefix.sub` as well, and the
-              // analyzer emits those at the sub-list's own line.
-              for (const sub of prefixSubTargets(spec)) {
-                const subNode = spec.namedChild(0)
-                const sid = `${v}->${sub}@${line}`
-                if (seen.has(sid)) continue
-                seen.add(sid)
-                out.push({ label: "references", from: v, to: sub, line: subNode ? line : line })
-              }
+              const id = `${v}->${lib}@${line}`
+              if (seen.has(id)) continue
+              seen.add(id)
+              out.push({ label: "references", from: v, to: lib, line })
             }
           }
         }

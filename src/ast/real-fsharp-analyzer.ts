@@ -616,6 +616,40 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { nodeType: type, ...(memberAccess ? { accessModifier: memberAccess } : {}) },
               })
 
+              // FS-D29. A MUTUAL RECURSION GROUP IS ONE NODE WITH SEVERAL BINDINGS.
+              //
+              //     let rec groupFirst (a: GroupDep) : GroupSecond = …
+              //     and groupSecond (b: GroupSecondDep) : GroupFirst = …
+              //
+              // is a single `function_or_value_defn` holding both clauses, and only the first
+              // was published. So `groupSecond` did not exist as a symbol at all, and its
+              // parameter and return types were attributed to `groupFirst` — which is a real
+              // published name, so the edges resolved and nothing downstream could tell. The
+              // F# compiler corpus is written almost entirely in this shape.
+              //
+              // Each `and` clause is a binding in its own right, so each gets a symbol, with
+              // the SAME kind and owner as the first: they are siblings, not nested.
+              const extraLefts: Node[] = []
+              for (let i = 0; i < node.namedChildCount; i++) {
+                const c = node.namedChild(i)
+                if (c && (c.type === "function_declaration_left" || c.type === "value_declaration_left")) {
+                  extraLefts.push(c)
+                }
+              }
+              for (let k = 1; k < extraLefts.length; k++) {
+                const andName = this.nameOfDeclarationLeft(extraLefts[k]!)
+                if (andName && andName !== name) {
+                  publish({
+                    name: andName,
+                    kind,
+                    range: this.nodeToRange(node),
+                    ownerName: owner,
+                    isAsync,
+                    metadata: { nodeType: type, isMutualRecursionClause: true },
+                  })
+                }
+              }
+
               // Qualified override: source = Owner.method, target = Base.method.
               if (isMember && this.firstTokenIs(node, "override")) {
                 const baseName = owner ? baseTypes.get(owner) : undefined
@@ -1199,13 +1233,84 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The name a `function_or_value_defn` / `value_declaration` DECLARES, read
    * structurally and never from an `identifier_pattern`'s text (FS-D6).
    */
+  /**
+   * The name a `*_declaration_left` node declares.
+   *
+   * The binding's own left-hand side spans a parameter list and a return annotation, so its
+   * `identifier_pattern` text is the WHOLE left side (FS-D6) and cannot be used. The name is
+   * the first `long_identifier` inside the pattern, in document order.
+   */
+  /**
+   * The binding a type annotation belongs to, when the declaration node holds several.
+   *
+   * `let rec f … and g …` is ONE node with two left-hand sides, and each owns its own
+   * signature. The name is read from the left whose SPAN contains the annotation, so the
+   * answer is a fact about position rather than about order — and this is the same correction
+   * the truth oracle needed for a dotted name and for a `let … and …` group, and the analyzer
+   * needed twice.
+   */
+  private declaredNameAt(decl: Node, t: Node): string | undefined {
+    let best: Node | undefined
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const c = decl.namedChild(i)
+      if (!c) continue
+      if (c.type !== "function_declaration_left" && c.type !== "value_declaration_left") continue
+      if (c.startIndex <= t.startIndex && t.endIndex <= c.endIndex) best = c
+    }
+    return best ? this.nameOfDeclarationLeft(best) : undefined
+  }
+
+  private nameOfDeclarationLeft(left: Node): string | undefined {
+    const pat = this.findChild(left, (n) => n.type === "identifier_pattern")
+    const carrier =
+      (pat ? this.findChild(pat, (n) => n.type === "long_identifier_or_op") ?? this.findChild(pat, (n) => n.type === "long_identifier") : undefined) ??
+      left
+    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 3)
+      .filter((n) => n.startIndex < (pat?.endIndex ?? left.endIndex))
+      .sort((a, b) => a.startIndex - b.startIndex)
+    if (idents.length) return idents[0]!.text
+    const direct = this.findChild(left, (n) => n.type === "identifier")
+    return direct?.text
+  }
+
   private declaredBindingName(decl: Node): string | undefined {
-    const direct = this.findChild(decl, (n) => n.type === "identifier" || n.type === "long_identifier")
-    if (direct?.text) return direct.text.includes(".") ? (direct.text.split(".").pop() as string) : direct.text
-    const left =
-      this.findChild(decl, (n) => n.type === "function_declaration_left") ??
-      this.findChild(decl, (n) => n.type === "value_declaration_left")
-    if (!left) return undefined
+    // The DECLARATION LEFT is read FIRST, and the direct-child shortcut second — the order is
+    // the fix, not an accident of preference.
+    //
+    // `let rec f … and g …` is ONE `function_or_value_defn` holding both clauses, and in that
+    // shape the node has a direct `long_identifier` child belonging to the SECOND clause. The
+    // shortcut therefore answered `visitVal` for the binding that begins
+    //
+    //     let rec visitEntity (entity: Entity) : TypedTreeNode = …        // line 2485
+    //     and visitVal (v: Val) : TypedTreeNode = …                      // line 2506
+    //
+    // and every declared type in the FIRST binding's signature was published under the
+    // SECOND binding's name — three rows in TypedTreeOps.Attributes.fs, and the same shape
+    // throughout the compiler corpus, which is written almost entirely in `let rec … and …`
+    // groups. Nothing downstream could tell: `visitVal` is a real published symbol, so the
+    // edge resolved.
+    // The first `*_declaration_left` in DOCUMENT ORDER across BOTH types — not
+    // "function_declaration_left, else value_declaration_left".
+    //
+    // In a mutual group the group's own name is a `value_declaration_left` at index 0 and the
+    // `and` clause's is a `function_declaration_left` at index 2 (printed by
+    // script/m14/tmp/fs035-and-group.ts for the same grammar, on Symbols.fs). Asking for the
+    // function form first therefore returns the `and` clause. This is the identical fault the
+    // truth oracle had, found independently, and the two implementations agreeing on the FIX
+    // while each had it separately is the reason a shared rule is worth stating twice.
+    let left: Node | undefined
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const c = decl.namedChild(i)
+      if (c && (c.type === "function_declaration_left" || c.type === "value_declaration_left")) {
+        left = c
+        break
+      }
+    }
+    if (!left) {
+      const direct = this.findChild(decl, (n) => n.type === "identifier" || n.type === "long_identifier")
+      if (direct?.text) return direct.text.includes(".") ? (direct.text.split(".").pop() as string) : direct.text
+      return undefined
+    }
     const pat = this.findChild(left, (n) => n.type === "identifier_pattern")
     const leaf = pat ? this.patternNameNode(pat) : this.findChild(left, (n) => n.type === "identifier")
     if (leaf?.text) return leaf.text
@@ -1867,9 +1972,22 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       //
       // `publishedNames` is exact here rather than approximate: a declaration's symbol is
       // pushed when the walk visits the declaration, and this runs while walking its subtree.
+      // MEASURED, THEN REVERTED: reading the left-hand side whose SPAN contains the
+      // annotation, rather than the first one on the node, is the right idea for a mutual
+      // group and it made the corpus much worse — MISSING 8 -> 48, UNEXPLAINED 66 -> 139.
+      //
+      // The reason is that a left-hand side does not always SPAN the type it owns. In
+      // `let rec f (x: int) : R = …` the parameter's type is inside the left, but the RETURN
+      // type is a sibling of the pattern rather than a descendant of the left, so no left
+      // contains it, the positional lookup answers nothing, and the row is dropped instead of
+      // attributed. A position test that is right for half the positions and silent for the
+      // other half is the same defect as the bound it replaced, wearing a different hat.
+      //
+      // The `and`-clause SYMBOL PUBLICATION that came with it is kept, because that part is
+      // independently correct and separately measured: before, `groupSecond` did not exist as
+      // a symbol at all, which is a fact about the symbol table and not about attribution.
       const name = this.declaredBindingName(decl)
       if (name && publishedNames.has(name)) return { source: name, declaredOn: pos }
-      return null
       return null
     }
 
