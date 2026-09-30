@@ -2051,6 +2051,7 @@ const handlers: Record<string, ToolHandler> = {
             traversal: impact.traversal,
             cascade: impact.cascade,
             countVerification: impact.countVerification,
+            reproducible: impact.reproducible,
             ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
             // The component's own bookkeeping does not ride the wire. `tracedId`
             // is the walk node a cascade row was found at — deciding `via` needs
