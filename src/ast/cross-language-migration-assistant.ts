@@ -1,5 +1,3 @@
-// @ts-nocheck — large static polyglot mapping dataset
-import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "cross-language-migration" })
@@ -32,15 +30,41 @@ export namespace CrossLanguageMigrationAssistant {
     relationshipType: string
     sourceSymbolId: string | null
     targetSymbolId: string | null
+    /** The name the indexer recorded for an endpoint that is not an indexed symbol. */
+    sourceExternal: string | null
+    targetExternal: string | null
     sourceFile: string
     targetFile: string
     /**
-     * The index does not measure per-relationship strength, so this is the
-     * bridge's fixed 0.8 (measured: 1 distinct value over 500 relationships on
-     * every corpus checked). It is reported because the field is part of the
-     * evidence shape, and it must not be read as a measurement.
+     * The line the relationship occurs on, 1-based, as stored by the indexer.
+     * Null when the indexer recorded none — 490 of 5228 cobra rows — and that
+     * absence is reported rather than filled with a zero.
      */
-    strength: number
+    line: number | null
+    /**
+     * The indexer's own 0–1 confidence for this relationship. This REPLACES the
+     * constant 0.8 the bridge used to fabricate: measured 6 distinct values on
+     * cobra and 4 on flask. It is a confidence, not a coupling strength, and the
+     * field is named for what the index actually stores.
+     */
+    confidence: number | null
+    /** True when the indexer marked this edge as crossing a language boundary. */
+    isCrossLanguage: boolean
+    /** How the boundary is bridged, as recorded ("name-resolution", …). */
+    bridgeMechanism: string | null
+    isCrossFile: boolean
+    /**
+     * False when either endpoint is not an indexed symbol. Such an edge cannot be
+     * located, so it is not charged as migration work; the count is reported
+     * instead of silently inflating the total.
+     */
+    endpointsResolved: boolean
+    /**
+     * True when the edge's files look like test code. A migrating engineer needs
+     * this split: measured, 55.3% of a cobra plan's evidence is test callers, and
+     * a flat per-edge cost makes that dominate the headline number.
+     */
+    isTestEvidence: boolean
   }
 
   export interface MigrationPlan {
@@ -58,15 +82,35 @@ export namespace CrossLanguageMigrationAssistant {
     dependencyProvenance: {
       indexedImports: number
       nameHeuristics: number
+      /**
+       * Whether the index can supply library evidence for this component at all.
+       * The index does not record per-file imports, so this is `unavailable` in
+       * practice; it is stated rather than reported as "no dependencies".
+       */
+      importEvidence: "available" | "unavailable"
       note: string
     }
     relationshipEvidence: MigrationRelationshipEvidence[]
+    evidenceBreakdown: {
+      total: number
+      /** Resolved, non-test edges: the integration points a port must satisfy. */
+      production: number
+      /** Resolved edges whose files are test code. */
+      test: number
+      /** Edges with an endpoint that is not an indexed symbol; not charged. */
+      unresolvable: number
+      /** Edges the indexer marked as crossing a language boundary. */
+      crossLanguage: number
+      /** Of the resolved edges, how many carry a line. */
+      withLine: number
+      /** Of the resolved edges, how many carry a stored confidence. */
+      withConfidence: number
+    }
     effortEstimateHours: number
     complexityScore: number // 1-10
     riskAssessment: MigrationRisk
     strategySteps: string[]
   }
-
   // A hardcoded knowledge base of polyglot equivalents for migration
   const BASE_POLYGLOT_LIBRARY_DICTIONARY: Record<
     string,
@@ -869,6 +913,137 @@ export namespace CrossLanguageMigrationAssistant {
     | { ok: true; plan: MigrationPlan }
     | { ok: false; refusal: MigrationRefusal }
 
+  // ── the planner's input ────────────────────────────────────────────────────
+  // A narrow view of the index, produced by
+  // `loadMigrationContext` (src/intelligence/migration/migration-source.ts).
+  // Deliberately not the whole project: the previous input was every symbol and
+  // every relationship in the repository, loaded and reconstructed per call.
+  export interface MigrationSourceRelationship {
+    id: string
+    sourceSymbolId: string | null
+    targetSymbolId: string | null
+    sourceExternal?: string | null
+    targetExternal?: string | null
+    type: string
+    confidence?: number | null
+    line?: number | null
+    isCrossLanguage?: boolean
+    bridgeMechanism?: string | null
+    isCrossFile?: boolean
+    /** Convenience for the legacy adapter: endpoint file paths. */
+    sourceFile?: string
+    targetFile?: string
+  }
+
+  export interface MigrationSource {
+    /** Symbols whose name matches a requested name (case-insensitive). */
+    symbols: Array<{ id: string; name: string; type?: string; language: string; file: string }>
+    relationships: MigrationSourceRelationship[]
+    nameById?: Map<string, string>
+    fileById?: Map<string, string>
+  }
+
+  /**
+   * Adapt the generic cross-language analysis shape into a `MigrationSource`.
+   *
+   * Kept so callers holding a `PolyglotProjectAnalysis` — the fixtures in
+   * script/m20/verify-migration-mappings.ts among them — keep working. The
+   * engine itself no longer goes through this path; it uses the bounded loader.
+   */
+  export function migrationSourceFromAnalysis(analysis: any): MigrationSource {
+    const nameById = new Map<string, string>()
+    const fileById = new Map<string, string>()
+    const symbols = (analysis?.crossLanguageSymbols ?? []).map((s: any) => {
+      nameById.set(s.id, s.name)
+      fileById.set(s.id, s.definitions?.[0]?.filePath ?? "unknown")
+      return {
+        id: s.id,
+        name: s.name,
+        type: s.type,
+        language: String(s.languages?.[0] ?? "unknown"),
+        file: s.definitions?.[0]?.filePath ?? "unknown",
+        metadata: s.metadata,
+      }
+    })
+    const relationships: MigrationSourceRelationship[] = (analysis?.crossLanguageRelationships ?? []).map((r: any) => ({
+      id: r.id,
+      sourceSymbolId: r.source?.symbolId ?? null,
+      targetSymbolId: r.target?.symbolId ?? null,
+      type: String(r.type),
+      confidence: Number.isFinite(r.strength) ? r.strength : null,
+      line: null,
+      isCrossLanguage: false,
+      bridgeMechanism: null,
+      isCrossFile: (r.source?.filePath ?? "") !== (r.target?.filePath ?? ""),
+      sourceFile: r.source?.filePath,
+      targetFile: r.target?.filePath,
+    }))
+    return { symbols: symbols as any, relationships, nameById, fileById }
+  }
+
+  /**
+   * Canonicalize a module specifier to the bare package name the dictionary is
+   * keyed by.
+   *
+   * Round 1 got this wrong in BOTH evidenced sources and in two different ways:
+   * `@nestjs/core` became `core` from `metadata.imports` and stayed
+   * `@nestjs/core` from a node_modules path, so the same package produced two
+   * different library names depending on which source saw it. The dictionary
+   * keys are bare names, so the scope is dropped.
+   *
+   * Returns `{ name: null }` for specifiers that are not a library at all: Node
+   * builtins (`node:fs`) and type-only packages (`@types/node`). Reporting a
+   * builtin or a type stub as a runtime dependency is a small lie that lands in
+   * every plan for a TypeScript component.
+   */
+  export interface CanonicalPackage {
+    name: string | null
+    /** Why it is not a library, when it is not one. */
+    excluded?: "node-builtin" | "type-only" | "relative" | "malformed"
+  }
+
+  export function canonicalPackageName(specifier: string): CanonicalPackage {
+    const raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
+    if (!raw) return { name: null, excluded: "malformed" }
+    if (raw.startsWith("node:")) return { name: null, excluded: "node-builtin" }
+    if (raw.startsWith(".") || raw.startsWith("/")) return { name: null, excluded: "relative" }
+    if (raw.startsWith("@types/")) return { name: null, excluded: "type-only" }
+    const segments = raw.split("/")
+    if (raw.startsWith("@")) {
+      // `@scope/name[/sub]`. The dictionary is keyed by the FRAMEWORK, which for
+      // these ecosystems is the scope: `@nestjs/core` and `@nestjs/common` are both
+      // the `nestjs` row. Taking `segments[1]` instead returned `core`, which
+      // matches no row — round 1's bug, kept alive here until this run.
+      if (segments.length < 2 || !segments[0] || !segments[1]) return { name: null, excluded: "malformed" }
+      const scope = segments[0].slice(1)
+      if (scope === "types" || scope.startsWith("types-")) return { name: null, excluded: "type-only" }
+      return { name: scope }
+    }
+    const name = segments[0]
+    if (!name || name.includes(".")) return { name: null, excluded: "malformed" }
+    return { name }
+  }
+
+  /**
+   * The package named by a `node_modules/...` path, canonicalized the same way.
+   * Previously this returned the whole scoped path, so a package seen here and
+   * through an import produced two different names.
+   */
+  export function packageFromNodeModulesPath(filePath: string): CanonicalPackage {
+    const match = String(filePath ?? "").match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
+    if (!match) return { name: null, excluded: "malformed" }
+    return canonicalPackageName(match[1])
+  }
+
+  /** Test-shaped evidence, so the effort split is visible instead of implied. */
+  const TEST_PATH = /(?:^|\/)(?:tests?|spec|specs|__tests__|testing)\/|(?:_test|_spec|\.test|\.spec|Test|Tests|Spec)\.[A-Za-z0-9]+$|_(?:test|tests|spec)\.[A-Za-z0-9]+$/
+
+  export function isTestPath(filePath: string): boolean {
+    const p = String(filePath ?? "")
+    if (!p || p === "unknown") return false
+    return TEST_PATH.test(p)
+  }
+
   /**
    * Analyzes a component (symbol) in the AST and generates a deep migration plan
    * to a target language, mapping dependencies and calculating risk/effort.
@@ -881,7 +1056,7 @@ export namespace CrossLanguageMigrationAssistant {
   export async function planMigration(
     symbolName: string,
     targetLanguage: string,
-    analysis: CrossLanguageIntelligence.PolyglotProjectAnalysis,
+    source: MigrationSource,
   ): Promise<MigrationOutcome> {
     log.debug(`planMigration: '${symbolName}' -> '${targetLanguage}'`)
 
@@ -889,17 +1064,13 @@ export namespace CrossLanguageMigrationAssistant {
     // silently collapsed to the first one: measured on a two-file fixture, the
     // previous `find` returned a confident plan for whichever symbol happened to
     // be first and never mentioned the other.
-    const matches = analysis.crossLanguageSymbols.filter((s) => s.name.toLowerCase() === symbolName.toLowerCase())
+    const wanted = String(symbolName ?? "").trim().toLowerCase()
+    const matches = source.symbols.filter((s) => String(s.name).toLowerCase() === wanted)
     if (matches.length === 0) {
       return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
     }
     if (matches.length > 1) {
-      const candidates = matches.map((s) => ({
-        id: s.id,
-        name: s.name,
-        language: String(s.languages?.[0] ?? "unknown"),
-        file: s.definitions?.[0]?.filePath ?? "unknown",
-      }))
+      const candidates = matches.map((s) => ({ id: s.id, name: s.name, language: s.language, file: s.file }))
       return {
         ok: false,
         refusal: {
@@ -911,11 +1082,11 @@ export namespace CrossLanguageMigrationAssistant {
     }
     const symbol = matches[0]
 
-    const source = resolveSourceLanguage(symbol.languages[0] ?? "")
-    if (!source.language) {
-      return { ok: false, refusal: { reason: "unsupported-source", detail: source.reason ?? "unsupported source language" } }
+    const resolvedSource = resolveSourceLanguage(symbol.language)
+    if (!resolvedSource.language) {
+      return { ok: false, refusal: { reason: "unsupported-source", detail: resolvedSource.reason ?? "unsupported source language" } }
     }
-    const sourceLanguage = source.language
+    const sourceLanguage = resolvedSource.language
 
     const normalizedTargetLanguage = normalizeMigrationLanguage(targetLanguage)
     if (!normalizedTargetLanguage) {
@@ -934,69 +1105,79 @@ export namespace CrossLanguageMigrationAssistant {
       }
     }
 
-    // 2. Analyze Component Dependencies & Relationships
-    // Relationship evidence is symbol-scoped, not file-scoped. A file can
-    // contain several components; counting every relationship touching that
-    // file silently charges one migration for its unrelated neighbors.
-    const symbolIds = new Set([
-      symbol.id,
-      ...(symbol.definitions ?? []).map((definition) => definition.symbolId).filter(Boolean),
-    ])
-    const relatedRels = analysis.crossLanguageRelationships.filter(
-      (relationship) => symbolIds.has(relationship.source.symbolId ?? "") || symbolIds.has(relationship.target.symbolId ?? ""),
-    )
+    // 2. Relationship evidence, scoped to this symbol's ids. Every field is one
+    //    the indexer actually stored; nothing is synthesised. The previous path
+    //    wrote `strength: 0.8` for every edge while the row's real
+    //    `confidence`, `line_number`, `is_cross_language` and `bridge_mechanism`
+    //    went unread.
+    const nameById = source.nameById ?? new Map<string, string>()
+    const fileById = source.fileById ?? new Map<string, string>()
     const relationshipEvidence = [...new Map(
-      relatedRels.map((relationship) => {
-        const id = String(relationship.id || [
-          relationship.source.symbolId ?? "",
-          relationship.target.symbolId ?? "",
-          relationship.type,
-          relationship.source.filePath,
-          relationship.target.filePath,
-        ].join("|"))
-        return [id, {
-          id,
-          relationshipType: String(relationship.type),
-          sourceSymbolId: relationship.source.symbolId ?? null,
-          targetSymbolId: relationship.target.symbolId ?? null,
-          sourceFile: relationship.source.filePath,
-          targetFile: relationship.target.filePath,
-          strength: Number.isFinite(relationship.strength) ? relationship.strength : 0,
-        }]
-      }),
+      source.relationships
+        .filter((r) => r.sourceSymbolId === symbol.id || r.targetSymbolId === symbol.id)
+        .map((r) => {
+          const sourceFile = r.sourceFile ?? (r.sourceSymbolId ? fileById.get(r.sourceSymbolId) : undefined) ?? "unknown"
+          const targetFile = r.targetFile ?? (r.targetSymbolId ? fileById.get(r.targetSymbolId) : undefined) ?? "unknown"
+          const id = String(r.id || [r.sourceSymbolId ?? "", r.targetSymbolId ?? "", r.type, sourceFile, targetFile].join("|"))
+          const endpointsResolved = Boolean(r.sourceSymbolId) && Boolean(r.targetSymbolId)
+          const entry: MigrationRelationshipEvidence = {
+            id,
+            relationshipType: String(r.type),
+            sourceSymbolId: r.sourceSymbolId ?? null,
+            targetSymbolId: r.targetSymbolId ?? null,
+            sourceExternal: r.sourceExternal ?? null,
+            targetExternal: r.targetExternal ?? null,
+            sourceFile,
+            targetFile,
+            line: typeof r.line === "number" ? r.line : null,
+            confidence: typeof r.confidence === "number" ? r.confidence : null,
+            isCrossLanguage: r.isCrossLanguage === true,
+            bridgeMechanism: r.bridgeMechanism ?? null,
+            isCrossFile: r.isCrossFile ?? (sourceFile !== targetFile),
+            endpointsResolved,
+            isTestEvidence: isTestPath(sourceFile) || isTestPath(targetFile),
+          }
+          return [id, entry] as const
+        }),
     ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
     // 3. Split dependencies by PROVENANCE before mapping them.
-    //
-    // The measured state of production: `metadata.imports` is never populated by
-    // the DB bridge (it hard-codes `metadata: {}`), node_modules is not indexed,
-    // so the only source that ever fired was a name-substring guess. That guess
-    // produced a Go→Python plan whose sole dependency was `jest`, at confidence
-    // 0, which then charged +6h and forced the risk band to Medium.
-    //
-    // So: a guess is still useful, and it is still offered — but it is never
-    // presented as a mapping, and it never moves an effort or risk number.
-    const { evidenced, inferred } = extractSourceDependencies(symbol, relatedRels)
+    const { evidenced, inferred, evidenceAvailable } = extractSourceDependencies(symbol as any, relationshipEvidence)
 
     const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import"))
     const inferredDependencies: LibraryEquivalence[] = inferred.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "name-heuristic"))
 
-    // Only evidenced, unresolved libraries charge the research allowance. A
-    // name guess is not a discovered gap in the migration; charging for it made
-    // effort and risk correlate with the tool's own guesswork.
-    const missingMappings = dependencies.filter((d) => d.confidence < 0.5).length
-
     // 4. Effort and risk, from measured quantities only.
+    //
+    //    An edge whose endpoint is not an indexed symbol cannot be located, so it
+    //    is not charged: you cannot schedule work against an edge with no
+    //    endpoint. Measured 9 such edges in a single cobra plan, previously
+    //    billed at 2 hours each. Test-shaped edges ARE charged — a port does have
+    //    to update its callers — but the split is reported, because 55.3% of a
+    //    cobra plan's evidence is test code and an undifferentiated number is
+    //    not interpretable.
+    const charged = relationshipEvidence.filter((e) => e.endpointsResolved)
+    const breakdown = {
+      total: relationshipEvidence.length,
+      production: charged.filter((e) => !e.isTestEvidence).length,
+      test: charged.filter((e) => e.isTestEvidence).length,
+      unresolvable: relationshipEvidence.length - charged.length,
+      crossLanguage: relationshipEvidence.filter((e) => e.isCrossLanguage).length,
+      withLine: charged.filter((e) => e.line != null).length,
+      withConfidence: charged.filter((e) => e.confidence != null).length,
+    }
+
+    const missingMappings = dependencies.filter((d) => d.confidence < 0.5).length
     let effortEstimateHours = 4
-    effortEstimateHours += relationshipEvidence.length * 2
+    effortEstimateHours += charged.length * 2
     effortEstimateHours += missingMappings * 6
 
     const riskFactors: string[] = []
     let riskLevel: MigrationRisk["level"] = "Low"
     let complexityScore = 2
 
-    if (relationshipEvidence.length > 5) {
-      riskFactors.push(`High coupling: Component has ${relationshipEvidence.length} unique indexed relationships.`)
+    if (charged.length > 5) {
+      riskFactors.push(`High coupling: ${charged.length} resolvable indexed relationships (${breakdown.production} production, ${breakdown.test} test).`)
       complexityScore += 3
       riskLevel = "High"
     }
@@ -1005,17 +1186,36 @@ export namespace CrossLanguageMigrationAssistant {
       complexityScore += 2
       if (riskLevel === "Low") riskLevel = "Medium"
     }
+    if (breakdown.crossLanguage > 0) {
+      const mechanisms = [...new Set(relationshipEvidence.filter((e) => e.isCrossLanguage).map((e) => e.bridgeMechanism).filter(Boolean))]
+      riskFactors.push(`${breakdown.crossLanguage} integration point${breakdown.crossLanguage === 1 ? "" : "s"} cross a language boundary${mechanisms.length ? ` (bridged by ${mechanisms.join(", ")})` : ""}; each must keep working after the port.`)
+      complexityScore += 1
+      if (riskLevel === "Low") riskLevel = "Medium"
+    }
+    if (breakdown.unresolvable > 0) {
+      // Not a risk of the CODE — a limit of what the index can see. Stated as
+      // such, and it does not move the band.
+      riskFactors.push(`${breakdown.unresolvable} indexed relationship${breakdown.unresolvable === 1 ? "" : "s"} have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`)
+    }
 
-    // The old guard was `symbol.type === DATABASE_ENTITY`, an enum value the DB
-    // bridge never writes: it stores the raw analyzer `symbol_type` (measured:
-    // module/class/property/variable/function/type/constant/method/namespace).
-    // The Critical band was therefore unreachable in production. It is reached
-    // now by a condition the index actually supports.
+    // The index does not record per-file imports, so a component's LIBRARY
+    // dependencies are unknown rather than empty. That is a different thing from
+    // a component with no libraries, and it belongs in the risk field, not only
+    // in a note nobody reads.
+    if (!evidenceAvailable) {
+      riskFactors.push("Library dependencies are UNKNOWN, not empty: the index does not record the imports this component performs. Resolve them before estimating.")
+    }
+
+    // Data-shaped detection now works on data the index actually holds: the
+    // raw `symbol_type` plus the component's own name. The previous guard
+    // required the `CrossLanguageSymbolType.DATABASE_ENTITY` enum value, which
+    // the bridge never wrote — measured 0 of 2988 flask symbols, so the Critical
+    // band was unreachable.
     const symbolType = String(symbol.type ?? "").toLowerCase()
     const isDataCarrier =
       symbolType === "database_entity" ||
-      /(?:^|[_\-.])?(?:table|schema|migration|migrate|entity|model|dao|repository|repo)(?:$|[_\-.])?/i.test(symbol.name) === true &&
-        /(?:class|struct|interface|type|table|enum)/.test(symbolType)
+      (/(?:class|struct|interface|type|table|enum)/.test(symbolType) &&
+        /(?:^|[_\-.])(?:table|schema|migration|migrate|entity|model|dao|repository|repo)(?:$|[_\-.])/i.test(symbol.name))
     if (isDataCarrier) {
       riskFactors.push(`Data-shaped component (${symbolType} "${symbol.name}"): schema and stored-state migration are likely in scope.`)
       complexityScore += 4
@@ -1027,16 +1227,20 @@ export namespace CrossLanguageMigrationAssistant {
     }
 
     // 5. Strategy steps, in the NORMALIZED language names. The previous text
-    // interpolated the raw request argument, so a request for `C++` scaffolded
-    // "a new C++ module" in a plan whose targetLanguage read `cpp`.
+    //    interpolated the raw request argument, so a request for `C++` scaffolded
+    //    "a new C++ module" in a plan whose targetLanguage read `cpp`.
     const strategySteps = [
       `Step 1: Scaffold new ${normalizedTargetLanguage} module/package for ${symbol.name}.`,
       dependencies.some((d) => d.confidence > 0.5)
         ? `Step 2: Install target equivalent dependencies: ${dependencies.filter((d) => d.confidence > 0.5).map((d) => d.target).join(", ")}.`
-        : "Step 2: No indexed import maps to a registered target equivalent — resolve the library substitutions before scaffolding.",
+        : evidenceAvailable
+          ? "Step 2: No indexed import maps to a registered target equivalent — resolve the library substitutions before scaffolding."
+          : "Step 2: The index carries no import evidence for this component — read its imports and resolve library substitutions before scaffolding.",
       `Step 3: Port the core domain logic from ${sourceLanguage} to ${normalizedTargetLanguage}.`,
-      `Step 4: Update ${relationshipEvidence.length} cross-language integration points to point to the new implementation.`,
-      `Step 5: Write unit tests using target language framework to match original coverage.`,
+      breakdown.production > 0
+        ? `Step 4: Update ${breakdown.production} production call site${breakdown.production === 1 ? "" : "s"} to the new implementation.`
+        : "Step 4: No production call sites are indexed for this component.",
+      breakdown.test > 0 ? `Step 5: Update ${breakdown.test} test call site${breakdown.test === 1 ? "" : "s"} and confirm coverage.` : "Step 5: No test call sites are indexed for this component.",
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
 
@@ -1047,7 +1251,7 @@ export namespace CrossLanguageMigrationAssistant {
       plan: {
         componentName: symbol.name,
         symbolId: symbol.id,
-        sourceFile: symbol.definitions?.[0]?.filePath ?? "unknown",
+        sourceFile: symbol.file,
         sourceLanguage,
         targetLanguage: normalizedTargetLanguage,
         dependencies,
@@ -1055,17 +1259,16 @@ export namespace CrossLanguageMigrationAssistant {
         dependencyProvenance: {
           indexedImports: evidenced.length,
           nameHeuristics: inferred.length,
-          note: evidenced.length === 0
-            ? "No indexed import evidence is available for this component, so `dependencies` is empty. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk."
-            : "`dependencies` is derived from indexed imports. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          importEvidence: evidenceAvailable ? "available" : "unavailable",
+          note: evidenceAvailable
+            ? "`dependencies` is derived from indexed imports. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk."
+            : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
         },
         relationshipEvidence,
+        evidenceBreakdown: breakdown,
         effortEstimateHours,
         complexityScore: Math.min(10, complexityScore),
-        riskAssessment: {
-          level: riskLevel,
-          factors: riskFactors,
-        },
+        riskAssessment: { level: riskLevel, factors: riskFactors },
         strategySteps,
       },
     }
@@ -1073,66 +1276,58 @@ export namespace CrossLanguageMigrationAssistant {
 
   /**
    * Null-returning wrapper kept for callers that only need "did it work".
+   * Accepts either a `MigrationSource` or a `PolyglotProjectAnalysis`.
    * Prefer {@link planMigration} when the reason matters.
    */
   export async function generateMigrationPlan(
     symbolName: string,
     targetLanguage: string,
-    analysis: CrossLanguageIntelligence.PolyglotProjectAnalysis,
+    input: MigrationSource | any,
   ): Promise<MigrationPlan | null> {
-    const outcome = await planMigration(symbolName, targetLanguage, analysis)
+    const source: MigrationSource = Array.isArray((input as any)?.symbols) ? (input as MigrationSource) : migrationSourceFromAnalysis(input)
+    const outcome = await planMigration(symbolName, targetLanguage, source)
     return outcome.ok ? outcome.plan : null
   }
-
   // --- INTERNAL UTILS ---
 
   /**
    * Separate the component's libraries by where the claim comes from.
    *
-   * `evidenced` — the symbol's own indexed imports, plus third-party packages
-   * reached through a node_modules relationship endpoint. These are claims about
-   * the code and are allowed to move effort and risk.
+   * `evidenced` — packages the index actually shows this component using:
+   * a node_modules relationship endpoint. These are claims about the code.
    *
    * `inferred` — name-substring guesses. Real signal about which ecosystem a
    * component probably lives in, but NOT evidence about this code, so they never
    * appear in `dependencies`.
+   *
+   * `evidenceAvailable` — whether any evidenced package was found AT ALL. The
+   * index does not record per-file imports, so this is normally false, and the
+   * difference between "this component has no libraries" and "we cannot see this
+   * component's libraries" has to survive into the plan.
    */
   function extractSourceDependencies(
-    symbol: CrossLanguageIntelligence.CrossLanguageSymbol,
-    relationships: CrossLanguageIntelligence.CrossLanguageRelationship[],
-  ): { evidenced: string[]; inferred: string[] } {
+    symbol: { id: string; name: string; type?: string; language?: string; file?: string; metadata?: any },
+    relationships: MigrationRelationshipEvidence[],
+  ): { evidenced: string[]; inferred: string[]; evidenceAvailable: boolean } {
     const evidenced = new Set<string>()
     const inferred = new Set<string>()
 
-    // 1. Imports carried on the symbol itself. The DB bridge does not currently
-    //    populate this (measured: 0 of 2988 symbols on flask, 0 of 892 on
-    //    express) — which is exactly why it must not be assumed present.
-    if (symbol.metadata && Array.isArray((symbol.metadata as any).imports)) {
-      for (const entry of (symbol.metadata as any).imports as unknown[]) {
-        const value = String(entry ?? "").trim()
-        if (!value) continue
-        // A scoped npm package is `@scope/name`; the dictionary is keyed by the
-        // bare name. Splitting on the first `/` left `@nestjs` for
-        // `@nestjs/core`, which matches no row.
-        if (value.startsWith("@")) {
-          const parts = value.split("/")
-          if (parts.length >= 2 && parts[1]) evidenced.add(parts[1])
-        } else {
-          evidenced.add(value.split("/")[0])
-        }
-      }
+    // 1. Imports carried on the symbol itself, when a caller supplies them. The
+    //    production loader does not (the index has no per-symbol import record),
+    //    which is exactly why this must not be assumed present.
+    const rawImports = Array.isArray(symbol?.metadata?.imports) ? symbol.metadata.imports : []
+    for (const entry of rawImports) {
+      const { name, excluded } = canonicalPackageName(String(entry ?? ""))
+      if (name) evidenced.add(name)
+      else if (excluded) log.debug(`canonicalPackageName: excluded import "${entry}" (${excluded})`)
     }
 
-    // 2. Third-party packages at a relationship endpoint. The previous guard
-    //    tested `rel.target` twice, missing the source side entirely and
-    //    duplicating a check that was never written.
-    for (const rel of relationships) {
-      for (const side of [rel.source?.filePath, rel.target?.filePath]) {
-        if (typeof side !== "string" || !side.includes("node_modules/")) continue
-        const parts = side.split("node_modules/")
-        if (parts.length < 2) continue
-        const segments = parts[1].split("/").filter(Boolean)
-        const name = segments[0]?.startsWith("@") && segments[1] ? `${segments[0]}/${segments[1]}` : segments[0]
+    // 2. Third-party packages at a relationship endpoint, canonicalized through
+    //    the SAME function as (1). Round 1 used two different rules on the two
+    //    sources, so one package produced two different library names.
+    for (const relationship of relationships) {
+      for (const side of [relationship.sourceFile, relationship.targetFile]) {
+        const { name } = packageFromNodeModulesPath(side)
         if (name) evidenced.add(name)
       }
     }
@@ -1140,9 +1335,9 @@ export namespace CrossLanguageMigrationAssistant {
     // 3. Name heuristics, kept but labelled as guesses. The unconditional
     //    test-framework entry is gone: it is what told a Go service to adopt
     //    `jest`, at confidence 0, for +6h and a forced Medium risk band.
-    const sourceLanguage = normalizeMigrationLanguage(symbol.languages?.[0] ?? "")
-    const typeStr = String(symbol.type || "").toLowerCase()
-    const nameStr = symbol.name.toLowerCase()
+    const sourceLanguage = normalizeMigrationLanguage(symbol?.language ?? "")
+    const typeStr = String(symbol?.type ?? "").toLowerCase()
+    const nameStr = String(symbol?.name ?? "").toLowerCase()
 
     if (sourceLanguage === "typescript" || sourceLanguage === "javascript") {
       if (typeStr.includes("api") || nameStr.includes("controller") || nameStr.includes("router")) inferred.add("express")
@@ -1153,7 +1348,11 @@ export namespace CrossLanguageMigrationAssistant {
       if (typeStr.includes("entity") || typeStr.includes("model")) inferred.add("sqlalchemy")
     }
 
-    return { evidenced: [...evidenced], inferred: [...inferred].filter((name) => !evidenced.has(name)) }
+    return {
+      evidenced: [...evidenced],
+      inferred: [...inferred].filter((name) => !evidenced.has(name)),
+      evidenceAvailable: evidenced.size > 0,
+    }
   }
 
   function toEquivalence(
@@ -1185,9 +1384,11 @@ export namespace CrossLanguageMigrationAssistant {
     if (mapping) {
       return { source: lib, target: mapping.target, confidence: 0.9, status: "supported", provenance, notes: mapping.notes }
     }
-    // Confidence 0 for an unevidenced guess is a statement, not a number we
-    // cannot justify. The old note ("custom research is required") was right for
-    // an indexed import and wrong for a guess.
+    // Reached only for an evidenced package with no registered row: the
+    // name-heuristic case returned above. This branch used to re-test
+    // `provenance === "name-heuristic"` in a ternary whose false arm was
+    // unreachable; removing `@ts-nocheck` from this file surfaced it, which is
+    // the checker's first dividend and the reason the pragma is gone.
     return {
       source: lib,
       target: null,
@@ -1195,9 +1396,7 @@ export namespace CrossLanguageMigrationAssistant {
       status: "uncertain",
       provenance,
       unsupportedReason: "unknown-library",
-      notes: provenance === "name-heuristic"
-        ? "Name-based guess, not an observed import; no equivalence is claimed and this does not contribute to effort or risk."
-        : "No evidence-backed equivalence is registered; custom research is required.",
+      notes: "No evidence-backed equivalence is registered; custom research is required.",
     }
   }
 
