@@ -99,6 +99,17 @@ export type SearchResults = SearchResult[] & {
    */
   bodyCoverage?: { withBody: number; symbols: number; ratio: number }
   /**
+   * Which route produced this result set.
+   *
+   * `phrase` means the query appeared verbatim in the name, qualified name,
+   * docstring or body. `terms` means nothing matched verbatim and the query's
+   * individual content words were matched instead. These are different claims:
+   * a phrase hit says the code contains this text, a terms hit says it
+   * discusses these words. Reported so a caller can weaken its confidence
+   * accordingly instead of presenting a keyword coincidence as a quotation.
+   */
+  matchMode?: "phrase" | "terms"
+  /**
    * How many candidate rows the scan actually looked at. Present so a bounded
    * answer can say "stopped after N of M" rather than only "stopped", and
    * absent when the scan completed.
@@ -679,6 +690,13 @@ export interface SecuritySummaryV2 {
   crossLanguage: number
   scannedFlows: number
   deduplicatedFlows: number
+  /**
+   * Deduplicated findings omitted by the `maxResults` cap. `0` means the report
+   * is complete. `deduplicatedFlows` is the pre-cap census and `total` is what
+   * was returned, so a caller that reads only `total` cannot tell a capped scan
+   * from a small one — this is the field that tells them.
+   */
+  truncatedFindings: number
 }
 
 export interface SecurityReport {
