@@ -84,7 +84,61 @@ const CERTIFIED_GATES = [
   "script/m29/verify-wave-protocol.ts",
   "script/m29/verify-precision-ledger.ts",
   "script/m56/verify-governance.ts",
+  // Tier 3 — the bb_security suite (2026-09-30). These six ran on a clean
+  // checkout with no HOME state: every fixture is built in mkdtemp and every
+  // index is written under the system tmpdir, so nothing depends on a
+  // pre-existing index, a corpus, a display, or a built dist/. The two legs
+  // that WOULD need something absent are gated rather than failed — X5's
+  // real-repository scan records `skipped` when no corpus is on the box, and
+  // the CLI parity leg in m20/verify-security-history.ts skips when dist/ is
+  // unbuilt.
+  //
+  // They belong in verify:fast rather than in a separate path-filtered job
+  // specifically because of WHERE the evidence comes from. Every taint row is
+  // written by src/ast/parallel-indexer.ts and matched by src/ast/
+  // taint-analyzer.ts, so a change to either can silently change what
+  // bb_security reports. A job filtered to security/ files would not run when
+  // the indexer changes — which is precisely when it must.
+  //
+  // Measured wall-clock on the reference box: regressions 76s, verify-security
+  // 27s, S1 21s, S2 34s, S3 35s, X1-X8 165s = ~6 min total.
+  "script/m15/verify-security-regressions.ts",
+  "script/verify-security.ts",
+  "script/m20/verify-security-flow-boundary.ts",
+  "script/m20/verify-security-adversarial.ts",
+  "script/m20/verify-security-history.ts",
+  "script/m15/verify-security-deep.ts",
 ]
+
+// ── KNOWN DRIFT, NOT REPAIRED HERE (2026-09-30) ────────────────────────────
+//
+// Check A below compares this list against `verify:fast`. That comparison was
+// ALREADY failing before the security gates were added, and this gate does not
+// itself run in CI (it is in the local-only `verify` chain), so the drift went
+// unnoticed. Measured at HEAD, before any change here:
+//
+//   verify:fast listed 30 · certified 24
+//   in verify:fast but NOT certified:  m42/verify-governance,
+//     m44/verify-governance, m45/verify-governance, m45/verify-capture-harness,
+//     m45/verify-d1, m45/verify-site-embed, m63/verify-cl1-wiring
+//   certified but NOT in verify:fast:  m56/verify-governance
+//
+// Two distinct problems, and neither is repaired by editing this list:
+//
+//  1. Seven lanes added gates to `verify:fast` without adding them here. The
+//     list cannot certify what it does not know about.
+//  2. `m45/verify-d1` and `m45/verify-site-embed` are in `verify:fast` but the
+//     CI job comment states site-dependent gates belong to the separate
+//     `verify-site` job. Both FAIL without a built site.
+//
+// Running the seven on the reference box (2026-09-30): six exit non-zero. So
+// `verify:fast` — the chain the CI `verify` job runs — is RED on that box, for
+// reasons that predate this work and belong to the lanes that added them.
+//
+// This comment is the record. The fix is per-lane: each owning lane certifies
+// or removes its own gate, and the two site-dependent ones move to
+// `verify-site`. Adding security's six here does not make that worse, and
+// deliberately does not paper over it.
 
 function extractVerifyFast(pkgText: string): string[] {
   try {
