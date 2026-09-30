@@ -1,0 +1,29 @@
+{
+  "//": [
+    "The HARNESS typecheck program. `tsconfig.json` includes only `src/**/*.ts`, so every file",
+    "under `script/` — the whole m14 gate machinery — has never been in a TypeScript program.",
+    "That is not a theoretical gap. `completeness-inventory.ts` declares",
+    "`const checks: SectionCheck[] = [ verifySectionA(cfg), ..., verifySectionH(), \"manual_audit\",",
+    "\"markdown\", \"scss\" ]` — three bare strings spliced into a typed array by a merge — and tsc",
+    "reported nothing, because the file was not being checked. The gate then crashed at runtime",
+    "with `c.id.padEnd` on a string instead of reporting its section-A failure, so a merge defect",
+    "was invisible to the type checker AND to the gate it broke.",
+    "",
+    "A separate program rather than widening `tsconfig.json`, for a measured reason: the src",
+    "program is on the hot path of every edit, and adding ~60 more files (several of them 20k+",
+    "lines) to it costs time on every typecheck to buy a check that runs far less often. This",
+    "config is invoked by script/m14/verify-harness-typecheck.ts, which is the gate.",
+    "",
+    "`script/m14/tmp/**` is EXCLUDED, and the reason is specific rather than precautionary: it",
+    "holds scratch probes AND copies of other lanes' fixture data, and the fixture data is",
+    "deliberately malformed — `script/m14/tmp/elixir-274/validation/m14/fixtures/typescript/",
+    "class-expression-members.ts` contains a constructor in an object literal, which is a",
+    "TypeScript syntax error by design. Including it would report three permanent failures that",
+    "are properties of the test corpus, not of the code."
+  ],
+  "extends": "./tsconfig.json",
+  "//compilerOptions": "tsconfig.json sets rootDir to src, and every file under script/ violates it with TS6059. The harness program spans both trees, so its root is the repo root. rootDir belongs INSIDE compilerOptions — placing it at the top level is silently ignored and tsc answers TS6258, which is a wasted round trip for anyone extending this config later.",
+  "compilerOptions": { "rootDir": "." },
+  "include": ["src/**/*.ts", "script/m14/**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests", "script/m14/tmp/**"]
+}

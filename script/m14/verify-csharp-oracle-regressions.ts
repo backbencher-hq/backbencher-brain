@@ -53,7 +53,11 @@ async function main() {
     (e: any) => e.label === "extends" || e.label === "implements",
   )
   const key = (e: any) => `${e.label} ${e.from} -> ${e.target}`
-  const have = new Set(edges.map(key))
+  // `Set<string>` is load-bearing, not decoration: `mod` is typed `any`, so `deriveCSharpEdges`
+  // returns `any`, `edges` is `any`, and `new Set(anyValue)` infers `Set<unknown>` — which makes
+  // every element `unknown` and the filter below a type error. The runtime was always fine;
+  // only the checker could see it, which is the whole reason this program exists in a typecheck.
+  const have = new Set<string>(edges.map(key))
   console.log("  derived extends/implements:")
   for (const k of [...have].sort()) console.log(`     ${k}`)
 

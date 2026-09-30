@@ -212,7 +212,8 @@ if (process.argv.includes("--write-baseline")) {
 
 const problems: string[] = []
 const notes: string[] = []
-const rows: string[] = []
+interface LaneRow { lang: string; compared: string[]; oracles: string[] }
+const rows: LaneRow[] = []
 
 for (const lang of langs) {
   const c = [...(compared.get(lang) ?? [])].sort()

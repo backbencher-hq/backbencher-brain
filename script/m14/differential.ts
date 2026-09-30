@@ -697,8 +697,10 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // question was most worth asking, because two grammar defects had been fixed
   // upstream of it and both changed the tree the oracle reads.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
-  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
-
+  // (This entry was written twice, byte-identical, by a merge. The first copy is removed:
+  // `tsc` reported TS1117 for it, and the duplicate-key detector that should have caught
+  // it silently reported none — see script/m14/tmp/cs-deep-42 for why that detector's own
+  // brace walk terminated before reading a single entry.)
   // scss is its own lane with its own wasm, analyzer and oracle. It is NOT folded into
   // the css entry: `deriveScssEdges` is a genuinely separate derivation (it resolves
   // ownership by DESCENDING and recording the enclosing statement, where the analyzer
@@ -6327,29 +6329,17 @@ export function deriveCSharpBareUses(
           const bs: string[] = []
           for (const b of bl?.namedChildren ?? []) {
             if (!b) continue
-            // D10b: excluding the `argument_list` SIBLING is not sufficient. A record's primary-
-            // constructor base is a SINGLE `primary_constructor_base_type` child whose own text
-            // carries the arguments, so a sibling-only rule never sees them:
-            //
-            //     internal sealed record Dachshund(string Name) : Beast(Name);
-            //     base_list > primary_constructor_base_type "Beast(Name)"
-            //         > identifier "Beast"       <- the base
-            //         > argument_list "(Name)"   <- the base CONSTRUCTOR's arguments
-            //
-            // Taking that child's raw text published a base TYPE named `Beast(Name)` — not a type
-            // at all — which F5 reported as `extends Dachshund -> Beast(Name)`. The base is the
-            // `type` field where the grammar supplies one, else the first named child. The
-            // `typeBaseLeaves` pre-pass already unwrapped this (CSD9); the edge-emitting loop and
-            // the bare-uses resolution loop had not, and a class is only as consistent as its last
-            // writer — which is the whole reason this is written down rather than patched quietly.
-            if (b.type === "primary_constructor_base_type") {
-              const t = b.childForFieldName?.("type") ?? (b.namedChildren ?? []).find((c: any) =>
-                c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "nullable_type")
-              if (t) baseTypes.push(leafOf(t.text))
-              continue
-            }
-            if (b.type === "argument_list") continue
-            baseTypes.push(leafOf(b.text))
+            if (!b || b.type === "argument_list") continue
+            // This loop ALREADY unwrapped a record's primary-constructor base before D10b existed, via
+            // `tn` — the same CSD9 shape the `typeBaseLeaves` pre-pass uses. A D10b patch was applied
+            // here on the assumption that it had not, spliced in a `baseTypes.push` against a variable
+            // this function does not have, and orphaned the tail of the original. `bun build` accepted
+            // it — an undefined global is valid JavaScript — and it would have thrown at runtime the
+            // first time a record with a primary-constructor base appeared. Caught by the harness
+            // typecheck an hour later (TS2304 on `baseTypes` and `tn`), which is the entire argument for
+            // having built that check: `bun build` parses, tsc resolves, and only one of the two was
+            // ever running on this file.
+            const tn = b.type === "primary_constructor_base_type"
               ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
               : b
             if (!tn || typeof tn.text !== "string") continue
@@ -6359,7 +6349,7 @@ export function deriveCSharpBareUses(
             const lt = text.indexOf("<")
             if (lt > 0) text = text.slice(0, lt)
             bs.push(leafOf(text.trim()))
-          }
+}
           if (bs.length > 0) bases.set(nm, bs)
         }
       }
