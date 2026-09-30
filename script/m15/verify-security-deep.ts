@@ -55,6 +55,7 @@ import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { validateToolArguments } from "../../src/mcp/tool-validation"
 import { TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { SecurityHarness, positiveCount, auditForAutoPass } from "./security-harness"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m15/results")
@@ -65,7 +66,16 @@ const skipped: Array<{ code: string; reason: string }> = []
 
 function emit(code: string, issue: string, title: string, file: string, extra: Record<string, unknown> = {}): void {
   const rec = h.record_({ issue, code, tool: "bb_security", title, extra: { ...extra, skipped: skipped.filter((s) => s.code === code) } })
-  writeFileSync(path.join(RESULTS_DIR, file), JSON.stringify(rec, null, 2) + "\n")
+  // writeSealed, not writeFileSync. The committed x1-x8.json carry a bbSeal
+  // envelope, and the trusted reader (`script/lib/evidence.ts` readEvidence)
+  // REFUSES an unsealed record as `unsealed` — a legacy write, i.e. exactly what
+  // a bare writeFileSync produces. The previous version wrote unsealed, so a
+  // successful run silently DESTROYED the seal, and a failing run destroyed the
+  // seal AND left `verified: false` in its place. (That is the specific mechanism
+  // behind the old X5 complaint about "stripping its seal".) M61.V1 declares
+  // writeSealed the ONE write path; this lane was never adopted, so the defect
+  // survived. Now it is adopted.
+  writeSealed(path.join(RESULTS_DIR, file), rec)
   console.log(`${code}: ${h.failed === 0 ? "VERIFIED" : "KNOWN-GAP"} (${h.totalPassed}/${h.checks} passed, ${h.negativePassed}/${h.negatives} negatives${skipped.some((s) => s.code === code) ? ", corpus legs skipped" : ""})`)
   h.resetForNextSection()
 }

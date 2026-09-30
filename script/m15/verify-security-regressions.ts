@@ -21,14 +21,28 @@ import { CrossLanguageSecurityAnalysis } from "../../src/security/cross-language
 import { createToolHandlers, SECURITY_FINDINGS_WINDOW, SECURITY_SUSPICIOUS_WINDOW, SECURITY_SCAN_CAP, SECURITY_RECORD_RUN_CENSUS_CAP } from "../../src/mcp/tool-handlers"
 import { getAnalysisHistory } from "../../src/intelligence/analysis/run-history"
 import { SecurityHarness, positiveCount } from "./security-harness"
+import { writeSealed } from "../lib/evidence.ts"
 
 const ROOT_DIR = path.resolve(import.meta.dirname ?? ".", "../..")
 const RESULTS_DIR = path.join(ROOT_DIR, "validation/m15/results")
 if (!existsSync(RESULTS_DIR)) mkdirSync(RESULTS_DIR, { recursive: true })
 
 const h = new SecurityHarness()
+/**
+ * Write this suite's evidence through the ONE sealed write path.
+ *
+ * `script/lib/evidence.ts` declares `writeSealed` the single write path and
+ * `readEvidence` the single trusted read, and the trusted read REFUSES a record
+ * with no `bbSeal` envelope (`kind: "unsealed"`). A bare `writeFileSync` +
+ * `JSON.stringify` therefore produces a record the rest of the governance
+ * machinery is required to reject. M61.V1 adopted sealed writes across the IDE
+ * lane; this lane was never adopted, which is how the defect survived.
+ */
 const write = (file: string, extra: Record<string, unknown> = {}) =>
-  writeFileSync(path.join(RESULTS_DIR, file), JSON.stringify(h.record_({ issue: "M15.XR", code: file.replace(".json", ""), tool: "bb_security", title: extra.title ?? "regression", extra: { ...extra, title: undefined } }), null, 2) + "\n")
+  writeSealed(
+    path.join(RESULTS_DIR, file),
+    h.record_({ issue: "M15.XR", code: file.replace(".json", ""), tool: "bb_security", title: extra.title ?? "regression", extra: { ...extra, title: undefined } }),
+  )
 
 // ── fixture helpers ─────────────────────────────────────────────────────────
 function cleanup(root: string, projectId: string): void {
@@ -794,6 +808,41 @@ write("xr5.json", { title: "observation states distinguished; real severity pres
   h.ck("XR6: the full-suite audit lists at least ten verifiers", /securityVerifiers = \[[\s\S]{0,700}verify-security-docs\.ts/.test(adversarialSrc), "the audit must cover the whole security suite, not three files")
   h.ck("XR6: the full-suite audit asserts each listed verifier exists", /existsSync\(path\.resolve\(file\)\)/.test(adversarialSrc), "a listed-but-absent file would silently shrink the audit's coverage")
   h.ck("XR6: the rewritten root verifier has no second local harness", !/let checks = 0/.test(stripStringsAndComments(legacyVerifier)) && !/let failures = 0/.test(stripStringsAndComments(legacyVerifier)), "each file needs ONE harness, or its counters can diverge from its exit code")
+
+  // ── the sealed-write law ─────────────────────────────────────────────────
+  //
+  // `script/lib/evidence.ts` declares writeSealed the ONE write path and
+  // readEvidence the ONE trusted read, and the trusted read REFUSES a record
+  // with no bbSeal envelope (`kind: "unsealed"`). Every security verifier
+  // wrote its evidence with a bare writeFileSync + JSON.stringify — i.e. it
+  // produced exactly the "legacy" record the reader is required to reject. On a
+  // SUCCESSFUL run that silently destroyed the committed seal; on a FAILING run
+  // it destroyed the seal AND left `verified: false` behind. That is the
+  // mechanism behind the old X5 "stripping its seal" complaint, and M61.V1's
+  // sealed-write adoption never covered this lane.
+  const evidenceLib = readFileSync(path.join(ROOT_DIR, "script/lib/evidence.ts"), "utf8")
+  h.ck("XR6: the evidence library declares writeSealed the one write path", /export function writeSealed/.test(evidenceLib), "the sealed write path is the contract these verifiers must use")
+  h.ck("XR6: the trusted reader refuses an unsealed record", /kind: "unsealed"/.test(evidenceLib) && /verifySeal/.test(evidenceLib), "a record written without a seal is a hard refusal, not a warning")
+
+  const evidenceWriters: Array<{ file: string; out: string }> = [
+    { file: "script/m15/verify-security-deep.ts", out: "validation/m15/results/x*.json" },
+    { file: "script/m15/verify-security-regressions.ts", out: "validation/m15/results/xr*.json" },
+    { file: "script/m20/verify-security-flow-boundary.ts", out: "validation/m20/results/S1.json" },
+    { file: "script/m20/verify-security-adversarial.ts", out: "validation/m20/results/S2.json" },
+    { file: "script/m20/verify-security-history.ts", out: "validation/m20/results/S3.json" },
+  ]
+  for (const w of evidenceWriters) {
+    const src = readFileSync(path.join(ROOT_DIR, w.file), "utf8")
+    const code = stripStringsAndComments(src)
+    h.ck(`XR6: ${w.file} writes ${w.out} through writeSealed`, /writeSealed\s*\(/.test(code), "an unsealed write is refused by the trusted reader")
+    // The sealed write must be the ONLY evidence write: a second, bare
+    // writeFileSync of a JSON.stringify record would re-open the same hole.
+    h.nk(
+      `XR6: ${w.file} has no remaining bare evidence write`,
+      !/writeFileSync\([^)]*JSON\.stringify/.test(code),
+      "a writeFileSync(JSON.stringify(...)) evidence write is the unsealed legacy path",
+    )
+  }
 }
 write("xr6.json", { title: "determinism + the harness cannot pass vacuously", defect: "A4/D" })
 
