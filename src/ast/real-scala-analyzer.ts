@@ -183,10 +183,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     if (rootNode.hasError) {
+      let reportedNodes = 0
       const errStack: Node[] = [rootNode]
       while (errStack.length > 0) {
         const n = errStack.pop()!
         if (n.type === "ERROR" || n.isMissing) {
+          reportedNodes++
           if (!metadata.errors) metadata.errors = []
           metadata.errors.push({
             message: `Syntax ${n.type} detected. The Brain Engine is bypassing this broken node.`,
@@ -202,6 +204,35 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const child = n.namedChild(i)
           if (child) errStack.push(child)
         }
+      }
+      // M60/SDJ-7: `hasError` WITHOUT a node to point at. The loop above reports
+      // one diagnostic per ERROR / MISSING node, and the pinned grammar sometimes
+      // flags damage without materialising either: 30 of the 513 damaged scala3
+      // files in the corpus (18,446 files; 2.8% damaged overall) carry
+      // `rootNode.hasError` with ZERO ERROR and ZERO MISSING nodes, so the file
+      // was returned with an empty `errors` array and reported clean.
+      //
+      // Measured on all 513 damaged files (script/m14/tmp/scala-error-coverage.ts):
+      // 483 published a diagnostic, 30 did not, and every one of the 30 has
+      // ERROR nodes 0 / MISSING nodes 0 — so the gap is one shape, not a rate.
+      //
+      // The java ruling (JD36) is that a TYPED node with an embedded error is
+      // silent on purpose, because tree-sitter recovery keeps the valid subtree and
+      // a per-child file-level error would flood generated files. This is the
+      // other case: the ROOT is damaged and there is nothing to bypass, so one
+      // file-level diagnostic is the honest report. It cannot fire on a clean file
+      // (`hasError` gates it) and cannot flood (at most one per file).
+      if (reportedNodes === 0) {
+        if (!metadata.errors) metadata.errors = []
+        metadata.errors.push({
+          message: "Syntax error detected. The parser flagged this file (rootNode.hasError) but recovered no ERROR or MISSING node to name, so no specific node is bypassed.",
+          range: {
+            startLine: 1, startColumn: 1,
+            endLine: 1, endColumn: 1,
+            startIndex: 0, endIndex: 0,
+          },
+          severity: "warning",
+        })
       }
     }
 
