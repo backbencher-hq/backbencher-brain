@@ -91,8 +91,13 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
 
   // Pass 1: the class/method skeleton, so `overrides` can be derived from it in pass 2
   // rather than guessed at while walking bodies.
+  //
+  // `classNames` is what the `instantiates` policy below reads, and it is read from the
+  // TREE's own class declarations rather than from the analyzer's symbol list, because
+  // the whole point of this file is that the two derive the answer separately.
   interface Klass { name: string; line: number; bases: string[]; qualifiedBases: Set<string>; methods: Map<string, number> }
   const classes: Klass[] = []
+  const classNames = new Set<string>()
   const stack: Array<{ kind: "module" } | { kind: "class"; cls: Klass } | { kind: "func"; name: string; line: number }> = [
     { kind: "module" },
   ]
@@ -141,6 +146,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         }
         const cls: Klass = { name, line: k.startPosition.row + 1, bases, qualifiedBases, methods: new Map() }
         classes.push(cls)
+        if (name) classNames.add(name)
         // A class is contained by whatever encloses it. Python has no module
         // declaration, so a module-level class is contained by nothing — that is the
         // scripting-family contract, and it is a SEMANTIC choice about Python, not a
@@ -236,7 +242,23 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const fn = n.childForFieldName("function")
       if (fn && scope) {
         const leaf = calleeLeaf(fn.text)
-        if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) add("calls", scope, leaf, n.startPosition.row + 1)
+        if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
+          // PYTHON'S CONSTRUCTOR CONVENTION, stated rather than assumed: a call whose
+          // callee is Capitalised and is declared as a class in THIS file is a
+          // construction of it, and the graph should say `instantiates`. The two
+          // conditions are both required and neither is a guess:
+          //   - Capitalised is PEP 8's convention for classes, not a guarantee, so it is
+          //     checked against the tree rather than trusted on its own;
+          //   - declared in this file is what makes the claim checkable. A Capitalised
+          //     callee this file has NOT read is a `calls` edge and nothing more —
+          //     claiming an instantiation of a class outside the file is a fabrication,
+          //     which is why `TypeVar(...)` and `Exception(...)` are calls.
+          // The convention is a convention, and this is the line that makes it one.
+          if (leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase() && classNames.has(leaf))
+            add("instantiates", scope, leaf, n.startPosition.row + 1)
+          else
+            add("calls", scope, leaf, n.startPosition.row + 1)
+        }
       }
     }
     // `self.x = ...` inside a method declares an INSTANCE ATTRIBUTE, which Python
