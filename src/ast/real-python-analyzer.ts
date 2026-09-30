@@ -499,10 +499,34 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     const decorators = this.extractDecorators(node, ctx, className)
 
     const kind = isEnum ? ASTEngine.SymbolKind.Enum : ASTEngine.SymbolKind.Class
+    // A CLASS NESTED IN A CLASS BODY IS A MEMBER OF IT. `Outer.Inner` is reachable from
+    // `Outer` in Python without any lookup machinery, so the nesting is a real containment
+    // and not a lexical coincidence.
+    //
+    // This was the first genuine ANALYZER defect the independent oracle found, and it is
+    // worth recording how: the differential reported 66 `contains` edges that the tree
+    // supports and the analyzer did not emit, across 24 corpus files — `_Multipart._Part`
+    // in `urllib/parse.py`, `CryptFacade._CryptData`, and a dozen class-in-class test
+    // fixtures. Every earlier disagreement in this review turned out to be the oracle's,
+    // which is exactly why an instrument that cannot lie is worth the trouble of building:
+    // this one was the analyzer's, and no fixture, mutant or completeness gate had noticed,
+    // because `contains` is derived from `ownerName` and a nested class simply had none.
+    //
+    // The guard is `currentFunction === undefined` and it is load-bearing. `currentClass`
+    // alone would also be true for a class declared inside a METHOD — `Outer.om` defines
+    // `Deep` — and that `Deep` is a LOCAL of `om`, not a member of `Outer`: it is not
+    // reachable as `Outer.Deep` and claiming it is would put a name on the outer class's
+    // surface that the source does not give it. Entering a class clears `currentFunction`
+    // and entering a function sets it, so "in a class body" and "in a method" are
+    // distinguishable here without a second piece of state.
+    const enclosingClass = ctx.currentClass && !ctx.currentFunction ? ctx.currentClass : undefined
     ctx.symbols.push({
       name: className,
       kind,
       range: this.nodeToRange(node),
+      ...(enclosingClass
+        ? { ownerName: enclosingClass, ownerKind: ASTEngine.SymbolKind.Class }
+        : {}),
       visibility: "public",
       decorators,
       docstring,
@@ -511,6 +535,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         pythonSpecific: true,
         baseClasses,
         isEnum,
+        ...(enclosingClass ? { isNestedClass: true } : {}),
       },
     })
     ctx.functionSymbolIndex[`::${className}`] = ctx.symbols.length - 1
