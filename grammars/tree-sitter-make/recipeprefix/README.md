@@ -126,7 +126,8 @@ prefixed rule after any comment anywhere in the file became an ERROR.
 
 **The wrong whitespace predicate.** The fix is to skip whitespace first — but reusing the
 value-arm test `is_space`, which **deliberately excludes `
-` and ``** because a
+` and `
+`** because a
 newline terminates an assignment value, means the loop skips nothing at all. It compiled,
 it ran, and it changed no behaviour. The predicate had to be split into `is_space` (value
 terminator) and `is_line_space` (line boundary).
@@ -143,9 +144,42 @@ Shipped: the prefix on recipe lines, with `_ordinary_rule` byte-for-byte upstrea
 so the scanner is force-added.
 
 Open: **MAKE-G5**, a recipe line at EOF with no trailing newline is an ERROR and is lost.
-Pre-existing upstream behaviour, invisible to the corpus, and not fixed here because
-`optional(NL)` fails generation outright ("Specify a left or right associativity in
-`_prefixed_recipe_line`") and deserves its own measured change. See the spec entry.
+Pre-existing upstream behaviour, identical in the pristine build, invisible to the corpus.
+
+It stays open, and the reason is worth the space. **Seven arrangements were built and
+measured**, and none of them works:
+
+| # | arrangement | result |
+|---|---|---|
+| 1 | `optional(NL)` on `_prefixed_recipe_line` | generation fails, wants associativity on `_prefixed_recipe_line` |
+| 2 | + `prec.right` on `_prefixed_recipe_line` and `_line_text` | generates; `recipe_lines` **falls to 0** across the corpus; wasm 167 KB → 240 KB; target case still broken |
+| 3 | declared `[$._line_text]` conflict instead | same collapse; target case still broken |
+| 4 | separate `_prefixed_recipe_line_eof` rule after the `repeat` | ordinary cases correct again; target still broken (with `prec.right`, and with `prec.left`) |
+| 5 | that EOF form as a peer **inside** the repeat | ordinary cases correct; target still broken (2 of 5) |
+| 6 | terminator moved **inside** `recipe_line` as `optional(NL)` | generation fails on `_prefixed_recipe_line` |
+| 7 | #6 plus `prec.right` on `_prefixed_recipe_line`, `_line_text` **and** `recipe_line` | generates; regresses ordinary files again; target still broken |
+
+The generator's complaint **moves** with each fix — `_prefixed_recipe_line`, then
+`_line_text`, then `recipe_line` — rather than disappearing. That is the diagnostic
+signature: the change relocates an ambiguity instead of removing one.
+
+**Why it is hard.** Upstream ends every recipe line with a mandatory
+`token.immediate(/[\r\n]+/)`, and that token does double duty: it ends the line *and*
+terminates the enclosing `repeat`. Optionalise it and "another recipe line" becomes
+indistinguishable from "the recipe ended here" — and the ambiguity is reported inside
+`_line_text`'s split construction, three rules away from the edit.
+
+**Why the lexical escape does not work either.** The obvious dodge is to let the
+newline be part of the `shell_text` *token*, so the decision is the lexer's rather than
+the parser's. A token can only permit a newline in **trailing** position with a
+lookahead the regex language does not have — and `allowSplit` already makes a recipe's
+text several tokens with `$(VAR)` interpolation wedged between them, so "trailing" is
+not a property any single one of them can own.
+
+A real fix re-encodes the recipe boundary: a dedicated `shell_text` construction for
+recipes that absorbs its own terminator. That is lexical surgery on text every directive
+also uses, so it wants its own corpus A/B and its own fixture rather than riding along
+with anything above.
 
 ## Reproducing
 
