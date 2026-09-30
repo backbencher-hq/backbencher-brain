@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T19:23:28.306Z",
-  "commit": "77f8950c017b34e474b399f1206682972a231a6c",
+  "generatedAt": "2026-09-30T22:25:06.808Z",
+  "commit": "e1b3f99af217e20cb708bc5f2f12f48f011aa1e3",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here CONSOLIDATED 2026-09-28: this record is the union of the grammar-governance line and m48-recovery, so every lane either side pinned is present. Lanes both sides changed are marked with a mergeNote and keep the side whose bytes the gate verifies.",
-  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift \u2014 including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
     "haskell": {
       "wired": {
@@ -149,7 +149,7 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-haskell/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-haskell/src, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
       },
       "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
@@ -220,7 +220,7 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-elixir/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-elixir/src, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
       },
       "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
@@ -299,7 +299,7 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-fsharp/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-fsharp/src, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
       },
       "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
@@ -515,19 +515,19 @@
     "cpp": {
       "wired": {
         "file": "wasm/tree-sitter-cpp.wasm",
-        "sha256": "5a1b78bef9cf2f9c6962e80e631cfe5137be7222acf0aaceec35c3de39a18ae2",
-        "bytes": 3552974
+        "sha256": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+        "bytes": 3520521
       },
       "surface": {
-        "ids": 547,
-        "uniqueNames": 493,
-        "namedIds": 259,
-        "namedUnique": 209,
+        "ids": 548,
+        "uniqueNames": 494,
+        "namedIds": 260,
+        "namedUnique": 210,
         "anonIds": 288,
         "anonUnique": 286,
         "fieldCount": 50,
-        "idOrderDigest": "80ef2ddffc0856378ea5fae4245a08af7c9c01d84c613513ef4073549d242171",
-        "typeSetDigest": "8380b425574a6f344e519217c91021702274c9463624760bfad1b925a0056f7a",
+        "idOrderDigest": "09e9fd2d97b59339c70df14b2f37107787e49ac480de5915c53eb10cc6fafabd",
+        "typeSetDigest": "d725f93edd85aa849379d9a153c337039dbf8840ebe2874e7131b858448cda63",
         "fieldSetDigest": "891be79130fbd85557641579f5ec3d7959bb9adcef8006d68e12bb4cd521f984"
       },
       "copies": [
@@ -544,8 +544,8 @@
         "dir": "grammars/tree-sitter-cpp",
         "files": {
           "grammar.js": {
-            "sha256": "817fc8a0629e96454738dd96dbe92ae73ce314c46da9fb00b7fe214593a15d49",
-            "bytes": 42199
+            "sha256": "a5637b9c59c6f59559bc13ce78233c9cc48f71ec02f108e576a99bb00752de29",
+            "bytes": 43542
           },
           "LICENSE": {
             "sha256": "2e0110e07abef7c2548b26ec9d6969775617ca539a0dc8dbeeb14d6452c711d1",
@@ -556,8 +556,8 @@
             "bytes": 1320
           },
           "PIN.md": {
-            "sha256": "93c07f90e50cf5173e61b61e3e0aa24350964471f1f7e1db5db4a9b4eaeaae1c",
-            "bytes": 7857
+            "sha256": "6e432d8bfd10bc2ffac1fe1e483041b824d883d3ce84117f8e500f3d0dce0d63",
+            "bytes": 12393
           },
           "src/scanner.c": {
             "sha256": "cf60387d290271f4d2fb558d0569b2b9ef879cb72206a9df5cc73b0b1a4b20ff",
@@ -568,12 +568,12 @@
             "bytes": 1115
           }
         },
-        "digest": "e25b2cbeac3026a4a212299e641b207090e3f210a0ab4beb3164167fe0b1d311",
+        "digest": "217ddda5ef43c48129b179abb51a6580d6d97225976e435309496d2f16ed6511",
         "fileCount": 6
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-cpp/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-cpp/src, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
       }
     },
     "perl": {
@@ -1214,7 +1214,7 @@
       },
       "copies": [
         {
-          "label": "registry (DIVERGENT \u2014 not byte-identical, see decision)",
+          "label": "registry (DIVERGENT — not byte-identical, see decision)",
           "path": "~/.bb/wasm/tree-sitter-json.wasm",
           "sha256": null,
           "byteIdentical": false,
@@ -1250,7 +1250,7 @@
       },
       "copies": [
         {
-          "label": "npm tree-sitter-css@0.25.0 (upstream prebuilt, the base \u2014 NOT these bytes)",
+          "label": "npm tree-sitter-css@0.25.0 (upstream prebuilt, the base — NOT these bytes)",
           "path": "~/.bun/install/cache/tree-sitter-css@0.25.0@@@1/tree-sitter-css.wasm",
           "sha256": null,
           "byteIdentical": false,
@@ -1674,7 +1674,7 @@
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-haskell",
-        "note": "grammar.js + the split grammar modules (grammar/*.js) + src/ (scanner.c, grammar.json, node-types.json, unicode.h, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-haskell@0.23.1. The GENERATED src/parser.c (20 MB here) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source\u2194wasm check below runs on the generated JSONs, not on parser.c."
+        "note": "grammar.js + the split grammar modules (grammar/*.js) + src/ (scanner.c, grammar.json, node-types.json, unicode.h, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-haskell@0.23.1. The GENERATED src/parser.c (20 MB here) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
       },
       "decision": "Pin as-is: the wired wasm is byte-identical to the wasm published in tree-sitter-haskell@0.23.1, which is the newest release of tree-sitter/tree-sitter-haskell (the grammar is dormant at 0.23.1), and that tarball's source is now vendored in-tree with per-file hashes. No better candidate exists, locally or upstream.",
       "alternatives": [],
@@ -1757,17 +1757,17 @@
           "version": "0.3.11"
         },
         "patches": [
-          "grammar: adds `module_val_declaration` and `nullable_type` \u2014 exactly the two named types the wired wasm has that npm tree-sitter-fsharp@0.3.11's wasm does not",
-          "scanner: the manifest records an interface-probe patch with token-type lookahead; its SOURCE IS NOT IN-TREE (`common/scanner.h` is byte-identical to the npm 0.3.11 tarball's), so the patch is not reconstructible from this repo \u2014 recorded here rather than papered over"
+          "grammar: adds `module_val_declaration` and `nullable_type` — exactly the two named types the wired wasm has that npm tree-sitter-fsharp@0.3.11's wasm does not",
+          "scanner: the manifest records an interface-probe patch with token-type lookahead; its SOURCE IS NOT IN-TREE (`common/scanner.h` is byte-identical to the npm 0.3.11 tarball's), so the patch is not reconstructible from this repo — recorded here rather than papered over"
         ],
         "patchEvidence": "validation/m14/results/family-grammar-fingerprints.json"
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-fsharp",
-        "note": "fsharp/grammar.js (the patched grammar \u2014 the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source\u2194wasm check cannot run for this lane."
+        "note": "fsharp/grammar.js (the patched grammar — the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source↔wasm check cannot run for this lane."
       },
-      "decision": "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING \u2192 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) \u2014 so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
+      "decision": "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING → 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) — so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
       "alternatives": [
         {
           "option": "npm tree-sitter-fsharp@0.3.11 (unpatched)",
@@ -1817,11 +1817,11 @@
         "kind": "byte-identical-to-npm-tarball",
         "package": "@yogthos/tree-sitter-clojure",
         "version": "0.0.14",
-        "chain": "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local copy of the package exists, so the bytes were matched against the package's PUBLISHED file hash instead: jsDelivr's listing for @yogthos/tree-sitter-clojure@0.0.14 reports tree-sitter-clojure.wasm, 91,957 bytes, sha256 (base64) kPiGa3TQThZD7XPM4lcgxzLfKqo4tF2p3MdzuugYHCc= \u2014 which decodes to 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, the wired sha exactly, and the size matches too. External corroboration, not a local re-derivation: the pin records that distinction."
+        "chain": "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local copy of the package exists, so the bytes were matched against the package's PUBLISHED file hash instead: jsDelivr's listing for @yogthos/tree-sitter-clojure@0.0.14 reports tree-sitter-clojure.wasm, 91,957 bytes, sha256 (base64) kPiGa3TQThZD7XPM4lcgxzLfKqo4tF2p3MdzuugYHCc= — which decodes to 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, the wired sha exactly, and the size matches too. External corroboration, not a local re-derivation: the pin records that distinction."
       },
       "source": {
         "state": "not-obtainable-offline",
-        "note": "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes \u2014 worse than no source. No yogthos source exists locally."
+        "note": "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes — worse than no source. No yogthos source exists locally."
       },
       "decision": "Pin the bytes to their named release: the wired wasm matches @yogthos/tree-sitter-clojure@0.0.14's published file hash and byte length, so the fork and its version are no longer only a commit message's claim. The alternative that was measured and rejected stays recorded: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88) while the wired fork leaves 2 of 585 damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
       "alternatives": [
@@ -1846,7 +1846,7 @@
         },
         "patches": [],
         "patchEvidence": "reviews/m60-clean-grammar-127-adjudication.md",
-        "chain": "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The source tree itself is NOT in this repo and these wasm bytes exist in no local copy, so the pin is sha + surface + that adjudication. External corroboration recorded this round: npm's tree-sitter-clean@1.2.7 does exist, and its published file listing (jsDelivr) carries per-file sha256 for grammar.js, src/scanner.c, src/grammar.json and src/node-types.json \u2014 but the package ships NO wasm, so the wired bytes cannot be hash-matched to a published artifact and are not claimed to be."
+        "chain": "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The source tree itself is NOT in this repo and these wasm bytes exist in no local copy, so the pin is sha + surface + that adjudication. External corroboration recorded this round: npm's tree-sitter-clean@1.2.7 does exist, and its published file listing (jsDelivr) carries per-file sha256 for grammar.js, src/scanner.c, src/grammar.json and src/node-types.json — but the package ships NO wasm, so the wired bytes cannot be hash-matched to a published artifact and are not claimed to be."
       },
       "source": {
         "state": "not-obtainable-offline",
@@ -1856,7 +1856,7 @@
       "alternatives": [
         {
           "option": "stay on v1.2.4 (sha 2b805890)",
-          "measured": "damaged files 67/312, MISSING 148, ERROR lines 6,508 \u2192 v1.2.7: 37/312, 9, 2,426, none newly damaged (G1)",
+          "measured": "damaged files 67/312, MISSING 148, ERROR lines 6,508 → v1.2.7: 37/312, 9, 2,426, none newly damaged (G1)",
           "artifact": "reviews/m60-clean-grammar-127-adjudication.md"
         }
       ],
@@ -1882,11 +1882,11 @@
         "dir": "grammars/tree-sitter-hcl",
         "note": "grammar.js + package.json + tree-sitter.json + LICENSE + README.md + CHANGELOG.md + PIN.md + src/ (grammar.json, node-types.json, scanner.c, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-hcl@64ad6278 kept at $HOME/fixtures/hcl/ts-grammars-hcl. Unlike haskell/elixir/fsharp, src/parser.c IS vendored (600 KB, small enough to keep), so the wired wasm is rebuildable from this directory alone with `tree-sitter build --wasm` and the pin is not only a hash."
       },
-      "decision": "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation \u2014 a vendored wasm that had drifted from upstream and needed manual repair \u2014 does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
+      "decision": "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation — a vendored wasm that had drifted from upstream and needed manual repair — does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
       "alternatives": [
         {
           "option": "hand-repair the wasm the way groovy's was repaired",
-          "measured": "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not \u2014 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
+          "measured": "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not — 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
           "artifact": "fixtures/hcl/out/grammar-conformance.json"
         }
       ],
@@ -1907,17 +1907,17 @@
         },
         "patches": [
           "#743 (rebuildability): `require('tree-sitter-c/grammar')` -> `require('../tree-sitter-c/grammar.js')`. Upstream reads the C grammar through a node_modules entry, and node_modules/ is gitignored repo-wide, so the require made this grammar unrebuildable from a fresh checkout. The C grammar is vendored beside it, so the dependency became a relative path; the same parser.c is generated, with no install step.",
-          "#743 (C++ port of the C wave, NARROWED for `::`): a new `macro_prefixed_type_specifier` rule = `prec(-1, seq(alias($.identifier, $.macro_specifier), $._macro_decorated_type))`, with `_macro_decorated_type` restricted to the KEYWORD-LED specifiers (struct/union/enum/class/sized_type_specifier/primitive_type/decltype). The C rule it ports uses the FULL type_specifier, and that breadth does not port: in cpp `_scope_resolution` has an OPTIONAL scope, so `A::B` reads as either the qualified type `A::B` or macro `A` decorating `::B`. Ported verbatim, the new derivation demanded a conflict declaration, and declaring it flipped runtime path selection in unrelated code \u2014 `fmt::format_to(std::back_inserter(buf), ...)` parsed as a DECLARATION of a function named `::format_to` in a file with zero ERRORs before and after. `A::B` was never a macro decoration, so the fix removes the ambiguity rather than arbitrating it: restricting the decorated type to keyword-led specifiers makes the bad derivation ungrammatical, and no identifier can start any of them, so no conflict is even possible.",
+          "#743 (C++ port of the C wave, NARROWED for `::`): a new `macro_prefixed_type_specifier` rule = `prec(-1, seq(alias($.identifier, $.macro_specifier), $._macro_decorated_type))`, with `_macro_decorated_type` restricted to the KEYWORD-LED specifiers (struct/union/enum/class/sized_type_specifier/primitive_type/decltype). The C rule it ports uses the FULL type_specifier, and that breadth does not port: in cpp `_scope_resolution` has an OPTIONAL scope, so `A::B` reads as either the qualified type `A::B` or macro `A` decorating `::B`. Ported verbatim, the new derivation demanded a conflict declaration, and declaring it flipped runtime path selection in unrelated code — `fmt::format_to(std::back_inserter(buf), ...)` parsed as a DECLARATION of a function named `::format_to` in a file with zero ERRORs before and after. `A::B` was never a macro decoration, so the fix removes the ambiguity rather than arbitrating it: restricting the decorated type to keyword-led specifiers makes the bad derivation ungrammatical, and no identifier can start any of them, so no conflict is even possible.",
           "#743 (header name): a `preproc_header_name` token, so a header can be an ARGUMENT of a preprocessor conditional (`#if __has_include(<vector>)`). The rule is scoped to the argument position because `<` cannot BEGIN a preprocessor expression (the unary operators are `! ~ - +`), so no competing `<` token exists there and the header token wins purely on match length; adding `<...>` anywhere in `_preproc_expression` instead would read `< B && C >` as a header name and turn every comparison into something else."
         ],
-        "patchEvidence": "The vendored tree is byte-identical to the tree-sitter-cpp@0.23.4 npm tarball for 4 of its 5 files (src/scanner.c cf60387d, tree-sitter.json ce25741b, LICENSE 2e0110e0, package.json bfde98d5) and DIFFERS in exactly one: grammar.js (upstream d0242291 -> vendored 817fc8a0, +54/-2 lines, which is the three patches above and nothing else). The wired wasm is NOT the published bytes: 3,552,974 vs the tarball's 3,434,931, because it was rebuilt with the patches. The fork adds three named node types and no fields \u2014 macro_prefixed_type_specifier, macro_specifier, preproc_header_name \u2014 with namedIds 256 -> 259, namedUnique 206 -> 209, and an UNCHANGED fieldSetDigest (891be791). The patches are LOAD-BEARING, not cosmetic: over this lane's own 28 cpp fixtures the fork parses 22 clean against upstream's 20, and the two files that separate them are cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp \u2014 the fixtures that were written FOR those two rules, which do not parse at all without them. On the fmt corpus the two agree on all 47 files, so the fork neither helps nor hurts ordinary library C++."
+        "patchEvidence": "The vendored tree is byte-identical to the tree-sitter-cpp@0.23.4 npm tarball for 4 of its 5 files (src/scanner.c cf60387d, tree-sitter.json ce25741b, LICENSE 2e0110e0, package.json bfde98d5) and DIFFERS in exactly one: grammar.js (upstream d0242291 -> vendored 817fc8a0, +54/-2 lines, which is the three patches above and nothing else). The wired wasm is NOT the published bytes: 3,552,974 vs the tarball's 3,434,931, because it was rebuilt with the patches. The fork adds three named node types and no fields — macro_prefixed_type_specifier, macro_specifier, preproc_header_name — with namedIds 256 -> 259, namedUnique 206 -> 209, and an UNCHANGED fieldSetDigest (891be791). The patches are LOAD-BEARING, not cosmetic: over this lane's own 28 cpp fixtures the fork parses 22 clean against upstream's 20, and the two files that separate them are cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp — the fixtures that were written FOR those two rules, which do not parse at all without them. On the fmt corpus the two agree on all 47 files, so the fork neither helps nor hurts ordinary library C++."
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-cpp",
-        "note": "grammar.js (the FORKED file, see patches) + src/scanner.c + tree-sitter.json + package.json + LICENSE. Four of the five are byte-for-byte from the npm tarball tree-sitter-cpp@0.23.4; grammar.js carries the three #743 patches. The GENERATED src/ (parser.c, grammar.json, node-types.json, tree_sitter/ headers) is NOT vendored, so the offline source<->wasm proof reports `not applicable` for this lane. That is a lane-specific reason, not the generic '41 MB, do not vendor' one the unpatched lanes give: publishing tree-sitter-cpp@0.23.4's own generated JSONs would make the check run and report a PERMANENT three-type delta (macro_prefixed_type_specifier, macro_specifier, preproc_header_name present in the wasm and absent from the source), because the fork's JSONs are what the proof would need and they can only be produced by `tree-sitter generate` from the forked grammar.js. A generated file that must be hand-corrected to make a proof pass is worse than a proof that honestly says it does not apply, so the surface is pinned by the digests below and the fork by the three named types named in the provenance. Rebuild with `tree-sitter generate` then `tree-sitter build --wasm`, from a tree that also has grammars/tree-sitter-c present \u2014 grammar.js requires ../tree-sitter-c/grammar.js, so unlike every unpatched lane this one is NOT rebuildable from its own directory alone."
+        "note": "grammar.js (the FORKED file, see patches) + src/scanner.c + tree-sitter.json + package.json + LICENSE. Four of the five are byte-for-byte from the npm tarball tree-sitter-cpp@0.23.4; grammar.js carries the three #743 patches. The GENERATED src/ (parser.c, grammar.json, node-types.json, tree_sitter/ headers) is NOT vendored, so the offline source<->wasm proof reports `not applicable` for this lane. That is a lane-specific reason, not the generic '41 MB, do not vendor' one the unpatched lanes give: publishing tree-sitter-cpp@0.23.4's own generated JSONs would make the check run and report a PERMANENT three-type delta (macro_prefixed_type_specifier, macro_specifier, preproc_header_name present in the wasm and absent from the source), because the fork's JSONs are what the proof would need and they can only be produced by `tree-sitter generate` from the forked grammar.js. A generated file that must be hand-corrected to make a proof pass is worse than a proof that honestly says it does not apply, so the surface is pinned by the digests below and the fork by the three named types named in the provenance. Rebuild with `tree-sitter generate` then `tree-sitter build --wasm`, from a tree that also has grammars/tree-sitter-c present — grammar.js requires ../tree-sitter-c/grammar.js, so unlike every unpatched lane this one is NOT rebuildable from its own directory alone."
       },
-      "decision": "Pin as-is, as a local rebuild from vendored source with the patch set recorded. The wired bytes are not the published release and must not be recorded as such: a reader who ran `npm pack tree-sitter-cpp@0.23.4` and compared would find a 118 KB difference and no way to account for it, which is precisely the failure M63.5 (#954, 'bind corpus measurements to a grammar hash') is about. The patch set is small, fully enumerated above, and provably load-bearing, so the honest record is the base version PLUS the patches \u2014 not the base version alone, which is what the analyzer's own documentation claimed until this entry existed ('Parser: tree-sitter-cpp 0.23.4 (npm, latest)'). A version-only string cannot express a fork, and tree-sitter.json's own `metadata.version: 0.23.4` does not either.",
+      "decision": "Pin as-is, as a local rebuild from vendored source with the patch set recorded. The wired bytes are not the published release and must not be recorded as such: a reader who ran `npm pack tree-sitter-cpp@0.23.4` and compared would find a 118 KB difference and no way to account for it, which is precisely the failure M63.5 (#954, 'bind corpus measurements to a grammar hash') is about. The patch set is small, fully enumerated above, and provably load-bearing, so the honest record is the base version PLUS the patches — not the base version alone, which is what the analyzer's own documentation claimed until this entry existed ('Parser: tree-sitter-cpp 0.23.4 (npm, latest)'). A version-only string cannot express a fork, and tree-sitter.json's own `metadata.version: 0.23.4` does not either.",
       "alternatives": [
         {
           "option": "keep the wired fork (sha 5a1b78be)",
@@ -1931,8 +1931,8 @@
         },
         {
           "option": "drop the fork and re-apply the patches upstream",
-          "measured": "NOT MEASURED \u2014 recorded as the obvious successor rather than a claim. The three patches are the kind that belong in tree-sitter-cpp (the C wave already landed the first of them there), but this repo cannot verify an upstream merge, and an unverified successor is worse than a recorded fork.",
-          "artifact": "n/a \u2014 see the note; nothing is claimed"
+          "measured": "NOT MEASURED — recorded as the obvious successor rather than a claim. The three patches are the kind that belong in tree-sitter-cpp (the C wave already landed the first of them there), but this repo cannot verify an upstream merge, and an unverified successor is worse than a recorded fork.",
+          "artifact": "n/a — see the note; nothing is claimed"
         }
       ],
       "evidence": [
@@ -1968,14 +1968,14 @@
     "perl": {
       "provenance": {
         "kind": "unnamed-build-sha-only",
-        "chain": "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files \u2014 the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted."
+        "chain": "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files — the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted."
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-perl",
-        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source\u2194wasm check below runs on the generated JSONs, not on parser.c."
+        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
       },
-      "decision": "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 \u2014 the newest release at the time this lane was first measured \u2014 proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
+      "decision": "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 — the newest release at the time this lane was first measured — proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
       "alternatives": [
         {
           "option": "keep the wired 1.2.1 build (sha ac0248ed)",
@@ -2022,10 +2022,10 @@
           "rev": "ee5ce96"
         },
         "patches": [
-          "FIX 1 (\u00a73.18) `extend schema` gains `repeat1(root_operation_type_definition)` and an optional body, with `prec.right` for the `{` ambiguity \u2014 fixes `extend schema { query: Q mutation: M }` and Apollo Federation's bodyless `extend schema @link(...)`",
-          "FIX 2 (\u00a73.17) `scalar_type_extension`'s `$.directives` becomes `optional($.directives)` \u2014 `extend scalar S` with no directive is valid and was rejected",
-          "FIX 3 (\u00a73.3) `field`'s `optional($.directive)` becomes `optional($.directives)` \u2014 `{ f @a @b }` is the legal spelling of two directives on one selection",
-          "FIX 4 (\u00a72.9.4) both string rules learn their escapes: the short string accepts `\\` + any non-newline, the block string accepts `\"\"\"` and skips `\\` as a unit",
+          "FIX 1 (§3.18) `extend schema` gains `repeat1(root_operation_type_definition)` and an optional body, with `prec.right` for the `{` ambiguity — fixes `extend schema { query: Q mutation: M }` and Apollo Federation's bodyless `extend schema @link(...)`",
+          "FIX 2 (§3.17) `scalar_type_extension`'s `$.directives` becomes `optional($.directives)` — `extend scalar S` with no directive is valid and was rejected",
+          "FIX 3 (§3.3) `field`'s `optional($.directive)` becomes `optional($.directives)` — `{ f @a @b }` is the legal spelling of two directives on one selection",
+          "FIX 4 (§2.9.4) both string rules learn their escapes: the short string accepts `\\` + any non-newline, the block string accepts `\"\"\"` and skips `\\` as a unit",
           "RENAME: 71 rule names snake_case -> PascalCase, pinned to the previous wasm's own `language.nodeTypeForId` table, with `source_file`/`comment`/`comma` held lower-case",
           "ADDITIVE (upstream, not ours): `optional($.description)` on `schema_definition` and `optional($.directives)` on `variable_definition`"
         ],
@@ -2035,18 +2035,18 @@
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-graphql",
-        "note": "grammar.upstream.js (bkegley/tree-sitter-graphql@ee5ce96, VERBATIM \u2014 the fixed input, so the port is idempotent) + port.py (the patch AS CODE: the rename table and the four anchored FIX hunks, each refusing to write a half-ported grammar) + grammar.js (the GENERATED patched grammar, which is what `tree-sitter generate` reads) + tree-sitter.json (ABI 15) + package.json (deliberately no `\"type\"` field: the repo root is `\"type\": \"module\"` and grammar.js is CommonJS `module.exports`, so without a local package.json the tree-sitter CLI cannot load it) + LICENSE (MIT) + README.md (the divergence record, the regeneration sequence, and what the patch bought) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c IS vendored (284 KB), the same call hcl made at 600 KB and the opposite of nim at 41 MB: `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. Tracking it makes the wired wasm rebuildable from TRACKED files alone and keeps the recorded digests still across a regeneration that changed nothing else. The exact three-command sequence is in README.md. A `node_modules` symlink points at the tree-sitter CLI during a build and is not tracked."
+        "note": "grammar.upstream.js (bkegley/tree-sitter-graphql@ee5ce96, VERBATIM — the fixed input, so the port is idempotent) + port.py (the patch AS CODE: the rename table and the four anchored FIX hunks, each refusing to write a half-ported grammar) + grammar.js (the GENERATED patched grammar, which is what `tree-sitter generate` reads) + tree-sitter.json (ABI 15) + package.json (deliberately no `\"type\"` field: the repo root is `\"type\": \"module\"` and grammar.js is CommonJS `module.exports`, so without a local package.json the tree-sitter CLI cannot load it) + LICENSE (MIT) + README.md (the divergence record, the regeneration sequence, and what the patch bought) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c IS vendored (284 KB), the same call hcl made at 600 KB and the opposite of nim at 41 MB: `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. Tracking it makes the wired wasm rebuildable from TRACKED files alone and keeps the recorded digests still across a regeneration that changed nothing else. The exact three-command sequence is in README.md. A `node_modules` symlink points at the tree-sitter CLI during a build and is not tracked."
       },
-      "decision": "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs \u2014 so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md \u00a7E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling \u2014 the one thing an upgrade must not do to this repository.",
+      "decision": "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs — so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md §E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling — the one thing an upgrade must not do to this repository.",
       "alternatives": [
         {
           "option": "pin the previous wasm as-is and document the two gaps as boundaries (what docs/analyzers/real-graphql-analyzer.md did)",
-          "measured": "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent \u2014 on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
+          "measured": "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent — on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
           "artifact": "fixtures/graphql/out/extraction-ab.json"
         },
         {
           "option": "upgrade to bkegley/tree-sitter-graphql main (ee5ce96) unmodified",
-          "measured": "REJECTED on capability, and this is the load-bearing measurement of the lane: upstream names its rules snake_case (`object_type_definition`). The analyzer, the m12 shape-safety census, the m14 and m60 lanes and every stored symbol row assume `ObjectTypeDefinition`. Building upstream unmodified and running the node-type set difference gives 72 node types gained and 72 lost with identical names apart from casing \u2014 i.e. every construct routes through the analyzer's default arm and the file yields nothing. It also leaves 6 of its own gaps (ext-schema-multi, ext-schema-directives-only, ext-scalar, desc-block-escaped-triple, field-two-directives, apollo-link).",
+          "measured": "REJECTED on capability, and this is the load-bearing measurement of the lane: upstream names its rules snake_case (`object_type_definition`). The analyzer, the m12 shape-safety census, the m14 and m60 lanes and every stored symbol row assume `ObjectTypeDefinition`. Building upstream unmodified and running the node-type set difference gives 72 node types gained and 72 lost with identical names apart from casing — i.e. every construct routes through the analyzer's default arm and the file yields nothing. It also leaves 6 of its own gaps (ext-schema-multi, ext-schema-directives-only, ext-scalar, desc-block-escaped-triple, field-two-directives, apollo-link).",
           "artifact": "fixtures/graphql/out/grammar-ab.json"
         },
         {
@@ -2251,28 +2251,28 @@
           "rev": "5000ae8f22d11fbe93939b05c1e37cf21117162d"
         },
         "patches": [
-          "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller \u2014 and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (fixtures/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
+          "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller — and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (fixtures/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
           "REPAIR 2 (grammar, `xml/grammar.js` `_intSubset`): the internal subset is now `repeat(choice($._markupdecl, $.conditionalSect, $._DeclSep))` over a named `_intSubsetItem` rule, and `conditionalSect` is declared. Upstream could not reach a conditional section from an internal subset at ANY version measured: 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0, which the wired wasm matches exactly, does not declare it in the `xml` grammar at all. The failure was destructive, not silent: `<![INCLUDE[...]]>` wrapped the `doctypedecl` in an ERROR and the parser then took a LATER `Name` as the DTD's name, so the analyzer published a Type symbol literally named `INCLUDE`. The named `_intSubsetItem` is because tree-sitter rejects a rule that can match the empty string and XML 1.0 permits an empty internal subset; writing the repeat at each use site keeps the generated `node-types.json` free of a wrapper node."
         ],
-        "patchEvidence": "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build \u2014 the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (fixtures/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (fixtures/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (fixtures/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured \u2014 the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
+        "patchEvidence": "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build — the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (fixtures/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (fixtures/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (fixtures/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured — the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
         "localCheckout": "The upstream checkouts the tree was vendored from are at $HOME/fixtures/xml/grammar/upstream (0.7.0 @ 5000ae8f, the base) and $HOME/fixtures/xml/grammar/probe-v0.5.0 (the older candidate, kept so the v0.5.0 build in the A/B stays reproducible). The pre-repair wired bytes are kept at $HOME/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm (sha256 50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1) so the A/B against them is reproducible forever."
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-xml",
         "srcSubdir": "xml/src",
-        "note": "Upstream's own multi-grammar layout, kept so the relative import in `xml/grammar.js` (`../common/common.mjs`) resolves and the tree is byte-comparable to a checkout: `xml/grammar.js` + `xml/src/` (grammar.json, node-types.json, parser.c, scanner.c, tree_sitter/ headers), `common/common.mjs` + `common/scanner.h` (the shared rules and the external scanner header, included by `xml/src/scanner.c`), `tree-sitter.json`, `LICENSE` (MIT). The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable`. `common/scanner.h` is the file REPAIR 1 edits, so tracking it is the difference between a reviewable repair and an invisible one. `xml/src/parser.c` IS vendored (254 KB) \u2014 the same call hcl made at 600 KB and graphql at 284 KB, the opposite of nim at 41 MB \u2014 because `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn this gate red after any `tree-sitter generate`. `xml/src/scanner.c` is vendored for the same reason: it includes the shared header. Rebuild with `tree-sitter build --wasm --output wasm/tree-sitter-xml.wasm grammars/tree-sitter-xml/xml`."
+        "note": "Upstream's own multi-grammar layout, kept so the relative import in `xml/grammar.js` (`../common/common.mjs`) resolves and the tree is byte-comparable to a checkout: `xml/grammar.js` + `xml/src/` (grammar.json, node-types.json, parser.c, scanner.c, tree_sitter/ headers), `common/common.mjs` + `common/scanner.h` (the shared rules and the external scanner header, included by `xml/src/scanner.c`), `tree-sitter.json`, `LICENSE` (MIT). The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable`. `common/scanner.h` is the file REPAIR 1 edits, so tracking it is the difference between a reviewable repair and an invisible one. `xml/src/parser.c` IS vendored (254 KB) — the same call hcl made at 600 KB and graphql at 284 KB, the opposite of nim at 41 MB — because `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn this gate red after any `tree-sitter generate`. `xml/src/scanner.c` is vendored for the same reason: it includes the shared header. Rebuild with `tree-sitter build --wasm --output wasm/tree-sitter-xml.wasm grammars/tree-sitter-xml/xml`."
       },
-      "decision": "Pin the local rebuild of the PATCHED vendored source, and record that the pre-repair bytes needed no provenance work at all. (1) The pre-repair wired wasm is an UNMODIFIED upstream build: its enumerable surface is byte-for-byte the surface of a build of upstream HEAD 0.7.0 (140 node types, 2 fields, zero set difference in either direction) and its behaviour matches that build on all 29 constructs of the A/B battery. So unlike Groovy this was not a stale blob; it was current upstream, and the two defects are UPSTREAM defects that upstream's own test corpus never exercises \u2014 `grep -rn 'PITarget' test/corpus/` returns nothing, and the only `PI`-adjacent tests are `StyleSheetPI`/`XmlModelPI`. (2) Because the defects are upstream's, no upgrade fixes them: v0.5.0, v0.6.4 and v0.7.0 all fail both, which is the measurement that makes the repair necessary rather than optional. (3) Upgrading past 0.7.0 would DELETE capability, not add it: 0.7.0 already split DTD into a separate `dtd` grammar, and adopting a split would strand `elementdecl`, `AttlistDecl`, `AttDef`, `GEDecl`, `PEDecl` and `NotationDecl` \u2014 the analyzer's entire DTD surface \u2014 in a grammar this engine does not wire. (4) The repair is admissible on the corpus A/B above: 31 files repaired against 2 adjudicated out-of-surface/negative-control movements, and corpus MISSING nodes down 32 -> 10. (5) The offline source<->wasm proof runs and is measured on every gate run.",
+      "decision": "Pin the local rebuild of the PATCHED vendored source, and record that the pre-repair bytes needed no provenance work at all. (1) The pre-repair wired wasm is an UNMODIFIED upstream build: its enumerable surface is byte-for-byte the surface of a build of upstream HEAD 0.7.0 (140 node types, 2 fields, zero set difference in either direction) and its behaviour matches that build on all 29 constructs of the A/B battery. So unlike Groovy this was not a stale blob; it was current upstream, and the two defects are UPSTREAM defects that upstream's own test corpus never exercises — `grep -rn 'PITarget' test/corpus/` returns nothing, and the only `PI`-adjacent tests are `StyleSheetPI`/`XmlModelPI`. (2) Because the defects are upstream's, no upgrade fixes them: v0.5.0, v0.6.4 and v0.7.0 all fail both, which is the measurement that makes the repair necessary rather than optional. (3) Upgrading past 0.7.0 would DELETE capability, not add it: 0.7.0 already split DTD into a separate `dtd` grammar, and adopting a split would strand `elementdecl`, `AttlistDecl`, `AttDef`, `GEDecl`, `PEDecl` and `NotationDecl` — the analyzer's entire DTD surface — in a grammar this engine does not wire. (4) The repair is admissible on the corpus A/B above: 31 files repaired against 2 adjudicated out-of-surface/negative-control movements, and corpus MISSING nodes down 32 -> 10. (5) The offline source<->wasm proof runs and is measured on every gate run.",
       "alternatives": [
         {
           "option": "pin the pre-repair bytes as-is and document the two defects as boundaries (what docs/analyzers/real-xml-analyzer.md does today)",
-          "measured": "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE \u2026>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
+          "measured": "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE …>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
           "artifact": "fixtures/xml/out/pi-rootcause.json"
         },
         {
           "option": "upgrade to upstream HEAD 0.7.0 unmodified",
-          "measured": "REJECTED, and this is the negative result worth keeping: the pre-repair wired bytes ALREADY ARE 0.7.0. Surface-identical (140 types, 2 fields, zero difference either way) and behaviourally identical on all 29 battery constructs, so the upgrade buys nothing \u2014 and it leaves both defects in place, because they are upstream's. Separately, 0.7.0's split of DTD into its own `dtd` grammar means the `xml` grammar alone cannot represent a standalone `.dtd` file at all (root node type ERROR, measured), which is filed as a separate finding rather than solved by a swap.",
+          "measured": "REJECTED, and this is the negative result worth keeping: the pre-repair wired bytes ALREADY ARE 0.7.0. Surface-identical (140 types, 2 fields, zero difference either way) and behaviourally identical on all 29 battery constructs, so the upgrade buys nothing — and it leaves both defects in place, because they are upstream's. Separately, 0.7.0's split of DTD into its own `dtd` grammar means the `xml` grammar alone cannot represent a standalone `.dtd` file at all (root node type ERROR, measured), which is filed as a separate finding rather than solved by a swap.",
           "artifact": "fixtures/xml/out/grammar-ab.json"
         },
         {
@@ -2282,7 +2282,7 @@
         },
         {
           "option": "wire upstream's separate `dtd` grammar as a second language for `.dtd`",
-          "measured": "NOT TAKEN, and recorded as owed rather than rejected. It is measurably the right grammar \u2014 it parses libxml2's `cond_sect1.dtd` and `cond_sect2.dtd`, which the `xml` grammar cannot represent at all (root ERROR, 11 and 8 ERROR nodes), with 0 ERROR nodes \u2014 but it is a new wired language, a new router entry, a new analyzer and a new lane, not a repair. The measurement is kept so the decision is revisit-able with numbers instead of a recollection.",
+          "measured": "NOT TAKEN, and recorded as owed rather than rejected. It is measurably the right grammar — it parses libxml2's `cond_sect1.dtd` and `cond_sect2.dtd`, which the `xml` grammar cannot represent at all (root ERROR, 11 and 8 ERROR nodes), with 0 ERROR nodes — but it is a new wired language, a new router entry, a new analyzer and a new lane, not a repair. The measurement is kept so the decision is revisit-able with numbers instead of a recollection.",
           "artifact": "fixtures/xml/out/regression-adjudication.json"
         }
       ],
