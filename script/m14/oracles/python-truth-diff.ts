@@ -152,7 +152,17 @@ for (const f of files) {
   if (res?.language !== "python") continue
   n++
 
-  const truth = derivePythonTruth(parser.parse(content).rootNode, path.basename(f).replace(/\.py$/, ""))
+  // The MODULE SCOPE is the filename stem NORMALISED to a legal identifier — the analyzer's
+  // PY-13 rule, mirrored here because a differential that spells the module differently
+  // compares two different graphs. `run-with-pty.py` is scoped `run_with_pty` by the lane,
+  // so an oracle that passes the raw stem disagreed on every module-level call in the file
+  // and reported it as the analyzer having missed the relationship: 146 edges across 63
+  // hyphenated scripts. Deriving it independently rather than importing the analyzer's
+  // helper is deliberate — two derivations that agree are evidence, one shared function is
+  // not — and agreeing on the NORMALISATION is part of deriving it.
+  const stem = path.basename(f).replace(/\.py$/, "")
+  const moduleScope = stem.replace(/[^A-Za-z0-9_]/g, "_").replace(/^(\d)/, "_$1")
+  const truth = derivePythonTruth(parser.parse(content).rootNode, moduleScope)
   const truthKeys = new Set<string>()
   for (const e of truth) {
     if (!TYPES.includes(e.type as any)) continue
