@@ -2967,14 +2967,18 @@ function scalaHeadTypeName(typeNode: any): string {
 export function deriveScalaUsesTruth(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
+  // Both ends stripped, for the same reason as deriveScalaContainsTruth: the
+  // SOURCE is a declaration name and the analyzer strips every declaration name
+  // it publishes (M60 #924), so an unstripped source can never match a row.
   const push = (from: string, target: string): void => {
     if (!target) return
     const t = stripNameQuoting(String(target).trim())
+    const f = stripNameQuoting(String(from).trim())
     if (!t) return
-    const k = `uses|${from}|${t}`
+    const k = `uses|${f}|${t}`
     if (seen.has(k)) return
     seen.add(k)
-    edges.push({ label: "uses", from: from || "(script)", target: t })
+    edges.push({ label: "uses", from: f || "(script)", target: t })
   }
 
   const namedChildOf = (n: any, t: string): any => {
@@ -3162,8 +3166,33 @@ export function deriveScalaUsesTruth(root: any): { label: string; from: string; 
     const isReceiverTypeNode = (t: string): boolean => t.endsWith("_type") || t.includes("type_identifier")
     const walk2 = (n: any): void => {
       if (n.type === "function_definition" || n.type === "function_declaration") {
+        // M60/S14: the walk to the extension must stop at an intervening TYPE,
+        // not only at the extension. A def inside a nested object is not an
+        // extension method:
+        //
+        //   extension (scrutinee0: Tree)          <- the extension's receiver is Tree
+        //     private def =?= (pattern0: Tree) ...  <- an extension METHOD: uses Tree
+        //     object TypeTreeTypeTest:
+        //       def unapply(x: Tree): Option[Tree & x.type] = x match   <- NOT one
+        //
+        // `unapply` takes `x: Tree` as a PARAMETER and matches on it; it does not
+        // read a Tree, and the analyzer was right and this arm was wrong — it
+        // derived `unapply uses Tree` for every def under an extension regardless
+        // of what sat between. Measured as 1 row on a 2000-file scala3 draw
+        // (compiler/src/scala/quoted/runtime/impl/QuoteMatcher.scala:239), which is
+        // also why the row was invisible at 400 files: the 60-file and 400-file
+        // draws do not contain that file, and the lane's cold-pool rotation had not
+        // reached it. The analyzer's own walk already breaks on
+        // class/trait/object for exactly this reason.
         let anc: any = n.parent
-        while (anc && anc.type !== "extension_definition") anc = anc.parent
+        while (anc && anc.type !== "extension_definition") {
+          if (anc.type === "class_definition" || anc.type === "object_definition" ||
+              anc.type === "trait_definition" || anc.type === "enum_definition") {
+            anc = null
+            break
+          }
+          anc = anc.parent
+        }
         if (anc) {
           const pc = namedChildOf(anc, "parameters")
           const p0 = pc && pc.namedChild(0) ? pc.namedChild(0) : null
@@ -3236,14 +3265,23 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   // Keyed on (label, from, target): the harness's analyzer side dedupes by
   // (label, target) and its truth loop is set-based, so including `from` here
   // only ever makes the truth STRICTLY more informative, never fewer rows.
+  // Quoting is stripped from BOTH ends. The target is a member name and the
+  // source is an OWNER name, and the analyzer strips both because
+  // `createSymbol` strips the name it builds every symbol and `ownerName` /
+  // `id` are derived from that same string (M60 #924). Stripping only the target
+  // left the owner carrying it: measured 4 rows on a 2000-file scala3 draw, all
+  // of them `gen -> #:::_properlyLazy` where the truth's SOURCE was
+  // `` `#:::_properlyLazy` `` (an operator method whose name had to be backticked)
+  // and the analyzer's was `#:::_properlyLazy`.
   const push = (from: string, target: string): void => {
-    if (!from || !target) return
+    const f = stripNameQuoting(String(from).trim())
+    if (!f || !target) return
     const t = stripNameQuoting(String(target).trim())
     if (!t) return
-    const k = `contains|${from}|${t}`
+    const k = `contains|${f}|${t}`
     if (seen.has(k)) return
     seen.add(k)
-    edges.push({ label: "contains", from, target: t })
+    edges.push({ label: "contains", from: f, target: t })
   }
 
   const namedChildOf = (n: any, t: string): any => {
@@ -3609,13 +3647,14 @@ export function deriveScalaReferencesTruth(root: any): { label: string; from: st
   // collapses the analyzer side by (label, target) anyway; keeping the kind in
   // the key here is strictly more informative and cannot lose a row.
   const push = (source: string, target: string, kind: string): void => {
-    if (!source || !target) return
+    const f = stripNameQuoting(String(source).trim())
+    if (!f || !target) return
     const t = stripNameQuoting(String(target).trim())
     if (!t) return
-    const key = `${source}|${t}|${kind}`
+    const key = `${f}|${t}|${kind}`
     if (emitted.has(key)) return
     emitted.add(key)
-    edges.push({ label: "references", from: source, target: t })
+    edges.push({ label: "references", from: f, target: t })
   }
 
   // ── helpers, each mirroring the SHAPE it reads and never the analyzer's state ──
