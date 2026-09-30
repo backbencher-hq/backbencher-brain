@@ -19446,6 +19446,16 @@ async function main() {
     }
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
+    // Per-LABEL breakdown of `unexplained`. The single total cannot distinguish one rule
+    // firing many times from many rules firing once, and those need opposite responses: the
+    // first is one bug, the second is a design question. csharp powershell sat at unexplained=3
+    // inside a lane reporting MISSING=0 and 100% covered, with nothing saying which rule.
+    // REPORT-ONLY and additive: it is in no artifact, changes no published figure, and no gate
+    // reads it. Two attempts to obtain this from OUTSIDE the harness both failed --
+    // CSHARP_INTERFACES is module-local, so an external deriveCSharpEdges(root, undefined)
+    // under-derives truth and reported 935 phantom fabrications against the real 3. The
+    // information exists only here, where `truth` and `rels` are both in scope.
+    const unexplainedByLabel = new Map<string, number>()
     let heuristicUnexplained = 0
     // Sharpness counters (BB_F5_STRICT only). strictMissing counts truth rows the
     // written-target rule cannot match; strictMasks counts the subset the
@@ -20668,6 +20678,7 @@ async function main() {
           if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
         } else {
           unexplainedInAnalyzer++
+          unexplainedByLabel.set(String(r.label), (unexplainedByLabel.get(String(r.label)) ?? 0) + 1)
           if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
@@ -20814,7 +20825,14 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}${
+      // Appended ONLY when there is something to attribute, so a clean lane's line is byte-identical
+      // to what it was before this existed. A breakdown that always prints is a breakdown nobody
+      // reads, and an always-changing log line breaks every parser reading these artifacts.
+      unexplainedInAnalyzer > 0
+        ? ` | unexplained-by-label: ${[...unexplainedByLabel.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join(",")}`
+        : ""
+    }`)
     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
     // were captured for exactly this purpose and then had no output path —
     // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by
