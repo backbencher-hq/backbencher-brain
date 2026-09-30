@@ -123,6 +123,9 @@ export async function analyzeComplexity(
   }
 
   let symbols: SymRow[]
+  // "exact-file" | "directory-prefix" for a file-shaped scope; undefined for a
+  // symbol or project scope, where the question does not arise.
+  let scopeMatch: ComplexityReport["scopeMatch"]
   if (scope === "function") {
     if (!options.target) throw new Error("Function name required for function scope")
     symbols = raw.prepare(base + " AND s.name = ? LIMIT 50").all(projectId, options.target) as SymRow[]
@@ -135,12 +138,20 @@ export async function analyzeComplexity(
     // 1. an exact relative path — what a caller means, and unambiguous even
     //    when the path contains % or _.
     symbols = raw.prepare(base + " AND f.relative_path = ?").all(projectId, wanted) as SymRow[]
+    // Which of the two file-shaped scopes this is. `scope` alone says "file"
+    // for both, which reads as ONE file: measured on the atlas corpus,
+    // `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. A
+    // reader who trusts the label concludes the metrics describe one file, and
+    // `maintainability` — a per-unit index — is then read as a file's score
+    // when it is a directory's.
+    scopeMatch = "exact-file"
     if (symbols.length === 0 && wanted.includes("/")) {
       // 2. a directory prefix, anchored at a separator so "src/util" cannot
       //    match "src/utilities", and ESCAPED so a % or _ is a character.
       symbols = raw
         .prepare(base + " AND f.relative_path LIKE ? ESCAPE '\\'")
         .all(projectId, escapeLike(wanted) + "/%") as SymRow[]
+      scopeMatch = "directory-prefix"
     }
     if (symbols.length === 0) {
       // 3. REFUSE. The old code answered with `%target%` matched anywhere, so
@@ -232,6 +243,7 @@ export async function analyzeComplexity(
     breakdown: breakdown.slice(0, 20),
     symbolCount,
     filesInScope,
+    scopeMatch,
     couplingRelationshipTypes: [...COUPLING_RELATIONSHIP_TYPES],
     provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
   }

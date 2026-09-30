@@ -372,6 +372,19 @@ export interface GraphTraversalResult {
    *  (measured: lodash holds eight symbols named `build`, cobra holds fifty
    *  structural symbols named `code_block.go`). */
   rootCandidates: number
+  /** How the root was found: `exact` (a structural symbol of that name),
+   *  `exact-any-kind` (a symbol of that name the graph cannot traverse — a
+   *  constant, a type alias — which still has callers), or `containment` (the
+   *  documented near-miss fallback, or a case difference, because SQLite's LIKE
+   *  is case-insensitive for ASCII).
+   *
+   *  `containment` means the answer is about a symbol whose name CONTAINS the
+   *  one asked for. Measured on the atlas corpus: `target: "ub"` answered
+   *  `found: true` rooted at `hub`, and `target: "_"` answered `found: true`
+   *  rooted at `build_registry`, with nothing in the payload saying the name
+   *  was not found at all. `found: true` alone means "a root was found", which
+   *  is a weaker claim than the one a reader assumes. */
+  rootMatch: "exact" | "exact-any-kind" | "containment"
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
@@ -553,6 +566,14 @@ export interface ComplexityReport {
    *  (`target: "src"`), and without this a one-file answer and an eighty-file
    *  answer are the same shape — measured 163 symbols with `linesOfCode: 2`. */
   filesInScope: number
+  /** For a file-shaped scope, WHICH of the two shapes it was:
+   *  `exact-file` (one `brain_file.relative_path`) or `directory-prefix` (every
+   *  file under a path prefix, on a segment boundary). Absent for a symbol or
+   *  project scope, where the question does not arise.
+   *
+   *  `scope` reads `"file"` for both, which reads as ONE file: measured,
+   *  `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. */
+  scopeMatch?: "exact-file" | "directory-prefix"
   /** Which relationship types `metrics.couplingEdges` counted. `exports` and
    *  `contains` are index bookkeeping; counting them inflated the number by
    *  1.20x on bb's own src and 2.24x on a small corpus. */
@@ -750,6 +771,11 @@ export interface TestMappingReport {
   provenance: EvidenceProvenance
   summary: {
     productionSymbols: number
+    /** Symbols the documented population filter removed — noise paths and noise
+     *  symbol names. So `productionSymbols + excludedAsNoise` is the store's
+     *  population under this mode's own filter, and a reader can check it
+     *  instead of taking it on trust. */
+    excludedAsNoise: number
     /** How many entries this answer returned, against the population above. */
     returned: number
     truncated: boolean
@@ -783,7 +809,21 @@ export interface TestGapReport {
   gaps: TestGap[]
   provenance: EvidenceProvenance
   summary: {
+    /** The production-symbol population this mode scanned — the SAME number
+     *  `test_mapping` reports as `productionSymbols`, so the two modes can be
+     *  compared. */
+    productionSymbols: number
+    /** How many GAP rows exist: `productionSymbols - directlyTested`. Named
+     *  `total` for compatibility, but it is a count of gaps, NOT of production
+     *  symbols. The two used to be indistinguishable: on the atlas corpus the
+     *  modes answered 169 and 163 under names that read as one question, and
+     *  nothing in either payload said how they relate. */
     total: number
+    /** Production symbols excluded because a test calls them directly — the
+     *  difference between the population and the gap count. */
+    directlyTested: number
+    /** Symbols the population filter dropped as noise. */
+    excludedAsNoise: number
     /** How many gap rows this answer returned, against `total`. */
     returned: number
     truncated: boolean
