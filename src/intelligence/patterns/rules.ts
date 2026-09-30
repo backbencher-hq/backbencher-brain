@@ -35,7 +35,15 @@ interface RuleOptions {
 const COMPLEXITY_THRESHOLD = 15
 const PARAMETER_THRESHOLD = 7
 const GOD_CLASS_MEMBER_THRESHOLD = 10
-const GOD_CLASS_SOFT_CAP = 20
+// GOD_CLASS_SOFT_CAP used to be declared here as 20 and read by nothing. It was
+// the old god-class confidence DIVISOR — the removed
+// `row.members / GOD_CLASS_SOFT_CAP < confidenceThreshold` gate — so the constant
+// outlived the formula and the name described a cap the engine never applied.
+// Removed rather than wired up: there is no soft cap here, the confidence is
+// min(0.9, 0.5 + members / 40), and a reader who found a constant named
+// GOD_CLASS_SOFT_CAP would reasonably conclude a cap existed and was being
+// skipped. script/m65's R9 asserts that no module constant in this file is
+// declared and unread, so the next residue of this kind is a red gate.
 
 export async function detectIndexRules(projectId: ProjectID, options: RuleOptions): Promise<RuleFinding[]> {
   const findings: RuleFinding[] = []
@@ -221,8 +229,23 @@ export async function detectIndexRules(projectId: ProjectID, options: RuleOption
     ).all(projectId) as Array<{ framework_type: string; c: number }>
     let shownFw = 0
     for (const fw of frameworks) {
+      // `confidenceThreshold` IS applied here, and it was not. The other three
+      // rules each open their loop with
+      //   if (confidence < options.confidenceThreshold) continue
+      // and this branch carried a hardcoded 0.6 with no check at all, so a caller
+      // asking for 0.9 — "only the high-confidence findings" — was handed every
+      // framework finding anyway. The parameter is documented as "drop findings
+      // below this confidence", and for one rule in four it did not.
+      //
+      // Found by script/m65, whose R3c asserts that no reported finding is below
+      // the requested threshold. The asymmetry is invisible in m13 because that
+      // fixture asks for 0.4 and 0.6, and 0.6 >= 0.6 keeps the finding.
+      const confidence = 0.6
+      if (confidence < options.confidenceThreshold) continue
       // One finding per framework TYPE, and a type can never be "beyond the
       // display budget" in a way that hides it: there are at most a handful.
+      // That exemption is about the BUDGET and says nothing about the threshold,
+      // so the two are applied independently: above, and here.
       if (shownFw >= budget && budget > 0 && frameworks.length > budget) {
         findings.push({
           type: "framework-detected",
