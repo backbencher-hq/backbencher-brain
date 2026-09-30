@@ -83,7 +83,18 @@ const IMPLICIT_OR_CONSTANT: ReadonlySet<string> = new Set([
 ])
 
 export class RealJuliaAnalyzer {
+  /**
+   * Call sites under an `@ccall`, recorded when the macro is visited and consulted when the
+   * nested `call_expression` is emitted. Instance state rather than a local because the macro
+   * case and the call case are different methods, and CLEARED at the top of every `analyze()` so
+   * a reused instance cannot carry one file's C symbols into the next file's graph — which would
+   * mark an unrelated call as foreign and is precisely the kind of cross-file bleed a shared
+   * analyzer instance invites.
+   */
+  private foreignMarked = new Set<string>()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    this.foreignMarked.clear()
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -306,6 +317,20 @@ export class RealJuliaAnalyzer {
           const callee = this.calleeName(node)
           if (!callee || IMPLICIT_OR_CONSTANT.has(callee)) break
           const isCtor = declaredTypes.has(callee) || TYPE_DECLARATIONS.has(callee)
+          // The FUNCTION form of ccall: `ccall(:jl_getpid, Cint, ())` or
+          // `ccall((:malloc, :libc), Ptr{Cvoid}, …)`. The callee here really is the Julia function
+          // `ccall`, so that edge is emitted normally; the C symbol lives in the FIRST ARGUMENT, as
+          // a `quote_expression` or a `tuple_expression` of them. Recorded with its library when
+          // the two-tuple form supplies one, because `(:malloc, :libc)` says which library the
+          // symbol comes from and discarding that loses a fact the source states.
+          const foreign = callee === "ccall" ? this.ccallTarget(node) : null
+          const meta: any = isCtor
+            ? { juliaSpecific: true, isTypeConstruction: true }
+            : foreign
+              ? { juliaSpecific: true, isForeignCall: true, foreignSymbol: foreign.symbol, foreignLibrary: foreign.library, via: "ccall" }
+              : this.foreignMarked.has(this.textKey(node, callee))
+                ? { juliaSpecific: true, isForeignCall: true, via: "@ccall" }
+                : { juliaSpecific: true }
           {
             relationships.push(this.rel(
               scope || GLOBAL_SCOPE,
@@ -313,7 +338,33 @@ export class RealJuliaAnalyzer {
               callee,
               node,
               isCtor ? 0.9 : 1.0,
-              isCtor ? { juliaSpecific: true, isTypeConstruction: true } : { juliaSpecific: true },
+              meta,
+            ))
+          }
+          // The C symbol gets its OWN edge rather than only a field on the `ccall` edge.
+          //
+          // Relationships dedup on `type|source->target` (Law 3), so two `ccall` invocations in one
+          // scope are the SAME edge and the second was dropped whole — taking `foreignSymbol` and
+          // `foreignLibrary` with it. Measured: `ccall(:jl_getpid, …)` and `ccall((:malloc, :libc), …)`
+          // in one file produced ONE edge carrying only the first call's symbol, and the fact that
+          // the source says `:libc` was simply gone. An edge to the C symbol is a distinct
+          // (source, target) pair per symbol, so it survives dedup and keeps its library, and it
+          // matches how `@ccall` already reports its target. The two spellings of one operation now
+          // agree, which they did not before.
+          if (foreign) {
+            relationships.push(this.rel(
+              scope || GLOBAL_SCOPE,
+              "calls",
+              foreign.symbol,
+              node,
+              1.0,
+              {
+                juliaSpecific: true,
+                isForeignCall: true,
+                foreignSymbol: foreign.symbol,
+                foreignLibrary: foreign.library,
+                via: "ccall",
+              },
             ))
           }
           break
@@ -323,6 +374,17 @@ export class RealJuliaAnalyzer {
         case "macrocall_expression": {
           const nameNode = this.firstNamedChildOfType(node, "macro_identifier")
           const name = nameNode ? nameNode.text.trim().replace(/^@/, "") : ""
+
+          // `@ccall strlen(s::Ptr{UInt8})::Csize_t` names a C SYMBOL, not a Julia binding. Its
+          // callee is a plain `call_expression` in the tree, so the walk reaches the ordinary call
+          // case and emitted `calls -> strlen` — asserting a Julia call to a binding that does not
+          // exist in Julia's namespace. The call is real; the claim that its target is a JULIA
+          // FUNCTION is not. The C targets are collected here and marked at the emit site, which
+          // keeps the edge (the code does call strlen) while refusing to pretend otherwise. The
+          // function form `ccall((:malloc, :libc), …)` states the same fact in a `quote_expression`
+          // argument and was recording NOTHING, so the two spellings of one operation disagreed;
+          // that form is handled in the call case below, library included.
+          if (name === "ccall") this.markForeignCallees(node)
           if (!name) break
           relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", name, node, 1.0, { juliaSpecific: true, isMacroCall: true }))
           break
@@ -659,6 +721,50 @@ export class RealJuliaAnalyzer {
       }
     }
     return ""
+  }
+
+  /**
+  /** The C symbol a `ccall(...)` call targets, with its library when the two-tuple form gives one. */
+  private ccallTarget(call: Node): { symbol: string; library: string | null } | null {
+    const args = this.firstNamedChildOfType(call, "argument_list")
+    const first = args ? this.pos(args, 0) : null
+    if (!first) return null
+    if (first.type === "quote_expression") {
+      const sym = this.pos(first, 0)
+      return sym ? { symbol: sym.text.trim().replace(/^:/, ""), library: null } : null
+    }
+    if (first.type === "tuple_expression") {
+      const parts = this.namedChildren(first).map((q) => this.pos(q, 0)?.text.trim().replace(/^:/, "") ?? "")
+      if (parts.length >= 2 && parts[0] && parts[1]) return { symbol: parts[0], library: parts[1] }
+      if (parts.length === 1 && parts[0]) return { symbol: parts[0], library: null }
+    }
+    return null
+  }
+
+  /** Stable key for a call site, so a `@ccall` target can be recognised again when it is emitted. */
+  private textKey(node: Node, callee: string): string {
+    return `${node.startIndex}:${callee}`
+  }
+
+  /**
+   * Record every call site under an `@ccall` as a call to a FOREIGN symbol.
+   *
+   * `@ccall strlen(s)::Csize_t` puts the C function in an ordinary `call_expression` inside
+   * `macro_argument_list`, so without this the emit site cannot tell it from `f(s)` and asserts a
+   * Julia binding. Collected by node start index rather than by name, because two different C
+   * symbols can share a name and only the call SITE says which one this edge is.
+   */
+  private markForeignCallees(macroNode: Node): void {
+    const args = this.firstNamedChildOfType(macroNode, "macro_argument_list")
+    if (!args) return
+    const visit = (n: Node) => {
+      if (n.type === "call_expression") {
+        const callee = this.calleeName(n)
+        if (callee) this.foreignMarked.add(this.textKey(n, callee))
+      }
+      for (const c of this.namedChildren(n)) visit(c)
+    }
+    visit(args)
   }
 
   /**
