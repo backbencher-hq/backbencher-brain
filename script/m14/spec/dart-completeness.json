@@ -250,12 +250,12 @@
       },
       {
         "id": "DARTGAP3",
-        "severity": "medium",
+        "severity": "high",
         "node_type": "record_type, record_type_field, record_type_named_field",
         "live_occurrences": 219,
         "live_files": 38,
-        "missing": "a record TYPE is a type declaration and wants a Type symbol with positional and named fields as members — the shape class_definition already gets. This is the declaration side.",
-        "effort": "medium — needs a declaration extractor parallel to extractClass"
+        "missing": "PARTIALLY CLOSED. The type-FIDELITY half is done: a `record_type` is now accepted by all three type extractors (parameter, return, field), which had a fixed five-node allowlist (type_identifier, function_type, nullable_type, void_type) and silently dropped every Dart 3 record. Measured over ProxiCall/lib: 27 return types and 1 parameter regained their declared record type, 0 relationships changed, 0 unexplained payload changes. What REMAINS is the CONTAINMENT half and it is a different, bigger question: a `typedef` over a record type (`typedef Pair = (int, String)`) emits NO `contains` edges for the record's fields, and neither does a typedef over a plain object type (`typedef Cfg = {int count}`) — so this is a CROSS-LANGUAGE family question, not a Dart-record one. The family precedent exists: the typescript-contains oracle's rule 5 rules a type alias over an object literal to be a CONTAINER, adopted there because it was that oracle's single largest disagreement source on real files. Dart's contains comes from the generic differential walker, which does not mirror a typedef-body rule, so landing this requires an ANALYZER change AND a matching change in the dart tree-truth oracle — editing differential.ts, which several lanes share. Named fields keep their names; positional fields are Dart's own `$1`/`$2`, which the corpus already reads (`rec.$1`). Do not build the analyzer half without the oracle half.",
+        "effort": "fidelity half: DONE. containment half: medium, and BLOCKED on a paired differential.ts change rather than on the Dart analyzer"
       },
       {
         "id": "DARTGAP4",
