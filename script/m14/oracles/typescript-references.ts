@@ -192,7 +192,7 @@ const TYPE_POSITION_ROOTS = new Set([
 ])
 
 /** Primitives are the absence of a type, not a name to reference. */
-const PRIMITIVES = new Set([
+export const PRIMITIVES = new Set([
   "string", "number", "boolean", "any", "unknown", "never", "void", "object",
   "symbol", "bigint", "undefined", "null", "this", "true", "false",
 ])
@@ -206,7 +206,7 @@ const PRIMITIVES = new Set([
  * the whole node marks the name too — so the name slot is excluded on the way
  * back out by the declarator branch in `collect`.
  */
-function typePositionNodes(root: any): Set<string> {
+export function typePositionNodes(root: any): Set<string> {
   const out = new Set<string>()
   const mark = (n: any): void => {
     if (!n) return
@@ -263,7 +263,7 @@ function insideFunctionBody(n: any): boolean {
 }
 
 /** The identifier slots of a pattern that BIND, as opposed to its type mentions. */
-function patternNames(n: any): string[] {
+export function patternNames(n: any): string[] {
   const out: string[] = []
   const walk = (x: any): void => {
     if (!x) return
@@ -304,7 +304,7 @@ function patternNames(n: any): string[] {
  * analyzer's symbol table holds members and a bare read of a member's name
  * resolves against it.
  */
-function declaredNames(root: any): Set<string> {
+export function declaredNames(root: any): Set<string> {
   const out = new Set<string>()
   const visit = (n: any): void => {
     if (!n) return
@@ -321,7 +321,7 @@ function declaredNames(root: any): Set<string> {
 }
 
 /** Names bound by a formal-parameter list, including destructuring and rest. */
-function paramNames(fp: any): string[] {
+export function paramNames(fp: any): string[] {
   const out: string[] = []
   for (const p of named(fp)) {
     if (p.type === "required_parameter" || p.type === "optional_parameter") {
