@@ -304,6 +304,10 @@ that sits in a cycle — Kahn's algorithm never reaches indegree 0 for it — so
 that cannot be split, so its members are collected into one trailing wave. The
 wave plan now accounts for every planned symbol.
 
+`paths` and `symbolIds` may name the same component. The union de-duplicates by
+id, so it is planned once — the path loader's own de-dup cannot cover this case,
+because it only sees paths.
+
 ### The cap bounds the work, and the work is observable
 
 `cohort.work` reports what the call actually read next to what the project holds:
