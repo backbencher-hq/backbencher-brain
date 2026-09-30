@@ -224,6 +224,11 @@ const descriptors = [
           type: "boolean",
           description: "include edges the indexer marked cross-language (default true). Set false for a single-language view.",
         },
+        maxEdges: {
+          type: "number",
+          description:
+            "hard cap on the number of edges in the WHOLE answer, across both directions and all depths (default 1000, max 5000). `edgeLimit` bounds one query and this bounds the answer; their product is what a caller receives. Reaching it is declared as `total-edge-limit` with the value in `summary.maxEdges`. Raise it for a hub symbol, lower it for a quick shape check",
+        },
         edgeLimit: { type: "number", description: "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`summary.calleesIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer." },
       },
       required: ["symbol"],
@@ -250,10 +255,14 @@ const descriptors = [
     // src/lsp/impact.ts (the component the editor graph panel's impact mode
     // uses) so agent and developer see identical totals and truncation.
     name: "bb_impact",
-    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and an independently declared total when computable. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows.",
+    description: "Bounded reverse-dependency impact for one symbol via the same component the editor graph panel uses: declared node budget (200) and depth (5), truncation as a first-class field with reason, and a declared total that is the size of the set the answer is a prefix of — measured, not inferred, so an answer that is short of the whole set says so even when no bound fired. Unknown symbols are loud declared errors — an empty impact set is never invented. Owner-cascade applies: impact includes dependents attributed at class level, not only exact-symbol rows. The relationship kinds that count are named in every answer's `rule.relationshipTypes` and can be overridden; a dependent carries its evidence tier, cross-language flag, bridge and position.",
     inputSchema: {
       type: "object",
-      properties: { symbol: { type: "string", description: "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)" } },
+      properties: {
+        symbol: { type: "string", description: "symbol name to compute impact for (`target`/`symbolName`/`query` are accepted as aliases)" },
+        relationshipTypes: { type: "array", items: { type: "string" }, description: "stored relationship kinds to count as dependencies. Default: calls, instantiates, extends, implements. A kind that is not listed is never reported, and the applied list is echoed in `rule.relationshipTypes` on every answer. This is the same control bb_graph has, so a caller who wants the type-level `uses`/`references` rows can ask for them on either door." },
+        refresh: { type: "boolean", description: "set false to skip the bounded staleness repair and answer from the existing index. When omitted, stale files inside the answer are repaired and the walk is re-run so the answer is not built from the rows the refresh replaced." },
+      },
       required: ["symbol"],
     },
     mutability: "read",
@@ -334,6 +343,7 @@ const descriptors = [
         symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
         path: { type: "string", description: "optional file path; resolved to the index's own spelling first, so `src/a.ts`, `./src/a.ts` and the absolute path are the same note. Returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
         limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
+        includeNameLevel: { type: "boolean", description: "with `path` and no `symbol`, also return name-level notes (written with no path), which apply wherever their name appears. Off by default, so a path filter answers the question as asked rather than mixing in the whole project" },
       },
       required: [],
     },
