@@ -176,7 +176,7 @@ than argued.
 | **V5** | V4 plus the DECLARE section restored and the conflict declared | **Blocked, and it disproved the diagnosis.** It failed the *same* case identically, which is how the real cause was found |
 | **V6** | `optional(';')` restored after `END` in both dollar-quoted body forms, plus `[$.plpgsql_block]` declared | **SHIPPED, superseded by V8.** `errors=0` on the blocking input. Function recall 17.6 % → 37.0 % by the count ratio |
 | **V11** | plpgsql bodies that hold **embedded SQL**, plus an **opaque-body fallback** | **SHIPPED (current).** The body forms repeat `_plpgsql_body_item` rather than `_plpgsql_statement`, so a `BEGIN…END` can contain `SELECT`/`INSERT`/`CREATE TABLE` and not only procedural forms — before this, a plpgsql body produced **zero relationships**. Function symbols on the extension corpus 3,342 → **6,189**, distinct function names 922 → **1,004** of 1,170, table symbols 13 → **91**, relationships 5,253 → **11,765**. The opaque fallback is what makes it safe: a body the scaffolding cannot read degrades to one token instead of failing the rule and taking the declaration with it |
-| **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **SHIPPED (current).** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
+| **V8** | psql meta-commands as an **`extra`**, quoted `LANGUAGE 'sql'`, C-language body `AS 'modulename', 'symbolname'` | **Shipped, superseded by V11.** Files parsing with zero errors on the extension corpus **4/387 → 105/387**; distinct function names **834 → 951** of 1,170; class symbols 11 → 13. The psql directive was the top damage shape by *file count* (301 of 302) and it LOST declarations, not just error spans |
 
 Six conflicts were resolved by measurement, not guesswork, and three of them are **declared**
 rather than resolved by deletion: `[$.plpgsql_block, $._plpgsql_body_item]`,
@@ -228,7 +228,7 @@ literals pays one extra parse per literal. Not separately benchmarked.
 | Gate | Result | Self-test |
 | --- | --- | --- |
 | contract battery (`fixtures/sql/probe/contract-battery.mts`) | 54 / 54 | — |
-| M14 fixture lane | 11 / 11 | — |
+| M14 fixture lane | 12 / 12 | — |
 | mutation harness, SQL mutants | **13 / 13 caught** (1 retired, see below) | 9 were red before their fixtures existed |
 | node-type gate (`script/m12/sql-node-types-compare.ts`) | 83 referenced, **0 dead**, 0 unjustified | injecting one dead reference → **exit 1** (previously the assertion was vacuous) |
 | resync corpus gate | C1–C3 plus **S1–S2** (sweep reachable; ≥50 declarations recovered) — 5 firings, 77 sweep-recovered | impossible bars → **exit 1** |
@@ -253,7 +253,8 @@ the record stays in the file, is printed on every run, and is not silently skipp
 
 ## Known gaps, stated rather than implied
 
-- **Distinct-name** function recall on real PostgreSQL extension DDL is **951 of 1,170 (81.3 %)**;
+- **Distinct-name** function recall on real PostgreSQL extension DDL is **1,004 of 1,170 (85.8 %)**
+  under the shipped V11 grammar (it was 922 under V8 and 999 under pristine 0.3.11);
   the count ratio says 35.8 %. Report the name-based figure: on a versioned extension corpus the
   two disagree by more than 2x because the same function is re-declared in every version script,
   and the count ratio measures repetition rather than coverage.
@@ -277,15 +278,16 @@ the record stays in the file, is printed on every run, and is not silently skipp
   `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE … ENABLE ROW LEVEL
   SECURITY`, and all 5 changed-shape files gain a `having` node. The gate has no bucket for
   either, and its verdict has not been changed.
-- Unknown relationship targets on ProxiCall are **76 edges (0.61 % of 12,470)**, re-measured
-  2026-09-27 after the plpgsql grammar and the EXECUTE-literal pass. The count was **165
-  (1.31 %)** before `SQL_BUILTINS` was extended with the measured set of PostgreSQL- and
-  extension-provided names; 89 of those edges were `encode`, `digest`, `daterange`,
-  `uuid_generate_v4`, `gen_random_bytes`, `array_append`, `regexp_replace` and friends — SQL
-  functions an agent reading the graph could easily mistake for project code. The remaining
-  76 are dominated by system catalogs (82 edges / 17 names, `pg_policies`, `pg_class`,
-  `pg_namespace`) which are legitimate external references rather than unknowns, and by names
-  declared in files the grammar still cannot parse.
+- Unknown relationship targets on ProxiCall, re-measured under the shipped V11 grammar over
+  **13,406 edges**: **13,162 resolve (98.18 %)**, **146 (1.09 %) are labelled external**
+  (PostgreSQL catalog 109, information_schema 19, platform 12, implicit `public` schema 6), and
+  **98 (0.73 %) over 35 names are an unlabelled gap** — `connection_queue_votes` (18),
+  `business_rules` (11), `set_session_code` (7), `auth` (6), `_drop_all_policies` (5),
+  `businesses` (4). The gap grew from 62 edges to 98 when the grammar started reading the SQL
+  inside plpgsql bodies, because bodies contribute edges to things no file declares; that is
+  the recall gain showing up as unresolved targets, not a new defect. None of the 146 external
+  edges is a mistake, and an unlabelled one is the only kind a consumer can misread as "the
+  project declares this and the analyzer missed it".
 - The perf gate measures files the analyzer actually processes in full (**<= 400 KB**). 309 of
   the 696 extension-corpus files are larger and hold **91.8 % of its bytes**; the engine
   truncates anything over 1 MB, so throughput over the raw 235 MB corpus is not a meaningful
