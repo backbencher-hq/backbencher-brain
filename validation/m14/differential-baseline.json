@@ -1556,17 +1556,17 @@
       "sampleSetHash": "850beced0f7f393d"
     },
     "element-plus:scss": {
-      "missing": 58,
-      "unexplained": 4,
+      "missing": 56,
+      "unexplained": 3,
       "heuristic": 0,
-      "truthRows": 1612,
-      "covered": 1554,
-      "coveragePct": 96.4,
+      "truthRows": 1614,
+      "covered": 1558,
+      "coveragePct": 96.5,
       "filesSampled": 149,
       "perf": {
-        "avgMsPerFile": 16.259,
+        "avgMsPerFile": 21.691,
         "filesMeasured": 160,
-        "loadAvg1AtMeasure": 21.9,
+        "loadAvg1AtMeasure": 35.63,
         "method": "analyze() only, min of 5 runs after 2 warmups — the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
       },

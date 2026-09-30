@@ -247,10 +247,40 @@ module.exports = grammar(CSS, {
       choice($.block, ';'),
     ),
 
+    // ── LOCAL PATCH 5 (backbencher-brain) — `@include` ARGUMENT WHITESPACE ────────
+    //
+    // This rule demanded `token.immediate` on BOTH delimiters, and `token.immediate`
+    // means zero characters of whitespace between the token and its neighbour. So an
+    // `@include` whose argument list is not written with the parens hard against the
+    // argument did not parse AT ALL. Measured, four forms:
+    //
+    //     @include f(1px);          OK      no whitespace
+    //     @include f(1px NL );      FAIL    a newline before the closing paren
+    //     @include f( NL 1px NL );  FAIL    the multi-line form
+    //     @include f( 1px );        FAIL    a single SPACE, on one line
+    //
+    // (NL stands for a line break; the literal form is in the A/B instrument's
+    // `include-arg-whitespace` repro rather than in a comment that a shell would eat.)
+    //
+    // The multi-line form is not exotic — it is the house style of a design-system
+    // stylesheet, and it is the FIRST error in 15 of the 63 element-plus files that
+    // still fail to parse, across `set-css-var-value` (10 files) and
+    // `css-var-from-global` (5). The trailing-space case is what makes the defect
+    // obvious rather than merely annoying: a stylesheet with a space inside the
+    // parentheses is not unusual, and it did not parse.
+    //
+    // A plain call with the same layout always parsed, which localises the fault
+    // precisely: it is this rule's delimiters, not Sass and not the lexer.
+    //
+    // Only the CLOSING delimiter is relaxed. `token.immediate('(')` stays, because Sass
+    // genuinely forbids whitespace between a mixin name and its argument list, and
+    // loosening it would accept `@include f (1px)`, which is a different language. The
+    // block form `@include f(1px) { … }` also still parses, because the `)` is now an
+    // ordinary token and the `{` after it is unambiguously the block.
     _include_arguments: $ => seq(
       token.immediate('('),
       sep1(',', alias($._include_argument, $.argument)),
-      token.immediate(')'),
+      ')',
     ),
 
     _include_argument: $ => seq(
@@ -340,9 +370,63 @@ module.exports = grammar(CSS, {
       $._value,
     )),
 
+    // ── LOCAL PATCH 4 (backbencher-brain) — MAP LITERALS, as an extension of two
+    // EXISTING rules rather than a new one. The reasoning for that shape is the whole
+    // content of this hunk, so it is written out rather than left implicit.
+    //
+    // `map.merge((…), $default)` is the largest parse-failure class in the corpus, and
+    // three previous attempts at it were measured and REVERTED (SCSS-L8). All three
+    // added a NEW rule — `map_value` — to the value hierarchy. Measured outcomes:
+    //
+    //   new rule in `_value`, prec 1     5 files fixed, 0 regressed, ERROR 3,900 -> 8,056
+    //   new rule overriding `arguments`  4 files fixed, 9 REGRESSED
+    //   that, with `prec.dynamic`         worse
+    //
+    // The first is the instructive failure. "0 regressed" and a DOUBLING of the error
+    // count, and the file-level A/B saw none of it, because the files that gained errors
+    // were already failing and stayed in the same bucket. A new rule in `_value` competes
+    // in every declaration, selector and interpolation in the language, and where it loses,
+    // tree-sitter recovers with an error node.
+    //
+    // So this patch adds NO new rule. It extends two rules that are already in the
+    // grammar and already compete safely:
+    //
+    //   1. `list_value` — the parenthesised VALUE group — now also accepts KEYED
+    //      entries, so a two-or-more-pair map is a `list_value` whose entries carry a
+    //      `:`. No new node type, no new competition: the rule already sits at
+    //      `prec(-1)` beside every other Sass value addition and has never inflated
+    //      the error count.
+    //
+    //   2. `parenthesized_value` — inherited from CSS as `'(' $._value ')'` — also
+    //      accepts `'(' $._value ':' $._value ')'`. This is the single-pair case, and
+    //      it is the one that looked arbitrary: `('a': 1)` lost to `parenthesized_value`
+    //      while `('a': 1, 'b': 2)` parsed, because a comma resolves the conflict before
+    //      precedence is consulted. Extending the winning rule is the direct answer, and
+    //      it is why `prec.dynamic` was never going to work — the conflict is settled when
+    //      the parser is GENERATED, so a post-parse preference is never consulted.
+    //
+    // Both halves only ever ACCEPT more than they did. A `:` inside parentheses was
+    // previously an error in every one of these positions, so no parse that succeeded
+    // before can change shape — which is the property the A/B then confirms rather than
+    // assumes.
+    // LOCAL PATCH 4/4b (backbencher-brain) — the SINGLE-PAIR map, which is the case
+    // that is not a `list_value` at all and so needs the CSS rule itself widened.
+    // `($, original)` keeps the inherited `'(' $._value ')'` and adds the keyed form,
+    // so every existing use parses exactly as before.
+    parenthesized_value: ($, original) => choice(
+      original,
+      seq('(', $._value, ':', $._value, optional(','), ')'),
+    ),
+
     list_value: $ => seq(
       '(',
-      sep2(',', $._value),
+      // LOCAL PATCH 4/4a — a keyed entry is `KEY ':' VALUE`, so a MAP is a
+      // `list_value` whose entries carry a colon. `sep2` is `rule (sep rule)+`, so the
+      // trailing comma needs its own `optional(',')`; without it a multi-line group's
+      // final comma is an error, which is why the element-plus idiom below failed even
+      // where the pairs themselves parsed.
+      sep2(',', choice($._value, seq($._value, ':', $._value))),
+      optional(','),
       ')',
     ),
 
