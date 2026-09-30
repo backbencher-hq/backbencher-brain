@@ -990,45 +990,109 @@ export namespace CrossLanguageMigrationAssistant {
   }
 
   /**
-   * Canonicalize a module specifier to the bare package name the dictionary is
-   * keyed by.
+   * Canonicalize a module specifier to the name the dictionary is keyed by.
    *
-   * Round 1 got this wrong in BOTH evidenced sources and in two different ways:
-   * `@nestjs/core` became `core` from `metadata.imports` and stayed
-   * `@nestjs/core` from a node_modules path, so the same package produced two
-   * different library names depending on which source saw it. The dictionary
-   * keys are bare names, so the scope is dropped.
+   * THE SHAPE OF THE PROBLEM. A dictionary key is a name in the SOURCE
+   * ecosystem's own vocabulary: `net/http` for Go, `flutter/material` for Dart,
+   * `socket.io` for npm, `asgiref` for Python. An import specifier is whatever
+   * the source file happens to write. Collapsing one to the other without
+   * knowing the language gets it wrong in both directions, and the dictionary
+   * audit measured all three failures:
    *
-   * Returns `{ name: null }` for specifiers that are not a library at all: Node
-   * builtins (`node:fs`) and type-only packages (`@types/node`). Reporting a
-   * builtin or a type stub as a runtime dependency is a small lie that lands in
-   * every plan for a TypeScript component.
+   *   "net/http"           -> "net"            (Go subpath is the package)
+   *   "package:flutter/material.dart" -> "flutter"  (Dart subpath is the widget set)
+   *   "socket.io"          -> rejected         (a real npm package with a dot)
+   *   "@nestjs/core"       -> "core"           (the scope is the framework)
+   *   "node:fs"            -> rejected         (a builtin, not a dependency)
+   *   "@types/node"        -> rejected         (a type stub, not a runtime dep)
+   *
+   * So this is language-aware. The rules that differ:
+   *
+   *  - Go, Dart, Rust, Java, C#, PHP, Ruby, Perl: a dotted or slashed path IS
+   *    the package name. `net/http`, `package:flutter/material.dart`, `com.squareup…`
+   *  - Python, R, Elixir, Haskell, Scala, Clojure: the FIRST dotted segment is
+   *    the module. `asgiref`, `ggplot2`.
+   *  - JavaScript/TypeScript: npm scope rules — `@scope/name` collapses to the
+   *    scope (the dictionary is keyed by framework), everything else keeps its
+   *    first path segment but KEEPS dots, so `socket.io` survives.
+   *
+   * `language` is the SOURCE language, normalized. It is optional so that a
+   * caller with no language gets the JavaScript/npm rules, which are the
+   * strictest about scope and the most common case in the corpus.
    */
   export interface CanonicalPackage {
     name: string | null
     /** Why it is not a library, when it is not one. */
-    excluded?: "node-builtin" | "type-only" | "relative" | "malformed"
+    excluded?: "node-builtin" | "type-only" | "relative" | "malformed" | "absolute"
   }
 
-  export function canonicalPackageName(specifier: string): CanonicalPackage {
-    const raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
+  /** Languages where a dotted/slashed path is itself the package name. */
+  const PATH_NAMED_LANGUAGES: ReadonlySet<string> = new Set([
+    "go", "rust", "java", "csharp", "php", "ruby", "perl", "swift", "kotlin", "cpp", "c",
+    // Clojure namespaces are dotted paths, not modules: `(require '[core.async])`
+    // names `core.async` in full. Taking the first segment turned it into `core`,
+    // which is not a namespace and matches no row.
+    "clojure",
+  ])
+  /** Languages where the first dotted segment is the module. */
+  const DOTTED_MODULE_LANGUAGES: ReadonlySet<string> = new Set([
+    "python", "r", "elixir", "haskell", "scala", "erlang", "julia", "lua",
+  ])
+
+  export function canonicalPackageName(specifier: string, language?: string | null): CanonicalPackage {
+    let raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
     if (!raw) return { name: null, excluded: "malformed" }
     if (raw.startsWith("node:")) return { name: null, excluded: "node-builtin" }
-    if (raw.startsWith(".") || raw.startsWith("/")) return { name: null, excluded: "relative" }
+    if (raw.startsWith(".") || raw.startsWith("./") || raw.startsWith("../")) return { name: null, excluded: "relative" }
+    if (raw.startsWith("/")) return { name: null, excluded: "absolute" }
+
+    // `package:flutter/material.dart` is Dart's canonical spelling.
+    if (raw.startsWith("package:")) raw = raw.slice("package:".length)
+
+    const lang = normalizeMigrationLanguage(language ?? "") ?? "javascript"
+
+    if (lang === "dart") {
+      // `package:<package>/<library>.dart` — the PACKAGE is the first segment, so
+      // `package:bloc/bloc.dart` is the `bloc` package. The subpath names a
+      // LIBRARY inside it, not a package, which is why the `flutter/material`
+      // dictionary row can never be selected by an import: both it and the
+      // `flutter` row canonicalize to `flutter`. Choosing between them needs
+      // library-level granularity the lookup does not have.
+      const first = raw.split("/")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    if (PATH_NAMED_LANGUAGES.has(lang)) {
+      const withoutExt = raw
+      // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
+      // type reference, and nothing in the dictionary is keyed by one.
+      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt) && lang !== "go") {
+        const first = withoutExt.split(/[./]/)[0]
+        return first ? { name: first } : { name: null, excluded: "malformed" }
+      }
+      // Go stdlib and module paths keep every segment.
+      return withoutExt ? { name: withoutExt } : { name: null, excluded: "malformed" }
+    }
+
+    if (DOTTED_MODULE_LANGUAGES.has(lang)) {
+      const first = raw.split(".")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    // JavaScript / TypeScript and the default.
     if (raw.startsWith("@types/")) return { name: null, excluded: "type-only" }
     const segments = raw.split("/")
     if (raw.startsWith("@")) {
-      // `@scope/name[/sub]`. The dictionary is keyed by the FRAMEWORK, which for
-      // these ecosystems is the scope: `@nestjs/core` and `@nestjs/common` are both
-      // the `nestjs` row. Taking `segments[1]` instead returned `core`, which
-      // matches no row — round 1's bug, kept alive here until this run.
       if (segments.length < 2 || !segments[0] || !segments[1]) return { name: null, excluded: "malformed" }
       const scope = segments[0].slice(1)
       if (scope === "types" || scope.startsWith("types-")) return { name: null, excluded: "type-only" }
       return { name: scope }
     }
+    // Keep dots: `socket.io`, `lodash.merge` and `underscore.string` are real
+    // package names. Only strip a path, which is how a subpath import names a
+    // package that is already known by its first segment.
     const name = segments[0]
-    if (!name || name.includes(".")) return { name: null, excluded: "malformed" }
+    if (!name) return { name: null, excluded: "malformed" }
     return { name }
   }
 
@@ -1037,10 +1101,10 @@ export namespace CrossLanguageMigrationAssistant {
    * Previously this returned the whole scoped path, so a package seen here and
    * through an import produced two different names.
    */
-  export function packageFromNodeModulesPath(filePath: string): CanonicalPackage {
+  export function packageFromNodeModulesPath(filePath: string, language?: string | null): CanonicalPackage {
     const match = String(filePath ?? "").match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
     if (!match) return { name: null, excluded: "malformed" }
-    return canonicalPackageName(match[1])
+    return canonicalPackageName(match[1], language ?? "javascript")
   }
 
   /** Test-shaped evidence, so the effort split is visible instead of implied. */
@@ -1400,7 +1464,7 @@ export namespace CrossLanguageMigrationAssistant {
     //    which is exactly why this must not be assumed present.
     const rawImports = Array.isArray(symbol?.metadata?.imports) ? symbol.metadata.imports : []
     for (const entry of rawImports) {
-      const { name, excluded } = canonicalPackageName(String(entry ?? ""))
+      const { name, excluded } = canonicalPackageName(String(entry ?? ""), symbol?.language)
       if (name) evidenced.add(name)
       else if (excluded) log.debug(`canonicalPackageName: excluded import "${entry}" (${excluded})`)
     }
@@ -1410,7 +1474,7 @@ export namespace CrossLanguageMigrationAssistant {
     //    sources, so one package produced two different library names.
     for (const relationship of relationships) {
       for (const side of [relationship.sourceFile, relationship.targetFile]) {
-        const { name } = packageFromNodeModulesPath(side)
+        const { name } = packageFromNodeModulesPath(side, symbol?.language)
         if (name) evidenced.add(name)
       }
     }
@@ -1481,6 +1545,47 @@ export namespace CrossLanguageMigrationAssistant {
       unsupportedReason: "unknown-library",
       notes: "No evidence-backed equivalence is registered; custom research is required.",
     }
+  }
+
+  /**
+   * Every (source, target, library) row in the dictionary, flattened.
+   *
+   * Exposed so the knowledge base can be AUDITED rather than trusted. Until this
+   * existed nothing had ever read the dictionary except the lookup, and the
+   * audit immediately found rows that could not fire: `net/http` canonicalized
+   * to `net`, `package:flutter/material.dart` to `flutter`, `socket.io` to
+   * nothing at all. A dictionary nobody reads is how a dead row survives.
+   *
+   * This reports the dictionary as MERGED, which is the form the lookup actually
+   * uses, so a merge that drops a row is visible here.
+   */
+  export interface MigrationDictionaryRow {
+    sourceLanguage: string
+    targetLanguage: string
+    library: string
+    /** The target the mapping names, as written in the dictionary. */
+    target: string
+    notes?: string
+  }
+
+  export function migrationDictionaryRows(): MigrationDictionaryRow[] {
+    const out: MigrationDictionaryRow[] = []
+    for (const [sourceLanguage, targetMap] of Object.entries(POLYGLOT_LIBRARY_DICTIONARY)) {
+      for (const [targetLanguage, libraryMap] of Object.entries(targetMap ?? {})) {
+        for (const [library, entry] of Object.entries(libraryMap ?? {})) {
+          out.push({
+            sourceLanguage,
+            targetLanguage,
+            library,
+            target: (entry as { target: string }).target,
+            notes: (entry as { notes?: string }).notes,
+          })
+        }
+      }
+    }
+    return out.sort((a, b) =>
+      `${a.sourceLanguage}|${a.targetLanguage}|${a.library}`.localeCompare(`${b.sourceLanguage}|${b.targetLanguage}|${b.library}`),
+    )
   }
 
   /**
