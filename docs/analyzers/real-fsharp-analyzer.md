@@ -287,6 +287,7 @@ with the measurement that found each one, in `reviews/fsharp/closure.md`.
 | F3 fixtures | 7/7 PASS |
 | F4 mutants | 15/15 CAUGHT — and the registration itself was a defect |
 | oracle vs analyzer, fixtures | 114 truth, 0 MISSING, 0 UNEXPLAINED |
+| canonical harness, F# per-language line | 99.9% covered, 10 MISSING / 10 UNEXPLAINED (0.3%) on one rotation; 100% covered, 0 / 1 on the next |
 | F5 differential, 3 audited labels | 100% covered, MISSING 0–1, UNEXPLAINED 3–5 (0.1%) — measured at an earlier state, see above |
 | all-label probe, 120 files | MISSING 205 / UNEXPLAINED 200 — the honest current number |
 
