@@ -92,7 +92,7 @@
       "while_statement",
       "yield_expression"
     ],
-    "_description": "the analyzer emits correctly (probe/fixture-confirmed). A type belongs here only if it contributes a symbol or a relationship, OR the analyzer deliberately consults it to refuse an emission (ERROR — the scoped damage guard at real-javascript-analyzer.ts:302, the same ruling as bash BD5). A node the analyzer merely reads but attributes elsewhere (e.g. a class EXPRESSION, whose heritage rides its binding) is RULED under design_decision instead, not asserted here."
+    "_description": "the analyzer emits correctly (probe/fixture-confirmed). A type belongs here only if it contributes a symbol or a relationship, OR the analyzer deliberately consults it to refuse an emission (ERROR \u2014 the scoped damage guard at real-javascript-analyzer.ts:302, the same ruling as bash BD5). A node the analyzer merely reads but attributes elsewhere (e.g. a class EXPRESSION, whose heritage rides its binding) is RULED under design_decision instead, not asserted here."
   },
   "internal_silent": {
     "types": [
@@ -116,7 +116,7 @@
       "statement_identifier",
       "with_statement"
     ],
-    "_description": "container/literal/keyword correctly emitting nothing. Also holds the tree-sitter synthetic error-recovery marker MISSING: not a grammar construct, emits no symbol — the same guard that covers ERROR reports it on result.errors."
+    "_description": "container/literal/keyword correctly emitting nothing. Also holds the tree-sitter synthetic error-recovery marker MISSING: not a grammar construct, emits no symbol \u2014 the same guard that covers ERROR reports it on result.errors."
   },
   "gap": {
     "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
@@ -125,19 +125,19 @@
         "id": "J1",
         "node_type": "import_statement",
         "severity": "high",
-        "missing": "imports kind misclassified usage_contextual instead of import_based — the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
+        "missing": "imports kind misclassified usage_contextual instead of import_based \u2014 the tier classifier has no 'imports' branch (the TS T1 / JVM K8 finding): every ES6/require/re-export dependency edge falls to usage_contextual",
         "evidence": "probe: import def from './m' -> imports: probe -> ./m:def conf=1 evidenceClass=usage_contextual (expect import_based)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/import-edges) + mutants javascript/reclassify-import-tier + javascript/drop-import-edges CAUGHT (2026-08-27). The dedicated 'imports' kind now classifies as import_based (classifier imports branch added), matching TS T1 / JVM K8."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/import-edges) + mutants javascript/reclassify-import-tier + javascript/drop-import-edges CAUGHT (2026-08-27). The dedicated 'imports' kind now classifies as import_based (classifier imports branch added), matching TS T1 / JVM K8."
       },
       {
         "id": "J2",
         "node_type": "import_statement (dynamic)",
         "severity": "high",
-        "missing": "dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module — TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
+        "missing": "dynamic import('./lazy') emits a spurious calls -> import edge and NO imports edge for the module \u2014 TS7 was closed in the TS wave; the JS dynamic-import fixture currently documents the bug as accepted",
         "evidence": "probe: const lazy = import('./lazy') -> calls: probe -> import (spurious); no imports edge for ./lazy",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/dynamic-import) + mutants javascript/drop-import-edges + javascript/reclassify-import-tier CAUGHT (2026-08-27). Dynamic import() now emits an imports edge (module:*) and the spurious calls -> import edge is suppressed (the `import` keyword lexes as its own node type — the TS T7 quirk)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/dynamic-import) + mutants javascript/drop-import-edges + javascript/reclassify-import-tier CAUGHT (2026-08-27). Dynamic import() now emits an imports edge (module:*) and the spurious calls -> import edge is suppressed (the `import` keyword lexes as its own node type \u2014 the TS T7 quirk)."
       },
       {
         "id": "J3",
@@ -146,61 +146,70 @@
         "missing": "string interpolation `${x}` emits no Uses on the interpolated identifiers (TS3 T3 / kotlin K4 / scala G4 analog)",
         "evidence": "probe: const s = `hi ${n} x` inside method -> no uses edge on n",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/interp-uses) + mutant javascript/drop-template-uses CAUGHT (2026-08-27). template_substitution identifiers now emit Uses (isTemplateInterpolation), matching TS T3 / kotlin K4 / scala G4."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/interp-uses) + mutant javascript/drop-template-uses CAUGHT (2026-08-27). template_substitution identifiers now emit Uses (isTemplateInterpolation), matching TS T3 / kotlin K4 / scala G4."
       },
       {
         "id": "J4",
         "node_type": "member_expression (call callee)",
         "severity": "medium",
-        "missing": "obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) — the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
+        "missing": "obj.method() emits BOTH calls (obj.method -> method) AND uses (obj -> method, isFieldAccess) \u2014 the family contract (TS/kotlin/scala) skips the callee in uses because calls covers it; JS double-emits",
         "evidence": "probe: obj.method() -> calls: method -> method AND uses: obj -> method",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/callee-uses) + mutant javascript/reintroduce-callee-uses CAUGHT (2026-08-27). A member_expression in call-callee position emits the Calls edge only — no double uses edge (family contract; web-tree-sitter wrappers compared by id, never reference)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/callee-uses) + mutant javascript/reintroduce-callee-uses CAUGHT (2026-08-27). A member_expression in call-callee position emits the Calls edge only \u2014 no double uses edge (family contract; web-tree-sitter wrappers compared by id, never reference)."
       },
       {
         "id": "J5",
         "node_type": "class_static_block",
         "severity": "medium",
-        "missing": "calls inside static { } blocks attribute to the MODULE, not the enclosing class — kotlin K7 init-attribution analog",
+        "missing": "calls inside static { } blocks attribute to the MODULE, not the enclosing class \u2014 kotlin K7 init-attribution analog",
         "evidence": "probe: class A { static { initStatic(); } } -> calls: probe-js1 -> initStatic (expect A)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/static-block) + mutant javascript/drop-static-calls CAUGHT (2026-08-27). Calls inside static { } blocks and static field initializers attribute to the enclosing class (kotlin K7 analog)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/static-block) + mutant javascript/drop-static-calls CAUGHT (2026-08-27). Calls inside static { } blocks and static field initializers attribute to the enclosing class (kotlin K7 analog)."
       },
       {
         "id": "J6",
         "node_type": "variable_declarator (instanceof source)",
         "severity": "medium",
-        "missing": "top-level const r = x instanceof T attributes the reference to 'global' instead of r — the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
+        "missing": "top-level const r = x instanceof T attributes the reference to 'global' instead of r \u2014 the resolveSource walk lacks variable_declarator (TS fixed this in the same wave)",
         "evidence": "probe: const r = obj instanceof TopLevel -> references: global -> TopLevel (expect r)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/instanceof-source) + mutant javascript/global-instanceof-source CAUGHT (2026-08-27). Top-level const r = x instanceof T attributes the reference to r, not the global placeholder (resolveSource gained variable_declarator)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/instanceof-source) + mutant javascript/global-instanceof-source CAUGHT (2026-08-27). Top-level const r = x instanceof T attributes the reference to r, not the global placeholder (resolveSource gained variable_declarator)."
       },
       {
         "id": "J7",
         "node_type": "object_pattern,array_pattern",
         "severity": "medium",
-        "missing": "module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols — TS emits them as constants (probe-verified parity gap)",
+        "missing": "module-level destructured bindings (const { a } = obj / const [b] = arr) emit NO symbols \u2014 TS emits them as constants (probe-verified parity gap)",
         "evidence": "probe: const { d2 } = someObj -> no symbol; TS same shape -> a [constant]",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/destructure-symbols) + mutant javascript/drop-destructure-symbols CAUGHT (2026-08-27). Module-level destructured bindings (object patterns: shorthand/nested/default/renamed; array patterns: head/rest) now emit symbols, matching TS."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/destructure-symbols) + mutant javascript/drop-destructure-symbols CAUGHT (2026-08-27). Module-level destructured bindings (object patterns: shorthand/nested/default/renamed; array patterns: head/rest) now emit symbols, matching TS."
       },
       {
         "id": "J8",
         "node_type": "jsx_element,jsx_self_closing_element,jsx_opening_element,jsx_closing_element,jsx_attribute,jsx_expression,jsx_namespace_name,jsx_text",
         "severity": "high",
-        "missing": "JSX component usage emits NOTHING — <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
+        "missing": "JSX component usage emits NOTHING \u2014 <Button/> produces no edges. JSX is native to the JS grammar (8 types in the gate enumeration), unlike TS where it is a separate tsx dialect; the analyzer's detectsJsx only sets a pattern flag",
         "evidence": "probe: const App = () => <div><Button label='x' /></div> -> no uses/instantiates edges for Button",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (javascript/jsx-usage) + mutant javascript/drop-jsx-uses CAUGHT (2026-08-27). JSX is native to the JS grammar — capitalized components now emit Uses with jsxElement metadata; lowercase intrinsics stay silent (TS family contract)."
+        "closure": "CLOSED \u2014 fixture-gated fix (javascript/jsx-usage) + mutant javascript/drop-jsx-uses CAUGHT (2026-08-27). JSX is native to the JS grammar \u2014 capitalized components now emit Uses with jsxElement metadata; lowercase intrinsics stay silent (TS family contract)."
       },
       {
         "id": "JSD-744",
         "status": "CLOSED",
         "node_type": "member_expression,identifier",
         "severity": "medium",
-        "missing": "M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing — only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible.",
+        "missing": "M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing \u2014 only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible.",
         "evidence": "probe script/m14/tmp/fixwaves/w1-repro.ts + w1-bare.ts (pre-fix: uses [] for bare, no config target for chain); fixture javascript/chain-root-and-bare-reads pins root+segments+bare with write/decl-name/JSX-name forbids; mutants javascript/drop-chain-root-uses + javascript/drop-bare-read-uses; oracle deriveJavaScriptEdges mirrors every gate in lockstep; lane filter now includes uses for javascript (parity audited)",
         "resolution": "fixed + gated: analyzer emits chain root (chainRoot marker, this/super excluded) and bare reads (bareRead marker; gates: not callee, not LHS write, not decl name, not pair key, not member part, not property/label/shorthand, not JSX tag name); oracle mirror identical; F3 50/50 js"
+      },
+      {
+        "id": "J9",
+        "node_type": "overrides \u2014 compared for javascript with NO truth behind it, and ~a fifth of the edges it emits name members that cannot exist on the base",
+        "severity": "high",
+        "missing": "TWO defects in one label. (1) `overrides` is in the javascript comparison set and the oracle derives no `overrides` truth at all, so every analyzer override edge is unmatched \u2014 the same shape as the `imports` and `extends` gaps, and the third instance in this lane. (2) The edges are largely unfounded: the analyzer matches method NAMES across a class boundary to a base it cannot resolve, and emits `overrides` for names that cannot be members of that base.",
+        "evidence": "**HOW (1) WAS FOUND, which is the reusable part.** A gated per-label truth dump (BB_LABEL_DUMP) prints, per label, how many TRUTH rows the oracle derived and how many ANALYZER rows were comparable. A label with `truth=0` and `comparable>0` is being compared against nothing. That check found `extends` first \u2014 fixed in the same session, 8 truth rows added, unexplained 2 -> 0 at a 400-file sample \u2014 and then `overrides`. Without it `overrides` is invisible: its edges sit at 0.5, so the harness files them as `heuristic`, and a bucket full of suspicion reads as caution rather than as a hole. That is why X9 could be closed honestly as 'true edges the truth cannot adjudicate' and why that closure was still incomplete: the bucket also held edges that are simply wrong. **THE FULL-CORPUS POPULATION, 3,369 files: 50 override edges naming a qualified base, across 7 builtin bases.** They are not equivalent rows. TRUE members (the base really has them): `URLSearchParams.*` \u2014 append, delete, entries, forEach, get, getAll, has, keys, set, sort, toString, values, [Symbol.iterator]; `Map.*` \u2014 clear, delete, entries, forEach, get, has, keys, set, values, [Symbol.iterator]; `Set.*` \u2014 add, clear, delete, entries, forEach, has, keys, values. **CANNOT BE MEMBERS \u2014 the defects.** (a) PRIVATE AND IMPLEMENTATION NAMES, 8 of 50: `URLSearchParams.#update_url`, `URLSearchParams.[REPLACE]`, `Map.#read_all`, `Map.#source`, `Set.#init`, `Set.#source`, `Date.#init`, `HTMLElement.$$g_p`. A `#name` is a private field, scoped to the class body and NOT a prototype member, so it cannot override anything on a base; `[REPLACE]` is a template marker and `$$g_p` is a Svelte-internal field. (b) CUSTOM-ELEMENT CALLBACKS, 3 of 50: `HTMLElement.connectedCallback`, `.disconnectedCallback`, `.attributeChangedCallback` \u2014 hooks the browser INVOKES on a custom element, not members of HTMLElement, so nothing is overridden. (c) INHERITED, NOT OWN, 2 of 50: `HTMLElement.addEventListener` / `.removeEventListener` live on `EventTarget.prototype`. (d) NON-STANDARD, 2 of 50: `Error.toJSON`, `URL.toJSON`. So the analyzer's guess is right about 39 of 50 and wrong about 11. **THE MECHANISM IS NAMED BY THE ANALYZER ITSELF**: every one carries `reasonCode: \"first-parent-guess\"` and `evidenceClass: \"inferred\"` at confidence 0.5. The analyzer is not asserting these, it is guessing. **WHY 0.5 IS NOT SUFFICIENT, which is the judgement.** The tier does real work \u2014 it is why these are suspicion rather than fabrication. But X9's closure said the oracle cannot adjudicate them because no corpus contains `URL`; that was correct, and it is also why this is a defect rather than a boundary. An edge that cannot be adjudicated AND cannot be true is not a declared uncertainty, it is a wrong answer wearing one. The private-field and custom-element-callback rows are DECIDABLE \u2014 a `#name` is never a prototype member \u2014 so they are not in the heuristic bucket's intended population at all.",
+        "status": "OPEN \u2014 the `overrides` oracle does not exist, and 11 of the 50 emitted edges are unfounded",
+        "closure": "Two separable pieces. (1) Derive `overrides` truth for the DECIDABLE cases \u2014 a base declared in the same file, or resolvable within it \u2014 which adjudicates those rows and leaves the unresolvable ones as declared suspicion. (2) Decide the design question for unresolvable bases: either stop emitting, or narrow the rule so a `#private` field and a custom-element callback can never match. The blast radius is real (the reasonCode, the confidence model, and a fixture that pins current behaviour), so (2) is not decided by this finding. Until it is, those ~11 rows are real output and the label must not be counted as verified coverage."
       }
     ]
   },
@@ -210,50 +219,50 @@
         "id": "D1",
         "node_type": "typeParameters (none)",
         "status": "RULED",
-        "question": "typeParameters payload: JavaScript has NO generics — the grammar declares no type_parameters node. Recommend: DECLARED N/A (omit from the payload matrix), consistent with the family contract that payloads exist only where the language declares them.",
-        "resolution": "RULED — DECLARED N/A (2026-08-27): JavaScript has no generics — the grammar declares no type_parameters node; the typeParameters payload row is omitted from the Matrix (family contract: payloads exist only where the language declares them)."
+        "question": "typeParameters payload: JavaScript has NO generics \u2014 the grammar declares no type_parameters node. Recommend: DECLARED N/A (omit from the payload matrix), consistent with the family contract that payloads exist only where the language declares them.",
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): JavaScript has no generics \u2014 the grammar declares no type_parameters node; the typeParameters payload row is omitted from the Matrix (family contract: payloads exist only where the language declares them)."
       },
       {
         "id": "D2",
         "node_type": "apiContract (none)",
         "status": "RULED",
         "question": "apiContract payload: JS has no framework API-contract concept (TS's api-contract is typed). Recommend: DECLARED N/A (groovy also omits it).",
-        "resolution": "RULED — DECLARED N/A (2026-08-27): JavaScript has no framework API-contract concept (TS's api-contract is typed); the apiContract payload row is omitted (groovy also omits it)."
+        "resolution": "RULED \u2014 DECLARED N/A (2026-08-27): JavaScript has no framework API-contract concept (TS's api-contract is typed); the apiContract payload row is omitted (groovy also omits it)."
       },
       {
         "id": "D3",
         "node_type": "computed_property_name",
         "status": "RULED",
-        "question": "[key]: value computed names are recursed generically with no dedicated symbol — recommend INTERNAL SILENT (TS D6 consistency).",
-        "resolution": "RULED — INTERNAL SILENT (2026-08-27): computed_property_name [key]: value is recursed generically with no dedicated symbol (TS D6 consistency)."
+        "question": "[key]: value computed names are recursed generically with no dedicated symbol \u2014 recommend INTERNAL SILENT (TS D6 consistency).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): computed_property_name [key]: value is recursed generically with no dedicated symbol (TS D6 consistency)."
       },
       {
         "id": "D4",
         "node_type": "glimmer_template,glimmer_opening_tag,glimmer_closing_tag",
         "status": "RULED",
-        "question": "Glimmer/Ember templates are declared by the grammar but ignored — recommend INTERNAL SILENT (TS D4 consistency).",
-        "resolution": "RULED — INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (TS D4 consistency)."
+        "question": "Glimmer/Ember templates are declared by the grammar but ignored \u2014 recommend INTERNAL SILENT (TS D4 consistency).",
+        "resolution": "RULED \u2014 INTERNAL SILENT (2026-08-27): Glimmer/Ember templates are declared by the grammar but ignored by the analyzer (TS D4 consistency)."
       },
       {
         "id": "D5",
         "node_type": "class_static_block",
         "status": "RULED",
-        "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module — J5 covers the attribution fix; the block structure itself is handled.",
-        "resolution": "RULED — HANDLED (2026-08-27): class_static_block structure is recursed; the attribution fix is J5 (calls now land on the enclosing class)."
+        "question": "class static blocks: the block is recursed (calls found) but attribution lands on the module \u2014 J5 covers the attribution fix; the block structure itself is handled.",
+        "resolution": "RULED \u2014 HANDLED (2026-08-27): class_static_block structure is recursed; the attribution fix is J5 (calls now land on the enclosing class)."
       },
       {
         "id": "M3710-COMPANION",
         "node_type": "class_declaration / method_definition (override resolution)",
         "status": "RULED",
-        "question": "AnalyzeContext.overrideCompanion is never populated by production callers — what must the analyzer do for externally-declared bases?",
-        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-JAVASCRIPT, the javascript/external-override fixture + confidence pins, and 6 family regression mutants."
+        "question": "AnalyzeContext.overrideCompanion is never populated by production callers \u2014 what must the analyzer do for externally-declared bases?",
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' \u2014 below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-JAVASCRIPT, the javascript/external-override fixture + confidence pins, and 6 family regression mutants."
       },
       {
         "id": "JSD-calls-oracle",
         "node_type": "F5 javascript lane call truth",
         "status": "FIXED",
         "question": "Does the javascript lane's truth carry calls?",
-        "ruling": "YES after #611: deriveJavaScriptEdges is pushed into the sweep truth for the plain javascript lane (the analyzer-side filter already compared calls; without the push, truth emitted ZERO calls and every analyzer call surfaced unexplained — 294 in the first gated vue-core run; per-file parity on scripts/verify-commit.js was proven during the wave)."
+        "ruling": "YES after #611: deriveJavaScriptEdges is pushed into the sweep truth for the plain javascript lane (the analyzer-side filter already compared calls; without the push, truth emitted ZERO calls and every analyzer call surfaced unexplained \u2014 294 in the first gated vue-core run; per-file parity on scripts/verify-commit.js was proven during the wave)."
       },
       {
         "id": "JSD9",
@@ -324,7 +333,7 @@
         "node_type": "JSX detection traversal cap (M49.J2 wave)",
         "status": "FIXED",
         "question": "Review J10: the 500-visit cap combined with order-dependent traversal to miss early JSX past ~300 lines (probe: line-1 JSX + 300 padding lines lost React).",
-        "decision": "Remove the cap — the walk is linear like every other pass here, with no stated reason for the bound. Fixture javascript/jsx-detection-depth (JSX first in a 131-line file, expectFrameworks React); mutant javascript/jsx-cap.",
+        "decision": "Remove the cap \u2014 the walk is linear like every other pass here, with no stated reason for the bound. Fixture javascript/jsx-detection-depth (JSX first in a 131-line file, expectFrameworks React); mutant javascript/jsx-cap.",
         "date": "2026-09-10"
       },
       {
@@ -332,14 +341,14 @@
         "node_type": "dynamic import() in qualified_calls + exports rebinding (M49.J2 wave)",
         "status": "FIXED",
         "question": "Session-later finds, both probe-confirmed: (a) the relationship walk skipped import() but qualified_calls leaked 'import' (TS T8 analog); (b) wholesale `exports = {...}` matched no shape and exported nothing.",
-        "decision": "(a) Port the import-callee guard into qcWalk (keyword node type or identifier text). (b) Handle bare-identifier `exports` left sides through collectModuleExports. Fixtures javascript/dynamic-import-qualified (notIncludes + imports control) and javascript/exports-rebind; mutants javascript/import-guard-revert + javascript/rebind-drop. Spread elements (`...other`) deliberately unhandled — resolving them is constant evaluation, recorded as a boundary.",
+        "decision": "(a) Port the import-callee guard into qcWalk (keyword node type or identifier text). (b) Handle bare-identifier `exports` left sides through collectModuleExports. Fixtures javascript/dynamic-import-qualified (notIncludes + imports control) and javascript/exports-rebind; mutants javascript/import-guard-revert + javascript/rebind-drop. Spread elements (`...other`) deliberately unhandled \u2014 resolving them is constant evaluation, recorded as a boundary.",
         "date": "2026-09-10"
       },
       {
         "id": "JSD19",
         "node_type": "qualified heritage dotted targets (review downgrade, NOT fixed)",
         "status": "RULED",
-        "question": "Review J7: `extends Lib.Base` targets the dotted path while TS strips to leaf — fix to leaf?",
+        "question": "Review J7: `extends Lib.Base` targets the dotted path while TS strips to leaf \u2014 fix to leaf?",
         "decision": "RULED - DO NOT FIX: js-member-heritage explicitly pins the dotted target (identifier-only extraction dropped qualified heritage entirely). The residual is cross-family (TS strips per TSD3) and needs an owner ruling on one convention, like the JVM exports fork. The claim probe now asserts the pinned behavior so a drive-by 'fix' fails loudly.",
         "date": "2026-09-10"
       },
@@ -347,16 +356,16 @@
         "id": "JSD20",
         "node_type": "accessor-slot semantics (method_definition get/set pairs)",
         "status": "RULED",
-        "question": "M49 #758 B5: get/set pairs collapsed to ONE symbol via the owner:name J3 dedup key — the getter was deadSpanned (nested symbols pruned, body calls skipped) and the setter's body walked under the getter's slot. Also: what happens when a DATA member shares the name (get x + x())?",
-        "decision": "RULED - FIXED: accessor pairs are DISTINCT descriptor slots (Object.getOwnPropertyDescriptor returns {get, set}) — both Property symbols survive with metadata.accessorKind, and BOTH bodies walk (calls/uses/symbols). Runtime slot semantics kept honest: a DATA member REPLACES the whole descriptor slot (get x then x() kills the accessor entirely — both halves removed, bodies deadSpanned); an accessor takes over a data member's slot; get+set MERGE (coexist). Cross-kind kills are post-walk zombies (mid-walk splice would corrupt seenMethodIdx indices). Pinned by javascript/accessor-slot-semantics + 3 mutants (accessor-pair-collapse, data-slot-zombie, static-override-fabrication).",
+        "question": "M49 #758 B5: get/set pairs collapsed to ONE symbol via the owner:name J3 dedup key \u2014 the getter was deadSpanned (nested symbols pruned, body calls skipped) and the setter's body walked under the getter's slot. Also: what happens when a DATA member shares the name (get x + x())?",
+        "decision": "RULED - FIXED: accessor pairs are DISTINCT descriptor slots (Object.getOwnPropertyDescriptor returns {get, set}) \u2014 both Property symbols survive with metadata.accessorKind, and BOTH bodies walk (calls/uses/symbols). Runtime slot semantics kept honest: a DATA member REPLACES the whole descriptor slot (get x then x() kills the accessor entirely \u2014 both halves removed, bodies deadSpanned); an accessor takes over a data member's slot; get+set MERGE (coexist). Cross-kind kills are post-walk zombies (mid-walk splice would corrupt seenMethodIdx indices). Pinned by javascript/accessor-slot-semantics + 3 mutants (accessor-pair-collapse, data-slot-zombie, static-override-fabrication).",
         "date": "2026-09-12"
       },
       {
         "id": "JSD21",
         "node_type": "static-method override fabrication (extractOverrideRelationships)",
         "status": "RULED",
-        "question": "M49 #758 B4: Sub { static greet() {} } fabricated overrides Base.greet at 0.95 — static and instance members live in DIFFERENT namespaces (no prototype-chain link between Sub.greet and Base.prototype.greet).",
-        "decision": "RULED - FIXED: extractOverrideRelationships skips isStatic symbols (continue before base lookup). Control proves non-vacuous: instance greet both sides still emits Sub.greet->Base.greet. Oracle parity: deriveTreeEdges never derived JS overrides truth (in-file branch has no js method_definition registration) — the lane audits analyzer overrides against empty truth, so the B4 fix REDUCES unexplained fabrications with zero oracle change. Mutant static-override-fabrication re-adds the edge; forbidRelationships kills it.",
+        "question": "M49 #758 B4: Sub { static greet() {} } fabricated overrides Base.greet at 0.95 \u2014 static and instance members live in DIFFERENT namespaces (no prototype-chain link between Sub.greet and Base.prototype.greet).",
+        "decision": "RULED - FIXED: extractOverrideRelationships skips isStatic symbols (continue before base lookup). Control proves non-vacuous: instance greet both sides still emits Sub.greet->Base.greet. Oracle parity: deriveTreeEdges never derived JS overrides truth (in-file branch has no js method_definition registration) \u2014 the lane audits analyzer overrides against empty truth, so the B4 fix REDUCES unexplained fabrications with zero oracle change. Mutant static-override-fabrication re-adds the edge; forbidRelationships kills it.",
         "date": "2026-09-12"
       },
       {
@@ -364,7 +373,7 @@
         "node_type": "export { x as default } alias-default clause",
         "status": "RULED",
         "question": "M49 #758 B8: name \"default\" with isDefault:false lost the public binding name while export default y worked. Fix or verify co-agent's landed fix?",
-        "decision": "RULED - VERIFIED ALREADY-FIXED (independent probe, this wave): the analyzer emits {name:\"default\", isDefault:true, metadata:{viaAliasDefault:true, localName:\"x\"}} — J6's alias contract (public name recorded) plus the default flag. Probe conv-j-b8.ts re-run at HEAD confirms. No new fixture needed: the B8 shape is pinned by the export-uniqueness family gate; the accessor-slot fixture's export surface is unaffected.",
+        "decision": "RULED - VERIFIED ALREADY-FIXED (independent probe, this wave): the analyzer emits {name:\"default\", isDefault:true, metadata:{viaAliasDefault:true, localName:\"x\"}} \u2014 J6's alias contract (public name recorded) plus the default flag. Probe conv-j-b8.ts re-run at HEAD confirms. No new fixture needed: the B8 shape is pinned by the export-uniqueness family gate; the accessor-slot fixture's export surface is unaffected.",
         "date": "2026-09-12"
       },
       {
@@ -385,7 +394,7 @@
       },
       {
         "id": "JSD25",
-        "node_type": "member-chain assignment LHS (write) — subtree vs node suppression",
+        "node_type": "member-chain assignment LHS (write) \u2014 subtree vs node suppression",
         "status": "RULED",
         "question": "M49 W1: `document.getElementById(id).style.display = v` lost the read of `id` and of `style`, and `store.inner.limit = v` lost `store`/`inner`. The suppression used `continue` in a stack walk that pushes children at the loop tail, so the whole STATEMENT SUBTREE was skipped. What does a write suppress?",
         "decision": "RULED - the write LHS suppresses ONLY its own target node, never the subtree. Reads nested inside the statement (call arguments, intermediate chain segments, the RHS) must survive; the write target itself (`limit`, `display`) must not emit a read. Implemented as a per-node guard (`if (!isWrite)`) so the tail child-push still runs. Pinned by fixture javascript/write-lhs-nested-reads with two mutants (write-lhs-subtree-skip, write-target-read-leak). Found only because the #760 cold-pool rotation sampled never-sampled files (grails-core MISSING=7, lodash MISSING=26) - no fixture had ever covered the shape, and the code comment asserted the opposite of what it did.",
@@ -395,7 +404,7 @@
         "id": "JSD26",
         "node_type": "member-chain head in call-rooted chains",
         "status": "RULED",
-        "question": "M49 W1: for a call-rooted chain the head was emitted as raw node TEXT, so `document.getElementById(id).style = v` produced `uses -> document.getElementById(id)` — a target that is not a symbol. Emit or not?",
+        "question": "M49 W1: for a call-rooted chain the head was emitted as raw node TEXT, so `document.getElementById(id).style = v` produced `uses -> document.getElementById(id)` \u2014 a target that is not a symbol. Emit or not?",
         "decision": "RULED - the chain head is a read only when it IS an identifier (the chain-root contract). A call/literal head carries no symbol; the call already has its `calls` edge. Analyzer + oracle gated identically; pinned by javascript/write-lhs-nested-reads (`targetEndsWith` forbid) and mutant javascript/chain-head-expression-fabrication.",
         "date": "2026-09-12"
       },
@@ -452,7 +461,7 @@
         "id": "JSD32",
         "node_type": "ERROR, MISSING",
         "status": "RULED",
-        "question": "F8 re-audit: the census injects ERROR and MISSING into every language's node-type set (completeness-inventory.ts:609 — they are not in the wasm symbol table, so the gate adds them by hand), yet no javascript spec row claimed them, so section-a failed for javascript and for 10+ other lanes on the same pair. Gap, silent omission, or handled?",
+        "question": "F8 re-audit: the census injects ERROR and MISSING into every language's node-type set (completeness-inventory.ts:609 \u2014 they are not in the wasm symbol table, so the gate adds them by hand), yet no javascript spec row claimed them, so section-a failed for javascript and for 10+ other lanes on the same pair. Gap, silent omission, or handled?",
         "decision": "RULED - HANDLED, and this is the javascript analog of bash BD5 (which the gate's own comment at completeness-inventory.ts:601-608 cites as the precedent: 'a spec that classifies ERROR - correctly, since the analyzer consults it - was being told its own row was grammar drift ... the fix is never to delete the correct row'). javascript holds an EXPLICIT guard, real-javascript-analyzer.ts:302: `if (n.type === \"ERROR\" || n.isMissing)`, which records a warning on result.errors and skips the damaged subtree. ERROR is therefore handled_verified: the analyzer consults it on purpose, exactly as bash does at real-bash-analyzer.ts:663/703/715. The guard is SCOPED to the damaged region, never a blanket file refusal - the property BD5 insists on, because a blanket refusal swallows valid declarations in a partially broken file. Measured at f10ea18f: `function good(){} function bad( { } const x = ;` -> good:function SURVIVES; the same file with the damage first -> BOTH x:constant and good:function survive; `function good(){} const arr = [1, 2` (unterminated) -> good:function survives, the array yielding only uses:T->arr. A clean control emits the same good:function with no errors, and a wholly-damaged file yields symbols:[] with one warning per ERROR. MISSING is filed internal_silent: the same guard reports it, but it contributes no symbol of its own. No fabrication is possible here - an unresolved name stays unresolved.",
         "date": "2026-09-27"
       }
