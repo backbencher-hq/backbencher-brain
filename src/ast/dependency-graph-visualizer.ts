@@ -48,6 +48,15 @@ export namespace DependencyGraphVisualizer {
     crossFile?: boolean
     /** How the cross-language edge is bridged, when the index recorded it. */
     bridge?: string
+    /** How many stored relationship rows this one drawn edge stands for. A call
+     *  made from 15 call sites is one edge with weight 15, not 15 edges: the graph
+     *  shape is right to merge them and the weight is right to keep. MEASURED on
+     *  cargo: 394 stored rows between 200 returned nodes collapsed to 285 links, so
+     *  109 rows used to vanish with nothing to say so. */
+    occurrences?: number
+    /** Every stored row behind this edge, so a reader can audit all of them and not
+     *  only the representative `rowId`. */
+    rowIds?: string[]
   }
 
   export interface GraphData {
@@ -189,7 +198,9 @@ export namespace DependencyGraphVisualizer {
 
     // 3. Map relationships to links
     const links: GraphLink[] = []
-    const seenLinks = new Set()
+    // Maps a link key to the link it produced, so a repeated (source, target,
+    // type) can add to that link's multiplicity instead of being discarded.
+    const seenLinks = new Map<string, GraphLink>()
     for (const rel of relationships) {
       if (!rel.source_id || !rel.target_id) continue
 
@@ -204,8 +215,20 @@ export namespace DependencyGraphVisualizer {
         // projection, and loss must be the declared kind, never silent.
         const relType = rel.relationship_type || rel.type || "dependency"
         const linkKey = `${rel.source_id}->${rel.target_id}::${relType}`
-        if (!seenLinks.has(linkKey)) {
-          seenLinks.add(linkKey)
+        // Several STORED ROWS can share one (source, target, type) — 15 call sites
+        // of the same call is one edge drawn once, but it is fifteen pieces of
+        // evidence. MEASURED on cargo: 394 stored rows between 200 returned nodes
+        // collapsed to 285 links, so 109 rows vanished with nothing to say so. The
+        // graph shape is right to merge them; the WEIGHT is not, and weight is what
+        // tells a reader this is a hot edge rather than a stray reference. So the
+        // first row found stays the representative `rowId`, and the multiplicity
+        // rides the edge as `occurrences` and `rowIds`.
+        const existing = seenLinks.get(linkKey)
+        if (existing) {
+          existing.occurrences = (existing.occurrences ?? 1) + 1
+          if (rel.row_id != null) (existing.rowIds ??= []).push(String(rel.row_id))
+        } else {
+          seenLinks.set(linkKey, null as any)
           const link: GraphLink = {
             source: rel.source_id,
             target: rel.target_id,
@@ -229,7 +252,10 @@ export namespace DependencyGraphVisualizer {
           if (rel.is_cross_language != null) link.crossLanguage = Number(rel.is_cross_language) === 1
           if (rel.is_cross_file != null) link.crossFile = Number(rel.is_cross_file) === 1
           if (rel.bridge_mechanism != null) link.bridge = String(rel.bridge_mechanism)
+          link.occurrences = 1
+          link.rowIds = link.rowId != null ? [link.rowId] : []
           links.push(link)
+          seenLinks.set(linkKey, link)
         }
       }
     }
@@ -341,6 +367,7 @@ export namespace DependencyGraphVisualizer {
   <div class="row"><span class="dot" style="background:#5eead4"></span>size = index gravity</div>
   <div class="row"><span class="dot" style="background:none;border:1.5px solid #fbbf24"></span>hollow ring = stale since index</div>
   <div class="row"><span class="swatch" style="border-top-style:solid"></span>opacity = stored confidence</div>
+  <div class="row"><span class="swatch" id="w-sw" style="border-top-style:solid;border-top-width:1px"></span>thickness = stored rows behind the edge</div>
   <div class="row"><span class="swatch" id="xl-sw" style="border-top-color:#f0abfc;border-top-width:3px"></span><span id="xl-text">cross-language edge</span></div>
 </div>
 <div class="panel" id="detail"><span class="close" id="dclose">&#10005;</span><div id="dbody"></div></div>
@@ -375,6 +402,14 @@ export namespace DependencyGraphVisualizer {
     if (!(t in tidx)) { tidx[t] = types.length; types.push(t); }
   }
   function col(t) { return PALETTE[(tidx[t] || 0) % PALETTE.length]; }
+  // Edge WIDTH encodes how much stored evidence sits behind the edge. A call made
+  // from 15 call sites is one drawn edge with weight 15, and MEASURED on cargo the
+  // heaviest edge is exactly that: parse -> push, 15 rows. Without this the hot
+  // edges and the stray references look identical, which is the one distinction a
+  // dependency picture most needs to make.
+  var widest = 1;
+  for (var w = 0; w < L.length; w++) if ((L[w].occurrences || 1) > widest) widest = L[w].occurrences || 1;
+  function weightOf(l) { return 0.7 + 2.6 * Math.sqrt(((l.occurrences || 1) - 1) / Math.max(1, widest - 1)); }
   var STRUCTURAL = { contains: 1, exports: 1, imports: 1 };
   function dash(t) { return STRUCTURAL[t] ? [] : [5, 4]; }
   // A cross-language edge is a LANGUAGE BOUNDARY, not a dependency: wide, long
@@ -390,12 +425,15 @@ export namespace DependencyGraphVisualizer {
   // ---- stats, declared rather than implied
   var stale = N.filter(function (n) { return n.stale; }).length;
   var cross = L.filter(function (l) { return l.crossLanguage; }).length;
+  var heaviest = L.reduce(function (a, l) { return Math.max(a, l.occurrences || 1); }, 1);
+  var evidenceRows = L.reduce(function (a, l) { return a + (l.occurrences || 1); }, 0);
   var byType = {};
   for (var j = 0; j < L.length; j++) { byType[L[j].type] = (byType[L[j].type] || 0) + 1; }
   document.getElementById("stats").innerHTML =
     row("nodes", N.length) + row("edges", L.length) +
     row("node types", uniq(N.map(function (n) { return n.type; })).length) +
     row("languages", uniq(N.map(function (n) { return n.group; }))) +
+    row("stored edges behind them", evidenceRows + (evidenceRows > L.length ? " (heaviest " + heaviest + ")" : "")) +
     (cross ? row("cross-language edges", cross, true) : "") +
     (stale ? row("stale since index", stale, true) : "");
   var xlt = document.getElementById("xl-text");
@@ -652,11 +690,11 @@ export namespace DependencyGraphVisualizer {
       ctx.save();
       if (l.crossLanguage) {
         ctx.globalAlpha = hit ? 1 : 0.72;
-        ctx.strokeStyle = "#f0abfc"; ctx.lineWidth = hit ? 3.2 : 1.9;
+        ctx.strokeStyle = "#f0abfc"; ctx.lineWidth = hit ? 3.2 : 1.9 + weightOf(l);
         ctx.setLineDash(hit ? [] : edgeDash(l));
       } else {
         ctx.globalAlpha = hit ? 1 : (0.16 + 0.62 * conf);
-        ctx.strokeStyle = col(l.type); ctx.lineWidth = hit ? 2.4 : 1.1;
+        ctx.strokeStyle = col(l.type); ctx.lineWidth = hit ? 2.4 + weightOf(l) : 0.6 + weightOf(l);
         ctx.setLineDash(hit ? [] : edgeDash(l));
       }
       ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
@@ -748,7 +786,9 @@ export namespace DependencyGraphVisualizer {
          ["type", o.type], ["confidence", o.confidence != null ? o.confidence : "unknown"],
          ["line", o.line != null ? o.line : "unknown"],
          ["language", o.crossLanguage ? (o.bridge || "crosses a language boundary") : "within one language"],
-         ["stored row", o.rowId || "—"],
+         ["stored rows", o.occurrences ? (o.occurrences + (o.occurrences === 1 ? " row" : " rows")) : "unknown"],
+         ["first row", o.rowId || "—"],
+         ["all rows", o.rowIds && o.rowIds.length > 1 ? o.rowIds.length + " carried" : "—"],
          ["stale", o.stale ? "yes" : "no"]];
     dbody.innerHTML = "<h3>" + (isNode ? "Symbol" : "Relationship") + "</h3><dl>" +
       rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + "</dl>";
