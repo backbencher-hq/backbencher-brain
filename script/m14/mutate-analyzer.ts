@@ -12119,6 +12119,39 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "python/framework-marker-silently-dropped",
+    language: "python",
+    defectClass: "coverage-loss",
+    description:
+      "PY-15 REVERT: ONE marker root is removed from the detection table while the rest of the " +
+      "table stays exactly as declared, so the surface still reports itself alive and still passes " +
+      "every reachability check — the defect the table's own comment warns about ('a marker that " +
+      "stops matching is a visible deletion here and not a silent loss of detection') made invisible " +
+      "by making it small. This is the shape the coverage census found in the wild rather than a " +
+      "shape invented for the harness: 7 of 9 declared roots fired ZERO times across 3,271 corpus " +
+      "files, and nothing in the suite noticed, because reachability had been reported as coverage. " +
+      "The transform drops the LAST declared root from `frameworkPatterns` and re-picks the primary " +
+      "from what remains, which is the pre-census table minus its newest row. Caught by " +
+      "python/framework-marker-coverage, whose `detectedFrameworks` row is an EXACT ORDERED list, " +
+      "and by python/framework-surface-pins.",
+    transform: r => {
+      const pats: any[] = (r.metadata as any)?.frameworkPatterns ?? []
+      const det: string[] = (r.metadata as any)?.detectedFrameworks ?? []
+      if (pats.length === 0) return r
+      const keptP = pats.slice(0, -1)
+      const keptD = det.slice(0, -1)
+      return {
+        ...r,
+        metadata: {
+          ...(r.metadata ?? {}),
+          frameworkPatterns: keptP,
+          detectedFrameworks: keptD,
+          framework: keptD[0],
+        },
+      }
+    },
+  },
+  {
     id: "python/framework-import-order-pick",
     language: "python",
     defectClass: "nondeterministic-primary-pick",

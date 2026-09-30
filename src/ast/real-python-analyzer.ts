@@ -88,6 +88,46 @@ const DENYLISTED_SYMBOL_NAMES = new Set([
  * table is declared the way csharp's CS_FRAMEWORK_MARKERS is (CONV-CS-2, java sibling)
  * rather than inferred from a corpus. One root per line, so a marker that stops matching
  * is a visible deletion here and not a silent loss of detection.
+ *
+ * MEASURED, and the reason the table grew: 3,271 corpus `.py` files carrying 160 distinct
+ * non-stdlib import roots (stdlib list from `sys.stdlib_module_names`, not guessed). Of the
+ * nine roots this table declared, SEVEN NEVER FIRE — `celery`, `django`, `fastapi`, `flask`,
+ * `sqlalchemy`, `starlette` and `tornado` occur zero times. Only `pytest` (1,010 sites) and
+ * `aiohttp` (1) matched anything at all. A marker that fires nowhere is not coverage, it is
+ * a line in a table, and the original census had no way to tell the two apart because the
+ * only evidence it gathered was that the surface was reachable.
+ *
+ * The four roots added below are the corpus's own, and each is a FRAMEWORK rather than a
+ * library — the distinction matters because `metadata.framework` is a single primary pick,
+ * so admitting `requests` or `numpy` here would make thousands of files report a library as
+ * their framework. `ansible` is the corpus's dominant framework by an order of magnitude
+ * (3,452 sites across 322 directories) and was entirely absent. `unittest` is the STANDARD
+ * LIBRARY's own test framework, detected in 132 corpus files, while `pytest` was already
+ * present: the table could name the third-party test runner and not the one that ships with
+ * the language. `setuptools` (20) and `sphinx` (19) are the build and documentation
+ * frameworks.
+ *
+ * Cython is deliberately NOT here. It is the corpus's second-largest root by a wide margin
+ * (260 lower-case + 169 capitalised import sites) and it is a DIALECT, not a framework — and
+ * no lane in this repository publishes a `dialect` field, so a Cython marker here would have
+ * to be recorded as a framework in order to be recorded at all. That is a cross-lane concept
+ * worth having and not one to invent inside a single analyzer; it is filed in the review as
+ * PY-16 rather than smuggled in under `framework`.
+ *
+ * A SECOND, INDEPENDENT python framework table exists — `FrameworkDetector.detectPythonFrameworks`
+ * in `src/ast/framework-intelligence.ts` — and `enhanceWithFrameworkIntelligence` MERGES its
+ * output into this metadata, so the field a consumer reads is the union of the two and neither
+ * table alone explains it. Measured on the corpus, the union is 10 frameworks and the split is
+ * not the one this table's shape suggests: `pandas`, `numpy`, `tensorflow` and `pytorch` come
+ * ONLY from the shared detector and appear nowhere here, while `starlette`, `sqlalchemy`,
+ * `aiohttp`, `celery`, `ansible`, `setuptools`, `sphinx` and `unittest` come ONLY from here.
+ * Five entries — `django`, `flask`, `fastapi`, `tornado`, `pytest` — are declared in BOTH, and
+ * those five are free to drift apart with nothing to notice. That duplication is PY-17 and it is
+ * the more interesting half of this finding: the seven dead markers above are mostly markers the
+ * shared detector already covers, so the table was not providing coverage the product lacked so
+ * much as a second source of truth for a field it already had. The four roots added here are
+ * precisely the ones the shared detector does NOT carry, which is why they are the four worth
+ * having.
  */
 const PY_FRAMEWORK_MARKERS: Record<string, { framework: string; pattern: string }> = {
   django: { framework: "Django", pattern: "orm" },
@@ -98,7 +138,14 @@ const PY_FRAMEWORK_MARKERS: Record<string, { framework: string; pattern: string 
   tornado: { framework: "Tornado", pattern: "async_web" },
   aiohttp: { framework: "aiohttp", pattern: "async_http" },
   celery: { framework: "Celery", pattern: "task_queue" },
+  ansible: { framework: "ansible", pattern: "automation" },
+  setuptools: { framework: "setuptools", pattern: "build" },
+  sphinx: { framework: "sphinx", pattern: "documentation" },
+  // Testing frameworks stay LAST, so `framework` (the primary pick, taken from the first
+  // entry) reports the application framework in a file that imports both — the same rule
+  // and the same reason as the table's original ordering.
   pytest: { framework: "pytest", pattern: "testing" },
+  unittest: { framework: "unittest", pattern: "testing" },
 }
 
 /** framework name -> its declared pattern kind, so the emitted array stays aligned. */
