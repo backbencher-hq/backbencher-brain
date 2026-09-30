@@ -584,6 +584,40 @@
         "measured_residue": "2,184 of 720,663 edges. By label: `references` 947, `uses` 776, `instantiates` 373, `calls` 84, `contains` 3, `implements` 1. The `references` 947 are package-scope var/const whose declared name is the BLANK identifier — `var _ Reader = (*Store)(nil)` — and there is no name to use. GOD11 established that `_` is worse than `global` because `_` can never be resolved by anything, including a reader, so these fall back to `global` on purpose. That is the honest answer for a declaration that deliberately has no name, and chasing it further would be inventing an owner the source does not name. The `uses`/`instantiates`/`calls` residue is deeper initializer nesting — composite literals and selectors several levels below the declaration — and is the next round's named work, not a silent skip.",
         "total_edges_note": "Total published edges rose from 716,968 to 720,663 across the two fixes. That is not a regression in precision; it is the lost-row half of the class being recovered. The `call:` dedupe key was the bare leaf, so `var a = time.Second` and `var b = time.Second` collapsed into one row and one declaration vanished. The differential cannot see this class either — it dedupes the analyzer side by label|target — so the source census is the only instrument that counts it.",
         "evidence": "script/m14/tmp/go-round7-dangling-sources.ts full-extent output, post-GOD12"
+      },
+      {
+        "id": "GOD13",
+        "node_type": "range_clause LHS as a binding position in the `uses` oracle",
+        "status": "FIXED — ORACLE SIDE",
+        "question": "The F5 draw intermittently reported 2 MISSING `uses` rows (`uses main -> main` in go-tools/cmd/deadcode, `uses f19 -> i` in the nilness testdata) that no other draw reproduced, which is the signature of a rotation-dependent class rather than noise. Both were the SAME defect and the ANALYZER was right on both.",
+        "resolution": "`isBindingPosition` had always recognised the `expression_list` inside a `range_clause`, and the BINDING COLLECTOR fired on var_spec/const_spec/short_var_declaration. But the identifier's parent is the `expression_list`, not the `range_clause`, so neither branch ever matched: a range variable was neither bound nor recognised as a binding, and `shadowed()` could not fire for one. `for _, main := range mains { main.Func(\"init\") }` therefore read the PACKAGE-LEVEL `main` as a bare identifier and the oracle published `uses main -> main`, which the analyzer correctly refuses — LocalsAreNotSymbols, and the local shadows the name. Fixed in `isBindingPosition` (an `expression_list` whose parent is a `range_clause` is the LHS, the first named child) and in the collector (it now fires on that shape).",
+        "lesson": "A rotation-dependent MISSING is a finding, not noise. Two draws disagreed on the same row, and the productive question was not 'why did this draw differ' but 'what shape appears in one draw and not another' — the answer was a tree shape, not a file set.",
+        "evidence": "script/m14/tmp/go-round6-uses-truth.ts (source-aware, full extent) + the two named corpus files"
+      },
+      {
+        "id": "GOD14",
+        "node_type": "a SECOND implementation of the `uses` oracle",
+        "status": "FIXED",
+        "question": "`script/m14/tmp/go-round6-uses-truth.ts` carried its own 588-line copy of the `uses` derivation while the gate read a different one in `differential.ts`. This is the THIRD time this exact split has cost the go lane: the first put two latent ReferenceErrors into 8b0e2113 (a typo and an undefined regex, both invisible until a rotating draw reached the branch), the second was differential.ts losing the oracles outright. The cost this time was that the probe reported 1,947 disagreements while the gate reported 0 on the same code.",
+        "resolution": "The probe now imports `deriveGoUses` from the place the gate reads it. A probe that can disagree with the gate about anything except the ANALYZER is not a second opinion, it is a second implementation — and the useful question is never 'which one is right', it is 'why are they different', which on all 1,947 rows was the analyzer having been taught something the probe had not.",
+        "evidence": "script/m14/tmp/go-round6-uses-truth.ts (588 lines removed, one import added)"
+      },
+      {
+        "id": "GOD15",
+        "node_type": "the SOURCE convention for `uses` edges, in the oracle",
+        "status": "FIXED",
+        "question": "After GOD12 taught the analyzer to attribute work inside a package-scope initialiser to the NAME that initialiser declares, the F5 gate could not see that the oracle still said `global`: the matcher is `label + normTarget(target)` and reads no source at all. The source-aware probe saw 1,947 rows on go-tools and 1,724 on prometheus — `global -> sectioned` against the analyzer's `funcMap -> sectioned`, the same edge with two sources and only one of them resolvable.",
+        "resolution": "The convention now lives in ONE place, `goEnclosingFunction` in the oracle: the enclosing function's name, else the declared name of a package-scope var/const with the blank excluded, else `global`. A function-local var does not bind, so the walk continues past one, which keeps `func f() { var x = T{} }` attributed to `f`. Disagreements fell from 1,947 to 21 on go-tools.",
+        "residue": "The 21 are all cases where the ANALYZER is right: 3 selector EXTRAs and 1 identifier EXTRA are the two classes already declared (GO-GAP-2, and the unusedparams function-type parameter), and 17 are a new oracle-side class — a bare read whose name coincides with the enclosing function's own name (`attr -> attr`, `doCallgraph -> main`), which the analyzer excludes via LocalsAreNotSymbols and the callee exclusion. Declared rather than chased, because the direction of every one of the 21 is the same and the analyzer is on the right side of it.",
+        "evidence": "script/m14/tmp/go-round6-uses-truth.ts full extent, post-GOD15"
+      },
+      {
+        "id": "GO46",
+        "node_type": "Go analyzer cost after GOD11 + GOD12",
+        "status": "MEASURED — no regression",
+        "question": "GOD12 added `resolveGoWorkSource`, which walks the ancestor chain on every call, selector-use and bare-identifier node. The round-5 perf script could not answer it: it materialises its before-side from `git show HEAD:...`, and HEAD is this lane's own commit, so it would have compared the analyzer with itself.",
+        "measured": "A purpose-built interleaved A/B pinned to `03bfc864` (GOD10 present, GOD11/GOD12 absent), 600 files in a fixed 2-20 KB band, 659,320 nodes, three passes each side per file, median, one process: **ratio 1.0066**, and ms-per-1k-nodes **51.455 -> 50.106** (lower after). The per-file spread is symmetric noise — 40 files >1.5x slower against 60 files >1.5x faster — on a box whose measured loadavg was 34, which is the case LANE-AUDIT-FORMULA §9 says the ratio survives and the absolutes do not. The honest statement is therefore 'no measurable cost', not 'faster'.",
+        "evidence": "script/m14/tmp/go-round7-perf-ab.ts"
       }
     ]
   }

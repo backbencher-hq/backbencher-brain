@@ -11114,9 +11114,37 @@ const goInErrorRegion = (n: any): boolean => {
 
 
 const goEnclosingFunction = (node: any): string => {
+  // GOD12/GOD15: the SOURCE convention, and it has to be stated in ONE place
+  // because the F5 matcher reads no source at all (`differential.ts` matches
+  // `label + normTarget(target)`), so a disagreement here is invisible to the
+  // gate and only the source-aware probe sees it. It saw 1,947 rows on go-tools
+  // and 1,724 on prometheus — every one of them the ANALYZER being right: after
+  // GOD12 the analyzer attributes work inside a package-scope initialiser to the
+  // NAME that initialiser declares, and this helper still answered `global`, so
+  // `global -> sectioned` and `funcMap -> sectioned` were the same edge with two
+  // sources and only one of them resolvable.
+  //
+  // The convention: the enclosing function's name; else, failing that, the
+  // declared name of a PACKAGE-SCOPE var/const (blank excluded, because `_` can
+  // never be resolved by anything); else `global`. A function-local var does not
+  // bind — LocalsAreNotSymbols — so the walk continues past one, which is what
+  // keeps `func f() { var x = T{} }` attributed to `f`.
   for (let n = node.parent, guard = 0; n && guard < 128; guard++, n = n.parent) {
     if (n.type === "function_declaration" || n.type === "method_declaration") {
       return String(n.childForFieldName?.("name")?.text ?? "global")
+    }
+    if (n.type === "var_spec" || n.type === "const_spec") {
+      // Local? keep walking for the enclosing function.
+      let local = false
+      for (let q: any = n.parent; q; q = q.parent) {
+        if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") { local = true; break }
+      }
+      if (!local) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+        }
+      }
     }
   }
   return "global"
