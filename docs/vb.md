@@ -118,9 +118,11 @@ All seven missing rows are dropped constructions:
 | `SoundManager.vb` | `calls … -> SoundContainer` | **not** `Sub New*` — unexplained |
 | `NewProj.vb`, `NewTestingEnv.vb` ×3, `NewUnattendWiz.vb` | 5 rows | `Sub New*` — DISMTools |
 
-Six of the seven are the one grammar defect, which is now confined to 2,823
-`New*` identifiers in the grammar. The seventh — `SoundManager`, in a file with no
-`Sub New*` at all — is genuinely unexplained and is recorded as such rather than
+Six of the seven are the one grammar defect, which costs **14 declarations in 7
+files** — not the 2,823 `New*` identifiers a raw pattern count suggests, which
+are identifiers and mostly harmless. The seventh — `SoundManager`, in a file with
+no `Sub New*` at all — is genuinely unexplained and is recorded as such rather
+than
 folded into the class it resembles.
 
 ### The `New*` grammar defect, and why a lane cannot fix it
@@ -148,16 +150,22 @@ Public Sub NewForm_Load()        (a Sub)            BROKEN
 ```
 
 Only `Sub New*` breaks, because `Sub` is the single thing that can be followed by
-the constructor form. `constructor_declaration` is `prec(100, seq(ci("Sub"),
-ci("New"), …))` against `method_declaration`'s `prec(1)`, so the parser commits to
-the constructor branch, and the member's body ends up outside the declaration
-node — which is why the *calls* go missing rather than the method.
+the constructor form. The constructor branch is `prec(100, …)` and its `Sub New`
+is a **compound token of its own** — `_sub_new: token(prec(100, seq(ci("Sub"),
+/\s+/, ci("New"))))` — so the lexer consumes the two-word prefix `Sub New` and
+leaves the rest as the identifier. The parser commits to the constructor branch,
+and the member's body ends up outside the declaration node — which is why the
+*calls* go missing rather than the method.
 
-**127 distinct `New*` identifiers, 2,823 occurrences** in the corpus, and the
-pattern is contagious in exactly the code this corpus is made of: Windows Forms
-names handlers `<Form>_<Event>` and names buttons `New<Thing>`, so a form or a
-button called `New…` loses the body of **every** handler it has — silently, with
-the file's symbol count still plausible.
+**127 distinct `New*` identifiers and 2,823 occurrences** exist in the corpus, but
+that is the count of *identifiers*, and it overstates the damage by two orders of
+magnitude. Only declarations shaped `Sub New<more chars>` trigger the bug, and
+there are **14** of them, in **7** files, losing **7 of 39,045** F5 truth edges
+(**0.018 %**). The shape is still worth knowing, because it is contagious in
+exactly the code this corpus is made of: Windows Forms names handlers
+`<Form>_<Event>`, so a form called `NewForm` has handlers `NewForm_Load`,
+`NewForm_Closing` — each one silently losing its body, with the file's symbol
+count still plausible.
 
 ### A proven negative result, not four failed guesses
 
