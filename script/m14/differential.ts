@@ -4823,7 +4823,23 @@ export function deriveGroovyEdges(root: any, sourceText?: string): { label: stri
         : null
       const fIsCallee = !!parentField && parentField.startIndex === n.startIndex && parentField.endIndex === n.endIndex
       const fParts = String(n.text).split(".").map((p: string) => (p.endsWith("?") || p.endsWith("*") ? p.slice(0, -1) : p))
-      if (fParts.length >= 2 && !fIsWrite && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
+      // Mirrors the analyzer's constructor-body exception. A `this.x = ...` inside a
+      // CONSTRUCTOR is a use of the field (the groovy lane's hand-audited truth records
+      // all four such rows), while an assignment LHS elsewhere stays a write and not a
+      // read. Without this the oracle derives nothing for those sites, so every one of
+      // the analyzer's edges there is scored UNEXPLAINED -- 14 of them across the
+      // 60-file groovy sample, all `uses <Type> -> <field>` on a constructor line.
+      //
+      // This arm is declared a mirror of the analyzer's `collectFieldAccessUses`, so it
+      // moves when that moves. The enclosing type is what names the edge, and the
+      // harness matches label+target site-agnostically, so only membership matters here.
+      let fInConstructor = false
+      for (let a = n.parent, guard = 0; a && guard++ < 24; a = a.parent) {
+        if (a.type === "class_declaration" || a.type === "trait_declaration" || a.type === "enum_declaration") break
+        if (a.type === "constructor_declaration") { fInConstructor = true; break }
+      }
+      const fThisLhsInConstructor = fInConstructor && fIsWrite && (fParts[0] === "this" || fParts[0] === "super")
+      if (fParts.length >= 2 && (!fIsWrite || fThisLhsInConstructor) && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
     } else if (t === "leading_dot_call") {
       // #851: a continuation segment is a CALL only with an argument list
       // (`.build(1)`); a paren-less `.label` is a member READ. BOTH live in this
@@ -12663,7 +12679,12 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
             const parens = tp.namedChildren.find((c: any) => c.type === "parens")
             const ap = parens?.namedChildren.find((c: any) => c.type === "apply")
             const first = ap?.namedChildCount ? ap.namedChild(0) : null
-            if (first) target = first.text
+            // The target is the applied HEAD's name, not the application's text:
+            // `instance CacheVariant (ExceptT Error IO) J` implements CacheVariant
+            // for `ExceptT`, and `instance D (C1 c)` for `C1`. Taking
+            // `first.text` published "ExceptT Error" and "C1 c" — spellings no
+            // consumer can resolve, and shapes the analyzer does not emit.
+            if (first) target = first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
           }
         }
       }
@@ -12965,7 +12986,10 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     // every edge of a qualified module under a truncated name. In a corpus of
     // short module names (Service.hs) the two agree, which is exactly why the
     // bug survived the fixture and only showed on real code.
-    const modName = modNode?.text ?? ""
+    // A file with NO module header is module `Main` — the language rule, and what the
+    // analyzer now publishes. Reading "" here made every edge of a headerless file
+    // (postgrest's Setup.hs) disagree with the analyzer by exactly the module name.
+    const modName = modNode?.text ?? "Main"
 
     // exports — the module's declared API surface
     const expList = header?.namedChildren?.find((c: any) => c.type === "exports")
@@ -13063,6 +13087,26 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     // the first level left 2,144 analyzer edges with no truth row, which reads
     // as pure fabrication — the same class of error as auditing a label whose
     // oracle derives nothing, in the opposite direction.
+    // A method's name is not always its first child. `foo x y = ...` starts with
+    // a `variable`, but `lhs <> rhs = ...` is an INFIX DEFINITION whose name is
+    // the `infix` node's `operator` child. postgrest's
+    //   instance Semigroup (Composite a) where
+    //     Composite encodeL printL <> Composite encodeR printR = ...
+    // defines the method `<>`, and reading namedChild(0) took the `apply` and
+    // found no name -- so the class side and the instance side both missed it
+    // and the analyzer's `method <>` had no truth row.
+    const methodName = (d: any): string => {
+      const first = d.namedChild(0)
+      if (first?.type === "variable") return first.text
+      const inf = d.namedChildren.find((c: any) => c.type === "infix")
+      const op = inf?.namedChildren.find((c: any) => c.type === "operator")
+      if (op?.text) return op.text
+      const tv = inf?.namedChildren.find((c: any) => c.type === "infix_id")
+        ?.namedChildren.find((c: any) => c.type === "variable")
+      if (tv?.text) return tv.text
+      return ""
+    }
+
     // A constructor's name is at DIFFERENT depths by shape: a GADT carries it
     // directly (gadt_constructor -> constructor "NonNullable"), an ordinary one
     // nests it (data_constructor -> prefix -> constructor "Red"). A direct-child
@@ -13121,8 +13165,13 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         if (nm) {
           const g = d.namedChildren.find((c: any) => c.type === "class_declarations")
           for (const m of g?.namedChildren ?? []) {
-            const v = m.namedChildren.find((c: any) => c.type === "variable") ?? m.namedChild(0)
-            if (v?.text) push("contains", nm, v.text)
+            if (m.type === "signature") {
+              const v = m.namedChildren.find((c: any) => c.type === "variable")
+              if (v?.text) push("contains", nm, v.text)
+            } else {
+              const nm2 = methodName(m)
+              if (nm2) push("contains", nm, nm2)
+            }
           }
         }
       }
@@ -13148,7 +13197,7 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
     // against. Collected in ONE sweep so an instance is comparable to a class
     // declared later in the file.
     const clsMethods = new Map<string, Set<string>>()
-    const insts: { cls: string; target: string; decls: any[] }[] = []
+    const insts: { cls: string; target: string; concrete: string; decls: any[] }[] = []
     const sweep: any[] = [root]
     while (sweep.length) {
       const n = sweep.pop()
@@ -13163,8 +13212,8 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
               const v = d.namedChildren.find((c: any) => c.type === "variable")
               if (v) set.add(v.text)
             } else if (d.type === "function" || d.type === "bind") {
-              const v = d.namedChild(0)
-              if (v?.type === "variable") set.add(v.text)
+              const m = methodName(d)
+              if (m) set.add(m)
             }
           }
         }
@@ -13196,8 +13245,21 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
           if (!target && named[1]) target = named[1].text
         }
         const group = n.namedChildren.find((c: any) => c.type === "instance_declarations")
+        // An instance whose type_patterns are ALL type variables
+        // (`instance JustIfMaybe a where ...`) is a generic/deferred instance
+        // with no concrete target type. Emitting for it produced edges whose
+        // SOURCE is the empty string plus a dot -- `overrides ".code" ->
+        // ErrorBody.code` -- because `${target}.${m}` with target="" is ".code".
+        // An edge that names no owner is unresolvable, so it is not published.
+        if (!cls) continue
+        // The universal impl-naming contract names an instance symbol by its
+        // TARGET TYPE, falling back to the CLASS when there is none — which is
+        // what the analyzer does for `instance JustIfMaybe a where ...`. So a
+        // generic instance still OWNS its methods (`contains JustIfMaybe ->
+        // justIfMaybe`); it just cannot be said to override a concrete one, and
+        // `push` blocks the resulting self-edge for every structural label.
         insts.push({
-          cls, target,
+          cls, target: target || cls, concrete: target,
           decls: (group?.namedChildren ?? []).filter((d: any) => d.type === "function" || d.type === "bind"),
         })
       }
@@ -13217,16 +13279,16 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       for (const c of n.namedChildren) sweep.push(c)
     }
 
-    for (const { cls, target, decls: dls } of insts) {
+    for (const { cls, target, concrete, decls: dls } of insts) {
       // An instance OWNS the methods it supplies: `instance Shape Rec where
       // area ...` makes `Rec` the owner of `area`. Without this the analyzer's
       // `contains Rec -> area` had no truth row and read as fabrication.
       for (const d of dls) {
-        const v = d.namedChild(0)
-        if (v?.type !== "variable" || !v.text) continue
-        push("contains", target, v.text)
+        const m = methodName(d)
+        if (!m) continue
+        push("contains", target, m)
         const set = clsMethods.get(cls)
-        if (set && set.has(v.text)) push("overrides", `${target}.${v.text}`, `${cls}.${v.text}`)
+        if (set && set.has(m) && concrete) push("overrides", `${concrete}.${m}`, `${cls}.${m}`)
       }
     }
   }
