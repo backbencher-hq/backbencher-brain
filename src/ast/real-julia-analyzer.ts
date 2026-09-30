@@ -178,8 +178,10 @@ export class RealJuliaAnalyzer {
         // attributed every call INSIDE a short-form body to the enclosing module, because the scope
         // never advanced. Julia's own stdlib writes this way far more often than the long form.
         case "assignment": {
-          const lhs = this.pos(node, 0)
-          if (!lhs || lhs.type !== "call_expression") break
+          // `f(x) where {T} = …` wraps the call in a `where_expression`; unwrap before demanding
+          // a `call_expression`, or every `where`-form declaration is silently skipped.
+          const lhs = this.unwrapWhere(this.pos(node, 0) ?? node)
+          if (lhs.type !== "call_expression") break
           const name = this.calleeName(lhs)
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
           symbols.push({
@@ -564,7 +566,40 @@ export class RealJuliaAnalyzer {
   }
 
   /** `signature` is positional: an identifier, a call, an argument list, a typed expr, or a where-expr. */
+  /**
+   * Strip a `where` clause to the callable underneath it. The callable is ALWAYS `pos(0)`.
+   *
+   * `f(x::T) where {T} = body` is `(assignment (where_expression (call_expression …) {T}) …)` and
+   * `function f(x::T) where T … end` is `(function_definition (signature (where_expression
+   * (call_expression …) T)) …)`. The corpus audit is what found this: `Compiler/test/inline.jl:664`
+   * declares `g41299(f::Tf, args::Vararg{Any,N}) where {Tf,N}`, nothing unwrapped the wrapper, so
+   * the declaration was never published and the call to it came out UNRESOLVED against a runtime
+   * that resolves it perfectly. Worse, the TYPE VARIABLE was read as the function's name.
+   *
+   * And note the two forms differ: `where {T}` puts a `curly_expression` after the call, but
+   * BARE `where T` puts the type variable there as a plain sibling `identifier`. That is why
+   * scanning for an identifier is unsound here — for `where T` it finds `T`, the parameter, and
+   * returns it as the function's name, fabricating a function called `T`. Positional access is
+   * not a workaround for this grammar; it is the only correct navigation.
+   */
+  private unwrapWhere(node: Node): Node {
+    let cur = node
+    for (let guard = 0; guard < 8 && cur.type === "where_expression"; guard++) {
+      const first = this.pos(cur, 0)
+      if (!first) break
+      cur = first
+    }
+    return cur
+  }
+
   private signatureName(sig: Node): string {
+    // `where T` / `where {T}`: the callable is pos(0). Check this BEFORE any identifier scan,
+    // because in the unbraced form the type variable IS a sibling identifier and the scan would
+    // return `T` — a function symbol named after a parameter.
+    if (sig.type === "where_expression") {
+      const callable = this.unwrapWhere(sig)
+      if (callable.type === "call_expression") return this.calleeName(callable) ?? ""
+    }
     const direct = this.firstNamedChildOfType(sig, "identifier")
     if (direct) return direct.text.trim()
     const call = this.firstNamedChildOfType(sig, "call_expression")
@@ -581,6 +616,10 @@ export class RealJuliaAnalyzer {
 
   /** The callee of a call: the identifier or scoped identifier, never a receiver or an argument. */
   private calleeName(call: Node): string | null {
+    if (call.type === "where_expression") {
+      const callable = this.unwrapWhere(call)
+      if (callable !== call) return this.calleeName(callable)
+    }
     for (const c of this.namedChildren(call)) {
       if (c.type === "identifier") return c.text.trim()
       if (c.type === "scoped_identifier") {
