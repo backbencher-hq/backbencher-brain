@@ -220,13 +220,36 @@ full-corpus run reported 100% coverage over 4,139 files and 95,231 edges while
 missing the construct entirely. **100% coverage is a statement about the corpus,
 not about the language.**
 
-**Construct census.** 24 modern PHP constructs were counted across both corpora
+**Grammar-driven construct census** —
+`bun script/m12/php-construct-census.ts` →
+`validation/m12/results/php-construct-census.json`. A hand-picked checklist only
+finds the constructs you thought of, so the census walks the grammar's own 179
+named node types against all **4,463** corpus files. It reports
+**CLAIMED-BUT-NEVER-EXERCISED**: a type classified handled/verified, on which no
+corpus file provides evidence, and which no design decision reasons about — an
+assertion nobody has ever looked at. That set was 1 and is now **0**; the
+remaining corpus-unexercised handled type (`dynamic_variable_name`, `$$n`) is
+recorded as hand-probed in PHPD34 rather than conflated with the unexamined.
+
+The census also exposed a data defect in the spec itself: **56 prose fragments
+were sitting in `node_type` fields** ("per-site duplicate rows", "operators",
+"mixed variadic calls"). They were not classifying anything — the inventory
+counts them as type references while `node_type` is split on `,` — so they made
+the classification look broader than it was. They are moved to `nodeTypeProse` /
+`note`, and the spec's classified set fell from 187 entries to 159 real node
+types. The inventory is unchanged at 179 types / A–H 8/8, which is the proof the
+prose was never doing work.
+
+**Hand-picked spot check (24 modern constructs).** 24 modern PHP constructs were counted across both corpora
 to find which are untested by any corpus run. Present: first-class callables,
 named arguments, readonly, `match`, attributes, constructor promotion, arrow
 functions, heredoc, nullsafe, union and intersection types, enums (including 27
 backed), abstract methods, `yield`, `never`, readonly classes. Absent from both:
 grouped `use` (now fixed), `insteadof` trait-conflict resolution, PHP 8.4
-asymmetric visibility, and `Fiber`. The latter three were probed directly:
+asymmetric visibility, and `Fiber`. All of the 20 grammar-driven never-seen types
+were then probed individually and adjudicated in PHPD34, including the one
+construct that genuinely fails — `var_modifier` (`var $x;`), removed in PHP 7.0,
+where a parse error is the correct outcome. Also probed directly:
 asymmetric visibility (`public private(set) string $name`) loses **no symbol** —
 all four properties are emitted — and `insteadof` keeps both trait `use` edges,
 consistent with the model where a trait's methods belong to the trait and are not
