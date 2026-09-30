@@ -201,15 +201,13 @@ function coverageFrom(metadata: { indexSymbolCount?: number; embeddedSymbolCount
 }
 
 /**
- * How much of the index is actually embedded. Measured per run, not assumed.
+ * How much of the index is actually embedded, measured directly.
  *
- * The documented coverage-honesty note used to fire only when the whole vector
- * path failed, which is a PATH condition and not a COVERAGE condition: at 22%
- * coverage the vector path succeeds and the tool printed similarity numbers
- * with no disclosure at all. This is the number that note is about.
- *
- * Only used on the exact-name route, which never calls the engine first; every
- * other route reads the engine's own measurement via `coverageFrom`.
+ * Retained only for the case where no engine call has happened and no metadata
+ * exists to read. Every live route reads `coverageFrom(semantic.metadata)`
+ * instead: this aggregate costs a measured 53ms median (90ms p95) on a
+ * 45 018-symbol corpus, and semantic-search.ts already computes the same two
+ * numbers on every call.
  */
 async function embeddingCoverage(projectId: ProjectID): Promise<{ embedded: number; symbols: number; ratio: number }> {
   try {
@@ -513,7 +511,11 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
         indexModel: "name-lookup",
         dimension: 0,
         fallbackReason: semantic.metadata.fallbackReason,
-        embeddingCoverage: await embeddingCoverage(projectId),
+        // Read from the engine's own measurement, like every other route. This
+        // branch runs after `semanticVectorSearch` has already computed both
+        // numbers, so re-querying them here was the same 53ms of redundant work
+        // removed from the other routes.
+        embeddingCoverage: coverageFrom(semantic.metadata),
         degenerateQueryVector: semantic.metadata.fallbackReason === "degenerate-query-vector",
       },
       provenance: makeProvenance({
