@@ -218,14 +218,61 @@ const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before 
 
 let files = 0, syms = 0, rels = 0
 const t0 = Date.now()
-const sourceClassEnd = (content: string, startRow: number): number => {
-  let depth = 0, started = false
-  for (let i = startRow; i < content.length; i++) {
+/**
+ * The source-side end of a class body, with string and comment literals skipped.
+ *
+ * The original counted every `{` and `}` in the raw source, so a brace inside a
+ * message string or a comment before the real body end made a class look truncated
+ * when the grammar had read it perfectly. That is a FALSE POSITIVE, and a report that
+ * cannot tell a real loss from its own instrumentation has not measured anything.
+ */
+const sourceClassEnd = (content: string, from: number): number => {
+  let depth = 0, started = false, i = from
+  while (i < content.length) {
     const c = content[i]
+    if (c === '"' || c === "'") {
+      const q = c
+      i++
+      while (i < content.length) {
+        if (content[i] === "\\") { i += 2; continue }
+        if (content[i] === q) { i++; break }
+        i++
+      }
+      continue
+    }
+    if (c === "/" && content[i + 1] === "/") {
+      const nl = content.indexOf("\n", i)
+      i = nl === -1 ? content.length : nl
+      continue
+    }
+    if (c === "/" && content[i + 1] === "*") {
+      const close = content.indexOf("*/", i + 2)
+      i = close === -1 ? content.length : close + 2
+      continue
+    }
     if (c === "{") { depth++; started = true }
-    else if (c === "}") { depth--; if (started && depth === 0) return i }
+    else if (c === "}") {
+      depth--
+      if (started && depth === 0) return i
+    }
+    i++
   }
   return -1
+}
+
+/** Does this specifier HAVE a body? A forward declaration has none to truncate. */
+const specifierBody = (n: any): any | null => {
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c && (c.type === "field_declaration_list" || c.type === "class_body" || c.type === "enumerator_list")) return c
+  }
+  return null
+}
+
+const rowAt = (content: string, index: number): number => {
+  let r = 0
+  for (let i = 0; i < index && i < content.length; i++) if (content[i] === "\n") r++
+  return r
 }
 
 for (const repo of REPOS) {
@@ -318,10 +365,26 @@ for (const repo of REPOS) {
         }
       }
       if (n.type === "class_specifier" || n.type === "struct_specifier" || n.type === "union_specifier") {
-        const se = sourceClassEnd(content, n.startIndex)
-        if (se > n.endIndex) {
-          const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
-          add(R1, n.type, { repo, file: rel, line: n.startPosition.row + 1, name: nm?.text, grammarEndsAt: n.endPosition.row + 1, sourceEndsAt: se + 1, linesOutside: se - n.endIndex })
+        // A FORWARD DECLARATION has no body, and tree-sitter gives it a
+        // `class_specifier` with no body child — which is correct, because there is
+        // nothing to truncate. Asking a body-less node "does the source's brace
+        // balance end later than you do?" gets YES from the next unrelated `{ … }`
+        // anywhere later in the file, and that is where almost all of this class's
+        // count came from. A truncation is a body that ENDS EARLY; it cannot be a
+        // body that was never there. Measured on the register's own corpus: 891
+        // forward declarations, and the naive check was reporting 18 real ones.
+        const body = specifierBody(n)
+        if (body) {
+          const se = sourceClassEnd(content, n.startIndex)
+          if (se > n.endIndex) {
+            const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+            add(R1, n.type, {
+              repo, file: rel, line: n.startPosition.row + 1, name: nm?.text,
+              grammarEndsAtRow: n.endPosition.row + 1, sourceEndsAtRow: rowAt(content, se) + 1,
+              rowsOutside: rowAt(content, se) - n.endPosition.row,
+              charsOutside: se - n.endIndex,
+            })
+          }
         }
       }
       // D8 — a symbol published for a trailing annotation. Asserted on the OUTPUT
