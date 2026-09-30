@@ -76,12 +76,33 @@ Measured over the 7-corpus census (107,513 relationships):
 | `instantiates` | 3,307 | 0 | |
 | `implements` | 666 | 0 | |
 | `extends` | 1,959 | 0 | |
-| `contains` | 0 | 22,266 | **declared exception** -- membership is a fact about two symbols, not a construct |
-| `overrides` | 0 | 8,085 | **declared exception** -- an inferred edge, or a guess |
+| `contains` | 22,266 | 0 | the line that NAMES the child, via `meta.nameLine` |
+| `overrides` | 8,085 | 0 | the OVERRIDING method's own declaration line |
 
-So 77,162 of 107,513 edges (71.8%) are lined, and the 30,351 that are not are
-exactly the two classes the honesty contract exempts by name. Before this wave the
-lane carried **0 of 105,979**.
+**All 108,013 relationships carry a line.** This table used to record two
+"declared exceptions" -- `contains` and `overrides`, 30,351 edges between them --
+and both declarations were wrong, which is worth setting out because the reasoning
+in each sounded right:
+
+  - `contains`: "membership is a fact about two symbols, not a construct." True of
+    the EDGE, and irrelevant to its line. The CHILD's name is written in the file:
+    `sum` is on the line reading `method sum ($self) { ... }`. M60's own lane audit
+    classes a lineless edge as a finding precisely when the target name is written
+    there, and c, cpp and objc all moved their `contains` edges onto the child's
+    own name for this reason (#921). "No naming node" was true of the POST-PASS
+    and false of the child.
+  - `overrides`: "an inferred edge, or a guess." The inference is about the BASE
+    -- a first-parent chain, which is why the edge carries confidence 0.5 and
+    `evidenceClass: inferred` and can never clear a structural floor. The method
+    being overridden is not in doubt and is written in this file, so it has a
+    naming node like any other declaration.
+
+Neither had a fixture: both expectations pinned `line_number: null`, the harness's
+UNKNOWN assertion, which made the absence an assertion rather than an oversight.
+What found them was `script/m14/tmp/perl-lineoracle.mts`, which reads each claimed
+line back against the file's own text -- presence is not correctness, and a
+fabricated 0 or a container's line copied onto every member scores identically to a
+right one. Two fixtures, two pins and six mutants now hold the rule.
 
 The per-label table and the census total are two instruments and they agree to
 the edge: `fixtures/perl/census.mts` and `fixtures/perl/lineless.mts` both sum to
@@ -196,14 +217,14 @@ text under `content` on every shape that needs the fallback.
 
   | corpus | files | tree truth | covered | MISSING | unexplained |
   | --- | --- | --- | --- | --- | --- |
-  | mojo (M12 pinned, F5 lane) | 274 | 11,202 | 100% | 0 | 0 |
-  | plack (second, F5 lane) | 225 | 2,395 | 100% | 0 | 0 |
-  | perl5 core | 3,607 | 48,344 | 100% | 0 | 0 |
-  | Moose-2.4000 | 961 | 12,233 | 100% | 0 | 0 |
-  | Catalyst-Runtime-5.90132 | 465 | 6,462 | 100% | 0 | 0 |
-  | Moo-2.005005 | 141 | 1,496 | 100% | 0 | 0 |
-  | DBI-1.654 | 101 | 2,369 | 100% | 0 | 0 |
-  | **all seven** | **5,774** | **84,501** | **100%** | **0** | **0** |
+  | mojo (M12 pinned, F5 lane) | 274 | 11,137 | 100% | 0 | 0 |
+  | plack (second, F5 lane) | 225 | 2,393 | 100% | 0 | 0 |
+  | perl5 core | 3,607 | 48,052 | 100% | 0 | 0 |
+  | Moose-2.4000 | 961 | 12,156 | 100% | 0 | 0 |
+  | Catalyst-Runtime-5.90132 | 465 | 6,422 | 100% | 0 | 0 |
+  | Moo-2.005005 | 141 | 1,479 | 100% | 0 | 0 |
+  | DBI-1.654 | 101 | 2,348 | 100% | 0 | 0 |
+  | **all seven** | **5,774** | **83,987** | **100%** | **0** | **0** |
 
   **Auditing the corpora the census walks but the F5 lane never sampled is what
   found the defects in this wave**, and it is worth saying why two F5 corpora
@@ -300,11 +321,75 @@ conclusion is the same: **agreement between an analyzer and an oracle is not
 evidence about the source.** Only `perl/receiver-qualification` pins it, and
 only the AST count gives it a size.
 
+### A callee the source does not write is not a name (PERL-MR12)
+
+The M59 line oracle reads every claimed line back against the file's own text, and
+in doing so it asked a question the differential never could: is the NAME on that
+line? A target that is not written cannot be verified, so it is a fabricated claim
+rather than a weak one. Three classes came out of it.
+
+**A method call whose name is computed.** `$self->${\( EXPR \)}` is perl's "call
+the method this expression computes", and the grammar puts the whole expression in
+the `method` field. The lane published that text as a callee name:
+
+    Moo/Object.pm:56    calls -> DemolishAll->new
+    Moo/Role.pm:224     calls -> ${\( $tc->can('coercion')||sub { ... } )}
+
+The first is a `function` field holding compound text; the second is a fragment of
+code. Neither is a method name, and 19 such edges left a 14-file draw. The rule is
+a POSITIVE allowlist on the callee text -- a plain identifier, `::`-qualified, an
+optional leading `&`, an optional leading `::` -- because a negative test can only
+enumerate the dynamic cases somebody already hit, and this pair has been wrong that
+way three times. The children are still walked, so the ordinary class call INSIDE a
+deref is published: `Method::Generate::DemolishAll->new` inside `${\( ... )}` becomes
+its own `instantiates` edge, and the fixture pins that control beside the refusal.
+
+Two shapes in that allowlist are there because omitting them was a self-inflicted
+regression, measured rather than argued: a leading `::` is how perl writes an
+absolute package path (`::is_deeply`), and whether a leading `&` is a CALL or a
+code-slot REFERENCE is `hasArgumentSyntax`'s decision, not the name test's. Leaving
+both out cost 32 truth rows on Moo, 155 on Moose and 97 on perl5 -- all of them
+calls the file really makes.
+
+**An edge naming the KEYWORD instead of the name.** `use parent` takes a list:
+
+    use parent 'Class::MOP::Module',        <- what addBase stamped
+             'Class::MOP::HasAttributes',   <- where HasAttributes is written
+             'Class::MOP::HasMethods',
+             'Class::MOP::HasOverloads';
+
+Three of Moose's four bases in `Class/MOP/Class.pm` live on lines the `use` never
+touches. `addBase` was handed ONE shared `nameNode` -- the `parent` keyword -- which
+is right for a single-argument list and wrong for every longer one, which is why no
+fixture caught it. The same shape appears in `use role 'R'`, which was stamped from
+the `role` keyword's node, and in Moo's `with qw/\n  MooseRoleOne\n  MooseRoleTwo\n/`,
+which is ONE `quoted_word_list` node starting on the `with` line with the role names
+*below* it. Each now claims the line its name is written on, with the keyword's line
+kept as the fallback so an unresolvable shape keeps its previous line.
+
+**And the oracle had to be corrected in the same direction, twice.** Its first gate
+on the written-name rule was an early `return src()`, which leaves the walk BEFORE
+its child loop -- so refusing to name a callee also stopped the children being
+walked, and every real call inside a deref vanished from the truth side. The
+analyzer's equivalent is a `break` out of a `switch`, which falls through to its
+child walk. And the rule had to be stated in BOTH the file-scope and in-sub call
+branches; it is a separate `if` with its own push, and stating it once has now cost
+a mojo row. This is the one place in the analyzer/oracle pair where sharing a rule
+is right: MR1, MR10 and MR11 were shared DERIVATIONS, where agreeing proved nothing,
+while "a method name that is not written cannot be named" is a fact about the
+file, so both sides testing it is corroboration.
+
+Measured: 420 files, 14,103 relationships through the line oracle, **0 INCONSISTENT**
+across Tiers A, B and C, with the oracle's own +7 line-shift self-test caught. The
+corpora do **not** exercise the wrapped-declaration shape -- 0 symbols where the
+name line differs from the declaration start -- so a fixture is the only thing
+holding that rule, and that is stated rather than left implied.
+
 ### The file surface is production's, exactly
 Three instruments walk the corpora -- `fixtures/perl/census.mts`,
 `fixtures/perl/lineless.mts` and the F5 lane in `script/m14/differential.ts` --
 and for most of this wave they walked **three different file sets**, which is
-why no two of their numbers agreed (107,838 / 107,870 / 111,106+2,395).
+why no two of their numbers agreed (107,838 / 107,870 / 111,106+2,393).
 
 `src/ast/language-detection.ts:42` maps `rb php lua pl pm t perl`, and `PL` is
 **not** in that table: a `.PL` file is not a perl file to the engine. The census
@@ -444,14 +529,16 @@ real file; a fixture with ten decision points now reports 11.
 | --- | --- |
 | F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. See the correction below. |
 | F3 fixtures | **8 expectations, 8/8 pass.** `validation/m14/fixtures/perl/`, one per defect class |
-| F4 mutation | **26 mutants, 26/26 caught** |
-| #419 structural (A) | green -- 140/140 classified, each in exactly one bucket |
+| F4 mutation | **32 mutants, 32/32 caught** |
+| perl ownership gate | **15/15** -- perl-owned CONTENT, seconds to run, the row that catches a commit that rebuilt a perl file from a stale base |
+| line oracle (M59.A7) | **0 INCONSISTENT** over 420 files / 14,103 relationships, self-test caught |
+| #419 structural (A) | green -- 170/170 classified, each in exactly one bucket |
 | #419 relationship kinds (B) | green -- the six kinds the lane emits, all pinned |
 | #419 payload matrix (C) | green -- complexity, parameters, decorators, imports, exports |
 | #419 evidence tiers (D) | green -- 3 tiers, 27 pins |
 | #419 docs (G) | green |
 | #419 differential (E) | green -- `mojo:perl` and `plack:perl` rows pinned, 0 missing / 0 unexplained |
-| #419 perf (F) | green -- `avgMsPerFile` recorded for both (22.0 and 4.7 ms/file) |
+| #419 perf (F) | green -- `avgMsPerFile` recorded for both |
 | cross-language (H) | green |
 
 All eight are green and perl is in `GATED_LANGS`. E and F were the last two, and
@@ -505,9 +592,9 @@ corpora, which is the proof they were dead:
 
 | corpus | before | after |
 | --- | --- | --- |
-| mojo / plack | 11,202 / 2,395, 0 / 0 | 11,202 / 2,395, 0 / 0 |
-| Moose / Catalyst | 12,233 / 6,462, 0 / 0 | 12,233 / 6,462, 0 / 0 |
-| Moo / DBI / perl5 | 1,496 / 2,369 / 48,344, 0 / 0 | 1,496 / 2,369 / 48,344, 0 / 0 |
+| mojo / plack | 11,137 / 2,393, 0 / 0 | 11,137 / 2,393, 0 / 0 |
+| Moose / Catalyst | 12,156 / 6,422, 0 / 0 | 12,156 / 6,422, 0 / 0 |
+| Moo / DBI / perl5 | 1,479 / 2,348 / 48,052, 0 / 0 | 1,479 / 2,348 / 48,052, 0 / 0 |
 
 The dead-literal record for perl is now **empty**, which is what closes #863: the
 issue asked for the dead field read to go, and the register that existed to track
