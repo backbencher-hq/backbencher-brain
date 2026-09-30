@@ -541,7 +541,20 @@ export function deriveFsharpEdges(root: any, symbols: any[]): TruthEdge[] {
         )
         // `new TextWriter()` — the operand is an APPLICATION, and the name is its callee, not
         // its text. Taking the text would publish `TextWriter()` with the parentheses.
-        const named = carrier?.type === "application_expression" ? firstChildOfType(carrier, "long_identifier_or_op") ?? firstChildOfType(carrier, "long_identifier") ?? firstChildOfType(carrier, "identifier") : carrier
+        // A QUALIFIED CALLEE is a `dot_expression`, and the three lookups above name only the
+        // unqualified spellings, so `{new Server.Shared.FSharpInteractiveServer() with … }` found
+        // nothing and the row was never emitted — fsimain.fs:98, the last real disagreement in
+        // the corpus.
+        //
+        // It is the OUTERMOST `dot_expression` that is wanted, and that is what a direct child
+        // lookup returns: the path nests left, so `A.B.C` is `dot(dot(A,B),C)` and the node whose
+        // text is the whole name is the one directly under the application. Two earlier attempts
+        // at this failed for two different reasons, and both are worth not repeating: taking the
+        // FIRST matching child of any type read the interface as `Compiler` (a namespace segment
+        // mistaken for a type), and rewriting the `else` arm broke the bare case outright — this
+        // ternary's `else` is `carrier` itself, which is the only thing that makes an unqualified
+        // operand work, and an edit that does not read the whole line will take it out.
+        const named = carrier?.type === "application_expression" ? firstChildOfType(carrier, "long_identifier_or_op") ?? firstChildOfType(carrier, "long_identifier") ?? firstChildOfType(carrier, "identifier") ?? firstChildOfType(carrier, "dot_expression") : carrier
         const written = (named?.text ?? "").split("<")[0]!.trim()
         // The leaf is the last dot-segment of the WRITTEN name, and it is computed from the
         // text rather than from a node descent.
