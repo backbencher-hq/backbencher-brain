@@ -314,8 +314,8 @@ the analyzer: it was measured before FS-D14/D15/D16 and before the oracle gained
 
 | | count | dominant classes |
 |---|---|---|
-| MISSING (truth derives, analyzer does not) | 8 | 3 `implements`, 2 `calls`/source-other, 2 `declared_type(parameter)`, 1 `overrides` |
-| UNEXPLAINED (analyzer emits, truth does not) | 66 | 14 `declared_type(local_annotation)`, 14 `declared_type(parameter)`, 9 `declared_type(record_field)`, 7 `implements`, 7 `calls`/source-other, 7 `declared_type(return)` |
+| MISSING (truth derives, analyzer does not) | 8 | 3 `implements`/target-bare, 2 `calls`/source-other, 2 `declared_type(parameter)`/target-bare, 1 `overrides`/named-type-source |
+| UNEXPLAINED (analyzer emits, truth does not) | 26 | 7 `implements`/target-bare, 7 `calls`/source-other, 5 `declared_type(local_annotation)`, 3 `overrides`/object-expression, 2 `declared_type(return)`, 1 `overrides`/named-type, 1 `instantiates` |
 
 Two rules account for 65 of the 123 unexplained rows, and neither is about F# — they are both
 about **who is allowed to own an edge**. A depth-bounded ancestor search (`findAncestor(decl,
