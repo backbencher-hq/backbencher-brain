@@ -237,6 +237,52 @@ per reference.
   grammar errors** (0.0% — tree-sitter-c-sharp v0.23.5; **0 missing
   tokens**)
 
+## Differential coverage — all four C# corpora, 2026-09-29
+
+Under the **widened seven-label compared set** (`calls, contains, references, uses, extends,
+implements, instantiates`), 120 files per corpus:
+
+| corpus | files | tree-truth | covered | | MISSING | unexplained |
+| --- | --- | --- | --- | --- | --- | --- |
+| roslyn | 120 | 31,489 | 31,489 | 100% | 0 | 0 |
+| aspnetcore | 120 | 6,515 | 6,515 | 100% | 0 | 0 |
+| powershell | 120 | 21,994 | 21,994 | 100% | 0 | 3 |
+| fsharp | 120 | 16,194 | 16,194 | 100% | 0 | 0 |
+| **total** | **480** | **76,192** | **76,192** | **100%** | **0** | **3** |
+
+Two things in that table are worth more than the 100%.
+
+**The compared set was four labels while the oracle derived eight.** `extends`, `implements` and
+`instantiates` were pushed into truth and then dropped at comparison time by the allowlist, so
+every number published before 2026-09-29 — including the ones this doc used to carry — was silent
+about half the labels. The effect of closing it is visible in the powershell row: truth rose from
+16,371 to 21,994 edges while coverage stayed at 100%, because the extra rows are real and are now
+being checked rather than merely computed. `unexplained` on powershell fell 18 → 3 and on fsharp
+8 → 0 for the same reason: rows that had nothing to match against now have one. `overrides` stays
+excluded on both sides under C923 with independent evidence.
+
+**These are probe runs, so they wrote no artifact.** F5 deliberately refuses to write
+`M14.0.F5.json` for anything but the canonical 20-file, 40-lane run, and that is correct — a
+number that overwrote the canonical artifact on every measurement would stop being evidence. So
+the table above is the only place these figures live, and the canonical artifact is still older
+than this round for that reason rather than by oversight.
+
+**The 3 unexplained powershell edges are NOT adjudicated.** They are confident analyzer edges with
+no truth row, which is the direction the aggregate hides: MISSING=0 reads as clean and the other
+number does not. 3 is small enough to be one rule and large enough to matter, and no per-label
+breakdown exists to say which. Adjudicating them needs the harness to report `unexplained` per
+label rather than as one lane total, because a single count cannot distinguish one rule firing
+three times from three rules firing once — and those need opposite responses.
+
+An attempt to get that breakdown from outside the harness failed, and the reason is recorded in
+`script/m14/tmp/cs-deep-62-unexplained-by-label.ts` rather than left as a mystery: `CSHARP_INTERFACES`
+is built inside the harness and is not exported, so a probe calling `deriveCSharpEdges(root,
+undefined)` derives LESS truth than the gate does and reports ~935 phantom fabrications against
+the harness's 3. The probe is kept precisely because that failure is instructive — it is the third
+time this round that a private reimplementation of harness internals produced confident numbers
+that were wrong (see also the private-matcher near-miss in `cs-deep-60`). Reading the matcher and
+the surrounding context first is cheaper than debugging a number that was never the gate's.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m12/fixtures/csharp/`
