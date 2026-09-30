@@ -82,9 +82,25 @@ invented defect.
 `contains` row says "class members, prototype methods", so that is the population
 measured: of 103 class-member and object-literal-method symbols in the sample,
 class members are **0/11 unplaced** and object-literal methods are **92/92
-unplaced**. M49 JD3 predicted exactly this split — `ownerName` is set only for
-class scopes — and its class-member half no longer holds on this corpus, so JD3
-should be read as an object-literal finding now, not a class-member one.
+unplaced**.
+
+**The 92/92 is not a defect, and the distinction is the whole content of this
+paragraph.** An object literal is owned by the binding it initialises; one that is
+an `export default`, a return value, a call argument or an array element has no
+binding to name and is correctly ownerless. Measured over a 120-file and then a
+600-file sample: object-literal members that HAVE a reachable binding and were not
+placed = **0**. All 92 have no binding at all.
+
+**JD3 (`reviews/javascript/m60-deep-review-2026-09-26.md:209`, "10.9% of real
+symbols are ownerless") is therefore HISTORICAL, not open.** It named a mechanism —
+`ownerName` came only from `scopeOwnerName`, which reported class scopes only, with
+only `class_declaration` pushing one — and that mechanism has been superseded by
+`containerOwnerName`, which resolves a class expression and an object literal by
+their binding as well as a class declaration by its name. Two earlier revisions of
+this paragraph called it "falsified" and then "an object-literal finding"; both
+were wrong, and the second was worse than the first because it credited the census
+with disproving a claim it never re-tested. A finding whose mechanism has been
+replaced is fixed, not falsified.
 
 **Regex, re-measured independently.** Stripping comments and string literals and
 then scanning finds **0 regex literals and 0 `RegExp`** in
