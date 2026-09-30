@@ -491,14 +491,71 @@ export async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): 
   const totalRow = rawDb.prepare(`
     SELECT COUNT(*) as count FROM brain_symbol WHERE project_id = ?
   `).get(projectId) as any
-  const total = totalRow?.count ?? 0
+  const totalSymbols = totalRow?.count ?? 0
 
+  // M64.I4: the numerator was `COUNT(*)` — a count of embedding ROWS, reported
+  // as "N of M SYMBOLS". Two ways that is wrong, and both are live:
+  //
+  //   1. A symbol embedded by two models contributes two rows, so the count is
+  //      inflated by exactly the number of extra models. The main report's
+  //      `embeddedEntities` has always used COUNT(DISTINCT entity_id); this
+  //      check counted rows. Two tools, one index, two different numbers for
+  //      "how much is embedded".
+  //   2. The table's population is not "symbols". It holds whatever the
+  //      embedder was handed, keyed by entity_type. The indexer embeds every
+  //      symbol that carries a snippet (parallel-indexer.ts) — there is NO kind
+  //      allowlist — so the ceiling is set by which analyzers emit snippets,
+  //      not by the corpus. On this repo that is 9,895 of 45,018 symbols = 22%,
+  //      which lands under the `pct < 50 => warn` line: a FULLY embedded index
+  //      reports `warn` forever, and "22% of my symbols" invites the reader to
+  //      go fix something that is not broken.
+  //
+  // So the check is measured against the population it can actually act on:
+  // the symbol kinds that DO appear in the embedding table are the kinds the
+  // embedder targets for this project, and coverage is measured over those.
+  // A user told "48 of 60 functions are embedded" can act; a user told "22% of
+  // 45,018 symbols" cannot, because the 78% is mostly kinds nobody attempts.
+  //
+  // The all-symbols share is still printed, so nothing is hidden — it is just
+  // no longer the number the verdict is derived from.
   const embedRow = rawDb.prepare(`
-    SELECT COUNT(*) as count FROM brain_semantic_embedding WHERE project_id = ?
+    SELECT COUNT(DISTINCT entity_id) as count FROM brain_semantic_embedding WHERE project_id = ?
   `).get(projectId) as any
-  const embedCount = embedRow?.count ?? 0
+  const embedded = embedRow?.count ?? 0
 
-  const pct = total > 0 ? (embedCount / total) * 100 : 0
+  // Which kinds the embedder actually targets here, and how many symbols exist
+  // of each. Bounded by the vocabulary of kinds (a handful), so this stays cheap
+  // enough for the indexer's hot path.
+  const targetKinds = rawDb.prepare(`
+    SELECT entity_type AS kind, COUNT(DISTINCT entity_id) AS c FROM brain_semantic_embedding
+    WHERE project_id = ? GROUP BY entity_type ORDER BY c DESC
+  `).all(projectId) as any[]
+
+  let targetSymbols = 0
+  if (targetKinds.length > 0) {
+    const placeholders = targetKinds.map(() => "?").join(",")
+    const targetRow = rawDb.prepare(
+      `SELECT COUNT(*) as count FROM brain_symbol WHERE project_id = ? AND symbol_type IN (${placeholders})`,
+    ).get(projectId, ...targetKinds.map((k) => String(k.kind))) as any
+    targetSymbols = targetRow?.count ?? 0
+  }
+
+  const pct = targetSymbols > 0 ? (embedded / targetSymbols) * 100 : 0
+  const overallShare = totalSymbols > 0 ? (embedded / totalSymbols) * 100 : 0
+  const kindDesc = targetKinds.map((k) => `${k.kind}=${k.c}`).join(" ")
+
+  if (embedded === 0) {
+    return {
+      name: "Embedding Coverage",
+      status: "error",
+      value: 0,
+      total: targetSymbols,
+      percentage: 0,
+      threshold: { warn: 50, error: 20 },
+      description: `The embedding table exists for this project but holds no vectors, so semantic search is keyword-only. ${totalSymbols} symbols are indexed.`,
+      remediation: "Generate embeddings with the bb_index tool: { path: \"<project path>\", mode: \"post\" } (CLI: bb index \"<project path>\").",
+    }
+  }
 
   // Get model breakdown
   const models = rawDb.prepare(`
@@ -511,12 +568,18 @@ export async function checkEmbeddingCoverage(rawDb: any, projectId: ProjectID): 
   return {
     name: "Embedding Coverage",
     status: pct < 20 ? "error" : pct < 50 ? "warn" : "ok",
-    value: embedCount,
-    total,
+    // M64.I4: `value`/`total` are now the TARGETED population (distinct
+    // embedded entities over the symbols of the kinds the embedder reaches),
+    // so the check's own numbers are the actionable ones. The all-symbols share
+    // is carried in the description rather than folded into the verdict.
+    value: embedded,
+    total: targetSymbols,
     percentage: Math.round(pct * 10) / 10,
     threshold: { warn: 50, error: 20 },
-    description: `${embedCount} of ${total} symbols have semantic embeddings (${modelDesc || "none"}). Semantic search quality depends on this coverage.`,
-    remediation: pct < 50 ? "Generate embeddings with the bb_index tool: { path: \"<project path>\", mode: \"post\" } (CLI: bb index \"<project path>\"). Note this only embeds the kinds the embedder supports — see bb_health verbose `unembedded kinds` for what it will never cover." : undefined,
+    description: `${embedded} of ${targetSymbols} embeddable symbols have vectors (${Math.round(overallShare * 10) / 10}% of all ${totalSymbols} symbols; ${kindDesc || "no kinds embedded"}). Counts DISTINCT entities, not rows, so a symbol embedded by several models counts once. Kinds absent from the embedding table are never attempted — that share of the gap is not a coverage failure. Models: ${modelDesc || "none"}.`,
+    remediation: pct < 50
+      ? `Generate embeddings with the bb_index tool: { path: "<project path>", mode: "post" } (CLI: bb index "<project path>"). This closes the gap over the kinds already targeted; kinds that never appear in the embedding table need an analyzer that emits a snippet for them, not a reindex.`
+      : undefined,
   }
 }
 

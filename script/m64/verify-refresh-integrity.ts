@@ -55,15 +55,24 @@ try {
   // design, so the call that observes it must be the one whose result is
   // asserted — polling with getUnifiedHealth and then re-querying would
   // consume it.
+  //
+  // The bound is generous on purpose: this runs in CI on shared runners, and a
+  // bound tuned to a quiet laptop is a flaky gate. The indexer itself allows
+  // 45s for a worker, so a 20-file fixture finishing inside 60s is not a
+  // close call. When the bound IS hit, the detail says so, because "the gate
+  // timed out" and "the tool did not report the failure" are different
+  // problems and the message has to distinguish them.
+  const BOUND_MS = 60_000
   let after: Awaited<ReturnType<typeof getUnifiedHealth>> | null = null
-  for (let i = 0; i < 40; i++) {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < BOUND_MS) {
     await sleep(500)
     const r = await getUnifiedHealth(pid, root, {})
     if (r.warnings.some((w) => w.code === "REFRESH_FAILED_ASYNC")) { after = r; break }
   }
   if (!after) after = await getUnifiedHealth(pid, root, {})
   const asyncFail = after.warnings.find((w) => w.code === "REFRESH_FAILED_ASYNC")
-  ck("the NEXT call reports the detached refresh as FAILED", !!asyncFail, asyncFail?.message?.slice(0, 150) ?? `warnings=${JSON.stringify(after.warnings.map((w) => w.code))}`)
+  ck("the NEXT call reports the detached refresh as FAILED", !!asyncFail, asyncFail?.message?.slice(0, 150) ?? `no REFRESH_FAILED_ASYNC within ${BOUND_MS}ms; warnings=${JSON.stringify(after.warnings.map((w) => w.code))}`)
   ck("the failure is an error, not a warning", asyncFail?.severity === "error", String(asyncFail?.severity))
   ck("the failure names the force wipe", /force wipe/.test(asyncFail?.message ?? ""), asyncFail?.message?.slice(0, 90) ?? "")
 

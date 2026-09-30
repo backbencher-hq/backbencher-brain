@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64b",
+  "tool": "bb_health",
+  "title": "bb_health round 2: embedding coverage arithmetic, the half-built index, refresh concurrency, and selection cost at scale",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "with one model, distinct entities == rows (so the two agree)",
+      "pass": true,
+      "detail": "check=30 distinct=30 rows=30"
+    },
+    {
+      "name": "it no longer claims to count ROWS as symbols",
+      "pass": true,
+      "detail": "30 of 30 embeddable symbols have vectors (100% of all 30 symbols; function=30). Counts DISTINCT enti"
+    },
+    {
+      "name": "and no longer asserts 'N of M symbols' [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "30 of 30 embeddable symbols have vectors (100% of all 30 symbols; function=30). Counts DISTINCT entities, not rows, so a"
+    },
+    {
+      "name": "it names the kinds it actually embedded",
+      "pass": true,
+      "detail": "(100% of all 30 symbols; function=30)"
+    },
+    {
+      "name": "and it still publishes the all-symbols share so nothing is hidden",
+      "pass": true,
+      "detail": "100% of all 30 symbols"
+    },
+    {
+      "name": "extra models add ROWS, not entities",
+      "pass": true,
+      "detail": "rows 30->35, distinct 30->30"
+    },
+    {
+      "name": "and the coverage number does NOT move when only models are added",
+      "pass": true,
+      "detail": "value 30 -> 30 (pre-fix, COUNT(*) would have risen to 35 and reported 117% instead of 100%)"
+    },
+    {
+      "name": "a fully embedded index is `ok`, not permanently `warn`",
+      "pass": true,
+      "detail": "value=30 total=30 status=ok pct=100% (pre-fix a fully embedded 30-file index read 30 of 30 = 100% only because the fixture has one kind; on a mixed corpus it read <50% and warned forever)"
+    },
+    {
+      "name": "a symbol kind that is never attempted does not drag the verdict down",
+      "pass": true,
+      "detail": "targeted population still 30/30; a \"variable\" symbol was added and the verdict is unchanged (pre-fix the denominator would have grown and the share fallen below the warn line)"
+    },
+    {
+      "name": "a present-but-empty embedding table is an error, not a silent 0",
+      "pass": true,
+      "detail": "status=error desc=The embedding table exists for this project but holds no vectors, so semantic se"
+    },
+    {
+      "name": "and it is distinct from the 'no table at all' branch [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the two states had no separate answer before"
+    },
+    {
+      "name": "a partial index raises INCOMPLETE_INDEX",
+      "pass": true,
+      "detail": "the last index run recorded 20 of 50 files as indexed — 30 file(s) were found by the walk but never written, so the index is INCOMPLETE even though th"
+    },
+    {
+      "name": "it is an error, not a warning",
+      "pass": true,
+      "detail": "error"
+    },
+    {
+      "name": "it names the shortfall",
+      "pass": true,
+      "detail": "the last index run recorded 20 of 50 files as indexed — 30 file(s) were found by the walk but never written, so the index is INCOM"
+    },
+    {
+      "name": "it names the contradiction with status='complete'",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the report exposes it as data, not only prose",
+      "pass": true,
+      "detail": "isIncomplete=true shortfall=30 discovered=50"
+    },
+    {
+      "name": "the index: line cannot be skimmed as a normal one",
+      "pass": true,
+      "detail": "index: version=v1.0.0 indexedFiles=20/50 — INCOMPLETE, 30 file(s) found by the walk were never written status=complete errors=0"
+    },
+    {
+      "name": "counts are still measured, and still truthful",
+      "pass": true,
+      "detail": "files=20"
+    },
+    {
+      "name": "a finished run does NOT raise INCOMPLETE_INDEX [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "warnings=[]"
+    },
+    {
+      "name": "and isIncomplete is false",
+      "pass": true,
+      "detail": "isIncomplete=false"
+    },
+    {
+      "name": "an incremental run (indexed < discovered) is reported as incomplete",
+      "pass": true,
+      "detail": "indexed=3 discovered=20 -> isIncomplete=true"
+    },
+    {
+      "name": "and the message says a rebuild is the fix, not a refresh",
+      "pass": true,
+      "detail": "an incremental shortfall is not repaired by another incremental pass"
+    },
+    {
+      "name": "two simultaneous detached refreshes both return without throwing",
+      "pass": true,
+      "detail": "a=false b=false"
+    },
+    {
+      "name": "both declare themselves pending, not complete",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the index SURVIVES two concurrent detached refreshes",
+      "pass": true,
+      "detail": "files=20 symbols=20 (an interleaved wipe would leave a partial index)"
+    },
+    {
+      "name": "and neither is reported as failed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "warnings=[\"INCOMPLETE_INDEX\"]"
+    },
+    {
+      "name": "nor as an empty index [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "a waited refresh racing a detached one still completes",
+      "pass": true,
+      "detail": "refresh: completed force=false wait=true durationMs=11265 derived=skipped-unchanged (unchanged — derived data still consistent)"
+    },
+    {
+      "name": "and the index is whole afterwards",
+      "pass": true,
+      "detail": "files=20"
+    },
+    {
+      "name": "with no residual failure record [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "warnings=[\"INCOMPLETE_INDEX\"]"
+    },
+    {
+      "name": "selection returns the requested count at 264k files",
+      "pass": true,
+      "detail": "200 of 264000"
+    },
+    {
+      "name": "selection is not the bottleneck at 264k files",
+      "pass": true,
+      "detail": "224ms to rank 264,000 ids (the first implementation of this same selection took 2,448ms here — it sorted the whole set; the warm-bb_health budget is 2,000ms)"
+    },
+    {
+      "name": "cost per file does not grow with corpus size (no superlinear blow-up)",
+      "pass": true,
+      "detail": "ns/file: 6000.0, 520.0, 860.0, 848.5"
+    },
+    {
+      "name": "the fast path selects EXACTLY the same files a stable sort would",
+      "pass": true,
+      "detail": "0 mismatch(es) over 42 cases: n=0..50,000 x k=1..n+5, plus 3,000 rows sharing only 700 distinct ids (impossible for the real caller, where id is the PRIMARY KEY — included to prove the tie-break is defined rather than accidental)"
+    },
+    {
+      "name": "the result is returned in relative_path order regardless of hash order",
+      "pass": true,
+      "detail": "p/118.ts,p/1197.ts,p/1351.ts …"
+    },
+    {
+      "name": "requesting every file is O(n) sort only, not a hash rank",
+      "pass": true,
+      "detail": "27ms for 50,000 files returned whole (a path sort, not a hash rank)"
+    },
+    {
+      "name": "MCP: a healthy index is not an error result",
+      "pass": true,
+      "detail": "isError=undefined"
+    },
+    {
+      "name": "MCP: and it declares itself healthy",
+      "pass": true,
+      "detail": "healthy=true"
+    },
+    {
+      "name": "MCP: no error-severity line is printed",
+      "pass": true,
+      "detail": "none"
+    },
+    {
+      "name": "MCP: a broken index is STILL not a tool failure (isError stays unset)",
+      "pass": true,
+      "detail": "isError=undefined — the tool did its job; the index is the finding"
+    },
+    {
+      "name": "MCP: but `healthy` is false",
+      "pass": true,
+      "detail": "healthy=false"
+    },
+    {
+      "name": "MCP: and the error is legible in the text",
+      "pass": true,
+      "detail": "error: [INCOMPLETE_INDEX] the last index run recorded 20 of 50 files as indexed — 30 file("
+    },
+    {
+      "name": "the CLI's exit-code decision and MCP's `healthy` are the SAME predicate",
+      "pass": true,
+      "detail": "cli.exit(1)=true mcp.healthy=false — both are \"an error-severity warning is present\""
+    },
+    {
+      "name": "so the two transports cannot disagree about a broken index",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a WARNING-severity finding leaves `healthy` true",
+      "pass": true,
+      "detail": "healthy=true with SYNTAX_ERRORS present — a stale or unparseable file is not an unhealthy INDEX"
+    },
+    {
+      "name": "and it is still not an error result",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "and the warning is still visible in the text",
+      "pass": true,
+      "detail": "warning: [SYNTAX_ERRORS] 20 indexed files have syntax errors"
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 47,
+    "passed": 47,
+    "failed": 0
+  },
+  "decisions": {
+    "embeddingCoverage": "measured over the population the embedder can act on (the symbol kinds that appear in the embedding table), counting DISTINCT entities",
+    "partialIndex": "indexed_files < total_files in brain_index_status is the one incompleteness signal that survives the writing process dying",
+    "concurrency": "refresh jobs are serialized per project; the record of a detached outcome is per project and replaced, not stacked",
+    "scale": "selection is O(files) in memory by design; sized here rather than assumed"
+  },
+  "limitations": [
+    "The multi-model case is proven by direct table manipulation, not by running a second embedding provider — the fixture cannot produce a second model without one.",
+    "The concurrency checks are single-process. Cross-process serialization is the index lock's job (script/m43/verify-p1-index-lock.ts), not this gate's."
+  ],
+  "generatedAt": "2026-09-30T07:43:59.119Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T07:46:56.696Z",
+    "contentSha256": "5a6a96352b45e44bfa4e3562d77c27e7ea5fd7c737f11ec45404de463cd7da11"
+  }
+}
