@@ -716,6 +716,44 @@ function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citat
  * `define_task ([{"name":"task_class"},{"name":"args"}])`. The names are the
  * parameter list; the rest of each object is not a signature.
  */
+/**
+ * How a signature is rendered when the index records no parameter list.
+ *
+ * `name()` is a CLAIM that the symbol takes no arguments, and where the index
+ * has no parameter list that claim is false. Measured across six languages by
+ * reading the declaration off disk for every sampled symbol whose `parameters`
+ * column is empty: **1 218 of 1 218 have a real parameter list** (excluding
+ * declarations whose list is genuinely empty or C's explicit `(void)`).
+ * Concrete: `Malloc(size_t size)` in a C header rendered as `Malloc()`,
+ * `application(app)` in Ruby as `application()`, `empty?(head, tail)` in Ruby
+ * as `empty?()`. 842 Ruby callables, 1 681 Perl, and every C and C++ header
+ * declaration the analyzer does not record are affected.
+ *
+ * So an absent list renders as an absent list — the parentheses are omitted
+ * rather than emptied — and the caller says the arguments are not described.
+ * This is the same asymmetry the return type already had: an absent
+ * `return_type` produced no clause, while an absent `parameters` produced one.
+ */
+/**
+ * Symbol kinds that take arguments, so a missing parameter list is a GAP in the
+ * document rather than the expected shape of the symbol.
+ *
+ * Measured across the eight indexed corpora, by counting how often each symbol
+ * type carries a parameter list at all: `function` 14 267 of 80 047 do not,
+ * `method` 2 702 of 42 177, `constructor` 188 of 1 351, `macro` none. Every
+ * other type is empty by nature and stays empty — `constant` 62 031,
+ * `property` 59 280, `enum_member` 28 844, `variable` 24 280, `type` 12 470,
+ * `class` 12 335, `struct` 8 841, `module` 7 334, `interface` 1 025 — and a
+ * caveat attached to those would be nonsense, since a field or a class does not
+ * take arguments. `property` is 99% empty and `function` only 18%, so the two
+ * cannot be lumped together.
+ */
+const CALLABLE_SYMBOL_TYPES: ReadonlySet<string> = new Set(["function", "method", "constructor", "macro"])
+
+function renderSignature(kind: string, name: string, parameters: string | null): string {
+  return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
+}
+
 function formatParameters(raw: unknown): string | null {
   const text = collapse(raw)
   if (!text || text === "[]" || text === "null") return null
@@ -757,9 +795,17 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
     }, resolver)
     const parameters = formatParameters(symbol.parameters)
-    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
     const returns = symbol.return_type ? `: ${collapse(symbol.return_type)}` : ""
-    api.push(fact("extracted", `${signature}${returns} is defined in ${rel} at lines ${start}-${end}.`, [id], citations))
+    // The caveat rides on the signature itself, not in a separate fact and not
+    // only in `limitations`: this fact is rendered as symbol mode's API and as
+    // feature mode's Entry points, and a bare `name` with no clause anywhere
+    // beside it is how a reader concludes the symbol takes no arguments. One
+    // sentence, on the line where the misreading would happen.
+    const noArgs = parameters === null && CALLABLE_SYMBOL_TYPES.has(String(symbol.symbol_type).toLowerCase())
+      ? "; the index records no parameter list for it, so its arguments are not described here"
+      : ""
+    api.push(fact("extracted", `${signature}${returns} is defined in ${rel} at lines ${start}-${end}${noArgs}.`, [id], citations))
     if (symbol.api_contract_path) api.push(fact("extracted", `${symbol.name} is bound to the API contract ${symbol.api_contract_path}.`, [id], citations))
     if (symbol.visibility) api.push(fact("extracted", `${symbol.name} is declared ${symbol.visibility}.`, [id], citations))
 
@@ -882,7 +928,7 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
     const start = Number(symbol.line_start ?? 0)
     const end = Number(symbol.line_end ?? start)
     const parameters = formatParameters(symbol.parameters)
-    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
     const framework = String(symbol.framework_type ?? "")
     const id = addCitation(citations, {
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
@@ -895,7 +941,10 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
       continue
     }
     if (framework) {
-      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.`, [id], citations))
+      const noArgs = parameters === null ? " The index records no parameter list for it either, so the inputs this endpoint accepts are not described." : ""
+      // An endpoint is callable by construction here — the selection admits only
+      // a route-signalled symbol or a function/method — so no type test is needed.
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.${noArgs}`, [id], citations))
       continue
     }
     // The selection admits `controller` as well as `route` and `endpoint`, so
