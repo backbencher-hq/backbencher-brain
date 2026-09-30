@@ -33,6 +33,9 @@ export interface QuickAnswerResult {
     dimension: number
     fallbackReason?: string
     embeddingCoverage: { embedded: number; symbols: number; ratio: number }
+    /** The ranking could not tell its top results apart — see the note in the answer. */
+    discriminative?: boolean
+    nonDiscriminativeCompetitors?: number
     /**
      * The query produced a vector of all zeros. Cosine against such a vector is
      * 0 for every row, so NOTHING was actually compared and the answer came
@@ -516,6 +519,8 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
         // numbers, so re-querying them here was the same 53ms of redundant work
         // removed from the other routes.
         embeddingCoverage: coverageFrom(semantic.metadata),
+        discriminative: semantic.metadata.discriminative,
+        nonDiscriminativeCompetitors: semantic.metadata.nonDiscriminativeCompetitors,
         degenerateQueryVector: semantic.metadata.fallbackReason === "degenerate-query-vector",
       },
       provenance: makeProvenance({
@@ -543,6 +548,8 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
     dimension: semantic.metadata.dimension,
     fallbackReason: semantic.metadata.fallbackReason,
     embeddingCoverage: coverage,
+    discriminative: semantic.metadata.discriminative,
+    nonDiscriminativeCompetitors: semantic.metadata.nonDiscriminativeCompetitors,
     degenerateQueryVector: degenerate,
   }
 
@@ -562,6 +569,10 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
         degenerate
           ? "Note: no vector was produced for this query — the embedding model could not represent its terms — so the matches below come from lexical search, not from similarity. No similarity score is shown because none was computed."
           : "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.",
+      )
+    } else if (semantic.metadata.discriminative === false) {
+      notes.push(
+        `Note: this ranking does not distinguish its top results — ${semantic.metadata.nonDiscriminativeCompetitors ?? 0} other symbol(s) scored within ${(semantic.metadata.nonDiscriminativeCompetitors ?? 0) === 1 ? "the same margin" : "that margin"} of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best.`,
       )
     } else if (coverage.ratio < 0.9) {
       notes.push(

@@ -14,6 +14,19 @@ import { makeProvenance } from "../evidence"
 // (highest-priority rows first via the ORDER BY in the query).
 const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 
+/**
+ * How close two scores must be for the ranking to be treated as unable to tell
+ * them apart.
+ *
+ * 0.05 on a cosine is roughly the resolution of a 50-dimensional hashed space:
+ * one extra vocabulary word out of a typical body moves the score by about this
+ * much, so two results within it differ by a word of vocabulary rather than by
+ * anything about the question. The exact value is a judgement; what matters is
+ * that the tool declares which way it went, so a reader can discount the score
+ * instead of being handed a number with no scale.
+ */
+const NON_DISCRIMINATIVE_MARGIN = 0.05
+
 // Sparse/incompatible model labels that must never be fed to dense cosine.
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
 
@@ -226,6 +239,29 @@ export async function semanticVectorSearch(
     return await keywordFallback(projectId, query, options, "no-resolvable-entities")
   }
 
+  // ── is this ranking discriminative, or noise with a decimal point? ───────
+  // The local model is a bag of words with NO inverse-document-frequency
+  // weighting, and cosine normalises by length, so a two-word body that happens
+  // to contain any word of the query can outrank a 200-word function that is
+  // actually about the question. Measured on rake, ten ordinary questions:
+  //
+  //   "how are errors reported to the user" -> top result `future`  (0.367)
+  //   "where is the request handled"        -> top result `matrix` (0.387)
+  //   "how does authentication work"        -> top result `glob`   (0.361)
+  //   "what validates the user input"       -> top result `item_4` (0.435)
+  //
+  // and nine of those ten had NO word in common with the question anywhere in
+  // the result's name, file or body. Those scores are not weak evidence, they
+  // are not evidence — but they are printed as a similarity, which makes noise
+  // look measured.
+  //
+  // So a score is qualified by whether the ranking can DISTINGUISH its top
+  // results from one another. When it cannot, the answer says so, and the
+  // number stops reading as a finding.
+  const rankedScores = ranked.map((r) => r.similarity)
+  const topScore = rankedScores[0]
+  const competitors = rankedScores.filter((s) => s >= topScore - NON_DISCRIMINATIVE_MARGIN).length - 1
+
   return {
     results,
     provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "brain_semantic_embedding", limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."], truncated: rows.length >= VECTOR_SCAN_CAP }),
@@ -236,6 +272,8 @@ export async function semanticVectorSearch(
       dimension: queryVector.length,
       scannedRows: rows.length,
       filteredRows: scored.length,
+      discriminative: competitors === 0,
+      nonDiscriminativeCompetitors: competitors,
       ...coverage,
     },
   }
