@@ -488,6 +488,41 @@ function filterNoiseRelationships(rels: any[], language: string, declaredNames?:
   })
 }
 
+/**
+ * Which symbol kinds get a stored body, and why each one is in or out.
+ *
+ * This list decides what content search can reach, so it was measured rather
+ * than guessed. Before it was explicit, only `function | class | method |
+ * interface` produced a snippet, and the result was whole ABSTRACTIONS with no
+ * searchable text at all:
+ *
+ *     ripgrep   impl         0/443    <- Rust's central abstraction, 0% searchable
+ *     ripgrep   struct       0/311
+ *     lodash    type       0/1302    <- measured: "Lodash Governance", a MARKDOWN heading
+ *     clojure   constructor  0/325
+ *
+ * IN, because the body is code nothing else can reach:
+ *   impl      a 73-line `impl HaystackBuilder` block is the whole answer to "how
+ *             does the haystack builder work". Its NAME was searchable; its logic
+ *             was not, so "HaystackBuilder" found a declaration and nothing else.
+ *   struct    3 lines of field declarations, but the field NAMES ("what has a
+ *             strip_dot_prefix flag") are signal the name alone does not carry.
+ *
+ * OUT, on measured grounds rather than tidiness:
+ *   type      in lodash these are markdown section headings, not code. Storing
+ *             them would put prose into a code index and dilute the bm25 ranking
+ *             that now ranks bodies. Better extraction, not a bigger list, is the
+ *             fix for that coverage number.
+ *   property / variable / constant / module / enum_member
+ *             declarations. A symbol's own name and qualified name are already
+ *             indexed and searched, so a one-line body adds rows and no recall —
+ *             which is why their measured 0% coverage is CORRECT, not a gap.
+ *
+ * `function` is 40% covered on rake, which is an analyzer-extraction limit rather
+ * than this list: those bodies arrive empty from upstream.
+ */
+const SNIPPET_KINDS = new Set(["function", "class", "method", "interface", "impl", "struct"])
+
 let engineModule: any = null
 
 export async function parseFile(filePath: string, projectPath: string, context?: ASTEngine.AnalyzeContext) {
@@ -638,7 +673,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         })
         .map((s: any) => {
         let snippet = ""
-        if (["function", "class", "method", "interface"].includes(s.kind)) {
+        if (SNIPPET_KINDS.has(s.kind)) {
           const lines = snippetLines ?? (snippetLines = content.split("\n"))
           snippet = lines.slice(Math.max(0, s.range.startLine - 1), s.range.endLine).join("\n")
           if (snippet.length > 10000) snippet = snippet.substring(0, 10000)
