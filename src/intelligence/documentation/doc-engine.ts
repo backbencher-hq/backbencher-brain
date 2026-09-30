@@ -735,20 +735,36 @@ function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citat
  * `return_type` produced no clause, while an absent `parameters` produced one.
  */
 /**
- * Symbol kinds that take arguments, so a missing parameter list is a GAP in the
- * document rather than the expected shape of the symbol.
+ * Which symbol kinds in THIS PROJECT the index records parameter lists for.
  *
- * Measured across the eight indexed corpora, by counting how often each symbol
- * type carries a parameter list at all: `function` 14 267 of 80 047 do not,
- * `method` 2 702 of 42 177, `constructor` 188 of 1 351, `macro` none. Every
- * other type is empty by nature and stays empty — `constant` 62 031,
- * `property` 59 280, `enum_member` 28 844, `variable` 24 280, `type` 12 470,
- * `class` 12 335, `struct` 8 841, `module` 7 334, `interface` 1 025 — and a
- * caveat attached to those would be nonsense, since a field or a class does not
- * take arguments. `property` is 99% empty and `function` only 18%, so the two
- * cannot be lumped together.
+ * A hand-written list of "kinds that take arguments" is a guess, and the guess
+ * was wrong: measured over the eight corpora, every one of `function`,
+ * `method`, `macro` and `constructor` carries parameter lists — and so do 343
+ * `property` symbols, which the list excluded on the reasoning that a field does
+ * not take arguments. There is no way to settle that by reading source, because
+ * a one-line window cannot tell a declaration's argument list from a call or a
+ * cast on the same line: scanning `variable` rows that way reported
+ * `Is(require("./is"))` and `enum_member Key(enum)` as parameter lists, 100% of
+ * the time, for every type — a measurement of nothing.
+ *
+ * So the tool does not guess. It asks the index what it has: if the project
+ * records parameter lists for a kind at all, then a symbol of that kind without
+ * one is a gap the document must name. A kind the index never gives arguments to
+ * gets no caveat, because there the absence is the expected shape rather than a
+ * hole. That is measured per project, needs no maintenance as analyzers add
+ * symbol kinds, and cannot go stale the way a list does.
  */
-const CALLABLE_SYMBOL_TYPES: ReadonlySet<string> = new Set(["function", "method", "constructor", "macro"])
+function symbolTypesWithParameters(raw: any, projectId: string): ReadonlySet<string> {
+  try {
+    const rows = raw.prepare(
+      `SELECT DISTINCT lower(symbol_type) t FROM brain_symbol
+       WHERE project_id=? AND parameters IS NOT NULL AND trim(parameters)<>''`,
+    ).all(projectId) as any[]
+    return new Set(rows.map((row) => String(row.t)))
+  } catch {
+    return new Set<string>()
+  }
+}
 
 function renderSignature(kind: string, name: string, parameters: string | null): string {
   return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
@@ -771,7 +787,7 @@ function formatParameters(raw: unknown): string | null {
   return text.replace(/^\(|\)$/g, "") || null
 }
 
-function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
+function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean, typesWithParameters: ReadonlySet<string>): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
   const api: DocFact[] = []
   const behavior: DocFact[] = []
   const tests: DocFact[] = []
@@ -802,7 +818,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
     // feature mode's Entry points, and a bare `name` with no clause anywhere
     // beside it is how a reader concludes the symbol takes no arguments. One
     // sentence, on the line where the misreading would happen.
-    const noArgs = parameters === null && CALLABLE_SYMBOL_TYPES.has(String(symbol.symbol_type).toLowerCase())
+    const noArgs = parameters === null && typesWithParameters.has(String(symbol.symbol_type).toLowerCase())
       ? "; the index records no parameter list for it, so its arguments are not described here"
       : ""
     api.push(fact("extracted", `${signature}${returns} is defined in ${rel} at lines ${start}-${end}${noArgs}.`, [id], citations))
@@ -921,7 +937,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
  * framework attribution is a property of the FILE, so it establishes that the
  * file is on an HTTP surface, not that any particular symbol answers a request.
  */
-function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver): DocFact[] {
+function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver, typesWithParameters: ReadonlySet<string>): DocFact[] {
   const facts: DocFact[] = []
   for (const symbol of symbols) {
     const rel = String(symbol.relative_path ?? "")
@@ -941,7 +957,9 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
       continue
     }
     if (framework) {
-      const noArgs = parameters === null ? " The index records no parameter list for it either, so the inputs this endpoint accepts are not described." : ""
+      const noArgs = parameters === null && typesWithParameters.has(String(symbol.symbol_type).toLowerCase())
+        ? " The index records no parameter list for it either, so the inputs this endpoint accepts are not described."
+        : ""
       // An endpoint is callable by construction here — the selection admits only
       // a route-signalled symbol or a function/method — so no type test is needed.
       facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.${noArgs}`, [id], citations))
@@ -1469,8 +1487,14 @@ export async function generateDocumentation(projectId: string, projectPath: stri
 
   const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
+  // Asked once per generation, and only for the modes that render a signature.
+  // It has to be read AFTER this line's `usesSymbolFacts` and BEFORE the
+  // `addSymbolFacts` call below, which is where a `const` declared in the wrong
+  // order becomes a temporal-dead-zone throw at run time rather than a type
+  // error -- `tsc` accepted the original placement.
+  const typesWithParameters = usesSymbolFacts || mode === "api" ? symbolTypesWithParameters(raw, projectId) : new Set<string>()
   const symbolParts = usesSymbolFacts
-    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol")
+    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol", typesWithParameters)
     : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[], limitations: [] as DocFact[] }
   const apiSurface = mode === "api" ? apiSurfaceIndex(raw, projectId) : null
   const relationshipParts = addRelationshipFacts(raw, resolver, symbols, citations)
@@ -1511,7 +1535,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names a candidate of this feature and no indexed relationship reaches one from a test, so its test coverage is not established." })
   } else if (mode === "api") {
     const surface = apiSurface ?? { files: 0, placeholders: [] as string[], contracts: 0, routes: 0, callables: 0 }
-    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver), lead: symbols.length === 0
+    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver, typesWithParameters), lead: symbols.length === 0
         ? `No HTTP surface is indexed for this project: ${surface.contracts} API contract path(s), ${surface.routes} route/endpoint/controller symbol(s), and ${surface.files} file(s) attributed to an HTTP framework holding ${surface.callables} callable exported symbol(s). This tool will not infer an endpoint from a function's name.`
         : `The index attributes ${surface.files} file(s) to an HTTP framework and holds ${surface.callables} callable exported symbol(s) in them. Framework attribution is a property of the FILE, so it places a symbol on an HTTP surface; it does not say which request the symbol answers, and no method or path is recorded.`, emptyExplanation: `No endpoint is indexed. This tool looked for an API contract path, a route, endpoint or controller symbol, and a callable symbol in a file the index attributes to an HTTP framework; the index holds ${surface.contracts} contract path(s), ${surface.routes} route-ish symbol type(s), and ${surface.files} HTTP-attributed file(s) with ${surface.callables} callable exported symbol(s). It will not infer an endpoint from a function's name.` })
     push({ id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: symbolParts.behavior, emptyExplanation: "No endpoint is indexed, so there is no signature whose parameters or return type could be reported." })
