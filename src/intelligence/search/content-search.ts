@@ -265,7 +265,7 @@ async function searchContentClassic(
 
   const corpus = raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
+      "s.docstring, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
