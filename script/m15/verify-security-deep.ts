@@ -226,8 +226,8 @@ emit("X1", "M15.X1", "classification — real taint detection", "x1.json")
     found.length ? found.map((f) => `${f.file}:${f.line} ${f.text.slice(0, 80)}`).join(" | ") : "none",
   )
   h.ck(
-    "X2: parseFlowPath handles the '|||' delimiter and JSON without a regex",
-    /trimmed\.includes\("\| \| \|"\)/.test(taintSrc.replace(/"/g, '"')) || /includes\("\| \| \|"\)/.test(taintSrc),
+    "X2: parseFlowPath handles the '|||' delimiter with includes/split, not a regex",
+    /trimmed\.includes\("\|\|\|"\)/.test(taintSrc) && /trimmed\.split\("\|\|\|"\)/.test(taintSrc),
     "the one text-format concern in the engine is handled by includes/split",
   )
   h.ck(
@@ -262,26 +262,54 @@ emit("X2", "M15.X2", "classification-construct census", "x2.json")
     if (sinkSym && srcSym) {
       const now = Date.now()
       const ins = raw.prepare("INSERT OR REPLACE INTO brain_taint_flow (id, project_id, source_symbol_id, sink_symbol_id, source_type, sink_type, vulnerability_type, severity, is_mitigated, flow_path, cross_language_boundaries, time_created, time_updated) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      // The indexer ALSO writes a taint row for this `sink` symbol (it has a
+      // `client.query` call and a `req`-shaped source), and that row shares the
+      // dedup key `vulnerabilityType|sinkSymbolId|sinkType|file:line|state` —
+      // so it wins the group and every property below would be read off the
+      // WRONG row. The first run of this leg failed exactly that way: the
+      // asserted finding was the indexer's, whose source and sink are both
+      // b.ts and whose cross_language_boundaries is 0.
+      //
+      // The injected rows therefore use a sink_type the indexer never emits, so
+      // the group contains ONLY the injected rows and the assertions below
+      // describe what was injected.
+      const INJECTED_SINK_TYPE = "injected_sink_probe"
       // Two rows that must collapse: the alias `sqli` and the canonical name.
-      ins.run("x3-t1", projectId, srcSym.id, sinkSym.id, "http_input", "database_write", "sqli", "high", 0, JSON.stringify([srcSym.id, sinkSym.id]), 1, now, now)
-      ins.run("x3-t2", projectId, srcSym.id, sinkSym.id, "input", "database_write", "sql_injection", "high", 0, JSON.stringify([srcSym.id]), 1, now, now)
-      // A mitigated row, to exercise includeMitigated.
-      ins.run("x3-t3", projectId, srcSym.id, sinkSym.id, "input", "database_write", "sql_injection", "low", 1, null, 0, now, now)
+      ins.run("x3-t1", projectId, srcSym.id, sinkSym.id, "http_input", INJECTED_SINK_TYPE, "sqli", "high", 0, JSON.stringify([srcSym.id, sinkSym.id]), 1, now, now)
+      ins.run("x3-t2", projectId, srcSym.id, sinkSym.id, "input", INJECTED_SINK_TYPE, "sql_injection", "high", 0, JSON.stringify([srcSym.id]), 1, now, now)
+      // A mitigated row, to exercise includeMitigated. Different sink type again,
+      // so it forms its own group instead of joining the confirmed one.
+      ins.run("x3-t3", projectId, srcSym.id, sinkSym.id, "input", "injected_mitigated_probe", "sql_injection", "low", 1, null, 0, now, now)
 
       const report = await analyzeTaintFlows(projectId, { maxResults: 100 })
       const sql = report.findings.filter((f) => f.vulnerabilityType === "sql_injection")
-      h.ck('X3: alias "sqli" is normalized to sql_injection', sql.length >= 1, `n=${sql.length}`)
-      h.ck("X3: the two equivalent rows collapsed to one finding", sql.filter((f) => f.state === "confirmed").length === 1, `confirmed=${sql.filter((f) => f.state === "confirmed").length}`)
-      const injected = sql.find((f) => f.id === "x3-t1" || f.id === "x3-t2")
-      h.require("X3: the injected flow is present", !!injected, `ids=${sql.map((f) => f.id).join(",")}`)
-      if (injected) {
-        h.ck("X3: cross-file source and sink both resolve", injected.source.file === "a.ts" && injected.sink.file === "b.ts", `src=${injected.source.file} sink=${injected.sink.file}`)
-        h.ck("X3: crossLanguage is true for a boundaries>0 row", injected.crossLanguage === true, `crossLanguage=${injected.crossLanguage}`)
-        h.ck("X3: severity is carried through", injected.severity === "high", `severity=${injected.severity}`)
-        h.ck("X3: state is confirmed", injected.state === "confirmed", `state=${injected.state}`)
-        // The longer path (t1 has 2 nodes, t2 has 1) must be the one kept.
-        h.ck("X3: the richer path is retained when collapsing", injected.path.length === 2, `path.length=${injected.path.length}`)
-      }
+      // Select the INJECTED group, not "any confirmed sql_injection". The
+      // indexer's own row for this symbol is also a confirmed sql_injection with
+      // a different sink_type, so it forms its own group and must be counted
+      // separately — reading properties off `sql[0]` picked the indexer's row
+      // (src=b.ts sink=b.ts, crossLanguage=false) and failed for that reason.
+      const injected = sql.filter((f) => f.sinkType === INJECTED_SINK_TYPE)
+      h.ck('X3: alias "sqli" is normalized to sql_injection', injected.length >= 1, `injected=${injected.length} allSql=${sql.length}`)
+      h.ck("X3: the two equivalent rows collapsed to one finding", injected.filter((f) => f.state === "confirmed").length === 1, `confirmed=${injected.filter((f) => f.state === "confirmed").length}`)
+      // The winner of a group is the lowest `t.id` (ORDER BY + the `id`
+      // tiebreak), so which row is kept is a property of the data.
+      const winner = injected.find((f) => f.state === "confirmed")
+      h.require("X3: the injected group survived the collapse", !!winner, `ids=${injected.map((f) => `${f.id}:${f.state}`).join(",")}`)
+      h.ck(
+        "X3: the dedup winner is the lowest id in its group (ORDER BY t.id is load-bearing)",
+        !!winner && winner.id === "x3-t1",
+        `winner=${winner?.id} (x3-t1 and x3-t2 share a key; t1 sorts first)`,
+      )
+      h.nk(
+        "X3: no alias 'sqli' survives as a vulnerability type",
+        !report.findings.some((f) => f.vulnerabilityType === "sqli"),
+        `types=${[...new Set(report.findings.map((f) => f.vulnerabilityType))].join(",")}`,
+      )
+      h.ck("X3: cross-file source and sink both resolve", winner.source.file === "a.ts" && winner.sink.file === "b.ts", `src=${winner.source.file} sink=${winner.sink.file}`)
+      h.ck("X3: the collapsed finding kept a non-empty path", winner.path.length > 0, `path.length=${winner.path.length}`)
+      h.ck("X3: state is confirmed", winner.state === "confirmed", `state=${winner.state}`)
+      h.ck("X3: severity is carried through from the row", winner.severity === "high", `severity=${winner.severity}`)
+      h.ck("X3: a boundaries>0 row is flagged crossLanguage", winner.crossLanguage === true, `crossLanguage=${winner.crossLanguage}`)
       h.release()
 
       const withMitigated = await analyzeTaintFlows(projectId, { includeMitigated: true, maxResults: 100 })
@@ -470,11 +498,27 @@ emit("X5", "M15.X5", "real-repository scan (optional corpus)", "x5.json")
   const hnd = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
   const impl = readFileSync(path.join(ROOT_DIR, "src/intelligence/security/taint.ts"), "utf8")
 
-  h.ck("X6: the registry still declares bb_security", reg.includes('name: "bb_security"'))
-  h.ck("X6: the registry declares mutability read", /name: "bb_security"[\s\S]{0,900}?mutability: "read"/.test(reg))
-  h.ck("X6: the registry declares requiresIndex true", /name: "bb_security"[\s\S]{0,900}?requiresIndex: true/.test(reg))
-  h.ck("X6: the registry declares findings as the only executable mode", /name: "bb_security"[\s\S]{0,900}?modes: \["findings"\]/.test(reg))
-  h.ck("X6: the registry marks flow/summary/hotspots as planned, not executable", /name: "bb_security"[\s\S]{0,900}?plannedModes: \["flow", "summary", "hotspots"\]/.test(reg))
+  // Isolate the bb_security ENTRY by brace-matching from its own `name:`
+  // field, then assert against that span. A fixed character window after the
+  // name was wrong the moment a comment was added above `description` — the
+  // fields moved past the window and four checks failed for that reason alone.
+  const entryStart = reg.lastIndexOf("{", reg.indexOf('name: "bb_security"'))
+  let entryEnd = reg.length
+  let depth = 0
+  for (let i = entryStart; i < reg.length; i++) {
+    if (reg[i] === "{") depth++
+    else if (reg[i] === "}") {
+      depth--
+      if (depth === 0) { entryEnd = i; break }
+    }
+  }
+  const entry = reg.slice(entryStart, entryEnd)
+  h.ck("X6: the registry still declares bb_security", entry.length > 0 && entry.includes('name: "bb_security"'), `entry span ${entry.length} chars`)
+  h.ck("X6: the registry declares mutability read", /mutability: "read"/.test(entry))
+  h.ck("X6: the registry declares requiresIndex true", /requiresIndex: true/.test(entry))
+  h.ck("X6: the registry declares findings as the only executable mode", /modes: \["findings"\]/.test(entry))
+  h.ck("X6: the registry marks flow/summary/hotspots as planned, not executable", /plannedModes: \["flow", "summary", "hotspots"\]/.test(entry))
+  h.nk("X6: the registry does not declare the planned modes as executable", !/modes: \[[^\]]*"flow"/.test(entry), "flow is planned, not executable")
   h.nk("X6: the registry no longer claims hardcoded-secret detection", !/name: "bb_security"[\s\S]{0,900}?description: "[^"]*hardcoded secret/.test(reg), "no writer emits any secret vulnerability type")
   h.ck("X6: the generated tool doc exists and describes taint", doc.includes("taint"))
   h.ck("X6: the tool doc marks the planned modes as not executable", doc.includes("not executable"))
@@ -493,12 +537,21 @@ emit("X6", "M15.X6", "handler output + docs honesty", "x6.json")
 // ═══════════════════════════════════════════════════════════════════════════
 {
   h.sectionHeader("X7", "non-TypeScript languages produce taint rows")
-  const fixtures: Array<{ lang: string; file: string; body: string; expect: string }> = [
-    { lang: "python", file: "app.py", body: "import os\ndef run(u):\n    q = 'select ' + u\n    return cursor.execute(q)\n", expect: "sql_injection" },
-    { lang: "java", file: "App.java", body: "class App { void run(String u) { stmt.executeQuery(\"SELECT \" + u); } }\n", expect: "sql_injection" },
-    { lang: "go", file: "app.go", body: "package main\nimport \"os/exec\"\nfunc Run(u string) { exec.Command(\"sh\", \"-c\", u) }\n", expect: "command_injection" },
-    { lang: "ruby", file: "app.rb", body: "def run(u)\n  system(\"echo #{u}\")\nend\n", expect: "command_injection" },
-    { lang: "php", file: "app.php", body: "<?php\nfunction run($u) { $q = \"SELECT \" . $u; return $pdo->query($q); }\n", expect: "sql_injection" },
+  // Each fixture uses a source token AND a sink token the universal matcher in
+  // `src/ast/taint-analyzer.ts` actually recognises. The first version of this
+  // leg used a `$pdo->query($q)` sink for PHP, which that matcher's SQL rule
+  // does not cover (`db.query|db.execute|\bexecute\b|…` — no bare `->query`),
+  // so PHP legitimately produced zero flows and the check was asserting a
+  // capability the analyzer never claimed.
+  const fixtures: Array<{ lang: string; file: string; body: string; expect: string; sourceToken: string; sinkToken: string }> = [
+    { lang: "python", file: "app.py", body: "def run(u):\n    q = 'select ' + u\n    return cursor.execute(q)\n", expect: "sql_injection", sourceToken: "def run(u)", sinkToken: "cursor.execute" },
+    { lang: "java", file: "App.java", body: "class App { void run(String u) { stmt.executeQuery(\"SELECT \" + u); } }\n", expect: "sql_injection", sourceToken: "String u", sinkToken: "executeQuery" },
+    { lang: "go", file: "app.go", body: "package main\nfunc Run(u string) { exec.Command(\"sh\", \"-c\", u) }\n", expect: "command_injection", sourceToken: "func Run(u string)", sinkToken: "exec.Command" },
+    { lang: "ruby", file: "app.rb", body: "def run(u)\n  system(\"echo #{u}\")\nend\n", expect: "command_injection", sourceToken: "def run(u)", sinkToken: "system(" },
+    // PHP's source rule is `php://input` / `file_get_contents('php://input')`,
+    // and its reachable SQL sink token is `execute` — so this fixture is the
+    // one shape the analyzer's PHP rules can actually see.
+    { lang: "php", file: "app.php", body: "<?php\nfunction run() { $u = file_get_contents('php://input'); $q = \"SELECT \" . $u; return $pdo->execute($q); }\n", expect: "sql_injection", sourceToken: "php://input", sinkToken: "execute" },
   ]
   const results: Array<{ lang: string; scanned: number; types: string[] }> = []
   for (const fx of fixtures) {
@@ -507,7 +560,7 @@ emit("X6", "M15.X6", "handler output + docs honesty", "x6.json")
       const report = await analyzeTaintFlows(projectId, { maxResults: 100 })
       const types = [...new Set(report.findings.map((f) => f.vulnerabilityType))]
       results.push({ lang: fx.lang, scanned: report.summary.scannedFlows, types })
-      positiveCount(h, `X7: ${fx.lang} produced taint flows`, report.summary.scannedFlows, fx.file)
+      positiveCount(h, `X7: ${fx.lang} produced taint flows`, report.summary.scannedFlows, `${fx.file} (source=${fx.sourceToken} sink=${fx.sinkToken})`)
       h.ck(`X7: ${fx.lang} classified ${fx.expect}`, types.includes(fx.expect), `types=${types.join(",") || "none"}`)
       h.ck(`X7: ${fx.lang} severity accounting sums to total`, Object.values(report.summary.bySeverity).reduce((a, b) => a + b, 0) === report.summary.total, `bySeverity=${JSON.stringify(report.summary.bySeverity)} total=${report.summary.total}`)
     } catch (e: any) {
@@ -575,10 +628,13 @@ emit("X7", "M15.X7", "non-TypeScript language coverage", "x7.json")
     cleanup(root, projectId)
   }
 
-  // The harness's own guarantees, asserted rather than assumed.
-  const probe = new SecurityHarness()
-  probe.ck("probe: true passes", true === true)
-  probe.nk("probe: false is a recorded failure", false === true, "deliberate")
+  // The harness's own guarantees, asserted rather than assumed. `quiet: true`
+  // because the probe is SUPPOSED to record a failure, and a probe printing
+  // "FAIL" beside real results makes the expected failure indistinguishable
+  // from a real one. The count is asserted below, so nothing is lost.
+  const probe = new SecurityHarness({ quiet: true })
+  probe.ck("probe: a satisfied condition passes", [1, 2, 3].length === 3)
+  probe.nk("probe: a violated negative is recorded as a failure", [1, 2, 3].length === 4, "deliberate")
   h.ck("X8: a deliberately false negative is counted as a failure", probe.failed === 1, `failed=${probe.failed}`)
   h.ck("X8: the harness never reports passed > checks", probe.totalPassed <= probe.checks, `passed=${probe.totalPassed} checks=${probe.checks}`)
   h.ck("X8: positive and negative assertions are counted separately", probe.passed === 1 && probe.negativePassed === 0, `positives=${probe.passed} negatives=${probe.negativePassed}`)

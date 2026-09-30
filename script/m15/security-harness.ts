@@ -35,6 +35,18 @@ export class SecurityHarness {
    * failure in any section is a non-zero exit regardless of section order.
    */
   failures: Array<{ label: string; detail: string; negative: boolean }> = []
+  /**
+   * Suppress printing. Set on a PROBE harness — one constructed to record a
+   * failure so the count can be asserted — because a probe writing "FAIL" into
+   * the same console as real results makes an expected failure
+   * indistinguishable from a real one. The count is still asserted, so nothing
+   * is lost.
+   */
+  private quiet = false
+
+  constructor(options: { quiet?: boolean } = {}) {
+    this.quiet = options.quiet === true
+  }
 
   /** Optional gate: a precondition whose absence invalidates the checks behind it. */
   private gate: { label: string; failed: boolean } | null = null
@@ -46,7 +58,7 @@ export class SecurityHarness {
     } else {
       const text = `[${this.checks + this.negatives}] ${label}${detail ? ` — ${detail}` : ""}`
       this.failures.push({ label, detail: text, negative })
-      console.log(`  FAIL: ${text}`)
+      if (!this.quiet) console.log(`  FAIL: ${text}`)
     }
     return { passed: ok, detail }
   }
@@ -79,7 +91,7 @@ export class SecurityHarness {
     if (cond) return
     this.gate = { label, failed: true }
     this.failures.push({ label: `gate: ${label}`, detail: `required precondition absent${detail ? ` — ${detail}` : ""}`, negative: false })
-    console.log(`  FAIL: [gate] ${label}${detail ? ` — ${detail}` : ""}`)
+    if (!this.quiet) console.log(`  FAIL: [gate] ${label}${detail ? ` — ${detail}` : ""}`)
   }
 
   /** Close the gate. Any assertion made while the gate was open is invalid. */
@@ -191,7 +203,6 @@ export function auditForAutoPass(h: SecurityHarness, label: string, sources: Arr
   const ZERO_THRESHOLD = new RegExp(">" + "=\\s*" + "0\\b")
   const OR_TRUE = new RegExp("\\|\\|\\s*" + "true" + "\\b")
   const ASSERTION_CALL = /\b(?:h\.)?(?:ck|nk|check|negative)\s*\(/
-  const desc = (s: string) => "satisfied by an empty set: " + s
 
   for (const { file, text } of sources) {
     const code = codeOnly(text)
@@ -199,15 +210,19 @@ export function auditForAutoPass(h: SecurityHarness, label: string, sources: Arr
     // recognisable assertion call is itself reported.
     h.ck(`${label}: ${file} contains assertions to audit`, ASSERTION_CALL.test(code), "no ck/nk/check/negative call found — the audit would be vacuous on this file")
 
+    // ONE assertion per file per shape, not one per line. A per-line audit over
+    // six verifiers emitted 8,918 assertions — a number no reader can review,
+    // and an unreadable gate is worse than none: a reviewer who cannot check the
+    // output learns to ignore it. The first per-line run found exactly ONE real
+    // defect (a `h.ck(..., true)` I had written) and buried it in 7,061
+    // negatives. Aggregation keeps the signal and names every offending line in
+    // the failure detail, so nothing is hidden by the smaller count.
+    const hits: Array<string> = []
     code.split("\n").forEach((line, i) => {
-      const at = `${file}:${i + 1}`
-      h.nk(`${label}: ${at} has no unconditional assertion`, !UNCONDITIONAL.test(line), `unconditional assertion: ${line.trim().slice(0, 90)}`)
-      // The detail text is assembled too: writing the banned operator into a
-      // message literal is fine for a human and a self-flag for this audit,
-      // because a detector that matches its own prose matches nothing else
-      // reliably either.
-      h.nk(`${label}: ${at} has no zero-true threshold`, !ZERO_THRESHOLD.test(line), desc(`a zero-inclusive bound: ${line.trim().slice(0, 80)}`))
-      h.nk(`${label}: ${at} has no or-true escape`, !OR_TRUE.test(line), desc(`an or-true escape: ${line.trim().slice(0, 80)}`))
+      for (const [shape, rx] of [["unconditional", UNCONDITIONAL], ["zero-inclusive", ZERO_THRESHOLD], ["or-true", OR_TRUE]] as const) {
+        if (rx.test(line)) hits.push(`${shape}@${i + 1}: ${line.trim().slice(0, 70)}`)
+      }
     })
+    h.nk(`${label}: ${file} has no unfalsifiable assertion shape`, hits.length === 0, hits.length ? hits.join(" | ") : "clean")
   }
 }
