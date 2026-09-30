@@ -344,12 +344,24 @@ self-agreeing `uses num_bits` survived a year of gates. The same is true of
 
 - The pinned grammar cannot parse some real C++. Two measured populations, kept
   apart because one is the analyzer's business and one is not:
-  - **R1 (reported, not gated): 715 of the corpus's classes have a grammar node
-    that ends before the source's own brace balance does.** The worst case is
-    `nlohmann-json/include/nlohmann/json.hpp`: `class basic_json` spans source
-    lines **128..6408** and its `class_specifier` covers **128..716**, so
-    **5,692 lines — 91% of the class — are walked outside the class node.** The
-    analyzer cannot invent a class node the grammar did not produce, so this is
+  - **R1 (reported, not gated): 23 of the corpus's class bodies have a grammar node
+    that ends before the source's own brace balance does.** This figure was
+    **715 until it was measured rather than trusted**, and the correction is the
+    useful part: the old check had two defects that both INFLATED it. It asked
+    body-less nodes too, and **891 of the corpus's 4,261 `class`/`struct`/`union`
+    nodes are FORWARD DECLARATIONS** — `class Message;` — which tree-sitter
+    correctly gives a `class_specifier` with no body, so the next unrelated `{ … }`
+    later in the file answered "your brace balance ends later than you do". Six
+    consecutive lines of gtest's own `// Forward declarations.` banner became six
+    "truncations" of 1,200+ rows each. And its source-side scanner counted braces
+    inside strings and comments. A truncation is a body that ENDS EARLY; it cannot
+    be a body that was never there. The worst REAL case is
+    `nlohmann-json/single_include/nlohmann/json.hpp`: `class basic_json` spans
+    source rows **128..6408** and its `class_specifier` covers **128..716**, so
+    **5,692 rows — 91% of the class — are walked outside the class node** (224,879
+    characters). Note the old artifact recorded that as `linesOutside: 224879`, a
+    CHARACTER delta in a field named for lines. The analyzer cannot invent a class
+    node the grammar did not produce, so this is
     reported with its number rather than papered over. `script/cpp-review/class-extent.ts`
     re-derives the gap for any class. (The D5 fix removed the analyzer-side
     amplification of this: before it, one recovered `function_definition`
@@ -500,7 +512,8 @@ lookups on a 123-entry set. No O(n²) or per-symbol O(n) scans.
 
 ## Open, and why
 
-- **R1 (715 truncated classes)** is a grammar limitation, not an analyzer defect.
+- **R1 (23 truncated class bodies)** is a grammar limitation, not an analyzer
+  defect. It was 715 until the check itself was measured — see the defect gate.
   It is reported with its number on every register run. Closing it means a newer
   tree-sitter-cpp, not more analyzer code — and the analyzer-side amplification
   it caused is already fixed (D5).
