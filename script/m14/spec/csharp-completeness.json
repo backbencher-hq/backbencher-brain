@@ -222,7 +222,75 @@
       "element_binding_expression",
       "implicit_parameter",
       "interpolation_quote"
-    ]
+    ],
+    "adjudication": {
+      "method": "script/m14/adjudicate-csharp-silent-verdicts.ts --list <paths> --limit 400",
+      "why": "These 164 entries were an unverified hand-authored claim: completeness-inventory checks that every node type IS classified, never that the classification is right, so a wrong entry is indistinguishable from a right one. This census replaces assertion with measurement for as many as a corpus sample can settle: a type that never occurs is UNTESTED rather than verified, and a type that occurs and contains nothing publishable is confirmed.",
+      "sample": "400 roslyn files",
+      "absent": {
+        "count": 48,
+        "meaning": "never occurs in the sample \u2014 the verdict is untested, not verified",
+        "types": [
+          "string_literal_encoding",
+          "verbatim_string_literal",
+          "preproc_arg",
+          "shebang_directive",
+          "raw_string_start",
+          "raw_string_end",
+          "raw_string_content",
+          "global_statement",
+          "extern_alias_directive",
+          "global_attribute",
+          "alias_qualified_name",
+          "pointer_type",
+          "function_pointer_type",
+          "calling_convention",
+          "function_pointer_parameter",
+          "scoped_type",
+          "checked_statement",
+          "do_statement",
+          "empty_statement",
+          "fixed_statement",
+          "unsafe_statement",
+          "goto_statement",
+          "labeled_statement",
+          "var_pattern",
+          "join_clause",
+          "join_into_clause",
+          "order_by_clause",
+          "group_clause",
+          "checked_expression",
+          "interpolation_alignment_clause",
+          "interpolation_format_clause",
+          "anonymous_method_expression",
+          "anonymous_object_creation_expression",
+          "implicit_stackalloc_expression",
+          "sizeof_expression",
+          "makeref_expression",
+          "reftype_expression",
+          "refvalue_expression",
+          "raw_string_literal",
+          "preproc_elif",
+          "preproc_region",
+          "preproc_endregion",
+          "preproc_line",
+          "preproc_error",
+          "preproc_warning",
+          "preproc_define",
+          "preproc_undef",
+          "interpolation_quote"
+        ]
+      },
+      "trivial": {
+        "count": 22,
+        "meaning": "occurs and its subtree contains nothing the analyzer publishes \u2014 confirmed by measurement"
+      },
+      "suspect": {
+        "count": 94,
+        "meaning": "occurs AND contains a publishable node; all inspected are structural containers whose contents are published by the nodes inside them (argument holds reads, if_statement holds calls, type_argument_list holds declared-type references, catch_declaration binds a variable). No probable defect found. Containment alone is not a defect, which is why this bucket is reported rather than acted on."
+      },
+      "caveat": "This measures OCCURRENCE and CONTAINMENT, not correctness. It cannot prove a verdict right; it can only say which verdicts were never exercised, and that is the finding. A wider corpus would move types between the buckets \u2014 the 48 absent are the ones a larger sample would test first."
+    }
   },
   "gap": {
     "_description": "csharp differential oracle (deriveCSharpEdges) PINNED at powershell corpus floor 0 missing / 0 unexplained; completeness A-H 8/8 pass. Declared residual (300-file sweep): unsafe C# COM-interop vtable-dispatch calls parse as degenerate tree-sitter invocation_expression subtrees (pointer-slot indexes, `if(...)` statements), so those 4 calls surface as `uses` (confidence 0.7) rather than `calls` \u2014 bounded, logged, and outside the gated 60-file floor which is deterministic-unclean-free.",
