@@ -1155,7 +1155,24 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const boundsNode = node.childForFieldName("bounds")
     if (boundsNode) {
       for (let i = 0; i < boundsNode.namedChildCount; i++) {
-        const bound = boundsNode.namedChild(i)
+        let bound = boundsNode.namedChild(i)
+        // RUST-MR: a HIGHER-RANKED bound (`for<'de> Deserialize<'de>` — the
+        // lifetime-generic supertrait idiom) wraps its type in a
+        // `higher_ranked_trait_bound` node, so the direct-child test below
+        // missed it and the supertrait edge was NEVER emitted: serde's
+        // `pub trait DeserializeOwned: for<'de> Deserialize<'de> {}` published
+        // nothing. The F5 oracle had the mirror-image bug on the same construct
+        // — it took the binder's text and FABRICATED `extends -> "for"` — so
+        // both sides were wrong in opposite directions and the row surfaced as
+        // one MISSING while the real edge never surfaced at all. Measured: 3
+        // higher-ranked bounds in 2 files across 2,598, and this is the only
+        // construct where a supertrait bound is named but unpublished.
+        if (bound?.type === "higher_ranked_trait_bound") {
+          for (let j = 0; j < bound.namedChildCount; j++) {
+            const inner = bound.namedChild(j)
+            if (inner && (inner.type === "type_identifier" || inner.type === "scoped_type_identifier" || inner.type === "generic_type")) { bound = inner; break }
+          }
+        }
         // Pinned wasm: trait_bounds children are direct type nodes -
         // 'trait_bound' does not exist here (grammar audit).
         if (bound && (bound.type === "type_identifier" || bound.type === "scoped_type_identifier" || bound.type === "generic_type")) {
@@ -1824,9 +1841,50 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Macro RULE bodies are templates, not code (CGD5 analog) — but macro
     // INVOCATION arguments are genuine reads.
     if (this.hasAncestor(node, "macro_definition", ["macro_invocation"])) return
+    // A macro INVOCATION's NAME is a CALLEE, and the calls branch owns it
+    // (RUST-D2 publishes `calls -> bail` for `bail!(…)`). The guard above covers
+    // a macro DEFINITION's body; nothing covered the invocation's own `macro`
+    // field, so a USE-IMPORTED macro published TWO edges for one name at one
+    // line — `calls -> bail` AND `uses -> bail` — while an imported FUNCTION
+    // called by name published `calls` only, because the call-callee guard below
+    // matches `call_expression` and not `macro_invocation`. Measured 269 sites
+    // over a 550-file slice of cargo/tokio/serde/hyper/ripgrep. R1's contract
+    // excludes callees, so the read was a fabrication; and the F5 `uses` oracle
+    // mirrored it (its only macro rule skips identifiers under a macro
+    // DEFINITION, stopping at `macro_invocation`), so the differential agreed
+    // with the fabrication and could not see it. The climb mirrors the
+    // call-callee climb so a PATH-qualified macro (`std::eprintln!`) is covered
+    // too, and the guard is on the `macro` FIELD alone — the invocation's
+    // arguments are reads and keep publishing.
+    {
+      let mtop: Node = node
+      let mup: Node | null = p
+      while (mup && (mup.type === "scoped_identifier" || mup.type === "generic_function")) {
+        mtop = mup
+        mup = mup.parent
+      }
+      if (mup && mup.type === "macro_invocation") {
+        const mfield = mup.childForFieldName("macro")
+        if (mfield && mfield.startIndex === mtop.startIndex && mfield.endIndex >= mtop.endIndex) return
+      }
+    }
     // Attributes (`#[derive(Foo)]`) and use paths are metadata/imports.
     if (this.hasAncestor(node, "attribute_item", ["function_item", "struct_item", "enum_item", "impl_item", "trait_item", "mod_item"])) return
     if (this.hasAncestor(node, "use_declaration", null)) return
+    // RUST-MR: a parameter of a FUNCTION-POINTER TYPE declares, it does not
+    // read. `type PasswordStore = extern "C" fn(schema: *const SecretSchema, …)`
+    // is a type alias — no body, therefore no per-function bound-name set to
+    // exclude those names by — and when such a name also resolved (a
+    // use-imported leaf or a file-visible value) the sweep published
+    // `uses -> schema`. A real function's parameters were already excluded by the
+    // bound-name set; a type's parameters had no such set. Last of the three
+    // declaration-position classes this line audit found, after the macro callee
+    // and the trait method signature.
+    if (p && p.type === "parameter") {
+      const params = p.parent
+      const holder = params?.parent
+      if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) return
+    }
     // Where-bounds belong to the dedicated where branch (R8).
     if (this.hasAncestor(node, "where_predicate", null)) return
 
@@ -1929,6 +1987,18 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   private isItemNamePosition(node: Node, parent: Node): boolean {
     switch (parent.type) {
       case "function_item":
+      // RUST-MR: a TRAIT method DECLARATION is a `function_signature_item` (no
+      // body), and the switch below listed `function_item` only — so a trait
+      // method's own NAME fell through to the read sweep. When the name also
+      // resolved (a use-imported leaf of the same name, or a file-visible value)
+      // it published a `uses` edge for its own DECLARATION, and at
+      // cargo-test-support/src/lib.rs:1477 that edge was a SELF-EDGE
+      // (`uses current_dir -> current_dir`). The IMPLEMENTATION of the same
+      // method never did, which is what made the class look like a trait quirk
+      // rather than a missing node type. 10 sites survived the macro-callee fix
+      // in the same 550-file slice; the whole class is trait method signatures
+      // whose name collides with an import.
+      case "function_signature_item":
       case "struct_item":
       case "enum_item":
       case "trait_item":

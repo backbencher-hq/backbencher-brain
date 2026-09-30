@@ -2,29 +2,156 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-28T20:15:19.702Z",
+  "generatedAt": "2026-09-30T01:58:23.532Z",
   "describes": "the working tree (a preview; run with --head to anchor it to a commit)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 26,
-  "analyzersScanned": 43,
+  "totalRegexUsages": 30,
+  "analyzersScanned": 46,
   "byClassification": {
-    "needs_review": 17,
-    "normalization": 9
+    "normalization": 8,
+    "needs_review": 22
   },
   "byReceiverCategory": {
-    "identifier": 14,
-    "other": 3,
-    "node_text": 9
+    "node_text": 8,
+    "identifier": 17,
+    "other": 5
   },
   "perFile": [
+    {
+      "file": "real-css-analyzer.ts",
+      "count": 11,
+      "usages": [
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 141,
+          "column": 13,
+          "source": "/^(--[A-Za-z0-9_-]+)/",
+          "operation": "test",
+          "receiver": "prelude",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 288,
+          "column": 33,
+          "source": "/[\\\\/]/",
+          "operation": "split",
+          "receiver": "filePath",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 483,
+          "column": 32,
+          "source": "/:\\d+$/",
+          "operation": "replace",
+          "receiver": "n",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 663,
+          "column": 74,
+          "source": "/specificity|omplexity/",
+          "operation": "test",
+          "receiver": "k",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1863,
+          "column": 88,
+          "source": "/^\\(/",
+          "operation": "replace",
+          "receiver": "collapseWhitespace(queryNode.text)",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1863,
+          "column": 107,
+          "source": "/\\)$/",
+          "operation": "replace",
+          "receiver": "collapseWhitespace(queryNode.text).replace(/^\\(/, \"\")",
+          "receiverCategory": "other",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1904,
+          "column": 27,
+          "source": "/^@\\S+/",
+          "operation": "replace",
+          "receiver": "node.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1904,
+          "column": 48,
+          "source": "/;\\s*$/",
+          "operation": "replace",
+          "receiver": "node.text.replace(/^@\\S+/, \"\")",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1966,
+          "column": 61,
+          "source": "/^@namespace\\s*/",
+          "operation": "replace",
+          "receiver": "n.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 1966,
+          "column": 91,
+          "source": "/;\\s*$/",
+          "operation": "replace",
+          "receiver": "n.text.replace(/^@namespace\\s*/, \"\")",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-css-analyzer.ts",
+          "line": 2496,
+          "column": 49,
+          "source": "/\\s+/",
+          "operation": "split",
+          "receiver": "namePart",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
     {
       "file": "real-fsharp-analyzer.ts",
       "count": 6,
       "usages": [
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
+          "line": 1217,
           "column": 20,
           "source": "/[()<]/",
           "operation": "test",
@@ -35,7 +162,7 @@
         },
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
+          "line": 1217,
           "column": 43,
           "source": "/\\s:/",
           "operation": "test",
@@ -46,7 +173,7 @@
         },
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
+          "line": 1217,
           "column": 63,
           "source": "/^[A-Za-z_][A-Za-z0-9_']*$/",
           "operation": "test",
@@ -57,7 +184,7 @@
         },
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1288,
+          "line": 1621,
           "column": 11,
           "source": "/^['^]/",
           "operation": "test",
@@ -68,7 +195,7 @@
         },
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1290,
+          "line": 1623,
           "column": 36,
           "source": "/^['^]/",
           "operation": "test",
@@ -79,7 +206,7 @@
         },
         {
           "file": "real-fsharp-analyzer.ts",
-          "line": 1292,
+          "line": 1625,
           "column": 12,
           "source": "/^[A-Za-z_][A-Za-z0-9_']*$/",
           "operation": "test",
@@ -163,67 +290,6 @@
       ]
     },
     {
-      "file": "real-typescript-analyzer.ts",
-      "count": 5,
-      "usages": [
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 1067,
-          "column": 85,
-          "source": "/^extends\\s+/",
-          "operation": "replace",
-          "receiver": "constraintNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 1630,
-          "column": 85,
-          "source": "/^extends\\s+/",
-          "operation": "replace",
-          "receiver": "constraintNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 2794,
-          "column": 54,
-          "source": "/^\\.\\.\\./",
-          "operation": "replace",
-          "receiver": "pat.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 3159,
-          "column": 40,
-          "source": "/^:\\s*/",
-          "operation": "replace",
-          "receiver": "child.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-typescript-analyzer.ts",
-          "line": 5987,
-          "column": 85,
-          "source": "/^extends\\s+/",
-          "operation": "replace",
-          "receiver": "constraintNode.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        }
-      ]
-    },
-    {
       "file": "real-svelte-analyzer.ts",
       "count": 4,
       "usages": [
@@ -240,7 +306,7 @@
         },
         {
           "file": "real-svelte-analyzer.ts",
-          "line": 457,
+          "line": 622,
           "column": 19,
           "source": "/^[A-Za-z_$][A-Za-z0-9_$]*$/",
           "operation": "test",
@@ -251,7 +317,7 @@
         },
         {
           "file": "real-svelte-analyzer.ts",
-          "line": 1003,
+          "line": 1259,
           "column": 26,
           "source": "/context=[\"']module[\"']/",
           "operation": "test",
@@ -262,7 +328,7 @@
         },
         {
           "file": "real-svelte-analyzer.ts",
-          "line": 1189,
+          "line": 1445,
           "column": 17,
           "source": "/^(.*?)\\s+(?:then|as)\\s+/",
           "operation": "test",
@@ -274,74 +340,52 @@
       ]
     },
     {
-      "file": "real-clean-analyzer.ts",
-      "count": 2,
+      "file": "real-c-analyzer.ts",
+      "count": 1,
       "usages": [
         {
-          "file": "real-clean-analyzer.ts",
-          "line": 382,
-          "column": 32,
-          "source": "/^\\(|\\)$/g",
+          "file": "real-c-analyzer.ts",
+          "line": 4317,
+          "column": 29,
+          "source": "/^\\d+[uUlL]*$/",
+          "operation": "test",
+          "receiver": "val.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-scss-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-scss-analyzer.ts",
+          "line": 72,
+          "column": 23,
+          "source": "/\\s+/g",
           "operation": "replace",
           "receiver": "text",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
-        },
-        {
-          "file": "real-clean-analyzer.ts",
-          "line": 383,
-          "column": 19,
-          "source": "/[,{}]/",
-          "operation": "test",
-          "receiver": "inner",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
         }
       ]
     },
     {
-      "file": "real-javascript-analyzer.ts",
-      "count": 2,
-      "usages": [
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 646,
-          "column": 35,
-          "source": "/^module\\.exports\\./",
-          "operation": "replace",
-          "receiver": "objText",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-javascript-analyzer.ts",
-          "line": 646,
-          "column": 69,
-          "source": "/^exports\\./",
-          "operation": "replace",
-          "receiver": "objText.replace(/^module\\.exports\\./, \"\")",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-python-analyzer.ts",
+      "file": "real-sql-analyzer.ts",
       "count": 1,
       "usages": [
         {
-          "file": "real-python-analyzer.ts",
-          "line": 589,
-          "column": 28,
-          "source": "/^@/",
-          "operation": "replace",
-          "receiver": "c.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
+          "file": "real-sql-analyzer.ts",
+          "line": 95,
+          "column": 26,
+          "source": "/^pg_[a-z_]+$/",
+          "operation": "other",
+          "receiver": "",
+          "receiverCategory": "other",
+          "classification": "needs_review",
           "justification": ""
         }
       ]

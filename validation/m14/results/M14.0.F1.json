@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (41/44 languages pass)",
+      "description": "per-literal shrink-only register with reasons (40/44 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,8 +24,8 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "committedAt": "2026-09-29T01:27:42-04:00",
+  "commit": "02a1f0fb6ce960cb191ebb87359e01871a75584c",
+  "committedAt": "2026-09-30T03:56:41+02:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
@@ -37,8 +37,13 @@
           },
           {
             "from": 0,
+            "lang": "rust",
+            "to": 2
+          },
+          {
+            "from": 0,
             "lang": "zig",
-            "to": 1
+            "to": 2
           }
         ],
         "ok": false,
@@ -177,6 +182,20 @@
             "literal": "image"
           },
           {
+            "context": "real-rust-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "rust",
+            "line": 1886,
+            "literal": "bare_function_type"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "rust",
+            "line": 1886,
+            "literal": "parenthesized_type"
+          },
+          {
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
             "kind": "field",
             "lang": "sql",
@@ -187,8 +206,15 @@
             "context": "real-zig-analyzer.ts:comparison",
             "kind": "type",
             "lang": "zig",
-            "line": 623,
+            "line": 648,
             "literal": "field_identifier"
+          },
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "zig",
+            "line": 1250,
+            "literal": "struct_literal"
           }
         ]
       },
@@ -575,7 +601,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 62,
+        "referencedTypeLiterals": 63,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1004,10 +1030,21 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 80,
-        "status": "pass",
+        "referencedTypeLiterals": 85,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1886,
+            "literal": "bare_function_type"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1886,
+            "literal": "parenthesized_type"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-rust.wasm"
@@ -1353,14 +1390,19 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 46,
+        "referencedTypeLiterals": 52,
         "status": "fail",
         "unknownFields": [],
         "unknownNodeTypes": [
           {
             "context": "real-zig-analyzer.ts:comparison",
-            "line": 623,
+            "line": 648,
             "literal": "field_identifier"
+          },
+          {
+            "context": "real-zig-analyzer.ts:comparison",
+            "line": 1250,
+            "literal": "struct_literal"
           }
         ],
         "waivedFindings": [],
@@ -1373,10 +1415,10 @@
       }
     },
     "summary": {
-      "fail": 3,
+      "fail": 4,
       "languagesAudited": 44,
-      "pass": 41,
-      "totalUnknownReferences": 10
+      "pass": 40,
+      "totalUnknownReferences": 13
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1404,9 +1446,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T05:36:53.645Z",
-  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-09-30T02:00:02.006Z",
+  "regeneratedAtCommit": "02a1f0fb6ce960cb191ebb87359e01871a75584c",
+  "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }

@@ -175,7 +175,7 @@ async function main(): Promise<void> {
     for (const p of problems) console.log("PROBLEM: " + p)
   } else {
     console.log("verdict: every engine relationship type is either emitted and gated here, or ruled out with a reason. " +
-      "That is the whole claim \u2014 not \"the lane emits a lot\", which no gate can mean anything by.")
+      "That is the whole claim — not \"the lane emits a lot\", which no gate can mean anything by.")
   }
   if (out) {
     fs.writeFileSync(out, JSON.stringify({
