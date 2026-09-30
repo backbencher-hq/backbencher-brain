@@ -230,12 +230,14 @@
     "gaps": [
       {
         "id": "DARTGAP1",
-        "severity": "high",
+        "severity": "decision",
         "node_type": "variable_pattern, pattern_variable_declaration",
         "live_occurrences": 353,
         "live_files": 110,
-        "missing": "a pattern-bound name is a real BINDING and deserves what a local declarator gets. The analyzer already collects these names for scoping (DT2's isBindingPatternContext) but emits no symbol, so a `uses` edge can point at a name that is not in the graph. Highest volume and the cheapest to close, because the binder detection already exists.",
-        "effort": "small — the names are already computed; only the symbol is missing"
+        "missing": "RE-SCOPED AFTER MEASUREMENT, and the first framing of this row was wrong. It claimed pattern bindings 'deserve what a local declarator gets' and that the names are already computed so only a symbol is missing. Both halves fail against the corpus. (a) A local declarator is NOT a symbol in this lane either -- it goes in the `bound` set, and DT2-C rules reads of bound names as `uses` edges, the same convention TypeScript pins as `interp-uses` and the same reason `uses build -> context` publishes for a parameter. So a pattern-bound name publishing `uses f -> a` with no symbol is CONSISTENT, not a gap. (b) The real question is the navigation one every language shares: should a BINDING be a symbol so a consumer resolving that edge finds a node? That is a family decision, not Dart work. MEASURED on all six pattern forms (if-case, record positional, named field, list with rest, null-check) and every one already behaves exactly as a parameter does.",
+        "effort": "DECISION, not construction. If bindings become symbols it is a cross-language change; if they stay bound this row closes as wontfix-by-convention and should be deleted from the gap list.",
+        "measured_position": "All six forms verified: `uses` published to the bound name, no symbol, and a read of the name is correctly suppressed as a local. Identical to the parameter treatment, which is the convention.",
+        "shadowing_checked_and_correct": "A shadowing defect was SUSPECTED here and does not exist; recorded because the suspicion and its refutation are both informative. Probe: `class C { final String s; void f(Object? o) { if (o case final String s) print(s); } }` publishes `uses f -> s`, whose target NAME is also a field symbol in the file, so it reads at first like a fabricated member read. The metadata says otherwise: the edge is `confidence 0.9, isLocalRead` — the LOCAL-READ arm — and a genuine field read is `confidence 0.6, isBareRead`. The pattern binding shadows the field exactly as a parameter and a `var` do, all three measured at 0.9/isLocalRead against the 0.6 control. The apparent collision is inherent to a name-keyed graph and is the accepted `interp-uses` situation, not a wrong edge. Corpus census agrees: 0 of 1,294 ProxiCall/lib files have a pattern-bound name colliding with a same-file symbol, which is what correct behaviour plus idiomatic naming predicts."
       },
       {
         "id": "DARTGAP2",
