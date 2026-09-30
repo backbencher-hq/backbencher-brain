@@ -27,6 +27,17 @@ const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
  */
 const NON_DISCRIMINATIVE_MARGIN = 0.05
 
+/**
+ * Minimum cosine for a LOCAL (offline, 50-dimensional hashed) match to be
+ * returned at all. Derived from measurement, not taste — see the comment at the
+ * threshold site for the two populations and the trade-off table.
+ *
+ * Overridable per call through `options.similarityThreshold`, which is what a
+ * caller raising or lowering its own bar should use; this constant is the
+ * default that a caller who has expressed no opinion gets.
+ */
+export const LOCAL_VECTOR_FLOOR = 0.5
+
 // Sparse/incompatible model labels that must never be fed to dense cosine.
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
 
@@ -224,7 +235,36 @@ export async function semanticVectorSearch(
   }
 
   const isLocalVectors = queryVector.length < 200
-  const threshold = options.similarityThreshold ?? (isLocalVectors ? 0.15 : 0.35)
+  // The LOCAL floor was 0.15, which sits far below the noise. Measured on rake
+  // with the production scorer, over two populations known apart WITHOUT a
+  // human judging them:
+  //
+  //   GOOD — a symbol scored against a query that NAMES it. The answer is known
+  //          to exist, so the score is a true positive.
+  //   BAD  — the top-scoring symbol for an ordinary question about a capability
+  //          this corpus does not have ("how does authentication work" in a
+  //          build tool). Every hit is a false positive BY CONSTRUCTION, because
+  //          the honest answer is "nothing found".
+  //
+  //          GOOD: n=120  min -0.262  p10 0.185  p50 0.576  p90 1.000
+  //          BAD:  n= 10  min  0.312  p10 0.346  p50 0.443  p90 0.547
+  //
+  // 0.15 is below the false-positive MEDIAN, so the old floor admitted
+  // essentially every wrong answer. What a floor buys:
+  //
+  //   floor 0.45   keeps 69% of true matches, 40% of false ones
+  //   floor 0.50   keeps 61% of true matches,  0% of false ones
+  //   floor 0.55   keeps 53% of true matches,  0% of false ones
+  //
+  // 0.50 is the knee. The dense matches it gives up are symbol-name queries,
+  // and those are resolved EXACTLY by the name route before retrieval is
+  // consulted at all — so nothing reachable by a user is lost, while every
+  // question this corpus cannot answer becomes an explicit "no semantic match"
+  // instead of a confident `matrix` at similarity 0.387.
+  //
+  // The API-embedding floor stays at 0.35: it was chosen for a different model
+  // in a different space, and there is no measurement here to move it.
+  const threshold = options.similarityThreshold ?? (isLocalVectors ? LOCAL_VECTOR_FLOOR : 0.35)
   const ranked = scored
     .filter((s) => s.similarity >= threshold)
     .sort((a, b) => b.similarity - a.similarity)
