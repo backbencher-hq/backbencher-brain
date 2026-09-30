@@ -1913,8 +1913,16 @@ const handlers: Record<string, ToolHandler> = {
             rule: impact.rule,
             budget: impact.budget,
             traversal: impact.traversal,
+            cascade: impact.cascade,
+            countVerification: impact.countVerification,
             ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
-            impact: dependents,
+            // The component's own bookkeeping does not ride the wire. `tracedId`
+            // is the walk node a cascade row was found at — deciding `via` needs
+            // it and a reader has no use for an opaque id, so the payload
+            // publishes the DECLARED fact (`via`, `viaMember`) and not the
+            // intermediate it was derived from. Everything else on a dependent is
+            // a fact about the stored row or about the file.
+            impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
             shownCount: impact.shownCount,
             directCount: impact.directCount,
             totalCountIfKnown: impact.totalCountIfKnown,

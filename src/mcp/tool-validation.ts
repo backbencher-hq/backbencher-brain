@@ -169,6 +169,19 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
   }
   // M31.T1: confidenceThreshold is documented as valid 0..1; out-of-range values
   // were silently accepted and produced misleading findings.
+  // M63.T2: the same validation bb_graph's relationshipTypes gets. An empty
+  // list would silently mean "no filter" upstream while the caller believes it
+  // means "no dependencies", and a list that is not strings cannot reach the
+  // SQL — both are loud errors, never a quiet reinterpretation.
+  if ((tool === "bb_graph" || tool === "bb_impact") && args.relationshipTypes !== undefined) {
+    const list = args.relationshipTypes
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error(`${tool} relationshipTypes must name at least one relationship kind`)
+    }
+    if (list.some((t) => typeof t !== "string" || t.trim().length === 0)) {
+      throw new Error(`${tool} relationshipTypes must be an array of non-empty relationship kind names`)
+    }
+  }
   if (tool === "bb_patterns" && args.confidenceThreshold != null) {
     const c = Number(args.confidenceThreshold)
     if (!Number.isFinite(c) || c < 0 || c > 1) {

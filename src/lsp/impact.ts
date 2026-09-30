@@ -128,10 +128,14 @@ export interface ImpactResult {
   budget: {
     maxNodes: number
     maxDepth: number
-    /** Declared ceilings the declared total is computed under. Past either,
-     *  `totalCountIfKnown` and `directCount` are null (declared unknown). */
+    /** Declared ceilings the declared total is computed under. Past any of
+     *  them, `totalCountIfKnown` and `directCount` are null (declared
+     *  unknown) — the walk gives up rather than spends unbounded time to be
+     *  more certain. */
     totalScanCeiling: number
     totalExpansionCeiling: number
+    /** The ceiling that actually governs the answer's cost, in milliseconds. */
+    totalTimeCeilingMs: number
   }
   /** How far the walk actually went, and the engine's own bound declarations
    *  (its per-query site limit, how many of its queries hit it, and the root's
@@ -184,6 +188,27 @@ export interface ImpactResult {
    *  not appear can read it here instead of inferring it, and the set and its
    *  declared total are guaranteed to be measurements of this same list. */
   rule: { relationshipTypes: string[]; cascade: string; noisePolicy: string; maxDepth: number }
+  /** M63.T2: the RETURNED set's composition by HOW each dependent is a
+   *  dependent. `rangeFolded` is the number of rows in `impact` that are in the
+   *  answer only because the cascade range widened — a conservative
+   *  over-count, declared rather than hidden. `null` when the composition could
+   *  not be established (a member lookup the index refused), which is a third
+   *  thing again, and is not zero. */
+  cascade: { exact: number; member: number; rangeFolded: number } | null
+  /** M63.T2: HOW completeness was established, so a reader can tell an answer
+   *  that is complete BY CONSTRUCTION from one that was measured and agreed.
+   *
+   *  `ran: false` — the walk never reached the depth boundary, so no node could
+   *  have been blocked, every bound that could fire has declared itself, and the
+   *  set is the whole truth without a measurement having been paid for.
+   *  `ran: true, timedOut: false` — the set was measured against an unbounded
+   *  walk of the same rule and the two agree.
+   *  `ran: true, timedOut: true` — the measurement stopped on the wall clock.
+   *  That is the ONE case where the same question can get two different answers,
+   *  because it is the only field here that depends on the machine rather than
+   *  on the index — so it is published rather than folded into the total's null,
+   *  where a reader could not tell a busy refusal from a structural one. */
+  countVerification: { ran: boolean; timedOut: boolean; boundarySuspect: boolean }
 }
 
 export interface ImpactDb {
@@ -208,6 +233,34 @@ export interface ImpactDependent {
   isCrossLanguage: boolean
   /** The bridge mechanism, when the row names one (null otherwise). */
   bridgeMechanism: string | null
+  /** M63.T2: HOW this row makes the dependent a dependent, under the walk's
+   *  own rule.
+   *
+   *  `exact` — the stored row names the traced symbol itself.
+   *  `member` — the row names a member of it (the owner cascade doing what it
+   *  says: a class's method is attributed to the class).
+   *  `range-folded` — the row names a symbol that is NEITHER the traced symbol
+   *  nor a member of it, and is in the answer only because the cascade RANGE
+   *  widened. The range is built from a symbol id up to its LAST colon, so for
+   *  a walked member `P:container:29` the range is [`P:container:`,
+   *  `P:container;`) — the whole container — and every sibling of `29` is
+   *  folded in with it. Measured: ripgrep `RegexMatcher` answers 14 dependents
+   *  of which all 14 are `range-folded` and none is a real member, and across
+   *  the lane's corpora 21 914 owner ids sit inside some level member's range
+   *  without being that member. The range is a SUPERSET — it never loses a
+   *  dependent the owner relation has — so a reader is being told "this might
+   *  break", but it is told so about a symbol nobody asked about, and that is
+   *  only acceptable if the answer says which rows those are.
+   *
+   *  Taken from the engine's own `targetMatch` / `matchedMember`, so there is
+   *  no second derivation of a fact the engine already states. */
+  via: "exact" | "member" | "range-folded"
+  /** The member the row actually named, when `via` is not `exact` — the
+   *  engine's own record, with the named member's name and file. */
+  viaMember?: { name: string; file: string }
+  /** The walk node this row was found at, kept because deciding `via` needs it
+   *  and for no other reason. Internal: the door does not publish it. */
+  tracedId?: string
   /** M63.T1: whether this dependent's FILE changed since it was indexed.
    *  Set by the surface that can answer it (the MCP door, over the component's
    *  file rows); absent from a component-level answer, which never touches
@@ -271,6 +324,31 @@ export const IMPACT_TOTAL_SCAN_CEILING = 50_000
  *  both counts are null — the declared unknown. */
 export const IMPACT_TOTAL_EXPANSION_CEILING = 2_000
 
+/** Declared WALL-CLOCK ceiling on the counting walk, in milliseconds.
+ *
+ *  A wall-clock bound is a different KIND of bound from the other two, and the
+ *  difference is not cosmetic. The row and expansion ceilings are properties of
+ *  the INDEX, so the same question always gets the same answer. The clock is a
+ *  property of the MACHINE, so the same question can get two — and this tool's
+ *  own suite caught it doing that: cobra `Command` answered `95/null` and then
+ *  `95/446` to two identical calls, because the first ran while the machine was
+ *  busy. A total that changes when the load changes is not a fact about the
+ *  index, so the clock is not used as the tool's budget: the budget is the work
+ *  ceiling, and this is a circuit breaker behind it, for an index large enough
+ *  that a work bound would not bound anything.
+ *
+ *  The first version of it was 1 200 ms, chosen from the cost of one hub. That
+ *  was the wrong number in the wrong direction: it fired on answers the work
+ *  bound would have delivered, so it was manufacturing declared unknowns on
+ *  perfectly measurable symbols — eight of the thirteen measured hubs lost an
+ *  exact total to it. What the measurement actually says is that the expansion
+ *  ceiling is NOT the cost driver: eleven of twelve hubs give an exact total at a
+ *  300-expansion ceiling, at the same wall time as at 2 000, and the three that
+ *  stay unknown do so at every ceiling (their closures are wide, not deep). So
+ *  the cost is set by the level widths, and 4 000 ms is a breaker that none of
+ *  the measured corpora reaches while still capping the pathological one. */
+export const IMPACT_TOTAL_TIME_CEILING_MS = 4_000
+
 export interface ImpactTotalCount {
   /** Distinct dependent symbols under the declared rule, transitive to
    *  `maxDepth`; null when the scan ceiling was reached (declared unknown,
@@ -289,6 +367,17 @@ export interface ImpactTotalCount {
   /** Symbols the walk opened (the other declared cost bound). */
   expansions: number
   hitScanCeiling: boolean
+  /** M63.T2: the walk stopped on the WALL CLOCK, not on a declared work bound.
+   *  A separate field from `hitScanCeiling` because the two mean different
+   *  things to a reader: the work ceilings are properties of the INDEX (the
+   *  same question always gives the same answer), and the clock is a property
+   *  of the MACHINE (the same question can give a different one). Keeping them
+   *  apart is what lets a reader — and the lane's stability law — tell a
+   *  structural unknown from a busy one. */
+  timedOut: boolean
+  /** The walk's composition by HOW each dependent is a dependent, measured
+   *  under the same rule as `total`. See `ImpactResult.cascade`. */
+  cascade: { exact: number; member: number; rangeFolded: number } | null
 }
 
 /** The owner-cascade id range: everything owned by `symbolId` sorts between
@@ -319,45 +408,85 @@ export function countImpactDependents(
   db: ImpactDb,
   projectId: string,
   rootSymbolId: string,
-  options: { maxDepth?: number; scanCeiling?: number; expansionCeiling?: number; relationshipTypes?: readonly string[] } = {},
+  options: {
+    maxDepth?: number
+    scanCeiling?: number
+    expansionCeiling?: number
+    timeCeilingMs?: number
+    relationshipTypes?: readonly string[]
+  } = {},
 ): ImpactTotalCount {
   const maxDepth = options.maxDepth ?? IMPACT_BUDGET.maxDepth
   const scanCeiling = options.scanCeiling ?? IMPACT_TOTAL_SCAN_CEILING
   const expansionCeiling = options.expansionCeiling ?? IMPACT_TOTAL_EXPANSION_CEILING
+  const timeCeilingMs = options.timeCeilingMs ?? IMPACT_TOTAL_TIME_CEILING_MS
+  const startedAt = Date.now()
   // The kinds the WALK was given, not a list of this module's own: the caller
   // hands both the same array, so a total can never describe a set that was
   // measured under a different rule.
   const relTypes = options.relationshipTypes ?? IMPACT_REL_TYPES
   const relPlaceholders = relTypes.map(() => "?").join(",")
   // One level, one statement. Every symbol at the same distance from the root
-  // contributes its own cascade range to a single disjunction, so the walk
-  // asks "who depends on ANY of these" once instead of once per symbol.
-  // 200 symbols per batch keeps the statement inside SQLite's default bound of
-  // 999 parameters (200 × 3 + the fixed ones); correctness does not depend on
-  // the batch size, only the number of round trips does.
+  // is asked about at once, so the walk asks "who depends on ANY of these" once
+  // per level instead of once per symbol.
+  //
+  // The statement is a flat IN list of the batch's ids plus one range predicate
+  // per DISTINCT cascade range in it — not one disjunction term per member.
+  // Two reasons, both measured:
+  //   * the disjunction nests, so a level wider than ~400 symbols cannot be
+  //     PREPARED at all ("Expression tree is too large"), and that failure
+  //     arrives as a declared `null`, indistinguishable from an unreadable
+  //     index. A flat list does not nest, and a batch of 200 keeps the
+  //     statement inside SQLite's default bound of 999 parameters.
+  //   * SQLite evaluates every term of the disjunction against every candidate
+  //     row, so the per-batch cost grew superlinearly with the batch. The union
+  //     of the per-member ranges IS the union of the distinct ranges — measured:
+  //     3 359 level members collapse to ONE — and `m.id = L` for each L is one
+  //     list. Same relation: the symmetric difference against the old form is
+  //     zero on all six measured hubs, at 1.4-1.7x the speed.
   const BATCH = 200
-  const levelSql = (batchSize: number) =>
+  const levelSql = (ids: number, ranges: number) =>
     "SELECT s.id AS id, s.name AS name, f.relative_path AS file " +
     "FROM brain_relationship r " +
     "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
     "JOIN brain_file f ON f.id = s.file_id " +
     "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
-    "AND r.target_symbol_id IN (SELECT m.id FROM brain_symbol m WHERE m.project_id = ? AND (" +
-    new Array(batchSize).fill("(m.id = ? OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?))").join(" OR ") +
+    "AND r.target_symbol_id IN (SELECT m.id FROM brain_symbol m WHERE m.project_id = ? AND (m.id IN (" +
+    new Array(ids).fill("?").join(",") +
+    ")" +
+    new Array(ranges).fill(" OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?)").join("") +
     "))"
   try {
     const found = new Set<string>()
     const depths = new Map<string, number>()
+    // Every symbol this walk OPENED, across every level. Kept because it is
+    // what decides how a found dependent got in: a target is `exact` if the
+    // walk asked about it, `member` if the walk asked about its OWNER, and
+    // `range-folded` if neither and the cascade RANGE let it in anyway.
+    const opened = new Set<string>()
     const visited = new Set<string>()
     let frontier: Array<{ id: string; depth: number }> = [{ id: rootSymbolId, depth: 0 }]
     let direct = 0
     let rowsScanned = 0
     let expansions = 0
     let hitScanCeiling = false
+    let timedOut = false
 
     while (frontier.length > 0 && !hitScanCeiling) {
       const next: Array<{ id: string; depth: number }> = []
       for (let start = 0; start < frontier.length; start += BATCH) {
+        // Per BATCH, not per level. A level can be a thousand symbols, so
+        // checking only between levels let the walk overshoot its own ceiling
+        // by 67% (measured: a 1 200 ms ceiling costing 2 001 ms). A batch is
+        // ONE statement, so checking here bounds the overshoot to that
+        // statement and nothing else.
+        if (Date.now() - startedAt > timeCeilingMs) {
+          // The clock, not a work bound. Named separately so a reader is never
+          // told "the index says so" when the machine said so.
+          timedOut = true
+          hitScanCeiling = true
+          break
+        }
         const batch = frontier.slice(start, start + BATCH).filter((entry) => !visited.has(entry.id))
         if (batch.length === 0) continue
         for (const entry of batch) {
@@ -366,20 +495,27 @@ export function countImpactDependents(
             break
           }
           visited.add(entry.id)
+          opened.add(entry.id)
           expansions++
         }
         if (hitScanCeiling) break
-        const params: unknown[] = [projectId, ...relTypes, projectId]
+        // The cascade range belongs to the symbol being walked, not to the
+        // root: at distance d the members of THAT symbol are the targets whose
+        // edges make it a dependent. Using the root's range for every level
+        // silently drops the owner-cascade edges of every non-root level —
+        // measured on rake `each`: 112 found instead of 143.
+        //
+        // Distinct ranges, not distinct members: two members of the same
+        // container share one range, which is the whole point of the range's
+        // construction and the reason the statement stays small on a wide level.
+        const ranges = new Map<string, string>()
         for (const entry of batch) {
-          // The cascade range belongs to the symbol being walked, not to the
-          // root: at distance d the members of THAT symbol are the targets
-          // whose edges make it a dependent. Using the root's range for every
-          // level silently drops the owner-cascade edges of every non-root
-          // level — measured on rake `each`: 112 found instead of 143.
           const prefix = cascadePrefix(entry.id)
-          params.push(entry.id, prefix, prefix + ";")
+          if (!ranges.has(prefix)) ranges.set(prefix, prefix)
         }
-        const rows = db.prepare(levelSql(batch.length)).all(...params) as Array<{ id: string; name: string; file: string }>
+        const params: unknown[] = [projectId, ...relTypes, projectId, ...batch.map((entry) => entry.id)]
+        for (const prefix of ranges.values()) params.push(prefix, prefix + ";")
+        const rows = db.prepare(levelSql(batch.length, ranges.size)).all(...params) as Array<{ id: string; name: string; file: string }>
         rowsScanned += rows.length
         if (rowsScanned > scanCeiling) {
           hitScanCeiling = true
@@ -400,11 +536,80 @@ export function countImpactDependents(
       }
       frontier = next
     }
-    return { total: hitScanCeiling ? null : found.size, direct, rowsScanned, expansions, hitScanCeiling, depths }
+    return {
+      total: hitScanCeiling ? null : found.size,
+      direct,
+      rowsScanned,
+      expansions,
+      hitScanCeiling,
+      timedOut,
+      depths,
+      cascade: classifyCascade(db, projectId, [...found], opened),
+    }
   } catch {
     // Unreadable index: the declared unknown, never a guess.
-    return { total: null, direct: 0, rowsScanned: 0, expansions: 0, hitScanCeiling: false, depths: new Map() }
+    return {
+      total: null,
+      direct: 0,
+      rowsScanned: 0,
+      expansions: 0,
+      hitScanCeiling: false,
+      timedOut: false,
+      depths: new Map(),
+      cascade: null,
+    }
   }
+}
+
+/** M63.T2: split a dependent set by HOW each member is a dependent.
+ *
+ *  The walk asked about every symbol it opened. So a found target is:
+ *  `exact`      — the walk asked about the target itself;
+ *  `member`     — the walk asked about the target's OWNER (the owner cascade
+ *                  working as declared);
+ *  `range-folded` — neither, and the target is here only because some opened
+ *                  symbol's cascade RANGE covered the target's owner without
+ *                  naming it. The range runs from a symbol id to the same id
+ *                  with its last colon replaced by `;`, so a member widens the
+ *                  range to its whole container and every sibling comes with
+ *                  it (see `ImpactDependent.via` for the measurement).
+ *
+ *  One indexed lookup per batch of target ids, after the walk rather than
+ *  inside it, so the walk's own statement keeps the shape that was measured to
+ *  be fast. A refusal is `null` — a third thing, not zero. */
+function classifyCascade(
+  db: ImpactDb,
+  projectId: string,
+  targets: string[],
+  opened: Set<string>,
+): { exact: number; member: number; rangeFolded: number } | null {
+  if (targets.length === 0) return { exact: 0, member: 0, rangeFolded: 0 }
+  const ownerById = new Map<string, string | null>()
+  try {
+    for (let i = 0; i < targets.length; i += 400) {
+      const slice = targets.slice(i, i + 400)
+      for (const row of db
+        .prepare("SELECT id AS id, owner_symbol_id AS owner FROM brain_symbol WHERE project_id = ? AND id IN (" + slice.map(() => "?").join(",") + ")")
+        .all(projectId, ...slice) as Array<{ id: string; owner: string | null }>) {
+        ownerById.set(row.id, row.owner ?? null)
+      }
+    }
+  } catch {
+    return null
+  }
+  let exact = 0
+  let member = 0
+  let rangeFolded = 0
+  for (const id of targets) {
+    if (opened.has(id)) {
+      exact++
+      continue
+    }
+    const owner = ownerById.get(id) ?? null
+    if (owner !== null && opened.has(owner)) member++
+    else rangeFolded++
+  }
+  return { exact, member, rangeFolded }
 }
 
 /** Bounded reverse-dependency impact for one symbol. Throws (declared error)
@@ -554,7 +759,45 @@ export async function computeImpact(
       }),
       isCrossLanguage: edge.isCrossLanguage === true,
       bridgeMechanism: edge.bridgeMechanism ?? null,
+      // The engine already classifies every caller row as `exact` or
+      // `owner-cascade` and names the member it matched (bb_graph publishes
+      // both). Reading them here is the point: a second derivation would be the
+      // defect M55.T5 exists to prevent, and a dropped field is the defect D10
+      // was filed for.
+      via: edge.targetMatch === "owner-cascade" ? "member" : "exact",
+      ...(edge.matchedMember ? { viaMember: edge.matchedMember } : {}),
+      // The walk node this row was found at, which is what the cascade
+      // classification below judges the named member against. It stays off the
+      // wire: it is an internal id the reader has no use for, and `via` is the
+      // reader-facing half of the same fact.
+      tracedId: edge.to,
     })
+  }
+  // M63.T2: `owner-cascade` is not the same thing as a real member. The named
+  // member is looked up once (name + file, both indexed) and its OWNER decides:
+  // an owner equal to the symbol the walk was at is the cascade working as
+  // declared, and anything else is here only because the range widened. The
+  // answer then declares how many of its rows are which, so a conservative
+  // over-count is visible instead of silent. A lookup the index refuses leaves
+  // the rows at `member` and the declared breakdown null — never zero.
+  // One lookup per DISTINCT member the answer names, not one per row: a class
+  // with forty cascaded callers names one member forty times.
+  const memberOwner = new Map<string, string>()
+  let unresolvedMembers = 0
+  for (const entry of impact) {
+    if (entry.via !== "member" || !entry.viaMember) continue
+    // The walk node this row was found at, so the member's owner can be judged
+    // against the symbol whose range let it in — and memoised WITH it, because
+    // the same member reached from two different walk nodes is two different
+    // questions.
+    const traced = entry.tracedId ?? ""
+    const key = `${entry.viaMember.name}\u0000${entry.viaMember.file}\u0000${traced}`
+    if (!memberOwner.has(key)) {
+      const owner = memberOwnerOf(db, projectId, entry.viaMember, traced)
+      memberOwner.set(key, owner)
+      if (owner === "unknown") unresolvedMembers++
+    }
+    if (memberOwner.get(key) === "range-folded") entry.via = "range-folded"
   }
   // M63.T2: an engine reason that describes a KIND FILTER is not a bound. The
   // engine's default is now every stored kind, so a caller that passes one
@@ -617,7 +860,14 @@ export async function computeImpact(
   const verify = truncated || boundarySuspect
   const counts = verify
     ? countImpactDependents(db, projectId, result.root.id, { maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes })
-    : { total: impact.length, direct: directFromSet, hitScanCeiling: false, depths: new Map<string, number>() }
+    : {
+        total: impact.length,
+        direct: directFromSet,
+        hitScanCeiling: false,
+        timedOut: false,
+        depths: new Map<string, number>(),
+        cascade: null,
+      }
   // The measured depths are the shortest paths, so the answer reports them
   // rather than the walk's first-trace stamps, and the set is re-sorted so
   // "deepest last" remains true of what is actually shown. A dependent the
@@ -647,6 +897,23 @@ export async function computeImpact(
     truncationReason = truncationReason ?? "impact-set-shorter-than-unbounded-walk"
   }
   const summary = result.summary
+  // A member whose owner the index refused is not evidence that it is a member,
+  // so the breakdown is then UNESTABLISHED: `null` says so where a count would
+  // read as a measurement.
+  let cascade: ImpactResult["cascade"] = { exact: 0, member: 0, rangeFolded: 0 }
+  if (unresolvedMembers === 0) {
+    let exact = 0
+    let member = 0
+    let rangeFolded = 0
+    for (const entry of impact) {
+      if (entry.via === "exact") exact++
+      else if (entry.via === "member") member++
+      else rangeFolded++
+    }
+    cascade = { exact, member, rangeFolded }
+  } else {
+    cascade = null
+  }
   return {
     root: {
       id: result.root.id,
@@ -666,6 +933,7 @@ export async function computeImpact(
       maxDepth: IMPACT_BUDGET.maxDepth,
       totalScanCeiling: IMPACT_TOTAL_SCAN_CEILING,
       totalExpansionCeiling: IMPACT_TOTAL_EXPANSION_CEILING,
+      totalTimeCeilingMs: IMPACT_TOTAL_TIME_CEILING_MS,
     },
     traversal: {
       depthReached: impact.reduce((n, entry) => (entry.depth > n ? entry.depth : n), 0),
@@ -692,10 +960,63 @@ export async function computeImpact(
     },
     rule: {
       relationshipTypes: [...relationshipTypes],
-      cascade: "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family",
+      cascade: "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family. The RANGE that implements it widens to the member's whole container, so siblings are folded in too; `cascade.rangeFolded` counts how many rows that accounts for in this answer",
       noisePolicy: "hard-noise symbol names and paths are excluded, as in every other analysis surface",
       maxDepth: IMPACT_BUDGET.maxDepth,
     },
+    cascade,
+    countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect },
+  }
+}
+
+/** M63.T2: the owner of the member a cascade row named, resolved from its name
+ *  and file, or `"range-folded"` when that owner is inside the walked symbol's
+ *  cascade range without being it.
+ *
+ *  `"unknown"` means the index could not resolve the member, and is not the
+ *  same answer as `"range-folded"`: one is a refusal, the other is a finding.
+ *  Both are indexed lookups (name, then file), memoised by the caller, so an
+ *  answer pays once per DISTINCT member it names. */
+function memberOwnerOf(
+  db: ImpactDb,
+  projectId: string,
+  member: { name: string; file: string },
+  tracedId: string,
+): "member" | "range-folded" | "unknown" {
+  try {
+    const file = db
+      .prepare("SELECT id AS id FROM brain_file WHERE project_id = ? AND (relative_path = ? OR path = ?) LIMIT 1")
+      .get(projectId, member.file, member.file) as { id: string } | undefined
+    if (!file) return "unknown"
+    // ALL the stored rows for that name in that file, not one of them. Measured:
+    // ripgrep's `matcher.rs` stores `non_matching_bytes` twice (a method at :481
+    // and a property at :379) and `RegexMatcher` three times (the struct and two
+    // `impl` blocks), so `LIMIT 1` here would be a coin toss presented as a
+    // measurement. A file can hold an overload, a generic instantiation, or —
+    // in Rust — one struct with several `impl` blocks, and the classification
+    // below is only as good as the candidate set it reads.
+    const rows = db
+      .prepare("SELECT id AS id, owner_symbol_id AS owner FROM brain_symbol WHERE project_id = ? AND file_id = ? AND name = ?")
+      .all(projectId, file.id, member.name) as Array<{ id: string; owner: string | null }>
+    if (rows.length === 0) return "unknown"
+    // The member the row named, judged against the symbol the walk was AT.
+    // `member` when ANY candidate is owned by it — a real member existing is
+    // evidence the row is a real cascade, and the field's job is to catch the
+    // rows that are NOT. `range-folded` when every candidate's owner is inside
+    // the walk node's cascade RANGE without being the walk node. Anything else
+    // — the engine matched it by a path this module cannot see — keeps the
+    // engine's own `owner-cascade` rather than being relabelled into a finding
+    // this module did not establish.
+    const prefix = cascadePrefix(tracedId)
+    let sawRangeOnly = false
+    for (const row of rows) {
+      if (row.owner === null || tracedId.length === 0 || row.owner === tracedId) return "member"
+      if (prefix.length === 0 || row.owner < prefix || row.owner >= prefix + ";") return "member"
+      sawRangeOnly = true
+    }
+    return sawRangeOnly ? "range-folded" : "member"
+  } catch {
+    return "unknown"
   }
 }
 
