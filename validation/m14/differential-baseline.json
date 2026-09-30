@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 16.74,
-    "loadAvgEnd": 17.5,
+    "loadAvgStart": 41.87,
+    "loadAvgEnd": 38.66,
     "sliceCount": 1
   },
   "counts": {
@@ -1580,6 +1580,24 @@
         "avgMsPerFile": 17.5
       },
       "sampleSetHash": "30e8a9b5f186db8b"
+    },
+    "tf-aws-components:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 1.1
+      },
+      "sampleSetHash": "00ec53d40fe79068"
+    },
+    "consul:make": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 10.5
+      },
+      "sampleSetHash": "abac0ebd75471c84"
     }
   },
   "hashes": {
@@ -1636,6 +1654,8 @@
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
-    "grails-core:xml": "30e8a9b5f186db8b"
+    "grails-core:xml": "30e8a9b5f186db8b",
+    "tf-aws-components:make": "00ec53d40fe79068",
+    "consul:make": "abac0ebd75471c84"
   }
 }

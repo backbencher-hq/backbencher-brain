@@ -751,9 +751,32 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         const w = this.firstChildOfType(n, new Set(["word"]))
         const name = w?.text?.trim() ?? ""
-        // `$(1)`, `$(2)` are positional parameters inside a macro body, not
-        // declarations; an all-digit name is never a symbol.
-        if (name && !this.isAllDigits(name)) emit(name, "ref", line)
+        if (name) {
+          // `$(1)`, `$(2)` are positional parameters inside a macro body, not
+          // declarations; an all-digit name is never a symbol.
+          if (!this.isAllDigits(name)) emit(name, "ref", line)
+        } else {
+          // A `variable_reference` with NO `word` of its own is a CONCATENATED
+          // name — `$(PAPEROPT_$(PAPER))` parses as
+          //   variable_reference -> concatenation -> word `PAPEROPT_` + variable_reference `$(PAPER)`
+          // and there is no declaration to find, because the name is built at
+          // expand time and no file can declare it. Emitting nothing here lost a
+          // real read: phpmyadmin/docs/Makefile declares `PAPEROPT_a4` and
+          // `PAPEROPT_letter` and then reads `$(PAPEROPT_$(PAPER))`, so this
+          // edge is the ONLY thing in the graph connecting those two
+          // declarations to the read that selects between them. The corpus
+          // differential reported it MISSING (2 edges, lines 18 and 20) when the
+          // 100th file entered the corpus, and the oracle derived it without
+          // consulting the analyzer.
+          //
+          // Emitted with the same `ref` intent as every other read, so the label
+          // still follows the one rule -- `references` iff this file declares the
+          // name -- and lands on `uses` here, which is correct: a computed name
+          // has no referent to point at.
+          const cat = this.firstChildOfType(n, new Set(["concatenation"]))
+          const catName = cat?.text?.trim() ?? ""
+          if (catName && !this.isAllDigits(catName)) emit(catName, "ref", line)
+        }
       } else if (n.type === "automatic_variable") {
         const w = this.firstChildOfType(n, new Set(["word"]))
         emit(w?.text?.trim() || n.text.trim(), "ref", line)
