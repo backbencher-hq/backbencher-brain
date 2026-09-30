@@ -333,12 +333,23 @@ async function searchContentBounded(
   const cap = phaseCap(pageBudget)
   let truncated = false
 
+  // Phases 1-3 are NOT gated on the page already being full.
+  //
+  // They used to be, and that made recall a function of the page size: a symbol
+  // reachable only by a docstring or qualified-name match was in the answer for
+  // limit=200 and absent for limit=15, because the exact-name phase alone
+  // filled the 15-slot budget. Measured on phpunit, the substring set lost 995
+  // of 7,256 matches this way — the same 15-row answer that a caller would
+  // trust as complete. The phases are bounded by `cap`, which is what actually
+  // bounds the work, so gating them bought nothing and cost recall.
+  const needed = () => byId.size < pageBudget
+
   // 1. exact name (indexed via the NOCASE index).
-  if (byId.size < pageBudget) {
+  if (needed()) {
     bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
   }
   // 2. name prefix (indexed range scan) — capped, and the cap is declared.
-  if (byId.size < pageBudget) {
+  if (needed()) {
     const rows = selectJoined(
       raw,
       projectId,
@@ -349,7 +360,7 @@ async function searchContentBounded(
     bump(rows, 3)
   }
   // 3. inner substring, over name / qualified name / docstring.
-  if (byId.size < pageBudget) {
+  if (needed()) {
     const lowerNeedle = trimmed.toLowerCase()
     const push = (rows: CorpusRow[]) => {
       for (const row of rows) {
