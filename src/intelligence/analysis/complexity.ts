@@ -35,6 +35,27 @@ export const COUPLING_RELATIONSHIP_TYPES = ["calls", "instantiates", "references
 
 const couplingClause = (): string => "relationship_type IN (" + COUPLING_RELATIONSHIP_TYPES.map(() => "?").join(",") + ")"
 
+/**
+ * Maintainability index, and the case where it is NOT computable.
+ *
+ * The formula is `171 - 5.2·ln(avgComplexity+1) - 16.2·ln(loc+1)`, a
+ * Halstead-free variant. It is calibrated for a single unit: the `16.2·ln(loc+1)`
+ * term drives the result negative for any scope above roughly 3·10⁴ non-blank
+ * lines. The old code clamped that to 0 and reported `available: true`, so
+ * backbencher-brain/src (165,567 lines) answered `maintainability: 0` — the
+ * clamp, presented as a measurement of a real project.
+ *
+ * So a negative RAW value means the formula does not apply to this scope, and
+ * the honest answer is `available: false`. A raw value of exactly 0 is a
+ * genuine result and is reported as one.
+ */
+function maintainabilityIndex(cyclomaticAvg: number | null, loc: number | null): number | null {
+  if (cyclomaticAvg === null || loc === null || loc <= 0) return null
+  const raw = 171 - 5.2 * Math.log(cyclomaticAvg + 1) - 16.2 * Math.log(loc + 1)
+  if (raw < 0) return null
+  return Math.round(raw * 100) / 100
+}
+
 // Scope-correct complexity. Unavailable metrics are marked available:false and
 // value:null rather than fabricated. depthOfInheritance is always unavailable
 // until real hierarchy analysis exists (previously hardcoded to 1).
@@ -81,11 +102,7 @@ export async function analyzeComplexity(
       .get(projectId, ...COUPLING_RELATIONSHIP_TYPES) as { c: number }
     const couplingEdges = Number(couplingRow.c)
     const cyclomaticAvg = symbolCount > 0 ? Math.round((totalCyclomatic / symbolCount) * 100) / 100 : null
-    let maintainability: number | null = null
-    if (symbolCount > 0 && loc >= 0) {
-      const mi = Math.max(0, 171 - 5.2 * Math.log((cyclomaticAvg ?? 0) + 1) - 16.2 * Math.log(loc + 1))
-      maintainability = Math.round(mi * 100) / 100
-    }
+    const maintainability = maintainabilityIndex(cyclomaticAvg, symbolCount > 0 ? loc : null)
     return {
       target,
       scope,
@@ -196,16 +213,10 @@ export async function analyzeComplexity(
     couplingEdges = null
   }
 
-  // Maintainability index (Halstead-free variant). Only computable when we have
-  // symbols and a LOC figure; otherwise unavailable rather than NaN.
-  let maintainability: number | null = null
-  // loc > 0, not loc >= 0: a scope whose files contribute no counted lines
-  // produces a near-maximum index (measured 156.17) that means nothing.
-  if (symbolCount > 0 && loc !== null && loc > 0) {
-    const avg = cyclomaticAvg ?? 0
-    const mi = Math.max(0, 171 - 5.2 * Math.log(avg + 1) - 16.2 * Math.log(loc + 1))
-    maintainability = Math.round(mi * 100) / 100
-  }
+  // Maintainability index. See maintainabilityIndex: unavailable when the
+  // scope has no LOC, and unavailable — not clamped to 0 — when the formula's
+  // own domain does not cover the scope.
+  const maintainability = symbolCount > 0 ? maintainabilityIndex(cyclomaticAvg, loc) : null
 
   return {
     target,

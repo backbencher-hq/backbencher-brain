@@ -1,7 +1,20 @@
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
 import type { FileDependency } from "../contracts"
+import type { EvidenceProvenance } from "../evidence"
 import { makeProvenance } from "../evidence"
+
+/** Cap on the per-file dependent / dependency lists inside one row.
+ *
+ *  A barrel or a widely-imported utility can have hundreds of importers; each
+ *  was rendered in full, so one row could dominate the page while saying
+ *  nothing a count would not say better. Capped and DECLARED per row: the
+ *  totals are the real figures and the two Truncated flags say the list was
+ *  cut. */
+const MAX_ROW_ENTRIES = 100
+
+
+
 
 type FileRow = { id: string; relativePath: string }
 type ImportRow = {
@@ -113,6 +126,25 @@ function escapeLike(value: string): string {
 //
 // Both dependents and dependencies return path AND fileId consistently, using
 // resolved relationships rather than path-substring guessing.
+/** The engine's own identity, once. The report-level page provenance is built
+ *  from this rather than from a second copy of the same three lines, so the two
+ *  can never disagree about which engine produced an edge. */
+export function dependencyProvenance(projectId: string): EvidenceProvenance {
+  return makeProvenance({
+    evidenceClass: "inferred",
+    engine: ENGINE,
+    engineVersion: ENGINE_VERSION,
+    projectId,
+    source: "brain_relationship+brain_import",
+    limitations: [
+      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
+      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
+      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
+      "A file's dependent and dependency lists are capped per row; dependentsTotal and dependenciesTotal are the real sizes and the Truncated flags say the list was cut.",
+    ],
+  })
+}
+
 export async function getFileDependencies(
   projectId: ProjectID,
   options: { filePath?: string; includeExternal?: boolean; limit?: number } = {},
@@ -214,19 +246,6 @@ export async function getFileDependencies(
     fileRows = fileRows.filter((f) => f.relativePath === prefix || f.relativePath.startsWith(prefix + "/"))
   }
 
-  const prov = makeProvenance({
-    evidenceClass: "inferred",
-    engine: ENGINE,
-    engineVersion: ENGINE_VERSION,
-    projectId,
-    source: "brain_relationship+brain_import",
-    limitations: [
-      "File-level edges are derived from symbol-level import relationships; alias/barrel re-exports may flatten multi-hop edges.",
-      "Internal specifiers are resolved against the importing file's directory. One that resolves to nothing is reported with resolution \"unresolved\" and no fileId — never guessed from a basename.",
-      "Only a small minority of 'imports' relationships carry both a source and a target symbol and brain_import.resolved_symbol_id is empty, so specifier resolution is the primary path here, not a fallback.",
-    ],
-  })
-
   const results: FileDependency[] = []
   for (const file of fileRows) {
     const deps = rawDepsByFile.get(file.id) ?? []
@@ -240,30 +259,48 @@ export async function getFileDependencies(
     // src/util/format.ts (4 real dependents).
     const internalDeps = deps.filter((d) => !d.external && d.fileId).length
     const unresolved = deps.filter((d) => d.resolution === "unresolved" && !d.external).length
+    const dependenciesTotal = deps.length
+    const dependentsTotal = dependents.length
     results.push({
       file: file.relativePath,
       fileId: file.id,
-      dependencies: deps,
-      dependents,
-      score: internalDeps + dependents.length,
+      dependencies: deps.slice(0, MAX_ROW_ENTRIES),
+      dependents: dependents.slice(0, MAX_ROW_ENTRIES),
+      dependenciesTotal,
+      dependentsTotal,
+      dependenciesTruncated: dependenciesTotal > MAX_ROW_ENTRIES,
+      dependentsTruncated: dependentsTotal > MAX_ROW_ENTRIES,
+      score: internalDeps + dependentsTotal,
       unresolvedSpecifiers: unresolved,
-      provenance: prov,
     })
   }
 
   results.sort((a, b) => b.score - a.score || a.file.localeCompare(b.file))
-  const page = results.slice(0, limit)
-  // makeProvenance defaults truncated:false. Slicing to `limit` and then saying
-  // "not truncated" is what let 20 of 93 files read as the whole project.
-  const provPage = makeProvenance({
-    evidenceClass: prov.evidenceClass,
-    engine: prov.engine,
-    engineVersion: prov.engineVersion,
-    projectId,
-    source: prov.source,
-    limitations: prov.limitations,
-    truncated: results.length > page.length,
-    unknowns: results.length > page.length ? [`file-page: showing ${page.length} of ${results.length} files — raise limit for the rest`] : [],
+  return results.slice(0, limit)
+}
+
+/**
+ * The report-level provenance for a dependency page.
+ *
+ * CONTRACT CHANGE (M-r2): provenance used to be repeated on every row. It is
+ * the SAME object for all of them — one engine, one evidence class, one set of
+ * limitations — and at 20 rows it was roughly a third of the payload: a
+ * default `dependencies` call rendered 38,124 bytes of which the informative
+ * part was the edges. It now lives once, on the report, next to the summary
+ * that states the page bound. A consumer reads `report.provenance`.
+ */
+export function dependencyPageProvenance(
+  provenance: EvidenceProvenance,
+  opts: { projectId: string; shown: number; total: number },
+): EvidenceProvenance {
+  return makeProvenance({
+    evidenceClass: provenance.evidenceClass,
+    engine: provenance.engine,
+    engineVersion: provenance.engineVersion,
+    projectId: opts.projectId,
+    source: provenance.source,
+    limitations: provenance.limitations,
+    truncated: opts.total > opts.shown,
+    unknowns: opts.total > opts.shown ? [`file-page: showing ${opts.shown} of ${opts.total} files — raise limit for the rest`] : [],
   })
-  return page.map((r) => ({ ...r, provenance: provPage }))
 }
