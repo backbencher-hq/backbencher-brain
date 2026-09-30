@@ -1147,8 +1147,17 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // call-site half of the same defect was fixed in this round too: the line
     // belongs to the name, never to the construct that contains it.
     const collectTypeNames = (n: Node, out: Array<{ name: string; line: number }>): void => {
-      const push = (name: string): void => {
-        if (name === "throws") return
+      const push = (name0: string): void => {
+        // M60/S15: quoting is not part of a NAME, on the TYPE-NAME path too. A
+        // backticked type is written that way precisely because the bare spelling
+        // is not a legal identifier — `library/src/scala/runtime/$throws.scala`
+        // declares `type `$throws` = Throwable`, and the edge published the target
+        // "`$throws`", which no reference can spell. Same rule and same helper as
+        // createSymbol (M60 #924), handleImport (S7) and collectExpressionUses (S13);
+        // this was the last of the sites that built a published name from raw node
+        // text. Measured 2 rows on a 2000-file scala3 draw.
+        const name = stripScalaQuoting(name0)
+        if (!name || name === "throws") return
         if (out.some((x) => x.name === name)) return
         out.push({ name, line: n.startPosition.row + 1 })
       }
@@ -1517,10 +1526,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isSelfReceiver = recv !== null && (recv.text === "this" || recv.text === "super")
           if (isSelfReceiver) {
             const leaf = n.childForFieldName?.("field")
-            if (leaf && leaf.text.length > 0) emitUse(n, leaf.text, leaf)
+            // M60/S13: quoting is not part of a NAME, on the read path as well as
+            // the declaration path. `` `enum`.values `` published the read target
+            // "`enum`" — a spelling no reference uses, because the only other way
+            // to write that identifier is `enum` (and it is backticked precisely
+            // because `enum` is a Scala 3 keyword). Same rule and same helper as
+            // createSymbol (M60 #924) and handleImport (M60/S7); the read path was
+            // the last one missed.
+            if (leaf && leaf.text.length > 0) emitUse(n, stripScalaQuoting(leaf.text), leaf)
           } else if (recv && recv.text.length > 0 && !(recv.text.charCodeAt(0) >= 65 && recv.text.charCodeAt(0) <= 90)) {
             // Capitalized receivers are type references (G3) — never Uses.
-            emitUse(n, recv.text, recv)
+            // The capitalisation test runs on the QUOTED text, which is the same
+            // character: a backtick is not a letter, so `` `enum` `` reads as
+            // lowercase and stays a read, which it is.
+            emitUse(n, stripScalaQuoting(recv.text), recv)
           }
         }
       }
@@ -3043,9 +3062,19 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
    * collectExpressionUses carries the same resolveSource.
    */
   private scalaDeclaredNameOf(node: Node): string | null {
+    // M60/S16: the name is read from the `name:` FIELD (M60/S8) and then
+    // quoting-stripped (M60 #924), because this string becomes an edge SOURCE and
+    // a backticked source cannot match anything. `def `dont crash on many
+    // options`(` — legal Scala, and common in a test suite — published every
+    // reference inside it under the source "`dont crash on many options`" with
+    // the backticks, while the declared name everywhere else in the analyzer is
+    // stripped. Measured 12 rows on a 2000-file scala3 draw
+    // (compiler/test/dotty/tools/dotc/SettingsTests.scala), all of them
+    // mis-attributed for that reason.
     const f = node.childForFieldName?.("name")
-    if (f) return f.text
-    return this.findChild(node, "identifier")?.text ?? null
+    if (f) return stripScalaQuoting(f.text)
+    const i = this.findChild(node, "identifier")?.text
+    return i === undefined ? null : stripScalaQuoting(i)
   }
 
   private findChild(node: Node, type: string): Node | null {
