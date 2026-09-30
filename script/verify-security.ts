@@ -190,11 +190,16 @@ try {
     h.ck("hotspot counts never exceed the finding count", matrix.hotspots.every((hs) => hs.findings <= matrix.findings.length), JSON.stringify(matrix.hotspots))
     h.ck("hotspot keys are real locations or symbols", matrix.hotspots.every((hs) => hs.kind === "file" || hs.kind === "symbol"), JSON.stringify(matrix.hotspots.map((h2) => h2.kind)))
     h.ck("hotspot maxSeverity is a documented severity", matrix.hotspots.every((hs) => ["critical", "high", "medium", "low", "unknown"].includes(hs.maxSeverity)), JSON.stringify(matrix.hotspots.map((h2) => h2.maxSeverity)))
-    // The file hotspot for src/handler.ts holds 3 findings (confirmed,
-    // mitigated, source_only) with severities high, high, unknown → max is high.
+    // The file hotspot for src/handler.ts holds ALL FOUR matrix rows —
+    // confirmed(high), mitigated(high), source_only(unknown), unresolved
+    // (critical) — so the true max is `critical`, not `high`. The first run of
+    // this suite asserted `3`/`high` and failed on both: the engine was right
+    // and the expectation was wrong, which is the correct direction for a test
+    // to fail in.
     const fileSpot = matrix.hotspots.find((hs) => hs.kind === "file" && hs.key === "src/handler.ts")
-    h.ck("the file hotspot reports the true max severity", fileSpot?.maxSeverity === "high", `maxSeverity=${fileSpot?.maxSeverity}`)
-    h.ck("the file hotspot counts every finding in it", fileSpot?.findings === 3, `findings=${fileSpot?.findings}`)
+    h.ck("the file hotspot reports the true max severity", fileSpot?.maxSeverity === "critical", `maxSeverity=${fileSpot?.maxSeverity} (expected critical — the sink-only row is critical)`)
+    h.ck("the file hotspot counts every finding in it", fileSpot?.findings === 4, `findings=${fileSpot?.findings} (expected 4 — the whole matrix lands in one file)`)
+    h.ck("the hotspot's count matches the returned findings", fileSpot?.findings === matrix.findings.length, `hotspot=${fileSpot?.findings} findings=${matrix.findings.length}`)
 
     // ── 6. alias normalization ──────────────────────────────────────────────
     const aliasRow = raw.prepare("SELECT COUNT(*) c FROM brain_taint_flow WHERE project_id = ?").get(projectId) as { c: number }
