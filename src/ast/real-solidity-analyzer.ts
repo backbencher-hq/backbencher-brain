@@ -321,6 +321,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     // SOL-6 — every SOURCE LINE the parser had to invent. Collected in one
     // pre-pass before the walk; consulted by both emit helpers.
@@ -1704,27 +1705,63 @@ const meta = modifiersOf(node)
     // it. A candidate with no in-file target emits NOTHING: a fabricated target
     // sits at zero `unknownTargets` while being wrong.
     let overridesEmitted = 0
+    let overridesEmittedExternal = 0
     let overridesUnresolved = 0
+    /** SOL-11 — refused because a bare `override` over 2+ bases says one of them
+     *  declares the member without saying which. A real ambiguity, not a gap. */
+    let overridesAmbiguousBaseCount = 0
     for (const cand of overrideCandidates) {
-      const bases = cand.explicit.length > 0 ? cand.explicit : cand.anyBase
+      // SOL-11 — a bare `override` over SEVERAL header bases is genuinely
+      // ambiguous (which base declares it?), and stays refused. An EXPLICIT list is
+      // not: the compiler enforces that each named base declares the member.
+      const bases = cand.explicit.length > 0
+        ? cand.explicit
+        : (cand.anyBase.length === 1 ? cand.anyBase : [])
+      // `bases` IS the policy: an explicit list, else the single header base, else
+      // empty for the 2+-bases case. So emptiness is the ONLY refusal condition,
+      // and it is decided before the loop — gating inside the loop on `inFile` is
+      // what made both an earlier draft drop the explicit-list case and a later one
+      // drop the single-header-base case. Two bugs, one bad guard.
+      if (bases.length === 0) {
+        overridesUnresolved++
+        overridesAmbiguousBaseCount++
+        continue
+      }
       let hit = false
       for (const base of bases) {
         // A contract listing ITSELF in `override(A, B)` is a diamond-inheritance
         // shape the grammar accepts; `overrides g -> B` inside `B` would be a
         // function overriding a member of its own owner, which is not a thing.
         if (base === cand.owner) continue
-        const members = membersByType.get(base)
-        if (!members || !members.has(cand.memberName)) continue
         if (!symbolMap.has(`${cand.owner}\u0000${cand.memberName}\u0000method`)) continue
-        if (!symbolMap.has(`${base}\u0000${cand.memberName}\u0000method`)) continue
-        addRel(cand.memberName, base, ASTEngine.RelationshipType.Overrides, 0.8, cand.line, {
+        const members = membersByType.get(base)
+        const inFile = members !== undefined && members.has(cand.memberName)
+        // The shared companion hook, for the callers that DO populate it. Nothing
+        // in production does — see the header — but reading it costs one lookup and
+        // means this lane participates rather than only bypassing it.
+        const companion = context?.overrideCompanion?.get(base)
+        const viaCompanion = !inFile && companion !== undefined && companion.has(cand.memberName)
+        const external = !inFile
+        addRel(cand.memberName, base, ASTEngine.RelationshipType.Overrides, external ? 0.75 : 0.9, cand.line, {
           overridesMember: cand.memberName,
           baseType: base,
-          ...(cand.explicit.length > 0
-            ? { baseNamedByOverrideSpecifier: true }
-            : { baseFromContractHeader: true }),
+          ...(cand.explicit.length > 0 ? { baseNamedByOverrideSpecifier: true } : { baseFromContractHeader: true }),
+          ...(external
+            ? {
+              externalBase: true,
+              // A single header base is as strong as an explicit list: the compiler
+              // requires SOME base to declare the member and there is only one
+              // candidate. The reasonCode distinguishes them rather than merging
+              // two different proofs under one label.
+              reasonCode: cand.explicit.length > 0
+                ? "named-by-override-specifier"
+                : (viaCompanion ? "companion-index" : "single-header-base"),
+              ...(viaCompanion ? { crossFileVerified: true } : {}),
+            }
+            : {}),
         })
         overridesEmitted++
+        if (external) overridesEmittedExternal++
         hit = true
       }
       if (!hit) overridesUnresolved++
@@ -1797,7 +1834,9 @@ const meta = modifiersOf(node)
         analysisVersion: "6.0-sol-module-owners-lines-tiers",
         // Reported rather than hidden — see the F9 spec and the surface measure.
         overridesEmitted,
+        overridesEmittedExternal,
         overridesUnresolved,
+        overridesAmbiguousBaseCount,
         engineCallsSuppressed,
         getterSymbols,
         storeRefusedDeclarations,

@@ -65,7 +65,7 @@ the index.
 | SOL-8 | EVM builtins | An opcode is not a Yul call. | `yul_function_call`'s `function:` is `choice(yul_identifier, yul_evm_builtin)`. The skip is **lossless**: the lexer always spells a bare `add` as the builtin, so no user Yul function can carry the name. |
 | SOL-9 | The callee resolver | Recurses through the wrappers the grammar builds and stops at the first name. | `t.call{value: 1}("")` is a `call_expression` → `expression` → **`struct_expression`** (grammar.js:801, conflicting at :53). The intuitive `identifier`/`member_expression` model returns nothing for every option-bearing call in the language. |
 | SOL-10 | Two struct spellings | `S({a: 1})` (call + `call_struct_argument`) and `S { a: 1 }` (`struct_expression`) both yield a constructor `calls`. | Both spellings exist: 33 and 13 corpus occurrences, disjoint. |
-| SOL-11 | `overrides` | Emitted only when the base is declared **in this file**; otherwise `metadata.overrideExternal` plus a `references` edge. Tier `inferred`. | Solidity HAS the keyword, so which bases is settled by the tree; the **target** is located by matching, which is an inference. A fabricated target sits at zero `unknownTargets` while being wrong. |
+| SOL-11 | `overrides` | **Three tiers.** Base in-file **and** declaring the member → **0.9**, verified. Base **not** in-file but named by an explicit `override(…)` → **0.75**, `inferred`, `meta.reasonCode: "named-by-override-specifier"`, `meta.externalBase: true`. Bare `override` with **one** header base → **0.75**, `reasonCode: "single-header-base"`. Bare `override` with **two or more** header bases → **no edge**. `AnalyzeContext.overrideCompanion` is read when a caller populates it. | Solidity's compiler **rejects** `override(X)` unless `X` declares the member, so for any compiling source the edge is the language's own invariant, not a guess — which is why an external base may be emitted at all. Fifteen sibling analyzers get cross-file overrides from `overrideCompanion`, and **nothing in production ever populates it**; Solidity does not need it. The 2+-bases case stays refused because the keyword says *one* of them declares the member without saying which. |
 | SOL-12 | `exports` | The **compilation-unit surface**: every file-scope declaration except a free function. | Solidity has no export construct. `solc` emits an ABI and abstraction for each contract, interface and library and nothing else; a free function contributes no ABI entry. |
 | SOL-13 | A function is a declaration container | Its **locals belong to it**, so `contains f -> ok` rather than `contains C -> ok`. | Solidity locals are strictly function-scoped, so the contract-level edge is simply false. PowerShell PS3 deliberately keeps a method's owner as its class; that is right for PowerShell and wrong here, and the divergence is stated rather than inherited. |
 | SOL-14 | Store-refused names | Not declared. | `pool-worker.ts`'s `UNIVERSAL` denylist says such names are "never legitimate declarations in any language". For Solidity that is false: `self` (CrosschainLinked.sol:59) and `root` (MerkleTreeMock.sol:15) are both real. Measured as 2 unknown `contains` targets before the rule existed. |
@@ -94,7 +94,7 @@ short circuits only, with the operator read **structurally** rather than by matc
 source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
-`19.98 ms/file, 4,105 facts/ms` over 389 files at `loadAvg1 13.55` on 8 cores, with
+`63.88 ms/file, 1,301 facts/ms` over 389 files at `loadAvg1 22.87` on 8 cores, with
 `perfIsQualified: false` because of it.
 
 ---
@@ -167,9 +167,17 @@ Named, with their measured size. None of these is hidden in a percentage.
    corpus: an ancestor that is really an interface declared in **another file** gets
    the wrong KIND — not a missing edge. A per-file analyzer cannot see it. Reported as
    `implementsCrossFileUnresolved`.
-2. **`overrides` is mostly unresolved, by design.** 8 emitted, **386 unresolved**
-   because the base is in another file. Fabricating the target would be worse than
-   omitting it. Reported as `overridesUnresolved`.
+2. **`overrides` is now 422/100 emitted/unresolved — and the 100 are a real
+   ambiguity, not a gap.** 414 of the 422 point at a base declared in **another file**
+   (`overridesEmittedExternal`), carried at 0.75 with a `reasonCode`. That was not the
+   first draft of this lane: it emitted **8** and reported **386 unresolved**, which
+   is the JavaScript lane's failure mode wearing a different language — a true fact
+   dropped for want of a companion index nobody builds. Solidity needs no guess,
+   because the compiler enforces `override(X) ⟹ X declares it`. The remaining **100**
+   are bare `override` over 2+ header bases: Solidity 0.8.8+ requires an explicit
+   list precisely when more than one base declares a member, so the keyword says one
+   of them does and not which. Reported as `overridesUnresolved` /
+   `overridesAmbiguousBaseCount`.
 3. **1,786 `calls` targets resolve to no local symbol** (482 distinct) — EVM and ABI
    members like `transfer`, `encode`, `returndatasize`, `toUint`. **Expected, and not
    meant to be 0**: Solidity has no syntax that separates `t.transfer(…)` from a
@@ -233,14 +241,14 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Parse damage | **0** damaged, 0 ERROR, 0 MISSING, 0 damage classes | same |
 | Type coverage | **112 of 124** declared named exercised; **12** never | same |
 | Never-exercised reachability | **12/12** probes reached their type; **8/8** negative controls correct | same, `--verify-silence` on the spec |
-| Symbols / relationships | **5,976** / **25,936** | `script/m60/solidity-surface-measure.ts` |
-| **Line coverage** | **25,936 / 25,936 = 100.00%** | same |
+| Symbols / relationships | **5,976** / **26,350** | `script/m60/solidity-surface-measure.ts` |
+| **Line coverage** | **26,350 / 26,350 = 100.00%** | same |
 | `unknownTargets` | **0** | same |
 | `dupKeys` | **0** | same |
 | `reservedTargets` | **0** | same, via the imported predicate |
-| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 3878 · `extends` 537 · `exports` 487 · `references` 1303 · `implements` 7 · `overrides` 8 · `instantiates` 1, plus 899 import-annotated `references` | same |
-| Evidence tiers | structural 6619 · usage_contextual 18410 · import_based 899 · inferred 8 | same, read from the analyzer's own central emitter |
-| Perf | 19.98 ms/file, 4,105 facts/ms, at `loadAvg1 13.55` / 8 cores — **`perfIsQualified: false`** | same |
+| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 3878 · `extends` 537 · `exports` 487 · `references` 1303 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
+| Evidence tiers | structural 6619 · usage_contextual 18410 · import_based 899 · inferred 422 | same, read from the analyzer's own central emitter |
+| Perf | 63.88 ms/file, 1,301 facts/ms, at `loadAvg1 22.87` / 8 cores — **`perfIsQualified: false`** | same |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
