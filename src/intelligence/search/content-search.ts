@@ -299,6 +299,7 @@ async function searchContentClassic(
     // content search truncates — and it reports it rather than looking complete.
     truncated: matched.truncated,
     matchMode: matched.mode,
+    ...(matched.termMatch ? { termMatch: matched.termMatch } : {}),
     // Declared in the contract since the body column landed but never actually
     // populated: a project indexed before it has no searchable body at all, so
     // "nothing matched" there means something different from "nothing could
@@ -505,6 +506,7 @@ function buildResults(
     totalMatches: number
     truncated?: boolean
     matchMode?: ContentMatchMode
+    termMatch?: { queryTerms: string[]; topMatched: string[] }
     bodyCoverage?: { withBody: number; symbols: number; ratio: number }
   } = { totalMatches: page.length },
 ): SearchResults {
@@ -512,6 +514,7 @@ function buildResults(
   results.totalMatches = meta.totalMatches
   if (meta.truncated) results.truncated = true
   if (meta.matchMode) results.matchMode = meta.matchMode
+  if (meta.termMatch) results.termMatch = meta.termMatch
   if (meta.bodyCoverage) results.bodyCoverage = meta.bodyCoverage
   for (const row of page) {
     results.push({
@@ -683,7 +686,8 @@ export type ContentMatchMode = "phrase" | "terms"
 function matchContentRows(
   query: string,
   corpus: CorpusRow[],
-): { rows: CorpusRow[]; mode: ContentMatchMode; truncated: boolean } {
+): { rows: CorpusRow[]; mode: ContentMatchMode; truncated: boolean; termMatch?: { queryTerms: string[]; topMatched: string[] } } {
+  let termMatch: { queryTerms: string[]; topMatched: string[] } | undefined
   const needle = query.toLowerCase()
   const matched: CorpusRow[] = []
   for (const row of corpus) {
@@ -706,14 +710,14 @@ function matchContentRows(
   const terms = contentQueryTerms(query)
   if (terms.length === 0) return { rows: [], mode: "phrase", truncated: false }
 
-  const scored: Array<{ row: CorpusRow; score: number; all: number }> = []
+  const scored: Array<{ row: CorpusRow; score: number; all: number; hitTerms: string[] }> = []
   for (const row of corpus) {
     const name = row.name.toLowerCase()
     const qn = (row.qualifiedName ?? "").toLowerCase()
     const ds = (row.docstring ?? "").toLowerCase()
     const st = row.sourceText ? row.sourceText.toLowerCase() : ""
     let score = 0
-    let hit = 0
+    const hitTerms: string[] = []
     for (const t of terms) {
       // Same relative weights as the phrase route, extended per term rather
       // than re-tuned: a name is still the strongest evidence available.
@@ -721,9 +725,9 @@ function matchContentRows(
       if (name.includes(t)) best = 3
       else if (qn.includes(t)) best = 2
       else if (ds.includes(t) || st.includes(t)) best = 1
-      if (best > 0) { score += best; hit++ }
+      if (best > 0) { score += best; hitTerms.push(t) }
     }
-    if (hit > 0) scored.push({ row, score, all: hit === terms.length ? 1 : 0 })
+    if (hitTerms.length > 0) scored.push({ row, score, all: hitTerms.length === terms.length ? 1 : 0, hitTerms })
   }
   if (scored.length === 0) return { rows: [], mode: "terms", truncated: false }
   // Covering EVERY term beats covering one term prominently, so it is a
@@ -737,7 +741,16 @@ function matchContentRows(
       compareCodeUnits(a.row.relativePath, b.row.relativePath),
   )
   const truncated = scored.length > TERMS_FALLBACK_CAP
-  return { rows: scored.slice(0, TERMS_FALLBACK_CAP).map((e) => e.row), mode: "terms", truncated }
+  // The best row's WHICH WORDS, not just how many. A match on 1 of 3 query
+  // words is a different claim from a match on 3 of 3, and a caller cannot tell
+  // them apart from a count — the same symbol matches any query sharing that one
+  // word. This is what lets the answer text say which words carried the match
+  // instead of implying the code was found.
+  termMatch = {
+    queryTerms: terms,
+    topMatched: scored[0].hitTerms,
+  }
+  return { rows: scored.slice(0, TERMS_FALLBACK_CAP).map((e) => e.row), mode: "terms", truncated, termMatch }
 }
 
 function sortByFieldWeight(query: string, corpus: CorpusRow[]): CorpusRow[] {
