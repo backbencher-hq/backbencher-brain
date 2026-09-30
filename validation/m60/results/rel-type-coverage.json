@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-29T02:06:27.199Z",
+  "at": "2026-09-30T00:01:34.673Z",
   "enumValues": [
     "calls",
     "contains",
@@ -18,15 +18,23 @@
       "emitted": [
         "calls",
         "contains",
+        "exports",
         "imports",
+        "overrides",
         "references",
         "uses"
       ],
       "audited": [
+        "calls",
+        "contains",
+        "exports",
         "extends",
         "implements",
+        "imports",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references",
+        "uses"
       ]
     },
     {
@@ -55,9 +63,12 @@
       "emitted": [
         "calls",
         "contains",
+        "exports",
         "implements",
+        "imports",
         "instantiates",
-        "references"
+        "references",
+        "uses"
       ],
       "audited": [
         "calls",
@@ -125,7 +136,6 @@
         "extends",
         "implements",
         "instantiates",
-        "overrides",
         "references",
         "uses"
       ]
@@ -134,14 +144,19 @@
       "lang": "css",
       "emitted": [
         "contains",
+        "imports",
         "references",
         "uses"
       ],
       "audited": [
+        "contains",
         "extends",
         "implements",
+        "imports",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references",
+        "uses"
       ]
     },
     {
@@ -198,7 +213,9 @@
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references",
+        "uses"
       ]
     },
     {
@@ -213,10 +230,12 @@
         "references"
       ],
       "audited": [
+        "calls",
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references"
       ]
     },
     {
@@ -233,13 +252,10 @@
       ],
       "audited": [
         "calls",
-        "contains",
         "extends",
         "implements",
         "instantiates",
-        "overrides",
-        "references",
-        "uses"
+        "overrides"
       ]
     },
     {
@@ -308,23 +324,22 @@
         "extends",
         "implements",
         "instantiates",
-        "overrides",
-        "references",
-        "uses"
+        "overrides"
       ]
     },
     {
       "lang": "html",
       "emitted": [
-        "calls",
         "contains",
         "uses"
       ],
       "audited": [
+        "contains",
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "uses"
       ]
     },
     {
@@ -342,10 +357,13 @@
       ],
       "audited": [
         "calls",
+        "contains",
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references",
+        "uses"
       ]
     },
     {
@@ -363,10 +381,13 @@
       ],
       "audited": [
         "calls",
+        "contains",
+        "exports",
         "extends",
         "implements",
         "instantiates",
         "overrides",
+        "references",
         "uses"
       ]
     },
@@ -374,6 +395,9 @@
       "lang": "json",
       "emitted": [
         "contains",
+        "exports",
+        "extends",
+        "imports",
         "references",
         "uses"
       ],
@@ -398,10 +422,13 @@
       ],
       "audited": [
         "calls",
+        "contains",
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "references",
+        "uses"
       ]
     },
     {
@@ -424,7 +451,10 @@
       "lang": "makefile",
       "emitted": [
         "calls",
+        "contains",
+        "exports",
         "imports",
+        "references",
         "uses"
       ],
       "audited": [
@@ -441,10 +471,12 @@
         "uses"
       ],
       "audited": [
+        "contains",
         "extends",
         "implements",
         "instantiates",
-        "overrides"
+        "overrides",
+        "uses"
       ]
     },
     {
@@ -460,15 +492,10 @@
         "uses"
       ],
       "audited": [
-        "calls",
-        "contains",
         "extends",
         "implements",
-        "imports",
         "instantiates",
-        "overrides",
-        "references",
-        "uses"
+        "overrides"
       ]
     },
     {
@@ -501,8 +528,6 @@
         "overrides"
       ],
       "audited": [
-        "calls",
-        "contains",
         "extends",
         "implements",
         "instantiates",
@@ -536,10 +561,31 @@
       "emitted": [
         "calls",
         "contains",
+        "exports",
         "extends",
         "implements",
         "instantiates",
-        "references"
+        "overrides",
+        "references",
+        "uses"
+      ],
+      "audited": [
+        "calls",
+        "contains",
+        "exports",
+        "extends",
+        "implements",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ]
+    },
+    {
+      "lang": "protobuf",
+      "emitted": [
+        "contains",
+        "uses"
       ],
       "audited": [
         "extends",
@@ -655,6 +701,23 @@
       ]
     },
     {
+      "lang": "scss",
+      "emitted": [
+        "references",
+        "uses"
+      ],
+      "audited": [
+        "contains",
+        "extends",
+        "implements",
+        "imports",
+        "instantiates",
+        "overrides",
+        "references",
+        "uses"
+      ]
+    },
+    {
       "lang": "sql",
       "emitted": [
         "calls",
@@ -707,6 +770,19 @@
       ]
     },
     {
+      "lang": "toml",
+      "emitted": [
+        "contains"
+      ],
+      "audited": [
+        "contains",
+        "extends",
+        "implements",
+        "instantiates",
+        "overrides"
+      ]
+    },
+    {
       "lang": "typescript",
       "emitted": [
         "calls",
@@ -722,6 +798,7 @@
       ],
       "audited": [
         "calls",
+        "contains",
         "extends",
         "implements",
         "instantiates",
@@ -740,11 +817,8 @@
         "references"
       ],
       "audited": [
-        "calls",
-        "contains",
         "extends",
         "implements",
-        "imports",
         "instantiates",
         "overrides"
       ]
@@ -772,7 +846,6 @@
         "references"
       ],
       "audited": [
-        "contains",
         "extends",
         "implements",
         "instantiates",
@@ -783,7 +856,9 @@
       "lang": "yaml",
       "emitted": [
         "contains",
+        "exports",
         "extends",
+        "imports",
         "references",
         "uses"
       ],
@@ -799,17 +874,18 @@
       "emitted": [
         "calls",
         "contains",
+        "exports",
+        "imports",
+        "instantiates",
         "references",
         "uses"
       ],
       "audited": [
         "calls",
-        "contains",
         "extends",
         "implements",
         "instantiates",
         "overrides",
-        "references",
         "uses"
       ]
     }
@@ -829,31 +905,6 @@
   "findings": [
     {
       "check": "DERIVATION",
-      "lang": "bash",
-      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "bash",
-      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "bash",
-      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "bash",
-      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "bash",
-      "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
       "lang": "c",
       "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
@@ -866,6 +917,21 @@
       "check": "DERIVATION",
       "lang": "clean",
       "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "clean",
+      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "clean",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "clean",
+      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -894,18 +960,8 @@
     },
     {
       "check": "DERIVATION",
-      "lang": "css",
-      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "css",
-      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "css",
-      "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "lang": "csharp",
+      "detail": "emits `overrides` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -935,37 +991,32 @@
     {
       "check": "DERIVATION",
       "lang": "erlang",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "erlang",
-      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "erlang",
-      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "fsharp",
-      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "fsharp",
-      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "fsharp",
-      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "go",
-      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
+      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "go",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "go",
+      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "go",
+      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1000,77 +1051,52 @@
     {
       "check": "DERIVATION",
       "lang": "hcl",
-      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "hcl",
-      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "hcl",
-      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "html",
-      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "html",
       "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
-      "lang": "html",
+      "lang": "hcl",
+      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "hcl",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "hcl",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "hcl",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "java",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "java",
-      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "java",
-      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "java",
-      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "javascript",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "javascript",
-      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "javascript",
-      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "javascript",
-      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"exports\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "json",
       "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "json",
+      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "json",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1081,21 +1107,6 @@
       "check": "DERIVATION",
       "lang": "json",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "kotlin",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "kotlin",
-      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "kotlin",
-      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1120,7 +1131,22 @@
     {
       "check": "DERIVATION",
       "lang": "makefile",
+      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "makefile",
+      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "makefile",
       "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "makefile",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1129,12 +1155,27 @@
     },
     {
       "check": "DERIVATION",
-      "lang": "markdown",
+      "lang": "nim",
+      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "nim",
       "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
-      "lang": "markdown",
+      "lang": "nim",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "nim",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "nim",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
@@ -1156,6 +1197,16 @@
       "check": "DERIVATION",
       "lang": "objective-c",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "perl",
+      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "perl",
+      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1164,18 +1215,13 @@
     },
     {
       "check": "DERIVATION",
-      "lang": "powershell",
-      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "powershell",
+      "lang": "protobuf",
       "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
-      "lang": "powershell",
-      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "lang": "protobuf",
+      "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1295,32 +1341,42 @@
     {
       "check": "DERIVATION",
       "lang": "typescript",
-      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "typescript",
-      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "typescript",
-      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `references` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "typescript",
-      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
-    },
-    {
-      "check": "DERIVATION",
-      "lang": "typescript",
-      "detail": "emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `uses` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "vb",
-      "detail": "emits `references` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"imports\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "vb",
+      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "vb",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "vb",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1335,17 +1391,32 @@
     {
       "check": "DERIVATION",
       "lang": "xml",
-      "detail": "emits `imports` but the differential audits [\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "xml",
-      "detail": "emits `references` but the differential audits [\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "xml",
+      "detail": "emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
       "lang": "yaml",
       "detail": "emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "yaml",
+      "detail": "emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "yaml",
+      "detail": "emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
     },
     {
       "check": "DERIVATION",
@@ -1356,12 +1427,83 @@
       "check": "DERIVATION",
       "lang": "yaml",
       "detail": "emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "zig",
+      "detail": "emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "zig",
+      "detail": "emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "zig",
+      "detail": "emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    },
+    {
+      "check": "DERIVATION",
+      "lang": "zig",
+      "detail": "emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
     }
   ],
+  "inputErrors": [],
+  "inputErrorLanes": [],
   "baseline": {
     "recorded": 106,
-    "regressions": 0,
-    "repaid": 0,
-    "regressionsDetail": []
+    "regressions": 48,
+    "repaid": 45,
+    "regressionsDetail": [
+      "DERIVATION|clean|emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
+      "DERIVATION|clean|emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
+      "DERIVATION|clean|emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
+      "DERIVATION|csharp|emits `overrides` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"references\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|erlang|emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|fsharp|emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\"] — the type is stored and compared against nothing",
+      "DERIVATION|go|emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|go|emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|go|emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|go|emits `uses` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|hcl|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|hcl|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|hcl|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|hcl|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|hcl|emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|javascript|emits `imports` but the differential audits [\"calls\",\"contains\",\"exports\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|java|emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"references\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|json|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|json|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|makefile|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|makefile|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|makefile|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|nim|emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|nim|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|nim|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|nim|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|nim|emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|perl|emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|perl|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|protobuf|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|protobuf|emits `uses` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|typescript|emits `exports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|typescript|emits `imports` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|typescript|emits `references` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|typescript|emits `uses` but the differential audits [\"calls\",\"contains\",\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|vb|emits `calls` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|vb|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|vb|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|vb|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|xml|emits `contains` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|xml|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|xml|emits `references` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|yaml|emits `exports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|yaml|emits `imports` but the differential audits [\"extends\",\"implements\",\"instantiates\",\"overrides\"] — the type is stored and compared against nothing",
+      "DERIVATION|zig|emits `contains` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|zig|emits `exports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|zig|emits `imports` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing",
+      "DERIVATION|zig|emits `references` but the differential audits [\"calls\",\"extends\",\"implements\",\"instantiates\",\"overrides\",\"uses\"] — the type is stored and compared against nothing"
+    ]
   }
 }

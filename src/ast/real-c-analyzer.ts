@@ -1752,6 +1752,42 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         // subtree — calls INSIDE cast arguments vanished. The walk now
         // always recurses; only the calls edge is suppressed.
         let suppressCall = false
+        // A call in a preprocessor DIRECTIVE is not a call. The preprocessor is
+        // line-anchored text (C-D2): `#if !defined(A) && !defined(B)` never
+        // executes, and `defined` is a preprocessor OPERATOR, not a callable
+        // name, so `calls global -> defined` is a fabricated edge.
+        //
+        // The `uses` path has carried both guards against this since CGD40
+        // (isDirectiveConditionText + isHashLineMention, lines 2063/2071); the
+        // `calls` path had neither, which is why this class survived. Measured
+        // over 200 files per corpus by call-edge-fidelity.ts: 61 over-emitted
+        // call sites -- `defined` in `#if`/`#elif` conditions in curl
+        // (curl_trc.c, http.c, protocol.c, openldap.c, cf-ip-happy.c) and redis.
+        //
+        // BOTH guards are needed, for the two different ways a directive loses
+        // its identity:
+        //
+        //   isDirectiveConditionText  a cleanly-parsed directive keeps its
+        //     `preproc_*` ancestor, so the walk up finds it immediately.
+        //
+        //   isHashLineMention  an initializer list left OPEN across interleaved
+        //     `#ifdef`s (curl_trc.c:530-556 -- `{ "a", 1 },` guarded entries
+        //     with the `};` eight lines later) puts the `#if` line inside an
+        //     ERROR with NO preproc_* ancestor, so the structural guard is
+        //     blind. The preprocessor is still line-anchored: the physical line
+        //     starts with '#', which is the fact C-D2 rests on.
+        //
+        // A clean `#if defined(X)` needed neither -- a clean directive never
+        // produces a call_expression at all -- so a fixture written from the
+        // tidy version of this defect reproduces nothing and the mutant
+        // SURVIVES. The reproducing shape is the damaged one.
+        //
+        // It is folded into the EMIT condition below rather than wrapping
+        // `if (fnNode)`: wrapping short-circuits the whole callee-type ladder,
+        // and #954's mutant restores that ladder's fall-through
+        // (`} else if (false) {`), so a wrapper made the #954 mutant SURVIVE --
+        // one guard silently disarming another. The two are now independent.
+        const inDirectiveCondition = this.isDirectiveConditionText(node) || this.isHashLineMention(node)
         if (fnNode) {
           let target = fnNode.text
           let isFuncPtr = false
@@ -1856,6 +1892,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           if (
             !suppressCall &&
+            !inDirectiveCondition &&
             target && target.trim() !== "" &&
             // Malformed recovery guard: include-adjacent macros produced
             // targets containing quotes/newlines (never real callees).

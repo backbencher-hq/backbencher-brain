@@ -628,6 +628,24 @@ const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).to
 // it is not the same kind of thing. It imports NOTHING from the analyzer.
 import { deriveMarkdownEdges } from "./markdown-oracle"
 
+// ── ZIG: this lane's truths live in a LANE-OWNED module (script/m14/zig-truth.ts) ──
+// `contains`, `imports`, `instantiates`, `exports` and the `references` oracle. The
+// last of those was committed HERE in wave 2 and the 2026-09-29 merge DELETED it,
+// along with zig's compared-label set — so the lane reported coverage of a class it
+// was no longer auditing, and nothing turned red because a missing gate and a
+// passing gate look identical from outside. All five are imported from one
+// lane-owned file so this does not happen twice: script/m14/zig-truth.ts has
+// survived three merges of this file untouched. The truths also live outside the
+// harness because the harness has been mid-repair by several lanes during the
+// wave (it did not parse for hours), and a lane's gates must not depend on that.
+import {
+  deriveZigContainment,
+  deriveZigExports,
+  deriveZigImports,
+  deriveZigInstantiation,
+  deriveZigReferenceEdges,
+} from "./zig-truth"
+
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
   // reading precision 1.000, which was a measurement of the analyzer against a
@@ -14734,7 +14752,20 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // type, and the analyzer now emits nothing for it (R7 absence) — the
         // old `?? "Self"` kept a target no symbol has.
         if (t2 === "Self") t2 = enclosingImplType(n) ?? ""
-        if (/^[A-Z]/.test(t2) && !seenCalls.has("struct:" + t2)) {
+        // RUST-MR mirror: the casing test is the WRONG discriminator for a
+        // struct literal. In Rust `Foo { .. }` is always a construction, and the
+        // grammar types the name as `type_identifier` even when the type was
+        // imported under a LOWERCASE alias — `use libc::ucred;` then
+        // `let mut ucred = ucred { pid: 0, .. }` is five live sites in tokio
+        // alone, all of which the case test dropped, so the analyzer's correct
+        // edges surfaced as UNEXPLAINED. The analyzer emits on the SHAPE; the
+        // oracle now does too. (This is the third way this oracle's
+        // `instantiates` surface was narrower than the analyzer's — after the
+        // bare uppercase callee and the scoped literal — so F5's "0
+        // unexplained" was partly arithmetic luck. Recorded as a spec decision
+        // rather than three separate patches, because the rule is one sentence:
+        // a construction is a construction whatever its type is spelled.)
+        if (t2.length > 0 && !seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
         }
@@ -14756,11 +14787,26 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
       const boundsNode = n.childForFieldName?.("bounds")
       if (nameNode && boundsNode) {
         const supers: string[] = []
-        for (const c of boundsNode.namedChildren) {
+        for (let c of boundsNode.namedChildren) {
           if (!c || c.type === "type_parameters" || c.type === "where_clause") continue
+          // RUST-MR mirror: a higher-ranked bound's text starts with the BINDER
+          // (`for<'de> Deserialize<'de>`), so the text path below took `for` and
+          // FABRICATED `extends -> "for"` — a bound no source line names, on
+          // serde's `trait DeserializeOwned: for<'de> Deserialize<'de>`. The
+          // analyzer had the mirror-image omission and published nothing, so the
+          // row surfaced as MISSING and the real supertrait was invisible on both
+          // sides. Descend to the bound TYPE, which is what both sides mean.
+          if (c.type === "higher_ranked_trait_bound") {
+            let inner: any = undefined
+            for (const kid of c.namedChildren ?? []) {
+              if (kid.type === "type_identifier" || kid.type === "scoped_type_identifier" || kid.type === "generic_type") { inner = kid; break }
+            }
+            if (!inner) continue
+            c = inner
+          }
           let bn = c.text.split("<")[0].split(":").pop() || ""
           bn = lastSegment(bn.trim())
-          if (/^[A-Za-z_]/.test(bn)) supers.push(bn)
+          if (/^[A-Za-z_]/.test(bn) && bn !== "for") supers.push(bn)
         }
         if (supers.length) supertraits[nameNode.text] = supers
       }
@@ -15075,6 +15121,43 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
           if (fnField && fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex) skip = true
           const first = up.namedChild(0)
           if (!skip && first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex) skip = true
+        }
+        // RUST-MR mirror: a macro INVOCATION's NAME is a callee too, and the
+        // call-callee guard above cannot see it (it tests `call_expression`).
+        // Before this, the analyzer published `calls -> bail` AND `uses -> bail`
+        // for one use-imported macro at one line, and this oracle derived the
+        // `uses` row too — so F5 compared a fabrication against a fabrication and
+        // reported 0 unexplained, which is agreement on a wrong contract rather
+        // than evidence. Same reasoning as R14 (D2's mirror): the oracle mirrors
+        // the analyzer's RULED contract, and a shared blind spot is the failure
+        // mode, not a green light. The climb mirrors the callee climb so a path
+        // macro (`std::eprintln!`) is covered, and the guard is on the `macro`
+        // FIELD alone — the invocation's arguments are reads.
+        if (!skip) {
+          let mtop: any = n
+          let mup: any = p
+          while (mup && (mup.type === "scoped_identifier" || mup.type === "generic_function")) { mtop = mup; mup = mup.parent }
+          if (mup && mup.type === "macro_invocation") {
+            const mf = mup.childForFieldName?.("macro")
+            if (mf && mf.startIndex === mtop.startIndex && mf.endIndex >= mtop.endIndex) skip = true
+          }
+        }
+        // RUST-MR mirror: a DECLARATION's name is not a read. (a) a trait method
+        // signature is a `function_signature_item`, and the analyzer's
+        // declaration-position switch listed `function_item` only — the name fell
+        // through and published a `uses` SELF-EDGE when it also resolved;
+        // (b) a fn-pointer TYPE's parameter declares, and with no body there is
+        // no bound-name set to exclude it by.
+        if (!skip && p) {
+          if (p.type === "function_signature_item" || p.type === "function_item" || p.type === "const_item" || p.type === "static_item" || p.type === "struct_item" || p.type === "enum_item" || p.type === "trait_item" || p.type === "type_item" || p.type === "mod_item" || p.type === "macro_definition") {
+            const nf = p.childForFieldName?.("name") ?? p.childForFieldName?.("pattern")
+            if (nf && nf.startIndex === n.startIndex && nf.endIndex === n.endIndex) skip = true
+          }
+          if (!skip && p.type === "parameter") {
+            const params = p.parent
+            const holder = params?.parent
+            if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) skip = true
+          }
         }
       }
       if (!skip && p && p.type === "field_expression") {
@@ -19121,6 +19204,32 @@ async function main() {
         for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // Z14: the `references` class joins the audited set. It was the analyzer's
+        // second-largest emitted class on this lane's corpora and had NO truth
+        // derivation at all, so a phantom type reference, a lost one and a corrupted
+        // one were all invisible to a lane reporting 100% coverage.
+        for (const e of deriveZigReferenceEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // Z30/Z32/Z33 (wave 4): the three types this lane emitted none of until the
+        // relationship census asked the blunt question. Compared at the MATCHER's
+        // key, which is `label + normTarget(target)` — site and owner are NOT part of
+        // it — so this catches fabrication and loss BY NAME, and the site/owner half
+        // of each class is adjudicated by the lane's own gates (zigw-imports.ts,
+        // zigw-instantiation.ts, zigw-exports.ts, zigw-contains.ts), which key on
+        // them. Stated here rather than left for a reader to infer from a count.
+        for (const e of deriveZigImports(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
+        for (const e of deriveZigInstantiation(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
+        for (const e of deriveZigExports(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
+        for (const e of deriveZigContainment(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
@@ -19440,7 +19549,7 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
+          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" ? ["uses"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
