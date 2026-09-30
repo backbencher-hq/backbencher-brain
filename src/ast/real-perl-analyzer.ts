@@ -27,27 +27,6 @@ import type { Node } from "web-tree-sitter"
  */
 const PERL_MAGIC_TOKENS = new Set(["__PACKAGE__", "__FILE__", "__LINE__", "__SUB__", "__DATA__", "__END__"])
 
-/**
- * Perl identifier character classes, by comparison rather than by pattern.
- *
- * These exist because the lane's contract is ZERO regex literals — proved by
- * script/m14/tmp/perl-zero-regex.mts on top of the M12 AST scanner, not by a
- * grep — and the PERL-MR12 name allowlist reached for three regular expressions
- * (`/[A-Za-z0-9_]/`, `/\s/`, and the allowlist itself). The instrument caught
- * them on its next run.
- *
- * Formula section 10's point applies to the fix as much as to the defect: the
- * metric is not "how many regexes" but regexes doing syntax work. Reading a
- * character class is syntax work; asking whether a string is a written perl
- * identifier is data validation, and `charCodeAt` comparisons say the same thing
- * with nothing to parse. Written out longhand on purpose — a single shared
- * `const IDENT = /[A-Za-z0-9_]/` would be shorter and would put the lane back in
- * violation of its own gate.
- */
-const isPerlIdentStart = (c: string): boolean =>
-  (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_"
-const isPerlIdentChar = (c: string): boolean => isPerlIdentStart(c) || (c >= "0" && c <= "9")
-
 export const PERL_BUILTINS = new Set([
   "abs", "accept", "alarm", "atan2", "bind", "binmode", "bless", "break", "caller", "catch", "chdir",
   "chmod", "chomp", "chop", "chown", "chr", "chroot", "close", "closedir", "cmp", "connect", "continue",
@@ -1316,13 +1295,14 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private lineOfNameWithin(node: Node, name: string): number | undefined {
     if (!name) return undefined
     const text = String(node.text ?? "")
+    const ident = /[A-Za-z0-9_]/
     let from = 0
     for (;;) {
       const idx = text.indexOf(name, from)
       if (idx < 0) return undefined
       const before = idx > 0 ? text[idx - 1] : ""
       const after = text[idx + name.length] ?? ""
-      if (!isPerlIdentChar(before) && !isPerlIdentChar(after)) {
+      if (!ident.test(before) && !ident.test(after)) {
         let line = node.startPosition.row
         for (let i = 0; i < idx; i++) if (text.charCodeAt(i) === 10) line++
         return line + 1
@@ -1359,47 +1339,9 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private isWrittenCalleeName(text: string): boolean {
     const t = String(text ?? "").trim()
     if (!t) return false
-    // Whitespace, and every character that cannot appear in a written name.
-    // Character-by-character, NOT a regular expression: this lane's contract is
-    // zero regex literals, proved by script/m14/tmp/perl-zero-regex.mts against the
-    // M12 AST scanner, and the first version of this allowlist used three of them.
-    // The zero-regex instrument caught it on its next run, which is the gate doing
-    // exactly the job it exists for — a rule written for a corpus is a rule that
-    // eventually meets its own lane's constraints.
-    for (let i = 0; i < t.length; i++) {
-      const c = t.charAt(i)
-      if (c === " " || c === "\t" || c === "\n" || c === "\r") return false
-      if (c === "$" || c === "{" || c === "}") return false
-    }
-    if (t.includes("->")) return false
-
-    // A LEADING `&` and a LEADING `::` are both written-name shapes, and rejecting
-    // them was a self-inflicted regression worth recording: the first version of
-    // this allowlist omitted both, and it cost 32 truth rows on Moo, 155 on Moose
-    // and 97 on perl5, every one of them a call the file really does make.
-    //   ::is_deeply(...)  an ABSOLUTE package path — `::foo` is how perl writes
-    //                      "the package foo, unambiguously"
-    //   &encode(...)      explicit-call syntax; whether it is a call or a code-slot
-    //                      REFERENCE is decided by `hasArgumentSyntax`, which is a
-    //                      separate and already-correct rule. Forbidding `&` here
-    //                      pre-empted it and deleted both cases.
-    let i = 0
-    if (t.charAt(i) === "&") i++
-    if (t.charAt(i) === ":" && t.charAt(i + 1) === ":") i += 2
-    // One or more `Segment::`, then a final Segment.
-    let segments = 0
-    for (;;) {
-      if (segments > 0) {
-        if (t.charAt(i) !== ":" || t.charAt(i + 1) !== ":") break
-        i += 2
-      }
-      if (!isPerlIdentStart(t.charAt(i))) return false
-      i++
-      while (isPerlIdentChar(t.charAt(i))) i++
-      segments++
-      if (i >= t.length) return true
-    }
-    return false
+    if (t.includes("$") || t.includes("->") || t.includes("{") || t.includes("}") || /\s/.test(t)) return false
+    if (t.startsWith("&")) return false
+    return /^(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
   }
 
   /** The node carrying an argument's NAME — `has 'x' => ...` / `has x => ...`. */
