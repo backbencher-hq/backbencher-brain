@@ -75,8 +75,43 @@ function beyond(rates: number[], p: number, sigmas: number): number {
     const chosen = selectSampleFiles(rows, SAMPLE)
     const ranks = chosen.map((r) => sorted.findIndex((s) => s.id === r.id))
     out(`index ${sorted.length} files; sample ranks: ${ranks.slice().sort((a, b) => a - b).join(",")}`)
-    ck("the sample reaches the tail of the sort order (not a prefix)", Math.max(...ranks) >= sorted.length - 5, `max sampled rank ${Math.max(...ranks)} of ${sorted.length - 1}; the old LIMIT-prefix stopped at ${SAMPLE - 1}`)
+    // "Not a prefix" is a DETERMINISTIC property and is the actual defect, so it
+    // is asserted as such: compare the selection against the first N in sort
+    // order and require that they differ.
+    //
+    // The earlier version of this check asserted "max sampled rank >= length-5",
+    // which is a per-draw assertion on a RANDOM quantity and fails at random —
+    // the exact mistake this file's section 2 was written to avoid. It passed
+    // three runs and failed the fourth (max rank 53 of 59, an ordinary draw for
+    // 20 of 60). A gate that fails at random trains people to ignore it, and the
+    // span is now checked as a distribution below instead.
+    const prefix = sorted.slice(0, SAMPLE).map((r) => r.id).join("|")
+    ck("the sample is NOT the first N files in sort order", chosen.map((r) => r.id).join("|") !== prefix, `the old LIMIT-prefix was exactly those ${SAMPLE} rows; this selection is a different set`)
+    // Coverage of both trees: with a 30/30 split and k=20 the chance of drawing
+    // all 20 from one side is 2^-19, so this is a sound assertion, and it is the
+    // failure the real repo exhibited (0 of 166 src/ files).
     ck("the sample covers BOTH trees", chosen.some((r) => r.relative_path.startsWith("aaa/")) && chosen.some((r) => r.relative_path.startsWith("zzz/")), `${chosen.filter((r) => r.relative_path.startsWith("aaa/")).length} aaa / ${chosen.filter((r) => r.relative_path.startsWith("zzz/")).length} zzz`)
+    // Span as a DISTRIBUTION, over many draws, which is the honest form of the
+    // property the per-draw check was trying to test.
+    {
+      const maxRanks: number[] = []
+      for (let d = 0; d < 200; d++) {
+        const variant = rows.map((r) => ({ id: `${r.id}~${d}`, relative_path: r.relative_path }))
+        const pick = selectSampleFiles(variant, SAMPLE)
+        maxRanks.push(Math.max(...pick.map((r) => sorted.findIndex((s) => s.id === r.id.replace(`~${d}`, "")))))
+      }
+      const sortedMax = [...maxRanks].sort((a, b) => a - b)
+      const median = sortedMax[Math.floor(sortedMax.length / 2)]
+      const tail = sorted.length - 5
+      const within5 = maxRanks.filter((m) => m >= tail).length
+      // The rate is a property of the draw, not a target: for k of n uniform
+      // draws the chance the maximum lands in the last 5 of 60 is ~89%, and the
+      // first version of this check asserted 95% and failed on 179/200. The
+      // MEDIAN is the stable statistic, and the contrast that matters is
+      // against a prefix, which reaches rank 19 on 200 of 200 draws.
+      ck("the sample TYPICALLY reaches the tail of the range", median >= tail, `median max rank ${median} of ${sorted.length - 1}; ${within5}/200 draws (${Math.round((within5 / 200) * 100)}%) reached the last 5, which is the exact hypergeometric rate for ${SAMPLE} of ${sorted.length}`)
+      ck("and it reaches further than a prefix EVER can, on essentially every draw", maxRanks.filter((m) => m > SAMPLE - 1).length >= 195, `${maxRanks.filter((m) => m > SAMPLE - 1).length}/200 draws exceeded rank ${SAMPLE - 1}; the old LIMIT-prefix exceeded it on 0`)
+    }
 
     // Stale everything the sample chose; the sample must FIND it, wherever it is.
     markStaled(root, chosen.map((r) => r.relative_path))

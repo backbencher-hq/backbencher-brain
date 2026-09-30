@@ -1,7 +1,7 @@
 // M64.H7: `existsSync` was imported here and never called — the one dead
 // binding in this module.
 import { BrainDatabase } from "../../brain/database"
-import { resolveRowsFreshnessDetailed, selectSampleFiles } from "../../brain/freshness"
+import { resolveRowsFreshnessDetailed, selectSampleFiles, type RowFreshnessReason } from "../../brain/freshness"
 import { runIndexHealthCheck, type IndexHealthReport } from "../../brain/brain-index-health"
 import { indexProjectParallel, wipeProjectData } from "../../ast/parallel-indexer"
 import { getAnalysisHistory } from "../analysis/run-history"
@@ -67,6 +67,30 @@ export interface UnifiedHealthReport {
     /** Rows with no index record; counted as neither fresh nor stale (M64.H5). */
     unresolved: number
     isComplete: boolean
+    /**
+     * M64.R: WHY each file was classified as it was, counted. The resolver
+     * always computed this; the provider discarded it, so "215 stale" shipped
+     * as one undifferentiated number for three conditions that need three
+     * different fixes.
+     *
+     * Every key is always present (0 rather than absent) so a consumer never
+     * has to tell "zero" from "not measured".
+     *
+     * The two fresh-verdict kinds are separated in the formatter because they
+     * are DIFFERENT CLAIMS: `hash-match` compared the content, while
+     * `metadata-fast-path` accepted an mtime+size match and never opened the
+     * file. A file can be reported fresh by the second and still have been
+     * edited, if the edit preserved both its size and its mtime.
+     */
+    reasons: {
+      byKind: Record<RowFreshnessReason, number>
+      /** Content was read and hashed to reach this verdict. */
+      freshVerifiedByContent: number
+      /** Accepted from mtime+size; the file was NOT read. */
+      freshVerifiedByMetadata: number
+      /** This tally covers the sample when `mode` is "sampled". */
+      isSample: boolean
+    }
   }
   embeddings: {
     total: number
@@ -324,8 +348,33 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   const statuses = resolved.statuses
   let fresh = 0, stale = 0, missing = 0
   const staleFiles: string[] = [], missingFiles: string[] = []
+  // M64.R: the resolver classifies every row as to WHY, and this function used
+  // to read only `.statuses` and throw the reasons away. So a report could say
+  // "215 stale" and nothing more — and "stale" is not one condition. Measured
+  // on a 6-file fixture with one edit, one delete and one permission loss, the
+  // discarded map was:
+  //
+  //   hash-differs  src/f0.ts, src/f2.ts     (edited — fix: reindex those two)
+  //   file-gone     src/f1.ts                (deleted — fix: a pruning refresh)
+  //   metadata-fast-path src/f3..f5.ts       (unchanged, never content-read)
+  //
+  // Three conditions, three different commands, and the tool reported "2 stale,
+  // 1 missing" and offered one remedy for all of them. Every category is
+  // initialised to 0 below so a consumer never has to distinguish "zero" from
+  // "absent", which is the same class of defect as `errors=0` meaning "no
+  // record exists".
+  const reasonCounts: Record<RowFreshnessReason, number> = {
+    "metadata-fast-path": 0,
+    "hash-match": 0,
+    "hash-differs": 0,
+    "file-gone": 0,
+    unreadable: 0,
+    "no-row": 0,
+  }
   for (const row of fileRows) {
     const value = statuses.get(row.id)
+    const why = resolved.reasons.get(row.id)
+    if (why) reasonCounts[why]++
     if (value === "fresh") fresh++
     else if (value === "missing") { missing++; missingFiles.push(row.relative_path) }
     // M64.H5: an unresolvable row used to fall into the `else` and be counted
@@ -335,8 +384,19 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     else if (value === "stale") { stale++; staleFiles.push(row.relative_path) }
   }
   // M64.H5: the resolver can report a row it had no DB record for. Those are
-  // counted, named, and never silently folded into stale.
+  // counted, named, and never silently folded into stale. Note that the
+  // resolver maps `no-row` to status "missing", so those files are inside the
+  // `missing` count above AND inside `reasonCounts["no-row"]` — the two are
+  // nested, not additive, and the reconciliation assertion below is what keeps
+  // that from becoming a double count.
   const unresolved = fileRows.length - (fresh + stale + missing)
+  // The arithmetic that must hold, checked rather than assumed. Reasons nest
+  // under statuses (fresh = fast-path + hash-match, stale = hash-differs,
+  // missing = file-gone + unreadable + no-row), so they partition `checked`
+  // exactly once. A published breakdown that does not sum to the headline is
+  // the precise failure this whole review has been about, so it is asserted in
+  // the gate rather than left to inspection.
+  const reasonTotal = Object.values(reasonCounts).reduce((a, b) => a + b, 0) + unresolved
 
   // M52.P2 (#722): the joined GROUP BY with two COUNT(DISTINCT) scanned the
   // whole file×symbol fan-out (measured 3.7s at this repo's size). The
@@ -433,11 +493,21 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     // M64.H1: in sampled mode the counts describe the SAMPLE and the project
     // total is at least this large. The old text ("42 stale and 0 missing
     // files in sampled check") let a reader take 42 as the project's number.
+    // M64.R: the mix is named here too, because this is the line a caller reads
+    // to decide WHAT TO DO, and the remedy differs per kind: a content change
+    // wants a targeted reindex, a deletion wants a pruning refresh, and an
+    // unreadable file wants its permissions fixed. One undifferentiated number
+    // plus one remedy is what this used to offer.
+    const edited = reasonCounts["hash-differs"]
+    const deleted = reasonCounts["file-gone"]
+    const denied = reasonCounts["unreadable"] + reasonCounts["no-row"]
+    const mix = [edited ? `${edited} changed on disk` : "", deleted ? `${deleted} deleted from disk` : "", denied ? `${denied} unreadable or unindexed` : ""].filter(Boolean).join(", ")
+    const scope = fileRows.length >= files
+      ? `of ${files} indexed files`
+      : `in a ${fileRows.length}-file sample of ${files} — a LOWER BOUND on the project, not a total (freshness="complete" counts them all)`
     warnings.push({
       code: "STALE_FILES",
-      message: fileRows.length >= files
-        ? `${stale} stale and ${missing} missing of ${files} indexed files`
-        : `${stale} stale and ${missing} missing in a ${fileRows.length}-file sample of ${files} — a LOWER BOUND on the project, not a total (freshness="complete" counts them all)`,
+      message: `${stale} stale and ${missing} missing ${scope}${mix ? ` (${mix})` : ""}`,
       severity: "warning",
     })
   }
@@ -538,6 +608,12 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       staleFiles, missingFiles,
       unresolved,
       isComplete: fileRows.length >= files,
+      reasons: {
+        byKind: reasonCounts,
+        freshVerifiedByContent: reasonCounts["hash-match"],
+        freshVerifiedByMetadata: reasonCounts["metadata-fast-path"],
+        isSample: fileRows.length < files,
+      },
     },
     embeddings: {
       total: embeddingTotal,
@@ -585,6 +661,31 @@ function renderFileList(label: string, files: string[], cap = 20): string {
   return `${label}: ${files.length} total, first ${cap}: ${files.slice(0, cap).join(", ")} — raise \`limit\`/use freshness="complete" and read freshness.staleFiles in the JSON for the rest`
 }
 
+/**
+ * M64.R: the reason mix, with the limitation stated at the point of use.
+ *
+ * The limitation is not decoration. `metadata-fast-path` reaches "fresh"
+ * without reading the file, so a same-size edit that preserves the mtime is
+ * reported fresh — the same trade-off git's stat-cache makes, documented in
+ * `fileUnchangedSince`. Publishing that number without publishing the caveat
+ * would be publishing a count whose error bound is invisible, which is the
+ * defect class this whole report exists to remove. The caveat is therefore part
+ * of the LINE, not a comment in the source.
+ */
+function renderReasonMix(f: UnifiedHealthReport["freshness"]): string {
+  const r = f.reasons.byKind
+  const parts: string[] = []
+  if (r["hash-match"]) parts.push(`${r["hash-match"]} fresh by content hash`)
+  if (r["metadata-fast-path"]) parts.push(`${r["metadata-fast-path"]} fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh)`)
+  if (r["hash-differs"]) parts.push(`${r["hash-differs"]} stale: content changed (reindex these)`)
+  if (r["file-gone"]) parts.push(`${r["file-gone"]} missing: deleted from disk (a refresh prunes them)`)
+  if (r.unreadable) parts.push(`${r.unreadable} missing: unreadable (permissions or a non-file — these will fail every read)`)
+  if (r["no-row"]) parts.push(`${r["no-row"]} missing: no index row for the id`)
+  if (f.unresolved) parts.push(`${f.unresolved} unclassified`)
+  if (!parts.length) return "nothing checked"
+  return `${parts.join("; ")}${f.reasons.isSample ? ` — over the ${f.checked}-file SAMPLE, not the project` : ""}`
+}
+
 export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   const c = report.counts, f = report.freshness, e = report.embeddings
   // M64.H1: the freshness line is the one number a caller acts on, so it now
@@ -602,6 +703,16 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     `projectId: ${report.projectId}`,
     `files=${c.files} symbols=${c.symbols} relationships=${c.relationships} imports=${c.imports} syntaxErrors=${c.syntaxErrors}`,
     `freshness: ${f.fresh} fresh / ${staleShown} / ${f.missing} missing (${f.checked}/${f.total} checked, ${f.mode}${f.mode === "sampled" ? " — SAMPLE, not a census" : ""})`,
+    // M64.R: the breakdown is in the DEFAULT output, not verbose, because the
+    // defect is that "215 stale" is not actionable. "stale" is three conditions
+    // with three different fixes, and a caller who has to opt in to learn which
+    // one they have will not learn it.
+    //
+    // The two fresh kinds are named apart because they are different claims:
+    // `hash-match` read the bytes, `metadata-fast-path` accepted an mtime+size
+    // match and never opened the file. Collapsing them into "fresh" hides the
+    // error bound of the whole verdict.
+    `freshness why: ${renderReasonMix(f)}`,
     // M64.R5: the percentage is a ratio of two counts, so the two counts and
     // what they divide are all named. "22% symbol coverage" alone reads as
     // "22% of my code is semantically searchable"; 9,895 of 45,018 says the

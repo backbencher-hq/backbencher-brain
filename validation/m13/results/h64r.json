@@ -1,0 +1,184 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64r",
+  "tool": "bb_health",
+  "title": "bb_health freshness reasons: every category reachable, distinguishable, and reconciling with the headline",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "an edited file is `hash-differs`",
+      "pass": true,
+      "detail": "f0 -> hash-differs"
+    },
+    {
+      "name": "a deleted file is `file-gone`",
+      "pass": true,
+      "detail": "f1 -> file-gone"
+    },
+    {
+      "name": "an untouched file is `metadata-fast-path`",
+      "pass": true,
+      "detail": "f7 -> metadata-fast-path"
+    },
+    {
+      "name": "an unreadable file is `unreadable` (needs BOTH a mode change and a missed fast path)",
+      "pass": true,
+      "detail": "f2 -> unreadable; chmod 000 alone yields metadata-fast-path because the stat still matches and the file is never opened"
+    },
+    {
+      "name": "and it is reported MISSING, never fresh",
+      "pass": true,
+      "detail": "status -> missing"
+    },
+    {
+      "name": "a same-content file with a changed mtime is `hash-match` — the bytes were actually read",
+      "pass": true,
+      "detail": "f6 -> hash-match (touched mtime only, content identical; this is what separates the two 'fresh' verdicts)"
+    },
+    {
+      "name": "and it is reported FRESH, not stale",
+      "pass": true,
+      "detail": "status -> fresh"
+    },
+    {
+      "name": "the two fresh kinds are genuinely different categories [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "f6=hash-match vs f7=metadata-fast-path"
+    },
+    {
+      "name": "an id with no index row is `no-row`",
+      "pass": true,
+      "detail": "-> no-row"
+    },
+    {
+      "name": "every category in the exported vocabulary is REACHABLE",
+      "pass": true,
+      "detail": "unreached: none"
+    },
+    {
+      "name": "reasons + unclassified == checked, exactly once",
+      "pass": true,
+      "detail": "reasons=12 unresolved=0 checked=12"
+    },
+    {
+      "name": "fresh == hash-match + metadata-fast-path",
+      "pass": true,
+      "detail": "fresh=10 vs 0+10"
+    },
+    {
+      "name": "stale == hash-differs",
+      "pass": true,
+      "detail": "stale=1 vs 1"
+    },
+    {
+      "name": "missing == file-gone + unreadable + no-row",
+      "pass": true,
+      "detail": "missing=1 vs 1+0+0"
+    },
+    {
+      "name": "the two fresh splits are exposed, and they are the counts",
+      "pass": true,
+      "detail": "content=0 metadata=10"
+    },
+    {
+      "name": "every category key is present, even at zero",
+      "pass": true,
+      "detail": "metadata-fast-path,hash-match,hash-differs,file-gone,unreadable,no-row"
+    },
+    {
+      "name": "a complete scan is not marked as a sample",
+      "pass": true,
+      "detail": "isSample=false"
+    },
+    {
+      "name": "the edited and deleted counts are real",
+      "pass": true,
+      "detail": "hash-differs=1 file-gone=1"
+    },
+    {
+      "name": "the default output carries the reason mix (not verbose-only)",
+      "pass": true,
+      "detail": "freshness why: 8 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh); 1 stal"
+    },
+    {
+      "name": "it names the content change",
+      "pass": true,
+      "detail": "freshness why: 8 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh); 1 stale: content changed (reindex these); 1 mi"
+    },
+    {
+      "name": "it names the deletion, with its different remedy",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "it states the fast path's error bound ON THE LINE",
+      "pass": true,
+      "detail": "fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh)"
+    },
+    {
+      "name": "and does not present a bare `N fresh` as if the bytes were read [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the fast-path count must be attributed, not merged into 'fresh'"
+    },
+    {
+      "name": "the STALE_FILES warning names the mix",
+      "pass": true,
+      "detail": "1 stale and 1 missing of 10 indexed files (1 changed on disk, 1 deleted from disk)"
+    },
+    {
+      "name": "a SAMPLED breakdown says it is a sample",
+      "pass": true,
+      "detail": "freshness why: 3 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh); 1 missing: deleted from disk (a refr"
+    },
+    {
+      "name": "and a complete one does not claim to be a sample",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a reindexed index is genuinely clean",
+      "pass": true,
+      "detail": "stale=0 missing=0 (deleting f1 back out of the index is the indexer's job, not this gate's)"
+    },
+    {
+      "name": "a clean index still renders a reason mix in prose, not category keys",
+      "pass": true,
+      "detail": "freshness why: 9 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh)"
+    },
+    {
+      "name": "and the prose still attributes the fast path rather than saying 'fresh'",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 29,
+    "passed": 29,
+    "failed": 0
+  },
+  "decisions": {
+    "vocabulary": "RowFreshnessReason is exported and typed at the resolver; a tally cannot be published without it",
+    "freshSplit": "hash-match and metadata-fast-path are reported apart — one read the bytes, one did not",
+    "limitation": "the metadata fast path's error bound is stated on the LINE, not only in a source comment",
+    "placement": "the mix is in the DEFAULT output, not verbose: the defect is that the number is unactivable by default",
+    "reconciliation": "reasons nest under status and must sum to `checked` exactly once"
+  },
+  "limitations": [
+    "The unreadable case is produced with chmod, which does not restrict root — on a runner that ignores file modes the case degrades to a read that succeeds. The gate asserts the category is REACHABLE, not that it occurs on every platform."
+  ],
+  "generatedAt": "2026-09-30T22:47:41.766Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-30T22:52:52.275Z",
+    "contentSha256": "855285e0799ba6ef6d6f323f14db950640e6218d058955502f6fa29edb40ca94"
+  }
+}
