@@ -1,16 +1,15 @@
 {
  "schemaVersion": 1,
  "instrument": "script/m14/tmp/c-audit/m12-truth-drift.ts",
- "generatedAt": "2026-09-30T00:50:05.670Z",
- "commit": "dd2d917d12f9a22edc40b73c0ff65ffcfe9ba3f1",
+ "generatedAt": "2026-09-30T22:23:55.041Z",
+ "commit": "e1b3f99af217e20cb708bc5f2f12f48f011aa1e3",
  "purpose": "Per-row comparison of the PINNED M12 ground truth against the LIVE analyzer, on the four M12 fixtures. The M12 differential is a fixture differential, so this needs no corpus -- which is what makes it runnable at all in a checkout where the F5 harness's corpus root ($HOME/fixtures/repositories) does not exist.",
  "why": "validation/m12/results/c-differential.json asserts passed:true at 92/92 and lists rel:Module.c:instantiates:buffer_create:malloc and rel:Module.c:references:global:stdlib.h among its TRUE POSITIVES. The analyzer emits neither: Module.c produces imports 2 / calls 6 / uses 8, with no `instantiates` (the allocator edge was deliberately removed as noise) and includes in the first-class `imports` kind since M60/#910. A row the analyzer cannot produce cannot be a true positive, so the artifact is green on something that cannot fail.",
  "totals": {
   "pinnedFacts": 92,
   "byVerdict": {
-   "still-produced": 80,
-   "produced-under-another-type": 7,
-   "not-produced": 5
+   "still-produced": 85,
+   "produced-under-another-type": 7
   },
   "unmentionedEmittedRows": 17,
   "unmentionedByClass": {
@@ -457,8 +456,8 @@
    "kind": "relationship",
    "file": "Module.c",
    "expected": "rel:Module.c:uses:module_init:initialized",
-   "verdict": "not-produced",
-   "actual": null,
+   "verdict": "still-produced",
+   "actual": "rel:Module.c:uses:module_init:initialized",
    "pinnedEvidence": "initialized = 1; global var usage inside module_init"
   },
   {
@@ -466,8 +465,8 @@
    "kind": "relationship",
    "file": "Module.c",
    "expected": "rel:Module.c:uses:module_shutdown:initialized",
-   "verdict": "not-produced",
-   "actual": null,
+   "verdict": "still-produced",
+   "actual": "rel:Module.c:uses:module_shutdown:initialized",
    "pinnedEvidence": "initialized = 0; global var usage inside module_shutdown"
   },
   {
@@ -493,8 +492,8 @@
    "kind": "relationship",
    "file": "Module.c",
    "expected": "rel:Module.c:uses:buffer_create:capacity",
-   "verdict": "not-produced",
-   "actual": null,
+   "verdict": "still-produced",
+   "actual": "rel:Module.c:uses:buffer_create:capacity",
    "pinnedEvidence": "buf->capacity = clamp(...) field access"
   },
   {
@@ -511,8 +510,8 @@
    "kind": "relationship",
    "file": "Module.c",
    "expected": "rel:Module.c:uses:buffer_create:length",
-   "verdict": "not-produced",
-   "actual": null,
+   "verdict": "still-produced",
+   "actual": "rel:Module.c:uses:buffer_create:length",
    "pinnedEvidence": "buf->length = 0 field access"
   },
   {
@@ -520,8 +519,8 @@
    "kind": "relationship",
    "file": "Module.c",
    "expected": "rel:Module.c:uses:buffer_create:data",
-   "verdict": "not-produced",
-   "actual": null,
+   "verdict": "still-produced",
+   "actual": "rel:Module.c:uses:buffer_create:data",
    "pinnedEvidence": "buf->data = (int *)malloc(...) field access"
   },
   {

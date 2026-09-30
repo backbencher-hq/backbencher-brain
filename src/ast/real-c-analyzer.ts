@@ -2006,7 +2006,47 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         // into it), RHS reads stay genuine (java JAD1 family contract).
         const parent = node.parent
         const lhs = parent ? parent.namedChild(0) : null
+        // #960: A WRITE TO A FIELD IS A `uses`. SCD1 (M37 #599) excluded an
+        // assignment LHS on the grounds that it is a write "never a read", and the
+        // exclusion is withdrawn on two grounds, one of which holds regardless of
+        // any oracle.
+        //
+        // THE ANALYZER WAS ALREADY INCONSISTENT WITH ITSELF. Measured on a
+        // five-line reproducer:
+        //
+        //   p->f++     ->  uses published
+        //   p->f += 1  ->  NOT published
+        //   p->f = 1   ->  NOT published
+        //   p->g &= ~3 ->  NOT published
+        //
+        // `p->f++` and `p->f += 1` are the same operation in C. The difference is
+        // that the pinned grammar folds a compound assignment into
+        // `assignment_expression` -- which this gate tests -- while `++` is an
+        // `update_expression` and never reached it. There is no semantic reading
+        // under which `f++` is a use and `f += 1` is not.
+        //
+        // THE PINNED M12 TRUTH AGREES WITH THE INCLUSIVE READING, and says so in
+        // its own contract text: `uses:buffer_create:capacity` is pinned for
+        // `buf->capacity = clamp(...)`, an assignment. So all FIVE facts the truth
+        // marks "not produced" are assignment targets -- three field writes
+        // (capacity/length/data) and two global-variable writes
+        // (`initialized = 1`, `initialized = 0` in module_init/module_shutdown).
+        // Removing the gate takes M12 truth drift from 5 not-produced to 0.
+        //
+        // WHAT THIS DOES NOT CLAIM. A write is not a READ, and the edge is not
+        // relabelled: it stays `uses` with `field_access` metadata, because the
+        // ontology has no `writes` kind (the vocabulary is calls, contains,
+        // exports, extends, implements, imports, instantiates, overrides,
+        // references, uses). Before, a write produced NO edge at all, which is not a
+        // stronger statement -- it is an ABSENCE, and the fact that this function
+        // writes this field was unrepresented anywhere in the graph. With this
+        // change it is represented once, and a consumer that cares about writes can
+        // see it; a consumer that wants reads has the same information it had,
+        // because the metadata does not claim a read.
         const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === node.startIndex && lhs.endIndex >= node.endIndex
+        // `isWrite` is still computed: the identifier branch below keeps its own
+        // copy of the same test, and this one stays for the metadata below so the
+        // edge carries the fact that it is a write rather than a read.
         // CGD17 (M37 #601): a field_expression in the CALLEE position is a
         // CALL, not a read — `p->xClose(p)` emitted BOTH `calls xClose`
         // (from the call_expression branch) and `uses xClose [field_access]`
@@ -2016,7 +2056,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           parent.childForFieldName("function")?.startIndex === node.startIndex
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (field && field.text.trim() && !isWrite && !isCallee) {
+        if (field && field.text.trim() && !isCallee) {
           const sourceScope = scopeManager.getRelationshipSource()
           // One name occurrence, ONE edge. The key is shared with the identifier
           // branch below on purpose (`::uses::` on BOTH sides): a field read is
@@ -2208,17 +2248,22 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             (node.parent.parent.namedChild(0)?.endIndex ?? 0) >= node.parent.endIndex &&
             node.parent.childForFieldName("field")?.startIndex === node.startIndex
           ) &&
-          // CGD1 (M37 #601): an assignment LHS is a WRITE, never a read —
-          // plain and compound assignments both parse as
-          // assignment_expression with the LHS as its first named child
-          // (probe c-shapes1 P5). `g_counter += 1` / `g_counter = 5` leaked a
-          // bogus `uses g_counter` (SCD1 class; C was the last unprobed
-          // systems language for that sweep). Span-match the LHS exactly —
-          // web-tree-sitter returns FRESH node objects per child() call, so
-          // reference identity never matches (the DAD3 oracle lesson).
-          !(node.parent?.type === "assignment_expression" &&
-            node.parent.namedChild(0)?.startIndex === node.startIndex &&
-            (node.parent.namedChild(0)?.endIndex ?? 0) >= node.endIndex) &&
+          // #960: the same withdrawal as the field branch above, on the IDENTIFIER
+          // path -- an assignment to a plain value (`initialized = 1`) rather than to
+          // a field. CGD1 (M37 #601) excluded it for the same reason SCD1 excluded
+          // the field form, and the reasoning fails identically: the grammar folds
+          // `g_counter = 5` and `g_counter += 1` into `assignment_expression` while
+          // `g_counter++` is an `update_expression` that never reaches this gate, so
+          // the analyzer already published a `uses` for the increment form and not for
+          // the two assignment forms. There is no reading under which that is
+          // consistent.
+          //
+          // The pinned M12 truth requires this edge: `uses:module_init:initialized`
+          // and `uses:module_shutdown:initialized` are both assignment targets, and
+          // they are the last TWO facts the truth reports as "not produced" once the
+          // field branch is fixed. Span-match the LHS exactly -- web-tree-sitter
+          // returns FRESH node objects per child() call, so reference identity never
+          // matches (the DAD3 oracle lesson).
           // A C KEYWORD can never name a value — reserved words are lexed as
           // keywords, so an `identifier` whose TEXT is one is grammar-recovery
           // debris, never a read. Measured (resolve.c L1336): the `#endif`-glued
