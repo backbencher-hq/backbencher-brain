@@ -683,13 +683,25 @@ function containmentPopulation(root: any): { members: Set<string>; objMethods: S
  * argument, a return value, an array element or an `export default` has no
  * binding to name and "stays ownerless — which is correct, not a gap".
  *
- * Measured across a 120-file svelte sample, that split is total: object-literal
- * methods with a REACHABLE BINDING and no `contains` edge = 0, and every
- * unplaced one had no binding at all. So M49 JD3's object-literal claim — "every
- * object-literal method is an orphan" — is FALSIFIED on this corpus, and the
- * honest reading of the earlier 92/92 figure is that it counted correctly-ownerless
- * members as unplaced. Counting those as a gap is how a phantom survives review:
- * the number is real, the label is wrong.
+ * Measured across a 120-file svelte sample and then a 600-file one, that split is
+ * total: object-literal members with a REACHABLE BINDING and no `contains` edge = 0,
+ * and every unplaced one had no binding at all. So the earlier 92/92 figure counted
+ * correctly-ownerless members as unplaced. Counting those as a gap is how a phantom
+ * survives review: the number is real, the label is wrong.
+ *
+ * THE ATTRIBUTION, which took a second pass to get right. The 92/92 was originally
+ * filed here as "M49 JD3 falsified". JD3 is reviews/javascript/
+ * m60-deep-review-2026-09-26.md:209 — "10.9% of real symbols are ownerless and
+ * therefore have no contains edge" — and it named a MECHANISM: `addContainment-
+ * Relationships` gates on `ownerName`, `ownerName` comes only from `scopeOwnerName`,
+ * and `scopeOwnerName` reports CLASS SCOPES ONLY, with only `class_declaration`
+ * pushing one. That mechanism no longer exists: the analyzer now derives the owner
+ * from `containerOwnerName`, which handles a class expression (by its binding) and
+ * an object literal (by its binding) as well as a class declaration. So JD3 was a
+ * real finding on 2026-09-26 and its mechanism has since been superseded — it is not
+ * falsified, it is HISTORICAL. Saying "falsified" credited this census with
+ * disproving something it never tested, and would have left the original review
+ * looking wrong rather than fixed.
  */
 function bindingReachable(obj: any): string | null {
   let q = obj.parent
@@ -1132,7 +1144,7 @@ const artifact = {
     declaredSuppressed: Object.fromEntries([...DECLARED_SUPPRESSED].map(([k, v]) => [k, v])),
   },
   orphanGap: {
-    finding: "M49 JD3 — RE-READ, and its object-literal half is falsified on this corpus. The defect population is object-literal members WITH a reachable binding that the analyzer failed to place, and it is 0. Members with no binding (export default, return, call argument, array element) are correctly ownerless by the analyzer's own contract.",
+    finding: "JD3 (reviews/javascript/m60-deep-review-2026-09-26.md:209, '10.9% of real symbols are ownerless') is HISTORICAL, not falsified. It diagnosed ownerName coming only from scopeOwnerName, which reported class scopes only; the analyzer now derives the owner from containerOwnerName, which handles class expressions and object literals by their binding. The defect population measured here — object-literal members WITH a reachable binding that were not placed — is 0. Members with no binding (export default, return value, call argument, array element) are correctly ownerless by the analyzer's own documented contract.",
     population: "class members (method/field definitions, including class expressions) and object-literal methods — the set the containment contract covers. Roots, function-locals and top-level declarations are EXCLUDED because no containment edge is claimed for them.",
     excludedFromPopulation: rootTotal,
     classMembers: { total: classMemberTotal, orphans: classMemberOrphans },
@@ -1141,7 +1153,7 @@ const artifact = {
       orphans: objMethodOrphans,
       withReachableBinding: { total: objBound, unplaced: objBoundOrphans, samples: objBoundSamples },
       withoutBinding: { total: objUnbound, unplaced: objUnboundOrphans, disposition: "correctly ownerless — no binding to name" },
-      ruling: "M49 JD3's object-literal claim is FALSIFIED: 0 of the bound members are unplaced. The 92/92 figure counted members that have no binding at all.",
+      ruling: "0 of the BOUND members are unplaced, so the containment contract holds for this shape. The 92/92 figure counted members that have no binding at all, which the contract places outside containment by design.",
     },
     symbolsTotal: symbolTotal,
     moduleScopeRoots: rootTotal,
