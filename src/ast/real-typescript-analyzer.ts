@@ -4593,6 +4593,45 @@ class TypeScriptAnalysisRunner {
         }
       }
 
+      // R14: an ARROW FUNCTION's or FUNCTION EXPRESSION's parameters shadow, and
+      // nothing covered them. R12 covered a named function's parameters via
+      // `parameterNamesOf(currentSymbol)`; R13 covered loop variables and catch
+      // bindings. This is the third binding form, and it fell through both for a
+      // structural reason: an arrow is not a named declaration, so
+      // `resolveRelationshipSymbol` never rebinds on it and the enclosing
+      // function stays the current symbol — whose parameter list is a different
+      // one. `function f(bbEntry: string) { return (root) => root() }` published
+      // `f->root` against a module-level `function root()`, because `root` binds
+      // the arrow and the shadow set was built from `f`'s parameters, which are
+      // `bbEntry`.
+      //
+      // Measured: 227 false `references` over 1000 tracked files across 66 of
+      // them, the largest of the three shadowing defects, led by the names that
+      // collide most — `root`, `env`, `c`, `e`, `name`, `file`, `kind`.
+      //
+      // The bindings go into `refShadowed` and NOT `locals`, for the reason R13
+      // established: `locals` also gates `uses`, and a use of an arrow's
+      // parameter is a real use. A fresh set is built rather than adding to the
+      // caller's, so the parameters shadow inside the arrow's own extent and
+      // nowhere else — an arrow that shadows `root` does not make a later
+      // `root()` in the enclosing function a local read.
+      if (currentSymbol && currentSymbol === prevSymbol && (n.type === "arrow_function" || n.type === "function_expression" || n.type === "generator_function")) {
+        const params = n.childForFieldName("parameters")
+        if (params) {
+          const scoped = new Set(refShadowed)
+          for (const p of params.namedChildren) {
+            // `required_parameter` / `optional_parameter` hold the binding in
+            // their `pattern` field; a bare `identifier` parameter is its own
+            // name. Destructuring and rest parameters are already covered by the
+            // pattern handler above, and re-adding them is harmless.
+            if (!p) continue
+            const pattern = p.childForFieldName("pattern") ?? (p.type === "identifier" ? p : null)
+            if (pattern && pattern.type === "identifier") scoped.add(pattern.text)
+          }
+          refShadowed = scoped
+        }
+      }
+
       // JSX component usage detection
       if ((n.type === "jsx_element" || n.type === "jsx_self_closing_element") && currentSymbol) {
         const opening = n.type === "jsx_element" ? n.namedChild(0) : n
