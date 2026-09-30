@@ -9,9 +9,10 @@ upstream's bytes.
 | Upstream | `tree-sitter-grammars/tree-sitter-make` |
 | Upstream revision | `70613f3d812cbabbd7f38d104d60a409c4008b43` ("chore: regenerate parser and bindings with 0.26.6") |
 | Upstream package | `tree-sitter-make` 1.1.1 (MIT) |
-| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `ca3da9c9b294e4a6263f39bb0b334c60ec465be641d7fbefee5b4d001871aa12`, 165,855 bytes — **a local build of the patched source below** |
+| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `b39139af9cac6f7cfc97f81e72c8d93c92617a091090ab7fafdfe463fd03ea16`, 181,617 bytes — **a local build of the patched source below** |
 | Pristine build (retained) | `ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
-| Patches | `ab/grammar.patch` (in-repo) — 2 patches, both measured (§ "The two patches") |
+| Patches | `ab/grammar.patch` (in-repo) — 3 patches, all measured (§ "The patches") |
+| External scanner | `src/scanner.c` — required by patch P3; **not** carried by `ab/grammar.patch`, which cannot express a new source file |
 | Gate | `bun run script/m14/verify-grammar-pins.ts` (lane `make`) |
 
 ## Why this is a patch and not a swap
@@ -36,10 +37,29 @@ proof to lose. The proof is re-established for the patched source in the next
 section, and the pristine build is kept so the comparison stays re-runnable
 forever.
 
-## The two patches
+## The patches
 
-Both are in `grammars/tree-sitter-make/ab/grammar.patch`, and each carries its own reasoning
-in the grammar's comments.
+All three are in `grammars/tree-sitter-make/ab/grammar.patch`, and each carries its own
+reasoning in the grammar's comments. P3 additionally needs `src/scanner.c`, which the
+patch cannot express because it is a new file rather than an edit.
+
+**P3 — `.RECIPEPREFIX`, with an external scanner.** Upstream hardcoded the recipe
+prefix to a tab and left `// TODO external parser for .RECIPEPREFIX` where the value
+belonged, so a Makefile that set it lost every recipe line — a correctness defect, and
+0 of the 100 corpus files set it. The scanner learns the prefix from the assignment's
+value and declines everything it cannot vouch for, so only a single literal character
+changes behaviour; its state is serialized so an incremental reparse cannot resume with
+a default tab. Two properties matter and took three builds to get right: the tab stays
+an **internal** token (the scanner declines the external one whenever the tracked
+prefix is the default, so the two can never both match one character), and a declared
+prefix may lead a **rule** as a separate grammar alternative rather than an `optional`
+head, because a nullable head changes the reduce decision after a recipe's newline and
+loses the tab following an ordinary comment. The first two builds each regressed three
+real corpus files by 36 error nodes; `grammars/tree-sitter-make/recipeprefix/README.md`
+records both failures and is worth reading before changing any of this.
+
+`tree-sitter.json` is vendored and **load-bearing**: without it the CLI falls back to
+ABI 14 and silently emits a parser that differs from the wired one.
 
 **P1 — target-scoped export variable.** `variable_assignment` already accepts an
 optional leading `list ':'`, so `target: VAR = value` parsed. It did not parse

@@ -4823,23 +4823,7 @@ export function deriveGroovyEdges(root: any, sourceText?: string): { label: stri
         : null
       const fIsCallee = !!parentField && parentField.startIndex === n.startIndex && parentField.endIndex === n.endIndex
       const fParts = String(n.text).split(".").map((p: string) => (p.endsWith("?") || p.endsWith("*") ? p.slice(0, -1) : p))
-      // Mirrors the analyzer's constructor-body exception. A `this.x = ...` inside a
-      // CONSTRUCTOR is a use of the field (the groovy lane's hand-audited truth records
-      // all four such rows), while an assignment LHS elsewhere stays a write and not a
-      // read. Without this the oracle derives nothing for those sites, so every one of
-      // the analyzer's edges there is scored UNEXPLAINED -- 14 of them across the
-      // 60-file groovy sample, all `uses <Type> -> <field>` on a constructor line.
-      //
-      // This arm is declared a mirror of the analyzer's `collectFieldAccessUses`, so it
-      // moves when that moves. The enclosing type is what names the edge, and the
-      // harness matches label+target site-agnostically, so only membership matters here.
-      let fInConstructor = false
-      for (let a = n.parent, guard = 0; a && guard++ < 24; a = a.parent) {
-        if (a.type === "class_declaration" || a.type === "trait_declaration" || a.type === "enum_declaration") break
-        if (a.type === "constructor_declaration") { fInConstructor = true; break }
-      }
-      const fThisLhsInConstructor = fInConstructor && fIsWrite && (fParts[0] === "this" || fParts[0] === "super")
-      if (fParts.length >= 2 && (!fIsWrite || fThisLhsInConstructor) && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
+      if (fParts.length >= 2 && !fIsWrite && !fIsCallee && fParts[fParts.length - 1]) push("uses", fParts[fParts.length - 1])
     } else if (t === "leading_dot_call") {
       // #851: a continuation segment is a CALL only with an argument list
       // (`.build(1)`); a paren-less `.label` is a member READ. BOTH live in this

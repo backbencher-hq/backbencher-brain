@@ -67,6 +67,79 @@
             "members": [
               {
                 "type": "SYMBOL",
+                "name": "_recipeprefix"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_targets"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ":"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "&:"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": "::"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "IMMEDIATE_TOKEN",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[\\t ]+"
+                    }
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_prerequisites"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "recipe"
+                  },
+                  {
+                    "type": "IMMEDIATE_TOKEN",
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "[\\r\\n]+"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
                 "name": "_targets"
               },
               {
@@ -450,8 +523,17 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "_recipeprefix"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_recipeprefix_tab"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_recipeprefix"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -690,13 +772,27 @@
           "type": "FIELD",
           "name": "value",
           "content": {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_assignment_text"
-            },
-            "named": true,
-            "value": "text"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_recipeprefix_value"
+                },
+                "named": true,
+                "value": "text"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_assignment_text"
+                },
+                "named": true,
+                "value": "text"
+              }
+            ]
           }
         },
         {
@@ -3165,7 +3261,7 @@
         }
       ]
     },
-    "_recipeprefix": {
+    "_recipeprefix_tab": {
       "type": "STRING",
       "value": "\t"
     },
@@ -4348,10 +4444,23 @@
     [
       "variable_reference",
       "_paren_text"
+    ],
+    [
+      "concatenation",
+      "_line_text"
     ]
   ],
   "precedences": [],
-  "externals": [],
+  "externals": [
+    {
+      "type": "SYMBOL",
+      "name": "_recipeprefix"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_recipeprefix_value"
+    }
+  ],
   "inline": [
     "_targets",
     "_target_pattern",

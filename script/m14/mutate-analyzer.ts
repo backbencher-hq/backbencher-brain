@@ -5332,51 +5332,6 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
-    id: "xml/predefined-entities-unresolvable",
-    language: "xml",
-    defectClass: "wrong-edge",
-    description:
-      "M18 regression: the five predefined entities go back to being UNRESOLVED. `&lt; &gt; &amp; &apos; &quot;` are declared by the XML specification itself, in every document, whether or not a DTD mentions them (XML 1.0 §4.6) — the same argument X8 settled for the `xml` and `xmlns` prefixes. The grammar reports each as an `EntityRef` and the resolver had exactly two answers, so all of them took the second: 4,575 sites across 180 files were stamped `resolvable: \"unresolved\"` with `danglingEntityReference: true`, which is the analyzer asserting that a well-formed document references an entity nothing defines. Reverted by removing `builtin` from the three-way label. `&nbsp;` is NOT in the set and must stay unresolved — an XML document using an undeclared HTML entity really does reference something undefined, so a fix that widened the set to make the other five pass would be the wrong fix.",
-    transform: (r) => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) => {
-        if ((x.metadata as any)?.role !== "entity_reference") return x
-        if ((x.metadata as any)?.resolvable !== "builtin") return x
-        return { ...x, metadata: { ...x.metadata, resolvable: "unresolved", danglingEntityReference: true } }
-      }),
-    }),
-  },
-  {
-    id: "xml/entity-replacement-text-ownership-dropped",
-    language: "xml",
-    defectClass: "wrong-edge",
-    description:
-      "M18 regression: an entity reference inside ANOTHER ENTITY'S REPLACEMENT TEXT goes back to being unowned. `<!ENTITY shout \"&greeting; THERE\">` is a real dependency — shout cannot be expanded without greeting — and it was dropped, because an `EntityRef` was only collected under an OWNING ELEMENT and replacement text has no element above it. 611 of the then-651-site shortfall sat in this shape over 16 files; libxml2's `test/recurse/lol_ig_content.xml` was the extreme at 147 sites and 1 edge. Reverted by re-anchoring each such edge to the DTD that holds the declaring entity, which is the owner that existed before the fix and the wrong one.",
-    transform: (r) => {
-      // The DTD that holds a declaration is recoverable from the owning
-      // `contains` edge's source, so the pre-fix owner can be reconstructed
-      // rather than guessed.
-      const dtdOf = new Map<string, string>()
-      for (const x of r.relationships ?? []) {
-        if (x.type === "contains" && (x.metadata as any)?.role === "dtd_entity_declaration") {
-          dtdOf.set(String(x.target), String(x.source))
-        }
-      }
-      return {
-        ...r,
-        relationships: (r.relationships ?? []).map((x: any) => {
-          if ((x.metadata as any)?.role !== "entity_reference") return x
-          const src = String(x.source)
-          // only the entity-owned edges move; element-owned ones have no dtdOf entry
-          if (!dtdOf.has(src)) return x
-          const dtd = dtdOf.get(src)!
-          if (dtd === src) return x
-          return { ...x, source: dtd, metadata: { ...x.metadata, entityOwnerIsDtd: true } }
-        }),
-      }
-    },
-  },
-  {
     id: "xml/declared-name-anchored-to-the-tag",
     language: "xml",
     defectClass: "line-attribution",

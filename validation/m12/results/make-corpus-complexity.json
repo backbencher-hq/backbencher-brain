@@ -1,34 +1,43 @@
 {
   "name": "make-corpus-production",
-  "wallTimeMs": 2341.011662,
-  "userCpuMs": 1732.679,
-  "systemCpuMs": 412.933,
-  "peakRssBytes": 242249728,
-  "rssDeltaBytes": 211881984,
+  "wallTimeMs": 1484.732614,
+  "userCpuMs": 1983.193,
+  "systemCpuMs": 366.955,
+  "peakRssBytes": 260091904,
+  "rssDeltaBytes": 205328384,
   "databaseBytes": null,
-  "files": 14,
-  "symbols": 630,
-  "relationships": 2490,
-  "filesPerSecond": 5.9803204859045245,
-  "symbolsPerSecond": 269.1144218657036,
-  "relationshipsPerSecond": 1063.6427149930191,
-  "trackedFiles": 14,
+  "files": 102,
+  "symbols": 1811,
+  "relationships": 5896,
+  "filesPerSecond": 68.69923852834555,
+  "symbolsPerSecond": 1219.7482448513115,
+  "relationshipsPerSecond": 3971.085395716915,
+  "trackedFiles": 102,
   "errors": 0,
   "errorFiles": 0,
   "crashFiles": 0,
+  "absent": [
+    "perl5/Cross/Makefile",
+    "perl5/win32/GNUmakefile",
+    "perl5/win32/Makefile"
+  ],
+  "absentCount": 3,
   "crashSamples": [],
-  "acceptanceFiles": 14,
+  "acceptanceFiles": 102,
   "residual": {
     "policy": "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
     "expected": [],
     "erroredFiles": [],
     "hasErrorNoNodeFiles": [
+      "tf-aws-components/deprecated/github-actions-runner/runners/runner/Makefile",
       "boundary/Makefile",
+      "boundary/internal/db/sqltest/Makefile",
+      "waypoint/ui/Makefile",
       "torrentinim/Makefile"
     ],
     "matches": true
   },
   "passed": true,
   "complexityPolicy": "one production parseFile pass per acceptance file; the make analyzer uses one iterative DFS over the tree with O(1) Map-backed symbol dedupe (name:kind) and Set-backed relationship dedupe — O(nodes + emitted facts), no per-symbol O(n) scans",
-  "corpusPolicy": "union of 13 repositories, pinned"
+  "corpusPolicy": "union of 14 repositories, pinned"
 }
