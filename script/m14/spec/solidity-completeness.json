@@ -140,6 +140,23 @@
     "_description": "An owner ruling where silence or an unusual shape is a DECISION rather than a consequence of the grammar. Each entry states the decision and why, and each is load-bearing for the lane's shape: the public-getter publication, the compilation-unit export surface, the extends-vs-implements split, and the four node types whose silence is argued rather than derived.",
     "decisions": [
       {
+        "node_type": "ERROR",
+        "type": "ERROR",
+        "corpusCount": 0,
+        "namedByAnalyzer": false,
+        "decision": "internal_silent — and the refusal is by SOURCE LINE, not by subtree",
+        "rationale": "SOL-6. An `ERROR` subtree is text the parser could not parse, so every symbol and relationship under it is a guess. The subtree is not the whole region: on validation/m14/fixtures/solidity/recovery-regions-sol6.sol the parser emits an ERROR covering only `is not ) valid solidity ( at` plus a MISSING `;`, and the tokens `this` and `all` are SIBLINGS of that ERROR node, outside its subtree. The first version of SOL-6 skipped the subtree and published a symbol named `all` and a type reference `this` — the parser's guess about garbage, stored as graph fact. So the rule is a pre-pass over ERROR/MISSING line spans, consulted by both emit helpers. The corpus cannot exercise it: 0 damaged files over all 389 production files, which is exactly why the fixture forces an ERROR on purpose."
+      },
+      {
+        "node_type": "MISSING",
+        "type": "MISSING",
+        "corpusCount": 0,
+        "namedByAnalyzer": false,
+        "decision": "internal_silent — the more dangerous of the pair, for a stated reason",
+        "rationale": "A MISSING node is a token the parser INSERTED so it could keep going, so it carries no error of its own: `tree.rootNode.hasError` is true because of it, but the node is fabricated content rather than a report of damage. Every instrument in this repo keyed on `hasError` therefore sees the FILE and not the insertion. SOL-6's line-range rule covers it: the inserted token's line is in the recovery set, so nothing is emitted from it. Pinned by recovery-regions-sol6, whose parser emits a MISSING `;` on line 7."
+      },
+      {
+        "node_type": "call_struct_argument",
         "type": "call_struct_argument",
         "corpusCount": 33,
         "namedByAnalyzer": false,
@@ -147,6 +164,7 @@
         "rationale": "SOL-10. `f({x: 1, y: 2})` is the modern named-argument form; each `call_struct_argument` names a parameter of `f`. Parameters are collected into the function's `parameters` payload and are deliberately not published as symbols, so an edge naming one would point at nothing the store holds. 33 occurrences."
       },
       {
+        "node_type": "struct_field_assignment",
         "type": "struct_field_assignment",
         "corpusCount": 13,
         "namedByAnalyzer": false,
@@ -154,6 +172,7 @@
         "rationale": "SOL-10. `S { a: 1 }` is the pre-0.8.8 spelling and its `struct_field_assignment` names a FIELD of `S`. The field IS published — as a member of `S`, owned by `S` — so an edge from the USE SITE would resolve to a member of a DIFFERENT owner, which is a different lie from the one SOL-1 is about. The `type:` field carries the struct name and does produce the call. 13 occurrences, disjoint from the 33 above."
       },
       {
+        "node_type": "user_definable_operator",
         "type": "user_definable_operator",
         "corpusCount": 4,
         "namedByAnalyzer": false,
@@ -161,6 +180,7 @@
         "rationale": "`using {Op.plus as +} for Price global` (grammar.js:53). The aliased OPERATOR `+` is not a name and cannot be a symbol; the aliased FUNCTION `Op.plus` is a `using_alias` child and IS handled, emitting `references -> Op`. 4 occurrences."
       },
       {
+        "node_type": "using_directive",
         "type": "using_directive",
         "corpusCount": 102,
         "namedByAnalyzer": false,
@@ -168,6 +188,7 @@
         "rationale": "grammar.js:53 — a `using_directive` holds EITHER a `type_alias` (`using L for T`) or a `using_alias` (`using {f, g} for T global`), and both have their own case emitting a `references` edge to the named entity, plus a `uses` type reference for the `source:` type. 102 occurrences, and verified on both forms."
       },
       {
+        "node_type": "yul_evm_builtin",
         "type": "yul_evm_builtin",
         "corpusCount": 2800,
         "namedByAnalyzer": true,
