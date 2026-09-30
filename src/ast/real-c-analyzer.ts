@@ -846,10 +846,41 @@ class CScopeManager {
     this.pushScope(ScopeKind.Global, "global", null as any)
   }
 
+  /**
+   * #961: the enclosing function's NAME, or null at file scope.
+   *
+   * This is what makes a function-local TYPE publishable without ambiguity. CGD20
+   * dropped these types entirely, so the question of naming them never arose; once
+   * they are published it has to be answered, and the measurement says the bare name
+   * does not work: across the three corpora, 3 of 20 function-local type names
+   * collide with a FILE-SCOPE type of the same name (`transfer`
+   * curl/lib/vssh/libssh2.c:3465, `entry` curl/tests/libtest/lib1915.c:35,
+   * `clar_counter` libgit2/deps/clar/clar/counter.h:86). Publishing `entry` twice in
+   * one file produces two symbols with one name and makes every `contains` edge
+   * from either of them ambiguous.
+   *
+   * Qualifying by the enclosing function resolves all three, and each step of the
+   * resulting path is a real symbol -- the function is a symbol, the type is a
+   * symbol -- so a `contains` edge anchored on it is resolvable rather than dangling.
+   * This is NOT the block-scope naming the contract forbids (`core_init.block_211`
+   * names no symbol); the block is still not used, and the function that encloses it
+   * is.
+   */
+  enclosingFunctionName(): string | null {
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      if (this.stack[i].kind === ScopeKind.Function) return this.stack[i].name
+    }
+    return null
+  }
+
   // CGD20 (M37 #601): does the current scope chain sit inside a FUNCTION
-  // body? Function locals (block vars, local struct/union/enum/typedef
-  // definitions) are execution artifacts (C-D1) — only file-scope
-  // declarations become symbols.
+  // body? CGD20 used this to DROP function-local type definitions as "execution
+  // artifacts"; #961 withdrew that reading (a struct definition emits no code) and
+  // this predicate now only distinguishes a local type from a file-scope one, so
+  // that the local can be published under a qualified name.
+  //
+  // Function-local VARIABLES remain unpublished, which is the part of C-D1 that was
+  // always right: `int counter = 0;` names no entity.
   isInsideFunction(): boolean {
     for (let i = this.stack.length - 1; i >= 0; i--) {
       if (this.stack[i].kind === ScopeKind.Function) return true
@@ -1509,9 +1540,29 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "struct_specifier": {
-          // CGD20: function-local struct definitions are execution artifacts
-          // (C-D1) — no scope, no symbol, no field registration.
-          if (scopeManager.isInsideFunction()) break
+          // #961: A FUNCTION-LOCAL TYPE IS A COMPILE-TIME TYPE, NOT AN EXECUTION
+          // ARTIFACT. CGD20 read the exclusion the other way -- "function-local
+          // struct definitions are execution artifacts (C-D1)" -- and dropped them with
+          // no scope, no symbol and no field registration. That reading does not
+          // survive contact with C. A struct definition EMITS NO CODE: the local
+          // VARIABLE is the execution artifact, and the struct is a type whose type is
+          // fully determined at compile time and whose VISIBILITY the block merely
+          // limits.
+          //
+          // Measured over the three corpora: 20 function-local named types carrying 65
+          // members across 15 files, of which NONE were published. They are used, not
+          // decoration -- deps/jemalloc/test/unit/malloc_io.c:14 `struct test_s` (6
+          // members, 4 references), src/ebuckets.c:2230 `struct TestParams` (the
+          // parameter table for the benchmark below it), src/listpack.c:1920
+          // `struct pick`, src/module.c:4590 `KeyMetaConfAllVersions` and
+          // src/module.c:7568 `typemethods.v2`-`v5`.
+          //
+          // THE DECISIVE ARGUMENT WAS IN THIS LANE'S OWN OUTPUT. The payload already
+          // published `uses local_type_in_use -> index` and `-> order` -- uses of
+          // members of a type CGD20 declined to declare. Those edges were unresolved in
+          // the strict sense: the only way to resolve `index` was the declaration that
+          // had been suppressed. A lane that will not publish a type is not consistent
+          // about declining to publish uses OF it.
           const nameNode = node.childForFieldName("name")
     let structName = "anonymous_struct"
     if (nameNode && nameNode.text.trim()) {
@@ -1520,6 +1571,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) structName = declNode.text.trim()
     }
+    // #961: the FUNCTION-QUALIFIED name for a function-local struct lives in the
+    // Struct scope pushed below, because `extractStruct` names the symbol from
+    // `getScopeName()` rather than from this local. See the note there.
           // Only a struct WITH a body is a definition site — forward/reference
           // declarations (`struct Point;`, `typedef struct Point Point;`) push
           // no scope so the typedef name cannot self-reference its own scope.
@@ -1542,8 +1596,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "union_specifier": {
-          // CGD20: function-local unions are execution artifacts (C-D1).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a union definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
           // #951: as the struct path.
     const unionNameNode = node.childForFieldName("name")
     let unionName = this.specifierOwnName(node)
@@ -1559,10 +1616,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "enum_specifier":
-          // CGD20: function-local enums are execution artifacts (C-D1) —
-          // their members must not leak as file-scope EnumMember symbols
-          // (measured: BackupSubCommandEnum/MB_enum members in sqlite).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a enum definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
+          //
+          // What the original exclusion was RIGHT about is preserved by the
+          // qualification rather than by silence: a local enum's MEMBERS are owned by
+          // the qualified type, so they cannot leak as file-scope EnumMember symbols --
+          // which was the measured harm CGD20 cited (BackupSubCommandEnum, MB_enum in
+          // sqlite). Publishing the type with a member path fixes the leak at its
+          // cause instead of refusing the type.
           this.extractEnum(
             node,
             symbols,
@@ -1628,8 +1693,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           )
           break
         case "type_definition":
-          // CGD20: function-local typedefs are execution artifacts (C-D1).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a typedef definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
           this.extractTypedef(node, symbols, structs, scopeManager.getScopeName(), isConditional)
           break
         case "preproc_def":
@@ -2727,6 +2795,46 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (structName === "anonymous_struct") {
       structName = this.inlineAggregateOwnerName(node) ?? "anonymous_struct"
     }
+    // #961: A FUNCTION-LOCAL TYPE IS QUALIFIED BY ITS ENCLOSING FUNCTION.
+    //
+    // The bare name does not survive the corpus: measured over the three corpora, 3 of
+    // the 20 function-local named types collide with a FILE-SCOPE type of the same name
+    // -- `transfer` (curl/lib/vssh/libssh2.c:3465), `entry`
+    // (curl/tests/libtest/lib1915.c:35) and `clar_counter`
+    // (libgit2/deps/clar/clar/counter.h:86). Publishing `entry` twice in one file
+    // yields two symbols with one name and makes every `contains` edge from either
+    // ambiguous.
+    //
+    // `scope` is `getScopeName()`, which joins every scope below global, so for a
+    // local struct it is exactly the qualified path (`lpRandomEntries.pick`) and at
+    // file scope it is the bare tag. It is therefore used AS the name rather than
+    // prefixed onto one -- an earlier draft prefixed and produced
+    // `lpRandomEntries.lpRandomEntries.pick.pick`, and a second draft that prefixed
+    // only in the caller produced `lpRandomEntries.lpRandomEntries.pick` because the
+    // caller had already qualified the Struct scope it pushes.
+    //
+    // The qualification belongs HERE and not in the `struct_specifier` case in
+    // `analyze`: that case's `structName` never reaches the symbol, because this
+    // extractor derives its own from `specifierOwnName`, which reads the source tag.
+    // The qualified name was computed in the caller and dropped -- the trace showed
+    // `enclosingFunctionName="lpRandomEntries"` while the payload published a bare
+    // `pick`.
+    //
+    // Every step of the resulting path is a real symbol -- the function and the type --
+    // so a `contains` edge anchored on it RESOLVES. That is what distinguishes this
+    // from the block-scope naming the contract forbids: `block_1920` names no symbol,
+    // and the enclosing function does.
+    //
+    // It applies ONLY to a type DECLARATION, never to an inline aggregate. An inline
+    // aggregate (`struct { ... } inner;` as a MEMBER) already has the correct owner
+    // path from `inlineAggregateOwnerName` -- #950's `S.val` and #958's
+    // `R.val.verbatim` -- and taking `scope` for it destroyed those three pinned rows,
+    // because the scope chain at that point is the ENCLOSING type (`envelope.body`),
+    // not the aggregate being named (`envelope.body.verbatim`). An inline aggregate's
+    // specifier sits in a `field_declaration`, which is exactly what
+    // `inlineAggregateOwnerName` keys on, so a null there is the precise test for "this
+    // is a declaration and not a member".
+    if (scope && scope !== "global" && this.inlineAggregateOwnerName(node) === null) structName = scope
     // A struct_specifier without a body is a forward/reference declaration
     // (e.g. `typedef struct Point Point;` or `struct Point *p;`). It is not a
     // definition site — skip it to avoid phantom duplicates; the definition
@@ -3059,6 +3167,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (unionName === "anonymous_union") {
       unionName = this.inlineAggregateOwnerName(node) ?? "anonymous_union"
     }
+    // #961: a FUNCTION-LOCAL union is qualified by its enclosing function, exactly as the
+    // struct and enum paths are. The first draft of this wave fixed struct and enum and
+    // MISSED union, so `local_union_and_enum`'s anonymous union still published as the
+    // PLACEHOLDER `anonymous_union` with `as_int` and `as_float` owned by it -- the #958
+    // defect class, on the one arm of the ruling that was left unfixed. A ruling that covers
+    // two of the three spellings is half a ruling, and the fixture caught it by naming the
+    // arm in a row of its own.
+    //
+    // The inline-aggregate test mirrors the struct path: an inline union that is a MEMBER
+    // already has its correct owner path from `inlineAggregateOwnerName` (#951's `S.val`),
+    // and taking `scope` for it would name the ENCLOSING type instead.
+    if (scope && scope !== "global" && unionName === "anonymous_union" && this.inlineAggregateOwnerName(node) === null) {
+      unionName = scope
+    }
 
     const fields: any[] = []
     // #950: as the struct path.
@@ -3295,6 +3417,19 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) enumName = declNode.text.trim()
     }
+    // #961: a FUNCTION-LOCAL enum is qualified by its enclosing function, exactly as the
+    // struct path is. Without it an anonymous local enum publishes as the PLACEHOLDER
+    // `anonymous_enum` whose members are owned by that placeholder -- the #958 defect
+    // class -- and two anonymous enums in one file produce two symbols with one name.
+    //
+    // `c/macro-wrapped-heading-917` pinned the CGD20 behaviour precisely because
+    // publishing leaked `BufSize` and `PlainSize` as file-scope EnumMembers (the
+    // measured harm CGD20's own comment cited). Qualifying the type fixes that leak at
+    // its CAUSE: the members are owned by `cmpp_stream.anonymous_enum` and
+    // `plain_stream.anonymous_enum`, both real symbols, instead of by a name that
+    // resolves to nothing. A named local enum is left alone -- the qualifier is only
+    // needed where the source has no name to carry the identity.
+    if (scope && scope !== "global" && enumName === "anonymous_enum") enumName = scope
     enums[enumName] = true
 
     const values: string[] = []
