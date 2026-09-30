@@ -144,9 +144,37 @@ that can FAIL rather than a comment: `contains` → `structural`; a declared typ
 → `reference_qualified`; `imports`/`exports`/the import `references` twin →
 `import_based`; a **proven** `instantiates` → `structural` (it is derived from the
 grammar, not guessed) and an unproven one → `inferred`; calls/uses →
-`usage_contextual`, or `inferred` below threshold. Confidence: 1.0 for contains/declared-type/bare reads, 0.85
-for a call, 0.75 for a field read, 0.9 for a declared type — every heuristic
-edge carries a machine-readable `metadata.relationshipType` reason code.
+`usage_contextual`, or `inferred` below threshold.
+
+**Confidence and reason codes**, read off the emission sites rather than
+summarised from an earlier draft — and note that confidence is per emission SITE,
+not per label, because two classes carry two values:
+
+| class | confidence | `metadata.relationshipType` | keying |
+|---|---|---|---|
+| `contains` | 1.0 | `zig_ownership` | per (owner, member) |
+| `calls` | 0.85 | `zig_function_call` | per (source, target) |
+| `uses` (field read) | 0.75 | `zig_field_access` | per (source, target) |
+| `uses` (bare read) | 1.0 | `identifier_usage` | per (source, target) |
+| `references` (declared type) | 0.9 | `declared_type` | per (source, target) |
+| `references` (import twin) | 1.0 | `zig_import` | per SITE |
+| `imports` | 0.9 | `zig_import` | per SITE |
+| `instantiates` | 1.0 | `zig_instantiation` | per SITE |
+| `exports` | 1.0 | `zig_export` | per SITE |
+
+Every class carries a reason code (Z44: `contains`, `exports` and `instantiates`
+did not, and `contains` — the largest class in the corpus — was the one that said
+nothing), and every row above is asserted by `zigw-invariants.ts`, which also
+checks the confidence against this table.
+
+**Two keying and shape rules the counts depend on.** `imports`, the import
+`references` twin and `instantiates` are **site-keyed**: one edge per SITE, so a
+file that imports the same module twice publishes two edges with the same name. The
+other four classes **collapse** per (source, target). And a `calls` **self-loop is
+recursion** — `fn fibonacci(n) { ... fibonacci(n - 1) ... }` publishing
+`calls fibonacci -> fibonacci` is a real call, not a cycle bug (18 in a 300-file
+draw). Both look like defects in a raw edge dump and are not; a gate that flagged
+them would have had correct edges deleted to make it green.
 
 ## M60 line numbers
 
@@ -191,8 +219,15 @@ Per-symbol cyclomatic complexity on every function/method, from a base of 1:
 `const a = if (c) 1 else 2;` is Zig's dominant form) and the `and`/`or`/`orelse`
 operator **tokens**. The operator is matched as a token type, never as a
 substring of the expression text (`x + standard + order` must not count).
-`metadata.complexity` on the symbol and `metadata.cyclomaticComplexity` on the
-file both carry the real number.
+`symbol.complexity` on the symbol — the **family standard**, which is where
+go/c/rust put it, and which an earlier draft of this document got wrong by
+claiming `metadata.complexity` — and `metadata.complexity` /
+`metadata.cyclomaticComplexity` on the file.
+
+The operators this counts (`for`, `while`, `switch`, `and`, `or`, `orelse`) and
+its accumulation across several constructs in one body are pinned by
+`calls-uses-complexity`, each value hand-computed from the rule above. They had
+been counted by the implementation and pinned by **nothing** (Z44).
 
 ## What is deliberately NOT emitted (ZIG.D.1, ZIG.GAP.*)
 
@@ -224,10 +259,10 @@ reproduces.
 
 | gate | instrument | result |
 |---|---|---|
-| F1 grammar audit | `audit-analyzer-grammar.ts` | **PASS** — 45 refs, 0 unknown node types, 0 unknown fields |
+| F1 grammar audit | `audit-analyzer-grammar.ts` | **PASS** — 50 refs, 0 unknown node types, 0 unknown fields. It was **FAIL with 2 unknown** until Z45: `field_identifier` and `struct_literal` are not node types in the pinned grammar, so two comparisons were dead disjuncts left by a grammar rename |
 | relationship-type census | `zig-relationship-census.ts` | **15 / 15 engine types accounted for** — 7 emitted and gated, 4 ruled not applicable (`extends`, `implements`, `overrides`, `depends_on`), 4 above the analyzers (`similar_to`, `relates_to_pattern`, `part_of_feature`, `affected_by`) |
-| F3 fixtures | the project's own `runLang("zig")` | **7 / 7 pass** — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners`, `declared-type-leaf`, `relationship-classes` |
-| F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **48 / 48 CAUGHT**, one per fixed class plus payload reverts. A mutant transforms the ANALYZER, so the count cannot reach an ORACLE defect — Z40 and Z41 were both mirror-side and neither had a mutant, which is the argument for the lane gates rather than a larger registry |
+| F3 fixtures | the project's own `runLang("zig")` | **7 / 7 pass**, including 8 hand-computed complexity pins and 7 reason-code assertions — and calibrated: removing the `contains` reason code takes it to **5 / 7** | — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners`, `declared-type-leaf`, `relationship-classes` |
+| F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **49 / 49 CAUGHT**, one per fixed class plus payload reverts. A mutant transforms the ANALYZER, so the count cannot reach an ORACLE defect — Z40 and Z41 were both mirror-side and neither had a mutant, which is the argument for the lane gates rather than a larger registry |
 | F5 differential, its own rotation | `differential.ts --repo zig` | **22,189 truth rows, 100% covered, MISSING 0, unexplained 0** |
 | `contains` gate | `zigw-contains.ts 200` | **PHANTOM 0, MISSING 0** (owner-keyed, bidirectional) |
 | `imports` gate | `zigw-imports.ts 200` | **PHANTOM 0, MISSING 0** (site-keyed, bidirectional) |
@@ -239,6 +274,7 @@ reproduces.
 | M60 line cross-check | `line-accuracy.ts zig zig,zls,ghostty 300` | **41,635 relationships, 0 wrong** — an independent generic probe over the same files; a different instrument counting a different draw, which is why the two totals are both stated rather than reconciled to one |
 | evidence tiers | `zigw-evidence-tier.ts` | every class carries a tier the family rule allows (`import_based` for `imports`/`exports` and the import `references` twin, `structural` for a proven `instantiates`, `declared_type` for a type reference) |
 | F5 wiring | `zigw-f5-wiring.ts` | the lane's audit is wired — and this gate has reported a real loss five times, including a commit that reverted `zig-truth.ts` from seven exports to four and dropped the whole of the Z37–Z39 work from HEAD |
+| output-channel invariants | `zigw-invariants.ts 300` | **0 violations** over 1,110 symbols, 2,908 relationships, 319 functions: no duplicate edge at a line, no self-loop outside `calls`, no empty/punctuation target, every confidence in (0,1] and equal to the table above, every relationship carrying a reason code and a line, every symbol kind in the shared `SymbolKind` enum, no `ownerName` the file does not declare, no duplicate symbol, every function carrying an integer complexity ≥ 1, every file carrying `cyclomaticComplexity`. Calibrated: `--calibrate` perturbs an edge ahead of the checks and reports 2 classes |
 | parse-error census | `zigw-parse-errors.ts` | **93 / 3,839 (2.4%)** files carry ERROR nodes, 811 ERROR nodes, 0 MISSING — bucketed: 43 intentionally invalid (`compile_errors` plus a langref page), 45 inline asm, 2 keyword-named fields, 3 labeled blocks in expression position. No analyzer defect in any of them (Z42) |
 | ownership verifier | `zigw-ownership.ts 3000` | 136,719 symbols, AGREE 84,442, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,485 — 1,480 of them same-named containers, filed as #963. Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all. This instrument was itself broken until Z43: it read a quoted name raw where the published symbol name is canonicalized, so it reported **701 phantom owners** that `zigw-contains.ts` — which derives from the grammar and keys on the owner — read as zero |
 | zero-regex | `script/m49/verify-r2-regex.ts` + `reviews/regex-policy.md` | **0 regexes** in this analyzer (was 1; see Z18) |
