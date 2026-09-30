@@ -165,7 +165,9 @@ const allDeclaredNames = new Set<string>()
 const owners = new Set<string>()
 let getterSymbols = 0
 let overridesEmitted = 0
+let overridesEmittedExternal = 0
 let overridesUnresolved = 0
+let overridesAmbiguousBaseCount = 0
 let implementsCrossFileUnresolved = 0
 let engineCallsSuppressed = 0
 let storeRefusedDeclarations = 0
@@ -249,6 +251,8 @@ for (const f of files) {
   const md = (r.metadata ?? {}) as Record<string, unknown>
   overridesEmitted += Number(md.overridesEmitted ?? 0)
   overridesUnresolved += Number(md.overridesUnresolved ?? 0)
+  overridesEmittedExternal += Number(md.overridesEmittedExternal ?? 0)
+  overridesAmbiguousBaseCount += Number(md.overridesAmbiguousBaseCount ?? 0)
   implementsCrossFileUnresolved += Number(md.implementsCrossFileUnresolved ?? 0)
   engineCallsSuppressed += Number(md.engineCallsSuppressed ?? 0)
   storeRefusedDeclarations += Number(md.storeRefusedDeclarations ?? 0)
@@ -305,7 +309,10 @@ const out = {
       publicStateVariables: getterSymbols,
       getterSymbols,
       overridesEmitted,
+      overridesEmittedExternal,
       overridesUnresolved,
+      overridesAmbiguousBaseCount,
+      externalBaseNote: "`overridesEmittedExternal` are rows whose base is named by an explicit `override(...)` list but declared in ANOTHER file. The Solidity compiler rejects `override(X)` unless `X` declares the member, so the edge is true for any compiling source; it is carried at 0.75 with `meta.reasonCode: \"named-by-override-specifier\"` rather than 0.9, because the member's presence is read off the language invariant instead of a declaration. Every one of those targets resolves to a real project symbol (`unknownTargets` is judged project-wide for `overrides`), so the corpus agrees with the edge.",
       implementsCrossFileUnresolved,
       engineCallsSuppressed,
       storeRefusedDeclarations,
@@ -341,7 +348,7 @@ console.log(`            kinds: ${JSON.stringify(r.kinds)}`)
 console.log(`            tiers: ${JSON.stringify(r.tiers)}`)
 if (r.notExercisedByThisDraw.length) console.log(`            not exercised by this draw (all implemented + gated): ${r.notExercisedByThisDraw.join(", ")}`)
 console.log(`            unresolved call targets: ${r.unresolvedCallTargets.count} over ${r.unresolvedCallTargets.distinct} distinct — top: ${r.unresolvedCallTargets.topTargets.slice(0, 8).join(", ")}`)
-console.log(`            overrides: ${r.analyzerDecisions.overridesEmitted} emitted, ${r.analyzerDecisions.overridesUnresolved} unresolved (base not in file)`)
+console.log(`            overrides: ${r.analyzerDecisions.overridesEmitted} emitted (${r.analyzerDecisions.overridesEmittedExternal} to a base in another file), ${r.analyzerDecisions.overridesUnresolved} unresolved (${r.analyzerDecisions.overridesAmbiguousBaseCount} of them a bare \`override\` over 2+ bases: which base declares it is genuinely undecidable)`)
 console.log(`            implements cross-file unresolved: ${r.analyzerDecisions.implementsCrossFileUnresolved}`)
 console.log(`            synthesised public getters published: ${r.analyzerDecisions.getterSymbols}`)
 console.log(`            declarations refused (store would drop the name): ${r.analyzerDecisions.storeRefusedDeclarations}`)

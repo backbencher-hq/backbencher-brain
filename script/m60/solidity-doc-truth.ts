@@ -63,15 +63,27 @@ const checks: Check[] = [
   { doc: "447", what: "assembly_statement", actual: census.corpusCounts.assembly_statement, expect: (v) => v === 447 },
   // ── the surface, and the four numbers the lane standard is written in
   { doc: "5,976", what: "symbols", actual: t.symbols, expect: (v) => v === 5976 },
-  { doc: "25,936", what: "relationships", actual: t.relationships, expect: (v) => v === 25936 },
-  { doc: "**25,936 / 25,936 = 100.00%**", what: "line coverage", actual: t.lineNumber,
+  { doc: "26,350", what: "relationships", actual: t.relationships, expect: (v) => v === 26350 },
+  { doc: "**26,350 / 26,350 = 100.00%**", what: "line coverage", actual: t.lineNumber,
     expect: (v: any) => v.withLine === v.total && v.pct === "100.00" },
   { doc: "unknownTargets", what: "unknownTargets must be 0", actual: t.unknownTargets.count, expect: (v) => v === 0 },
   { doc: "dupKeys", what: "dupKeys must be 0", actual: t.dupKeys.count, expect: (v) => v === 0 },
   { doc: "reservedTargets", what: "reservedTargets must be 0", actual: t.reservedTargets.count, expect: (v) => v === 0 },
-  { doc: "19.98 ms/file", what: "perf perFileMs", actual: t.perf.perFileMs, expect: (v) => Math.abs(v as number - 19.98) < 0.01 },
-  { doc: "4,105 facts/ms", what: "perf factsPerMs", actual: t.perf.factsPerMs, expect: (v) => Math.abs(v as number - 4105) < 1 },
-  { doc: "loadAvg1 13.55", what: "load context", actual: surface.loadContext.loadAvg1, expect: (v) => v === 13.55 },
+  // PERF AND LOAD: derived from the artifact AT RUN TIME, not hardcoded. The first
+  // version pinned `19.98 ms/file` to +/-0.01 while the row directly below it asserts
+  // `perfIsQualified: false` — the gate simultaneously declared the number
+  // unqualified and demanded the doc reproduce it to a hundredth of a millisecond.
+  // That is not a strict gate, it is a tripwire: every re-measure on a busier machine
+  // "fails" it while teaching the reviewer nothing about whether the doc is honest.
+  // What IS checkable, and what this now checks, is the property the doc-truth gate
+  // exists for: THE DOC REPORTS THE ARTIFACT. So the expected substring is built
+  // from the artifact's own value, formatted the way the doc formats it, and a
+  // mismatch means the doc is stale — a real defect. The load number is folded in
+  // rather than pinned, because it is recorded FOR the reader precisely so a perf
+  // figure can be read with the contention that produced it.
+  { doc: `${t.perf.perFileMs.toFixed(2)} ms/file`, what: "perf perFileMs tracks the artifact", actual: t.perf.perFileMs, expect: (v) => v === t.perf.perFileMs },
+  { doc: `${Math.round(t.perf.factsPerMs).toLocaleString("en-US")} facts/ms`, what: "perf factsPerMs tracks the artifact", actual: t.perf.factsPerMs, expect: (v) => Math.round(v as number) === Math.round(t.perf.factsPerMs) },
+  { doc: `loadAvg1 ${surface.loadContext.loadAvg1.toFixed(2)}`, what: "load context tracks the artifact", actual: surface.loadContext.loadAvg1, expect: (v) => v === surface.loadContext.loadAvg1 },
   { doc: "perfIsQualified: false", what: "perf qualification", actual: surface.perfIsQualified, expect: (v) => v === false },
   // ── per-kind counts, all ten
   { doc: "contains` 5587", what: "kinds.contains", actual: t.kinds.contains, expect: (v) => v === 5587 },
@@ -81,17 +93,17 @@ const checks: Check[] = [
   { doc: "exports` 487", what: "kinds.exports", actual: t.kinds.exports, expect: (v) => v === 487 },
   { doc: "references` 1303", what: "kinds.references", actual: t.kinds.references, expect: (v) => v === 1303 },
   { doc: "implements` 7", what: "kinds.implements", actual: t.kinds.implements, expect: (v) => v === 7 },
-  { doc: "overrides` 8", what: "kinds.overrides", actual: t.kinds.overrides, expect: (v) => v === 8 },
+  { doc: "overrides` 422", what: "kinds.overrides", actual: t.kinds.overrides, expect: (v) => v === 422 },
   { doc: "instantiates` 1", what: "kinds.instantiates", actual: t.kinds.instantiates, expect: (v) => v === 1 },
   { doc: "899 import-annotated", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
   // ── tiers
   { doc: "structural 6619", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6619 },
   { doc: "usage_contextual 18410", what: "tiers.usage_contextual", actual: t.tiers.usage_contextual, expect: (v) => v === 18410 },
   { doc: "import_based 899", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
-  { doc: "inferred 8", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 8 },
+  { doc: "inferred 422", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 422 },
   // ── the limitations, each with its measured size
   { doc: "507 edges", what: "implementsCrossFileUnresolved", actual: d.implementsCrossFileUnresolved, expect: (v) => v === 507 },
-  { doc: "8 emitted, **386 unresolved**", what: "overrides emitted/unresolved", actual: `${d.overridesEmitted}/${d.overridesUnresolved}`, expect: (v) => v === "8/386" },
+  { doc: "422/100 emitted/unresolved", what: "overrides emitted/unresolved", actual: `${d.overridesEmitted}/${d.overridesUnresolved}`, expect: (v) => v === "422/100" },
   { doc: "1,786 `calls` targets", what: "unresolvedCallTargets count", actual: t.unresolvedCallTargets.count, expect: (v) => v === 1786 },
   { doc: "(482 distinct)", what: "unresolvedCallTargets distinct", actual: t.unresolvedCallTargets.distinct, expect: (v) => v === 482 },
   { doc: "58", what: "synthesised getters published", actual: d.getterSymbols, expect: (v) => v === 58 },

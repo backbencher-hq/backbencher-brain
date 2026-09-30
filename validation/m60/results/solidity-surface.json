@@ -1,10 +1,10 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-09-30T22:37:56.740Z",
-  "commit": "802b74faec6bb52c4bf0e87fecb2dd3f51158420",
+  "at": "2026-09-30T23:04:44.724Z",
+  "commit": "3716c6dc6bce69bdbe96a4d4e7002a74d703ecd5",
   "loadContext": {
-    "loadAvg1": 13.55,
+    "loadAvg1": 22.87,
     "cores": 8,
     "memoryPsiFullAvg10": "0.00"
   },
@@ -36,16 +36,16 @@
       "missing": 0
     },
     "symbols": 5976,
-    "relationships": 25936,
+    "relationships": 26350,
     "kinds": {
       "contains": 5587,
       "extends": 537,
       "uses": 14128,
+      "overrides": 422,
       "exports": 487,
       "references": 1303,
       "calls": 3878,
       "implements": 7,
-      "overrides": 8,
       "instantiates": 1
     },
     "notExercisedByThisDraw": [
@@ -55,12 +55,12 @@
     "tiers": {
       "structural": 6619,
       "usage_contextual": 18410,
-      "import_based": 899,
-      "inferred": 8
+      "inferred": 422,
+      "import_based": 899
     },
     "lineNumber": {
-      "withLine": 25936,
-      "total": 25936,
+      "withLine": 26350,
+      "total": 26350,
       "pct": "100.00"
     },
     "unknownTargets": {
@@ -113,16 +113,19 @@
     "analyzerDecisions": {
       "publicStateVariables": 58,
       "getterSymbols": 58,
-      "overridesEmitted": 8,
-      "overridesUnresolved": 386,
+      "overridesEmitted": 422,
+      "overridesEmittedExternal": 414,
+      "overridesUnresolved": 100,
+      "overridesAmbiguousBaseCount": 100,
+      "externalBaseNote": "`overridesEmittedExternal` are rows whose base is named by an explicit `override(...)` list but declared in ANOTHER file. The Solidity compiler rejects `override(X)` unless `X` declares the member, so the edge is true for any compiling source; it is carried at 0.75 with `meta.reasonCode: \"named-by-override-specifier\"` rather than 0.9, because the member's presence is read off the language invariant instead of a declaration. Every one of those targets resolves to a real project symbol (`unknownTargets` is judged project-wide for `overrides`), so the corpus agrees with the edge.",
       "implementsCrossFileUnresolved": 507,
       "engineCallsSuppressed": 123,
       "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 7773,
-      "perFileMs": 19.983,
-      "factsPerMs": 4105.294
+      "wallMs": 24850,
+      "perFileMs": 63.881,
+      "factsPerMs": 1300.858
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",

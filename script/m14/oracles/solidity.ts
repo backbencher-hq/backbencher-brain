@@ -352,6 +352,7 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
       if (b !== "") explicit.push(b)
     }
     let bases = explicit
+    let ambiguous = false
     if (bases.length === 0) {
       // No explicit list: the bases come from the enclosing contract's header.
       let p: any = d.parent
@@ -359,9 +360,36 @@ export function deriveSolidityEdges(root: any, moduleName: string): { label: str
              p.type !== "library_declaration") p = p.parent
       const cn = p?.childForFieldName?.("name")
       bases = cn ? (contractBases.get(cn.text) ?? []) : []
+      // SOLIDITY-11. A bare `override` over SEVERAL header bases is a genuine
+      // ambiguity: Solidity 0.8.8+ requires the explicit list precisely when more
+      // than one base declares the member, so the keyword says ONE of them does and
+      // not which. Deriving an edge here would make the oracle agree with a
+      // FABRICATION, which is the one failure mode an oracle exists to catch. The
+      // honest answer is no edge, and the analyzer refuses it for the same reason.
+      if (bases.length > 1) { ambiguous = true; bases = [] }
     }
+    if (ambiguous) continue
+    // WHY NO `baseHasMember` GATE ANY MORE. The first version required the base to be
+    // declared IN THIS FILE and to declare the member, which derived truth only for
+    // 8 rows and left the analyzer's 414 cross-file edges "unexplained" — a label
+    // the harness calls a confident fabrication, correctly, because the oracle had
+    // no derivation for them. But that gate tested the WRONG thing. It was not the
+    // analyzer's in-file reach that made an override true; it is the language's own
+    // rule that `override(X)` is REJECTED unless `X` declares the member. So the
+    // invariant is the derivation, and it is also the more INDEPENDENT one: it reads
+    // the keyword and the header only, never the analyzer's member table, which is
+    // the structure a wrong member set would corrupt. The set comparison therefore
+    // still catches a dropped edge (the original defect), an invented edge, and a
+    // mis-resolved base name.
+    let owner: any = d.parent
+    while (owner && owner.type !== "contract_declaration" && owner.type !== "interface_declaration" &&
+           owner.type !== "library_declaration") owner = owner.parent
+    const self = owner?.childForFieldName?.("name")?.text
     for (const base of bases) {
-      if (baseHasMember(root, base, nm.text)) push("overrides", nm.text, base)
+      // `contract X is X` is a diamond shape the grammar accepts; `overrides m -> X`
+      // inside X would be a function overriding a member of its own owner.
+      if (base === self) continue
+      push("overrides", nm.text, base)
     }
   }
 

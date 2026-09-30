@@ -475,6 +475,79 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "solidity/external-override-suppressed",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-11 REVERT, the whole defect in one edit: refuse to emit an `overrides` edge when the base is not declared in the same file. That is EXACTLY what the first version of this lane did, and it cost 414 true edges over the 389-file corpus while reporting itself clean — the JavaScript lane's `first-parent-guess` failure mode wearing a different language, since 15 sibling analyzers read an `overrideCompanion` hook that no production caller ever populates and every one of them would drop these edges the same way. Solidity needs no companion: the compiler rejects `override(X)` unless `X` declares the member, so the edge is the language's own invariant. Caught by external-override-sol11's `handle -> ILater` row, which this revert deletes outright.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "overrides" && (x.metadata ?? {}).externalBase === true),
+      ),
+    }),
+    caughtBy: "solidity/external-override-sol11",
+    id_hint: "SOL-11",
+    id: "solidity/external-override-suppressed",
+  },
+  {
+    id: "solidity/external-override-overstated",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-11 REVERT, the honesty half: report an external-base `overrides` edge at the same 0.9 as an in-file verified one, keeping only the target and dropping the tier reasoning. Every COUNT stays identical and the edge is still correct, which is why this is the more dangerous half — a consumer cannot tell a member read from a declaration from one inferred from the compiler's rule. Caught by external-override-sol11's `confidenceMax: 0.75` and its `meta.reasonCode` / `meta.externalBase` pins.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "overrides" || (x.metadata ?? {}).externalBase !== true) return x
+        const { reasonCode: _r, externalBase: _e, crossFileVerified: _c, ...rest } = x.metadata ?? {}
+        return { ...x, confidence: 0.9, metadata: rest }
+      }),
+    }),
+    caughtBy: "solidity/external-override-sol11",
+  },
+  {
+    id: "solidity/ambiguous-override-emitted",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-11 REVERT, the refusal: emit an `overrides` edge for a bare `override` over TWO OR MORE header bases, picking the first. This fabricates 100 rows over the 389-file corpus and is the one shape where guessing is genuinely wrong rather than merely weak — Solidity 0.8.8+ requires an explicit list precisely when more than one base declares a member, so the keyword says one of them does and not which. Caught by external-override-sol11's TWO `ambiguous` forbid rows.",
+    // The FIRST attempt at this mutant only ADDED METADATA to override rows that
+    // already existed, and it SURVIVED — because the refused shape emits NO row, so
+    // there is nothing on the result to annotate. A faithful revert of "we used to
+    // emit this" has to synthesise the edge, and synthesise it GENERICALLY: any owner
+    // carrying TWO OR MORE heritage edges (extends/implements) gets an `overrides` row
+    // from each of its members to its FIRST base. That is exactly what "pick the first
+    // base" does, and it needs no name filter.
+    transform: (r: any) => {
+      const basesByOwner = new Map<string, string[]>()
+      for (const x of r.relationships ?? []) {
+        if (x.type !== "extends" && x.type !== "implements") continue
+        const list = basesByOwner.get(x.source) ?? []
+        list.push(x.target)
+        basesByOwner.set(x.source, list)
+      }
+      const have = new Set((r.relationships ?? []).filter((x: any) => x.type === "overrides").map((x: any) => `${x.source} -> ${x.target}`))
+      const added: any[] = []
+      for (const sym of r.symbols ?? []) {
+        if (sym.kind !== "method" || !sym.ownerName) continue
+        const bases = basesByOwner.get(sym.ownerName)
+        if (!bases || bases.length < 2) continue
+        const first = bases[0]
+        if (have.has(`${sym.name} -> ${first}`)) continue
+        added.push({
+          type: "overrides",
+          source: sym.name,
+          target: first,
+          confidence: 0.75,
+          metadata: { evidenceClass: "inferred", soliditySpecific: true, overridesMember: sym.name, baseType: first, baseFromContractHeader: true, guessedFirstBase: true },
+        })
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+    },
+    caughtBy: "solidity/external-override-sol11",
+  },
+  {
     id: "solidity/import-edges-unannotated",
     language: "solidity",
     defectClass: "payload-loss",
