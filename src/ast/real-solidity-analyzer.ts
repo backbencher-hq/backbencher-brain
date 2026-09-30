@@ -393,15 +393,20 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     /** SOL-12 — the file-scope surface, for the module's `exports` edges. */
     const topLevelExports: { name: string; line: number }[] = []
     /** Import edge targets: a name per imported symbol, or `*` for the file. */
-    const importEdges: { name: string; path: string; line: number }[] = []
+    const importEdges: { name: string; path: string; line: number; isNamespace?: boolean }[] = []
     /** SOL-7b — how many engine-function calls were refused at the emit site.
      *  COUNTED, not silent: a refusal nobody counts is how the next engine
      *  builtin lands as a fabricated edge with nothing to notice it. */
     let engineCallsSuppressed = 0
-    /** SOL-14 — how many declarations were refused because the STORE would drop
-     *  them anyway. Counted for the same reason: `self` and `root` are real
-     *  Solidity identifiers that pool-worker's UNIVERSAL denylist refuses, and an
-     *  uncounted refusal is indistinguishable from the analyzer being wrong. */
+    /** SOL-14 — the declarations refused because the STORE would drop them anyway.
+     *  Counted AND NAMED: `self` and `root` are real Solidity identifiers that
+     *  pool-worker's UNIVERSAL denylist refuses, and an uncounted refusal is
+     *  indistinguishable from the analyzer being wrong. The names (not just the
+     *  count) are also what makes the rule testable from the result alone: a
+     *  revert that reinstates them cannot be written without being told which
+     *  ones, and a mutant that hard-codes `self` and `root` would measure the
+     *  fixture rather than the behaviour. */
+    const storeRefusedNames = new Set<string>()
     let storeRefusedDeclarations = 0
     /** SOL-6 — declarations refused because their line is a recovery line. */
     let symbolsSuppressedOnRecoveryLines = 0
@@ -559,11 +564,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // CrosschainLinked.sol:59 and `root` at MerkleTreeMock.sol:15 are both real
       // Solidity identifiers the shared filter drops.
       if (STORE_REFUSED_SYMBOL_NAMES.has(clean)) {
-        // Counted here, at the single point every declaration kind goes through.
-        // The state-variable path checks FIRST so it can also suppress the
-        // SOL-3 getter; it returns before reaching this line, so there is no
-        // double count.
+        // Counted and NAMED here, at the single point every declaration kind goes
+        // through. The state-variable path checks FIRST so it can also suppress the
+        // SOL-3 getter; it breaks before reaching this line, so there is no double
+        // count.
         storeRefusedDeclarations++
+        storeRefusedNames.add(clean)
         return
       }
       // SOL-6 — a declaration on a recovery line is the parser guessing.
@@ -897,7 +903,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             // first version emitted nothing here, so a namespace import published
             // no `references` edge at all while a braced one published one per
             // name: measured on `tiny.sol`, 2 import statements → 1 edge.
-            importEdges.push({ name: alias.text, path: rawPath, line })
+            importEdges.push({ name: alias.text, path: rawPath, line, isNamespace: true })
           } else if (names.length === 0 && !alias) {
             importEdges.push({ name: "*", path: rawPath, line })
           }
@@ -1165,6 +1171,7 @@ const meta = modifiersOf(node)
           // `pushSymbol` and the refusal lived in `declareSymbol`.
           if (STORE_REFUSED_SYMBOL_NAMES.has(name)) {
             storeRefusedDeclarations++
+            storeRefusedNames.add(name)
             // `break`, NOT `return`: this is a `switch` case inside the walk's
             // `while`, so `return` would exit `analyze` itself and the whole file
             // would come back as `undefined` — which `JSON.stringify` renders as a
@@ -1678,6 +1685,13 @@ const meta = modifiersOf(node)
       addRel(fileName, e.name, ASTEngine.RelationshipType.References, 1.0, e.line, {
         import: true,
         importPath: e.path,
+        // A namespace import IS a namespace import, and the ALIASED form
+        // (`import * as Utils from …`) was not labelled as one — only the bare form
+        // carried the marker. So nothing in the output said which edges came from a
+        // namespace import, and the marker selected the wrong set: a filter keyed on
+        // `isNamespaceImport` removed the bare import (which the F9 gate already
+        // suppresses) and left the aliased one standing.
+        ...(e.isNamespace ? { isNamespaceImport: true } : {}),
       })
     }
 
@@ -1714,8 +1728,15 @@ const meta = modifiersOf(node)
         engineCallsSuppressed,
         getterSymbols,
         storeRefusedDeclarations,
+        storeRefusedNames: [...storeRefusedNames].sort(),
         symbolsSuppressedOnRecoveryLines,
-        recoveryLines: recoveryLines.size,
+        // The SET, not just the count, and for a testable reason: SOL-6's mutant
+        // has to reinstate what the narrower rule would have emitted, and a revert
+        // written from a count alone cannot be written generically — it would have
+        // to hard-code the fixture's line, which measures the fixture rather than
+        // the behaviour. The list is also the same fact at a resolution a reader
+        // wants: which lines of this file the parser could not handle.
+        recoveryLinesList: [...recoveryLines].sort((a, b) => a - b),
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
       } as Partial<ASTEngine.FileMetadata>,
     }
