@@ -1,12 +1,12 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-09-30T20:53:24.181Z",
-  "commit": "83224b965dba9a9d88251ab380356d4f1fc2fc79",
+  "at": "2026-09-30T21:02:58.167Z",
+  "commit": "1de48fbb8ee201f4495127f3dc650ae371b68c27",
   "loadContext": {
-    "loadAvg1": 17.54,
+    "loadAvg1": 11.37,
     "cores": 8,
-    "memoryPsiFullAvg10": "0.00"
+    "memoryPsiFullAvg10": "0.71"
   },
   "perfIsQualified": false,
   "perfIsQualifiedRule": "loadAvg1 < 8. A perFileMs taken above that is contention, not a lane budget — measured on a sibling lane whose artifact published 228 → 246 → 91 ms/file across three runs of an UNCHANGED analyzer. /proc/pressure/memory is recorded too, because load is the wrong signal when the box is memory-stalled: PSI, not loadavg, is what stalls.",
@@ -36,14 +36,14 @@
       "missing": 0
     },
     "symbols": 5977,
-    "relationships": 23339,
+    "relationships": 25750,
     "kinds": {
       "contains": 5529,
       "extends": 537,
-      "uses": 11656,
+      "uses": 13999,
       "exports": 487,
       "references": 1304,
-      "calls": 3810,
+      "calls": 3878,
       "implements": 7,
       "overrides": 8,
       "instantiates": 1
@@ -54,13 +54,13 @@
     "notExercisedNote": "`imports` is expected here and is NOT a gap: imports are modelled as `references` edges carrying `metadata.import: true`, the settled convention for this repo (PowerShell PS-7 for the same reason). The count of those edges is `tiers.import_based`, and every one of them is checked by the fixtures' `expectImports`.",
     "tiers": {
       "structural": 6561,
-      "usage_contextual": 15871,
+      "usage_contextual": 18282,
       "import_based": 899,
       "inferred": 8
     },
     "lineNumber": {
-      "withLine": 23339,
-      "total": 23339,
+      "withLine": 25750,
+      "total": 25750,
       "pct": "100.00"
     },
     "unknownTargets": {
@@ -76,8 +76,8 @@
       "samples": []
     },
     "unresolvedCallTargets": {
-      "count": 1726,
-      "distinct": 473,
+      "count": 1786,
+      "distinct": 482,
       "topTargets": [
         "_msgSender x88",
         "min x46",
@@ -91,23 +91,23 @@
         "panic x21",
         "readBytes32 x21",
         "_hashTypedDataV4 x19",
+        "timestamp x18",
         "unwrap x18",
-        "readUint256 x18",
-        "push x16"
+        "readUint256 x18"
       ],
       "samples": [
         "fv/harnesses/AccountHarness.sol:11 -> EIP712",
         "fv/harnesses/AccountHarness.sol:14 -> _fallbackHandler",
         "fv/harnesses/AccountHarness.sol:22 -> contains",
         "fv/harnesses/AccountHarness.sol:26 -> length",
+        "fv/harnesses/AccountHarness.sol:30 -> at",
         "fv/harnesses/AccountHarness.sol:42 -> contains",
         "fv/harnesses/AccountHarness.sol:46 -> length",
+        "fv/harnesses/AccountHarness.sol:50 -> at",
         "contracts/mocks/docs/token/ERC721/GameItem.sol:10 -> ERC721",
         "contracts/mocks/docs/token/ERC721/GameItem.sol:14 -> _mint",
         "contracts/mocks/docs/token/ERC721/GameItem.sol:15 -> _setTokenURI",
-        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:24 -> initializer",
-        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:29 -> onlyInitializing",
-        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:34 -> onlyInitializing"
+        "contracts/mocks/MultipleInheritanceInitializableMocks.sol:24 -> initializer"
       ]
     },
     "analyzerDecisions": {
@@ -116,12 +116,13 @@
       "overridesEmitted": 8,
       "overridesUnresolved": 386,
       "implementsCrossFileUnresolved": 507,
-      "engineCallsSuppressed": 123
+      "engineCallsSuppressed": 123,
+      "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 7361,
-      "perFileMs": 18.923,
-      "factsPerMs": 3982.513
+      "wallMs": 9483,
+      "perFileMs": 24.379,
+      "factsPerMs": 3345.519
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",
@@ -129,6 +130,7 @@
     "This is NOT a truth oracle. It measures what the analyzer emits and how it changed; whether each edge is CORRECT is F5's question. Everything here can be green with every edge wrong.",
     "`unknownTargets` is a proxy for resolvability, not for correctness: a target that names a real contract which happens to share a spelling with a local symbol counts as resolved.",
     "`unresolvedCallTargets` is NOT expected to be 0 and must not be gated as if it were. `abi.encode(1)` and `payable(a).transfer(1)` are real calls whose targets are EVM/ABI members; Solidity has no syntax that distinguishes them from a user-defined member access, so suppressing them would lose real edges. The top-target list is the adjudication surface.",
+    "`storeRefusedDeclarations` counts declarations this lane declined to make because pool-worker.ts's UNIVERSAL denylist would drop the symbol while the analyzer's `contains` edge survived — 2 over the draw (`self` at CrosschainLinked.sol:59, `root` at MerkleTreeMock.sol:15). Both are real Solidity identifiers, so the store's list is over-broad for this language; the fix belongs in pool-worker.ts, which this lane does not own, so the drift between the two lists is checked by script/m60/solidity-reserved-words.ts instead. The refusals are COUNTED so an uncounted one is distinguishable from the analyzer being wrong.",
     "`implementsCrossFileUnresolved` counts `extends` edges that may really be `implements` because the interface is declared in another file. A per-file analyzer cannot see it; the count is reported rather than hidden, and it is a wrong KIND, not a missing edge.",
     "Parse damage is the vendored grammar's, and it is 0 on all 389 production files — so this draw cannot exercise the recovery-region refusal (SOL-6). The fixture `recovery-regions-sol6` forces an ERROR on purpose, because a green 0-damage corpus would otherwise leave that rule untested."
   ]

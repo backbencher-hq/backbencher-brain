@@ -105,13 +105,29 @@ import { isReservedTarget, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } f
  *    not a missing edge, and it is counted and reported as
  *    `implementsCrossFileUnresolved` rather than papered over.
  *
- *  - SOL-6  NOTHING IS EMITTED FROM A RECOVERY REGION. bash BD5, extended to a
- *    SUBTREE: an ERROR or MISSING node's whole subtree is skipped, not merely its
- *    own children — a recovery region contains syntactically valid-looking
- *    children, and emitting them is how a parser's guess becomes a graph fact.
- *    The corpus is 0% damaged so this is defensive, and it is gated by the
- *    fixture `recovery-regions-sol6`, which forces an ERROR on purpose —
- *    otherwise a green 0-damage corpus would leave the rule untested.
+ *  - SOL-6  NOTHING IS EMITTED FROM A RECOVERY REGION — AND A RECOVERY REGION IS
+ *    A RANGE OF SOURCE LINES, NOT AN ERROR NODE'S SUBTREE. bash BD5, extended.
+ *    The first version skipped an ERROR/MISSING node's descendants, and the
+ *    fixture written to test it proved the rule was too narrow: on
+ *
+ *        function good() public pure returns (uint256) { return 1; }
+ *        this is not ) valid solidity ( at all
+ *        function alsoGood() public pure returns (uint256) { return 2; }
+ *
+ *    the parser emits `ERROR` covering only `is not ) valid solidity ( at` and
+ *    a MISSING `;`. The tokens `this` and `all` are SIBLINGS of that ERROR node,
+ *    outside its subtree, so the subtree rule let both through and the file
+ *    published a symbol named `all` and a type reference `this` — the parser's
+ *    guess about garbage, stored as graph fact. What is actually unrecoverable is
+ *    the SOURCE LINE, not the node: once a line is inside a recovery region the
+ *    parser is inventing, and anything it reports there is an invention. So the
+ *    rule is: pre-pass the tree for ERROR/MISSING line spans, and refuse any
+ *    symbol or relationship whose line falls in one. Cost is one O(n) pre-pass and
+ *    an O(1) Set lookup per emit.
+ *    The corpus is 0% damaged so this is defensive, and the fixture
+ *    `recovery-regions-sol6` forces an ERROR on purpose — otherwise a green
+ *    0-damage corpus would leave the rule untested, which is how it stayed too
+ *    narrow through a full surface measurement.
  *
  *  - SOL-7  A GLOBAL'S MEMBERS ARE NOT PROJECT MEMBERS. `msg.sender` parses as a
  *    `member_expression` with `object:`/`property:` fields, so the naive
@@ -306,6 +322,20 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     content: string,
     filePath: string,
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    // SOL-6 — every SOURCE LINE the parser had to invent. Collected in one
+    // pre-pass before the walk; consulted by both emit helpers.
+    const recoveryLines = new Set<number>()
+    {
+      const stack: Node[] = [rootNode]
+      while (stack.length > 0) {
+        const n = stack.pop()!
+        if (n.type === "ERROR" || n.isMissing) {
+          for (let r = n.startPosition.row + 1; r <= n.endPosition.row + 1; r++) recoveryLines.add(r)
+        }
+        for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) stack.push(c) }
+      }
+    }
+
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -373,6 +403,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      *  Solidity identifiers that pool-worker's UNIVERSAL denylist refuses, and an
      *  uncounted refusal is indistinguishable from the analyzer being wrong. */
     let storeRefusedDeclarations = 0
+    /** SOL-6 — declarations refused because their line is a recovery line. */
+    let symbolsSuppressedOnRecoveryLines = 0
     /** SOL-3 — how many synthesised public getters were published as symbols. */
     let getterSymbols = 0
 
@@ -433,6 +465,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // coverage is meant to be a completeness check on the emit path and an
       // emit path that can produce a null cannot be checked.
       if (!Number.isFinite(line) || line < 1) return
+      // SOL-6 — refuse anything on a line the parser invented.
+      if (recoveryLines.has(line)) return
       // SOL-7b — a reserved TOKEN cannot be a call target or a constructed type.
       // `require(...)`, `assert(...)`, `keccak256(...)` and `type(...)` all parse
       // clean and would otherwise each become a graph fact about a function that
@@ -528,6 +562,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         storeRefusedDeclarations++
         return
       }
+      // SOL-6 — a declaration on a recovery line is the parser guessing.
+      if (recoveryLines.has(line)) {
+        symbolsSuppressedOnRecoveryLines++
+        return
+      }
       const key = `${top().owner}\u0000${clean}\u0000${kind}`
       if (symbolMap.has(key)) return
       pushSymbol(clean, kind, node, meta, parameters)
@@ -620,34 +659,38 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      * call and its name, and STOPS at the first name-bearing node, so it is
      * O(wrapper depth) per site rather than O(subtree).
      */
-    const calleeNameOf = (node: Node | null, depth = 0): { name: string; line: number } | null => {
+    const calleeNameOf = (
+      node: Node | null,
+      depth = 0,
+      viaMember = false,
+    ): { name: string; line: number; viaMember: boolean } | null => {
       if (!node || depth > 6) return null
       const line = node.startPosition.row + 1
       switch (node.type) {
         case "identifier":
-          return { name: node.text, line }
+          return { name: node.text, line, viaMember }
         case "member_expression": {
           const prop = node.childForFieldName("property")
-          return prop ? calleeNameOf(prop, depth + 1) : null
+          return prop ? calleeNameOf(prop, depth + 1, true) : null
         }
         case "struct_expression":
           // SOL-10 — the call-with-options / named-argument form: the NAME lives
           // in the `type:` field, and the `struct_field_assignment` children are
           // option values, not names.
-          return calleeNameOf(node.childForFieldName("type"), depth + 1)
+          return calleeNameOf(node.childForFieldName("type"), depth + 1, viaMember)
         case "user_defined_type": {
           const n = udtName(node)
-          return n === "" ? null : { name: n, line }
+          return n === "" ? null : { name: n, line, viaMember }
         }
         case "array_access":
-          return calleeNameOf(node.childForFieldName("base"), depth + 1)
+          return calleeNameOf(node.childForFieldName("base"), depth + 1, viaMember)
         case "expression":
         case "payable_conversion_expression":
         case "parenthesized_expression": {
           for (let i = 0; i < node.namedChildCount; i++) {
             const c = node.namedChild(i)
             if (!c) continue
-            const got = calleeNameOf(c, depth + 1)
+            const got = calleeNameOf(c, depth + 1, viaMember)
             if (got) return got
           }
           return null
@@ -1214,7 +1257,16 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "yul_path": {
           // `sstore` / `x.slot` — the FIRST segment is the variable, the rest are
           // members. A segment the grammar spells as an EVM builtin is silent.
-          findChildren(node, "identifier").forEach((seg, i) => {
+          //
+          // The children are `yul_identifier`, NOT `identifier`: grammar.js:398
+          // declares `yul_identifier: $ => $.identifier`, an ALIAS, so the node
+          // type on the wire is `yul_identifier` wrapping an `identifier`. Reading
+          // `identifier` children found none, and the first Yul fixture emitted
+          // ZERO path reads — 2,640 `yul_path` nodes in the corpus, none of them
+          // ever read. Read the alias, which is what the tree actually says.
+          const segs = findChildren(node, "yul_identifier")
+          const segTexts: Node[] = segs.length > 0 ? segs : findChildren(node, "identifier")
+          segTexts.forEach((seg, i) => {
             if (EVM_BUILTIN_NAMES.has(seg.text)) return
             addRel(top().scope, seg.text, ASTEngine.RelationshipType.Uses, 0.7, seg.startPosition.row + 1, {
               isYulPathSegment: true,
@@ -1243,7 +1295,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
               ptype === "new_expression" || ptype === "struct_expression" ||
               ptype === "catch_clause" || ptype === "meta_type_expression") break
           const name = udtName(node)
-          if (name !== "") {
+          // Defence in depth with SOL-2: a global is not a type either. The read
+          // rule refuses `this`/`msg`/… but the user_defined_type case is a
+          // different branch, and a recovery-region fragment that parses as a type
+          // name reached it (measured: `uses -> this` with
+          // `isTypeReference: true` on a line the parser could not handle).
+          if (name !== "" && !GLOBAL_OBJECTS.has(name)) {
             addRel(top().scope, name, ASTEngine.RelationshipType.Uses, 0.85, node.startPosition.row + 1,
               { isTypeReference: true, typeReferenceSite: ptype })
           }
@@ -1303,7 +1360,17 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (got && got.name !== "") {
             addRel(top().scope, got.name, ASTEngine.RelationshipType.Calls, 0.9, got.line, {
               isSolidityCall: true,
-              ...(fn && isMemberLike(fn) ? { isMemberCall: true } : {}),
+              // The member flag is REPORTED BY THE NAME RESOLVER, never by a second
+              // traversal that re-decides the same question. The first version ran a
+              // separate `isMemberLike(fn)` over the callee's DIRECT children, which
+              // cannot see a `member_expression` nested under a `struct_expression`'s
+              // `type:` field — so `t.call{value: 1}("")` resolved the name `call`
+              // and then failed to say it was a member call, and the reserved-token
+              // rule deleted the edge it had just resolved. `call`, `balance` and
+              // `delegatecall` are EVM opcode TOKENS and also members of Solidity's
+              // built-in types, so that deletion was silent and total. The name and
+              // the fact about where it came from now cannot disagree.
+              ...(got.viaMember ? { isMemberCall: true } : {}),
               ...(fn && findFirstChild(fn, "struct_expression") !== null ? { hasCallOptions: true } : {}),
             })
           }
@@ -1604,6 +1671,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         engineCallsSuppressed,
         getterSymbols,
         storeRefusedDeclarations,
+        symbolsSuppressedOnRecoveryLines,
+        recoveryLines: recoveryLines.size,
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
       } as Partial<ASTEngine.FileMetadata>,
     }
@@ -1635,25 +1704,4 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       endIndex: node.endIndex,
     }
   }
-}
-
-/** Is this a callee wrapper that resolves to a MEMBER access? `t.call{…}(…)`. */
-function isMemberLike(fn: Node): boolean {
-  if (fn.type !== "expression") return false
-  for (let i = 0; i < fn.namedChildCount; i++) {
-    const c = fn.namedChild(i)
-    if (!c) continue
-    if (c.type === "member_expression") return true
-    if (c.type === "struct_expression" && findFirstNamed(c, "member_expression") !== null) return true
-    if (c.type === "payable_conversion_expression") return true
-  }
-  return false
-}
-
-function findFirstNamed(node: Node, type: string): Node | null {
-  for (let i = 0; i < node.namedChildCount; i++) {
-    const c = node.namedChild(i)
-    if (c && c.type === type) return c
-  }
-  return null
 }

@@ -127,21 +127,48 @@ const isAllDigits = (text: string): boolean => {
 /**
  * Would an edge to `target` of this `type` be a fabrication?
  *
- * `calls` and `instantiates`: yes for any reserved token — nothing in Solidity
- * can be called or constructed under a keyword's name.
+ * `calls` / `instantiates`, BARE (no object): yes for any reserved token. Nothing
+ * in Solidity can be called or constructed under a keyword's name, so `calls ->
+ * keccak256` is always a fabrication.
+ *
+ * `calls` through a MEMBER (`x.call(…)`, `t.balance()`, `a.delegatecall(…)`):
+ * NO, and the distinction is not pedantry. `call`, `balance` and `delegatecall`
+ * are EVM OPCODE tokens and they are ALSO members of Solidity's built-in types,
+ * so `RESERVED_TOKENS` contains all three. Applying the bare rule to a member call
+ * deleted every one of them: a fixture written to pin the call shapes produced NO
+ * edge for `t.call{value: 1}("")`, and the surface measure cannot even report the
+ * loss because the edge never existed to be counted. A callee reached through an
+ * object is named by that object's type, not by the global namespace, so the
+ * global-namespace rule does not apply to it. The analyzer marks the edge
+ * `isMemberCall`, and both sides call this one function — the flag cannot be
+ * waved around silently because the negative controls below pin the behaviour of
+ * both directions.
+ *
  * `uses`: yes for a reserved token UNLESS the analyzer has declared the edge a
- * type reference, because `uses -> uint256` names a real language type and is
- * the honest edge for a declared `uint256` field.
+ * type reference, because `uses -> uint256` names a real language type and is the
+ * honest edge for a declared `uint256` field. A member read is exempt for the
+ * same reason a member call is.
+ *
  * `contains` / `extends` / `implements` / `exports` / `references`: a reserved
- * token as a DECLARED name is impossible too, but these are checked separately by
- * the unknown-target metric, and folding them in here would make one number mean
- * two things.
+ * token as a DECLARED name is impossible too, but these are checked by the
+ * unknown-target metric, and folding them in here would make one number mean two
+ * things.
  */
 export const isReservedTarget = (type: string, target: string, metadata?: Record<string, unknown>): boolean => {
   if (target.length === 0) return false
-  if (type === "calls" || type === "instantiates") return RESERVED_TOKENS.has(target)
+  const meta = metadata ?? {}
+  // SOL-7 / SOL-9 — a target reached THROUGH an object belongs to that object's
+  // type, not to the language's global namespace, so neither the keyword rule nor
+  // the opcode-token rule applies to it.
+  const viaMember =
+    meta.isMemberCall === true || meta.isMemberReference === true || meta.isTypeReference === true
+  if (type === "calls") {
+    if (viaMember) return false
+    return RESERVED_TOKENS.has(target)
+  }
+  if (type === "instantiates") return RESERVED_TOKENS.has(target)
   if (type === "uses") {
-    if (metadata && metadata.isTypeReference === true) return false
+    if (viaMember) return false
     return RESERVED_TOKENS.has(target)
   }
   return false
