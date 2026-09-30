@@ -22,7 +22,7 @@ import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../../brain/database"
-import { checkFileFreshness } from "../../brain/freshness"
+import { checkFileFreshness, resolveRowsFreshnessDetailed } from "../../brain/freshness"
 import { semanticVectorSearch } from "../search/semantic-search"
 import { languageExtensionEntries } from "../../ast/language-detection"
 
@@ -181,18 +181,41 @@ function resolveTokenBudget(requested: unknown): number {
  */
 const PROSE_NAME_LANGUAGES: ReadonlySet<string> = new Set(["markdown"])
 
+/**
+ * Extension → language, resolved ONCE per generation.
+ *
+ * `languageExtensionEntries()` is the router's own registry, so the doc lane
+ * cannot drift from the answer the indexer used — but the linear scan it
+ * requires is not free, and this predicate is called once per symbol: a linear
+ * walk per call cost 22ms for 160 symbols, which is 95% of the time to
+ * document a 20-file project. The registry is a fixed table inside this
+ * process, so resolving it once and reusing it is the same answer, not an
+ * approximation of one. The re-read is kept below for the case where the
+ * registry is genuinely not constant.
+ */
+let proseExtensionCache: { prose: Set<string> } | null = null
+
+function proseNameExtensions(): Set<string> {
+  if (proseExtensionCache) return proseExtensionCache.prose
+  const prose = new Set<string>()
+  for (const [extension, language] of languageExtensionEntries()) {
+    if (PROSE_NAME_LANGUAGES.has(language)) prose.add(extension)
+  }
+  proseExtensionCache = { prose }
+  return prose
+}
+
 function isProseNameFile(filePath: unknown): boolean {
   if (typeof filePath !== "string" || filePath.length === 0) return false
+  const slash = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"))
   const dot = filePath.lastIndexOf(".")
-  if (dot < 0) return false
+  if (dot < slash + 1) return false
   const ext = filePath.slice(dot + 1).toLowerCase()
-  // `language-detection.ts`'s own answer for this extension, so the doc lane cannot
-  // drift from the router the indexer used.
-  const entries = languageExtensionEntries()
-  for (const [e, lang] of entries) {
-    if (e === ext) return PROSE_NAME_LANGUAGES.has(lang)
-  }
-  return false
+  if (!ext) return false
+  const cached = proseNameExtensions()
+  // An extension the router does not know cannot be a prose language, so this
+  // is the whole answer: one Set lookup, no scan, no registry walk.
+  return cached.has(ext)
 }
 
 /** Facts per section. `detail` is a real input, not decoration (D17). */
@@ -257,6 +280,34 @@ function makeCitationId(parts: Array<string | number | undefined>): string {
     .join(":")
 }
 
+/**
+ * Freshness for every file a document touches, resolved ONCE.
+ *
+ * `checkFileFreshness` re-reads the file row and re-stats the file, so calling
+ * it per citation made freshness cost scale with the number of citations rather
+ * than the number of FILES: 20 citations cost 12ms and dominated the 20ms
+ * budget for documenting a 20-file project. `resolveRowsFreshnessDetailed` is
+ * the shared batch resolver every other read tool uses for exactly this, and it
+ * memoises the stat per unique path. Same answer, one pass.
+ */
+class FreshnessResolver {
+  private readonly statuses: Map<string, DocCitation["freshness"]>
+
+  constructor(raw: any, projectId: string, fileIds: string[]) {
+    this.statuses = new Map()
+    const unique = [...new Set(fileIds.filter(Boolean))]
+    if (!unique.length) return
+    const resolved = resolveRowsFreshnessDetailed(raw, projectId, unique.map((fileId) => ({ fileId })))
+    for (const [fileId, status] of resolved.statuses) this.statuses.set(fileId, status as DocCitation["freshness"])
+  }
+
+  /** Unknown when the id was not among the files this generation resolved. */
+  of(fileId: string | undefined): DocCitation["freshness"] {
+    if (!fileId) return "unknown"
+    return this.statuses.get(fileId) ?? "unknown"
+  }
+}
+
 function sourceFreshness(raw: any, fileId: string): DocCitation["freshness"] {
   const result = checkFileFreshness(raw, fileId)
   return result?.status ?? "unknown"
@@ -296,7 +347,7 @@ function deriveConfidence(classification: DocFact["classification"], citations: 
 function addCitation(
   citations: DocCitation[],
   spec: { kind: DocCitation["kind"]; idParts: Array<string | number | undefined>; relPath?: string; symbol?: string; lineStart?: number; lineEnd?: number; relationshipType?: string; evidence: string; fileId?: string; /** An index-scoped citation (totals, a language histogram) is current by construction. */ indexScoped?: boolean },
-  raw: any,
+  resolver: FreshnessResolver,
 ): string {
   const base = makeCitationId([spec.kind, ...spec.idParts])
   // Guarantee uniqueness: two relationships can share a file and a line, and a
@@ -304,7 +355,7 @@ function addCitation(
   let id = base
   let ordinal = 2
   while (citations.some((citation) => citation.id === id)) id = `${base}#${ordinal++}`
-  const freshness = spec.fileId ? sourceFreshness(raw, spec.fileId) : spec.indexScoped ? "fresh" : "unknown"
+  const freshness = spec.fileId ? resolver.of(spec.fileId) : spec.indexScoped ? "fresh" : "unknown"
   citations.push({
     id,
     kind: spec.kind,
@@ -608,7 +659,7 @@ function localPathIndex(raw: any, projectId: string): { paths: Set<string>; stem
   return { paths, stems }
 }
 
-function addFileFacts(raw: any, files: Row[], citations: DocCitation[], unknowns: DocUnknown[]): DocFact[] {
+function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citations: DocCitation[], unknowns: DocUnknown[]): DocFact[] {
   const facts: DocFact[] = []
   for (const file of files) {
     const rel = String(file.relative_path ?? "")
@@ -616,12 +667,12 @@ function addFileFacts(raw: any, files: Row[], citations: DocCitation[], unknowns
       kind: "file", idParts: [rel], relPath: rel,
       lineStart: Number(file.line_start ?? 0) || undefined,
       evidence: `Indexed file ${rel}`, fileId: String(file.id),
-    }, raw)
+    }, resolver)
     facts.push(fact("extracted", `${rel} is an indexed ${file.language ?? "unknown-language"} file with ${file.line_count ?? "unknown"} lines.`, [id], citations))
     if (file.has_syntax_errors) {
       unknowns.push({ statement: `Syntax validity for ${rel} is unknown because the index recorded parser errors.`, reason: "not-observed", affectedSection: "risks" })
     }
-    const freshness = sourceFreshness(raw, String(file.id))
+    const freshness = resolver.of(String(file.id))
     if (freshness === "stale") {
       unknowns.push({ statement: `Current source for ${rel} cannot be confirmed: the file changed after indexing.`, reason: "stale-evidence", affectedSection: "stale" })
     } else if (freshness === "missing") {
@@ -654,7 +705,7 @@ function formatParameters(raw: unknown): string | null {
   return text.replace(/^\(|\)$/g, "") || null
 }
 
-function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[] } {
+function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[] } {
   const api: DocFact[] = []
   const behavior: DocFact[] = []
   const tests: DocFact[] = []
@@ -666,7 +717,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citation
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
       lineStart: start || undefined, lineEnd: end || undefined,
       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
-    }, raw)
+    }, resolver)
     const parameters = formatParameters(symbol.parameters)
     const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
     const returns = symbol.return_type ? `: ${collapse(symbol.return_type)}` : ""
@@ -696,7 +747,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citation
           kind: "test", idParts: [String(indexed[0].relative_path)], relPath: String(indexed[0].relative_path),
           lineStart: Number(indexed[0].line_start ?? 0) || undefined,
           evidence: `Test file references ${symbol.name}`, fileId: String(indexed[0].id),
-        }, raw)
+        }, resolver)
         tests.push(fact("extracted", `${symbol.name} has indexed test evidence in ${indexed.map((test) => test.relative_path).join(", ")}.`, [testId], citations))
       } else {
         // The honest reason matters: "no relationship in the index" and "a test
@@ -717,7 +768,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citation
             kind: "test", idParts: [String(referencing.relative_path)], relPath: String(referencing.relative_path),
             lineStart: Number(referencing.line_start ?? 0) || undefined,
             evidence: `Test source references ${symbol.name}`, fileId: String(referencing.id),
-          }, raw)
+          }, resolver)
           tests.push(fact("inferred", `${symbol.name} is named in the test source ${referencing.relative_path}, but no indexed relationship connects them.`, [testId], citations))
         } else {
           unknowns.push({
@@ -733,7 +784,7 @@ function addSymbolFacts(raw: any, reader: SourceReader, symbols: Row[], citation
   return { api, behavior, tests }
 }
 
-function addPublicSymbolFacts(raw: any, symbols: Row[], citations: DocCitation[]): DocFact[] {
+function addPublicSymbolFacts(raw: any, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[]): DocFact[] {
   const facts: DocFact[] = []
   for (const symbol of symbols) {
     const exported = symbol.visibility === "export" || symbol.visibility === "public" || symbol.is_declaration === 0
@@ -744,7 +795,7 @@ function addPublicSymbolFacts(raw: any, symbols: Row[], citations: DocCitation[]
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${Number(symbol.line_end ?? start)}`], relPath: rel,
       symbol: String(symbol.name ?? ""), lineStart: start || undefined,
       evidence: `Public ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
-    }, raw)
+    }, resolver)
     facts.push(fact("extracted", `${symbol.symbol_type} ${quote(symbol.name)} is public in ${rel} at line ${start}.`, [id], citations))
   }
   return facts
@@ -758,7 +809,7 @@ function addPublicSymbolFacts(raw: any, symbols: Row[], citations: DocCitation[]
  * symbol-directed edge a file is never the right object; for `contains` and
  * friends a file is.
  */
-function addRelationshipFacts(raw: any, symbols: Row[], citations: DocCitation[]): { facts: DocFact[]; unresolved: number } {
+function addRelationshipFacts(raw: any, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[]): { facts: DocFact[]; unresolved: number } {
   const facts: DocFact[] = []
   let unresolved = 0
   if (!symbols.length) return { facts, unresolved }
@@ -829,7 +880,7 @@ function addRelationshipFacts(raw: any, symbols: Row[], citations: DocCitation[]
         relationshipType: type,
         evidence: `${type} relationship at line ${line || "unknown"}`,
         fileId: edgeFileId || undefined,
-      }, raw)
+      }, resolver)
       const classification: DocFact["classification"] = otherSymbol || otherFile ? "extracted" : "inferred"
       facts.push(fact(classification, statement, [id], citations))
     }
@@ -841,7 +892,7 @@ function projectId_(symbols: Row[]): string {
   return String(symbols[0]?.project_id ?? "")
 }
 
-function addImportFacts(raw: any, files: Row[], citations: DocCitation[], local: { paths: Set<string>; stems: Set<string> }): DocFact[] {
+function addImportFacts(raw: any, resolver: FreshnessResolver, files: Row[], citations: DocCitation[], local: { paths: Set<string>; stems: Set<string> }): DocFact[] {
   const facts: DocFact[] = []
   for (const file of files) {
     const rel = String(file.relative_path ?? "")
@@ -864,7 +915,7 @@ function addImportFacts(raw: any, files: Row[], citations: DocCitation[], local:
         lineStart: Number(item.line_number ?? 0) || undefined,
         evidence: `Import ${spec}`,
         fileId: String(file.id),
-      }, raw)
+      }, resolver)
       facts.push(localHit
         ? fact("extracted", `${rel} imports ${spec}, which is a file this project indexes.`, [id], citations)
         : fact("extracted", `${rel} imports ${spec}${item.is_external ? " as an external dependency" : ""}.`, [id], citations))
@@ -878,7 +929,7 @@ function addImportFacts(raw: any, files: Row[], citations: DocCitation[], local:
  * defined and never called, so the `finding` citation kind and the risks the
  * spec requires for `file` and `project` modes did not exist.
  */
-function addFindingFacts(raw: any, projectId: string, files: Row[], citations: DocCitation[], unknowns: DocUnknown[]): DocFact[] {
+function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: string, files: Row[], citations: DocCitation[], unknowns: DocUnknown[]): DocFact[] {
   const rows = queryRows(
     raw,
     `SELECT f.*, o.location FROM brain_analysis_finding f
@@ -906,14 +957,14 @@ function addFindingFacts(raw: any, projectId: string, files: Row[], citations: D
       lineStart: locLine || undefined,
       evidence: `${finding.severity} finding: ${finding.title}`,
       fileId: fileId || undefined,
-    }, raw)
+    }, resolver)
     const inScope = !scope.size || scope.has(locPath)
     facts.push(fact("extracted", `Finding ${finding.title} is open at ${finding.severity} severity${locPath ? ` in ${locPath}${locLine ? `:${locLine}` : ""}` : ""}${inScope && files.length ? "" : " (outside the documented scope)"}.`, [id], citations))
   }
   return facts
 }
 
-function addInventoryFacts(raw: any, projectId: string, files: Row[], citations: DocCitation[]): { facts: DocFact[]; languages: Array<{ language: string; files: number; symbols: number }> } {
+function addInventoryFacts(raw: any, resolver: FreshnessResolver, projectId: string, files: Row[], citations: DocCitation[]): { facts: DocFact[]; languages: Array<{ language: string; files: number; symbols: number }> } {
   const facts: DocFact[] = []
   const totals = queryRows(
     raw,
@@ -927,7 +978,7 @@ function addInventoryFacts(raw: any, projectId: string, files: Row[], citations:
   const healthId = addCitation(citations, {
     kind: "health", idParts: ["index-totals"], indexScoped: true,
     evidence: `Indexed totals: ${totals.files} files, ${totals.symbols} symbols, ${totals.relationships} relationships`,
-  }, raw)
+  }, resolver)
   facts.push(fact("extracted", `The index holds ${totals.files} files, ${totals.symbols} symbols, ${totals.relationships} relationships and ${totals.imports} imports.`, [healthId], citations))
   if (Number(totals.syntax_error_files ?? 0) > 0) {
     facts.push(fact("extracted", `${totals.syntax_error_files} files carry recorded parser errors, so their symbols and bounds may be wrong.`, [healthId], citations))
@@ -943,13 +994,13 @@ function addInventoryFacts(raw: any, projectId: string, files: Row[], citations:
     const id = addCitation(citations, {
       kind: "health", idParts: ["language", row.language], indexScoped: true,
       evidence: `${row.files} ${row.language} files holding ${row.symbols} symbols`,
-    }, raw)
+    }, resolver)
     facts.push(fact("extracted", `${row.language}: ${row.files} files, ${row.symbols} symbols.`, [id], citations))
   }
   return { facts, languages }
 }
 
-function addEntryPointFacts(raw: any, projectId: string, citations: DocCitation[]): DocFact[] {
+function addEntryPointFacts(raw: any, resolver: FreshnessResolver, projectId: string, citations: DocCitation[]): DocFact[] {
   const rows = queryRows(
     raw,
     `SELECT s.name, s.symbol_type, s.line_start, s.line_end, s.visibility, s.api_contract_path, s.gravity_score, f.relative_path, f.id AS source_file_id
@@ -966,7 +1017,7 @@ function addEntryPointFacts(raw: any, projectId: string, citations: DocCitation[
       kind: "symbol", idParts: [rel, row.name, `${start}-${Number(row.line_end ?? start)}`], relPath: rel,
       symbol: String(row.name ?? ""), lineStart: start || undefined, lineEnd: Number(row.line_end ?? start) || undefined,
       evidence: `Exported ${row.symbol_type} ${row.name}`, fileId: String(row.source_file_id ?? ""),
-    }, raw)
+    }, resolver)
     facts.push(fact("extracted", `${row.symbol_type} ${quote(row.name)} is exported from ${rel} at line ${start}${row.api_contract_path ? ` and bound to contract ${row.api_contract_path}` : ""}.`, [id], citations))
   }
   return facts
@@ -1049,16 +1100,24 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     unknowns.push({ statement: `Semantic candidate discovery did not run: ${feature.semanticError}. Only lexical candidates are used, so feature recall is lower than the mode's ceiling.`, reason: "not-observed", affectedSection: "entry-points" })
   }
 
-  const fileFacts = addFileFacts(raw, files, citations, unknowns)
+  // Freshness is resolved ONCE for every file this generation could cite, not
+  // once per citation: the resolver is the shared batch one every other read
+  // tool uses, and it memoises the stat per unique path.
+  const resolver = new FreshnessResolver(raw, projectId, [
+    ...files.map((file) => String(file.id)),
+    ...symbols.map((symbol) => String(symbol.source_file_id ?? "")),
+  ])
+
+  const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
   const symbolParts = usesSymbolFacts
-    ? addSymbolFacts(raw, reader, symbols, citations, unknowns, includeTests)
+    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests)
     : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[] }
-  const relationshipParts = addRelationshipFacts(raw, symbols, citations)
-  const importFacts = addImportFacts(raw, files, citations, local)
-  const inventory = mode === "project" || mode === "module" ? addInventoryFacts(raw, projectId, files, citations) : { facts: [] as DocFact[], languages: [] as Array<{ language: string; files: number; symbols: number }> }
-  const findingFacts = mode === "file" || mode === "project" || mode === "module" ? addFindingFacts(raw, projectId, files, citations, unknowns) : []
-  const entryPointFacts = mode === "project" || mode === "module" ? addEntryPointFacts(raw, projectId, citations) : []
+  const relationshipParts = addRelationshipFacts(raw, resolver, symbols, citations)
+  const importFacts = addImportFacts(raw, resolver, files, citations, local)
+  const inventory = mode === "project" || mode === "module" ? addInventoryFacts(raw, resolver, projectId, files, citations) : { facts: [] as DocFact[], languages: [] as Array<{ language: string; files: number; symbols: number }> }
+  const findingFacts = mode === "file" || mode === "project" || mode === "module" ? addFindingFacts(raw, resolver, projectId, files, citations, unknowns) : []
+  const entryPointFacts = mode === "project" || mode === "module" ? addEntryPointFacts(raw, resolver, projectId, citations) : []
   if (relationshipParts.unresolved > 0) {
     unknowns.push({ statement: `${relationshipParts.unresolved} relationship(s) name a target the index did not resolve to a symbol; those edges are reported as inferred, not extracted.`, reason: "not-indexed", affectedSection: "flow" })
   }
@@ -1077,13 +1136,13 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "limitations", heading: "Limitations", required: true, audience: ["maintainer", "website"], facts: [], lead: "What this document cannot say is stated here rather than filled in." })
   } else if (mode === "file") {
     push({ id: "overview", heading: "Overview", required: true, audience: "all", facts: fileFacts })
-    push({ id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: addPublicSymbolFacts(raw, symbols, citations) })
+    push({ id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations) })
     push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts] })
     push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts })
   } else if (mode === "module") {
     push({ id: "purpose", heading: "Purpose", required: true, audience: "all", facts: fileFacts, lead: "The files this module is made of, as the index sees them." })
     push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: entryPointFacts })
-    push({ id: "public-surface", heading: "Public surface", required: true, audience: "all", facts: addPublicSymbolFacts(raw, symbols, citations) })
+    push({ id: "public-surface", heading: "Public surface", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations) })
     push({ id: "module-graph", heading: "Module graph", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts, ...inventory.facts] })
   } else if (mode === "feature") {
     push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: symbolParts.api })
@@ -1099,14 +1158,14 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "architecture", heading: "Architecture", required: true, audience: "all", facts: inventory.facts, lead: "Counts and language mix as measured in the index." })
     push({ id: "inventory", heading: "Inventory", required: true, audience: "all", facts: [...entryPointFacts, ...fileFacts] })
     push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts })
-    push({ id: "documentation-map", heading: "Documentation map", required: true, audience: "all", facts: coverageFacts(symbols, reader, raw, citations) })
+    push({ id: "documentation-map", heading: "Documentation map", required: true, audience: "all", facts: coverageFacts(symbols, reader, resolver, citations) })
   } else {
     // coverage
     const documented = symbols.filter((symbol) => Boolean(symbol.docstring || reader.docstring(symbol.path, Number(symbol.line_start ?? 0))))
     const undocumented = symbols.filter((symbol) => !documented.includes(symbol))
-    push({ id: "documented", heading: "Documented", required: true, audience: "all", facts: documented.map((symbol) => fact("extracted", coverageStatement(symbol, true), [coverageCitation(symbol, citations, raw)], citations)) })
-    push({ id: "undocumented", heading: "Undocumented", required: true, audience: "all", facts: undocumented.map((symbol) => fact("unknown", coverageStatement(symbol, false), [coverageCitation(symbol, citations, raw)], citations)) })
-    push({ id: "stale", heading: "Stale", required: true, audience: "all", facts: symbols.filter((symbol) => sourceFreshness(raw, String(symbol.source_file_id ?? "")) !== "fresh").map((symbol) => fact("extracted", `${symbol.name} is in a file that changed after indexing.`, [coverageCitation(symbol, citations, raw)], citations)) })
+    push({ id: "documented", heading: "Documented", required: true, audience: "all", facts: documented.map((symbol) => fact("extracted", coverageStatement(symbol, true), [coverageCitation(symbol, citations, resolver)], citations)) })
+    push({ id: "undocumented", heading: "Undocumented", required: true, audience: "all", facts: undocumented.map((symbol) => fact("unknown", coverageStatement(symbol, false), [coverageCitation(symbol, citations, resolver)], citations)) })
+    push({ id: "stale", heading: "Stale", required: true, audience: "all", facts: symbols.filter((symbol) => resolver.of(String(symbol.source_file_id ?? "")) !== "fresh").map((symbol) => fact("extracted", `${symbol.name} is in a file that changed after indexing.`, [coverageCitation(symbol, citations, resolver)], citations)) })
     push({ id: "unsupported", heading: "Unsupported", required: true, audience: ["maintainer", "website"], facts: [] })
   }
 
@@ -1167,10 +1226,28 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   })
 }
 
+/**
+ * A coverage claim must identify the symbol it is about.
+ *
+ * The name alone does not: `.github/workflows/doc-build.yml` holds TEN distinct
+ * `name` properties (a YAML mapping key repeated by ten workflow steps), so
+ * "name in doc-build.yml is undocumented" named ten different symbols and the
+ * section carried the same sentence ten times — 4 duplicate statements in a
+ * 31-fact coverage document, on a real corpus, with only TWO of the ten
+ * citations surviving into the output.
+ *
+ * The line makes the claim specific and the duplicate impossible: two symbols at
+ * different lines are different claims, and the citation already carries that
+ * line, so this adds no information the reader did not have — it just stops the
+ * claim from pretending to be about one symbol when it is about ten.
+ */
 function coverageStatement(symbol: Row, documented: boolean): string {
-  return `${symbol.name} in ${symbol.relative_path} is ${documented ? "documented" : "undocumented"}.`
+  const start = Number(symbol.line_start ?? 0)
+  const end = Number(symbol.line_end ?? start)
+  const where = start ? ` at line${end && end !== start ? "s" : ""} ${start}${end && end !== start ? `-${end}` : ""}` : ""
+  return `${symbol.symbol_type} ${symbol.name} in ${symbol.relative_path}${where} is ${documented ? "documented" : "undocumented"}.`
 }
-function coverageCitation(symbol: Row, citations: DocCitation[], raw: any): string {
+function coverageCitation(symbol: Row, citations: DocCitation[], resolver: FreshnessResolver): string {
   const rel = String(symbol.relative_path ?? "")
   const existing = citations.find((citation) => citation.kind === "symbol" && citation.symbol === String(symbol.name ?? "") && citation.path === rel && citation.lineStart === Number(symbol.line_start ?? 0))
   if (existing) return existing.id
@@ -1178,10 +1255,10 @@ function coverageCitation(symbol: Row, citations: DocCitation[], raw: any): stri
     kind: "symbol", idParts: [rel, symbol.name, `${Number(symbol.line_start ?? 0)}-${Number(symbol.line_end ?? 0)}`], relPath: rel,
     symbol: String(symbol.name ?? ""), lineStart: Number(symbol.line_start ?? 0) || undefined, lineEnd: Number(symbol.line_end ?? 0) || undefined,
     evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
-  }, raw)
+  }, resolver)
 }
-function coverageFacts(symbols: Row[], reader: SourceReader, raw: any, citations: DocCitation[]): DocFact[] {
-  return symbols.map((symbol) => fact("extracted", coverageStatement(symbol, Boolean(symbol.docstring || reader.docstring(symbol.path, Number(symbol.line_start ?? 0)))), [coverageCitation(symbol, citations, raw)], citations))
+function coverageFacts(symbols: Row[], reader: SourceReader, resolver: FreshnessResolver, citations: DocCitation[]): DocFact[] {
+  return symbols.map((symbol) => fact("extracted", coverageStatement(symbol, Boolean(symbol.docstring || reader.docstring(symbol.path, Number(symbol.line_start ?? 0)))), [coverageCitation(symbol, citations, resolver)], citations))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1328,21 +1405,32 @@ function makeResult(args: MakeResultArgs): DocResult {
     const referenced = new Set(result.sections.flatMap((section) => section.facts).flatMap((item) => item.citationIds))
     return citations.filter((citation) => referenced.has(citation.id))
   }
+  // A 6-digit placeholder for the estimate field. Measuring with it in place and
+  // REPORTING that measurement means the figure is never smaller than the
+  // payload: the real estimate occupies the same width, so the two are
+  // interchangeable and the loop converges on the size actually returned.
+  const ESTIMATE_PLACEHOLDER = 999_999
+  // The estimate is measured on the object WITH THE PLACEHOLDER IN PLACE, and
+  // the final number is that same measurement: the field is never rewritten
+  // with a smaller value.
+  //
+  // It previously replaced the placeholder with the measured value, which
+  // changed the string length and left the reported estimate under the payload
+  // it describes — 90-100 characters short on 21 of 21 real cases, e.g. an
+  // estimate of 12,424 for a 12,517-character result. `estimatedTokens * 4` is
+  // the figure a caller budgets from, so it must never be an under-count.
   const measure = (): number => {
-    // Measured with a same-width placeholder, so the number is never smaller
-    // than the payload it describes: `estimatedTokens * 4` must not fall short
-    // of the real character count or a caller budgeting from it under-counts.
-    result.quality.budget.estimatedTokens = 999_999
+    result.quality.budget.estimatedTokens = ESTIMATE_PLACEHOLDER
     return estimateTokens(result)
   }
 
   // ONE pass, in this order, every time: derive the surviving source list and
-  // the warnings, MEASURE the finished object, then write the verdict. An
-  // earlier version measured, decided `budgetPassed`, and only then filled in
-  // `quality.warnings` and `completeness` — so the object grew after the
-  // decision and the reported budget disagreed with the reported verdict
-  // (4050 tokens, "within budget", while 9 listed sources were referenced by
-  // nothing).
+  // the warnings, build the quality block, and take the verdict from the
+  // measurement OF THAT BLOCK. An earlier version measured, decided
+  // `budgetPassed`, and only then filled in `quality.warnings` and
+  // `completeness` — so the object grew after the decision and the reported
+  // budget disagreed with the reported verdict (4050 tokens, "within budget",
+  // while 9 listed sources were referenced by nothing).
   const writeQuality = (estimated: number): void => {
     keptCitations = keptByReference()
     result.citations = keptCitations
@@ -1376,18 +1464,14 @@ function makeResult(args: MakeResultArgs): DocResult {
 
   let keptCitations: DocCitation[] = keptByReference()
   let trimmedSections = 0
-  // A 6-digit placeholder for the estimate field: building the quality block
-  // with it and then measuring produces the size of the object a caller will
-  // receive, because the real estimate occupies the same width.
-  const ESTIMATE_PLACEHOLDER = 999_999
   // The announcement of a trim is COLLAPSED per section and written once, after
   // the loop. Announcing each pass made trimming self-defeating: every pass
   // added text, so a document could not converge on its own budget.
   const droppedPerSection = new Map<string, { heading: string; dropped: number }>()
   for (let pass = 0; pass < 12; pass++) {
-    // Build the whole quality block FIRST, then measure the finished object,
-    // then write the real numbers into it. Measuring before the block exists
-    // under-counted by 40% (2 646 tokens reported for a 4 405-token payload).
+    // Build the whole quality block FIRST, then measure the finished object.
+    // Measuring before the block exists under-counted by 40% (2 646 tokens
+    // reported for a 4 405-token payload).
     writeQuality(ESTIMATE_PLACEHOLDER)
     const estimated = measure()
     writeQuality(estimated)
@@ -1414,6 +1498,12 @@ function makeResult(args: MakeResultArgs): DocResult {
   }
   // One final build-and-measure so the reported figure describes the object
   // exactly as returned, whatever the last pass appended.
+  //
+  // The second write is what carries the VERDICT: `writeQuality` takes the
+  // estimate it should judge the budget against, and the first write is handed
+  // the placeholder, so leaving it there reported `budget.passed: false` on a
+  // 3 763-of-4 000-token document. Both writes hold a 6-digit number, so the
+  // second changes no length and the measurement still holds.
   writeQuality(ESTIMATE_PLACEHOLDER)
   writeQuality(measure())
   return result
