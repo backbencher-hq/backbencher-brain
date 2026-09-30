@@ -734,6 +734,17 @@ export async function executeEdit(projectPath: string, projectId: string, reques
   // string, which is fine for a diff preview) while the bytes are what ROLLBACK
   // restores.
   const snapshots = new Map(changes.map((change) => [change.path, snapshotOf(change.path)]))
+  // M66: which files were ACTUALLY replaced on disk, as opposed to merely
+  // planned. A file whose write never happened needs no restore, and trying to
+  // restore one is actively harmful: if the write failed because the directory is
+  // read-only, the restore into that same directory fails too, and the rollback
+  // then reports a file as "NOT restored" that was never modified in the first
+  // place. The engine did that until script/m67 made the failure real with a
+  // read-only directory: the commit failed on `writeFileSync(temp)` with EACCES,
+  // nothing had been written, and the answer came back "ROLLBACK INCOMPLETE" for
+  // a file that was never at risk. A false alarm in a safety mechanism is how you
+  // train people to ignore it.
+  const committed: string[] = []
   // Track every temp file created during the write loop so the catch block can
   // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
   const temps: string[] = []
@@ -750,6 +761,9 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       // asked for and cannot see in a diff.
       const originalMode = snapshots.get(change.path)!.mode
       renameSync(temporary, change.path)
+      // Past this point the file on disk is NOT the pre-edit file, so putting it
+      // back is the engine's responsibility.
+      committed.push(change.path)
       if (originalMode !== null) {
         try { chmodSync(change.path, originalMode) } catch { /* best effort: content is the contract */ }
       }
@@ -782,12 +796,19 @@ export async function executeEdit(projectPath: string, projectId: string, reques
     // the catch block: the remaining files were never restored, the
     // orphaned-temp scrub after it never ran, and the original error was REPLACED
     // by the rollback's — the caller saw "EPERM" instead of the validation failure
-    // that caused the rollback, with a half-reverted working tree. Now every file
-    // is attempted, failures are collected, temps are always scrubbed, and the
-    // ORIGINAL error still propagates — annotated, because a partial rollback is
-    // the most important thing a caller can be told.
+    // that caused the rollback, with a half-reverted working tree. Now every
+    // COMMITTED file is attempted, failures are collected, temps are always
+    // scrubbed, and the ORIGINAL error still propagates — annotated, because a
+    // partial rollback is the most important thing a caller can be told.
+    //
+    // Only `committed` paths are restored. A path that was planned but never
+    // replaced on disk is already correct, and attempting a restore of it can only
+    // fail and raise a false alarm — which is exactly what happened: a write that
+    // failed because its directory was read-only produced "ROLLBACK INCOMPLETE"
+    // for a file nothing had been written to.
     const rollbackFailures: string[] = []
-    for (const [file, snapshot] of snapshots) {
+    for (const file of committed) {
+      const snapshot = snapshots.get(file)!
       try {
         if (snapshot.existed) writeBytesPreservingMode(file, snapshot.bytes!, snapshot.mode)
         else rmSync(file, { force: true })
