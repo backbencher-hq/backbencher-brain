@@ -1,6 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { isReservedTarget } from "./solidity-reserved-tokens"
+import { isReservedTarget, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
 
 /**
  * Solidity analyzer.
@@ -57,17 +57,32 @@ import { isReservedTarget } from "./solidity-reserved-tokens"
  *    leaked. Measured consequence: 37,467 `identifier` nodes in the corpus, and
  *    the read pass claims only the ones in that position.
  *
- *  - SOL-3  THE PUBLIC STATE-VARIABLE GETTER IS RECORDED, NOT PUBLISHED.
- *    `uint256 public bal;` makes the compiler synthesise a `bal()` getter that
- *    appears NOWHERE in the source. Publishing a second symbol named `bal` would
- *    collide with the state variable that actually exists, and the collision
- *    would be invisible: both rows would read `bal`, both would resolve, and
- *    `bb_graph` would answer a question about which one nobody can tell apart.
- *    csharp PS4 settled the shape of this ruling for a member whose name the
- *    source never writes. So the FACT is preserved and the un-navigable row is
- *    not: the state-variable symbol carries `metadata.getterSynthesised: true`,
- *    `getterVisibility` and `getterIsPayable`. 352 `state_variable_declaration`
- *    nodes in the corpus; the public ones are counted in the surface artifact.
+ *  - SOL-3  THE PUBLIC STATE-VARIABLE GETTER IS PUBLISHED UNDER ITS REAL NAME,
+ *    `bal()`. `uint256 public bal;` makes the compiler synthesise a getter that
+ *    appears NOWHERE in the source, and the decision is which of three shapes to
+ *    give it. The first draft chose "record it in the symbol's metadata and do not
+ *    publish it", on the reasoning that a duplicate `bal` would collide with the
+ *    state variable invisibly. MEASUREMENT KILLED THAT DRAFT: `parseFile` returns
+ *    every symbol with `metadata: undefined`, because pool-worker.ts drops the
+ *    whole object at the worker boundary — the same seam that cost the PowerShell
+ *    lane its `is_static = 0` and its `annotations = null`. So "record it in
+ *    metadata" was a decision the store never received, which is structurally the
+ *    same failure as the PowerShell lane's pin record claiming 8 patches against
+ *    bytes containing 7: an artifact agreeing with itself and disagreeing with what
+ *    ships.
+ *
+ *    What ships instead: the getter is a real symbol, named with its EXTERNAL
+ *    SIGNATURE `bal()`. A Solidity identifier cannot contain `(`, so this name can
+ *    never collide with the state variable `bal`, with a function, or with
+ *    anything else — the collision the first draft was avoiding does not exist
+ *    under this spelling. It is navigable (`bb_graph`, search, the `contains` tree
+ *    from the contract), and a `references` edge from the variable to the getter
+ *    makes the pair a walk rather than two adjacent rows. It is a leaf of the call
+ *    graph, which is CORRECT: a public getter has no in-repo caller unless the repo
+ *    calls it. `metadata.getterSynthesised` is still set, because a pre-store
+ *    consumer can use it — it is simply not what makes the fact true.
+ *    352 `state_variable_declaration` nodes in the corpus; the public ones are
+ *    counted as `getterSymbols` in the surface artifact.
  *
  *  - SOL-4  `constructor` IS WRITTEN IN THE SOURCE. `constructor_definition` has
  *    NO `name:` field — but unlike PowerShell's `Deployment(...)`, Solidity
@@ -204,12 +219,20 @@ const isSpaceCode = (code: number): boolean =>
  * The question PowerShell's F9 asks, asked of Solidity text, and used to DROP an
  * edge rather than to keep one. Solidity identifiers are
  * `[A-Za-z_$][A-Za-z0-9_$]*`, so a `.` is not an identifier character — but the
- * MODULE symbol is `AccessControl.sol`, which contains one. Rather than
- * special-case the module, `.` is admitted here and this test is applied only to
- * edge TARGETS, never to a symbol name. A target carrying a newline, a quote, a
- * space or a brace names nothing resolvable, and it would sit at zero
- * `unknownTargets` for exactly as long as it existed — the same invisibility the
- * PowerShell here-string targets had.
+ * MODULE symbol is `AccessControl.sol` and SOL-3's synthesised getter is `bal()`,
+ * and both name real stored symbols. Rather than special-case either, `.`, `(` and
+ * `)` are admitted here, and this test is applied only to edge TARGETS, never to a
+ * declaration name. A target carrying a newline, a quote, a space or a brace names
+ * nothing resolvable, and it would sit at zero `unknownTargets` for exactly as long
+ * as it existed — the same invisibility the PowerShell here-string targets had.
+ *
+ * Admitting `(`/`)` is safe here precisely because no target is derived from
+ * arbitrary source text: every target is an `identifier`'s text, a keyword the
+ * analyzer refused earlier, or one of the two names the analyzer synthesises
+ * itself (the module basename, a getter signature). MEASURED — with `(` refused the
+ * SOL-3 `references bal -> bal()` edge was dropped by this very gate, so the getter
+ * was published as a symbol and then never linked to the variable it reads, which
+ * is the half of SOL-3 that makes it navigable.
  */
 const isPlausibleSymbolName = (name: string): boolean => {
   if (name.length === 0) return false
@@ -217,7 +240,8 @@ const isPlausibleSymbolName = (name: string): boolean => {
     const c = name.charCodeAt(i)
     const ok =
       (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) ||
-      c === 95 /* _ */ || c === 36 /* $ */ || c === 46 /* . */
+      c === 95 /* _ */ || c === 36 /* $ */ || c === 46 /* . */ ||
+      c === 40 /* ( */ || c === 41 /* ) */
     if (!ok) return false
   }
   return true
@@ -274,43 +298,6 @@ const EVM_BUILTIN_NAMES = new Set([
   "loadimmutable", "linkersymbol", "memoryguard", "verbatim", "chainid",
   "basefee", "blobbasefee", "blobhash", "origin", "gasprice", "blockhash",
   "coinbase", "timestamp", "number", "difficulty", "prevrandao", "gaslimit",
-])
-
-/**
- * SOL-7b — the engine functions the GRAMMAR CANNOT MARK.
- *
- * The obvious defence against a fabricated `calls` edge is RESERVED_TOKENS, and
- * it is not sufficient. `require(x)` and `function require() internal {}` produce
- * IDENTICAL trees — the grammar cannot tell an engine builtin from a user
- * function at a call site — so no `hasError`-keyed gate in this repo can see
- * `calls -> require`. That is exactly the PowerShell PS5 failure: 6 fabricated
- * edges naming its own block keywords, found by a census rather than by a gate,
- * and invisible to everything structural.
- *
- * The 15 entries below are DERIVED BY BEHAVIOUR, not remembered: for each
- * candidate, `contract T { function t() public { NAME(); } }` is parsed against
- * the wired wasm and the callee node type is inspected.
- * `bun run script/m60/solidity-reserved-words.ts` re-derives both this list and
- * RESERVED_TOKENS and prints the buckets.
- *
- * The finding that made the list necessary is worth stating, because the obvious
- * guess is wrong: `keccak256` IS one of the grammar's 262 tokens, and in CALL
- * position the lexer still produces a plain `identifier` — a token only appears
- * where the grammar expects that literal, and `NAME()` is not such a place.
- * Believing "it is a keyword, the token set covers it" would have left every
- * `keccak256(...)` in the corpus as a fabricated edge. `type` and `revert` need no
- * entry because the grammar gives them dedicated node types
- * (`meta_type_expression`, `revert_statement`), so they are structurally
- * impossible as call targets.
- *
- * A refusal that is not COUNTED is how a new engine builtin lands silently, so
- * `engineCallsSuppressed` is reported in the analyzer's metadata and read by the
- * surface measure.
- */
-const ENGINE_FUNCTIONS = new Set([
-  "require", "assert", "gasleft", "sha256", "ripemd160", "ecrecover", "suicide",
-  "keccak256", "sha3", "gas", "blockhash", "blobhash", "selfdestruct",
-  "addmod", "mulmod",
 ])
 
 export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -381,6 +368,13 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      *  COUNTED, not silent: a refusal nobody counts is how the next engine
      *  builtin lands as a fabricated edge with nothing to notice it. */
     let engineCallsSuppressed = 0
+    /** SOL-14 — how many declarations were refused because the STORE would drop
+     *  them anyway. Counted for the same reason: `self` and `root` are real
+     *  Solidity identifiers that pool-worker's UNIVERSAL denylist refuses, and an
+     *  uncounted refusal is indistinguishable from the analyzer being wrong. */
+    let storeRefusedDeclarations = 0
+    /** SOL-3 — how many synthesised public getters were published as symbols. */
+    let getterSymbols = 0
 
     /** SOL-5 — counted, not hidden: an `extends` that may really be an
      *  `implements` because the interface is declared in another file. */
@@ -447,7 +441,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (isReservedTarget(type, target, metadata)) return
       // SOL-7b — `require(ok, "x")` parses exactly like a call to a user function
       // named `require`, so the tree cannot settle it and a declared list must.
-      if (type === ASTEngine.RelationshipType.Calls && ENGINE_FUNCTIONS.has(target)) {
+      if (type === ASTEngine.RelationshipType.Calls && ENGINE_FUNCTION_NAMES.has(target)) {
         engineCallsSuppressed++
         return
       }
@@ -523,6 +517,17 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     ): void => {
       const clean = name.trim()
       if (clean === "") return
+      // SOL-14 — the store refuses this name, so declaring it would publish a
+      // `contains` edge pointing at a symbol that never reaches the store. Refuse
+      // HERE, at the single point every declaration goes through, exactly as a
+      // non-positive line is refused in `addRel`. See
+      // src/ast/solidity-reserved-tokens.ts for the measured evidence: `self` at
+      // CrosschainLinked.sol:59 and `root` at MerkleTreeMock.sol:15 are both real
+      // Solidity identifiers the shared filter drops.
+      if (STORE_REFUSED_SYMBOL_NAMES.has(clean)) {
+        storeRefusedDeclarations++
+        return
+      }
       const key = `${top().owner}\u0000${clean}\u0000${kind}`
       if (symbolMap.has(key)) return
       pushSymbol(clean, kind, node, meta, parameters)
@@ -1096,11 +1101,28 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (node.childForFieldName("location")) {
             meta.stateLocation = node.childForFieldName("location")!.text
           }
-          // SOL-3 — the getter is RECORDED, not published.
+          // SOL-3 — the synthesised getter, published under its external name.
           if (meta.visibility === "public") {
             meta.getterSynthesised = true
             meta.getterVisibility = "public"
             meta.getterIsPayable = meta.stateMutability === "payable"
+            const getterName = `${name}()`
+            const getter = pushSymbol(getterName, ASTEngine.SymbolKind.Method, node, {
+              ...meta,
+              isSynthesisedGetter: true,
+              declarationKeyword: "public state variable getter",
+              getterFor: name,
+              ...(meta.stateMutability === "view" || !meta.stateMutability
+                ? { stateMutability: meta.stateMutability ?? "view" }
+                : {}),
+            })
+            void getter
+            if (getter) {
+              getterSymbols++
+              // The pair is a WALK, not two adjacent rows.
+              addRel(name, getterName, ASTEngine.RelationshipType.References, 1.0, line,
+                { isGetterFor: true, getterOfVariable: name })
+            }
           }
           declareSymbol(name, ASTEngine.SymbolKind.Property, node, line, meta)
           noteMember(top().owner, name)
@@ -1580,6 +1602,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         overridesEmitted,
         overridesUnresolved,
         engineCallsSuppressed,
+        getterSymbols,
+        storeRefusedDeclarations,
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
       } as Partial<ASTEngine.FileMetadata>,
     }
