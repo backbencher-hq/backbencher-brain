@@ -1,1687 +1,1741 @@
 {
- "schemaVersion": 1,
- "truthSource": "manual_audit",
- "source": "validation/m12/fixtures/javascript/ (5 fixtures) \u2014 manually audited against fixture source and the C#/Java/F#/TS family contract",
- "facts": [
-  {
-   "id": "sym:Domain.js:4:class:UserId",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 4,
-   "attributes": {
-    "name": "UserId",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class UserId"
-   }
-  },
-  {
-   "id": "sym:Domain.js:5:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 5,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:Domain.js:9:method:toString",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 9,
-   "attributes": {
-    "name": "toString",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method toString"
-   }
-  },
-  {
-   "id": "sym:Domain.js:14:constant:Status",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 14,
-   "attributes": {
-    "name": "Status",
-    "symbolKind": "constant"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constant Status"
-   }
-  },
-  {
-   "id": "sym:Domain.js:20:class:Customer",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 20,
-   "attributes": {
-    "name": "Customer",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class Customer"
-   }
-  },
-  {
-   "id": "sym:Domain.js:21:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 21,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:Domain.js:26:method:describe",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 26,
-   "attributes": {
-    "name": "describe",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method describe"
-   }
-  },
-  {
-   "id": "sym:Domain.js:31:class:Repository",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 31,
-   "attributes": {
-    "name": "Repository",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class Repository"
-   }
-  },
-  {
-   "id": "sym:Domain.js:32:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 32,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:Domain.js:36:method:findById",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 36,
-   "attributes": {
-    "name": "findById",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method findById"
-   }
-  },
-  {
-   "id": "sym:Domain.js:40:method:save",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 40,
-   "attributes": {
-    "name": "save",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method save"
-   }
-  },
-  {
-   "id": "sym:Domain.js:45:function:findById",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 45,
-   "attributes": {
-    "name": "findById",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function findById"
-   }
-  },
-  {
-   "id": "sym:Domain.js:49:function:findAll",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Domain.js",
-   "line": 49,
-   "attributes": {
-    "name": "findAll",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function findAll"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:UserId:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "UserId",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains UserId -> constructor"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:UserId:toString",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "UserId",
-   "targetId": "toString",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains UserId -> toString"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:Customer:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Customer",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Customer -> constructor"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:Customer:describe",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Customer",
-   "targetId": "describe",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Customer -> describe"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:Repository:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Repository",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Repository -> constructor"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:Repository:findById",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Repository",
-   "targetId": "findById",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Repository -> findById"
-   }
-  },
-  {
-   "id": "rel:Domain.js:contains:Repository:save",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Repository",
-   "targetId": "save",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Repository -> save"
-   }
-  },
-  {
-   "id": "rel:Domain.js:calls:toString:String",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "toString",
-   "targetId": "String",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls toString -> String"
-   }
-  },
-  {
-   "id": "rel:Domain.js:calls:findById:get",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "findById",
-   "targetId": "get",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls findById -> get"
-   }
-  },
-  {
-   "id": "rel:Domain.js:calls:save:set",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "save",
-   "targetId": "set",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls save -> set"
-   }
-  },
-  {
-   "id": "rel:Domain.js:calls:findById:findById",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "findById",
-   "targetId": "findById",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls findById -> findById"
-   }
-  },
-  {
-   "id": "rel:Domain.js:calls:findAll:values",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "findAll",
-   "targetId": "values",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls findAll -> values"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:UserId",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "UserId",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> UserId"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:Status",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "Status",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> Status"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:Customer",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "Customer",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> Customer"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:Repository",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "Repository",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> Repository"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:findById",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "findById",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> findById"
-   }
-  },
-  {
-   "id": "rel:Domain.js:exports:Domain:findAll",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Domain.js",
-   "sourceId": "Domain",
-   "targetId": "findAll",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Domain -> findAll"
-   }
-  },
-  {
-   "id": "sym:Features.js:4:constant:localConstant",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 4,
-   "attributes": {
-    "name": "localConstant",
-    "symbolKind": "constant"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constant localConstant"
-   }
-  },
-  {
-   "id": "sym:Features.js:6:class:User",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 6,
-   "attributes": {
-    "name": "User",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class User"
-   }
-  },
-  {
-   "id": "sym:Features.js:7:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 7,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:Features.js:12:property:current",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 12,
-   "attributes": {
-    "name": "current",
-    "symbolKind": "property"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "property current"
-   }
-  },
-  {
-   "id": "sym:Features.js:20:method:save",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 20,
-   "attributes": {
-    "name": "save",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method save"
-   }
-  },
-  {
-   "id": "sym:Features.js:26:method:format",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 26,
-   "attributes": {
-    "name": "format",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method format"
-   }
-  },
-  {
-   "id": "sym:Features.js:30:method:entries",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 30,
-   "attributes": {
-    "name": "entries",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method entries"
-   }
-  },
-  {
-   "id": "sym:Features.js:34:method:create",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 34,
-   "attributes": {
-    "name": "create",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method create"
-   }
-  },
-  {
-   "id": "sym:Features.js:39:function:normalize",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 39,
-   "attributes": {
-    "name": "normalize",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function normalize"
-   }
-  },
-  {
-   "id": "sym:Features.js:43:function:helper",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 43,
-   "attributes": {
-    "name": "helper",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function helper"
-   }
-  },
-  {
-   "id": "sym:Features.js:47:function:createService",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Features.js",
-   "line": 47,
-   "attributes": {
-    "name": "createService",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function createService"
-   }
-  },
-  {
-   "id": "rel:Features.js:imports:Features:./base:BaseService",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "Features",
-   "targetId": "./base:BaseService",
-   "attributes": {
-    "type": "imports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "imports Features -> ./base:BaseService"
-   }
-  },
-  {
-   "id": "rel:Features.js:extends:User:BaseService",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "BaseService",
-   "attributes": {
-    "type": "extends"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "extends User -> BaseService"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> constructor"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:current",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "current",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> current"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:save",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "save",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> save"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:format",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "format",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> format"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:entries",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "entries",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> entries"
-   }
-  },
-  {
-   "id": "rel:Features.js:contains:User:create",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User",
-   "targetId": "create",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains User -> create"
-   }
-  },
-  {
-   "id": "rel:Features.js:calls:save:helper",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "save",
-   "targetId": "helper",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls save -> helper"
-   }
-  },
-  {
-   "id": "rel:Features.js:calls:save:save",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "save",
-   "targetId": "save",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls save -> save"
-   }
-  },
-  {
-   "id": "rel:Features.js:calls:format:format",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "format",
-   "targetId": "format",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls format -> format"
-   }
-  },
-  {
-   "id": "rel:Features.js:instantiates:create:User",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "create",
-   "targetId": "User",
-   "attributes": {
-    "type": "instantiates"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "instantiates create -> User"
-   }
-  },
-  {
-   "id": "rel:Features.js:calls:normalize:trim",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "normalize",
-   "targetId": "trim",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls normalize -> trim"
-   }
-  },
-  {
-   "id": "rel:Features.js:instantiates:createService:User",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "createService",
-   "targetId": "User",
-   "attributes": {
-    "type": "instantiates"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "instantiates createService -> User"
-   }
-  },
-  {
-   "id": "rel:Features.js:overrides:User.format:BaseService.format",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "User.format",
-   "targetId": "BaseService.format",
-   "attributes": {
-    "type": "overrides"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "overrides User.format -> BaseService.format"
-   }
-  },
-  {
-   "id": "rel:Features.js:exports:Features:User",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "Features",
-   "targetId": "User",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Features -> User"
-   }
-  },
-  {
-   "id": "rel:Features.js:exports:Features:normalize",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "Features",
-   "targetId": "normalize",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Features -> normalize"
-   }
-  },
-  {
-   "id": "rel:Features.js:exports:Features:createService",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Features.js",
-   "sourceId": "Features",
-   "targetId": "createService",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Features -> createService"
-   }
-  },
-  {
-   "id": "sym:base.js:3:class:BaseService",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "base.js",
-   "line": 3,
-   "attributes": {
-    "name": "BaseService",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class BaseService"
-   }
-  },
-  {
-   "id": "sym:base.js:4:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "base.js",
-   "line": 4,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:base.js:8:method:format",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "base.js",
-   "line": 8,
-   "attributes": {
-    "name": "format",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method format"
-   }
-  },
-  {
-   "id": "sym:base.js:13:function:helper",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "base.js",
-   "line": 13,
-   "attributes": {
-    "name": "helper",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function helper"
-   }
-  },
-  {
-   "id": "rel:base.js:contains:BaseService:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "BaseService",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains BaseService -> constructor"
-   }
-  },
-  {
-   "id": "rel:base.js:contains:BaseService:format",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "BaseService",
-   "targetId": "format",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains BaseService -> format"
-   }
-  },
-  {
-   "id": "rel:base.js:calls:format:String",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "format",
-   "targetId": "String",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls format -> String"
-   }
-  },
-  {
-   "id": "rel:base.js:calls:helper:trim",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "helper",
-   "targetId": "trim",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls helper -> trim"
-   }
-  },
-  {
-   "id": "rel:base.js:exports:base:BaseService",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "base",
-   "targetId": "BaseService",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports base -> BaseService"
-   }
-  },
-  {
-   "id": "rel:base.js:exports:base:helper",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "base.js",
-   "sourceId": "base",
-   "targetId": "helper",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports base -> helper"
-   }
-  },
-  {
-   "id": "sym:Services.js:6:function:FileLogger",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 6,
-   "attributes": {
-    "name": "FileLogger",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function FileLogger"
-   }
-  },
-  {
-   "id": "sym:Services.js:10:method:log",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 10,
-   "attributes": {
-    "name": "log",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method log"
-   }
-  },
-  {
-   "id": "sym:Services.js:14:function:CompositeLogger",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 14,
-   "attributes": {
-    "name": "CompositeLogger",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function CompositeLogger"
-   }
-  },
-  {
-   "id": "sym:Services.js:18:method:log",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 18,
-   "attributes": {
-    "name": "log",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method log"
-   }
-  },
-  {
-   "id": "sym:Services.js:24:function:Service",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 24,
-   "attributes": {
-    "name": "Service",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function Service"
-   }
-  },
-  {
-   "id": "sym:Services.js:28:method:get",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 28,
-   "attributes": {
-    "name": "get",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method get"
-   }
-  },
-  {
-   "id": "sym:Services.js:32:method:set",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Services.js",
-   "line": 32,
-   "attributes": {
-    "name": "set",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method set"
-   }
-  },
-  {
-   "id": "rel:Services.js:imports:Services:node:fs:*",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "node:fs:*",
-   "attributes": {
-    "type": "imports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "imports Services -> node:fs:*"
-   }
-  },
-  {
-   "id": "rel:Services.js:imports:Services:node:path:*",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "node:path:*",
-   "attributes": {
-    "type": "imports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "imports Services -> node:path:*"
-   }
-  },
-  {
-   "id": "rel:Services.js:imports:Services:node:events:*",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "node:events:*",
-   "attributes": {
-    "type": "imports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "imports Services -> node:events:*"
-   }
-  },
-  {
-   "id": "rel:Services.js:contains:FileLogger:log",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "FileLogger",
-   "targetId": "log",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains FileLogger -> log"
-   }
-  },
-  {
-   "id": "rel:Services.js:contains:CompositeLogger:log",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "CompositeLogger",
-   "targetId": "log",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains CompositeLogger -> log"
-   }
-  },
-  {
-   "id": "rel:Services.js:contains:Service:get",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Service",
-   "targetId": "get",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Service -> get"
-   }
-  },
-  {
-   "id": "rel:Services.js:contains:Service:set",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Service",
-   "targetId": "set",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Service -> set"
-   }
-  },
-  {
-   "id": "rel:Services.js:calls:log:appendFileSync",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "log",
-   "targetId": "appendFileSync",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls log -> appendFileSync"
-   }
-  },
-  {
-   "id": "rel:Services.js:calls:log:log",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "log",
-   "targetId": "log",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls log -> log"
-   }
-  },
-  {
-   "id": "rel:Services.js:calls:get:get",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "get",
-   "targetId": "get",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls get -> get"
-   }
-  },
-  {
-   "id": "rel:Services.js:calls:set:set",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "set",
-   "targetId": "set",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls set -> set"
-   }
-  },
-  {
-   "id": "rel:Services.js:exports:Services:FileLogger",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "FileLogger",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Services -> FileLogger"
-   }
-  },
-  {
-   "id": "rel:Services.js:exports:Services:CompositeLogger",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "CompositeLogger",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Services -> CompositeLogger"
-   }
-  },
-  {
-   "id": "rel:Services.js:exports:Services:Service",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Services.js",
-   "sourceId": "Services",
-   "targetId": "Service",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Services -> Service"
-   }
-  },
-  {
-   "id": "sym:Negative.js:5:function:LocalsAreNotSymbols",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 5,
-   "attributes": {
-    "name": "LocalsAreNotSymbols",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function LocalsAreNotSymbols"
-   }
-  },
-  {
-   "id": "sym:Negative.js:11:function:ParamsAreNotSymbols",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 11,
-   "attributes": {
-    "name": "ParamsAreNotSymbols",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function ParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "sym:Negative.js:15:function:DestructuredParamsAreNotSymbols",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 15,
-   "attributes": {
-    "name": "DestructuredParamsAreNotSymbols",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function DestructuredParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "sym:Negative.js:19:function:LambdaParamsAreNotSymbols",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 19,
-   "attributes": {
-    "name": "LambdaParamsAreNotSymbols",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function LambdaParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "sym:Negative.js:23:function:TemplateStringsAreNotCallTargets",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 23,
-   "attributes": {
-    "name": "TemplateStringsAreNotCallTargets",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function TemplateStringsAreNotCallTargets"
-   }
-  },
-  {
-   "id": "sym:Negative.js:28:function:BuiltinsAreFiltered",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 28,
-   "attributes": {
-    "name": "BuiltinsAreFiltered",
-    "symbolKind": "function"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "function BuiltinsAreFiltered"
-   }
-  },
-  {
-   "id": "sym:Negative.js:34:class:Counter",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 34,
-   "attributes": {
-    "name": "Counter",
-    "symbolKind": "class"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "class Counter"
-   }
-  },
-  {
-   "id": "sym:Negative.js:35:constructor:constructor",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 35,
-   "attributes": {
-    "name": "constructor",
-    "symbolKind": "constructor"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "constructor constructor"
-   }
-  },
-  {
-   "id": "sym:Negative.js:39:method:increment",
-   "layer": "ast_extraction",
-   "kind": "symbol",
-   "file": "Negative.js",
-   "line": 39,
-   "attributes": {
-    "name": "increment",
-    "symbolKind": "method"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "method increment"
-   }
-  },
-  {
-   "id": "rel:Negative.js:contains:Counter:constructor",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Counter",
-   "targetId": "constructor",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Counter -> constructor"
-   }
-  },
-  {
-   "id": "rel:Negative.js:contains:Counter:increment",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Counter",
-   "targetId": "increment",
-   "attributes": {
-    "type": "contains"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "contains Counter -> increment"
-   }
-  },
-  {
-   "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:join",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "LambdaParamsAreNotSymbols",
-   "targetId": "join",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls LambdaParamsAreNotSymbols -> join"
-   }
-  },
-  {
-   "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:map",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "LambdaParamsAreNotSymbols",
-   "targetId": "map",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls LambdaParamsAreNotSymbols -> map"
-   }
-  },
-  {
-   "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:toFixed",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "LambdaParamsAreNotSymbols",
-   "targetId": "toFixed",
-   "attributes": {
-    "type": "calls"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "calls LambdaParamsAreNotSymbols -> toFixed"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:LocalsAreNotSymbols",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "LocalsAreNotSymbols",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> LocalsAreNotSymbols"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:ParamsAreNotSymbols",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "ParamsAreNotSymbols",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> ParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:DestructuredParamsAreNotSymbols",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "DestructuredParamsAreNotSymbols",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> DestructuredParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:LambdaParamsAreNotSymbols",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "LambdaParamsAreNotSymbols",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> LambdaParamsAreNotSymbols"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:TemplateStringsAreNotCallTargets",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "TemplateStringsAreNotCallTargets",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> TemplateStringsAreNotCallTargets"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:BuiltinsAreFiltered",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "BuiltinsAreFiltered",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> BuiltinsAreFiltered"
-   }
-  },
-  {
-   "id": "rel:Negative.js:exports:Negative:Counter",
-   "layer": "relationships",
-   "kind": "relationship",
-   "file": "Negative.js",
-   "sourceId": "Negative",
-   "targetId": "Counter",
-   "attributes": {
-    "type": "exports"
-   },
-   "evidence": {
-    "authority": "manual_audit",
-    "reference": "exports Negative -> Counter"
-   }
-  }
- ]
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/javascript/ (5 fixtures) \u2014 manually audited against fixture source and the C#/Java/F#/TS family contract",
+  "facts": [
+    {
+      "id": "sym:Domain.js:4:class:UserId",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 4,
+      "attributes": {
+        "name": "UserId",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class UserId"
+      }
+    },
+    {
+      "id": "sym:Domain.js:5:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 5,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Domain.js:9:method:toString",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 9,
+      "attributes": {
+        "name": "toString",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method toString"
+      }
+    },
+    {
+      "id": "sym:Domain.js:14:constant:Status",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 14,
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constant Status"
+      }
+    },
+    {
+      "id": "sym:Domain.js:20:class:Customer",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 20,
+      "attributes": {
+        "name": "Customer",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Customer"
+      }
+    },
+    {
+      "id": "sym:Domain.js:21:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 21,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Domain.js:26:method:describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 26,
+      "attributes": {
+        "name": "describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method describe"
+      }
+    },
+    {
+      "id": "sym:Domain.js:31:class:Repository",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 31,
+      "attributes": {
+        "name": "Repository",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Repository"
+      }
+    },
+    {
+      "id": "sym:Domain.js:32:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 32,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Domain.js:36:method:findById",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 36,
+      "attributes": {
+        "name": "findById",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method findById"
+      }
+    },
+    {
+      "id": "sym:Domain.js:40:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 40,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method save"
+      }
+    },
+    {
+      "id": "sym:Domain.js:45:function:findById",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 45,
+      "attributes": {
+        "name": "findById",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function findById"
+      }
+    },
+    {
+      "id": "sym:Domain.js:49:function:findAll",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Domain.js",
+      "line": 49,
+      "attributes": {
+        "name": "findAll",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function findAll"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:UserId:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "UserId",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserId -> constructor"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:UserId:toString",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "UserId",
+      "targetId": "toString",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains UserId -> toString"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:Customer:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Customer",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> constructor"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:Customer:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Customer",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Customer -> describe"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:Repository:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Repository",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> constructor"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:Repository:findById",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Repository",
+      "targetId": "findById",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> findById"
+      }
+    },
+    {
+      "id": "rel:Domain.js:contains:Repository:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Repository",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Repository -> save"
+      }
+    },
+    {
+      "id": "rel:Domain.js:calls:toString:String",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "toString",
+      "targetId": "String",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls toString -> String"
+      }
+    },
+    {
+      "id": "rel:Domain.js:calls:findById:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "findById",
+      "targetId": "get",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls findById -> get"
+      }
+    },
+    {
+      "id": "rel:Domain.js:calls:save:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "save",
+      "targetId": "set",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls save -> set"
+      }
+    },
+    {
+      "id": "rel:Domain.js:calls:findById:findById",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "findById",
+      "targetId": "findById",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls findById -> findById"
+      }
+    },
+    {
+      "id": "rel:Domain.js:calls:findAll:values",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "findAll",
+      "targetId": "values",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls findAll -> values"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:UserId",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "UserId",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> UserId"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:Status",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "Status",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Status"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:Customer",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "Customer",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Customer"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:Repository",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "Repository",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> Repository"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:findById",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "findById",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> findById"
+      }
+    },
+    {
+      "id": "rel:Domain.js:exports:Domain:findAll",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Domain.js",
+      "sourceId": "Domain",
+      "targetId": "findAll",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Domain -> findAll"
+      }
+    },
+    {
+      "id": "sym:Features.js:4:constant:localConstant",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 4,
+      "attributes": {
+        "name": "localConstant",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constant localConstant"
+      }
+    },
+    {
+      "id": "sym:Features.js:6:class:User",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 6,
+      "attributes": {
+        "name": "User",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class User"
+      }
+    },
+    {
+      "id": "sym:Features.js:7:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 7,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Features.js:12:property:current",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 12,
+      "attributes": {
+        "name": "current",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "property current"
+      }
+    },
+    {
+      "id": "sym:Features.js:20:method:save",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 20,
+      "attributes": {
+        "name": "save",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method save"
+      }
+    },
+    {
+      "id": "sym:Features.js:26:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 26,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method format"
+      }
+    },
+    {
+      "id": "sym:Features.js:30:method:entries",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 30,
+      "attributes": {
+        "name": "entries",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method entries"
+      }
+    },
+    {
+      "id": "sym:Features.js:34:method:create",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 34,
+      "attributes": {
+        "name": "create",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method create"
+      }
+    },
+    {
+      "id": "sym:Features.js:39:function:normalize",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 39,
+      "attributes": {
+        "name": "normalize",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function normalize"
+      }
+    },
+    {
+      "id": "sym:Features.js:43:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 43,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function helper"
+      }
+    },
+    {
+      "id": "sym:Features.js:47:function:createService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 47,
+      "attributes": {
+        "name": "createService",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function createService"
+      }
+    },
+    {
+      "id": "rel:Features.js:imports:Features:./base:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "Features",
+      "targetId": "./base:BaseService",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Features -> ./base:BaseService"
+      }
+    },
+    {
+      "id": "rel:Features.js:extends:User:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "extends User -> BaseService"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> constructor"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:current",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "current",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> current"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "save",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> save"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> format"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:entries",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "entries",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> entries"
+      }
+    },
+    {
+      "id": "rel:Features.js:contains:User:create",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User",
+      "targetId": "create",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains User -> create"
+      }
+    },
+    {
+      "id": "rel:Features.js:calls:save:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "save",
+      "targetId": "helper",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls save -> helper"
+      }
+    },
+    {
+      "id": "rel:Features.js:calls:save:save",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "save",
+      "targetId": "save",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls save -> save"
+      }
+    },
+    {
+      "id": "rel:Features.js:calls:format:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "format",
+      "targetId": "format",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls format -> format"
+      }
+    },
+    {
+      "id": "rel:Features.js:instantiates:create:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "create",
+      "targetId": "User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates create -> User"
+      }
+    },
+    {
+      "id": "rel:Features.js:calls:normalize:trim",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "normalize",
+      "targetId": "trim",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls normalize -> trim"
+      }
+    },
+    {
+      "id": "rel:Features.js:instantiates:createService:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "createService",
+      "targetId": "User",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "instantiates createService -> User"
+      }
+    },
+    {
+      "id": "rel:Features.js:overrides:User.format:BaseService.format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "User.format",
+      "targetId": "BaseService.format",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "overrides User.format -> BaseService.format"
+      }
+    },
+    {
+      "id": "rel:Features.js:exports:Features:User",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "Features",
+      "targetId": "User",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> User"
+      }
+    },
+    {
+      "id": "rel:Features.js:exports:Features:normalize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "Features",
+      "targetId": "normalize",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> normalize"
+      }
+    },
+    {
+      "id": "rel:Features.js:exports:Features:createService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Features.js",
+      "sourceId": "Features",
+      "targetId": "createService",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Features -> createService"
+      }
+    },
+    {
+      "id": "sym:base.js:3:class:BaseService",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.js",
+      "line": 3,
+      "attributes": {
+        "name": "BaseService",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class BaseService"
+      }
+    },
+    {
+      "id": "sym:base.js:4:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.js",
+      "line": 4,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:base.js:8:method:format",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.js",
+      "line": 8,
+      "attributes": {
+        "name": "format",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method format"
+      }
+    },
+    {
+      "id": "sym:base.js:13:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "base.js",
+      "line": 13,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function helper"
+      }
+    },
+    {
+      "id": "rel:base.js:contains:BaseService:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "BaseService",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains BaseService -> constructor"
+      }
+    },
+    {
+      "id": "rel:base.js:contains:BaseService:format",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "BaseService",
+      "targetId": "format",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains BaseService -> format"
+      }
+    },
+    {
+      "id": "rel:base.js:calls:format:String",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "format",
+      "targetId": "String",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls format -> String"
+      }
+    },
+    {
+      "id": "rel:base.js:calls:helper:trim",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "helper",
+      "targetId": "trim",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls helper -> trim"
+      }
+    },
+    {
+      "id": "rel:base.js:exports:base:BaseService",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "base",
+      "targetId": "BaseService",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports base -> BaseService"
+      }
+    },
+    {
+      "id": "rel:base.js:exports:base:helper",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "base.js",
+      "sourceId": "base",
+      "targetId": "helper",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports base -> helper"
+      }
+    },
+    {
+      "id": "sym:Services.js:6:function:FileLogger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 6,
+      "attributes": {
+        "name": "FileLogger",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function FileLogger"
+      }
+    },
+    {
+      "id": "sym:Services.js:10:method:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 10,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method log"
+      }
+    },
+    {
+      "id": "sym:Services.js:14:function:CompositeLogger",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 14,
+      "attributes": {
+        "name": "CompositeLogger",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function CompositeLogger"
+      }
+    },
+    {
+      "id": "sym:Services.js:18:method:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 18,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method log"
+      }
+    },
+    {
+      "id": "sym:Services.js:24:function:Service",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 24,
+      "attributes": {
+        "name": "Service",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function Service"
+      }
+    },
+    {
+      "id": "sym:Services.js:28:method:get",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 28,
+      "attributes": {
+        "name": "get",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method get"
+      }
+    },
+    {
+      "id": "sym:Services.js:32:method:set",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 32,
+      "attributes": {
+        "name": "set",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method set"
+      }
+    },
+    {
+      "id": "rel:Services.js:imports:Services:node:fs:*",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "node:fs:*",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Services -> node:fs:*",
+        "note": "Emitted at confidence 0.6 by DESIGN, not by omission: a bare `require(\"node:fs\")` binds a module object, not a declaration in the target module, so there is nothing to resolve to (JD-J12/JD2b). M12 buckets anything below 0.7 as `unknown`, and this row was declared `resolved`, so the analyzer's correct edge could never match it and read as a false negative. Declared `unknown`, which is the schema's own way of saying 'this is the state I expect'."
+      },
+      "expectedState": "unknown"
+    },
+    {
+      "id": "rel:Services.js:imports:Services:node:path:*",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "node:path:*",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Services -> node:path:*",
+        "note": "Emitted at confidence 0.6 by DESIGN, not by omission: a bare `require(\"node:fs\")` binds a module object, not a declaration in the target module, so there is nothing to resolve to (JD-J12/JD2b). M12 buckets anything below 0.7 as `unknown`, and this row was declared `resolved`, so the analyzer's correct edge could never match it and read as a false negative. Declared `unknown`, which is the schema's own way of saying 'this is the state I expect'."
+      },
+      "expectedState": "unknown"
+    },
+    {
+      "id": "rel:Services.js:imports:Services:node:events:*",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "node:events:*",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "imports Services -> node:events:*",
+        "note": "Emitted at confidence 0.6 by DESIGN, not by omission: a bare `require(\"node:fs\")` binds a module object, not a declaration in the target module, so there is nothing to resolve to (JD-J12/JD2b). M12 buckets anything below 0.7 as `unknown`, and this row was declared `resolved`, so the analyzer's correct edge could never match it and read as a false negative. Declared `unknown`, which is the schema's own way of saying 'this is the state I expect'."
+      },
+      "expectedState": "unknown"
+    },
+    {
+      "id": "rel:Services.js:contains:FileLogger:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "FileLogger",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains FileLogger -> log"
+      }
+    },
+    {
+      "id": "rel:Services.js:contains:CompositeLogger:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "CompositeLogger",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains CompositeLogger -> log"
+      }
+    },
+    {
+      "id": "rel:Services.js:contains:Service:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Service",
+      "targetId": "get",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> get"
+      }
+    },
+    {
+      "id": "rel:Services.js:contains:Service:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Service",
+      "targetId": "set",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Service -> set"
+      }
+    },
+    {
+      "id": "rel:Services.js:calls:log:appendFileSync",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "log",
+      "targetId": "appendFileSync",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls log -> appendFileSync"
+      }
+    },
+    {
+      "id": "rel:Services.js:calls:log:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "log",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls log -> log"
+      }
+    },
+    {
+      "id": "rel:Services.js:calls:get:get",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "get",
+      "targetId": "get",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls get -> get"
+      }
+    },
+    {
+      "id": "rel:Services.js:calls:set:set",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "set",
+      "targetId": "set",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls set -> set"
+      }
+    },
+    {
+      "id": "rel:Services.js:exports:Services:FileLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "FileLogger",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> FileLogger"
+      }
+    },
+    {
+      "id": "rel:Services.js:exports:Services:CompositeLogger",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "CompositeLogger",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> CompositeLogger"
+      }
+    },
+    {
+      "id": "rel:Services.js:exports:Services:Service",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Services.js",
+      "sourceId": "Services",
+      "targetId": "Service",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Services -> Service"
+      }
+    },
+    {
+      "id": "sym:Negative.js:5:function:LocalsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 5,
+      "attributes": {
+        "name": "LocalsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.js:11:function:ParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 11,
+      "attributes": {
+        "name": "ParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.js:15:function:DestructuredParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 15,
+      "attributes": {
+        "name": "DestructuredParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function DestructuredParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.js:19:function:LambdaParamsAreNotSymbols",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 19,
+      "attributes": {
+        "name": "LambdaParamsAreNotSymbols",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "sym:Negative.js:23:function:TemplateStringsAreNotCallTargets",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 23,
+      "attributes": {
+        "name": "TemplateStringsAreNotCallTargets",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function TemplateStringsAreNotCallTargets"
+      }
+    },
+    {
+      "id": "sym:Negative.js:28:function:BuiltinsAreFiltered",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 28,
+      "attributes": {
+        "name": "BuiltinsAreFiltered",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "function BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "sym:Negative.js:34:class:Counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 34,
+      "attributes": {
+        "name": "Counter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "class Counter"
+      }
+    },
+    {
+      "id": "sym:Negative.js:35:constructor:constructor",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 35,
+      "attributes": {
+        "name": "constructor",
+        "symbolKind": "constructor"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "constructor constructor"
+      }
+    },
+    {
+      "id": "sym:Negative.js:39:method:increment",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.js",
+      "line": 39,
+      "attributes": {
+        "name": "increment",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "method increment"
+      }
+    },
+    {
+      "id": "rel:Negative.js:contains:Counter:constructor",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Counter",
+      "targetId": "constructor",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Counter -> constructor"
+      }
+    },
+    {
+      "id": "rel:Negative.js:contains:Counter:increment",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Counter",
+      "targetId": "increment",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "contains Counter -> increment"
+      }
+    },
+    {
+      "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:join",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "join",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> join"
+      }
+    },
+    {
+      "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:map",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "map",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> map"
+      }
+    },
+    {
+      "id": "rel:Negative.js:calls:LambdaParamsAreNotSymbols:toFixed",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "LambdaParamsAreNotSymbols",
+      "targetId": "toFixed",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "calls LambdaParamsAreNotSymbols -> toFixed"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:LocalsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "LocalsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> LocalsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:ParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "ParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> ParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:DestructuredParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "DestructuredParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> DestructuredParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:LambdaParamsAreNotSymbols",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "LambdaParamsAreNotSymbols",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> LambdaParamsAreNotSymbols"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:TemplateStringsAreNotCallTargets",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "TemplateStringsAreNotCallTargets",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> TemplateStringsAreNotCallTargets"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:BuiltinsAreFiltered",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "BuiltinsAreFiltered",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> BuiltinsAreFiltered"
+      }
+    },
+    {
+      "id": "rel:Negative.js:exports:Negative:Counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "Negative",
+      "targetId": "Counter",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "exports Negative -> Counter"
+      }
+    },
+    {
+      "id": "sym:Services.js:4:constant:EventEmitter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Services.js",
+      "line": 4,
+      "attributes": {
+        "name": "EventEmitter",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "const { EventEmitter } = require(\"node:events\") on line 4",
+        "note": "A destructured require binding is a real local binding, so it is a Constant. This is the CJS counterpart of a destructuring ESM import and was simply never transcribed; the analyzer emitting it is correct and the omission was in the truth."
+      }
+    },
+    {
+      "id": "sym:Features.js:16:property:current",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Features.js",
+      "line": 16,
+      "attributes": {
+        "name": "current",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "set current(value) on line 16",
+        "note": "The SETTER half of the accessor pair whose getter is already declared at line 12. M49 B5 rules that get/set on the same name are DISTINCT descriptor slots \u2014 Object.getOwnPropertyDescriptor returns {get, set} and both survive \u2014 so two symbols is the ruled behaviour, and a truth carrying only the getter made the setter a false positive. Not collapsing them: a data member replaces the whole slot while accessors MERGE, so the pair is genuinely two nodes."
+      }
+    },
+    {
+      "id": "rel:Negative.js:uses:TemplateStringsAreNotCallTargets:value",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.js",
+      "sourceId": "TemplateStringsAreNotCallTargets",
+      "targetId": "value",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "const key = `key_${value}` on line 24",
+        "note": "A template SUBSTITUTION is a read of the substituted identifier, so uses->value at 0.85 with isTemplateInterpolation is correct. The function is named TemplateStringsAreNotCallTargets because a template must not become a CALL TARGET; it does not assert that a template suppresses reads, and `value` is the function's own parameter, a real binding. The row was missing from the truth rather than wrongly emitted by the analyzer, and it is the last of six discrepancies that were all truth lag: three CJS import facts declared `resolved` that the contract puts at 0.6, and two correctly-emitted symbols never transcribed."
+      }
+    }
+  ]
 }
