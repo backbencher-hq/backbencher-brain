@@ -854,6 +854,14 @@ export class RealProtobufAnalyzer implements ASTEngine.LanguageAnalyzer {
         ...(pkg ? { protoPackage: pkg } : {}),
         ...(fileOptions.length ? { fileOptions } : {}),
         ...(fileRanges.length ? { fileRanges } : {}),
+        // A COUNTED work measure, not a duration. `typeCache.size` is the number
+        // of distinct nodes the walk actually read, which is what a linearity
+        // claim needs: it is deterministic and load-independent, where a wall
+        // clock on a shared machine moved this lane's own ratio between 0.94 and
+        // 2.05 across runs of identical code, and exceeded its bound only when
+        // other lanes were running. A gate whose verdict depends on what else the
+        // machine is doing is not a gate.
+        visitedNodes: typeCache.size,
         filePath,
         symbolCount: symbols.length,
         relationshipCount: relationships.length,
