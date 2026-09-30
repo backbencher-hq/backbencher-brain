@@ -1200,13 +1200,47 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The tree this is built on is printed by script/m14/tmp/fs030-object-expr-name.ts.
    */
   private objectExpressionInterface(node: Node): { written: string; leaf: string } | undefined {
-    const carrier =
-      this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
-      this.findDescendant(
-        node,
-        (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
-        4,
-      )
+    // The interface is the object's FIRST DIRECT CHILD, and the fix is to read it there.
+    //
+    // The subtree search below was written for a DOTTED interface — `{ new System.IDisposable
+    // with … }` — and asked for the first `dot_expression` anywhere inside. When the interface
+    // is BARE, `{ new IDisposable with … }`, that search finds nothing of its own and keeps
+    // descending, into the member bodies. So the first dotted expression in the subtree won,
+    // and on fsharp/src/fsi/fsimain.fs:54 that was
+    // `Thread.CurrentThread.CurrentUICulture`, giving
+    //
+    //     implements  Main  ->  CurrentUICulture
+    //
+    // where truth derives
+    //
+    //     implements  Main  ->  IDisposable
+    //
+    // One wrong name, and it cost FIVE rows in that file alone: three MISSING (the real
+    // interfaces IDisposable, CtrlBreakService and FsiEvaluationSessionHostConfig, each from
+    // an object expression, all displaced by whichever dotted name a member body mentioned)
+    // and one UNEXPLAINED fabrication. The name it found is not a near-miss — it is a property
+    // assignment inside a `Dispose` method, which is not a type and implements nothing.
+    //
+    // Reading child 0 is also the cheaper rule. "The name after `new`" is a fact about the
+    // first child, so a bounded search for a name in a place it cannot appear is a rule that
+    // can only ever be wrong, and wrong in the direction of a member body.
+    const first = node.namedChild(0)
+    const isNameish = (n: Node | null): n is Node =>
+      !!n &&
+      (n.type === "dot_expression" ||
+        n.type === "typed_expression" ||
+        n.type === "long_identifier_or_op" ||
+        n.type === "long_identifier")
+    const carrier = isNameish(first)
+      ? first
+      : // Kept for shapes where the name is not the first child, so this is a narrowing of
+        // where the name may be READ rather than a claim that it is never elsewhere.
+        (this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
+          this.findDescendant(
+            node,
+            (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
+            4,
+          ))
     if (!carrier) return undefined
     // `typed_expression` text carries the type ARGUMENTS too, and an argument list is
     // not part of the type's name.
@@ -1221,7 +1255,20 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `member _.Equals(x, y) = …` and `-> failwith` for a body that calls it — a
     // strictly worse answer than `System`, because it now varied with the body. The
     // name is the carrier's business alone.
-    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 8)
+    //
+    // A TYPE ARGUMENT is not part of the type's name, and it arrives as an identifier like any
+    // other, so reading the last identifier of a `typed_expression` reads the ARGUMENT:
+    // `{ new System.Collections.Generic.IEqualityComparer<Foo> with … }` has carrier text
+    // `System.Collections.Generic.IEqualityComparer<Foo>`, whose last identifier is `Foo`, and
+    // the row came out `implements Fixture.Names -> Foo` — a type argument presented as the
+    // type being implemented. The fixture caught it, which is the second thing in this lane
+    // that guard has earned its keep on.
+    //
+    // `written` already handles this for the full name (`split("<")`); the leaf needs the same
+    // correction, and taking the carrier's FIRST CHILD is how the grammar says "the type, not
+    // its argument" without re-parsing the text.
+    const nameish = carrier.type === "typed_expression" ? (carrier.namedChild(0) ?? carrier) : carrier
+    const idents = this.findDescendants(nameish, (n) => n.type === "identifier", 8)
     const leaf = idents.length ? idents[idents.length - 1]!.text : written
     return { written, leaf: leaf || written }
   }
