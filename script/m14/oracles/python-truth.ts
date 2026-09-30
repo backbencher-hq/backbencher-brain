@@ -488,7 +488,27 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       if (fn && scope === null) {
         const leaf = calleeName(fn)
         if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
-          add("calls", moduleName ?? "", leaf, n.startPosition.row + 1)
+          // The CONSTRUCTOR CONVENTION APPLIES AT MODULE SCOPE TOO, and this walk was the
+          // one place it did not.
+          //
+          // Every other scope — a function body, a method, a class body — asks whether the
+          // callee is Capitalised AND declared as a class in this file, and records
+          // `instantiates` when it is. This module-level walk asked neither and recorded
+          // `calls`, unconditionally. So `_display = Display()` in
+          // `ansible/utils/display.py`, where `class Display(metaclass=Singleton)` is
+          // declared 800 lines earlier in the same file, was derived as a call to a
+          // function — and the same edge was then counted on BOTH sides of the comparison,
+          // as the oracle's `calls` "missing" and the analyzer's `instantiates`
+          // "unexplained". That is 282 of the 435 disagreements left in the lane, and it
+          // came from one branch that had drifted from the rule the other four follow.
+          //
+          // The condition is unchanged, not relaxed: Capitalised is PEP 8's convention and
+          // is checked against the tree rather than trusted, and `classNames` is what makes
+          // the claim checkable — an imported `TypeVar(...)` is still a `calls`.
+          if (leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase() && classNames.has(leaf))
+            add("instantiates", moduleName ?? "", leaf, n.startPosition.row + 1)
+          else
+            add("calls", moduleName ?? "", leaf, n.startPosition.row + 1)
         }
       }
     }
