@@ -276,7 +276,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     /** The node that NAMES each (owner, base) pair, so the `extends` edge
      *  emitted in the post-walk pass can carry that construct's line instead of
      *  arriving line-less while every other source-backed edge carries one. */
-    const packageBaseLine = new Map<string, Node>()
+    const packageBaseLine = new Map<string, number>()
     const packageMethods = new Map<string, Set<string>>()
     const deferredIsa: { owner: string; right: Node }[] = []
     // Inner `ambiguous_function_call_expression` nodes that are the CLASS
@@ -409,7 +409,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * (`use parent` vs `use base` vs `@ISA` vs `use Mojo::Base`) instead of a
      * generic "Perl inheritance".
      */
-    const addBase = (owner: string, parents: string[], reasonCode: string, nameNode?: Node) => {
+    const addBase = (owner: string, parents: string[], reasonCode: string, nameNode?: Node, parentLines?: Map<string, number>) => {
       const existing = packageBases.get(owner) || []
       for (const parent of parents) {
         if (!parent) continue
@@ -417,7 +417,23 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           existing.push(parent)
           if (!packageBaseOrigin.has(owner)) packageBaseOrigin.set(owner, reasonCode)
         }
-        if (nameNode && !packageBaseLine.has(`${owner}\u001f${parent}`)) packageBaseLine.set(`${owner}\u001f${parent}`, nameNode)
+        // The LINE is per parent. A parent's name is not on the line of the
+        // keyword that introduces it:
+        //     use parent 'Class::MOP::Module',          <- what the old code stamped
+        //              'Class::MOP::HasAttributes',     <- where HasAttributes is
+        //              'Class::MOP::HasMethods',
+        //              'Class::MOP::HasOverloads';
+        // `use parent` takes an argument LIST, so three of Moose's four bases in
+        // Class/MOP/Class.pm live on lines the `use` never touches, and the M59
+        // line oracle read all three as INCONSISTENT. One shared `nameNode` — the
+        // `parent`/`base` keyword — cannot be right for a list longer than one,
+        // and it was right for exactly the single-argument case, which is why no
+        // fixture caught it.
+        const key = `${owner}\u001f${parent}`
+        if (packageBaseLine.has(key)) continue
+        const perParent = parentLines?.get(parent)
+        if (typeof perParent === "number") packageBaseLine.set(key, perParent)
+        else if (nameNode) packageBaseLine.set(key, nameNode.startPosition.row + 1)
       }
       packageBases.set(owner, existing)
     }
@@ -649,13 +665,38 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (module === "Moose" || module === "Moo" || module === "Mojo::Base") frameworks.add(module === "Mojo::Base" ? "Mojolicious" : "Moose/Moo OOP")
           if (module === "parent" || module === "base") {
             const parents = args.filter((arg) => !this.isOption(arg))
-            if (state.packageName) addBase(state.packageName, parents, REASON.useParentDeclaration, moduleNode)
+            // Per-argument lines, from the ARGUMENT nodes — a base's name is
+            // written on its own line inside the `use parent` list.
+            const parentLines = new Map<string, number>()
+            for (const argNode of this.argumentNodes(node)) {
+              for (const value of this.wordValues(argNode)) {
+                if (this.isOption(value)) continue
+                const line = this.lineOfNameWithin(argNode, value)
+                if (line !== undefined) parentLines.set(value, line)
+              }
+            }
+            if (state.packageName) addBase(state.packageName, parents, REASON.useParentDeclaration, moduleNode, parentLines)
           } else if (module === "role") {
             // `use role 'R'` is the pre-`with` spelling of the same
             // composition; without it the role is an undeclared dependency.
-            for (const arg of args) {
-              if (this.isOption(arg)) continue
-              addRelationship(state.packageName || "global", this.leafName(arg), ASTEngine.RelationshipType.Implements, { reasonCode: REASON.useRoleComposition }, 0.9, moduleNode)
+            // Iterate ARGUMENT NODES, not the extracted strings: the string has
+            // lost the node, and the node is where the name's own line lives. The
+            // pre-fix line came from `moduleNode` — the `role` KEYWORD — so
+            // `use role 'R'` on a following line, or a role inside a `qw` list,
+            // claimed the line of the word `role`.
+            for (const argNode of this.argumentNodes(node)) {
+              for (const value of this.wordValues(argNode)) {
+                if (this.isOption(value)) continue
+                addRelationship(
+                  state.packageName || "global",
+                  this.leafName(value),
+                  ASTEngine.RelationshipType.Implements,
+                  { reasonCode: REASON.useRoleComposition },
+                  0.9,
+                  undefined,
+                  this.lineOfNameWithin(argNode, value),
+                )
+              }
             }
             if (state.packageName) frameworks.add("Moose/Moo OOP")
           }
@@ -749,6 +790,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "function_call_expression": {
           const functionNode = node.childForFieldName("function") || this.findChildByType(node, "function")
           const target = functionNode?.text || ""
+          // Same rule as the method side. A `function` field holding compound
+          // text is a method call the grammar typed as a function call, not a
+          // callee name — measured as `calls -> DemolishAll->new`.
+          if (!this.isWrittenCalleeName(target)) break
           if (target === "has") {
             // `has 'name' => (...)` — the attribute NAME is the first argument;
             // the symbol's range must be that name, not the whole statement.
@@ -772,6 +817,12 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
                   { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
                   0.9,
                   arg,
+                  // `arg` is the right NODE but the wrong LINE for a `qw` list that
+                  // wraps: the list starts on the `with` line and the role names
+                  // are on the lines after it. Prefer the name's own line and keep
+                  // the node as the fallback, so a shape the offset search cannot
+                  // resolve keeps its previous (correct) line.
+                  this.lineOfNameWithin(arg, value),
                 )
                 continue
               }
@@ -798,7 +849,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // cannot see. The edge is byte-identical to the direct call —
               // same leaf target, same 0.9 — and the line comes from
               // `packageBaseLine`, the same argument node.
-              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg)
+              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg, new Map([[value, this.lineOfNameWithin(arg, value) ?? arg.startPosition.row + 1]]))
             }
             frameworks.add("Moose/Moo OOP")
           } else if (target === "new") {
@@ -837,6 +888,14 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_call_expression": {
           const methodNode = this.findChildByType(node, "method")
           const method = methodNode?.text || ""
+          if (!this.isWrittenCalleeName(method)) {
+            // Symbolic deref, or a method name held in a variable: nothing is
+            // WRITTEN that names the callee, so there is no target to publish
+            // and no line that could be the target's line. `break` leaves the
+            // generic child walk below to run, so real calls inside the
+            // expression are still published.
+            break
+          }
           // `invocant` is multi-child for a parenthesised receiver
           // `(Foo)->new` / `($self || $other)->new`; the bracket markers carry
           // no name, so the first NAMED child is the receiver. Hoisted out of the
@@ -969,6 +1028,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           ASTEngine.RelationshipType.Extends,
           { via: "Perl inheritance", reasonCode: origin },
           0.9,
+          undefined,
           packageBaseLine.get(`${owner}\u001f${base}`),
         )
       }
@@ -1218,6 +1278,70 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private argumentNodes(node: Node): Node[] {
     return perlArgumentNodes(node)
+  }
+
+  /**
+   * The line a NAME is written on INSIDE a node, when the node's own start line
+   * is not it. `with qw/\n  MooseRoleOne\n  MooseRoleTwo\n/` is ONE
+   * `quoted_word_list` node starting on the `with` line, so stamping the edge from
+   * that node puts `implements` two lines above the role it names.
+   *
+   * Scoped to the ARGUMENT node, never the whole statement: for
+   * `use Moose::Role 'My::Role'`, searching the statement for `Role` finds the
+   * one inside `Moose::Role` and returns the module's line — exactly the bug
+   * this avoids. Returns undefined when the name is not in the node's text, so
+   * callers fall back to the node's own line rather than inventing one.
+   */
+  private lineOfNameWithin(node: Node, name: string): number | undefined {
+    if (!name) return undefined
+    const text = String(node.text ?? "")
+    const ident = /[A-Za-z0-9_]/
+    let from = 0
+    for (;;) {
+      const idx = text.indexOf(name, from)
+      if (idx < 0) return undefined
+      const before = idx > 0 ? text[idx - 1] : ""
+      const after = text[idx + name.length] ?? ""
+      if (!ident.test(before) && !ident.test(after)) {
+        let line = node.startPosition.row
+        for (let i = 0; i < idx; i++) if (text.charCodeAt(i) === 10) line++
+        return line + 1
+      }
+      from = idx + 1
+    }
+  }
+
+  /**
+   * Is this callee text a NAME the source actually writes?
+   *
+   * A target that is not written cannot be verified — the M59 line oracle reads
+   * every claimed target back against the file's own text, and one that is not
+   * there is a FABRICATED claim rather than a weak one. Same reasoning that
+   * removed the phantom `DSN` and `use_module` classes, applied to the method
+   * side, and found by that oracle:
+   *
+   *   Moo/Object.pm:56   calls -> DemolishAll->new
+   *   Moo/Role.pm:224    calls -> ${\( $tc->can('coercion')||sub { ... } )}
+   *
+   * Both are symbolic deref — `$self->${\( EXPR \)}`, perl's "call the method
+   * whose name this expression computes". The grammar puts the whole expression
+   * in the `method` field, so the lane published arbitrary source text as a
+   * callee name. A POSITIVE allowlist again, not a "does this look wrong" test:
+   * a negative test only enumerates the dynamic cases somebody already hit, and
+   * this pair has been wrong that way three times.
+   *
+   * Rejected: a sigil (`->$name`), braces, `$`, `->`, whitespace. For a rejected
+   * one NO edge is emitted — and the children are still walked, so the real calls
+   * INSIDE the expression survive: `Method::Generate::DemolishAll->new` inside a
+   * deref becomes its own `instantiates` edge. 19 such edges left a 14-file
+   * draw.
+   */
+  private isWrittenCalleeName(text: string): boolean {
+    const t = String(text ?? "").trim()
+    if (!t) return false
+    if (t.includes("$") || t.includes("->") || t.includes("{") || t.includes("}") || /\s/.test(t)) return false
+    if (t.startsWith("&")) return false
+    return /^(?:[A-Za-z_][A-Za-z0-9_]*::)*[A-Za-z_][A-Za-z0-9_]*$/.test(t)
   }
 
   /** The node carrying an argument's NAME — `has 'x' => ...` / `has x => ...`. */
