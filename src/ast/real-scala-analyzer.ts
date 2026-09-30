@@ -2577,6 +2577,44 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // expression collectors (the identifiers are ordinary reads).
     if (patternNode.type === "tuple_pattern") return
 
+    // M60/S12: that refusal was for ONE of five pattern shapes, and the other
+    // four published the PATTERN'S SOURCE TEXT as the symbol name. A `val`'s
+    // pattern is a NAME only when it is a name; every other pattern is a
+    // destructuring or matching shape with no single name to publish:
+    //
+    //   val State(queue, size) = s          -> `State(queue, size)`
+    //   val selfRef :: regularRef = r       -> `selfRef :: regularRef`
+    //   val vdef @ ValDef(_, tpt, rhs) = t  -> `vdef @ ValDef(_, tpt, rhs)`
+    //   val _ = w                           -> `_`
+    //   val s"${RootPackageName @ _}/" = rp  -> `s"${RootPackageName @ _}/"`
+    //
+    // None of them is spellable by a reference and none can be joined to
+    // anything, so they are graph garbage with a name-shaped disguise — and the
+    // analyzer's own rule (M60 #924, "quoting syntax is not part of a NAME",
+    // createSymbol's "a SYNTHETIC name must be canonical") says a published name
+    // is a NAME.
+    //
+    // The census is what makes the list exhaustive rather than a guess
+    // (script/m14/tmp/scala-val-pattern-census.ts, 400 files each). scala3
+    // 15,216 val/var definitions: identifier 14704, tuple_pattern 375,
+    // case_class_pattern 91, infix_pattern 23, capture_pattern 10,
+    // identifiers 8, operator_identifier 3, interpolated_string_expression 2.
+    // cats-effect 3,577: identifier 3396, tuple_pattern 123, wildcard 54,
+    // case_class_pattern 4. So the NAME shapes are `identifier`, `identifiers`
+    // and `operator_identifier`; everything else is a pattern.
+    //
+    // Measured reach on the corpora: 2 published rows on a 400-file scala3 draw
+    // (semanticdb/Scala3.scala:187-188, the symbolic-value string pattern — the
+    // only one of the five that occurs at class/object level in that draw; the
+    // rest sit inside methods and are already dropped by the function-scope
+    // gate). All five are reachable at class or object level and are pinned by
+    // validation/m14/fixtures/scala/m60-val-pattern-is-a-name.
+    if (
+      patternNode.type !== "identifier" &&
+      patternNode.type !== "identifiers" &&
+      patternNode.type !== "operator_identifier"
+    ) return
+
     // M60 (#924, scala E): `val A, B = Value` declares TWO constants — the grammar
     // carries them as an `identifiers` node, and publishing its source text made
     // `A, B` one name that no reference can spell (measured: EnumerationTests.scala:3,
