@@ -353,15 +353,42 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   //   inferred       the heuristic tier, which the analyzer documentation
   //                  discloses has no oracle.
   //   lowConfidence  the guess tier, below MIN_EDGE_CONFIDENCE.
-  const typeList = USAGE_TYPES.map(() => "?").join(",")
-  const usageFilter = `r.project_id = ? AND r.relationship_type IN (${typeList})`
+  //
+  // NAMED PARAMETERS, not `?`. This is not a style preference. SQLite binds `?`
+  // in TEXTUAL order, and a `?` inside a SELECT-list expression binds BEFORE the
+  // WHERE clause's placeholders — so the statement below, which reads the gate in
+  // its SELECT list and repeats it in its WHERE, was written as
+  //
+  //   .all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE)
+  //
+  // and bound 0.7 to `r.project_id = ?`. The query matched nothing, statement (1)
+  // returned zero rows, `rejectedFor` stayed empty, and every "REFUSED EVIDENCE:
+  // N row(s) about this symbol" disclosure silently disappeared from the output
+  // on every corpus — with the finding COUNT unchanged, so nothing looked wrong.
+  // The fingerprint diff is what named it: coverage-gap text byte-identical,
+  // refusal text gone.
+  //
+  // Six copies of one rule with positional binding is six chances to order them
+  // wrong, and the failure is silent rather than an error. With names there is no
+  // order to get wrong, and a missing name is an error instead of a wrong answer.
+  const typeParams: Record<string, string> = {}
+  const typeList = USAGE_TYPES
+    .map((t, i) => {
+      typeParams[`t${i}`] = t
+      return `@t${i}`
+    })
+    .join(",")
+  const usageFilter = `r.project_id = @projectId AND r.relationship_type IN (${typeList})`
   // A row the gate rejects. `CLEAN_SQL` is its exact complement.
   const GATE_SQL =
     `(CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL ` +
     `AND r.source_symbol_id = r.target_symbol_id THEN '${SELF_LOOP_EXCLUDED}' ` +
     `WHEN json_extract(r.metadata, '$.evidenceClass') = 'inferred' THEN '${INFERRED_EXCLUDED}' ` +
-    `WHEN r.confidence < ? THEN '${LOW_CONFIDENCE_EXCLUDED}' ELSE NULL END)`
+    `WHEN r.confidence < @minConf THEN '${LOW_CONFIDENCE_EXCLUDED}' ELSE NULL END)`
   const CLEAN_SQL = `${GATE_SQL} IS NULL`
+  // The one object every statement below binds. Spelled out once so that adding a
+  // statement cannot forget a name.
+  const BIND = { projectId, minConf: MIN_EDGE_CONFIDENCE, ...typeParams }
   // Coverage counts every non-bookkeeping row, gated or not, because it answers
   // "did the analyzer REACH this file?", which is not the question the gate
   // answers. `contains` and `exports` are excluded for the same reason they are
@@ -382,8 +409,16 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const usedNames = new Set<string>()
   const fileIncomingUsage = new Map<string, { edges: number; sources: number }>()
   const symbolsWithAnyIncoming = new Set<string>()
-  // symbolId -> the reasons a row about it was refused, so the finding can say so.
-  const rejectedFor = new Map<string, string[]>()
+  // symbolId -> how many ROWS about it were refused, and for which REASONS.
+  //
+  // Two numbers, not one, and the distinction matters: `rows` is what the
+  // disclosure counts ("3 row(s) about this symbol were excluded") and
+  // `reasons` is what it itemises. Collapsing them into one array looks like a
+  // simplification and is a lie — a symbol with three refused self-loop rows and
+  // one refused low-confidence row has four rows and two reasons, and reporting
+  // either as the other misstates the index. The reason list is deduplicated for
+  // readability; the row count is not deduplicated at all, because it is a count.
+  const rejectedFor = new Map<string, { rows: number; reasons: string[] }>()
   const edgeRejects = { [SELF_LOOP_EXCLUDED]: 0, [INFERRED_EXCLUDED]: 0, [LOW_CONFIDENCE_EXCLUDED]: 0 }
   const edgeRejectsByType: Record<string, Record<string, number>> = {}
 
@@ -401,7 +436,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       `SELECT r.relationship_type AS rt, ${GATE_SQL} AS reason, r.target_symbol_id AS id, COUNT(*) AS n ` +
         `FROM brain_relationship r WHERE ${usageFilter} AND ${GATE_SQL} IS NOT NULL ` +
         `GROUP BY r.relationship_type, reason, r.target_symbol_id`,
-    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE, MIN_EDGE_CONFIDENCE) as Array<{
+    ).all(BIND) as Array<{
       rt: string; reason: string; id: string | null; n: number
     }>
     for (const row of rows) {
@@ -409,16 +444,14 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       const bucket = (edgeRejectsByType[row.rt] ??= {})
       bucket[row.reason] = (bucket[row.reason] ?? 0) + row.n
       if (row.id) {
-        const list = rejectedFor.get(row.id)
-        if (list) {
-          // A symbol can be refused for more than one reason, once per distinct
-          // relationship type. The reason list is a disclosure, not a tally, so
-          // duplicates are collapsed and the order is the gate's own order, which
-          // keeps the text stable between runs.
-          if (!list.includes(row.reason)) list.push(row.reason)
-        } else {
-          rejectedFor.set(row.id, [row.reason])
-        }
+        // One GROUP BY row per (relationship type, reason, target), so `n` is how
+        // many rows of that kind were refused. The row total sums across reasons
+        // and types; the reason list is deduplicated and kept in the gate's own
+        // order, so the text is stable between runs.
+        const entry = rejectedFor.get(row.id) ?? { rows: 0, reasons: [] }
+        entry.rows += row.n
+        if (!entry.reasons.includes(row.reason)) entry.reasons.push(row.reason)
+        rejectedFor.set(row.id, entry)
       }
     }
   }
@@ -430,7 +463,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
         `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.source_symbol_id IS NOT NULL ` +
         `AND r.target_symbol_id IS NOT NULL`,
-    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ id: string }>
+    ).all(BIND) as Array<{ id: string }>
     for (const row of rows) usedIds.add(row.id)
   }
 
@@ -455,14 +488,14 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     const externals = raw.prepare(
       `SELECT DISTINCT r.target_external AS ext FROM brain_relationship r ` +
         `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.target_external IS NOT NULL`,
-    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ ext: string }>
+    ).all(BIND) as Array<{ ext: string }>
     for (const row of externals) usedNames.add(leafName(row.ext))
 
     const names = raw.prepare(
       `SELECT DISTINCT t.name AS name FROM brain_relationship r ` +
         `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
         `WHERE ${usageFilter} AND ${CLEAN_SQL} AND r.source_symbol_id IS NULL`,
-    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ name: string }>
+    ).all(BIND) as Array<{ name: string }>
     for (const row of names) usedNames.add(row.name)
   }
 
@@ -474,7 +507,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       `SELECT t.file_id AS f, COUNT(*) AS n FROM brain_relationship r ` +
         `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
         `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
-    ).all(projectId, ...USAGE_TYPES) as Array<{ f: string; n: number }>
+    ).all(BIND) as Array<{ f: string; n: number }>
     for (const row of edges) {
       const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
       entry.edges = row.n
@@ -484,7 +517,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       `SELECT t.file_id AS f, COUNT(DISTINCT COALESCE(r.source_symbol_id, '?')) AS n ` +
         `FROM brain_relationship r JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
         `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL} AND t.file_id IS NOT NULL GROUP BY t.file_id`,
-    ).all(projectId, ...USAGE_TYPES) as Array<{ f: string; n: number }>
+    ).all(BIND) as Array<{ f: string; n: number }>
     for (const row of sources) {
       const entry = fileIncomingUsage.get(row.f) ?? { edges: 0, sources: 0 }
       entry.sources = row.n
@@ -492,14 +525,34 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     }
   }
 
-  // (5) Per-symbol coverage: did the analyzer produce ANY row about this symbol?
-  //     A symbol with no incoming row at all, in a file that has some, is the
+  // (5) Per-symbol coverage: does the analyzer have an ANCHORED row about this
+  //     symbol? A symbol with no such row, in a file that has some, is the
   //     signature of an analyzer that reached the file and not the symbol.
+  //
+  //     ANCHORED ONLY, and that is deliberate and not an oversight. This is the
+  //     asymmetry with statement (4) above, and the two are not the same test:
+  //
+  //       per symbol   an ANCHORED row. "Another identified symbol points here."
+  //       per file     ANY row, anchored or not. "The analyzer produced anything
+  //                     about this file at all."
+  //
+  //     A first draft of this rewrite used `NOT_SELF_LOOP_SQL` here too, on the
+  //     reasonable reading that the file test and the symbol test should agree.
+  //     It silenced 258 COVERAGE GAP INDICATOR disclosures across nine
+  //     repositories, because an unanchored row is a NAME match: `references` is
+  //     97% unanchored on rake and 61% on lodash, so counting those here means
+  //     nearly every symbol has "some incoming row" and the indicator — which
+  //     exists to say the analyzer got to this file and not to this declaration —
+  //     stops firing exactly where it is most wanted. The previous version wrote
+  //     `source_symbol_id <> target_symbol_id`, which in SQL is NULL, not true,
+  //     for an unanchored row and so excluded them. That reads like a mistake and
+  //     behaves correctly; the explicit form below says so on its face.
   {
     const rows = raw.prepare(
       `SELECT DISTINCT r.target_symbol_id AS id FROM brain_relationship r ` +
-        `WHERE ${usageFilter} AND ${NOT_SELF_LOOP_SQL}`,
-    ).all(projectId, ...USAGE_TYPES) as Array<{ id: string }>
+        `WHERE ${usageFilter} AND r.source_symbol_id IS NOT NULL ` +
+        `AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id <> r.target_symbol_id`,
+    ).all(BIND) as Array<{ id: string }>
     for (const row of rows) symbolsWithAnyIncoming.add(row.id)
   }
 
@@ -516,7 +569,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
         `JOIN brain_symbol t ON t.id = r.target_symbol_id ` +
         `WHERE ${usageFilter} AND ${CLEAN_SQL} AND s.file_id IS NOT NULL ` +
         `AND t.file_id IS NOT NULL AND s.file_id <> t.file_id`,
-    ).all(projectId, ...USAGE_TYPES, MIN_EDGE_CONFIDENCE) as Array<{ f: string }>
+    ).all(BIND) as Array<{ f: string }>
     for (const row of rows) referencedFiles.add(row.f)
   }
 
@@ -740,10 +793,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     return v
   }
 
-  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejectedReasons?: string[]; fileUsage?: { edges: number; sources: number } }
+  type OrphanCandidate = { conf: number; file: string; loc: number; symbol?: SymRow; fileRow?: FileRow; rejected?: { rows: number; reasons: string[] }; fileUsage?: { edges: number; sources: number } }
   const candidates: OrphanCandidate[] = []
 
-  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejectedReasons: string[], fileUsage: { edges: number; sources: number } | undefined): PatternFinding => {
+  const buildSymbolFinding = (sym: SymRow, confidence: number, fileReferenced: boolean, nameAmbiguous: boolean, rejected: { rows: number; reasons: string[] } | undefined, fileUsage: { edges: number; sources: number } | undefined): PatternFinding => {
     const classLike = CLASS_LIKE_TYPES.has(sym.symbolType)
     const rule = classLike ? "orphaned_class" : "orphaned_function"
     return {
@@ -759,10 +812,10 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
         { kind: "relationship", description: `No resolved incoming relationship of type ${USAGE_TYPES.join("/")} names this symbol id. (contains/exports are indexer bookkeeping and are not usage.)` },
         { kind: "reference", description: nameAmbiguous ? `No name-matched reference either, but '${sym.name}' is declared ${2}+ times in the reporting scope, so a name reference could not have been attributed to this declaration. Candidates in this class measured 14.4% false positive against 0.0% for unambiguous names.` : `No name-matched cross-file reference (target_external) names this symbol, and its name is declared exactly once in the reporting scope, so a name reference would have been decisive if one existed.` },
         { kind: "heuristic", description: fileReferenced ? `Its file IS reached from other files by a resolved cross-file edge, which correlates with a higher false-positive rate (11.4% vs 3.7% measured across a 9-repository corpus): a reachable file is where an unrecorded reference is most likely.` : `Its file has no incoming cross-file reference at all, which correlates with a lower false-positive rate (3.7% measured).` },
-        ...(rejectedReasons.length > 0
+        ...(rejected !== undefined
           ? [{
               kind: "heuristic" as const,
-              description: `REFUSED EVIDENCE: ${rejectedReasons.length} row(s) about this symbol were excluded as unverified (${[...new Set(rejectedReasons)].join(", ")}). A row like that is not proof of a consumer — on rake an \`overrides\` row that is simultaneously a self-loop, evidenceClass "inferred" and published at 0.5 was the only thing standing between \`listen\` in lib/Mojo/IOLoop/Server.pm and this report, and that symbol has no recorded callers at all. If you believe the excluded row, the declaring ancestor or caller is outside the indexed files and the analyzer did not capture it; this finding is then a coverage gap, not dead code.`,
+              description: `REFUSED EVIDENCE: ${rejected.rows} row(s) about this symbol were excluded as unverified (${rejected.reasons.join(", ")}). A row like that is not proof of a consumer — on rake an \`overrides\` row that is simultaneously a self-loop, evidenceClass "inferred" and published at 0.5 was the only thing standing between \`listen\` in lib/Mojo/IOLoop/Server.pm and this report, and that symbol has no recorded callers at all. If you believe the excluded row, the declaring ancestor or caller is outside the indexed files and the analyzer did not capture it; this finding is then a coverage gap, not dead code.`,
             }]
           : []),
         ...(fileUsage ? [{
@@ -773,8 +826,8 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
       ],
       limitations: [
         "Name-only matching cannot see dynamic dispatch, reflection, or string-based lookups.",
-        ...(rejectedReasons.length > 0
-          ? [`${rejectedReasons.length} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
+        ...(rejected !== undefined
+          ? [`${rejected.rows} relationship row(s) about this symbol were excluded as unverified. If the analyzer failed to capture a real caller, this finding is a coverage gap rather than dead code; the excluded rows are itemised in the evidence above.`]
           : []),
         ...(fileUsage
           ? [`This symbol has no recorded incoming reference while its file has ${fileUsage.edges} from ${fileUsage.sources} source(s), so the absence of evidence here is probably the analyzer's, not the code's. Verify against the source before acting on it.`]
@@ -864,7 +917,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
     // usedIds, because usedIds holds only what survived the gate — a symbol the
     // gate rejected is exactly the one whose absence of evidence is in question.
     const fileUsage = symbolsWithAnyIncoming.has(sym.id) ? undefined : fileIncomingUsage.get(sym.fileId)
-    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym, rejectedReasons: rejectedFor.get(sym.id) ?? [], fileUsage })
+    candidates.push({ conf: confidence, file: sym.file, loc: locFor(sym), symbol: sym, rejected: rejectedFor.get(sym.id), fileUsage })
   }
 
   // ---- file candidates -----------------------------------------------------
@@ -911,7 +964,7 @@ export async function detectOrphans(projectId: ProjectID, options: OrphanOptions
   const truncated = candidates.length > maxResults
   const page = candidates.slice(0, maxResults).map((c) =>
     c.symbol
-      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name), c.rejectedReasons ?? [], c.fileUsage)
+      ? buildSymbolFinding(c.symbol, c.conf, referencedFiles.has(c.symbol.fileId), ambiguousNames.has(c.symbol.name), c.rejected, c.fileUsage)
       : buildFileFinding(c.fileRow!, c.conf),
   )
 
