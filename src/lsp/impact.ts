@@ -24,6 +24,26 @@
 //                measurements of ONE declared kind list, handed to both walks
 //                (M63.T2). Before it, the walk and the count each read a list
 //                of their own and nothing checked they agreed.
+//   attributed:  every dependent says HOW it is a dependent — `exact`, `member`
+//                (naming the member), or `range-folded`, meaning it is here only
+//                because the owner-cascade RANGE widened, which is a strict
+//                superset of the owner relation and so a conservative
+//                over-count — measured on this lane's corpora at 21 914 owner ids
+//                inside a range without being the member, and 7 of ripgrep
+//                `RegexMatcher`'s 21 dependents. And because `depth` is the
+//                MEASURED shortest path while the engine that produced the set
+//                stamps the first depth-first trace, every evidence field is
+//                re-read from the stored row AT THE REPORTED DEPTH and
+//                `evidenceAtDepth` says which path it is on; measured, 340 of
+//                4 258 rows (7.98%) had been publishing one row's depth with
+//                another row's evidence. Where nothing can be attributed the
+//                evidence fields are null: a refusal is not a measurement.
+//   bounded cost: the counting walk is ONE STATEMENT PER LEVEL, not one per
+//                symbol, and its statement is a flat list plus one term per
+//                DISTINCT cascade range — measured equal to the per-member form
+//                on every row of six hubs, 1.4-1.7x the speed, and free of the
+//                expression-tree ceiling that stops a disjunction term per
+//                member at ~400 (M63.T2).
 //   consistent:  the differential gate (script/m26/verify-impact-mode.ts)
 //                proves impact counts agree with the L3 references surface
 //                (src/lsp/navigation.ts) for sampled symbols on the same
@@ -54,6 +74,10 @@
 //   G5 resolved:   an indexed member target roots at its owning declaration
 //                  with a declared note; a genuinely unknown symbol still
 //                  errors (never an empty set that would read as "no impact")
+//   G6 attributed: a dependent at the shortest path carries the evidence of the
+//                  row AT that path, and a row that is only in the set because
+//                  the cascade range widened is marked as such on the payload
+//                  and in the panel (M63.T2)
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { AnalysisExclusions } from "../ast/analysis-exclusions"
@@ -209,6 +233,27 @@ export interface ImpactResult {
    *  on the index — so it is published rather than folded into the total's null,
    *  where a reader could not tell a busy refusal from a structural one. */
   countVerification: { ran: boolean; timedOut: boolean; boundarySuspect: boolean }
+  /** M63.T2: would this answer be the same if it were asked again?
+   *
+   *  Every bound this tool and the engine declare is a property of the INDEX —
+   *  a node budget, a depth cap, a site limit, a caller budget — so the same
+   *  question on the same index gets the same answer, and the lane's suite holds
+   *  the tool to that. ONE bound is not: the engine's 2 000 ms walk-time budget
+   *  (its owner's declared trade-off — a node is not a unit of work, and a bound
+   *  that does not bound is worse than a slow one).
+   *
+   *  Measured on the lane's largest index, `bb_impact {symbol:"file"}` on cargo
+   *  returned 142, 95, 142, 142, 95 rows over five identical calls, and `cargo`
+   *  178 or 172. The engine declares the cause on exactly the short runs
+   *  (`walk-time-budget-exhausted` in `traversal.engineTruncationReason`), but
+   *  this tool's headline `truncationReason` names the first clause of the set —
+   *  `caller-site-limit`, which also fired — so two answers with different row
+   *  counts carried the SAME declared reason.
+   *
+   *  So this field is the reader's answer to "will I get this again?", and it is
+   *  false when a time bound fired on either side: the engine's walk, or the
+   *  counting walk behind the declared total (`countVerification.timedOut`). */
+  reproducible: boolean
 }
 
 export interface ImpactDb {
@@ -847,11 +892,24 @@ export async function computeImpact(
   // The filter is declared where it belongs, in `rule.relationshipTypes`;
   // `truncated` keeps its one meaning: this set is a PREFIX of the declared
   // rule's whole truth.
+  // M63.T2: the reason SET is kept, not just its first clause, because the
+  // clauses are not equal in kind. `caller-site-limit` and
+  // `walk-time-budget-exhausted` can both fire on the same call, and a
+  // time-bounded answer is not reproducible — so a reader comparing two answers
+  // must not see the same declared reason on both while the row counts differ.
+  const reasons: string[] = []
   for (const reason of (result.summary?.truncationReason ?? "").split("+")) {
     const clause = reason.trim()
     if (clause.length === 0 || clause.startsWith("relationshipTypes:")) continue
     truncated = true
-    truncationReason = truncationReason ?? `traversal: ${clause}`
+    if (!reasons.includes(clause)) reasons.push(clause)
+  }
+  // A time bound, named separately: it is the one clause that says the answer
+  // depends on the machine, so it is never left to be inferred from a sibling.
+  const walkTimeBoundFired = reasons.some((clause) => clause === "walk-time-budget-exhausted")
+  truncationReason = truncationReason ?? (reasons.length > 0 ? `traversal: ${reasons.join("+")}` : null)
+  if (walkTimeBoundFired) {
+    truncationReason = truncationReason === null ? "walk: time-budget-exhausted" : `${truncationReason} (walk: time-budget-exhausted — this answer is not reproducible)`
   }
 
   // M63.T1: the declared total is measured under the SAME rule the walk used
@@ -1058,6 +1116,7 @@ export async function computeImpact(
     },
     cascade,
     countVerification: { ran: verify, timedOut: verify && counts.timedOut === true, boundarySuspect },
+    reproducible: !walkTimeBoundFired && !(verify && counts.timedOut === true),
   }
 }
 
