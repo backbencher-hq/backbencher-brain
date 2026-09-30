@@ -215,6 +215,18 @@ export interface SemanticSearchResults {
     embeddedSymbolCount: number
     /** 0..1, embeddedSymbolCount / indexSymbolCount. 1 when nothing is indexed. */
     embeddingCoverage: number
+    /**
+     * Whether the ranking can tell its top results from one another. False when
+     * several stored vectors score within the engine's discrimination margin of
+     * the best one, which in a 50-dimensional hashed bag-of-words happens often:
+     * the score then orders by an accident of body length rather than by
+     * anything about the query, and printing it as a similarity makes noise look
+     * measured. Optional — a producer that does not compute it omits the field
+     * rather than reporting a guess.
+     */
+    discriminative?: boolean
+    /** How many other candidates scored within the margin of the best. */
+    nonDiscriminativeCompetitors?: number
   }
 }
 
