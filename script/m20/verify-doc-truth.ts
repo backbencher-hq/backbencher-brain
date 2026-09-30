@@ -18,7 +18,7 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
-import { generateDocumentation, formatDocumentation, explainEmptyRequiredSections, assertUnknownsNameRenderedSections, type DocRequest, type DocResult, type DocSection, type DocUnknown, type SectionDraft } from "../../src/intelligence/documentation/doc-engine"
+import { generateDocumentation, formatDocumentation, explainEmptyRequiredSections, assertUnknownsNameRenderedSections, resolveUnknownSections, type DocRequest, type DocResult, type DocSection, type DocUnknown, type SectionDraft } from "../../src/intelligence/documentation/doc-engine"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { docSourceFingerprint, docRelevantWorkingTreeChanges } from "../../src/intelligence/documentation/evidence"
@@ -693,6 +693,49 @@ try {
         && apiDoc.unknowns.some((u) => u.affectedSection === "errors" && u.statement.includes("no table, column or symbol type"))
         && apiDoc.unknowns.some((u) => u.affectedSection === "examples"),
       `errors explained: ${apiDoc.unknowns.some((u) => u.affectedSection === "errors")}; examples explained: ${apiDoc.unknowns.some((u) => u.affectedSection === "examples")}; errors facts=${errors.facts.length} examples facts=${examples.facts.length}`)
+// ── T28: `endpoints` holds endpoints, not every symbol in an HTTP file ────
+// Found on a real repository, not by a fixture. Broadening the selection to
+// files the index marks `net_http` made the mode work — and then made it
+// report `module blog()` and `struct Config()` as endpoints. Measured on
+// go_tools: those 25 files hold 281 exported symbols, of which 121 are
+// property accessors, 25 module declarations, 19 structs, 18 variables and 3
+// interfaces. Only 95 are callable.
+//
+// So the fixture now plants a struct and a module declaration in the
+// HTTP-attributed file alongside the handler, and the gate requires that
+// neither reaches the section.
+{
+  for (const [symId, name, kind] of [["gate-sh-struct", "Widget", "struct"], ["gate-sh-module", "widgetmod", "module"]] as const) {
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run(symId, projectId, httpId, name, name, kind, 3, 9, null, "", null, "export", Date.now(), Date.now())
+  }
+  const withNoise = await doc({ mode: "api", detail: "deep", limit: 20 })
+  const noisyEndpoints = withNoise.sections.find((section) => section.id === "endpoints")!
+  const named = noisyEndpoints.facts.map((item) => item.statement)
+  check("T28: `endpoints` reports callables and route-signalled symbols only",
+    named.some((statement) => statement.includes("serve"))
+      && !named.some((statement) => statement.includes("Widget") || statement.includes("widgetmod")),
+    `${named.length} endpoint fact(s) in a file holding a handler, a struct and a module declaration; handler present: ${named.some((s) => s.includes("serve"))}; struct or module leaked in: ${named.filter((s) => s.includes("Widget") || s.includes("widgetmod")).length}`)
+  // And the honest part: an endpoint the index cannot route must say so,
+  // rather than implying a documented route exists.
+  const routesNamed = noisyEndpoints.facts.filter((item) => !item.statement.includes("no method, path or route")).length
+  check("T28: an endpoint the index cannot route says so, instead of implying a route exists",
+    noisyEndpoints.facts.length > 0 && routesNamed === 0,
+    `${noisyEndpoints.facts.length - routesNamed}/${noisyEndpoints.facts.length} state that no method, path or route is recorded; first: ${named[0]?.slice(0, 150) ?? "(none)"}`)
+  // The predicate, shared with its twin.
+  const isEndpointSubject = (statement: string): boolean =>
+    !(statement.includes("struct ") || statement.includes("module ") || statement.includes("property ") || statement.includes("variable ") || statement.includes("interface "))
+  negative("T28 the endpoint-subject predicate convicts each non-callable type",
+    isEndpointSubject("struct Widget() is defined in a/b.go at lines 3-9.") === false
+      && isEndpointSubject("module widgetmod() is defined in a/b.go at lines 1-2.") === false
+      && isEndpointSubject("method ServeHTTP(w, r) is defined in a/b.go at lines 1-9.") === true
+      && isEndpointSubject("function NewServer(cfg) is defined in a/b.go at lines 1-9.") === true,
+    "struct, module, property, variable and interface subjects are rejected; method and function subjects are accepted — and the gate's own endpoint list is judged by this predicate")
+  for (const [symId] of [["gate-sh-struct"], ["gate-sh-module"]] as const) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+}
+
     // The negative twin, and the important half: with the framework attribution
     // removed, the mode must return to explaining itself and must NOT keep the
     // endpoint it found a moment ago.
@@ -702,8 +745,12 @@ try {
     check("T24: with no HTTP surface indexed, `api` claims no endpoint and says what it looked for",
       endpointsWithout.facts.length === 0
         && apiWithout.unknowns.some((u) => u.affectedSection === "endpoints" && u.statement.includes("No endpoint is indexed"))
-        && apiWithout.unknowns.some((u) => u.affectedSection === "endpoints" && u.statement.includes("0 file(s) are attributed")),
-      `endpoints facts with the attribution removed: ${endpointsWithout.facts.length} (was ${endpoints.facts.length}); explanation: ${apiWithout.unknowns.filter((u) => u.affectedSection === "endpoints").map((u) => u.statement.slice(0, 100)).join(" || ")}`)
+        && apiWithout.unknowns.some((u) => u.affectedSection === "endpoints"
+          && u.statement.includes("0 contract path(s)") && u.statement.includes("0 route-ish symbol type(s)")
+          && u.statement.includes("0 HTTP-attributed file(s)") && u.statement.includes("0 callable exported symbol(s)")),
+      `endpoints facts with the attribution removed: ${endpointsWithout.facts.length} (was ${endpoints.facts.length}); ` +
+      `${apiWithout.unknowns.filter((u) => u.affectedSection === "endpoints").length} note(s) name it; the section's own explanation: ` +
+      `"${(apiWithout.unknowns.find((u) => u.affectedSection === "endpoints" && u.statement.startsWith("No endpoint is indexed"))?.statement ?? "*** ABSENT ***").slice(0, 260)}"`)
     raw.prepare("UPDATE brain_file SET framework_type='net_http' WHERE id=?").run(httpId)
   }
 
@@ -753,6 +800,54 @@ try {
     negative("T25 both guards convict their defect shape [negative]",
       throws(() => explainEmptyRequiredSections([section("x")], [draft("x")], [])) && throws(() => assertUnknownsNameRenderedSections({ mode: "api", sections: [section("a")], unknowns: [{ affectedSection: "b", reason: "not-indexed", statement: "x" }] })),
       "neither guard is a no-op: both reject a result they should reject")
+  }
+
+  // ── T29: an explanation must be AIMED, not defaulted to the lead ───────────
+  // A concern whose preferred section does not exist in this mode lands on the
+  // document's lead section, and it was then accepted as that section's
+  // explanation. The scope note says how much of the project was not examined;
+  // that is not a reason the Endpoints section has no endpoints — and on the
+  // 5 382-file typescript index it was the only note the section carried.
+  {
+    const section = (id: string): DocSection => ({ id, heading: id, prose: "", facts: [], citations: [] })
+    // api mode renders none of the sections `scope` prefers, so `scope` is
+    // defaulted rather than aimed, and must not excuse the section.
+    const defaulted = resolveUnknownSections([section("endpoints"), section("inputs-outputs")], [
+      { statement: "The scope contains more indexed files than the evidence limit allows.", reason: "output-budget", affectedSection: "@concern:scope" },
+    ])
+    const written: DocUnknown[] = []
+    explainEmptyRequiredSections(
+      [section("endpoints"), section("inputs-outputs")],
+      [{ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: [], emptyExplanation: "no endpoint is indexed" },
+       { id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: [], emptyExplanation: "no signature to report" }],
+      written, defaulted,
+    )
+    // The same concern, in a mode that DOES render a section it prefers. `scope`
+    // prefers `overview`, which `file` mode renders and `api` mode does not — so
+    // the identical note is aimed in one and defaulted in the other, and only the
+    // aimed one may excuse its section. `freshness` would not do here: it is a
+    // caveat in every mode, aimed or not, and this rule does not change that.
+    const aimed = resolveUnknownSections([section("overview"), section("public-symbols")], [
+      { statement: "The scope contains more indexed files than the evidence limit allows; 40 file(s) were not examined.", reason: "output-budget", affectedSection: "@concern:scope" },
+    ])
+    const writtenAimed: DocUnknown[] = []
+    explainEmptyRequiredSections(
+      [section("overview"), section("public-symbols")],
+      [{ id: "overview", heading: "Overview", required: true, audience: "all", facts: [], emptyExplanation: "no indexed file matched this target" },
+       { id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: [], emptyExplanation: "no exported symbol is indexed" }],
+      writtenAimed, aimed,
+    )
+    check("T29: the same concern, aimed in one mode and defaulted in another, is treated differently",
+      written.length === 2
+        && ["endpoints", "inputs-outputs"].every((id) => written.some((item) => item.affectedSection === id))
+        && written.every((item) => item.statement.startsWith("no ") || item.statement.startsWith("No "))
+        && writtenAimed.length === 1 && writtenAimed[0].affectedSection === "public-symbols",
+      `the scope note DEFAULTED onto api's lead: both empty sections were written up (${written.length}: ${written.map((item) => item.affectedSection).join(",")}), so "endpoints" got its own reason rather than inheriting a scope caveat; ` +
+      `the same note AIMED at file mode's "overview": only "public-symbols" was written (${writtenAimed.length}: ${writtenAimed.map((item) => item.affectedSection).join(",")})`)
+    negative("T29 the aimed-or-defaulted rule convicts both defect shapes",
+      resolveUnknownSections([section("endpoints")], [{ statement: "x", reason: "output-budget", affectedSection: "@concern:scope" }]).get("endpoints")?.has("scope") === false
+        && resolveUnknownSections([section("stale")], [{ statement: "x", reason: "not-indexed", affectedSection: "@concern:freshness" }]).get("stale")?.has("freshness") === true,
+      "a scope note defaulted onto a section that does not render is struck from the explaining set; a freshness note aimed at a section the mode does render is kept — so the rule discriminates rather than disabling caveats wholesale")
   }
 
   // ── T26: the announced evidence bounds ARE the applied bounds ─────────────
