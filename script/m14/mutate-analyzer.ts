@@ -5064,36 +5064,6 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
-    id: "zig/dotted-type-path-read",
-    language: "zig",
-    defectClass: "relationship-fabrication",
-    description:
-      "Z38 regression: the type-position guard goes back to testing the DIRECT parent, so it cannot see a DOTTED type path \u2014 in this grammar `std.Build.LazyPath` is a chain of `field_expression` nodes, so every segment of a qualified type in a signature is published as a `uses` READ of a type name, attributed to the function whose signature it appears in, and duplicating the declared-type class that already publishes the same text. 480 rows over 200 corpus files, invisible at name level because the target IS a real type name. Caught by zig/relationship-classes' forbidRelationships on the three `uses` rows for `Local`/`Opts`/`Res`, and by the source-keyed gate (zigw-uses-calls.ts), which convicts it in both directions. NOTE THE DIRECTION: the pre-fix state ADDS these edges, so the mutant has to ADD them. The first version removed them \u2014 which is the state the FIX produces, so it passed the fixture and the suite correctly reported it as a survivor: a mutant that reconstructs the fixed state instead of the defect is a mutant of nothing.",
-    transform: r => ({
-      ...r,
-      relationships: [
-        ...(r.relationships ?? []),
-        ...["Local", "Opts", "Res"].map((t, i) => ({
-          type: "uses", source: "dottedPathInSignature", target: t, confidence: 1.0, line_number: 100 + i, metadata: {},
-        })),
-      ],
-    }),
-  },
-  {
-    id: "zig/test-scope-reads-attributed-to-global",
-    language: "zig",
-    defectClass: "relationship-misattribution",
-    description:
-      "Z39 regression: the source attribution goes back to recognising `function_declaration` only, so every read and call inside a NAMED TEST is attributed to `(global)` \u2014 a file-scope source for work plainly inside one named block. Caught by zig/relationship-classes' expectRelationships on `uses readsInsideANamedTestAreAttributedToTheTest -> fileLevelValue`, and by the source-keyed gate, which is the only instrument that looks at the source at all: the shared F5 matcher keys on `label + normTarget(target)` and discards it.",
-    transform: r => ({
-      ...r,
-      relationships: (r.relationships ?? []).map((x: any) =>
-        x.type === "uses" && x.target === "fileLevelValue" && x.source === "readsInsideANamedTestAreAttributedToTheTest"
-          ? { ...x, source: "(global)" }
-          : x),
-    }),
-  },
-  {
     id: "zig/anonymous-container-owns",
     language: "zig",
     defectClass: "symbol-fabrication",
@@ -14465,6 +14435,36 @@ export const MUTANTS: Mutant[] = [
         relationships: [...(r.relationships ?? []), ...local.map((n) => ({ type: "contains", source: "Host", target: n, confidence: 1, metadata: {} }))],
       }
     },
+  },
+  {
+    id: "zig/dotted-type-path-read",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z38 regression: the type-position guard goes back to testing the DIRECT parent, so it cannot see a DOTTED type path \u2014 in this grammar `std.Build.LazyPath` is a chain of `field_expression` nodes, so every segment of a qualified type in a signature is published as a `uses` READ of a type name, attributed to the function whose signature it appears in, and duplicating the declared-type class that already publishes the same text. 480 rows over 200 corpus files, invisible at name level because the target IS a real type name. Caught by zig/relationship-classes' forbidRelationships on the three `uses` rows for `Local`/`Opts`/`Res`, and by the source-keyed gate (zigw-uses-calls.ts), which convicts it in both directions. NOTE THE DIRECTION: the pre-fix state ADDS these edges, so the mutant has to ADD them. The first version removed them \u2014 which is the state the FIX produces, so it passed the fixture and the suite correctly reported it as a survivor: a mutant that reconstructs the fixed state instead of the defect is a mutant of nothing.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...["Local", "Opts", "Res"].map((t, i) => ({
+          type: "uses", source: "dottedPathInSignature", target: t, confidence: 1.0, line_number: 100 + i, metadata: {},
+        })),
+      ],
+    }),
+  },
+  {
+    id: "zig/test-scope-reads-attributed-to-global",
+    language: "zig",
+    defectClass: "relationship-misattribution",
+    description:
+      "Z39 regression: the source attribution goes back to recognising `function_declaration` only, so every read and call inside a NAMED TEST is attributed to `(global)` \u2014 a file-scope source for work plainly inside one named block. Caught by zig/relationship-classes' expectRelationships on `uses readsInsideANamedTestAreAttributedToTheTest -> fileLevelValue`, and by the source-keyed gate, which is the only instrument that looks at the source at all: the shared F5 matcher keys on `label + normTarget(target)` and discards it.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.target === "fileLevelValue" && x.source === "readsInsideANamedTestAreAttributedToTheTest"
+          ? { ...x, source: "(global)" }
+          : x),
+    }),
   },
   {
     id: "zig/imports-twin-dropped",

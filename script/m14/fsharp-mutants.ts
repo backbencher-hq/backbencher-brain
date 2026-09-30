@@ -324,6 +324,32 @@ export const FSHARP_MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "fsharp/mutual-group-named-after-its-and-clause",
+    language: "fsharp",
+    defectClass: "wrong-name",
+    description:
+      "PRE-FIX (FS-D29): `let rec f … and g …` is ONE `function_or_value_defn` holding both clauses, and two things read the FIRST left-hand side. The symbol publication minted only `f` — so `g` did not exist at all — and the declared-type attribution named the group by its first clause, so `g`'s parameter and return types were published as `f -> …`. Measured on TypedTreeOps.Attributes.fs: `visitEntity -> Entity`, `-> Val` and `-> TypedTreeNode` all published as `visitVal -> …`, in a corpus written almost entirely in this shape; and 24 rows in Symbols.fs for the same reason. Nothing downstream could tell, because `visitVal` IS a published symbol and the edges resolved. Reverted by attributing every declared-type row to the LAST function-or-variable symbol in the result — the pre-fix shape, where one name carries a whole group. Caught by fsharp/declared-type-graph, whose mutual group at lines 73-77 pins four rows that split by OWNER: `groupFirst -> GroupDep`, `-> GroupSecond` and `groupSecond -> GroupSecondDep`, `-> GroupFirst`.",
+    transform: (r: any) => {
+      const names = new Set(
+        (r.symbols ?? [])
+          .filter((s: any) => ["function", "variable", "method"].includes(String(s.kind)))
+          .map((s: any) => String(s.name)),
+      )
+      if (names.size < 2) return r
+      const last = [...names].pop()!
+      const first = [...names][0]!
+      if (last === first) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) => (s.name === last ? { ...s, name: first } : s)),
+        relationships: (r.relationships ?? []).map((x: any) => ({
+          ...x,
+          source: x.source === last ? first : x.source,
+        })),
+      }
+    },
+  },
+  {
     id: "fsharp/recursive-call-refused-as-a-self-edge",
     language: "fsharp",
     defectClass: "wrong-relationship",
