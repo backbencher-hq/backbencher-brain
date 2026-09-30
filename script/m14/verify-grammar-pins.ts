@@ -1890,13 +1890,67 @@ async function main() {
   }
 
   const measured: Record<string, MeasuredLane> = {}
+  const unreadable: Array<{ lang: string; reason: string }> = []
   for (const [lang, lane] of Object.entries(LANES)) {
-    const m = await measureLane(lane.wired)
-    const { namedUnique, uniqueNames } = await measureSurface(path.join(ROOT, lane.wired))
-    m.copies = measureCopies(lane, m.wired.sha256)
-    m.vendored = measureVendored(ROOT, lane)
-    m.sourceVsWasm = sourceVsWasmFor(ROOT, lane, namedUnique, uniqueNames)
-    measured[lang] = m
+    // A grammar that cannot be LOADED must fail ITS OWN lane and leave every
+    // other lane with a verdict.
+    //
+    // It used to take the whole run down. `Language.load` is unguarded, so one
+    // corrupt wasm threw `CompileError: WebAssembly.Module doesn't parse` out
+    // of this loop and the process died — every other lane's pin result simply
+    // ceased to exist, indistinguishable from a run that was never attempted.
+    // With 16 lanes already red for unrelated reasons, a gate that can go
+    // SILENT about the input it exists to hash is the worst failure shape
+    // available: silence reads exactly like a pass.
+    //
+    // So the failure is caught, recorded, and the loop continues. The lane is
+    // marked unreadable and reported by name in its own section and in the exit
+    // path, and the gate still exits non-zero — a corrupt grammar is still a
+    // failure, it is just no longer a failure that erases its neighbours.
+    try {
+      const m = await measureLane(lane.wired)
+      const { namedUnique, uniqueNames } = await measureSurface(path.join(ROOT, lane.wired))
+      m.copies = measureCopies(lane, m.wired.sha256)
+      m.vendored = measureVendored(ROOT, lane)
+      m.sourceVsWasm = sourceVsWasmFor(ROOT, lane, namedUnique, uniqueNames)
+      measured[lang] = m
+    } catch (e) {
+      const reason = e instanceof Error ? e.message : String(e)
+      unreadable.push({ lang, reason })
+      // A minimal, HONEST record: the sha and length are still computable
+      // without a valid module, so the drift check keeps working on them, and
+      // the surface is declared unreadable rather than invented as empty —
+      // an empty surface would compare equal to a record of zeros and hide the
+      // very failure being reported.
+      let sha = "(unreadable)"
+      let bytes = 0
+      try {
+        const buf = fs.readFileSync(path.join(ROOT, lane.wired))
+        sha = sha256(buf)
+        bytes = buf.length
+      } catch {
+        /* the file itself is missing; sha stays unreadable */
+      }
+      measured[lang] = {
+        wired: { file: lane.wired, sha256: sha, bytes },
+        surface: {
+          ids: [],
+          uniqueNames: [],
+          namedIds: [],
+          namedUnique: 0,
+          anonIds: [],
+          anonUnique: 0,
+          fieldCount: 0,
+          idOrderDigest: "UNREADABLE",
+          typeSetDigest: "UNREADABLE",
+          fieldSetDigest: "UNREADABLE",
+        } as unknown as Surface,
+        copies: [],
+        vendored: { state: "not-obtainable-offline" },
+        sourceVsWasm: { nodeTypesJson: null, note: `grammar unreadable: ${reason}` },
+      }
+    }
+    const m = measured[lang]
     const sv: any = m.sourceVsWasm
     const svNote = sv.nodeTypesJson
       ? sv.missingInWasm.length || sv.namedOnlyInWasm.length
@@ -1979,6 +2033,10 @@ async function main() {
 
   const recorded: PinRecord = JSON.parse(fs.readFileSync(REGISTRY, "utf8"))
   const failures = verifyPins(recorded, measured)
+  if (unreadable.length) {
+    console.error(`\nUNREADABLE GRAMMAR (${unreadable.length}) — these lanes could not be measured, and every OTHER lane above still carries a verdict:`)
+    for (const u of unreadable) console.error(`  ${u.lang}: ${u.reason}`)
+  }
   for (const f of failures) console.error(`PIN FAILURE ${f.lane}: ${f.check} (recorded ${JSON.stringify(f.recorded)} → actual ${JSON.stringify(f.actual)})`)
   if (failures.length) {
     console.error(`\ngrammar pins FAILED: ${failures.length} drift(s)`)
