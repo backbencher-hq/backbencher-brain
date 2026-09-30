@@ -52,8 +52,11 @@
 | extends | ✅ | class superclasses: `class Semigroup s => Mergeable s` → `extends Mergeable -> Semigroup` (from `context` → `apply` → first `name` child; parens-wrapped multi-superclasses handled) | 1.0 |
 | calls | ✅ | `apply` heads with function sources (source = the containing function/method via `currentFunction`). Local calls emit LEAF targets only when the callee is a module-level declared function (pre-pass collects all `function`/`bind`/`signature` names → forward references resolve, e.g. `submitOrder -> describe` declared later). Self-recursion and mutual recursion ARE emitted (`countDown -> countDown`, `mutualA -> mutualB`). Qualified calls emit FULL targets (`M.lookup`, `Data.Map.size` — the Erlang `gen_server:cast` precedent). Exclusions: Prelude/imported functions (`map`, `foldl'`, `fromMaybe`), type variables, pattern vars, record-field selectors, operator/infix syntax, where/let-local functions (their bodies are scoped noise) | 1.0 |
 | instantiates | ✅ | constructor application in BODY position → `instantiates fn -> Constructor` (Erlang `record_expr` analog). Pattern-position constructor applications (function heads, `patterns` nodes) never emit. `record_update_expr`-analog record updates (`book { bids = ... }`) are not constructions | 0.9 |
-| references | ✅ | module dependencies only: `import` → `references module -> dep` (the FP-family module-dep contract). Source is the MODULE (fixed — was self-source `references Data.List -> Data.List`) | 0.9 |
-| uses | ❌ | record field access (`name u`, `bids book` — field selectors) is a field read — no edge (fields already have `contains` ownership) | — |
+| imports | ✅ | `import` → `imports module -> importedModule` (**M60-HK**: was `references`; 2,119 of 2,126 `references` edges were module imports) |
+| exports | ✅ | the `header → exports` list → `exports module -> name`; only `export` nodes count, because the list interleaves Haddock comments (**M60-HK**) |
+| overrides | ✅ | `instance C T where m ...` → `overrides T.m -> C.m`, matched against a class→methods pre-pass (**M60-HK**) |
+| uses | ✅ | a type synonym → the `name`/`constructor` leaves of its right-hand side; a `variable` there is a type PARAMETER and is excluded (**M60-HK**) |
+| references | ✅ | FFI entity edges only — an `imports` edge now carries the module dependency (**M60-HK**; 7 edges corpus-wide) |
 
 ## Noise-elimination contract (what produces NO edges)
 
