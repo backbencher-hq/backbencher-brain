@@ -89,6 +89,16 @@ export type SearchResults = SearchResult[] & {
    */
   rankedMatches?: number
   /**
+   * How much of the searchable corpus has a symbol BODY to search.
+   *
+   * Content search matches name, qualified_name, docstring and body. The body
+   * column arrived after databases were indexed, so a project indexed before it
+   * has none — and a search over such a project silently misses every word
+   * that appears only inside a function. This ratio is what lets a caller tell
+   * "nothing matched" from "nothing could match", which are opposite facts.
+   */
+  bodyCoverage?: { withBody: number; symbols: number; ratio: number }
+  /**
    * How many candidate rows the scan actually looked at. Present so a bounded
    * answer can say "stopped after N of M" rather than only "stopped", and
    * absent when the scan completed.
