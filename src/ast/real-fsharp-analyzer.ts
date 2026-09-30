@@ -1237,6 +1237,24 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return found
   }
 
+  /**
+   * The type declaration whose body contains `n`, walking to the root.
+   *
+   * The OUTERMOST one, which for a mutual group is the node that holds every clause in the
+   * group — `type A = … and B = …` is one `type_definition` with both bodies inside it. The
+   * name of the type that actually owns a declaration is recovered separately, by taking the
+   * last `type_name` before the declaration; see the class-field arm in `resolveSource`.
+   */
+  private outermostTypeDefinitionAbove(n: Node): Node | undefined {
+    let found: Node | undefined
+    let cur: Node | null = n.parent
+    while (cur) {
+      if (cur.type === "type_definition") found = cur
+      cur = cur.parent
+    }
+    return found
+  }
+
   private findAncestor(node: Node, predicate: (n: Node) => boolean, maxDepth: number = 12): Node | undefined {
     let cur: Node | null = node.parent
     for (let i = 0; cur && i < maxDepth; i++) {
@@ -1672,9 +1690,34 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const inTypeBody = this.findAncestor(decl, (n) => n.type === "type_extension_elements", 3) !== undefined
       const enclosingCallable = this.outermostCallableAbove(decl, isCallable)
       if (inTypeBody && enclosingCallable === undefined) {
-        // a field of the class: the type owns it
-        const td = this.findAncestor(decl, (n) => n.type === "type_definition", 6)
-        const tn = td ? this.findDescendant(td, (n) => n.type === "type_name", 3) : undefined
+        // a field of the class: the type owns it.
+        //
+        // The owning type is the one whose body CONTAINS this declaration, and in a mutual
+        // type group the group's node holds several:
+        //
+        //     type FSharpAssemblyContents(…) =          // <- the group's first type
+        //         member val …
+        //     and FSharpImplementationFileContents(…) =  // <- the type that owns the field
+        //         let mutable Binding : …
+        //
+        // Two things were wrong here. `findAncestor(decl, type_definition, 6)` is bounded
+        // and cannot tell "no type above" from "further than 6 up". And taking the FIRST
+        // `type_name` descendant of that node names the group's FIRST type, so a field in
+        // the `and` clause was published under its sibling's name — a name that exists, so
+        // the edge resolved and nothing downstream could tell it was wrong. Measured in
+        // Exprs.fs: `FSharpAssemblyContents -> Binding` against the truth's
+        // `FSharpImplementationFileContents -> Binding`.
+        //
+        // The owner is the LAST type name that begins before the field does, in document
+        // order — which is the same correction the truth oracle needed for identifiers in a
+        // dotted name, and for the same reason: an array is not a document.
+        const td = this.outermostTypeDefinitionAbove(decl)
+        if (!td) return null
+        const fieldStart = decl.startIndex
+        const names = this.findDescendants(td, (n) => n.type === "type_name", 4)
+          .filter((n) => n.startIndex < fieldStart)
+          .sort((a, b) => a.startIndex - b.startIndex)
+        const tn = names.length ? names[names.length - 1] : undefined
         const tName = tn ? this.typeInfoOf(tn)?.name ?? null : null
         if (tName) return { source: tName, declaredOn: "class_field" }
       }
@@ -1688,6 +1731,18 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             : this.declaredBindingName(enclosingCallable)
         if (cName) return { source: cName, declaredOn: "local_annotation" }
       }
+      // The fallback is for a genuinely TOP-LEVEL binding — and only that. If `decl` is
+      // nested inside another declaration then it is a local or a member, the enclosing
+      // callable above owns it, and reaching here means the walk above did not find it. The
+      // old behaviour published the local's own name in that case, which produced
+      // `argInfo -> ArgReprInfo` in Symbols.fs for a `let argInfo` that the analyzer does not
+      // publish as a symbol at all: an edge with no other end, whose only defect is invisible
+      // because the name looks like a perfectly good one.
+      //
+      // So the fallback now REFUSES when `decl` is nested, rather than publishing a name that
+      // may belong to nothing. A top-level `let annotated : Bar` has no declaration ancestor
+      // and is unaffected — that is the fixture case this fallback exists for.
+      if (this.outermostCallableAbove(decl, isCallable) || this.findAncestor(decl, isDecl, 40)) return null
       const name = this.declaredBindingName(decl)
       if (name) return { source: name, declaredOn: pos }
       return null
