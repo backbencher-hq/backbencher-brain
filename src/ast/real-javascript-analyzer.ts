@@ -1466,6 +1466,30 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // so the conjunct was a no-op condition (M60 review JD10/F7).
           const baseInFile = symbols.some((s) => s.name === base && s.kind === ASTEngine.SymbolKind.Class)
           if (baseInFile) continue
+          // J9 (2026-09-30): a `#private` NAME IS NEVER A PROTOTYPE MEMBER, so it
+          // cannot override anything — and this branch's whole premise is that the
+          // base is UNKNOWN, not that the member is. 0.5 is the right tier for a
+          // true edge with a guessed base; it is the wrong tier for an edge that is
+          // false by the language's own definition, because "the base is unknown"
+          // says nothing about whether the name could be a member of ANY base.
+          //
+          // In JavaScript a `#name` is class-scoped: it is installed on each
+          // INSTANCE at construction and is not on the prototype at all, so no
+          // subclass can shadow it and no base can declare it. Measured over the
+          // full 3,369-file corpus, this branch produced 50 override edges naming a
+          // builtin base, of which SIX were private names that the language says
+          // cannot be members of anything:
+          //
+          //   URLSearchParams.#update_url   Map.#read_all   Map.#source
+          //   Set.#init   Set.#source        Date.#init      (6 edges)
+          //
+          // So the guard is not a tightening of a heuristic, it is the removal of
+          // rows that the language rules out. It is deliberately narrow: nothing
+          // else about this branch changes, and the remaining 0.5 rows stay,
+          // because for THOSE the base genuinely is unknown and the suspicion is
+          // honest — see J9 in script/m14/spec/javascript-completeness.json for the
+          // full classification of the 48 distinct names this branch produces.
+          if (s.name.startsWith("#")) continue
           // Pass 3 (family parity with java/groovy resolveOverrides): the
           // base is not declared in this file and the companion index gave
           // no opinion (it is never populated in production — see M37.10).
