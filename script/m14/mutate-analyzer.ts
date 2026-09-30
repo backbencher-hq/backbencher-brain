@@ -5086,6 +5086,17 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "zig/underscore-fn-not-declared",
+    language: "zig",
+    defectClass: "dangling-edge",
+    description:
+      "Z46 regression: the blank-identifier refusal returns to the FUNCTION branch. `const _ = 1;` is a discard and must mint nothing (Z8/GO5), but `pub fn _(msgid: [*:0]const u8) …` is a REAL callable declaration \u2014 the gettext convention, and the whole i18n entry point of ghostty. With it excluded the analyzer publishes `calls (global) -> _` for a function it declined to declare: a dangling edge pointing at a name the index will never resolve. Caught by the dangling-target invariant in `zigw-invariants.ts`, which asks whether an edge's target is declared at FILE SCOPE with no symbol published. CALIBRATED by reverting the fix by hand and watching the invariant report the dangling edge.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((x: any) => x.name !== "_"),
+    }),
+  },
+  {
     id: "zig/reason-code-dropped",
     language: "zig",
     defectClass: "edge-traceability",
@@ -16479,6 +16490,46 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({
       ...r,
       relationships: [...(r.relationships ?? []), { type: "calls", source: "clj.fixture.shadowed-macro", target: "require", line_number: 32, confidence: 0.9, metadata: {} }],
+    }),
+  },
+  {
+    id: "clojure/anon-shorthand-call-skipped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert (derived calls oracle): `#(f ...)` is an anon_fn_lit whose children are the body DIRECTLY - no list_lit, no `fn` head - so a walk that fires on lists never visits it; 55 calls written in the shorthand in core.clj alone (`#(shift-mask s m %)`) are invisible - anon-fn-shorthand-call pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "twice")),
+    }),
+  },
+  {
+    id: "clojure/anon-arg-placeholder-called",
+    language: "clojure",
+    defectClass: "fabricated-relationship",
+    description: "F5-cert (derived calls oracle): `#(% 1)` APPLIES its argument and calls nothing, but `%` has the same node shape as a callee so a shape test alone invents a call to `%` - the head needs a NAME test - anon-fn-shorthand-call forbids catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "lambda_20_30", target: "%", line_number: 21, confidence: 0.9, metadata: {} }],
+    }),
+  },
+  {
+    id: "clojure/special-form-emitted-as-call",
+    language: "clojure",
+    defectClass: "fabricated-relationship",
+    description: "F5-cert (derived calls oracle): `fn*` is a compiler intrinsic with no public var so the core-list suppression gate cannot see it, and `let` is shadowed in core.clj, so both were published as calls - special-form-vs-macro forbids catch it",
+    transform: r => ({
+      ...r,
+      relationships: [...(r.relationships ?? []), { type: "calls", source: "build", target: "fn*", line_number: 17, confidence: 0.9, metadata: {} }],
+    }),
+  },
+  {
+    id: "clojure/macro-suppressed-as-special-form",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert (derived calls oracle): `loop`, `letfn` and `case` are MACROS and core.clj defines every one of them, so CLJ-D43 says a call to them IS a call; treating them as special forms and suppressing them drops 5 real edges - special-form-vs-macro pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "loop")),
     }),
   },
 ]
