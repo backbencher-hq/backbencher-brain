@@ -4531,6 +4531,53 @@ export const MUTANTS: Mutant[] = [
     description: "re-emits calls edges for parenthesized closure callees ((self.0)(n)): the pre-fix else branch took functionNode.text verbatim and fabricated a (self.0) target",
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { source: "run", target: "(self.0)", type: "calls", confidence: 1, metadata: {} }] }),
   },
+  // ── D8 (a trailing annotation is not a declaration, 2026-09-29) ──────────────
+  // The first two arms are the obvious ones. The THIRD exists because the two
+  // wrong versions of this rule each deleted real symbols and neither fixture
+  // existed to catch it: a sibling-based rule removed every `TEST(Suite, Name)`
+  // heading that followed a function declaration, and a backward scan that tried
+  // to skip comments met the comment's TEXT before its `//` and removed 20
+  // headings in one bundled gmock file. `TEST` is spelled in all caps, so a rule
+  // that only asks "is the name a macro" cannot tell the two families apart, and
+  // the failure mode of getting it wrong is DELETION — the most expensive kind,
+  // because a missing symbol cannot be distinguished from a file that never
+  // declared one.
+  {
+    id: "cpp/d8-annotation-published-as-method",
+    language: "cpp",
+    defectClass: "fabricated-symbol",
+    description: "D8 regression, arm A: re-publish the trailing annotation. A thread-safety annotation written after a parameter list decorates the declaration in front of it and declares nothing; the grammar recovers it as a second function_definition whose declarator is the macro and whose body is the real method's. Publishing it invents a member of the class — measured as `GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom: \"macro-heading\"`, 20 sites in one bundled gmock file — and attributes the real body's reads to the macro. Reverted generically: a no-return-type, all-caps function_definition whose invocation continues a declaration publishes nothing.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? [])
+        .filter((s: any) => !/^GTEST_LOCK_EXCLUDED_/.test(String(s.name)))
+        .concat([
+          { name: "GTEST_LOCK_EXCLUDED_(mutex_)", kind: "function", range: { startLine: 8, startColumn: 5, endLine: 10, endColumn: 6, startIndex: 300, endIndex: 420 }, visibility: "public", metadata: { isCppFunction: false, expandedFrom: "macro-heading", macroName: "GTEST_LOCK_EXCLUDED_", headingText: "GTEST_LOCK_EXCLUDED_(mutex_)" } },
+        ]),
+    }),
+  },
+  {
+    id: "cpp/d8-annotation-body-owner-stolen",
+    language: "cpp",
+    defectClass: "fabricated-relationship",
+    description: "D8 regression, arm B: the SECOND half of the same defect, which is the one that was not obvious. Even with the phantom symbol suppressed, the stolen BODY is still a separate `compound_statement` node and reaches the macro-declared-body branch on its own — so the body's reads were attributed to the annotation. Reverted generically: the macro-declared-body branch is skipped when the body belongs to a trailing annotation, and the statements are walked with the enclosing owner instead of a macro's.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).concat([
+        { source: "GTEST_LOCK_EXCLUDED_(mutex_)", target: "helper", type: "calls", confidence: 1, line_number: 9, metadata: { isFunctionCall: true } },
+      ]),
+    }),
+  },
+  {
+    id: "cpp/d8-test-heading-deleted",
+    language: "cpp",
+    defectClass: "symbol-loss",
+    description: "D8 regression, arm C — the CONTROL, and the one this lane needed most. A test-macro HEADING is the opposite of an annotation: `TEST(Suite, Name) { body }` genuinely defines the function it is named after, and `TEST` is spelled in all caps, so the macro-name test cannot separate the families. Two versions of the D8 rule deleted real headings (every heading following a function declaration, then 20 in one gmock file). This mutant deletes a heading to prove the fixture still fails when the rule over-corrects — a gate that only ever runs in the under-firing direction proves nothing about the direction that costs symbols.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => !/^TEST\(Suite, Reads\)/.test(String(s.name))),
+    }),
+  },
   {
     id: "rust/drop-union-symbols",
     language: "rust",
@@ -8590,6 +8637,37 @@ export const MUTANTS: Mutant[] = [
           : x,
       ),
     }),
+  },
+  // ═══ GOD10 (round 7) ═════════════════════════════════════════════════
+  // The NINTH label. Deleted once with the rest of the go harness wiring; it
+  // has to come back every time, which is the argument for moving the go oracles
+  // out of shared files.
+  {
+    id: "go/recovered-imports-dropped",
+    language: "go",
+    defectClass: "relationship-loss",
+    description:
+      "GOD10 regression: the `imports` edges recovered from a grammar ERROR region go away. Reconstructed from the SOURCE, which is the faithful axis here: a recovered spec and a well-formed one carry the same path, marker and source in the output, so the pre-fix world cannot be told from the post-fix one by reading the result. The pre-fix rule was \"an import is published only when its import_spec sits under a well-formed import_declaration\", so the revert detects the shape the wrapper key missed and drops the import edges it would have lost. A well-formed file is untouched, so the only fixture that can fail is the one that exists to fail. Lines, not raw text: an indexOf(\"import (\") matched inside go/imports-recovered.go's OWN COMMENT — the fixture documents the shape, so the literal appears in a `//` line and a `)` appears in another — and the mutant survived its own fixture until made line-based and comment-aware. Caught by go/imports-recovered; go/imports-contract is the control proving the scan does not fire on the 11 well-formed shapes.",
+    transform: (r: any, source?: string) => {
+      if (typeof source !== "string") return r
+      const lines = source.split("\n")
+      let openAt = -1
+      for (let i = 0; i < lines.length; i++) {
+        const t = lines[i].trim()
+        if (t.startsWith("//")) continue
+        if (t === "import (") { openAt = i; break }
+      }
+      if (openAt === -1) return r
+      let closed = false
+      for (let i = openAt + 1; i < lines.length; i++) {
+        const t = lines[i].trim()
+        if (t.startsWith("//")) continue
+        if (t.startsWith(")")) { closed = true; break }
+        if (t.startsWith("func ") || t.startsWith("type ") || t.startsWith("var ") || t.startsWith("const ")) break
+      }
+      if (closed) return r
+      return { ...r, relationships: (r.relationships ?? []).filter((x: any) => String(x.type) !== "imports") }
+    },
   },
   {
     id: "go/map-key-silence",
@@ -14357,6 +14435,36 @@ export const MUTANTS: Mutant[] = [
         relationships: [...(r.relationships ?? []), ...local.map((n) => ({ type: "contains", source: "Host", target: n, confidence: 1, metadata: {} }))],
       }
     },
+  },
+  {
+    id: "zig/dotted-type-path-read",
+    language: "zig",
+    defectClass: "relationship-fabrication",
+    description:
+      "Z38 regression: the type-position guard goes back to testing the DIRECT parent, so it cannot see a DOTTED type path \u2014 in this grammar `std.Build.LazyPath` is a chain of `field_expression` nodes, so every segment of a qualified type in a signature is published as a `uses` READ of a type name, attributed to the function whose signature it appears in, and duplicating the declared-type class that already publishes the same text. 480 rows over 200 corpus files, invisible at name level because the target IS a real type name. Caught by zig/relationship-classes' forbidRelationships on the three `uses` rows for `Local`/`Opts`/`Res`, and by the source-keyed gate (zigw-uses-calls.ts), which convicts it in both directions. NOTE THE DIRECTION: the pre-fix state ADDS these edges, so the mutant has to ADD them. The first version removed them \u2014 which is the state the FIX produces, so it passed the fixture and the suite correctly reported it as a survivor: a mutant that reconstructs the fixed state instead of the defect is a mutant of nothing.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...["Local", "Opts", "Res"].map((t, i) => ({
+          type: "uses", source: "dottedPathInSignature", target: t, confidence: 1.0, line_number: 100 + i, metadata: {},
+        })),
+      ],
+    }),
+  },
+  {
+    id: "zig/test-scope-reads-attributed-to-global",
+    language: "zig",
+    defectClass: "relationship-misattribution",
+    description:
+      "Z39 regression: the source attribution goes back to recognising `function_declaration` only, so every read and call inside a NAMED TEST is attributed to `(global)` \u2014 a file-scope source for work plainly inside one named block. Caught by zig/relationship-classes' expectRelationships on `uses readsInsideANamedTestAreAttributedToTheTest -> fileLevelValue`, and by the source-keyed gate, which is the only instrument that looks at the source at all: the shared F5 matcher keys on `label + normTarget(target)` and discards it.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.type === "uses" && x.target === "fileLevelValue" && x.source === "readsInsideANamedTestAreAttributedToTheTest"
+          ? { ...x, source: "(global)" }
+          : x),
+    }),
   },
   {
     id: "zig/imports-twin-dropped",
