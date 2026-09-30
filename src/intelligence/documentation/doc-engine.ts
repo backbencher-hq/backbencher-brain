@@ -154,7 +154,7 @@ function resolveTokenBudget(requested: unknown): number {
  * a heading, a table, a code fence or a front-matter block, so its "name" is English
  * text — and both scanners below read the file as if those names were code:
  *
- *  1. `sourceDocstring` is a C-family `/**` `*` `//` comment scanner. In markdown `*`
+ *  1. the comment scanner (`SourceReader.docstring`) is C-family `/**` `*` `//`. In markdown `*`
  *     is the BOLD delimiter, so a prose line above a heading is read as a JSDoc
  *     block. Measured over this repository's own index (331 `.md` files, 3,598
  *     markdown symbols): **79 symbols received a fabricated docstring at
@@ -193,30 +193,6 @@ function isProseNameFile(filePath: unknown): boolean {
     if (e === ext) return PROSE_NAME_LANGUAGES.has(lang)
   }
   return false
-}
-
-function sourceDocstring(filePath: string, lineStart: number): string | null {
-  // See PROSE_NAME_LANGUAGES: for a markdown heading the preceding `*bold*` prose
-  // line is not a comment, and emitting it as a docstring at confidence 1.0 is a
-  // fabrication rather than a weak inference.
-  if (isProseNameFile(filePath)) return null
-  try {
-    const lines = readFileSync(filePath, "utf8").split(/\r?\n/)
-    const before = lines.slice(0, Math.max(0, lineStart - 1)).reverse()
-    const comments: string[] = []
-    for (const line of before) {
-      const trimmed = line.trim()
-      if (!trimmed) {
-        if (comments.length) break
-        continue
-      }
-      if (trimmed.startsWith("/**") || trimmed.startsWith("*") || trimmed.startsWith("//")) {
-        comments.unshift(trimmed.replace(/^\/\*\*?\s?/, "").replace(/\*\/$/, "").replace(/^\*\s?/, "").replace(/^\/\/\s?/, ""))
-        if (trimmed.startsWith("/**")) break
-      } else break
-    }
-    return comments.length ? comments.join(" ").trim() : null
-  } catch { return null }
 }
 
 /** Facts per section. `detail` is a real input, not decoration (D17). */
@@ -388,6 +364,13 @@ class SourceReader {
   /** The comment block immediately above `lineStart`, or null when there is none. */
   docstring(absPath: string | undefined, lineStart: number): string | null {
     if (!absPath || !lineStart) return null
+    // See PROSE_NAME_LANGUAGES. This guard was written onto a `sourceDocstring`
+    // free function that nothing calls, while every LIVE call site goes through
+    // this method — so the markdown fabrication it documents (a heading
+    // inheriting the `*bold*` prose line above it, published as an extracted
+    // fact at confidence 1.0) was still reachable. The guard belongs where the
+    // scan happens, which is here.
+    if (isProseNameFile(absPath)) return null
     const key = `${absPath}:${lineStart}`
     if (this.docstrings.has(key)) return this.docstrings.get(key) ?? null
     const fileLines = this.readLines(absPath)
