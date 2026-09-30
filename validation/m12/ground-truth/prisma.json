@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "language": "prisma",
+  "issue": "M60 objective C",
+  "authority": "AUTHORED, NOT HARVESTED \u2014 there is no .prisma file on this machine, so this ground truth was written alongside the corpus it describes. It proves the analyzer agrees with the author; it does not prove agreement with the world. Recorded as a lane limit in the same spirit as the corpus note.",
+  "fixtures": [
+    "prisma/schema1.prisma"
+  ],
+  "facts": [
+    {
+      "kind": "class",
+      "name": "User",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "email",
+        "name",
+        "age",
+        "role",
+        "tags",
+        "createdAt",
+        "updatedAt",
+        "meta",
+        "legacyId",
+        "bio",
+        "secret",
+        "raw"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "Profile",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "bio",
+        "userId"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "Post",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "title",
+        "body",
+        "authorId"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "Comment",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "body",
+        "postId",
+        "authorId"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "Session",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "token",
+        "userId"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "RoleAssignment",
+      "meta.type": "table",
+      "fields": [
+        "id",
+        "sessionId",
+        "role",
+        "grantedAt"
+      ]
+    },
+    {
+      "kind": "type",
+      "name": "Role",
+      "meta.type": "enum",
+      "members": [
+        "MEMBER",
+        "ADMIN",
+        "GUEST"
+      ]
+    },
+    {
+      "kind": "type",
+      "name": "Address",
+      "meta.type": "composite",
+      "fields": [
+        "street",
+        "city",
+        "zip"
+      ]
+    },
+    {
+      "kind": "class",
+      "name": "ActiveUser",
+      "meta.type": "view",
+      "fields": [
+        "id",
+        "email",
+        "role"
+      ]
+    },
+    {
+      "kind": "module",
+      "name": "db",
+      "meta.type": "datasource",
+      "provider": "postgresql"
+    },
+    {
+      "kind": "function",
+      "name": "client",
+      "meta.type": "generator",
+      "provider": "prisma-client-js"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "User",
+      "target": "Profile"
+    },
+    {
+      "kind": "rel",
+      "type": "contains",
+      "from": "User",
+      "target": "posts"
+    },
+    {
+      "kind": "rel",
+      "type": "contains",
+      "from": "User",
+      "target": "sessions"
+    },
+    {
+      "kind": "rel",
+      "type": "contains",
+      "from": "Post",
+      "target": "comments"
+    },
+    {
+      "kind": "rel",
+      "type": "contains",
+      "from": "Session",
+      "target": "roles"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "Profile",
+      "target": "User"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "Post",
+      "target": "User"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "Comment",
+      "target": "User"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "Comment",
+      "target": "Post"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "Session",
+      "target": "User"
+    },
+    {
+      "kind": "rel",
+      "type": "references",
+      "from": "RoleAssignment",
+      "target": "Session"
+    }
+  ]
+}
