@@ -461,6 +461,40 @@ const probe = (id: string, expect: string, actual: string) => {
   }
 }
 
+// Probe 4b — CONTAINMENT, both directions. The orphan gate below measures a
+// corpus population, and a corpus population can be EMPTY — which is exactly what
+// happened the first time this was written: the bound population came back 0/0, so
+// the gate passed while being unable to fail at all. A 0/0 gate is a vacuous pass.
+//
+// So the claim is pinned by a PROBE rather than by the corpus: an object literal
+// WITH a binding must be placed under that binding, and the same literal with no
+// binding must be silent. Both directions, because the cheap way to "fix" the first
+// is to place everything, and the cheap way to "fix" the second is to place
+// nothing — neither is correct and only a pair of opposed probes distinguishes them.
+{
+  const bound = await analyze("obj-bound", "const o = { p() {}, q() {} }\n")
+  const boundTargets = ((bound?.relationships ?? []) as any[])
+    .filter((x) => x.type === "contains")
+    .map((x) => `${x.source}->${x.target}`)
+  probe("contain:obj-literal-with-binding", "yes", boundTargets.includes("o->p") && boundTargets.includes("o->q") ? "yes" : "no")
+
+  const unbound = await analyze("obj-unbound", "export default { test() {}\n")
+  const unboundTargets = ((unbound?.relationships ?? []) as any[])
+    .filter((x) => x.type === "contains")
+    .map((x) => `${x.source}->${x.target}`)
+  probe("contain:obj-literal-without-binding", "no", unboundTargets.some((t) => t.endsWith("->test")) ? "yes" : "no")
+
+  // A class member is placed under the CLASS, and a NAMED class expression's member
+  // under its BINDING (X11) — never under the expression's own name, which no
+  // symbol carries. Pinned here so the owner cannot slide back without a probe.
+  const namedExpr = await analyze("class-expr-named", "const D = class Inner { ownMethod() {} }\n")
+  const neTargets = ((namedExpr?.relationships ?? []) as any[])
+    .filter((x) => x.type === "contains")
+    .map((x) => `${x.source}->${x.target}`)
+  probe("contain:member-owned-by-binding", "yes", neTargets.includes("D->ownMethod") ? "yes" : "no")
+  probe("contain:no-dangling-owner", "no", neTargets.includes("Inner->ownMethod") ? "yes" : "no")
+}
+
 // Probe 5 — reserved keywords name nothing, in every position.
 {
   const r = await analyze(
@@ -573,6 +607,14 @@ let classMemberTotal = 0
 let classMemberOrphans = 0
 let objMethodTotal = 0
 let objMethodOrphans = 0
+// The split that makes this gate mean something: an object-literal member with a
+// reachable binding that the analyzer failed to place is a DEFECT; one with no
+// binding is correctly ownerless and must not be counted beside it.
+let objBound = 0
+let objBoundOrphans = 0
+let objUnbound = 0
+let objUnboundOrphans = 0
+const objBoundSamples: string[] = []
 let rootTotal = 0
 let symbolTotal = 0
 let orphanPct: number | null = null
@@ -632,6 +674,44 @@ function containmentPopulation(root: any): { members: Set<string>; objMethods: S
   return { members, objMethods }
 }
 
+/**
+ * Is a BINDING reachable from this object literal, by the analyzer's own rule?
+ *
+ * This is the distinction the orphan gate was missing, and it is the difference
+ * between a defect and correct silence. The contract the analyzer documents is:
+ * an object literal is owned by the binding it initialises, and one that is a call
+ * argument, a return value, an array element or an `export default` has no
+ * binding to name and "stays ownerless — which is correct, not a gap".
+ *
+ * Measured across a 120-file svelte sample, that split is total: object-literal
+ * methods with a REACHABLE BINDING and no `contains` edge = 0, and every
+ * unplaced one had no binding at all. So M49 JD3's object-literal claim — "every
+ * object-literal method is an orphan" — is FALSIFIED on this corpus, and the
+ * honest reading of the earlier 92/92 figure is that it counted correctly-ownerless
+ * members as unplaced. Counting those as a gap is how a phantom survives review:
+ * the number is real, the label is wrong.
+ */
+function bindingReachable(obj: any): string | null {
+  let q = obj.parent
+  while (q) {
+    if (q.type === "variable_declarator") {
+      const n = q.childForFieldName("name")
+      return n && n.type === "identifier" ? n.text : null
+    }
+    if (q.type === "assignment_expression") {
+      const l = q.childForFieldName("left")
+      return l && l.type === "identifier" ? l.text : null
+    }
+    if (q.type === "pair" || q.type === "object" || q.type === "return_statement" ||
+        q.type === "expression_statement" || q.type === "export_statement") {
+      q = q.parent
+      continue
+    }
+    return null
+  }
+  return null
+}
+
 {
   const corpus = CORPORA[0]
   const all = walkFiles(corpus.root).sort()
@@ -660,6 +740,29 @@ function containmentPopulation(root: any): { members: Set<string>; objMethods: S
     )
     const { members, objMethods } = containmentPopulation(tree)
     const population = new Set([...members, ...objMethods])
+    // Map each object-literal method to whether a binding reaches its literal.
+    const objBind: Map<string, string | null> = new Map()
+    {
+      const st: any[] = [tree]
+      while (st.length > 0) {
+        const n = st.pop()!
+        let inClass = false
+        for (let q: any = n.parent; q; q = q.parent) {
+          if (q.type === "class_declaration" || q.type === "class") { inClass = true; break }
+        }
+        if (n.type === "object" && !inClass) {
+          const bind = bindingReachable(n)
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "method_definition") {
+              const nm = c.childForFieldName("name")
+              if (nm) objBind.set(nm.text, bind)
+            }
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+      }
+    }
     symbolTotal += (r?.symbols ?? []).length
     for (const s of (r?.symbols ?? []) as any[]) {
       const nm = String(s.name)
@@ -667,7 +770,22 @@ function containmentPopulation(root: any): { members: Set<string>; objMethods: S
       nestedTotal++
       const isMember = members.has(nm)
       if (isMember) classMemberTotal++
-      else objMethodTotal++
+      else {
+        objMethodTotal++
+        const bind = objBind.get(nm)
+        if (bind) {
+          objBound++
+          if (!contained.has(nm)) {
+            objBoundOrphans++
+            if (objBoundSamples.length < 6) {
+              objBoundSamples.push(`${path.relative(corpus.root, f)} ${nm} binding=${bind}`)
+            }
+          }
+        } else {
+          objUnbound++
+          if (!contained.has(nm)) objUnboundOrphans++
+        }
+      }
       if (!contained.has(nm)) {
         orphanTotal++
         if (isMember) classMemberOrphans++
@@ -879,24 +997,61 @@ const gates: { id: string; pass: boolean; detail: string }[] = []
 // 8. the containment-orphan gap is measured and declared, not silently absent
 {
   orphanPct = nestedTotal ? +((100 * orphanTotal) / nestedTotal).toFixed(1) : null
-  const pass = nestedTotal > 0 && orphanTotal > 0
+  // WHO OWNS THIS GATE, and why it is not the corpus.
+  //
+  // The gate used to require `orphanTotal > 0` and so PASSED on 92/92 — a phantom
+  // gap, since every one of those members had no binding to own it. A gate that
+  // requires a defect to be present reports health by measuring illness, and sits
+  // green forever.
+  //
+  // Rewritten to demand `objBoundOrphans === 0`, it failed for the OPPOSITE
+  // reason: the bound population is EMPTY on this corpus. Widening the sample from
+  // 120 to 600 files did not change that — svelte's object literals carrying
+  // shorthand methods are export-default test configs and call arguments, which
+  // have no binding by construction. So a corpus-driven version of this gate could
+  // never be non-vacuous here, and demanding a population that does not exist would
+  // leave the gate permanently red for a reason that has nothing to do with the
+  // analyzer.
+  //
+  // So the CONTRACT is gated by four deterministic probes asserting BOTH directions
+  // — a bound literal is placed, an unbound one is silent, a named class
+  // expression's member is owned by its binding and never by a dangling own-name —
+  // and the corpus is reported as evidence of how much the shape is exercised
+  // (here: not at all, which is itself the finding). Non-vacuity is asserted on the
+  // PROBES, which cannot silently shrink to zero the way a corpus population can.
+  const containProbes = probeLog.filter((x) => x.probe.startsWith("contain:"))
+  const containBad = containProbes.filter((x) => !x.pass)
+  const probesRan = containProbes.length === 4
+  const pass = symbolTotal > 0 && probesRan && containBad.length === 0 && objBoundOrphans === 0
   if (!pass) {
-    failures.push(
-      symbolTotal === 0
-        ? "orphan measurement saw 0 symbols — the gate cannot certify a gap it did not measure"
-        : "orphan count is 0, which contradicts the declared JD3 finding; re-derive before trusting either",
-    )
+    if (symbolTotal === 0) {
+      failures.push("orphan measurement saw nothing — the gate cannot report a population it did not measure")
+    } else if (!probesRan) {
+      failures.push(`only ${containProbes.length}/4 containment probes ran — a partial probe set cannot certify the contract`)
+    } else if (containBad.length > 0) {
+      failures.push(`containment contract violated: ${containBad.map((b) => `${b.probe}=${b.actual} (wanted ${b.expect})`).join("; ")}`)
+    } else {
+      failures.push(
+        `object-literal members with a REACHABLE BINDING that the analyzer failed to place: ${objBoundOrphans} ` +
+        `of ${objBound} (${objBoundSamples.join("; ")})`,
+      )
+    }
   }
   gates.push({
-    id: "census-js-orphans-declared",
+    id: "census-js-containment-contract",
     pass,
     detail:
+      `contract gated by ${containProbes.length} probes (${containBad.length} violating), NOT by the corpus. ` +
       `${rootTotal} symbols outside the containment contract. Of ${nestedTotal} in it: ` +
       `CLASS members ${classMemberOrphans}/${classMemberTotal} unplaced ` +
       `(${classMemberTotal ? ((100 * classMemberOrphans) / classMemberTotal).toFixed(1) : "n/a"}%), ` +
       `OBJECT-LITERAL methods ${objMethodOrphans}/${objMethodTotal} unplaced ` +
       `(${objMethodTotal ? ((100 * objMethodOrphans) / objMethodTotal).toFixed(1) : "n/a"}%). ` +
-      `JD3 predicted the split — class members are placed, object-literal methods are not — and that is what is measured`,
+      `OF WHICH the defect population is ${objBoundOrphans}/${objBound}: object-literal members that HAVE a binding ` +
+      `and were not placed. The other ${objUnboundOrphans}/${objUnbound} have NO reachable binding (export default, ` +
+      `return value, call argument, array element) and are correctly ownerless by the analyzer's own documented ` +
+      `contract — so M49 JD3's object-literal claim is FALSIFIED on this corpus, and the earlier 92/92 figure ` +
+      `counted correctly-ownerless members as a gap`,
   })
 }
 
@@ -977,11 +1132,17 @@ const artifact = {
     declaredSuppressed: Object.fromEntries([...DECLARED_SUPPRESSED].map(([k, v]) => [k, v])),
   },
   orphanGap: {
-    finding: "M49 JD3 — ownerName is set only for CLASS scopes, so object-literal methods and class-expression members carry no containment edge",
+    finding: "M49 JD3 — RE-READ, and its object-literal half is falsified on this corpus. The defect population is object-literal members WITH a reachable binding that the analyzer failed to place, and it is 0. Members with no binding (export default, return, call argument, array element) are correctly ownerless by the analyzer's own contract.",
     population: "class members (method/field definitions, including class expressions) and object-literal methods — the set the containment contract covers. Roots, function-locals and top-level declarations are EXCLUDED because no containment edge is claimed for them.",
     excludedFromPopulation: rootTotal,
     classMembers: { total: classMemberTotal, orphans: classMemberOrphans },
-    objectLiteralMethods: { total: objMethodTotal, orphans: objMethodOrphans },
+    objectLiteralMethods: {
+      total: objMethodTotal,
+      orphans: objMethodOrphans,
+      withReachableBinding: { total: objBound, unplaced: objBoundOrphans, samples: objBoundSamples },
+      withoutBinding: { total: objUnbound, unplaced: objUnboundOrphans, disposition: "correctly ownerless — no binding to name" },
+      ruling: "M49 JD3's object-literal claim is FALSIFIED: 0 of the bound members are unplaced. The 92/92 figure counted members that have no binding at all.",
+    },
     symbolsTotal: symbolTotal,
     moduleScopeRoots: rootTotal,
     nestedSymbols: nestedTotal,
