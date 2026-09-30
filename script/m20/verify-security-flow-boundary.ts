@@ -30,6 +30,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
 import { securitySourceFingerprint, securityRelevantWorkingTreeChanges } from "../../src/intelligence/security/evidence"
+import { writeSealed } from "../lib/evidence.ts"
 import { SecurityHarness } from "../m15/security-harness"
 
 const h = new SecurityHarness()
@@ -134,7 +135,7 @@ const result = {
   ],
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })
-writeFileSync(path.resolve("validation/m20/results/S1.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.resolve("validation/m20/results/S1.json"), result)
 console.log(failed === 0 ? `\nSECURITY S1: PASS (${h.totalPassed}/${h.checks}, ${h.negativePassed}/${h.negatives} negatives)` : `\nSECURITY S1: ${failed} FAILURES`)
 if (failed > 0) for (const f of h.failures) console.log(`  FAIL: ${f.detail}`)
 process.exit(failed > 0 ? 1 : 0)

@@ -48,6 +48,7 @@ import { BrainDatabase } from "../../src/brain/database"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { getAnalysisHistory } from "../../src/intelligence/analysis/run-history"
 import { securitySourceFingerprint, securityRelevantWorkingTreeChanges } from "../../src/intelligence/security/evidence"
+import { writeSealed } from "../lib/evidence.ts"
 import { SecurityHarness } from "../m15/security-harness"
 
 const h = new SecurityHarness()
@@ -183,7 +184,7 @@ const result = {
   ],
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })
-writeFileSync(path.resolve("validation/m20/results/S3.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.resolve("validation/m20/results/S3.json"), result)
 console.log(failed === 0 ? `\nSECURITY S3: PASS (${h.totalPassed}/${h.checks}, ${h.negativePassed}/${h.negatives} negatives${skipped.length ? `, ${skipped.length} leg(s) skipped` : ""})` : `\nSECURITY S3: ${failed} FAILURES`)
 for (const s of skipped) console.log(`  SKIP ${s.leg}: ${s.reason}`)
 if (failed > 0) for (const f of h.failures) console.log(`  FAIL: ${f.detail}`)

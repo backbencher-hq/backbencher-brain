@@ -5,11 +5,20 @@
 //    (docs/BB_SECURITY.md states + confidence calibration).
 // 2. Real behavior: TS SQLi concat -> at least one RESOLVED finding;
 //    clean fixture -> zero findings; parameterized -> zero resolved SQLi.
-// 3. Tautology audit: scans every security verifier for unconditional
-//    assertions (h.ck(..., true, ...), >= 0, || true). Fails if found.
+// 3. Auto-pass audit: scans ALL ELEVEN security verifiers for structurally
+//    unfalsifiable assertions — an unconditional second argument, a
+//    zero-inclusive bound, or an or-true escape. The detector reads CODE only
+//    (comments/strings/templates stripped) and assembles its own patterns from
+//    parts, so it neither flags a verifier that NAMES the banned shape in a
+//    failure message nor flags itself. The previous version scanned three files
+//    and matched one literal, which is how the two files that actually
+//    contained the banned shape passed it.
 // 4. Mutation proof: flipping is_mitigated on a resolved flow must change the
-//    verdict; the engine must distinguish the two states.
-// 5. Persists exact evidence (this file must have no auto-passes itself).
+//    verdict; the engine must distinguish the two states. The disproof's
+//    preconditions are asserted, because `before.includes(x) && !after.includes(x)`
+//    is satisfied by two empty sets.
+// 5. Accounting: bySeverity and byState must each sum to total.
+// 6. Persists exact evidence through the ONE sealed write path.
 
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from "node:fs"
 import { execFileSync } from "node:child_process"
@@ -20,6 +29,7 @@ import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
 import { analyzeTaintFlows } from "../../src/intelligence/security/taint"
 import { securitySourceFingerprint, securityRelevantWorkingTreeChanges } from "../../src/intelligence/security/evidence"
+import { writeSealed } from "../lib/evidence.ts"
 import { SecurityHarness, auditForAutoPass } from "../m15/security-harness"
 
 // The shared harness. The previous inline `check`/`negative` pair had two
@@ -191,7 +201,7 @@ const result = {
   ],
 }
 mkdirSync(path.resolve("validation/m20/results"), { recursive: true })
-writeFileSync(path.resolve("validation/m20/results/S2.json"), JSON.stringify(result, null, 2) + "\n")
+writeSealed(path.resolve("validation/m20/results/S2.json"), result)
 console.log(failed === 0 ? `\nSECURITY S2: PASS (${h.totalPassed}/${h.checks}, ${h.negativePassed}/${h.negatives} negatives)` : `\nSECURITY S2: ${failed} FAILURES`)
 if (failed > 0) for (const f of h.failures) console.log(`  FAIL: ${f.detail}`)
 process.exit(failed > 0 ? 1 : 0)
