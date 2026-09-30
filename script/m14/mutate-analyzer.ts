@@ -8298,6 +8298,56 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    // RUST-MR: a macro INVOCATION's name is a callee, and the calls branch owns
+    // it (RUST-D2). The read sweep's callee guard covered `call_expression`
+    // only, so a USE-IMPORTED macro published BOTH `calls -> bail` AND
+    // `uses -> bail` for one name at one line — 269 sites over a 550-file slice
+    // of five real corpora — while an imported FUNCTION published `calls` only.
+    // The F5 `uses` oracle mirrored the over-reach, so F5 agreed with the
+    // fabrication; with no `uses` edge left to remove, this mutant is
+    // undetectable by construction, which is why the fixture carries FORBID rows.
+    id: "rust/reemit-macro-callee-uses",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "RUST-MR: a macro invocation's NAME emits a `uses` edge beside its `calls` edge — one site, two labels, and the read is fabricated (R1 excludes callees)",
+    transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "go", target: "bail", line_number: 24, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }] }),
+  },
+  {
+    // RUST-MR: the same class in the other two container shapes — a trait
+    // method DECLARATION (`function_signature_item`, absent from the
+    // isItemNamePosition switch, so its own name fell through and produced a
+    // `uses` SELF-EDGE when it also resolved) and a fn-pointer TYPE's parameter
+    // (no body, so no bound-name set excluded it).
+    id: "rust/reemit-declaration-position-reads",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "RUST-MR: a declaration position emits a `uses` edge — a trait method signature's own name (a self-edge) and a fn-pointer type's parameter name",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "uses", source: "current_dir", target: "current_dir", line_number: 29, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+        { type: "uses", source: "global", target: "schema", line_number: 34, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } },
+      ],
+    }),
+  },
+  {
+    // RUST-MR: a higher-ranked bound (`for<'de> Deserialize<'de>`) wraps its
+    // type in a `higher_ranked_trait_bound` node, so the supertrait extraction's
+    // direct-child test never saw it and the bound was published by NOBODY —
+    // while the F5 oracle read the binder's text and FABRICATED
+    // `extends -> "for"`, so both sides were wrong in opposite directions on one
+    // construct. 3 sites in 2 files over 2,598.
+    id: "rust/drop-higher-ranked-bounds",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "RUST-MR: a higher-ranked trait bound publishes no `extends` edge — serde's `trait DeserializeOwned: for<'de> Deserialize<'de>` names a supertrait and publishes none",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "extends" && x.source === "DeserializeOwned")),
+    }),
+  },
+  {
     id: "go/drop-bare-uses",
     language: "go",
     defectClass: "relationship-loss",
