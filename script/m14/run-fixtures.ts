@@ -172,6 +172,12 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
   json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
   powershell: { wasm: "tree-sitter-powershell.wasm", analyzerFile: "real-powershell-analyzer", className: "RealPowershellAnalyzer", ext: "ps1,psm1,psd1" },
+  // M60 Solidity lane. The wasm name is the GRAMMAR's, and it is the name the pin's
+  // `wired` field records, so a swap here is a swap the pin gate catches. The pin
+  // is byte-identical to the npm tarball tree-sitter-solidity@1.2.13 with zero local
+  // patches (script/m14/verify-grammar-pins.ts, LANES.solidity), which is the only
+  // provenance kind structurally immune to the failure the PowerShell lane hit.
+  solidity: { wasm: "tree-sitter-solidity.wasm", analyzerFile: "real-solidity-analyzer", className: "RealSolidityAnalyzer", ext: "sol" },
 }
 
 interface Entry { [k: string]: any }

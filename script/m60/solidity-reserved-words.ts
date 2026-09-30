@@ -256,6 +256,26 @@ ctrl("isReservedTarget: calls -> transfer is NOT reserved (a member, not a token
   !isReservedTarget("calls", "transfer"))
 ctrl("isReservedTarget: contains is not this predicate's business",
   !isReservedTarget("contains", "keccak256"))
+// The member-call exemption, in BOTH directions. `call`, `balance` and
+// `delegatecall` are EVM opcode tokens AND members of Solidity's built-in types,
+// so applying the bare rule to a member call deletes `t.call{value: 1}("")`
+// entirely. The surface measure cannot report that loss because the edge never
+// existed to be counted — which is why the exemption needs its own control rather
+// than being taken on trust.
+ctrl("isReservedTarget: calls -> call IS reserved when bare (it is an opcode token)",
+  isReservedTarget("calls", "call"))
+ctrl("isReservedTarget: calls -> call is ALLOWED when it is a member call",
+  !isReservedTarget("calls", "call", { isMemberCall: true }))
+ctrl("isReservedTarget: calls -> balance ALLOWED as a member call (address.balance)",
+  isReservedTarget("calls", "balance") &&
+  !isReservedTarget("calls", "balance", { isMemberCall: true }))
+ctrl("isReservedTarget: calls -> delegatecall ALLOWED as a member call",
+  isReservedTarget("calls", "delegatecall") &&
+  !isReservedTarget("calls", "delegatecall", { isMemberCall: true }))
+ctrl("isReservedTarget: calls -> transfer is never reserved (not a token at all)",
+  !isReservedTarget("calls", "transfer") && !isReservedTarget("calls", "transfer", { isMemberCall: true }))
+ctrl("the exemption does not open a hole for a BARE call to a keyword",
+  isReservedTarget("calls", "keccak256", { isSolidityCall: true }))
 ctrl("require/assert/gasleft lex as bare identifiers (so a declared set is required)",
   bareIdentifiers.includes("require") && bareIdentifiers.includes("assert") && bareIdentifiers.includes("gasleft"))
 // This control is the one that refuted the first draft of this file's header,
