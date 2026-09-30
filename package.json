@@ -85,7 +85,8 @@
     "audit:evidence-harness": "bun run script/m14/emit-f2-evidence.ts",
     "verify:m57": "npx tsx script/m57/verify-governance.ts && npx tsx script/m57/verify-gate-selftest.ts && bun run script/m57/verify-t1-classifier.ts && bun run script/m57/verify-t2-consumers.ts && bun run script/m57/verify-t3-scope-all.ts && bun run script/m57/verify-t4-corpus-identity.ts && bun run script/m57/verify-t5-predicate-unity.ts && bun run script/m57/verify-closure.ts",
     "verify:m60-sql-resync": "bun run script/m60/verify-sql-resync.ts",
-    "verify:m60-sql-perf": "bun run script/m60/sql-perf-gate.ts"
+    "verify:m60-sql-perf": "bun run script/m60/sql-perf-gate.ts",
+    "parse:check": "bun run script/m14/parse-check.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

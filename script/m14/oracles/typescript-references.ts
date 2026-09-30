@@ -103,7 +103,7 @@ const DECLARERS = new Set([
   "variable_declarator",
 ])
 
-/** Nodes that BIND a name in the scope they sit in, shadowing any file declaration. */
+/** Node types that BIND a name in the scope they sit in, shadowing any file declaration. */
 const BINDERS = new Set([
   "variable_declarator",
   "catch_clause",
@@ -112,6 +112,106 @@ const BINDERS = new Set([
   "class_declaration",
   "identifier",
 ])
+
+/**
+ * `references` is the UNION OF TWO SURFACES with different rules, and that is
+ * not a modelling detail — it is the rule.
+ *
+ * The RESOLVED surface is an expression mention whose name resolves to a
+ * declaration in this file. `f` mentioning a declared `helper` is a reference to
+ * `helper`; `f` mentioning its own parameter `root` is a mention of a local and
+ * publishes nothing.
+ *
+ * The TYPE surface is a mention in a type position, and it does NOT require
+ * resolution at all. That is measured and load-bearing: over 600 files, 25.6% of
+ * all `references` rows (2,062 of 8,048) name a target that no declaration in the
+ * file owns — `Record` 674 times, `Array` 348, `Promise` 334, `Error` 89, `Buffer`
+ * 50. Those are ambient and builtin types, and the analyzer's resolved pass could
+ * not have produced any of them: its symbol table is built from the file's own
+ * symbols and nothing else. They come from the type pass, which records the name
+ * a signature SPELLS. `function f(): Promise<T>` does reference `Promise`; a
+ * consumer asking "who mentions Promise" is asking a real question, and the
+ * declaration may live in another file, in a library, or nowhere at all.
+ *
+ * The one thing the type surface does exclude is a PRIMITIVE. `string`,
+ * `number`, `boolean`, `any`, `unknown`, `never`, `void`, `object`, `symbol`,
+ * `bigint`, `undefined` and `null` are the absence of a type rather than a name,
+ * and a reference to one is noise: every annotated function would reference
+ * `string`.
+ */
+const TYPE_POSITION_ROOTS = new Set([
+  "type_annotation",
+  "type_alias_declaration",
+  "as_expression",
+  "satisfies_expression",
+  "type_arguments",
+  "type_parameters",
+  "heritage_clause",
+  "implements_clause",
+  "type_predicate",
+  "conditional_type",
+  "infer_type",
+  "call_signature",
+  "construct_signature",
+  "index_signature",
+  "method_signature",
+  "abstract_method_signature",
+  "property_signature",
+  "public_field_definition",
+  "enum_member",
+  "function_type",
+  "generic_type",
+  "union_type",
+  "intersection_type",
+  "array_type",
+  "tuple_type",
+  "object_type",
+  "lookup_type",
+  "indexed_access_type",
+  "mapped_type_clause",
+  "type_query",
+  "optional_type",
+])
+
+/** Primitives are the absence of a type, not a name to reference. */
+const PRIMITIVES = new Set([
+  "string", "number", "boolean", "any", "unknown", "never", "void", "object",
+  "symbol", "bigint", "undefined", "null", "this", "true", "false",
+])
+
+/**
+ * Mark every node that sits inside a type position, keyed by its byte span.
+ *
+ * Tree-sitter node objects are recreated on every access, so identity never
+ * matches; a span pair is the stable key. `type_alias_declaration` is a root
+ * because its VALUE is a type while its name is a declaration, and walking from
+ * the whole node marks the name too — so the name slot is excluded on the way
+ * back out by the declarator branch in `collect`.
+ */
+function typePositionNodes(root: any): Set<string> {
+  const out = new Set<string>()
+  const mark = (n: any): void => {
+    if (!n) return
+    out.add(`${n.startIndex}:${n.endIndex}:${n.type}`)
+    for (const c of named(n)) mark(c)
+  }
+  const visit = (n: any): void => {
+    if (!n) return
+    if (TYPE_POSITION_ROOTS.has(n.type)) {
+      if (n.type === "type_alias_declaration") {
+        mark(n.childForFieldName?.("type"))
+        const tp = n.childForFieldName?.("type_parameters")
+        if (tp) mark(tp)
+        return
+      }
+      mark(n)
+      return
+    }
+    for (const c of named(n)) visit(c)
+  }
+  visit(root)
+  return out
+}
 
 /** Node types whose mentions are attributed to the declaration that CONTAINS them. */
 const OWNED_BY_OWNER = new Set(["property_signature", "public_field_definition"])
@@ -239,6 +339,8 @@ function isBindingSlot(id: any): boolean {
 
 export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
   const declared = declaredNames(root)
+  const inTypePosition = typePositionNodes(root)
+  const isTypePos = (n: any): boolean => inTypePosition.has(`${n.startIndex}:${n.endIndex}:${n.type}`)
   const edges: TruthEdge[] = []
   const seen = new Set<string>()
 
@@ -322,12 +424,16 @@ export function deriveTypeScriptReferencesTruth(root: any): TruthEdge[] {
       return
     }
 
-    if (t === "identifier" || t === "type_identifier" || t === "shorthand_property_identifier") {
+    if (t === "identifier" || t === "type_identifier" || t === "nested_type_identifier" || t === "shorthand_property_identifier") {
       const name = n.text
+      // A QUALIFIED type name is written whole: `NodeJS.ProcessEnv` is the
+      // target, not `NodeJS`. The base of a `generic_type` is likewise the name
+      // the file spells.
+      const typeSurface = t === "type_identifier" || t === "nested_type_identifier" || isTypePos(n)
       const mentionable =
         name !== sourceName &&
-        declared.has(name) &&
         !childBound.has(name) &&
+        (typeSurface ? !PRIMITIVES.has(name) : declared.has(name)) &&
         !isMemberAccessProperty(n) &&
         !isObjectLiteralKey(n) &&
         !isLabelName(n) &&
