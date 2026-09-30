@@ -246,9 +246,42 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           let kind = ASTEngine.SymbolKind.Class
           let isInterface = false
-          var isMeasure = !!this.findDescendant(node, function (n) {
-            return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure"))
-          })
+          // FS-D27. A UNIT OF MEASURE is a structural fact, not a substring.
+          //
+          // The test was `n.text.includes("Measure") || n.text.includes("[<Measure")` on any
+          // `attribute` descendant — the one text read left in this analyzer, and the only
+          // thing here that was not AST-derived. Two defects, and the second is worse than
+          // the first:
+          //
+          //   1. the second clause is dead, being a substring of the first;
+          //   2. `[<MeasureAnnotatedAbbreviation>]` is a DIFFERENT and perfectly ordinary F#
+          //      attribute — it marks a generic abbreviation — and it CONTAINS the substring.
+          //      `fsharp/src/FSharp.Core/prim-types.fs:483` writes
+          //      `[<MeasureAnnotatedAbbreviation>] type float<[<Measure>] 'Measure> = float`,
+          //      where the real measure marker is on the TYPE PARAMETER and the type itself
+          //      is an abbreviation. The substring test cannot tell those apart, and `findDescendant`
+          //      returns whichever comes first, so the abbreviation was classified as a measure.
+          //
+          // The name is read from the tree, and only from the attributes attached to the TYPE:
+          //
+          //     type_definition
+          //       attributes "[<Measure>]"
+          //         attribute "Measure"
+          //           simple_type "Measure" -> long_identifier "Measure" -> identifier "Measure"
+          //
+          // An exact name match, on the `attributes` node that is a DIRECT child of the type,
+          // is what the language means: `Measure` and its `MeasureAttribute` spelling name the
+          // same attribute, and nothing else does. A `Measure` on a type PARAMETER is a
+          // different fact about a different node and is not consulted here — the parameter
+          // positions are the R9 declared-type graph's business, not the kind classifier's.
+          const isMeasure = this.filterChildren(node, (n) => n.type === "attributes").some((attrs) =>
+            this.findDescendants(attrs, (n) => n.type === "attribute", 3).some((attr) => {
+              const nm =
+                this.findDescendant(attr, (n) => n.type === "long_identifier", 3) ??
+                this.findDescendant(attr, (n) => n.type === "identifier", 3)
+              return nm?.text === "Measure" || nm?.text === "MeasureAttribute"
+            }),
+          )
           if (isMeasure) kind = ASTEngine.SymbolKind.Type
           if (hasRecordTypeDefn) {
             kind = ASTEngine.SymbolKind.Class
@@ -1585,11 +1618,21 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const text = (node.text ?? "").trim()
       if (!text) return null
       if (text === "_") return null
-      if (/^['^]/.test(text)) return null // 'T, ^T — a binder, not a dependency
       const leaf = text.includes(".") ? (text.split(".").pop() as string) : text
-      if (!leaf || leaf === "_" || /^['^]/.test(leaf)) return null
+      if (!leaf || leaf === "_") return null
+      // A TYPE BINDER is not a dependency. `'T` and `^T` are the F# spellings, and the
+      // grammar has a node for it: a type_variable / type_binder, whose own text is the
+      // apostrophe. Reading the NODE is the whole point — the previous test was the regex
+      // `/^['^]/` on the text, which is the sixth of the six regex literals the M12 census
+      // found in this file and which the analyzer's own doc claimed did not exist.
+      if (isTypeBinderNode(node)) return null
       if (PREDEFINED.has(leaf)) return null
-      if (!/^[A-Za-z_][A-Za-z0-9_']*$/.test(leaf)) return null
+      // A name is an IDENTIFIER or a dotted chain of them, and the grammar has an
+      // `identifier` node for the former. The previous test was the regex
+      // `/^[A-Za-z_][A-Za-z0-9_']*$/` applied to the leaf's text; walking the node says the
+      // same thing without a pattern, and says it about the TREE rather than about a string
+      // that happens to look like a name.
+      if (!isIdentifierNameNode(node, leaf)) return null
       return leaf
     }
 
