@@ -101,6 +101,19 @@ function wordVector(word: string): Float32Array {
  * A zero vector has cosine 0 against every stored row, so the dense path never
  * ran for the single most likely query a code tool receives.
  */
+/** The unit vector for one word, or null when the word is not in any
+ *  vocabulary this module knows. Exported so a DIAGNOSTIC can re-derive the
+ *  scoring exactly as production does, instead of approximating it — a probe
+ *  that guesses the model measures a different model. */
+export function wordVectorForTest(word: string): Float32Array | null {
+  const w = word.toLowerCase().slice(0, 30)
+  if (w.length < 2) return null
+  if (!_wordMap || !_wordVecs) buildVectors(BASE_WORDS)
+  const idx = _wordMap?.[w]
+  if (idx === undefined || !_wordVecs) return null
+  return _wordVecs.slice(idx * WORD_DIM, (idx + 1) * WORD_DIM)
+}
+
 export function tokenizeForEmbedding(text: string): string[] {
   const out: string[] = []
   // Split on everything that is not a letter or digit — INCLUDING underscore,
