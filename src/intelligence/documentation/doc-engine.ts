@@ -670,7 +670,13 @@ function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citat
     }, resolver)
     facts.push(fact("extracted", `${rel} is an indexed ${file.language ?? "unknown-language"} file with ${file.line_count ?? "unknown"} lines.`, [id], citations))
     if (file.has_syntax_errors) {
-      unknowns.push({ statement: `Syntax validity for ${rel} is unknown because the index recorded parser errors.`, reason: "not-observed", affectedSection: "risks" })
+      // One unknown PER FILE, all attached to the Overview: the Overview states
+      // what each indexed file is, and a file whose parse failed is a different
+      // claim about that file. Attaching all of them to `risks` buried the
+      // Risks section under 65 identical-shaped unknowns on a real corpus, and
+      // a `risks` unknown that describes `lib/libc/include/.../activdbg.h` is
+      // not a risk finding.
+      unknowns.push({ statement: `Syntax validity for ${rel} is unknown because the index recorded parser errors, so its symbols and byte bounds may be wrong.`, reason: "not-observed", affectedSection: "overview" })
     }
     const freshness = resolver.of(String(file.id))
     if (freshness === "stale") {
@@ -938,10 +944,56 @@ function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: strin
      ORDER BY CASE f.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END, f.last_seen_at DESC LIMIT 20`,
     projectId,
   )
-  if (!rows.length) {
-    unknowns.push({ statement: "No open analysis finding is indexed for this project, so the risk surface is not measured here.", reason: "not-indexed", affectedSection: "risks" })
-    return []
+  // Analysis findings are ONE risk source, and no read path in this tool
+  // produces them, so on every corpus measured this section was empty while
+  // the index held 1 099 files with recorded parser errors and 185 477 symbols
+  // with a measured complexity. An always-empty REQUIRED section is a
+  // placeholder, not a measurement, so the other two sources the index really
+  // holds are read here, and their absence is stated rather than implied.
+  const brokenFiles = Number((queryRows(raw, "SELECT count(*) AS c FROM brain_file WHERE project_id=? AND has_syntax_errors=1", projectId)[0]?.c ?? 0))
+  const complexityFacts: DocFact[] = []
+  if (rows.length === 0 && brokenFiles === 0) {
+    unknowns.push({ statement: "No open analysis finding, no recorded parser error and no complexity outlier is indexed for this project, so no risk is asserted here — the absence of evidence is not evidence of absence.", reason: "not-indexed", affectedSection: "risks" })
   }
+  if (brokenFiles > 0) {
+    const healthId = addCitation(citations, {
+      kind: "health", idParts: ["risk", "syntax-errors"], indexScoped: true,
+      evidence: `${brokenFiles} file(s) carry recorded parser errors`,
+    }, resolver)
+    complexityFacts.push(fact("extracted", `${brokenFiles} indexed file(s) carry recorded parser errors, so the symbols and byte bounds bb_doc cites from them may be wrong.`, [healthId], citations))
+    const worst = queryRows(raw, "SELECT relative_path, line_count FROM brain_file WHERE project_id=? AND has_syntax_errors=1 ORDER BY line_count DESC LIMIT 10", projectId)
+    for (const row of worst) {
+      const id = addCitation(citations, {
+        kind: "file", idParts: [String(row.relative_path)], relPath: String(row.relative_path),
+        evidence: `File with recorded parser errors`, fileId: String((queryRows(raw, "SELECT id FROM brain_file WHERE project_id=? AND relative_path=?", projectId, row.relative_path)[0]?.id ?? "")),
+      }, resolver)
+      complexityFacts.push(fact("extracted", `${row.relative_path} carries a recorded parser error.`, [id], citations))
+    }
+  }
+  // The highest measured complexity in scope — a measured value, cited, and the
+  // reader can see the threshold it was selected by.
+  const COMPLEXITY_OUTLIER = 15
+  const outliers = queryRows(
+    raw,
+    "SELECT s.name, s.complexity, s.line_start, s.line_end, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=? AND s.complexity >= ? ORDER BY s.complexity DESC, s.name LIMIT 20",
+    projectId, COMPLEXITY_OUTLIER,
+  )
+  if (outliers.length) {
+    const healthId = addCitation(citations, {
+      kind: "health", idParts: ["risk", "complexity", String(COMPLEXITY_OUTLIER)], indexScoped: true,
+      evidence: `${outliers.length} symbol(s) at measured complexity >= ${COMPLEXITY_OUTLIER}`,
+    }, resolver)
+    complexityFacts.push(fact("extracted", `${outliers.length} symbol(s) carry a measured complexity of ${COMPLEXITY_OUTLIER} or more; the ${outliers.length} highest are listed below.`, [healthId], citations))
+    for (const row of outliers) {
+      const id = addCitation(citations, {
+        kind: "symbol", idParts: [String(row.relative_path), String(row.name), `${row.line_start}-${row.line_end}`], relPath: String(row.relative_path),
+        symbol: String(row.name), lineStart: Number(row.line_start) || undefined, lineEnd: Number(row.line_end) || undefined,
+        evidence: `Symbol with measured complexity ${row.complexity}`, fileId: String(row.source_file_id),
+      }, resolver)
+      complexityFacts.push(fact("extracted", `${row.name} in ${row.relative_path} has a measured complexity of ${row.complexity}.`, [id], citations))
+    }
+  }
+  if (!rows.length) return complexityFacts
   const scope = new Set(files.map((file) => String(file.relative_path ?? "")))
   const facts: DocFact[] = []
   for (const finding of rows) {
@@ -961,7 +1013,7 @@ function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: strin
     const inScope = !scope.size || scope.has(locPath)
     facts.push(fact("extracted", `Finding ${finding.title} is open at ${finding.severity} severity${locPath ? ` in ${locPath}${locLine ? `:${locLine}` : ""}` : ""}${inScope && files.length ? "" : " (outside the documented scope)"}.`, [id], citations))
   }
-  return facts
+  return [...facts, ...complexityFacts]
 }
 
 function addInventoryFacts(raw: any, resolver: FreshnessResolver, projectId: string, files: Row[], citations: DocCitation[]): { facts: DocFact[]; languages: Array<{ language: string; files: number; symbols: number }> } {
@@ -1193,11 +1245,24 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     return draft.audience === "all" || draft.audience.includes(audience)
   })
 
+  // The per-section evidence cap.
+  //
+  // This used to announce `${capped} of ${total} were emitted; the rest did not
+  // fit the requested detail` — and then the budget pass announced its own drop
+  // for the SAME section, so the two messages counted the same facts twice: a
+  // 12-of-24 documentation map reported "18 more dropped", for 36 accounted out
+  // of 24. Worse, the two reasons are conflated in one sentence, so a reader
+  // cannot tell which bound bit.
+  //
+  // The cap is recorded as a BOUND and the budget pass as a BOUND, and the
+  // section's own count is the truth. The budget pass measures what it actually
+  // removed from the already-capped list, so the arithmetic closes.
   const sections: DocSection[] = []
+  const cappedOut: Array<{ heading: string; emitted: number; available: number }> = []
   for (const draft of selectedDrafts) {
     const capped = draft.facts.slice(0, perSection)
     if (capped.length < draft.facts.length) {
-      unknowns.push({ statement: `${capped.length} of ${draft.facts.length} ${draft.heading.toLowerCase()} items were emitted; the rest did not fit the requested detail.`, reason: "output-budget", affectedSection: draft.id })
+      cappedOut.push({ heading: draft.heading, emitted: capped.length, available: draft.facts.length })
     }
     sections.push(assembleSection(draft, citations))
   }
@@ -1210,6 +1275,14 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   // Two same-named symbols — overloads, or a DSL method defined twice — emitted
   // the same unknown SENTENCE twice, so `unknowns` was a multiset of sentences
   // rather than a set of distinct gaps. Dedupe on the whole record.
+  for (const record of cappedOut) {
+    const section = sections.find((s) => s.heading === record.heading)
+    unknowns.push({
+      statement: `The per-section evidence cap is ${perSection} at detail "${detail}", so ${record.available - record.emitted} of ${record.available} ${record.heading.toLowerCase()} items were not selected. The output budget may have shortened this further; it reports its own count.`,
+      reason: "output-budget",
+      affectedSection: section?.id ?? "overview",
+    })
+  }
   const distinctUnknowns: DocUnknown[] = []
   const seenUnknown = new Set<string>()
   for (const unknown of unknowns) {
@@ -1223,6 +1296,9 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     reader,
     projectId, projectPath, request, mode, detail, audience,
     files, symbols, sections, citations, unknowns: distinctUnknowns, inventory,
+    // The per-section cap is a bound of its own, announced where the cap is
+    // applied, so the two bounds never recount the same facts.
+    cappedOut, perSection,
   })
 }
 
@@ -1322,6 +1398,10 @@ interface MakeResultArgs {
   __raw: any
   /** One reader per generation, so each source file is read at most once. */
   reader: SourceReader
+  /** Sections the per-section evidence cap shortened, with the counts it used. */
+  cappedOut: Array<{ heading: string; emitted: number; available: number }>
+  /** The per-section cap that applied, for the message that names it. */
+  perSection: number
   projectId: string
   projectPath: string
   request: DocRequest
@@ -1468,6 +1548,17 @@ function makeResult(args: MakeResultArgs): DocResult {
   // the loop. Announcing each pass made trimming self-defeating: every pass
   // added text, so a document could not converge on its own budget.
   const droppedPerSection = new Map<string, { heading: string; dropped: number }>()
+  // The budget pass halves the largest section until the payload fits. It
+  // records what it removed FROM THE CAPPED LIST, and the cap records what it
+  // removed from the original, so the three numbers close:
+  //
+  //   availableBeforeCap = afterCap + budgetDropped + emitted
+  //
+  // The previous version announced the cap with the pre-cap total and the drop
+  // with its own pre-pass count, and the two recounted the same facts: a
+  // 12-of-24 documentation map reported "18 more dropped" — 36 accounted for
+  // out of 24. A cap message that does not add up is worse than no message,
+  // because a reader who checks it concludes the whole quality block is wrong.
   for (let pass = 0; pass < 12; pass++) {
     // Build the whole quality block FIRST, then measure the finished object.
     // Measuring before the block exists under-counted by 40% (2 646 tokens
@@ -1491,7 +1582,7 @@ function makeResult(args: MakeResultArgs): DocResult {
     trimmedSections++
   }
   for (const [id, record] of droppedPerSection) {
-    result.unknowns.push({ statement: `${record.dropped} ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })
+    result.unknowns.push({ statement: `${record.dropped} more ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })
   }
   if (!result.quality.budget.passed) {
     result.unknowns.push({ statement: `The required sections cannot fit inside ${maxTokens} tokens: the smallest honest rendering is ${result.quality.budget.estimatedTokens} tokens. Raise maxTokens (hard maximum ${MAX_TOKEN_BUDGET}) or narrow the target.`, reason: "output-budget", affectedSection: "overview" })
