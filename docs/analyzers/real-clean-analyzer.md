@@ -9,14 +9,20 @@
 ## Language
 
 - Analyzer file: `src/ast/real-clean-analyzer.ts`
-- Parser: `tree-sitter-clean` **v1.2.7** (authored by the project owner; pinned
-  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@302fb5d0` release
-  v1.2.7, adopted 2026-09-25 — `reviews/m60-clean-grammar-127-adjudication.md`).
-  The pin is recorded in `validation/m14/grammar-pins.json` (sha256 `9ea8525dcb…`,
-  6,743,856 B; round record `reviews/functional-family/m60-grammar-pins.md`): npm's
-  `tree-sitter-clean@1.2.7` publishes `grammar.js` / `scanner.c` / `grammar.json` /
-  `node-types.json` but **no wasm**, so the wired bytes are not claimed to be
-  hash-matched to a published artifact.
+- Parser: `tree-sitter-clean` **v1.2.8** (authored by the project owner; pinned
+  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@7dfe6d12` release
+  v1.2.8, published 2026-09-30 to npm, crates.io and PyPI — the prior v1.2.7
+  adoption is recorded in `reviews/m60-clean-grammar-127-adjudication.md`).
+  The pin is recorded in `validation/m14/grammar-pins.json` (sha256 `001361f63d…`,
+  6,791,209 B; round record `reviews/functional-family/m60-grammar-pins.md`).
+  Two facts govern how that hash may be used. **npm's `tree-sitter-clean@1.2.8`
+  publishes `grammar.js` / `scanner.c` / `grammar.json` / `node-types.json` but no
+  wasm**, so the wired bytes are not claimed to be hash-matched to a published
+  artifact. And **a `tree-sitter build --wasm` is not byte-deterministic** — two
+  consecutive builds of one `parser.c` at v1.2.8 produced different sha256s — so
+  the hash pins the bytes in this tree, not a function of the source. What a
+  consumer can require is the reproducible part: the id-order, type-set and
+  field-set digests in the same block, measured through web-tree-sitter 0.25.9.
 - Language detection: `.icl` / `.dcl` → `clean` in `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealCleanAnalyzer`
 - **Pure AST. ZERO regular expressions** — measured with TypeScript's own
@@ -59,7 +65,7 @@ every class context, the record-field access graph, the selective-import lists,
 the where-locals, and every type reference in the corpus. That is the gap this
 round closed, and the review lists each piece with its size.
 
-## Grammar tree shape (as pinned, v1.2.7)
+## Grammar tree shape (as pinned, v1.2.8)
 
 Everything the analyzer reads is a node **field**, not a child scan. The shapes
 that matter:

@@ -707,8 +707,8 @@
     "clean": {
       "wired": {
         "file": "wasm/tree-sitter-clean.wasm",
-        "sha256": "90eab80b423f56217b68e9a1c86feb4ad9068ed1178af3ea1c0de87fa7140f03",
-        "bytes": 6791203
+        "sha256": "001361f63df7d8bfbb1a17ca746fa3555f395e462a3d6bd168414bd4c8a8feea",
+        "bytes": 6791209
       },
       "surface": {
         "ids": 290,
@@ -729,7 +729,11 @@
       "sourceVsWasm": {
         "nodeTypesJson": null,
         "note": "no vendored source"
-      }
+      },
+      "grammarVersion": "1.2.8",
+      "sourceCommit": "7dfe6d12b5cba14b64c4358558c1d409a9a4f434",
+      "provenance": "v1.2.8 of the grammar, and a REBUILD from the released source rather than from the working tree's parser. The release ships a parser.c generated from scratch with --abi 15 (sha256 6aa7551345419e3daeb22fd091477c28034bcc65b838726237be39bd2c88d6c6, LANGUAGE_VERSION 15), while an incremental generate leaves parser.c differing from a clean one by LR state ORDERING (1,461 insertions / 1,581 deletions at v1.2.8). That difference is behaviourally nil — over all 2,179 corpus files the two builds agree on every figure (1,656 parse-clean, 523 failing, 24,738 problem nodes, 2,688,891 error bytes, 0 files differing) and on the whole enumerable surface above, which is why only the bytes below moved. It was re-pinned anyway so the recorded artifact is a build of the source the registries actually serve, which the previous pin could not claim.",
+      "buildNote": "A tree-sitter wasm build is NOT byte-deterministic: two consecutive `tree-sitter build --wasm` runs over one parser.c produced different sha256s (212e538c… and 262e6b90…) at v1.2.8. This sha256 therefore pins THE BYTES IN THIS TREE, not a function of the source. The reproducible part of the contract is the surface block — the id-order, type-set and field-set digests, measured through web-tree-sitter 0.25.9, the runtime the product parses with. A consumer must verify those, not this hash."
     },
     "hcl": {
       "wired": {
