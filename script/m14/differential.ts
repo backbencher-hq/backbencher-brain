@@ -21211,6 +21211,15 @@ async function main() {
   // the baseline or emit evidence (the parent owns both, from the journal).
   if (CHILD_SLICE) {
     console.log(`[batch ${CHILD_SLICE.i}/${CHILD_SLICE.n}] slice done — journal holds ${Object.keys(laneJournal).length} lane(s) for state ${stateKey}`)
+    // G20: a child must exit 0 (the parent owns the verdict), so the gap is handed
+    // over in the journal rather than by exit code. Declared as a limitation rather
+    // than left implicit: if this key is ever dropped from the journal schema, a
+    // BATCHED sweep would silently stop reporting label gaps while a single-process
+    // run kept reporting them — and batching is the mode a full 34-language sweep
+    // actually uses, which is where losing it would hurt most.
+    if (labelTruthGaps.length > 0) {
+      ;(laneJournal as any).labelTruthGaps = [...((laneJournal as any).labelTruthGaps ?? []), ...labelTruthGaps]
+    }
     process.exit(0)
   }
 
@@ -21500,6 +21509,14 @@ async function main() {
       console.log(`differential baseline file sets: ${unpinned.length} lane(s) unpinned (no recorded drawn set) — those keep the strict count comparison, which can false-positive after a rotation; pin with --update-baseline (unpinned: ${unpinned.slice(0, 8).join(", ")}${unpinned.length > 8 ? ", …" : ""})`)
     }
     removeFrozenTrees()
+    // G20: a compared label with no truth is a FAILURE of the run, not a note. It
+    // has to be folded into THIS decision rather than set as an exitCode earlier,
+    // because this line is an explicit process.exit() and would otherwise DISCARD it
+    // — silently passing a clean run with a hole in it, which is the exact failure
+    // the gate exists to prevent. (Learned by wiring it the wrong way first.)
+    if (labelTruthGaps.length > 0) {
+      process.exit(6)
+    }
     process.exit(evaluation.regressions.length || evaluation.perfRegressions.length ? 5 : 0)
   }
 
