@@ -751,6 +751,31 @@ export async function traverseGraph(
       "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
       KIND_RANK_SQL
 
+    // The same shape with the TARGET-symbol columns as literal NULLs.
+    //
+    // These nine columns describe the resolved target, and in the unresolved arm
+    // there is no target — so they are constants. They used to be produced by
+    // `LEFT JOIN brain_symbol s ON 0` / `LEFT JOIN brain_file f ON 0`, which
+    // keeps the column count right and costs a nested-loop join per row. SQLite
+    // cannot flatten a compound whose arm contains a join it cannot eliminate,
+    // so the arm lost the `brain_rel_proj_type_target_idx` it was eligible for
+    // and read ALL 52,597 relationship rows of the project.
+    //
+    // Measured on backbencher-brain/src: ONE statement took 24-29 seconds —
+    // `bb_analyze mode=callees target=push` did not answer in 30 s, for a
+    // symbol with 23 callees, and `mode:callees` on a symbol with 6 callees did
+    // not answer either. A wall-clock budget cannot interrupt a single SQL
+    // statement, so this was the floor under the whole walk.
+    const selectColsUnresolved =
+      "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
+      "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
+      "NULL AS symId, NULL AS symName, NULL AS line, NULL AS lineEnd, " +
+      "NULL AS complexity, NULL AS symType, " +
+      "NULL AS fileRel, NULL AS filePath, NULL AS fileLang, " +
+      "src.relative_path AS srcFileRel, r.target_external AS extName, " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL
+
     let rows: EdgeRow[]
     if (isExternal) {
       rows = []
@@ -792,13 +817,14 @@ export async function traverseGraph(
           // this contract already documents for it. The name is kept — it is
           // the node's name — so nothing is lost; it is simply labelled for
           // what it is.
-          selectCols +
+          selectColsUnresolved +
           "FROM brain_relationship r " +
-          // No target-symbol join at all: there is no target symbol. These
-          // columns stay in the SELECT list so the compound query keeps a
-          // single shape, and are constant NULL.
-          "LEFT JOIN brain_symbol s ON 0 " +
-          "LEFT JOIN brain_file f ON 0 " +
+          // No target-symbol join at all: there is no target symbol, so the
+          // target columns come from `selectColsUnresolved` as literal NULLs.
+          // They used to be `LEFT JOIN … ON 0` against the resolved select
+          // list — same columns, one nested-loop join per row, and SQLite could
+          // not flatten the arm, so the arm read every relationship row in the
+          // project instead of using `brain_rel_proj_type_target_idx`.
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
