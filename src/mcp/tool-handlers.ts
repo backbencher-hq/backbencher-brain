@@ -29,7 +29,7 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
-import { getFileDependencies } from "../intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import { makeProvenance } from "../intelligence/evidence"
@@ -689,15 +689,25 @@ const handlers: Record<string, ToolHandler> = {
   bb_analyze: async (args, { projectId }) => {
     const mode = String(args.mode ?? "")
     const allowed = new Set(["mode", "target", "filePath", "limit"])
-    // `limit` is advertised on the tool as "result limit". It is honoured by
-    // dependencies and test_quality and silently ignored by the other modes —
-    // measured on bb's own src, `test_mapping` returned 373,270 bytes with
-    // `limit: 2`, byte for byte the same as unlimited. Ignoring a parameter a
-    // caller believes in is worse than refusing it.
-    const LIMIT_MODES = new Set(["dependencies", "test_mapping", "test_gaps", "test_quality"])
+    // `limit` is ONE parameter with ONE meaning: the most items this answer
+    // returns. For dependencies it is files, for the test-intel modes entries,
+    // and for the graph modes EDGES PER DIRECTION — because a caller who
+    // passes limit:10 to `callers` means ten callers, not ten files. It was
+    // previously refused outright on the graph modes, which left the largest
+    // answers in the tool (measured: 87,038 bytes for one `callers` call on a
+    // 93-file corpus) with no way at all to ask for less.
+    const LIMIT_MODES = new Set([
+      "callers",
+      "callees",
+      "trace",
+      "dependencies",
+      "test_mapping",
+      "test_gaps",
+      "test_quality",
+    ])
     if (args.limit !== undefined && !LIMIT_MODES.has(mode)) {
       return textResult(
-        `bb_analyze ${mode}: limit does not apply to this mode (it bounds dependencies, test_mapping, test_gaps and test_quality) — refusing it rather than ignoring it`,
+        `bb_analyze ${mode}: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality) — refusing it rather than ignoring it`,
         true,
       )
     }
@@ -842,11 +852,88 @@ const handlers: Record<string, ToolHandler> = {
           { scope: { kind: "dir" } },
         )
       }
-      const nodes = Object.values((result as { nodes: Record<string, any> }).nodes ?? {})
+      // ── the response page ──────────────────────────────────────────────
+      // Three things were wrong with the wire shape, all measured on the
+      // corpus and on bb's own src:
+      //
+      //   1. NO PAGE. `limit` was refused here, so a high-fan-in symbol
+      //      returned everything: 87,038 bytes (~24k tokens) for one `callers`
+      //      call, 89,929 for `trace`.
+      //   2. PER-EDGE DECORATION. Every edge carried a `metadata.enrichment`
+      //      block (role / layerFlow / criticality / frequency) that no tool
+      //      page documents and no caller can cite — 64 of 64 edges, and the
+      //      bulk of the payload. `evidenceClass` IS documented, so it stays.
+      //   3. ABSOLUTE PATHS. `nodes[].filePath` embedded the checkout's
+      //      absolute path 59 times in one answer, so the same question
+      //      returns different bytes on a different machine and no two answers
+      //      can be diffed or cached.
+      // 25, not 50: measured per-edge payload is ~800 bytes pretty-printed
+      // (from / to / rowId / callSite / evidenceClass, all of which are load-
+      // bearing), so 50 edges is ~56 KB ≈ 15k tokens before the caller has
+      // read a line of it. 25 edges is ~28 KB — enough to see the SHAPE of a
+      // fan-in, which is what the question is usually for — and the true
+      // count is in `summary.callersIfUncapped` / `calleesIfUncapped`, so a
+      // caller who needs the rest passes `limit`.
+      const GRAPH_EDGE_PAGE = 25
+      const edgeLimit = args.limit != null ? Number(args.limit) : GRAPH_EDGE_PAGE
+      const fullCallers = ((result as any).callers ?? []) as any[]
+      const fullCallees = ((result as any).callees ?? []) as any[]
+      // The enrichment block is the indexer's internal inference. Dropping it
+      // from THIS surface is not a contract change: it was never in the
+      // registry description, the schema, or any tool page.
+      const trim = (e: any) => (e?.metadata?.enrichment ? { ...e, metadata: { evidenceClass: e.metadata.evidenceClass } } : e)
+      const pageCallers = fullCallers.slice(0, edgeLimit).map(trim)
+      const pageCallees = fullCallees.slice(0, edgeLimit).map(trim)
+      // Nodes are rebuilt from the RETURNED edges plus the root, so the
+      // payload contains exactly what the answer cites.
+      const allNodes = (result as { nodes: Record<string, any> }).nodes ?? {}
+      const nodeIds = new Set<string>([result.root?.id])
+      for (const e of [...pageCallers, ...pageCallees]) {
+        if (e.from) nodeIds.add(e.from)
+        if (e.to) nodeIds.add(e.to)
+      }
+      const nodes: any[] = []
+      for (const id of nodeIds) {
+        const n = allNodes[id]
+        if (n) nodes.push({ ...n })
+      }
+      // `file` is the project-relative path and is what the answer cites.
+      // `filePath` was the absolute one: it is dropped AFTER freshness is
+      // resolved from it, so the envelope is unaffected.
+      for (const n of nodes) delete n.filePath
+      // The root carried its own absolute `filePath` outside the nodes map, so
+      // one checkout path survived the trim above.
+      const rootNode: any = (result as any).root ? { ...(result as any).root } : null
+      if (rootNode) delete rootNode.filePath
+      const freshable = nodes.filter((n) => !n.isExternal)
       return withFreshness(
-        { ...(result as unknown as Record<string, unknown>), mode, target, found: true } as Record<string, unknown>,
-        nodes.map((n) => (n.isExternal ? { filePath: null } : { filePath: n.filePath || n.file || null })),
-        { onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== "fresh" } },
+        {
+          ...(result as unknown as Record<string, unknown>),
+          mode,
+          target,
+          found: true,
+          root: rootNode ?? (result as any).root,
+          callers: pageCallers,
+          callees: pageCallees,
+          nodes: Object.fromEntries(nodes.map((n) => [n.id, n])),
+          summary: {
+            ...(result as any).summary,
+            // What was returned against what the traversal found.
+            // `callersIfUncapped` / `calleesIfUncapped` above are the
+            // traversal's own bounded count, so "showing 50 of 390" is a real
+            // pair of numbers whenever a cap fired.
+            returnedCallers: pageCallers.length,
+            returnedCallees: pageCallees.length,
+            pageEdgeLimit: edgeLimit,
+            pageTruncated: pageCallers.length < fullCallers.length || pageCallees.length < fullCallees.length,
+          },
+        } as Record<string, unknown>,
+        freshable.map((n) => ({ filePath: allNodes[n.id]?.filePath ?? n.file })),
+        {
+          onRows: (statuses) => {
+            for (const n of freshable) n.stale = statuses.get(allNodes[n.id]?.filePath || n.file) !== "fresh"
+          },
+        },
       )
     }
     if (mode === "dependencies") {
@@ -857,8 +944,48 @@ const handlers: Record<string, ToolHandler> = {
         ...d.dependents.map((x) => ({ fileId: x.fileId })),
       ])
       const first = deps[0]
+      // Every other collection mode states how many items it returned; this
+      // one returned 20 files of 90 with no summary at all. The total is
+      // counted over the SCOPE — filePath is a path PREFIX, so the honest
+      // denominator is the files under that prefix, not the whole project.
+      const scopePath = args.filePath ? String(args.filePath) : null
+      const totalFiles = scopePath
+        ? Number(
+            (
+              raw
+                .prepare(
+                  "SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')",
+                )
+                .get(projectId, scopePath, scopePath.replace(/[\\%_]/g, (c) => "\\" + c) + "/%") as { c: number }
+            )?.c ?? 0,
+          )
+        : Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c)
       return withFreshness(
-        { dependencies: deps },
+        {
+          dependencies: deps,
+          // One provenance for the report. It used to be repeated on all 20
+          // rows — the same engine, the same evidence class, the same
+          // limitations — and that repetition was roughly a third of the
+          // payload on a default call.
+          provenance: dependencyPageProvenance(
+            dependencyProvenance(projectId as any),
+            { projectId: projectId as string, shown: deps.length, total: totalFiles },
+          ),
+          summary: {
+            returned: deps.length,
+            totalFiles,
+            scope: scopePath,
+            truncated: deps.length < totalFiles,
+            // Counted over the RETURNED page, and named as such: these are not
+            // project totals.
+            returnedInternalDependencies: deps.reduce(
+              (n: number, d: any) => n + d.dependencies.filter((x: any) => !x.external).length,
+              0,
+            ),
+            returnedInternalDependents: deps.reduce((n: number, d: any) => n + d.dependents.length, 0),
+            pageLimit: Number(args.limit ?? 20),
+          },
+        },
         rows,
         {
           scope: first ? { kind: "file", path: first.file } : undefined,
@@ -1504,6 +1631,11 @@ const handlers: Record<string, ToolHandler> = {
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
         edgeLimit: result.summary?.edgeLimit ?? null,
+        // The bound on the WHOLE answer. Without it a caller could compute the
+        // ceiling of an answer (per-query limit x fan-out budget x 2) but not
+        // that the ceiling was 20,000 edges.
+        maxEdges: result.summary?.maxEdges ?? null,
+        totalEdgeLimitReached: result.summary?.totalEdgeLimitReached === true,
         cappedQueries: result.summary?.cappedQueries ?? 0,
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,
         calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
@@ -1555,15 +1687,60 @@ const handlers: Record<string, ToolHandler> = {
     }, null, 2))
   },
 
-  bb_impact: async (args, { projectId }) => {
+  bb_impact: async (args, { projectId, projectPath }) => {
     const symbol = String(args.symbol ?? "")
     if (!symbol) return textResult("bb_impact requires symbol", true)
+    const relationshipTypes: string[] | undefined =
+      Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map((t: unknown) => String(t)) : undefined
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     try {
-      // The SAME component the editor graph panel's impact mode uses
-      // (src/lsp/impact.ts): declared budget, first-class truncation,
-      // declared total. One truth (M28 decision D-1).
-      const impact = await computeImpact(raw, projectId as string, symbol)
+      // M63.T2: ONE list, handed to the component, which hands it to BOTH its
+      // walks. The engine's default is every stored kind, so a filter is a real
+      // choice rather than an accident of a default — and the answer states
+      // which rule it applied.
+      // Freshness is resolved over the files the answer is actually ABOUT — the
+      // dependents' files plus the root's own. An answer about a symbol
+      // describes a set of files, and those are the files that can be stale.
+      // The path->id map is a property of the PROJECT, so it is built once and
+      // both passes read it; building it per pass would make a refresh change
+      // the map a stale answer was measured against.
+      const idByPath = new Map<string, string>()
+      for (const f of raw.prepare("SELECT id, path, COALESCE(relative_path,'') AS rel FROM brain_file WHERE project_id = ?").all(projectId) as Array<{
+        id: string
+        path: string
+        rel: string
+      }>) {
+        idByPath.set(f.path, f.id)
+        if (f.rel.length > 0) idByPath.set(f.rel, f.id)
+      }
+      const runPass = async (): Promise<{ impact: Awaited<ReturnType<typeof computeImpact>>; detail: ReturnType<typeof resolveRowsFreshnessDetailed>; rows: Array<{ fileId: string | null; filePath: string | null }> }> => {
+        const impact = await computeImpact(raw, projectId as string, symbol, {}, undefined, relationshipTypes ? { relationshipTypes } : {})
+        const rows = [
+          ...impact.impact.map((d) => ({ fileId: idByPath.get(d.filePath || d.file) ?? null, filePath: d.filePath || d.file || null })),
+          { fileId: idByPath.get(impact.root.filePath || impact.root.file) ?? null, filePath: impact.root.filePath || impact.root.file || null },
+        ]
+        return { impact, detail: resolveRowsFreshnessDetailed(raw, projectId as any, rows), rows }
+      }
+      const first = await runPass()
+      // The root's file is part of the question — "what breaks if I change
+      // THIS" — so `runPass` already includes it in the rows, and the repair
+      // set and the envelope both see it. Without that, a stale root with
+      // fresh dependents renders as a clean answer.
+      const staleFiles = collectStaleFiles(raw, first.rows, first.detail.statuses)
+      let autoRefreshText = ""
+      let pass = first
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        autoRefreshText = autoRefreshLine(decision)
+        if (decision.action === "refreshed") {
+          // Re-run so the answer is not built from the rows the repair just
+          // replaced — the walk itself reads the index, so a refresh without a
+          // second pass would report the pre-refresh graph.
+          pass = await runPass()
+        }
+      }
+      const impact = pass.impact
+      const detail = pass.detail
       // M63.T1: the payload IS the component's result, plus the freshness of
       // the files it is about. Four things were missing, and all four are
       // load-bearing for a refactoring decision:
@@ -1598,35 +1775,13 @@ const handlers: Record<string, ToolHandler> = {
       // index at all is `null`, which is a THIRD state and deliberately not
       // folded into the other two: "we could not check" is not "fresh".
       const dependents = impact.impact
-      const idByPath = new Map<string, string>()
-      if (dependents.length > 0 || impact.root.filePath) {
-        for (const f of raw.prepare("SELECT id, path, COALESCE(relative_path,'') AS rel FROM brain_file WHERE project_id = ?").all(projectId) as Array<{
-          id: string
-          path: string
-          rel: string
-        }>) {
-          idByPath.set(f.path, f.id)
-          if (f.rel.length > 0) idByPath.set(f.rel, f.id)
-        }
+      const rootRow = { fileId: idByPath.get(impact.root.filePath || impact.root.file) ?? null, filePath: impact.root.filePath || impact.root.file || null }
+      for (let i = 0; i < dependents.length; i++) {
+        const id = idByPath.get(dependents[i]!.filePath || dependents[i]!.file) ?? null
+        dependents[i]!.stale = id ? detail.statuses.get(id) !== "fresh" : null
       }
-      const idOf = (p: string | undefined): string | null => (p ? (idByPath.get(p) ?? null) : null)
-      const rows = dependents.map((d) => ({ fileId: idOf(d.filePath || d.file), filePath: d.filePath || null }))
-      const detail = resolveRowsFreshnessDetailed(raw, projectId as any, rows)
-      for (const d of dependents) {
-        const id = idOf(d.filePath || d.file)
-        d.stale = id ? detail.statuses.get(id) !== "fresh" : null
-      }
-      const rootFileId = idOf(impact.root.filePath || impact.root.file)
-      const rootStatus = rootFileId ? (detail.statuses.get(rootFileId) ?? "missing") : null
-      // The root's file is part of the question — "what breaks if I change
-      // THIS" — so it counts toward the envelope even when no dependent is
-      // stale. Without that, a stale root with fresh dependents would render
-      // as a clean answer.
+      const rootStatus = rootRow.fileId ? (detail.statuses.get(rootRow.fileId) ?? "missing") : null
       const rootIsStale = rootStatus !== null && rootStatus !== "fresh"
-      const envelopeRows = rootIsStale && !rows.some((r) => r.fileId && detail.statuses.get(r.fileId) !== "fresh")
-        ? [...rows, { fileId: rootFileId, filePath: impact.root.filePath || null }]
-        : rows
-      const envelope = envelopeRows.length === rows.length ? detail : resolveRowsFreshnessDetailed(raw, projectId as any, envelopeRows)
       return textResult(
         JSON.stringify(
           {
@@ -1635,15 +1790,17 @@ const handlers: Record<string, ToolHandler> = {
             rootStale: rootIsStale ? rootStatus : false,
             rootMatch: impact.rootMatch,
             resolution: impact.resolution,
+            rule: impact.rule,
             budget: impact.budget,
             traversal: impact.traversal,
+            ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
             impact: dependents,
             shownCount: impact.shownCount,
             directCount: impact.directCount,
             totalCountIfKnown: impact.totalCountIfKnown,
             truncated: impact.truncated,
             truncationReason: impact.truncationReason,
-            freshness: buildStalenessEnvelope(envelope.summary, { kind: "dir" }),
+            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
           },
           null,
           2,
@@ -1898,6 +2055,15 @@ const handlers: Record<string, ToolHandler> = {
   bb_annotations: async (args, { projectId }) => {
     const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
     const givenPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    // A `path` filter with no symbol asks "what has been said about this file".
+    // The predicate also matched every NAME-LEVEL note in the project, because a
+    // name-level note does apply wherever the name appears — but that made the
+    // narrow question answer mostly-global: measured on cobra, a path read
+    // returned 2 notes for the file and 48 name-level notes from the whole
+    // project, and under the default limit the file's own notes were nearly cut
+    // off. The file's own notes are now the default answer, and the name-level
+    // set is one explicit flag away rather than an unrequested mixture.
+    const includeNameLevel = args.includeNameLevel === true
     const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
     if (!Number.isFinite(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
@@ -1933,16 +2099,24 @@ const handlers: Record<string, ToolHandler> = {
     // relative order is whatever SQLite happens to produce, so "read back what
     // I just wrote" is not reproducible.
     const ORDER = "ORDER BY time_updated DESC, id"
+    // The flag governs the PATH-ONLY shape only. With a symbol as well, a
+    // name-level note about THAT symbol genuinely applies — it is about the symbol
+    // the caller asked for, not a global answer — so the symbol+path shape keeps
+    // including it regardless of the flag. Applying the flag to both shapes
+    // silently changed that already-correct behaviour, and the round-1 suite
+    // caught the regression.
+    const pathOnlyClause = includeNameLevel ? "(symbol_path = ? OR symbol_path IS NULL)" : "symbol_path = ?"
+    const symbolPathClause = "(symbol_path = ? OR symbol_path IS NULL)"
     let where: string
     let params: unknown[]
     if (symbol && canonicalPath !== null) {
-      where = `project_id = ? AND ${namePredicate} AND (symbol_path = ? OR symbol_path IS NULL)`
+      where = `project_id = ? AND ${namePredicate} AND ${symbolPathClause}`
       params = [projectId, ...nameParams, canonicalPath]
     } else if (symbol) {
       where = `project_id = ? AND ${namePredicate}`
       params = [projectId, ...nameParams]
     } else if (canonicalPath !== null) {
-      where = `project_id = ? AND (symbol_path = ? OR symbol_path IS NULL)`
+      where = `project_id = ? AND ${pathOnlyClause}`
       params = [projectId, canonicalPath]
     } else {
       where = `project_id = ?`
@@ -1959,6 +2133,7 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(JSON.stringify({
       symbol,
       path: canonicalPath,
+      includeNameLevel: symbol !== null || includeNameLevel,
       annotations: rows,
       count: rows.length,
       totalCountIfKnown,

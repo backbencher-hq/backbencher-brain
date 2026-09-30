@@ -58,6 +58,29 @@ const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
 
 /**
+ * Wall-clock budget for one walk, in milliseconds.
+ *
+ * The other bounds on a traversal are in NODES, and a node is not a unit of
+ * work. Measured on backbencher-brain/src (7,196 symbols, 40,557
+ * relationships): the caller query for `push` matches 2,436 stored rows, and
+ * the `ORDER BY f.relative_path, r.line_number, r.id` that makes the answer
+ * reproducible (M59.A12) costs 85.8 ms of the 87.8 ms — a 43x multiplier over
+ * the same query without it. SQLite sorts BEFORE applying the LIMIT, so the
+ * per-query `edgeLimit` of 200 does not bound it. At a 50-node budget that is
+ * ~4.4 s for one symbol, and the recursion multiplies it: measured
+ * `bb_analyze mode=callers target=push` at 417 ms on a warm cache and over
+ * 25 s cold, and `mode=trace target=push` at 613 SECONDS.
+ *
+ * So a bound that is declared but does not bound is the defect. This one
+ * does: when the clock runs out the walk stops and says so through
+ * `truncationReason: "walk-time-budget-exhausted"`, which is the same contract
+ * every other bound here obeys. A caller who needs the whole set raises
+ * `timeBudgetMs` (or lowers the fan-in they are asking about) and can see that
+ * they did.
+ */
+const DEFAULT_WALK_TIME_BUDGET_MS = 2_000
+
+/**
  * Which relationship kinds survive a cap first, and why.
  *
  * The cap's ORDER BY used to be `fileRel, lineNumber, rowId` — stable, but
@@ -135,6 +158,28 @@ const KIND_RANK_SQL =
  */
 const DEFAULT_EDGE_QUERY_LIMIT = 200
 const MAX_EDGE_QUERY_LIMIT = 5000
+
+/**
+ * The bound on the SIZE OF THE ANSWER, as distinct from the bound on one query.
+ *
+ * `edgeLimit` bounds a single edge query and the fan-out budgets bound how many
+ * symbols are expanded, but nothing bounded their PRODUCT — so the nominal
+ * ceiling was 50 x 200 x 2 = 20,000 edges, and a caller asking "who calls
+ * unwrap" at the default depth could be handed half a megabyte with nothing in
+ * the payload to predict it. Measured: ripgrep's `unwrap` returns 206 edges at
+ * depth 1, 454 at depth 3 and 702 at depth 5 — 228 KiB, 504 KiB and 770 KiB
+ * rendered.
+ *
+ * Both existing bounds are declared, so this was never a silent lie; but a
+ * declared pair whose product is unbounded is not a bound, and the reader has to
+ * do the multiplication themselves to find that out.
+ *
+ * The default sits comfortably above what an ordinary question produces (about
+ * 450 edges for a hub symbol at the default depth) and stops the explosion. A
+ * caller who wants more asks for more.
+ */
+const DEFAULT_MAX_TOTAL_EDGES = 1000
+const MAX_TOTAL_EDGES = 5000
 /** Ceiling for the declared-total counting scan: past this the total is a
  *  declared lower bound rather than a silent one. Only reached when a cap was
  *  hit, so the normal path pays nothing. */
@@ -284,8 +329,18 @@ export async function traverseGraph(
   /** The depth cap this run enforced. Paired with `maxDepthReached` it is the
    *  only way a reader can tell "the walk finished" from "the walk stopped". */
   maxDepth: number
+  /** The wall-clock budget this walk ran under, and whether it stopped on it.
+   *  A node is not a unit of work — see DEFAULT_WALK_TIME_BUDGET_MS — so the
+   *  time bound is the one that actually bounds a pathological target, and it
+   *  is declared on both sides: what it was, and whether it fired. */
+  timeBudgetMs: number
+  timeBudgetExhausted: boolean
   /** M59.A12 (#888): the declared per-query site limit in force for this run. */
   edgeLimit: number
+  /** The total-edge bound in force for this run, and whether it was reached.
+   *  Distinct from `edgeLimit`, which bounds ONE query: this bounds the answer. */
+  maxEdges: number
+  totalEdgeLimitReached: boolean
   /** How many edge queries hit that limit (a query can hit it at any depth). */
   cappedQueries: number
   /** True site count of the ROOT symbol, counted with the same query and the
@@ -366,6 +421,14 @@ export async function traverseGraph(
   const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
+  const maxEdges = Math.max(
+    edgeLimit,
+    Math.min(Math.floor(options.maxEdges ?? DEFAULT_MAX_TOTAL_EDGES), MAX_TOTAL_EDGES),
+  )
+  // Set once the answer is full, and consulted before every further emit, so the
+  // traversal stops rather than continuing to expand symbols whose edges can no
+  // longer be returned.
+  let totalLimitReached = false
 
   // The cap orderings, over the projected `kindRank`. The trailing keys make
   // each a strict TOTAL order, which is what makes two identical questions
@@ -383,6 +446,14 @@ export async function traverseGraph(
     reasons.add(reason)
     truncated = true
   }
+  // Armed once, at the top of the walk, and read before every descent. The
+  // root query itself is not interruptible (SQLite would have to be), so the
+  // floor on a single call is one query — measured at 88 ms on the corpus that
+  // produced the 613 s figure, and 2 ms on a small one.
+  const timeBudgetMs = Math.max(0, Math.floor(options.timeBudgetMs ?? DEFAULT_WALK_TIME_BUDGET_MS))
+  const deadline = Date.now() + timeBudgetMs
+  let timeBudgetExhausted = false
+  const outOfTime = (): boolean => timeBudgetMs > 0 && Date.now() >= deadline
   // An ACTIVE filter is a declared subset, so it goes through `noteReason` rather
   // than straight into the set. Adding the reason alone would produce
   // `truncated: false` beside a `truncationReason`, which is worse than either
@@ -491,6 +562,11 @@ export async function traverseGraph(
 
   const traceCallers = (symbolId: string, depth: number): void => {
     if (depth >= maxDepth || visitedCallers.has(symbolId)) return
+    if (outOfTime()) {
+      timeBudgetExhausted = true
+      noteReason("walk-time-budget-exhausted")
+      return
+    }
     visitedCallers.add(symbolId)
     const { prefix, upper } = cascadeBounds(symbolId)
     const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
@@ -573,6 +649,15 @@ export async function traverseGraph(
         }
         emittedCallerSites.add(siteKey)
       }
+      // The bound on the WHOLE answer, as distinct from the per-query site
+      // limit. Checked before the emit, not after, so a full answer never grows
+      // past `maxEdges`; `break` leaves this symbol's remaining rows un-emitted
+      // and the flag stops the other direction on its next turn.
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       if (depth > 0) deeperCallers++
       else if (cascadeMatch(row, symbolId) === "exact") exactCallers++
       else cascadedCallers++
@@ -645,6 +730,11 @@ export async function traverseGraph(
 
   const traceCallees = (symbolId: string, srcFileRel: string, srcLine: number, depth: number): void => {
     if (depth >= maxDepth || visitedCallees.has(symbolId)) return
+    if (outOfTime()) {
+      timeBudgetExhausted = true
+      noteReason("walk-time-budget-exhausted")
+      return
+    }
     visitedCallees.add(symbolId)
     const isExternal = symbolId.startsWith("ext:")
     const { prefix, upper } = cascadeBounds(symbolId)
@@ -756,6 +846,11 @@ export async function traverseGraph(
         }
         emittedCalleeSites.add(calleeKey)
       }
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       if (depth > 0) deeperCallees++
       else if (cascadeMatch(row, symbolId) === "exact") exactCallees++
       else cascadedCallees++
@@ -839,7 +934,11 @@ export async function traverseGraph(
     truncationReason: reasons.size > 0 ? [...reasons].join("+") : undefined,
     maxDepthReached,
     maxDepth,
+    timeBudgetMs,
+    timeBudgetExhausted,
     edgeLimit,
+    maxEdges,
+    totalEdgeLimitReached: totalLimitReached,
     cappedQueries,
     totalCallersIfKnown,
     totalCalleesIfKnown,
@@ -967,7 +1066,11 @@ export async function graphTraversal(
     truncationReason,
     maxDepthReached,
     maxDepth,
+    timeBudgetMs,
+    timeBudgetExhausted,
     edgeLimit,
+    maxEdges,
+    totalEdgeLimitReached: totalLimitReached,
     cappedQueries,
     totalCallersIfKnown,
     totalCalleesIfKnown,
@@ -1002,6 +1105,8 @@ export async function graphTraversal(
       totalCallees: callees.length,
       maxDepthReached,
       maxDepth,
+      timeBudgetMs,
+      timeBudgetExhausted,
       crossLanguageEdges,
       truncated,
       truncationReason,
@@ -1010,6 +1115,11 @@ export async function graphTraversal(
       // a cap was hit and it was computable — a floor can no longer be read as a
       // total by a caller that only looks at the summary.
       edgeLimit,
+      // The bound on the WHOLE answer, as distinct from the per-query site
+      // limit. Declared because the product of the per-query bound and the
+      // fan-out budget is otherwise unbounded, and unstated.
+      maxEdges,
+      totalEdgeLimitReached: totalLimitReached,
       cappedQueries,
       callersIfUncapped: totalCallersIfKnown,
       calleesIfUncapped: totalCalleesIfKnown,
