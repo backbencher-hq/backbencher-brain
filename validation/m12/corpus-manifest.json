@@ -737,6 +737,16 @@
           "bytes": 1058041,
           "provenanceKind": "unnamed-build-sha-only",
           "note": "Registered 2026-09-29 in script/m14/verify-grammar-pins.ts. php was previously ABSENT from the pin table, so its bytes were governed by nothing. The npm tree-sitter-php 0.24.2 claim in the doc is NOT offline-re-derivable (not a package.json dep, tarball not vendored), so the pin is deliberately sha-only; no vendored source and no PIN.md, so the source<->wasm proof is not applicable and the grammar is not rebuildable offline."
+        },
+        "symbolContract": {
+          "measuredAt": "2026-09-29T23:55:00.000Z",
+          "note": "Symbol-side audit on the same 150-file strided sample used for the relationship line-number audit.",
+          "sample": 150,
+          "symbols": 1187,
+          "missingStartLine": 0,
+          "missingEndLine": 0,
+          "pct": "0.00%",
+          "complexityOnCallables": "666/666 (100% of methods carry complexity; sum 1,086). Complexity is a per-callable metric, so the 521 non-callable symbols (properties 227, namespace 140, class 131, constant 10, interface 9, trait 2, enum 1, enum_member 1) correctly carry none."
         }
       }
     },
