@@ -110,6 +110,22 @@ export type SearchResults = SearchResult[] & {
    */
   matchMode?: "phrase" | "terms"
   /**
+   * Which of the query's content words the BEST result actually matched, and
+   * which it ignored.
+   *
+   * Present only on the terms route, because that is the only route where the
+   * two differ in kind. A match on 1 of 3 query words is a different claim from
+   * 3 of 3: the same symbol would match any query sharing that one word, so
+   * presenting it as "closest matches" without saying so invites reading a
+   * coincidence as a finding. The words are named rather than counted because a
+   * count alone does not tell a reader WHICH word carried the match.
+   *
+   * Measured on rake: requiring full coverage to present a result would discard
+   * 9 of 11 answerable questions to reject 2 of 7 inapplicable ones, so this is
+   * disclosed to the answer rather than used as a filter.
+   */
+  termMatch?: { queryTerms: string[]; topMatched: string[] }
+  /**
    * How many candidate rows the scan actually looked at. Present so a bounded
    * answer can say "stopped after N of M" rather than only "stopped", and
    * absent when the scan completed.
@@ -254,6 +270,18 @@ export interface SemanticSearchResults {
     discriminative?: boolean
     /** How many other candidates scored within the margin of the best. */
     nonDiscriminativeCompetitors?: number
+    /**
+     * Which of the query's content words the best keyword-fallback result
+     * matched, and which it ignored. Present only when the fallback used the
+     * terms route.
+     *
+     * It exists because the answer text lists code blocks, and a reader cannot
+     * otherwise tell a match on every word they used from a match on one common
+     * one. On rake, "where is the request handled" returns five code blocks that
+     * matched the single word `request` — in a GitHub Actions file, in a
+     * repository with no request handling at all.
+     */
+    termMatch?: { queryTerms: string[]; topMatched: string[] }
   }
 }
 
@@ -565,7 +593,13 @@ export interface ComplexityReport {
   /** How many FILES the scope covered. A file scope can match many
    *  (`target: "src"`), and without this a one-file answer and an eighty-file
    *  answer are the same shape — measured 163 symbols with `linesOfCode: 2`. */
+  /** Files HOLDING A SYMBOL the metrics above are computed over. */
   filesInScope: number
+  /** Files the scope NAMES, whether or not any of them hold an indexed symbol.
+   *  Equals `filesInScope` unless a file in scope has no symbols — measured on
+   *  backbencher-brain/src, `target: "ast"` reported 83 of 84. Published so the
+   *  difference is visible rather than an unexplained discrepancy. */
+  filesMatchingScope: number
   /** For a file-shaped scope, WHICH of the two shapes it was:
    *  `exact-file` (one `brain_file.relative_path`) or `directory-prefix` (every
    *  file under a path prefix, on a segment boundary). Absent for a symbol or
