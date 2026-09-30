@@ -282,13 +282,33 @@ WordPress `wp_add_*` hooks), so this is a standing check rather than a one-off.
   `validation/m12/results/php-perf-ab.json`. It reports speed and output
   equality as **separate** claims, interleaves the two analyzers round by round,
   and compares results field-by-field on every file before timing anything.
+- **The estimator is min-of-reps, not the median.** Under contention every run
+  is inflated by whatever else the box is doing, and that inflation is
+  one-sided — a run can only be slower than the uncontended truth, never faster.
+  So the minimum is the best available lower bound on true cost, while a median
+  inherits the contention. Both are reported, and the gap between them *is* the
+  machine's noise. Switching estimators changed the answer materially: the same
+  comparison reads 1.151x by min and 1.025x by median.
 - Measured machine noise is larger than any available win: the profile moved
   19.21 → 22.31 ms/file between two consecutive runs of *identical* code, and
-  two 5-rep A/B runs of the same pair returned 1.883x and then 0.755x (spread
-  106% and 300%). The harness therefore reports its speed verdict as
-  `INDETERMINATE` above 25% spread rather than publishing a number it cannot
-  support. **No performance claim is made for this lane**, and no optimization
-  has been applied.
+  early 5-rep A/B runs returned 1.883x and then 0.755x. At 15 reps with the
+  min estimator the spread is still 30.5%. The harness therefore reports its
+  speed verdict as `INDETERMINATE` above 25% spread rather than publishing a
+  number it cannot support.
+- One optimization was applied, chosen because half of it is provable: the
+  grouped-`use` fix had introduced a `namespace_name` scan over every `use`
+  declaration, including the plain `use App\X;` form that is the overwhelming
+  majority in real code — wasted work, including a `.text` WASM crossing, on the
+  common path. The scan is now conditional on a group actually being present.
+  The A/B reports **output identical: YES** across all 150 files, which is the
+  half of a performance claim that is decidable on any hardware, and
+  **1.003x** — real but below the noise floor.
+- **Conclusion: the analyzer is already at this box's noise floor.** The
+  identified headroom (the fused main walk, ~90% of cost) is not reachable
+  without a structural change to the walk, and no such change can be validated
+  here. No performance claim is made for this lane. Closing this properly needs
+  a quiet machine — pinned cores (`taskset`), a loaded/idle control, and tens of
+  reps — not more work on the analyzer.
 
 ### Not yet measured
 
