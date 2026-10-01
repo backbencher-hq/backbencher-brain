@@ -416,10 +416,29 @@ export interface ParallelIndexingStats {
      * M40.A2: what this run did about derived data (relationships/enrichment/
      * gravity/taints/health). "full" = complete pass; "bounded" = scoped pass
      * over touched symbols/edges; "deferred" = skipped by request or cancel;
-     * "skipped-unchanged" = nothing parsed, derived data untouched and still
-     * consistent. Absent on legacy persisted runs.
+     * "skipped-unchanged" = nothing was parsed, so no derived pass ran.
+     * Absent on legacy persisted runs.
+     *
+     * `derivedPass` says WHICH pass ran. It never said whether the derived data
+     * ended up CONSISTENT, and this comment used to claim it did — "untouched and
+     * still consistent" — which is false in exactly the case a user meets it.
+     * Measured: cancel a 60-file index mid-run, then `bb index --resume`. The
+     * cancel leaves 16 relationships with `target_symbol_id IS NULL` (the
+     * resolution phase was interrupted); the resume parses nothing, so its pass
+     * is "skipped-unchanged"; the relationship COUNT recovers to the clean
+     * index's 180, so every count-based check reads healthy — and those 16 edges
+     * are still unattached. Only `bb index --post` resolves them (16 -> 0).
+     * So `derivedPass` is not a consistency statement, and the count below is.
      */
     derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged"
+    /** Relationships this project holds whose target could not be attached to a
+     *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+     *  The row is present and counted, but it is not an edge — traversal reads it
+     *  as absent, so it under-reports. Measured 0 after a clean full index, 16
+     *  after a cancel, and 0 again after `runPostProcessing`. This is the
+     *  measurement `derivedPass` is not, and it is what decides whether the
+     *  remediation is `bb index --post`. */
+    unresolvedRelationships?: number
   }
 }
 
@@ -3880,6 +3899,36 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
 // MAIN ENTRY POINT
 // ============================================================================
 
+/**
+ * How many stored relationships are NOT attached to a stored symbol:
+ * `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+ *
+ * The row is present and counted, but it is not an edge — every traversal reads
+ * it as absent, so it under-reports, and the relationship count does not show it.
+ *
+ * This is the measurement `summary.derivedPass` is not. `derivedPass` says which
+ * pass ran; nothing said whether the index ended up CONSISTENT, and the noop
+ * path's own note claimed "untouched and still consistent" on the strength of
+ * nothing. Measured, in the case a user meets it: cancel a 60-file index
+ * mid-run (leaving 16 unresolved relationships), then `bb index --resume`, which
+ * parses nothing so its pass is `skipped-unchanged` — and leaves all 16.
+ * `bb index --post` resolves them.
+ *
+ * Best-effort: a failure to measure is logged and leaves the field absent, which
+ * callers render as "not measured" rather than as a clean bill.
+ */
+async function measureUnresolvedRelationships(projectId: ProjectID): Promise<number | undefined> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return Number(
+      (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL").get(projectId) as any)?.c ?? 0,
+    )
+  } catch (e: any) {
+    log.warn("could not measure unresolved relationships", { error: e?.message })
+    return undefined
+  }
+}
+
 export async function indexProjectParallel(
   projectId: ProjectID,
   projectPath: string,
@@ -4003,6 +4052,10 @@ export async function indexProjectParallel(
         timeouts: 0,
         cancelled: 0,
         derivedPass: "skipped-unchanged",
+        // Measured here too, because this is the path `--resume` takes and it is
+        // the one that can carry a previous run's unfinished work. Measured 16 on
+        // a cancel-then-resume, and 0 after `bb index --post`.
+        unresolvedRelationships: await measureUnresolvedRelationships(projectId),
       }
 
       // M40.A2: an incremental noop run can still observe DELETIONS —
@@ -4505,6 +4558,12 @@ export async function indexProjectParallel(
         : stats.cancelled
           ? "post-processing deferred: run cancelled (resume to continue)"
           : "post-processing deferred (full-index-only path)")
+    }
+
+    // Measured after every derived path has run, so the number describes the index
+    // as handed back rather than the pass that produced it.
+    if (stats.summary) {
+      stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
