@@ -1,6 +1,6 @@
 // M64.H7: `existsSync` was imported here and never called — the one dead
 // binding in this module.
-import { relative as relativePath } from "node:path"
+import { relative as relativePath, resolve, isAbsolute, sep } from "node:path"
 import { statSync } from "node:fs"
 import { BrainDatabase } from "../../brain/database"
 import { resolveRowsFreshnessDetailed, selectSampleFiles, type RowFreshnessReason } from "../../brain/freshness"
@@ -25,6 +25,10 @@ export interface UnifiedHealthOptions {
    * acquire silently.
    */
   checkUnindexed?: boolean
+  // M64.D: report the state of specific files rather than the project. At most
+  // 50, validated at the boundary. Absent means no scoped question was asked, and
+  // the project-wide report is returned exactly as before.
+  paths?: string[]
   /** Advertised in the registry: verbose=true adds a per-language breakdown and stale/missing file names. */
   verbose?: boolean
   logger?: { log: (...args: any[]) => void; write: (s: string) => void }
@@ -131,8 +135,24 @@ export interface UnifiedHealthReport {
    * belong to no bucket. `totalMs` is the number to act on; the phases are for
    * explaining it.
    */
-  timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number }
+  timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number; pathsMs: number }
   integrity: IndexHealthReport | null
+  // M64.D: present only when paths was asked for. It states IN THE PAYLOAD that
+  // the rest of the report is project-wide, so a scoped answer can never be read
+  // as though every number in the object were scoped.
+  scope: { kind: "paths"; requested: string[]; refused: Array<{ requested: string; reason: string }>; note: string } | null
+  // M64.D: one row per requested path, in FIVE states. `not-indexed` and
+  // `absent` are the two a boolean would destroy, and both are things an agent
+  // needs to know before acting.
+  pathChecks: Array<{
+    requested: string
+    path: string
+    status: "fresh" | "stale" | "gone" | "not-indexed" | "absent"
+    reason: string | null
+    language: string | null
+    symbols: number
+    verifiedBy: string | null
+  }> | null
   /**
    * M64.C: the OTHER direction of the index/disk difference. `freshness.missing`
    * is in the index and gone from disk; this is on disk and absent from the
@@ -275,7 +295,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // work, the aggregates are index scans, and the optional integrity battery
   // content-hashes the corpus when it is in `complete` mode. `totalMs` is from
   // function entry, so it includes the aggregates this object reports.
-  const timing = { totalMs: 0, aggregatesMs: 0, freshnessMs: 0, integrityMs: 0, refreshMs: 0 }
+  const timing = { totalMs: 0, aggregatesMs: 0, freshnessMs: 0, integrityMs: 0, refreshMs: 0, pathsMs: 0 }
   const startedCall = Date.now()
   const now = () => Date.now()
   const warnings: HealthWarning[] = []
@@ -621,6 +641,146 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     }
   }
 
+  // M64.D: per-path state.
+  //
+  // `paths` answers the question an agent actually has after an edit — "are MY
+  // files fresh?" — without the only current answer being a scan of the whole
+  // project. The constraint that shaped everything here: it must not be possible
+  // to mistake the result for a project report. So the scoped answer is a
+  // SEPARATE, self-describing block (`scope` + `pathChecks`) and never an
+  // alteration of the project-wide counts — a caller reading `counts.files` gets
+  // the same number it always got.
+  //
+  // FIVE states, because the honest enumeration is five and collapsing any pair
+  // fabricates an answer:
+  //
+  //   fresh        indexed, on disk, unchanged
+  //   stale        indexed, on disk, content changed
+  //   gone         indexed, NOT on disk — it was deleted
+  //   not-indexed  on disk, NOT indexed — the indexer has not run since it appeared
+  //   absent       neither on disk nor indexed — the path does not exist
+  //
+  // The last three are the ones a boolean `fresh: true/false` would destroy, and
+  // they are the ones that matter: reporting "fresh" for a file the index has
+  // never seen is the fabrication this design exists to avoid. An agent would
+  // edit, verify freshness, and proceed against an index that does not contain
+  // its work.
+  let pathChecks: UnifiedHealthReport["pathChecks"] = null
+  let scope: UnifiedHealthReport["scope"] = null
+  if (options.paths && options.paths.length > 0) {
+    const scopeStarted = now()
+    // The SAME primitive bb_edit uses: realpath-normalised, and it refuses a path
+    // escaping the project root directly or through a symlink. A health answer
+    // about a path outside the project is a different question, and answering it
+    // silently would be worse than refusing.
+    const { resolveSafeEditPath } = await import("../edit/edit-engine")
+    const resolved: NonNullable<UnifiedHealthReport["pathChecks"]> = []
+    const refused: Array<{ requested: string; reason: string }> = []
+    const wanted: Array<{ requested: string; abs: string; realAbs: string; rel: string; fileId: string | null; row: any }> = []
+    for (const requested of options.paths) {
+      const trimmed = String(requested).trim()
+      // Resolve against the project path AS GIVEN first, so an absolute path
+      // inside the project becomes project-relative before it reaches the
+      // containment check. Without this, `resolveSafeEditPath` computes
+      // `path.resolve(realpathSync(root), "/abs/path")`, and an absolute argument
+      // DISCARDS the root — so on a machine where the project path traverses a
+      // symlink (macOS /var -> /private/var) a perfectly valid in-project
+      // absolute path is refused as an escape. The gate caught it as a false
+      // refusal on the fifth spelling of the same file.
+      const key = resolve(projectPath, trimmed)
+      const asRelative = relativePath(projectPath, key)
+      if (asRelative === "" || asRelative === ".." || asRelative.startsWith(`..${sep}`) || isAbsolute(asRelative)) {
+        refused.push({ requested: trimmed, reason: `path escapes project root: ${trimmed}` })
+        continue
+      }
+      let abs: string
+      try {
+        // Still the realpath primitive, for the symlink check: a symlink inside
+        // the project pointing out of it must not be followed.
+        abs = resolveSafeEditPath(projectPath, asRelative)
+      } catch (e) {
+        refused.push({ requested: trimmed, reason: e instanceof Error ? e.message : String(e) })
+        continue
+      }
+      // M64.D: the index keys rows by the path the INDEXER resolved, which is
+      // the project path as given — NOT its realpath. `resolveSafeEditPath`
+      // deliberately returns a realpath, and on any machine where the project
+      // path traverses a symlink (macOS: /var -> /private/var) the two differ, so
+      // a lookup keyed on the realpath misses EVERY row.
+      //
+      // The gate caught it on its first run: all five states came back
+      // `not-indexed`, i.e. every indexed file was reported as a file the index
+      // had never seen. A systematic false negative on the primary case, in the
+      // feature built to stop exactly that.
+      //
+      // So the two are used for their two jobs: `resolveSafeEditPath` is the
+      // CONTAINMENT check (it refuses escapes and symlink escapes, and that is
+      // what it is for), and the database key is the plain resolved path.
+      const row = raw.prepare("SELECT id, language FROM brain_file WHERE project_id=? AND path=?").get(projectId, key) as any
+      wanted.push({ requested: trimmed, abs: key, realAbs: abs, rel: asRelative, fileId: row ? String(row.id) : null, row })
+    }
+    // One batched resolution for every indexed path asked about — the SAME
+    // resolver the project scan uses, so the verdict and the reason are one
+    // measurement and not a reimplementation of it.
+    const ids = wanted.map((w) => w.fileId).filter((x): x is string => !!x)
+    const scoped = ids.length ? resolveRowsFreshnessDetailed(raw, projectId, ids.map((id) => ({ fileId: id })), { freshnessMode: "complete" }) : null
+    for (const w of wanted) {
+      if (!w.fileId || !w.row) {
+        // Not in the index. The next question is whether it is on disk at all,
+        // because "the indexer has not run since this appeared" and "this path
+        // does not exist" are different and an agent acts on them differently.
+        let onDisk = false
+        try { onDisk = statSync(w.abs).isFile() } catch { onDisk = false }
+        resolved.push({
+          requested: w.requested,
+          path: w.rel,
+          status: onDisk ? "not-indexed" : "absent",
+          reason: onDisk
+            ? "on disk but not in the index — the indexer would index this, so it has not run since the file appeared"
+            : "not in the index and not on disk — this path does not exist",
+          language: null,
+          symbols: 0,
+          verifiedBy: null,
+        })
+        continue
+      }
+      const status = scoped!.statuses.get(w.fileId)
+      const reason = scoped!.reasons.get(w.fileId) ?? null
+      const symbolCount = (raw.prepare("SELECT COUNT(*) c FROM brain_symbol WHERE project_id=? AND file_id=?").get(projectId, w.fileId) as any)?.c ?? 0
+      resolved.push({
+        requested: w.requested,
+        path: w.rel,
+        // The resolver's `missing` covers BOTH "deleted" and "unreadable"; for a
+        // caller asking about ONE file those are different, so the reason is
+        // carried rather than flattened into one word.
+        status: status === "missing" ? (reason === "file-gone" ? "gone" : "gone") : (status as "fresh" | "stale") ?? "absent",
+        reason,
+        language: w.row.language ?? null,
+        symbols: Number(symbolCount),
+        verifiedBy: reason === "metadata-fast-path" ? "mtime+size only (file not read)" : reason === "hash-match" ? "content hash" : null,
+      })
+    }
+    pathChecks = resolved
+    scope = {
+      kind: "paths",
+      requested: options.paths.map((p) => String(p).trim()),
+      refused,
+      note: "This block answers the paths you named. Every other line in this report — counts, embeddings, freshness, index — is PROJECT-WIDE and is NOT scoped to these paths.",
+    }
+    const unindexedPaths = resolved.filter((r) => r.status === "not-indexed").map((r) => r.path)
+    if (unindexedPaths.length > 0) {
+      warnings.push({ code: "PATHS_NOT_INDEXED", message: `${unindexedPaths.length} of the ${resolved.length} path(s) you named exist on disk but are NOT in the index: ${unindexedPaths.slice(0, 5).join(", ")}. A freshness answer about a file the index has never seen would be meaningless; index them with bb_index on those paths.`, severity: "warning" })
+    }
+    const stalePaths = resolved.filter((r) => r.status === "stale").map((r) => r.path)
+    if (stalePaths.length > 0) {
+      warnings.push({ code: "PATHS_STALE", message: `${stalePaths.length} of the ${resolved.length} path(s) you named changed on disk since indexing: ${stalePaths.slice(0, 5).join(", ")}.`, severity: "warning" })
+    }
+    if (refused.length > 0) {
+      warnings.push({ code: "PATHS_REFUSED", message: `${refused.length} path(s) were REFUSED and are NOT checked: ${refused.map((r) => `${r.requested} (${r.reason})`).join("; ")}. A refused path is not a clean one.`, severity: "error" })
+    }
+    timing.pathsMs = now() - scopeStarted
+  }
+
   let integrity: IndexHealthReport | null = null
   if (options.integrity === true) {
     const integrityStarted = now()
@@ -843,6 +1003,8 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: (raw as any).driver ?? "sqlite" },
     timing,
     unindexed,
+    scope,
+    pathChecks,
     integrity, analysisRuns, refresh,
     effectiveConfig,
     languages: languageRows,
@@ -932,6 +1094,20 @@ function renderReasonMix(f: UnifiedHealthReport["freshness"]): string {
 
 export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   const c = report.counts, f = report.freshness, e = report.embeddings
+  // M64.D: when a scoped question was asked, the SCOPED answer comes FIRST and
+  // everything after it is labelled project-wide. A caller reading top-down
+  // cannot reach a 3-file verdict and then read `files=1654` as part of it.
+  const pre: string[] = []
+  if (report.scope && report.pathChecks) {
+    pre.push(`SCOPED ANSWER for ${report.pathChecks.length} path(s) you named — everything below this block is PROJECT-WIDE:`)
+    for (const p of report.pathChecks) {
+      const bare = p.status === "gone" || p.status === "not-indexed" || p.status === "absent"
+      const detail = [bare ? null : `${p.symbols} symbol(s)`, p.language, p.verifiedBy ? `verified by ${p.verifiedBy}` : null].filter(Boolean).join(", ")
+      pre.push(`  ${p.status.padEnd(12)} ${p.path}${detail ? ` — ${detail}` : ""}${bare ? ` — ${p.reason}` : ""}`)
+    }
+    if (report.scope.refused.length) pre.push(`  REFUSED (not checked): ${report.scope.refused.map((r) => `${r.requested} — ${r.reason}`).join("; ")}`)
+    pre.push("")
+  }
   // M64.H1: the freshness line is the one number a caller acts on, so it now
   // names the coverage. A sample of 200 of 1,654 printed as
   // "158 fresh / 42 stale / 0 missing (200/1654, sampled)" could be read as
@@ -1056,5 +1232,5 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     lines.push(renderFileList("missing files", report.freshness.missingFiles))
   }
   for (const warning of report.warnings) lines.push(`${warning.severity}: [${warning.code}] ${warning.message}`)
-  return lines.join("\n")
+  return [...pre, ...lines].join("\n")
 }

@@ -1096,7 +1096,7 @@ const handlers: Record<string, ToolHandler> = {
 
   bb_health: async (args, { projectId, projectPath }) => {
     const refreshRequested = args.refresh === true || args.force === true
-    const report = await getUnifiedHealth(projectId, projectPath, { refresh: refreshRequested, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true, checkUnindexed: args.checkUnindexed === true, verbose: args.verbose === true, logger: { log: (..._a: any[]) => {}, write: (_s: string) => {} } })
+    const report = await getUnifiedHealth(projectId, projectPath, { refresh: refreshRequested, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true, checkUnindexed: args.checkUnindexed === true, paths: Array.isArray(args.paths) ? args.paths.map((p: unknown) => String(p)) : undefined, verbose: args.verbose === true, logger: { log: (..._a: any[]) => {}, write: (_s: string) => {} } })
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, undefined, Number(args.limit ?? 20))
       // M64.P3: this branch returned a bare textResult, so it carried no
