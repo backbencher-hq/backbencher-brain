@@ -737,18 +737,46 @@ inside a macro argument and the analyzer publishes no `contains` member for it.
 clang sees the expanded struct and does. Every macro-wrapped struct field is
 invisible to the payload.
 
-**Over-emission (the 16 phantoms).** `H1_TUNNEL_INIT`, `H1_TUNNEL_CONNECT`,
-`H1_TUNNEL_RECEIVE` are ENUMERATORS, published as members of the enclosing
-STRUCT. They belong to their own enum, and the enum belongs to the field that uses
-it. An inline `enum { ... } field;` inside a struct is being flattened onto the
-struct's owner, which is the same defect #961 fixed for function-local enums,
-reached from the other direction.
+**Over-emission (the 16 phantoms) — and the first explanation of this was WRONG.**
+I initially recorded these as "an inline `enum {...} field;` inside a struct
+flattened onto the struct's owner". A minimal repro refuted that immediately: the
+analyzer gets `enum keeponval { ... } keepon;` right, publishing
+`contains keeponval -> KEEPON_DONE` with `owner=keeponval`. The real mechanism is
+name collision, in `curl/lib/cf-h1-proxy.c`:
+
+```c
+typedef enum {                    /* an ANONYMOUS enum with a typedef alias */
+  H1_TUNNEL_INIT,
+  H1_TUNNEL_CONNECT,
+  H1_TUNNEL_RECEIVE,
+  ...
+} h1_tunnel_state;                /* the alias is `h1_tunnel_state` */
+
+struct h1_tunnel_state {          /* a STRUCT with the SAME NAME */
+  ...
+};
+```
+
+C keeps typedef names and struct tags in **separate namespaces**, so both
+declarations are legal and both are called `h1_tunnel_state`. The analyzer mints the
+anonymous enum's owner name from the alias, so it publishes
+`contains h1_tunnel_state -> H1_TUNNEL_INIT` — an edge that is TRUE of the typedef
+alias and FALSE of the struct that shares the name. A consumer resolving
+`h1_tunnel_state` as a container gets a struct with six phantom members.
+
+So this is not over-emission and not flattening. It is an **ambiguous owner**: the
+`contains` target does not identify which of two same-named C declarations owns the
+member. It is the same root problem #961's qualification solved for colliding type
+NAMES (`lpRandomEntries.pick`), arriving through the typedef/tag namespaces instead
+of the function-local scope. Recorded here because the wrong explanation was
+committed first and a minimal repro is what caught it.
 
 So the oracle is SOUND on curl — it found two genuine defect classes that no other
 instrument could see, precisely because it is a different implementation reading
 one tree. Both are recorded here rather than fixed in this pass, because each needs
-its own fixture, mutant and ruling, and a macro-expansion rule (# `BIT(...)`) is a
-semantic decision rather than a patch.
+its own fixture, mutant and ruling: the `BIT(...)` case is a macro-expansion
+SEMANTIC decision, and the phantom case is a NAME-RESOLUTION decision about which of
+two same-named C declarations owns a member. Neither is a mechanical patch.
 
 **libgit2 remains blocked**: `src/git2_util.h` is generated at BUILD time, so it
 needs `make`, not only `cmake`.
