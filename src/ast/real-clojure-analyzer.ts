@@ -146,6 +146,52 @@ const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> =
  * defines nothing. Everything else in def position is treated as a definition
  * by the CLJ-D30 branch, which is the general rule rather than a hand list.
  */
+/**
+ * THE NAME A DEFINING FORM BINDS, past any metadata that precedes it.
+ *
+ * CLJ-D56. When a form carries LEADING metadata the grammar folds that metadata
+ * INTO the `list_lit`, so it becomes `namedChild(0)` and pushes the head to index 1:
+ *
+ *   list_lit  ^{:clj-kondo/ignore [:metabase/…]} (deftest ^:parallel complicated-test-1 …)
+ *     meta_lit   ^:clj-kondo/ignore […]          <- child 0
+ *     sym_lit    deftest                         <- child 1  the HEAD
+ *     sym_lit    ^:parallel complicated-test-1   <- child 2  the NAME, itself wrapped
+ *
+ * Every branch that read `namedChild(1)` therefore read the MACRO: `deftest` published
+ * a `contains -> deftest` edge with no line, created no symbol for
+ * `complicated-test-1`, and missed a sibling form outright. metabase has four such
+ * forms across sql_tools/macaw/references_test.clj and
+ * sql_tools/sqlglot/references_test.clj.
+ *
+ * The name may ALSO be wrapped in metadata (`^:parallel complicated-test-1`), so the
+ * reader unwraps rather than skips at the name position. Same two-position shape as
+ * the truth-side fix; both were wrong for the same reason.
+ */
+function defNameNodeOf(node: Node): Node | null {
+  let head = 0
+  while (head < node.namedChildCount && node.namedChild(head)?.type === "meta_lit") head++
+  let i = head + 1
+  while (i < node.namedChildCount) {
+    const c = node.namedChild(i)
+    if (!c) return null
+    if (c.type === "meta_lit") {
+      // The NAME wrapped in metadata: unwrap to the symbol inside it. The unwrap is
+      // inlined rather than calling `executionHead`, which is local to `analyze` and
+      // not visible at module scope.
+      let inner: Node | null = null
+      for (let k = 0; k < c.namedChildCount; k++) {
+        const cand = c.namedChild(k)
+        if (cand && cand.type === "sym_lit") { inner = cand; break }
+      }
+      if (inner) return inner
+      i++
+      continue
+    }
+    return c.type === "sym_lit" ? c : null
+  }
+  return null
+}
+
 function isDefLikeHead(head: string): boolean {
   if (head.length < 3) return false
   if (head.charCodeAt(0) !== 100 /* d */ || head.charCodeAt(1) !== 101 /* e */ || head.charCodeAt(2) !== 102 /* f */) return false
@@ -341,7 +387,18 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "sym_lit") {
         const name = node.childForFieldName("name")
         const ns = node.childForFieldName("namespace")
-        if (name && ns) return `${ns.text}/${name.text}`
+        // CLJ-D54: A QUALIFIED SYMBOL'S PREFIX MAY CARRY METADATA, and the metadata is
+        // not the namespace. metabase/util/yaml.clj requires
+        // `^{:clj-kondo/ignore [:discouraged-namespace]} [clj-yaml.core :as yaml]`, so the
+        // symbol `yaml/YAMLCodec` has a metadata-decorated prefix and this returned
+        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec` as an `implements`
+        // TARGET - a type that is not a type, unresolvable by anything that reads the
+        // graph. The prefix's own `name` field is the bare symbol, so read that instead
+        // of the node text; it costs nothing when there is no metadata.
+        const nsText = ns && (ns.text ?? "").startsWith("^{")
+          ? (ns.childForFieldName("name")?.text ?? ns.text)
+          : (ns?.text ?? "")
+        if (name && nsText) return `${nsText}/${name.text}`
         if (name) return name.text
         return node.text
       }
@@ -1400,7 +1457,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (no symbol, no activeFunction) and, with top-level attribution
         // arriving in the same wave, the deftest name is the honest caller.
         else if (formName === "deftest") {
-          const name = symName(node.namedChild(1)) || `test_${node.startPosition.row}`
+          // CLJ-D56: past any leading metadata, or this read the MACRO and invented a
+          // symbol called `deftest`.
+          const testNameNode = defNameNodeOf(node)
+          const name = (testNameNode ? symName(testNameNode) : "") || `test_${node.startPosition.row}`
           const testSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
@@ -1719,9 +1779,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `defonce`/`declare`/`deftest`/`defmulti`/`defmethod`/`defprotocol`/
         // `defrecord`/`deftype`/`definterface`, and each is claimed by an EARLIER
         // branch, so this one only ever runs for a head nobody handled.
-        else if (isDefLikeHead(formName) && node.namedChild(1)?.type === "sym_lit") {
-          const nameNode = node.namedChild(1)!
-          const name = symName(nameNode)
+        else if (isDefLikeHead(formName)) {
+          // CLJ-D56, same reader: `namedChild(1)` is the HEAD when metadata leads.
+          const nameNode = defNameNodeOf(node)
+          const name = nameNode ? symName(nameNode) : ""
           if (name) {
             // `def-aset aset-int setInt int`: a name, a docstring, then
             // arbitrary arguments. An arglist is a VECTOR named the same as the
