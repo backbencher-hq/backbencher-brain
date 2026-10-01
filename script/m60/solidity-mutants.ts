@@ -546,6 +546,105 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/natspec-docstring-dropped",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-16 REVERT: stop publishing `docstring`. No relationship, count or line changes at all — 2,779 of 5,976 symbols simply stop carrying their documentation, and `brain_symbol.docstring` goes back to NULL for every Solidity symbol in the index. A payload-only revert is invisible to every count-based gate in the repository, which is why it needs one of its own. Caught by natspec-sol16's five `docstring` pins.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.docstring === undefined) return s
+        const { docstring: _d, ...rest } = s
+        return rest
+      }),
+    }),
+    caughtBy: "solidity/natspec-sol16",
+  },
+  {
+    id: "solidity/natspec-last-comment-only",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-16 REVERT, the bug the fixture was written for: attach documentation PER COMMENT instead of per RUN, so only the LAST comment of a run survives. This is not hypothetical — it was the first implementation, and it published `library Docs` as documented by `@author Someone` while silently dropping the `@title` and `@notice` above it, i.e. two lines kept out of every three, on every documented declaration in the corpus. Caught by natspec-sol16's exact `docstring` for `Docs` and `SLOT`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const parts = s.comments
+        if (!Array.isArray(parts) || parts.length < 2) return s
+        return { ...s, docstring: parts[parts.length - 1] }
+      }),
+    }),
+    caughtBy: "solidity/natspec-sol16",
+  },
+  {
+    id: "solidity/natspec-anchor-reused",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-16 REVERT, the second bug the fixture was written for: do not clear the run anchor after a flush, so a TRAILING comment run at the end of a parent reuses the previous declaration as its target. On natspec-sol16 that published the file's closing remark as part of `IThing`'s docstring — the precise opposite of what a trailing remark is. Caught by natspec-sol16's exact `docstring` for `IThing`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (typeof s.docstring !== "string" || !s.docstring.includes("FOLLOW")) return s
+        return { ...s, docstring: `${s.docstring}\nA trailing remark that documents nothing: Solidity attaches documentation to what FOLLOWS it, so this run has no declaration to land on and must not be published.` }
+      }),
+    }),
+    caughtBy: "solidity/natspec-sol16",
+  },
+  {
+    id: "solidity/modifiers-decorators-dropped",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-17 REVERT: stop publishing applied modifiers on the `decorators` field. 188 corpus symbols over 40 distinct modifier names stop carrying them; no relationship changes, because the `calls` edge for an applied modifier is emitted by the `modifier_invocation` case and is untouched. Caught by modifiers-sol17's four `decorators` pins.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.decorators)) return s
+        const { decorators: _d, ...rest } = s
+        return rest
+      }),
+    }),
+    caughtBy: "solidity/modifiers-sol17",
+  },
+  {
+    id: "solidity/modifiers-every-scope",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-17 REVERT, the over-collection direction: publish EVERY modifier declared anywhere in the file as a decorator on EVERY function. This is the failure mode of reading modifiers from the enclosing contract instead of from the function's own header, and it is the reason modifiers-sol17 pins `single` as exactly `[\"onlyOwner\"]` — `single` applies one modifier while three are in scope, so this turn would make the fixture fail rather than quietly widen. Caught by modifiers-sol17's `single` and `paired` pins.",
+    transform: (r: any) => {
+      const all: string[] = []
+      for (const x of r.relationships ?? []) {
+        if (x.type === "calls" && (x.metadata ?? {}).calleeKind === "modifierInvocation") {
+          if (!all.includes(x.target)) all.push(x.target)
+        }
+      }
+      if (all.length === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.kind === "method" ? { ...s, decorators: all } : s),
+      }
+    },
+    caughtBy: "solidity/modifiers-sol17",
+  },
+  {
+    id: "solidity/using-alias-funcs-dropped",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-16's audit find: revert the `using_alias` case to looking for DIRECT `identifier` children. The grammar nests the name as `using_alias (user_defined_type (identifier)) (user_definable_operator)`, so the direct-child search is empty for every input and the branch had NEVER fired — 4 `using_alias` nodes in the corpus, all in contracts/account/utils/draft-ERC7579Utils.sol, and 0 edges. Found by a per-case emit census, the same signature as the `revert_statement` dead branch.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata ?? {}).isUsingAliasFunction === true,
+      ),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
+  },
+  {
     id: "solidity/call-callee-kind-dropped",
     language: "solidity",
     defectClass: "payload-loss",

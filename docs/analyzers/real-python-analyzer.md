@@ -43,7 +43,7 @@
 | instantiates | ✅ | uppercase-head call with the target in the O(1) `declaredTypes` set (in-file class/enum only — imported classes like `TypeVar` are external, no in-file target); Python has no `new` keyword | 0.9 |
 | imports | ✅ | `import_statement` / `import_from_statement` → module leaf → `${modulePath}:${item}`; relative imports (`from .models import User`) → module leaf | 1.0 |
 | exports | ✅ | `__all__` assigned a `list` **or** `tuple` literal → each string item; module-level names. **PY-14:** tuple-only reading left 3 of 16 corpus `__all__` assignments (19%) publishing nothing. Each edge and each `exports` entry records the **declaring form** (`dunderAllForm` / `form`) — provenance, since `list` and `tuple` are one declaration to `from mod import *`. A `NAME` in the literal, a concatenation, and `.extend()` are declared boundaries (pinned as forbids) | 1.0 |
-| overrides | ✅ | method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
+| overrides | ✅ | resolved against the class's **DECLARATION** (`name@startLine`), never its name — two `class C` declarations in one file are unrelated, and a name-keyed lookup gave a base-less class its namesake's bases. A base spelling the class's own name is excluded from both this derivation and `extends` (#299), so a rebind class overrides nothing and never overrides itself; method whose name is found walking the **real MRO**, not the leftmost base — **PY-8**: `Requirement.__new__` pointed at a mixin that does not define `__new__`. `object.__init__` is a verified universal fact (0.95). The **first-parent guess is 0.5**, not 0.95: it is a cross-lane family contract (php/ruby/python/js/perl/java/swift) pinned by `python/external-override`, and python does not remove it unilaterally. Measured over 400 corpus files it fired 1,163 times and was confirmed **0** times — the companion-index tier above it is never populated (**PY-7**) | 0.95 verified / 0.5 guessed |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, enum members, record fields | 1.0 |
 | uses | ✅ | member **read** `self.x` → leaf, marked `isMemberRead`; assignment targets, call callees (`self.ping()` — the attribute IS the call) and call receivers (`self.svc.ping()` — `self.svc` is traversal) are excluded, so a read is only ever a read | 0.9 |
 | references | — | not emitted; name identity is carried by imports/exports/calls, and a second edge for the same fact doubles the graph without adding information | — |
@@ -148,48 +148,50 @@ the setter was unreachable from its class. 6 missing `contains` over 120 files b
 "manual_audit"`, 108 facts, 5 `unknown`, two synthetic fixtures), so it cannot falsify the
 analyzer — it was written by reading the same source the analyzer reads.
 
-An **independent** oracle now exists and derives truth from the tree without importing the
-analyzer: `script/m14/oracles/python-truth.ts` (`contains`, `extends`, `overrides`, `calls`,
-`instantiates`) with a runnable comparator in `python-truth-diff.ts`. Latest run over 400
-pinned corpus files:
+An **independent** oracle derives truth from the tree without importing the analyzer:
+`script/m14/oracles/python-truth.ts` (`contains`, `extends`, `overrides`, `calls`,
+`instantiates`) with a runnable comparator in `python-truth-diff.ts`, on two axes:
+
+- **membership** — is the edge present on each side;
+- **multiplicity** — is it present the *same number of times*, which a set comparison cannot see
+  and which is the axis PY-6's defect class lives on.
+
+Over 3,271 corpus files:
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
-| `contains` | 28,153 | 313 | 20 |
-| `extends` | 3,505 | 155 | 0 |
-| `overrides` | 1,881 | 221 | 32 |
-| `calls` | 55,825 | 1,710 | **3,386** |
-| `instantiates` | 1,461 | 27 | 184 |
-| **total** | **90,825** | **2,426** | **3,622** |
+| `contains` | 28,213 | 6 | 18 |
+| `extends` | 3,505 | **0** | **0** |
+| `overrides` | 1,883 | 6 | 26 |
+| `calls` | 59,197 | 15 | 14 |
+| `instantiates` | 1,640 | **0** | 5 |
 
-**Read the disagreement columns as oracle incompleteness, not analyzer error.** Both directions
-concentrate on one shape the oracle does not model — a **member-call leaf**. Confirmed against
-the source: `requests/adapters.py:321` is `if url.lower().startswith("https")`, so the
-analyzer's `calls request_url -> lower` is correct and the oracle never derived it. The other
-cluster is identically-named bases (`class ArgumentParser(ArgumentParser)`), where the analyzer
-declines a self-referential `extends` and the oracle does not.
+**90 disagreements, from 6,048 when this was first run.** Three of those were real analyzer
+defects and are now fixed; the other ~6,000 were the instrument's own, and the sequence is worth
+recording because it is the argument for building one:
 
-So the honest statement is narrower than an agreement rate: the oracle agrees on 90,825 edges
-and **cannot currently falsify the analyzer for `calls`**. Nine defects were found by the parts
-of it that are complete.
+- it fed its own truth derivation the analyzer's **truncated bytes** (619 false "missing" from a
+  file the analyzer never finished reading — see the 1 MiB note above);
+- it gave every nested `def` its **own scope**, contradicting this lane's declared contract, and
+  counted the same edge on both sides (282 from one drifted branch);
+- it cut a callee's **text** at the first `(`, so `url.lower().startswith("x")` yielded `lower`
+  — the inner call's name — losing 1,858 outer calls;
+- it named a **subscript expression** as a callee (`PKG_MANAGERS[pkgmgr]`), where this lane emits
+  nothing because `d[k]()` calls an unnamed value;
+- it spelled the **module scope** two ways (146 edges from hyphenated scripts);
+- it applied the constructor convention in four places but not the fifth (282 more).
 
-**A harness bug worth recording, because it flattered the analyzer.** The first full-corpus run
-printed `8` as the disagreement count for all five types, which is a clamp: `sample()` capped the
-stored examples at `SHOW = 8` and the summary table printed that array's `.length` as the count.
-The per-type lists said `(8+)` honestly; the table did not. An earlier version of this document
-reported "4,973 of 4,975 agreed, 21 residual" on the strength of it — roughly 290× optimistic.
-Counts are now tracked exactly and only examples are capped, and every list header prints
-`N total, showing M`.
+The real defects had to **survive all of that** before they could be read as what they were.
 
-**A retracted finding, recorded because it is the more useful half of the story.** This review
-previously claimed that 37.8% of `overrides` edges resolved ambiguously, on the strength of a
-37.8% figure. That figure was an artefact of measuring the **analyzer** instead of the
-**store**: the indexer keys symbols on `${scope || ownerName}.${name}` as well as `name`, so an
-`Owner.method` source is an **exact** hit and the ambiguous leaf fallback is never reached. An
-end-to-end index of a three-class file (`Base.__eq__`, `A.__eq__`, `B.__eq__`, two overriding)
-resolved both edges to the correct owner, 2 of 2 exact, and did so identically with the
-proposed fix disabled. A python `qualifiedName` publication and a shared-indexer resolution
-reorder were both written to "fix" it and both reverted — see **PY-3** in the review.
+**Three limits are stated rather than absorbed**, because a differential that reports agreement
+it has not earned is the failure this exists to prevent:
+
+- **Chained calls across line continuations** — membership agrees, multiplicity does not.
+  tree-sitter produces a degenerate node for the continuation form (the inner `call` has no
+  children), so the oracle cannot see the extra edges at all. See the implementation note below.
+- **Override bases that are both imported and locally declared** — needs the module's imports,
+  which the derivation does not read.
+- **Multiplicity** — all 11,670 rows are the line-continuation shape.
 
 ## Evidence pointers
 
