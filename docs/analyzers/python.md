@@ -12,11 +12,11 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Analyzer | `src/ast/real-python-analyzer.ts` (`RealPythonAnalyzer`) |
 | Extensions | `.py`, `.pyi` |
 | Grammar | `tree-sitter-python` 0.25.0, `wasm/tree-sitter-python.wasm`, **pinned by sha256** |
-| Fixtures | 15 |
-| Mutants | 29, none surviving |
-| Completeness | 130 node types, 60 handled, 65 silent, **0 unclassified**, 7 explicit decisions |
-| Regex | **0** — no `RegExp`, no `/…/` literal |
-| Corpus | 3,271 `.py` files, 23,911 symbols, 99,743 relationships, 0 parse errors |
+| Fixtures | 19 |
+| Mutants | 30, none surviving |
+| Completeness | **123 named node types declared by the grammar, all 123 classified** — 62 handled-verified, 68 internal-silent, **0 gaps**, 7 design decisions (`script/m14/spec/python-completeness.json`, verified against the wasm surface directly) |
+| Regex | **0 executable regex literals**, 0 `new RegExp(`, 0 `RegExp` — verified by stripping comments and strings first. **Caveat:** `clean-completeness-gate.ts` §4a hardcodes the `clean` lane and does not check this one, and the committed M12 census record is stale for python (`STALE … :589:/^@/`, a regex since removed) — see `reviews/regex-policy.md` |
+| Corpus | 3,271 `.py` files, **45,560 symbols, 230,420 relationships**. **821 syntax-error nodes across 44 files**, and 776 of them are 29 files that are not Python at all: `otp/lib/asn1/test/asn1_SUITE_data/*.py` holds **ASN.1 notation** (`Int DEFINITIONS ::=`), so the "errors" are the grammar correctly refusing a non-Python file with a `.py` extension. The remaining 45 are 15 real files (14 cython, 1 hledger). An earlier version of this row claimed `0 parse errors` and far smaller totals; both were stale, measured before `uses`/`references`/`imports`/`exports`/`overrides` existed |
 | Independent oracle | **99.9994% — 161,094 edges agreed, 1 disagreement.** Every relationship type the analyzer emits has an independent second derivation (PY-23) |
 
 ## What a consumer may rely on

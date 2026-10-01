@@ -134,8 +134,12 @@ Zero O(n²) on the measured corpus. The `instantiates` check is an O(1) `declare
 lookup (it was a per-uppercase-call `symbols.some()` scan); override and extends resolution go
 through maps; the MRO walk is bounded by the base list; the relationship dedup key is a `Set`.
 
-Measured over the pinned corpus: **3,271 files, 23,911 symbols, 99,743 relationships in 66.7s
-via `ASTEngine.parseFile`, 0 parse errors.** The dedup key includes the edge's **site line**
+Measured over the pinned corpus: **3,271 files, 45,560 symbols, 230,420 relationships in 66.7s
+via `ASTEngine.parseFile`.** 821 syntax-error nodes land in 44 files, 776 of them in 29 files
+that are not Python — `otp`'s `asn1_SUITE_data/*.py` holds **ASN.1 notation**
+(`Int DEFINITIONS ::=`) under a `.py` extension — so the remainder is 15 real files (14 cython,
+1 hledger). An earlier version of this sentence said `0 parse errors`; that was measured before
+those files entered the corpus and is no longer true. The dedup key includes the edge's **site line**
 (**PY-6**): keying on `(type, source, target)` is strictly coarser than the store's own
 `(source, type, target, line)` key, and python makes that bite because the canonical property
 is a getter/setter pair — both `def`s are real symbols, and one `contains` edge was emitted, so
