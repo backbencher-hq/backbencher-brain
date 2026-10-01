@@ -574,8 +574,16 @@ function activeFunctionOf(root: Node): Map<number, string> {
     } else if (n.type === "list_lit") {
       const h = executionHead(n)
       const nm = h && h.type === "sym_lit" ? symName(h) : ""
-      if (nm === "fn" || nm === "fn*") {
+      if (nm === "fn") {
         next = lambdaName()
+      } else if (nm === "fn*") {
+        // `fn*` IS NOT `fn` FOR OWNERSHIP. `(fn* [sig] …)` at core.clj:4773 publishes
+        // `fn -> IllegalArgumentException`, while `(fn [] …)` and `#(…)` publish the
+        // GENERATED name. One sample of each and they are genuinely two rules, which
+        // is the fourth time in this file that a name I assumed was a synonym turned
+        // out to be two contracts. `fn*` is the compiler intrinsic the reader expands
+        // to, and the analyzer has no lambda-naming for it.
+        next = "fn"
       } else if (SHADOW_FN_PARAM_HEADS.has(nm)) {
         const dn = defNameOf(n)
         if (dn) next = dn
@@ -1193,6 +1201,14 @@ function ctorClassOf(node: Node): string | null {
     return arg && arg.type === "sym_lit" ? symName(arg) : null
   }
   if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) return form.slice(0, -1)
+  // CLJ-D51, THE PART THAT IS NOT DERIVABLE: a static factory call `Class/method`
+  // is an `instantiates` edge ONLY when the method is a record factory —
+  // `RecordToTestStatics1/create` at test_clojure/protocols.clj:291 is, and
+  // `Integer/parseInt` is not. Adding the shape unconditionally took `instantiates`
+  // from 99.62% to 66.67%, 520 fabricated edges, which is the measurement that says
+  // it cannot be decided from one file: telling a record factory from an ordinary
+  // static method needs to know that `RecordToTestStatics1` IS a record, and that is
+  // cross-file type knowledge. Recorded rather than guessed.
   if (form.startsWith("->") && form.length > 2 && form !== "->>") {
     const cls = form.slice(2)
     const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
@@ -1253,7 +1269,10 @@ export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
     // question — it tracks `def` — and `(def via-def (delay (java.io.StringReader. …)))`
     // publishes `clj.fixture.activefn -> java.io.StringReader`, because a `def` creates
     // a var and not a function.
-    const src = activeFn.get(node.startIndex) || nsAt(tl, node.startIndex)
+    // …and where there is no `ns` either, the analyzer attributes to Clojure's default
+    // namespace, `user` — CLJ-D47's chain again, and the second derivation in this file
+    // to need it. `instantiates||java.io.File` is the shape.
+    const src = activeFn.get(node.startIndex) || nsAt(tl, node.startIndex) || "user"
     const id = `${src}->${cls}@${line}`
     if (seen.has(id)) return
     seen.add(id)
