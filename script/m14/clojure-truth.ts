@@ -400,9 +400,18 @@ export function deriveClojureStaticUsesTruth(root: Node, isSuppressed: (head: st
     // version of this function had one, which rejected every real static site.
     const slash = formName.lastIndexOf("/")
     if (slash <= 0) return
-    if (formName.charCodeAt(slash + 1) !== 46 /* . */) return
-    const member = formName.slice(slash + 2)
-    const cls = formName.slice(0, slash)
+    // BOTH dot positions: `Class/.member` and `Class./member`. The third
+    // spelling, `Class/member`, is a NAMESPACE-qualified call and stays one —
+    // `str/join` and `clojure.string/trim` have the identical shape, so a rule
+    // that promoted it would fabricate a member access for every qualified call
+    // in the corpus. The CLJ-D32 fixture is what found the second spelling
+    // missing: `java.io.File./getName` was emitting a dangling
+    // `calls -> java.io.File./getName`.
+    const afterDot = formName.charCodeAt(slash + 1) === 46
+    const beforeDot = formName.charCodeAt(slash - 1) === 46
+    if (!afterDot && !beforeDot) return
+    const member = afterDot ? formName.slice(slash + 2) : formName.slice(slash + 1)
+    const cls = afterDot ? formName.slice(0, slash) : formName.slice(0, slash - 1)
     if (!member || !cls) return
     const line = head.startPosition.row + 1
     for (const e of [

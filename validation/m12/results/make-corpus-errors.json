@@ -1,7 +1,8 @@
 {
   "analyzer": "make",
-  "corpus": "union of 14 repositories, pinned",
+  "corpus": "union of 15 repositories, pinned",
   "corpusRepositories": [
+    "cabal",
     "terraform",
     "tf-aws-components",
     "consul",
@@ -19,12 +20,12 @@
   ],
   "corpusRepositoriesAbsent": [
     "elixir",
-    "cabal",
     "luarocks",
     "cython",
     "tree-sitter-clean"
   ],
   "corpusRevisions": {
+    "cabal": "cdb488e5ef41005cb1fa9a534708a459a6e98b2e",
     "terraform": "db4eef44f5bbd39a115f939304279caee7cf9b12",
     "tf-aws-components": "1f74a966a0b40ce7e5cae5baec690e5356cf46b8",
     "consul": "668c7586de219f9f05510cc5734dc1861f0f68cb",
@@ -42,6 +43,7 @@
   },
   "corpusFileCap": 400,
   "revisions": {
+    "cabal": "cdb488e5ef41005cb1fa9a534708a459a6e98b2e",
     "terraform": "db4eef44f5bbd39a115f939304279caee7cf9b12",
     "tf-aws-components": "1f74a966a0b40ce7e5cae5baec690e5356cf46b8",
     "consul": "668c7586de219f9f05510cc5734dc1861f0f68cb",
@@ -63,7 +65,7 @@
     "makefile",
     "*.mk"
   ],
-  "trackedFiles": 102,
+  "trackedFiles": 105,
   "absent": [
     "perl5/Cross/Makefile",
     "perl5/win32/GNUmakefile",
@@ -124,7 +126,7 @@
     "hasErrorNoNodeNote": "hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token that web-tree-sitter does not surface. The file parses into the correct tree and the analyzer's output for it is correct, so this is NOT a file error. It is the engine's conservative fallback (engine.ts:1264) doing its job."
   },
   "residualMatches": true,
-  "cleanFiles": 102,
+  "cleanFiles": 105,
   "crashes": [],
   "errors": [],
   "passed": true,

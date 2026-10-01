@@ -111,9 +111,30 @@ naming symbols the file did not declare.
 
 The edge carries the **heading's** line because M59 #825 takes `line_number` from the
 node that carries the name the edge is about — java's mapped-column edge does the same
-for the same reason — and because it is the only choice under which the store's
-`fileId:name:line` endpoint key resolves. The link's own line is not lost: it is
-`metadata.linkLine`.
+for the same reason. The link's own line is not lost: it is `metadata.linkLine`.
+
+**What actually fixed this, stated precisely, because the first version of this
+document got it wrong.** The mechanism is the target's NAME, not its line. The store
+resolves a `contains` target by name *and* line (`resolveContainsTargetStmt`, because
+same-named members need the line to tell them apart) and **every other relationship
+type by name alone** (`resolveTargetStmt`: `WHERE project_id = ? AND name = ?`, with a
+tiebreak on declaration-first / same-file / same-language). So a `uses` edge never
+needed the line to resolve, and the earlier claim here — that the heading's line was
+"the only choice under which the store's `fileId:name:line` endpoint key resolves" —
+was false.
+
+What was true, and is the whole of the fix: the raw fragment `#install-now` is not the
+NAME of any symbol the file publishes, so a name-only resolver found nothing and the
+edge bound to nothing. Resolving the fragment to the heading's published **name** is
+what made it bind — and that is also why the e2e gate can assert the edge through a
+JOIN on `target_symbol_id` rather than through `target_external`. The line choice is
+right on M59's terms and harmless, but it is not load-bearing, and a reader deciding
+whether to change it should know that before they assume the store depends on it.
+
+The corollary is worth carrying to any lane with same-named non-`contains` targets: name-only
+resolution means an edge to one of two same-named symbols binds to whichever the
+tiebreak picks. `contains` is the only type with a line to disambiguate, which is
+precisely why it is the one type that carries one into resolution.
 
 **Declared limitation.** GitHub's slugger keeps Unicode letters, so `Café` is
 `#café`; this lane's slug is ASCII-only and would produce `#caf`. The rule is

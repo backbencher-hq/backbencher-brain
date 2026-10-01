@@ -107,8 +107,8 @@
     "digest": "4d3af2553ff83e9644e59df3fd3b9e2fc3eeb408acd3a03f2789e026ad85c494",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-sql_tree-sitter-sql.wasm",
-      "sha256": "486ec2159ecff99bfb94c1549c3e1306594b252f653e13d920e2fdddcff99369",
-      "bytes": 12555354
+      "sha256": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
+      "bytes": 12620599
     },
     "siblings": {
       "src/ast/real-bash-analyzer.ts": {
@@ -216,8 +216,8 @@
         "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
-        "sha256": "10bbde0e49a49a603caab09f3e1fd6dc6f0d90cef999d00696c10dcf5a21ad05",
-        "bytes": 84853
+        "sha256": "1b421b48179c5ff2d529886c2fb6ef42e6e712a0c6ebf67b09cde2feb0c67042",
+        "bytes": 85609
       },
       "src/ast/real-php-analyzer.ts": {
         "sha256": "a899cc80f31145e1486b0ccc4b4ebba256a0849920d4e7f5e7f259ed6896241e",
@@ -459,11 +459,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:sql",
-      "wallTimeMs": 227.630135,
-      "userCpuMs": 221.508,
-      "systemCpuMs": 24.184,
-      "peakRssBytes": 270004224,
-      "rssDeltaBytes": 13000704,
+      "wallTimeMs": 348.868042,
+      "userCpuMs": 293.638,
+      "systemCpuMs": 25.444,
+      "peakRssBytes": 256073728,
+      "rssDeltaBytes": 14344192,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

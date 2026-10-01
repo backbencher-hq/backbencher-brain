@@ -104,8 +104,14 @@ relationships, two silent filters sat between them:
 
 | | before | after |
 |---|---|---|
-| reachable with **no** `relationshipTypes` argument | **34.3%** | **50.5%** |
-| reachable with an explicit filter | 50.5% | 50.5% |
+| reachable with **no** `relationshipTypes` argument | **57.4%** | **73.7%** |
+| reachable with an explicit filter | 73.7% | 73.7% |
+
+(Corpus-wide denominator: 101,017 edges over 1,200 parsed files of 8,528, with declared
+names indexed from **all** of them. An earlier version of this section reported 34.3% → 50.5% —
+both figures came from a probe that indexed only the files it parsed, so any edge into an
+unsampled file read as unresolved. Same defect and same fix; the magnitude was a sample
+statistic. Review §30.)
 
 `graph-engine.ts` defaulted the traversal to four of the eleven types, so **22.2% of every emitted
 relationship was excluded before the query ran** — including `contains`, the parent-to-member edge, which
@@ -114,8 +120,12 @@ function reports every cap and budget through `truncated` / `truncationReason` a
 The default is now every type, and a caller's filter is declared. That also removed a three-way
 disagreement between the repo's graph paths, two of which already returned everything.
 
-The remaining **49.5%** is not a type problem: it is edges whose target resolves to no symbol, which every
-graph query excludes. The structure is a language fact — `contains` and `overrides` resolve at 100% because
+The remaining **26.3%** is not a type problem: it is edges whose target resolves to no symbol, which every
+graph query excludes — and all 26,578 are accounted for. **76.3%** of the gap is `calls` to external
+framework DSL that no repository in the corpus declares (RSpec's `it`/`let`/`assert_equal`, Minitest,
+`I18n.t`); **18.1%** is `uses` where an ivar read targets a *value*, not a symbol; **4.2%** is
+`references` where `require` names a gem outside the project. Every cause is a fact about Ruby or about
+the dependency set — **not one is a fabricated edge**. Review §27–§30. The structure is a language fact — `contains` and `overrides` resolve at 100% because
 both sides are declared symbols, `references` at 2.9% (a require target is a *path*) and `uses` at 5.0% (an
 ivar read targets `@foo`). `references` is the sharpest case: **1,194 edges emitted, stored, and invisible to graph traversal.**
 The reachability figures are a **lower bound** on production resolution, which

@@ -215,3 +215,26 @@ grammars/tree-sitter-yaml/src/parser.c
 # an entire dependency history. This rule has now been lost twice to unrelated
 # .gitignore rewrites (first in 2c3a58eb), so it is short and stands alone.
 libxslt/
+
+# `validation/m55/profile/user-data/` is a CAPTURED BROWSER PROFILE, not a
+# fixture and not evidence: 230 files, 33 MB, produced by an m55 profiling run of
+# the agent host. It contains `Cookies` (+ journal), `machineid`, `Local State`,
+# `Preferences`, `Trust Tokens`, `SharedStorage`, `Network Persistent State`,
+# `TransportSecurity`, `Crashpad`, GPU/CDAWN caches, `chatSessions` and
+# `workspaceStorage`.
+#
+# It is untracked, and it must STAY untracked: committing it would publish browser
+# session material and a stable machine identifier to a public repository, and no
+# later `git rm` makes that reversible. Found during the pre-push review, when a
+# `git add -A` staged all 230 of them in one go. Nothing of it was ever in HEAD
+# or in any commit on origin/main, so nothing needs undoing.
+#
+# The rule is scoped to the CAPTURED profile, not to `validation/m55/`, so the
+# m55 lane's own reports and assertions under that tree remain committable.
+validation/m55/profile/
+# ...including `extensions/backbencher.bb-lsp-vscode-0.1.0/`, which is a CAPTURED
+# COPY of this repo's own extension. `ide/vscode/` is tracked and is the real
+# source; the copy under the profile differs from it in `package.json`, so if that
+# difference was deliberate it belongs committed in `ide/vscode/`, where a reader
+# will look — not as a build artefact inside a profiling capture. Flagged for the
+# m55 lane rather than silently resolved here.

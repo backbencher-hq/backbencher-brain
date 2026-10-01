@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T08:05:14.876Z",
+  "generatedAt": "2026-10-01T09:59:39.441Z",
   "reference": "Python 3 expat — a conforming XML 1.0 implementation, not owned or shipped by this repository",
   "method": "Each file is parsed by the wired grammar and by expat, and the two accept/reject verdicts are compared. Agreement is the evidence that a rejection is CORRECT; disagreement is a candidate grammar defect and is the thing this probe exists to find.",
   "cases": [
