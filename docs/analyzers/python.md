@@ -181,19 +181,14 @@ Filed in the review, not fixed, each with the reason:
   those do not resolve. Much of that collision is coincidental with stdlib method names. A
   caller doing a name-only lookup should know this before trusting the result.
 - **PY-16** — no `dialect` field exists in any lane, so Cython cannot be recorded honestly.
-- **PY-17** — two python framework tables with five overlapping entries, free to drift.
-- **PY-18** — the perf gate records a number and checks only that it is positive, so it cannot
-  fail. Measured properly (`script/m14/python-phase-profile.ts`), the lane is **84% analyzer /
-  16% parser** (58.7s vs 11.2s over 3,271 files, mean 21.4ms, p99 257ms), and every slow file is
-  85–92% analyzer. So the 1 MiB truncation limit guards a fifth of the cost, and the remaining
-  cost is structural: the tree is walked four times per file. Two provably-equivalent
-  micro-optimisations are in (a per-node `phantomKey` computed even when 96.7% of files have no
-  phantoms to match; a `parent.parent` re-read per attribute node). **No wall-clock gain is
-  claimed** — the machine ran at load 14.5 and identical code measured 18% apart twice.
-  re-measured or compared. Python's recorded `cython:python` 67.2 ms/file was taken at **load
-  average 41.85** and re-measures at ~193 ms/file at load 3.8. The distribution is skewed
-  (p50 55 ms, p99 2,497 ms, 8 files = 41% of the time), so the mean describes no file in it.
-  Budget on total time and p95 instead.
-- **PY-19** — content over **1 MiB** is truncated before parsing. The truncation is now **disclosed on the result** (`errors` entry plus a structured `metadata.truncated`), so a consumer can tell an incomplete parse from a complete one; 1 of 3,271 files is affected (`cython/tests/run/extsubscript.py`, 26% of it unread). The threshold itself is unchanged.
-  1 of 3,271 corpus files is affected (`cython/tests/run/extsubscript.py`, 357 KiB / 25% of it
-  never parsed). Cross-lane, in `engine.ts`.
+- **PY-17** — REFUTED as filed, and one real defect found under it. The census shows **0
+  case-variant duplicates** across 3,271 files, so the two tables' differing casing never reaches a
+  consumer, and they are **complementary rather than duplicate** (the second supplies all of
+  pandas/numpy/tensorflow/pytorch, the first all of ansible/setuptools/sphinx). But
+  `FrameworkDetector.hasImport` matches a needle against the **full dotted module path**, and
+  `"platform".includes("tf")` is true — so **34 corpus files reported `tensorflow`** on the
+  strength of a stdlib import. Fixed by adding a root-exact `hasModule` and using it for the
+  python table only (`hasImport` left byte-identical for the ~20 other lanes that read it).
+  `tensorflow` 34 → **0**. Gated by asserting *"a framework may only be reported if an import names
+  it"* — **no fixture can cover this code**, since `FrameworkIntelligence` runs only inside
+  `parseFile` while `run-fixtures.ts` calls `analyzer.analyze()` directly.
