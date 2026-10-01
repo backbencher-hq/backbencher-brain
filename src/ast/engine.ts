@@ -1868,6 +1868,24 @@ export namespace ASTEngine {
     /** Owner type name → declared method names, built from previously parsed
      *  files. Used for cross-file override-target resolution. */
     overrideCompanion?: Map<string, Set<string>>
+    /**
+     * A PROJECT-WIDE DECLARATION INDEX. OPTIONAL and ADDITIVE: an analyzer that does
+     * not read this field behaves exactly as it did before it existed, byte for byte.
+     * That is the property that makes it safe to add while fifteen sibling analyzers
+     * depend on this type.
+     *
+     * It exists because `overrideCompanion` above has never been populated by any
+     * production caller — the repo's own JavaScript external-override fixture says so
+     * in its header — and because a per-file analyzer cannot answer two questions a
+     * cross-file question can: "is this base an INTERFACE?" and "does any project type
+     * declare this member?". On the 389-file Solidity corpus that is 507 inheritance
+     * edges whose kind is undecided and 1,564 call targets that a whole-corpus audit
+     * shows are declared where the file cannot see them.
+     *
+     * See `src/ast/project-index.ts` for the shape and for why the scanner is
+     * deliberately independent of any analyzer that reads it.
+     */
+    projectIndex?: import("./project-index").ProjectIndex
     [key: string]: any
   }
 

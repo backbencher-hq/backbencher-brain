@@ -546,6 +546,63 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/project-index-ignored",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-21 REVERT: ignore `AnalyzeContext.projectIndex` entirely. That is the pre-SOL-21 behaviour, and it cost 507 undecided inheritance kinds and 1,487 unresolved call targets on the 389-file corpus — the whole point of adding an OPTIONAL field to a type fifteen sibling analyzers depend on. Caught by solidity-crossfile-gate's five `with-index` checks, which assert the kinds settle and the calls resolve.",
+    // Modelled on the OUTPUT, not by blanking the context: the mutation harness calls
+    // `transform(result, content)` and never hands a transform the AnalyzeContext, so a
+    // mutant that tried to clear `context.projectIndex` would be a no-op — which is
+    // exactly what the first version of this entry did, and it SURVIVED.
+    //
+    // Rewriting the resolved rows back to the shape the pre-SOL-21 analyzer emitted is
+    // the faithful revert in the only channel available: the kind falls back to
+    // `extends`, the row regains `kindUnresolved` at 0.9/`inferred`, and the resolved
+    // call becomes `external` again.
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        const md = x.metadata ?? {}
+        if ((x.type === "extends" || x.type === "implements") && md.kindResolvedProjectWide === true) {
+          const { kindResolvedProjectWide: _k, baseDeclarationKind: _b, ...rest } = md
+          return {
+            ...x,
+            type: "extends",
+            confidence: 0.9,
+            metadata: {
+              ...rest,
+              evidenceClass: "inferred",
+              kindUnresolved: true,
+              assumedKind: "extends",
+              reasonCode: "base-not-declared-in-file",
+            },
+          }
+        }
+        if (x.type === "calls" && md.calleeKind === "crossFileInheritedMember") {
+          return { ...x, metadata: { ...md, calleeKind: "external" } }
+        }
+        return x
+      }),
+    }),
+    caughtBy: "solidity/crossfile-sol21",
+  },
+  {
+    id: "solidity/project-index-candidate-as-resolution",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-21 REVERT, the honesty half: collapse `projectMemberCandidate` into `crossFileInheritedMember`, i.e. resolve a call whenever the index knows the name ANYWHERE rather than only through the OWNING contract's ancestors. This is the specific way the two grades could be confused, and it would convert 1,031 honest candidates into 1,031 confident facts — a Solidity `calls` edge carries no receiver type for a free function, so WHICH type is meant is undecidable. Caught by solidity-crossfile-gate's `candidate-is-not-a-resolution` check.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata ?? {}).calleeKind !== "projectMemberCandidate") return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), calleeKind: "crossFileInheritedMember" } }
+      }),
+    }),
+    caughtBy: "solidity/crossfile-sol21",
+  },
+  {
     id: "solidity/qualified-calls-dropped",
     language: "solidity",
     defectClass: "payload-loss",
