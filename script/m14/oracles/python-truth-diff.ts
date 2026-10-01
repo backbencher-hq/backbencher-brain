@@ -94,10 +94,12 @@ const key = (t: string, f: string, to: string, line?: number) =>
  * been coming from in this review.
  */
 
-/** The engine's own limit, mirrored so both sides of the comparison see identical bytes. */
-const PARSE_LIMIT = 1024 * 1024
+/** PY-19: the engine's parse limit is NOT copied here — it is read back from
+ * `result.metadata.truncated` per file. See the note at the truncation site. */
 const truncatedFiles: string[] = []
 let nTruncated = 0
+/** PY-19: cases where the mirrored PARSE_LIMIT and the engine's own disclosure disagreed. */
+const truncationMirrorMismatches: string[] = []
 
 const DUMP = process.env.BB_ORACLE_DUMP
 const dumpRows: any[] = []
@@ -165,15 +167,43 @@ for (const f of files) {
   // defect rate. So the truncation is reproduced EXACTLY — same limit, same unit — and a
   // truncated file is COUNTED and named, because "we did not read this file" is a coverage
   // fact the differential has to surface rather than absorb into its own error rate.
+  // PY-19. The engine truncates the input at its own limit and now says so, STRUCTURALLY, in
+  // `metadata.truncated`. This harness used to cut the bytes itself from a COPY of the engine's
+  // limit constant — and the first version of that arrangement was worse than no arrangement at
+  // all, because it pre-truncated to exactly 1 MiB, which meant the engine saw a file that was
+  // no longer over the limit, so the engine's own disclosure never fired and there was nothing to
+  // cross-check the copy against. Two sides agreeing because one of them made the other's
+  // condition disappear is not agreement.
+  //
+  // So the engine cuts now, and this harness asks it what it read: the oracle parses the first
+  // `parsedSize` bytes, which is the same input the analyzer saw, by construction rather than by
+  // a duplicated constant that can drift. The declared limit is never written down here.
+  const res: any = await engine.ASTEngine.parseFile(f, raw)
+  const disclosure: any = res?.metadata?.truncated
   let content = raw
   let truncatedBytes = 0
-  if (raw.length > PARSE_LIMIT) {
-    truncatedBytes = raw.length - PARSE_LIMIT
-    content = raw.substring(0, PARSE_LIMIT)
+  if (disclosure && typeof disclosure.parsedSize === "number" && disclosure.parsedSize < raw.length) {
+    content = raw.substring(0, disclosure.parsedSize)
+    truncatedBytes = raw.length - content.length
   }
-  if (truncatedBytes > 0) { truncatedFiles.push(`${path.basename(f)} (${truncatedBytes} bytes unread)`); nTruncated++ }
+  if (truncatedBytes > 0) {
+    truncatedFiles.push(`${path.basename(f)} (${truncatedBytes} bytes unread)`)
+    nTruncated++
+  }
 
-  const res: any = await engine.ASTEngine.parseFile(f, content)
+  // The disclosure is load-bearing, so it has to be trustworthy: a file the engine truncated
+  // WITHOUT disclosing it would leave this harness comparing a truncated analyzer result against
+  // a whole-file oracle derivation, which manufactures a row per relationship in the tail.
+  const engineSaidTruncated = Array.isArray(res?.errors) && res.errors.some((e: any) =>
+    typeof e?.message === "string" && e.message.includes("input truncated at the 1 MiB parse limit"),
+  )
+  if (engineSaidTruncated !== Boolean(disclosure)) {
+    truncationMirrorMismatches.push(
+      `${f}: engine disclosed an error notice=${engineSaidTruncated} but metadata.truncated=${Boolean(disclosure)} — ` +
+        `the parse this run measured is not the parse the analyzer reports`,
+    )
+  }
+
   if (res?.language !== "python") continue
   n++
 
@@ -288,6 +318,12 @@ if (multiTotal > 0) {
 
 if (nTruncated > 0) {
   console.log(`\nTRUNCATED INPUT (engine limit 1 MiB) — these files were compared only over the bytes the analyzer actually read:`)
+  if (truncationMirrorMismatches.length > 0) {
+    // Loud, not a count. A mismatch means the two sides of every remaining comparison may have
+    // read different bytes, so the rows below are not findings until it is resolved.
+    console.log(`\n!! TRUNCATION MIRROR DISAGREED WITH THE ENGINE (${truncationMirrorMismatches.length}) — results are NOT trustworthy:`)
+    for (const m of truncationMirrorMismatches) console.log(`   ${m}`)
+  }
   for (const f of truncatedFiles) console.log(`   ${f}`)
   console.log(`   ${nTruncated} file(s) truncated. Coverage of their unread tails is a PY-19 concern, NOT analyzer error.`)
 }
