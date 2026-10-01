@@ -135,6 +135,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   // S1.21: stable per-file counter for anonymous given names (see handleGiven).
   // Reset at the top of every analyze() so each file counts from 1.
   private givenCounter = 0
+  // M60: per-file anonymous-CLASS name disambiguation, same contract as
+  // givenCounter above. `anonymous_<SuperName>` is only unique within its supertype,
+  // and a file routinely declares several anonymous classes of the SAME supertype.
+  // Measured on the full scala3 corpus: 3,330 anonymous symbols across 1,503 files,
+  // of which **402 files declare a DUPLICATE name** (517 collisions).
+  //
+  // The cost was not cosmetic. `CheckCaptures.scala` declares FOUR distinct
+  // `anonymous_TypeTraverser` classes (lines 161, 363, 384, 2308), and all their
+  // members were published under ONE owner: 8 contains rows drawn from 4 different
+  // classes, 7 of them attributed to the wrong one, with `traverse` appearing four
+  // times under the same owner and collapsing to a single row after the harness's
+  // (label, target) dedupe. One node where the source has four.
+  //
+  // The FIRST occurrence keeps the bare name, so every existing pin on
+  // `anonymous_Runnable -> run` still holds; later ones take `#2`, `#3`, ... in
+  // source order, which is rename-stable under upstream line insertions the same way
+  // given_N is.
+  private anonNameUse = new Map<string, number>()
 
   public analyze(
     rootNode: Node,
@@ -148,6 +166,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const exports: ASTEngine.ExportInfo[] = []
     // S1.21: stable per-file counter for anonymous given names (see handleGiven).
     this.givenCounter = 0
+    this.anonNameUse = new Map<string, number>()
 
     const patternsObj: Record<string, boolean> = {}
     const frameworksObj: Record<string, boolean> = {}
@@ -473,7 +492,12 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `anonymous_:\n  private var cur = ...` for a body with no supertype at
           // all. An unnameable supertype now takes the canonical fallback.
           const superName = this.stripTypeArgs(this.scalaAnonymousSupertypeName(typeNode))
-          const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
+          const anonBase = superName ? `anonymous_${superName}` : "anonymous_object"
+          // Disambiguate only on COLLISION, so the common single-anonymous-class file
+          // publishes exactly the name it always did.
+          const seen = this.anonNameUse.get(anonBase) ?? 0
+          this.anonNameUse.set(anonBase, seen + 1)
+          const anonName = seen === 0 ? anonBase : `${anonBase}#${seen + 1}`
           const anonSym: ASTEngine.UniversalSymbol = {
             name: anonName,
             kind: ASTEngine.SymbolKind.Class,
