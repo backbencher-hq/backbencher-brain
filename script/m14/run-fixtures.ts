@@ -228,6 +228,10 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   "startColumn", "endColumn", "genericParameters", "parameters", "returnType", "type",
   "visibility", "isAsync", "isAbstract", "isExported", "isDeclaration", "isRecordField",
   "docstring", "decorators", "complexity", "linesOfCode", "id", "line",
+  // SOL-16: NatSpec payload. `comments` is the per-comment array the TypeScript lane
+  // populates for the same job, so the key is allowlisted for cross-lane parity
+  // rather than because Solidity needed a new spelling.
+  "docstringKind", "docTags", "comments",
   // relationship rows
   "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
   "line_number", "confidence", "contains", "symbol", "isImport", "isContained",
@@ -266,6 +270,29 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
     // declaration's line) was indistinguishable from the fixed one.
     if (k === "line_number" && v === null) {
       if (actual.line_number !== undefined && actual.line_number !== null) return false
+      continue
+    }
+    // TOP-LEVEL arrays, by sorted JSON — the same rule `meta.*` already uses one
+    // branch below, for the same reason: a strict `!==` can never be true for an
+    // array, so a fixture listing `docTags: ["@notice", "@param"]` could not state
+    // the list it wanted and the row asserted nothing while reading as coverage.
+    // Additive: every scalar comparison below is untouched.
+    if (Array.isArray(v)) {
+      const av = (actual as any)[k]
+      if (!Array.isArray(av)) return false
+      if (JSON.stringify([...av].sort()) !== JSON.stringify([...v].sort())) return false
+      continue
+    }
+    // `field: null` at the TOP level means "this field must be ABSENT or null", the
+    // same convention `line_number: null` and `meta.x: null` already use, applied one
+    // level up. It exists because `undefined === null` is false, so a fixture could
+    // not state the ABSENT case for a symbol field — which is the case a consumer
+    // actually hits most (`decorators` on a function with no applied modifier,
+    // `docstring` on an undocumented declaration). Without it the only writable
+    // assertion was the presence case, and a rule that populated every field
+    // everywhere would pass. Additive: every other comparison is untouched.
+    if (v === null) {
+      if ((actual as any)[k] !== undefined && (actual as any)[k] !== null) return false
       continue
     }
     if (k === "confidenceMin") {
