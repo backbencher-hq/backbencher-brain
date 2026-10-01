@@ -488,6 +488,41 @@ function filterNoiseRelationships(rels: any[], language: string, declaredNames?:
   })
 }
 
+/**
+ * Which symbol kinds get a stored body, and why each one is in or out.
+ *
+ * This list decides what content search can reach, so it was measured rather
+ * than guessed. Before it was explicit, only `function | class | method |
+ * interface` produced a snippet, and the result was whole ABSTRACTIONS with no
+ * searchable text at all:
+ *
+ *     ripgrep   impl         0/443    <- Rust's central abstraction, 0% searchable
+ *     ripgrep   struct       0/311
+ *     lodash    type       0/1302    <- measured: "Lodash Governance", a MARKDOWN heading
+ *     clojure   constructor  0/325
+ *
+ * IN, because the body is code nothing else can reach:
+ *   impl      a 73-line `impl HaystackBuilder` block is the whole answer to "how
+ *             does the haystack builder work". Its NAME was searchable; its logic
+ *             was not, so "HaystackBuilder" found a declaration and nothing else.
+ *   struct    3 lines of field declarations, but the field NAMES ("what has a
+ *             strip_dot_prefix flag") are signal the name alone does not carry.
+ *
+ * OUT, on measured grounds rather than tidiness:
+ *   type      in lodash these are markdown section headings, not code. Storing
+ *             them would put prose into a code index and dilute the bm25 ranking
+ *             that now ranks bodies. Better extraction, not a bigger list, is the
+ *             fix for that coverage number.
+ *   property / variable / constant / module / enum_member
+ *             declarations. A symbol's own name and qualified name are already
+ *             indexed and searched, so a one-line body adds rows and no recall —
+ *             which is why their measured 0% coverage is CORRECT, not a gap.
+ *
+ * `function` is 40% covered on rake, which is an analyzer-extraction limit rather
+ * than this list: those bodies arrive empty from upstream.
+ */
+const SNIPPET_KINDS = new Set(["function", "class", "method", "interface", "impl", "struct"])
+
 let engineModule: any = null
 
 export async function parseFile(filePath: string, projectPath: string, context?: ASTEngine.AnalyzeContext) {
@@ -570,9 +605,44 @@ export async function parseFile(filePath: string, projectPath: string, context?:
     }
 
     // Stage 5: Universal Multi-Language Taint Data-Flow Extraction
+    //
+    // GATED on the language. `TaintAnalyzer` matches SOURCE and SINK TOKENS
+    // over a symbol's text, so it will happily "find" a taint flow in prose:
+    // measured on this repository's own index, 326 of bb_security's 3,190
+    // findings (10.2%) were in Markdown, JSON, YAML, HTML and CSS, including
+    // `docs/m15/M15-MASTER-PLAN.md:214` reported as a `sql_injection` with the
+    // symbol name parsed out of a markdown table pipe. No amount of token
+    // matching can make those valid; they are an artefact of running a text
+    // matcher over a text format.
+    //
+    // The gate is a NAME list, not a heuristic, because the taint rules are
+    // written against programming-language APIs (`db.query`, `child_process`,
+    // `PreparedStatement`). A configuration or prose format has no such API, so
+    // there is nothing for the rules to legitimately match. It lives here rather
+    // than inside `taint-analyzer.ts` so the analyzer stays a pure rule set and
+    // the eligibility decision stays visible at the call site.
+    const TAINT_ELIGIBLE_LANGUAGES = new Set([
+      // The languages the engine dispatches to a REAL analyzer AND for which
+      // the taint rules are written against a language API (`db.query`,
+      // `child_process`, `PreparedStatement`, `cursor.execute`, …).
+      "typescript", "tsx", "javascript", "java", "kotlin", "scala", "groovy",
+      "python", "ruby", "php", "go", "rust", "swift", "dart", "c", "cpp",
+      "csharp", "perl", "lua", "r", "elixir", "erlang", "clojure", "haskell",
+      "zig", "nim", "fsharp", "vb", "powershell", "bash", "objective-c",
+      // Explicitly EXCLUDED, and each exclusion is load-bearing:
+      //   markdown json yaml toml xml html css sass scss graphql protobuf
+      //   make clean hcl terraform svelte vue sql
+      // Markdown/JSON/YAML/TOML/XML/HTML/CSS carry prose and data, not code —
+      // measured at 326 of 3,190 bb_security findings (10.2%). The rest are
+      // schema, query, build and markup formats whose tokens ("select", "exec",
+      // "query") collide with the sink rules without ever being a sink.
+    ])
+    const taintEligible = TAINT_ELIGIBLE_LANGUAGES.has((language || "").toLowerCase())
     try {
-      const { TaintAnalyzer } = await import("./taint-analyzer")
-      TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+      if (taintEligible) {
+        const { TaintAnalyzer } = await import("./taint-analyzer")
+        TaintAnalyzer.enrichSymbols(parsed.symbols, content, language)
+      }
     } catch (e) {
       log("Taint extraction failed:", e)
     }
@@ -638,7 +708,7 @@ export async function parseFile(filePath: string, projectPath: string, context?:
         })
         .map((s: any) => {
         let snippet = ""
-        if (["function", "class", "method", "interface"].includes(s.kind)) {
+        if (SNIPPET_KINDS.has(s.kind)) {
           const lines = snippetLines ?? (snippetLines = content.split("\n"))
           snippet = lines.slice(Math.max(0, s.range.startLine - 1), s.range.endLine).join("\n")
           if (snippet.length > 10000) snippet = snippet.substring(0, 10000)

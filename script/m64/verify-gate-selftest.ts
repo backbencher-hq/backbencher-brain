@@ -24,7 +24,7 @@
 // failure cannot leave the working tree dirty. The runner is a child process
 // because the gate imports the modules under test by absolute path.
 
-import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, existsSync } from "node:fs"
+import { mkdtempSync, mkdirSync, cpSync, writeFileSync, readFileSync, rmSync, existsSync, symlinkSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { execFileSync } from "node:child_process"
@@ -53,6 +53,13 @@ interface Mutation {
   replace: string
   /** what this mutation undoes, and therefore what the gate must catch */
   undoes: string
+  /**
+   * True when the mutation is EXPECTED to break the engine badly enough that the
+   * gate cannot run at all, rather than to make it disagree. Only a mutation that
+   * is known to do that may be counted as caught by a crash; every other mutation
+   * that merely crashes has told us nothing about the gate.
+   */
+  expectCrash?: boolean
 }
 
 const MUTATIONS: Mutation[] = [
@@ -60,12 +67,25 @@ const MUTATIONS: Mutation[] = [
     id: "M1",
     file: "src/intelligence/patterns/orphans.ts",
     undoes: "the evidence quality gate — a self-loop / inferred / low-confidence row is accepted as a consumer again",
-    // The gate's three-part condition, reduced to "no condition".
-    find: `        row.src !== null && row.id !== null && row.src === row.id ? SELF_LOOP_EXCLUDED
-        : row.ev === "inferred" ? INFERRED_EXCLUDED
-        : typeof row.conf === "number" && row.conf < MIN_EDGE_CONFIDENCE ? LOW_CONFIDENCE_EXCLUDED
-        : null`,
-    replace: `        null`,
+    // The gate now lives in one SQL CASE expression, because six statements share
+    // it. The anchor follows it there: all three WHEN branches are replaced by a
+    // condition that is never true, so every row reads as clean.
+    find: "    `(CASE WHEN r.source_symbol_id IS NOT NULL AND r.target_symbol_id IS NOT NULL ` +\n    `AND r.source_symbol_id = r.target_symbol_id THEN '${SELF_LOOP_EXCLUDED}' ` +\n    `WHEN json_extract(r.metadata, '$.evidenceClass') = 'inferred' THEN '${INFERRED_EXCLUDED}' ` +\n    `WHEN r.confidence < @minConf THEN '${LOW_CONFIDENCE_EXCLUDED}' ELSE NULL END)`",
+    replace: "    `(CASE WHEN 1 = 0 THEN '${SELF_LOOP_EXCLUDED}' ELSE NULL END)`",
+  },
+  {
+    id: "M7",
+    file: "src/intelligence/patterns/orphans.ts",
+    undoes: "named parameter binding in the relationship statements — a `?` inside the SELECT-list CASE binds BEFORE the WHERE clause's placeholders, so 0.7 lands on `r.project_id = ?`, the query matches nothing, and every refused-evidence disclosure silently disappears with the finding counts unchanged",
+    // This one goes red by REFUSING TO RUN rather than by asserting: a named
+    // placeholder with no bound value is a SqliteError. That is still a red gate
+    // and a good outcome, but it is a different outcome, so the report says which.
+    find: "const usageFilter = `r.project_id = @projectId AND r.relationship_type IN (${typeList})`",
+    replace: "const usageFilter = `r.project_id = ? AND r.relationship_type IN (${typeList})`",
+    // An unbound named placeholder is a SqliteError, so the gate cannot run at
+    // all. That is the correct outcome for this mutation and is declared as such
+    // rather than being allowed to masquerade as a disagreement.
+    expectCrash: true,
   },
   {
     id: "M2",
@@ -88,6 +108,25 @@ const MUTATIONS: Mutation[] = [
     undoes: "the coverage-gap disclosure — a symbol whose file is reached but which is not goes back to reading as confident dead code",
     find: `    const fileUsage = symbolsWithAnyIncoming.has(sym.id) ? undefined : fileIncomingUsage.get(sym.fileId)`,
     replace: `    const fileUsage = undefined`,
+  },
+  {
+    id: "M5",
+    file: "src/intelligence/patterns/orphans.ts",
+    undoes: "the per-symbol coverage test's ANCHORED-ONLY semantics — unanchored name matches count as recorded consumers again, which silences the coverage-gap indicator across whole corpora",
+    // The explicit `IS NOT NULL` is the current shape. The version before the
+    // SQL reduction wrote `source_symbol_id <> target_symbol_id`, which in SQL is
+    // NULL rather than true for an unanchored row and so excluded them — correct
+    // behaviour from what reads like a mistake. This mutation reinstates that
+    // exclusion being absent, so what is undone is unambiguous.
+    find: "`WHERE ${usageFilter} AND r.source_symbol_id IS NOT NULL ` +\n        `AND r.target_symbol_id IS NOT NULL AND r.source_symbol_id <> r.target_symbol_id`,",
+    replace: "`WHERE ${usageFilter} AND r.target_symbol_id IS NOT NULL ` +\n        `AND (r.source_symbol_id IS NULL OR r.source_symbol_id <> r.target_symbol_id)`,",
+  },
+  {
+    id: "M6",
+    file: "src/intelligence/patterns/orphans.ts",
+    undoes: "the row count in the refused-evidence disclosure — it goes back to counting deduplicated REASONS, so a symbol with three refused self-loop rows reports one",
+    find: "REFUSED EVIDENCE: ${rejected.rows} row(s) about this symbol",
+    replace: "REFUSED EVIDENCE: ${rejected.reasons.length} row(s) about this symbol",
   },
 ]
 
@@ -131,6 +170,23 @@ for (const m of MUTATIONS) {
       mkdirSync(path.dirname(to), { recursive: true })
       cpSync(from, to, { recursive: true })
     }
+    // `wasm/` holds the tree-sitter core and every grammar, and the engine
+    // resolves them relative to its own source directory. The mirror did not
+    // copy it, so every mutation run died with
+    //   Aborted(ENOENT: tree-sitter.wasm)
+    // before the gate evaluated a single check — and the self-test reported all
+    // seven mutations as CAUGHT, because a crash exits non-zero. That is the
+    // worst kind of green: seven mutations proved nothing, and the run looked
+    // like the strongest evidence in the file.
+    //
+    // Symlinked rather than copied: it is ~220 MB of grammars and the mutations
+    // never modify it.
+    for (const asset of ["wasm"]) {
+      const from = path.join(REPO, asset)
+      if (existsSync(from)) {
+        try { symlinkSync(from, path.join(mirror, asset), "dir") } catch {}
+      }
+    }
     writeFileSync(path.join(mirror, m.file), original.replace(m.find, m.replace))
     // The mirror has no node_modules, so resolve tsx from the real repo.
     const link = path.join(mirror, "node_modules")
@@ -149,9 +205,30 @@ for (const m of MUTATIONS) {
       out = (e.stdout ?? "") + (e.stderr ?? "")
     }
     const redChecks = out.split("\n").filter((l) => l.includes("FAIL:")).map((l) => l.trim().replace(/^FAIL:\s*/, "").split(" — ")[0])
-    check(`${m.id} the gate goes RED when this is undone — ${m.undoes}`,
-      exitCode !== 0 && redChecks.length > 0,
-      `exit=${exitCode} failingChecks=${redChecks.length} ${JSON.stringify(redChecks.slice(0, 3))}`)
+    // "M64.P1 session" is the gate's own catch-all: the whole body is wrapped in a
+    // try/catch that turns ANY exception into one failing check. So a mutation
+    // that merely crashes reports exactly one red check, named "M64.P1 session",
+    // and is indistinguishable from a real disagreement unless it is told apart
+    // here.
+    //
+    // That distinction is the whole point. A crash is a red gate but it is not
+    // EVIDENCE that this gate covers this decision — the run may have died before
+    // evaluating anything, which is precisely what happened when the mirror was
+    // missing wasm/ and all seven mutations "passed".
+    const realAssertions = redChecks.filter((c) => c !== "M64.P1 session")
+    const crashed = redChecks.length > 0 && realAssertions.length === 0
+    const onlySession = redChecks.length === 1 && redChecks[0] === "M64.P1 session"
+    const how = realAssertions.length > 0
+      ? `${realAssertions.length} real assertion(s) fired: ${realAssertions.slice(0, 2).join("; ")}`
+      : onlySession
+        ? (m.expectCrash ? "the gate refused to run, as expected for this mutation" : "INCONCLUSIVE — the gate crashed before judging anything")
+        : `exit=${exitCode} with no failing assertion and no recognisable error`
+    console.log(`       -> ${how}`)
+    const caught = m.expectCrash
+      ? exitCode !== 0 && (realAssertions.length > 0 || onlySession)
+      : exitCode !== 0 && realAssertions.length > 0
+    check(`${m.id} the gate goes RED when this is undone — ${m.undoes}`, caught,
+      `exit=${exitCode} failing=${JSON.stringify(redChecks.slice(0, 3))}`)
   } finally {
     rmSync(mirror, { recursive: true, force: true })
   }

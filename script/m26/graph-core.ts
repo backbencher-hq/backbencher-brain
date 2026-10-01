@@ -521,7 +521,21 @@ export function renderGraph(result: GraphResultLike, dom: GraphDom): RenderStats
  *  locally so this core keeps its zero-import law. */
 export interface ImpactResultLike {
   root: { id: string; name: string; file: string }
-  impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
+  impact: Array<{
+    id: string
+    name: string
+    file: string
+    depth: number
+    relationshipType: string
+    confidence: number
+    /** M63.T2: `exact`, `member`, or `range-folded` — the last being a
+     *  conservative over-count the cascade range contributed and the reader
+     *  needs marked. Optional so hand-built fixtures keep type-checking. */
+    via?: "exact" | "member" | "range-folded"
+    /** M63.T2: which path the quoted evidence belongs to, null when nothing
+     *  could be attributed. See `ImpactDependent.evidenceAtDepth`. */
+    evidenceAtDepth?: number | null
+  }>
   shownCount: number
   /** null = the honest "unknown" total (never a fabricated number) */
   totalCountIfKnown: number | null
@@ -531,6 +545,11 @@ export interface ImpactResultLike {
    *  Optional so hand-built fixtures keep type-checking; a surface that
    *  receives it says so out loud (see renderImpact). */
   rootMatch?: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
+  /** M63.T2: HOW each shown dependent is a dependent, and how many of them are
+   *  here only because the owner-cascade RANGE widened. Optional so hand-built
+   *  fixtures keep type-checking; a surface that receives it says so out loud. */
+  impact?: never
+  cascade?: { exact: number; member: number; rangeFolded: number } | null
 }
 
 /** M55.T1 (Truth Rule 2): a declared substitution is rendered on EVERY surface
@@ -596,13 +615,43 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
     note.textContent = `"${match.requested}" is not a stored symbol on its own — showing the impact of ${result.root.name}${result.root.file ? ` (${result.root.file})` : ""}`
     layer.appendChild(note)
   }
+  let rangeFolded = 0
+  let unattributed = 0
   for (const dep of result.impact) {
     const el = dom.create("div")
     el.addClass("bb-impact-node")
     el.setAttribute("data-id", dep.id)
     el.setAttribute("data-depth", String(dep.depth))
+    // M63.T2: the same law the payload follows, on the other surface. A
+    // dependent that is here only because the cascade range widened is not a
+    // member of the symbol the user asked about, and a panel that lists it
+    // beside real members without saying so is the defect the tool exists to
+    // prevent — on a screen, with no field for a reader to check.
+    if (dep.via !== undefined) el.setAttribute("data-via", dep.via)
+    if (dep.via === "range-folded") {
+      rangeFolded++
+      el.addClass("bb-impact-node--range-folded")
+    }
+    if (dep.evidenceAtDepth === null) {
+      unattributed++
+      el.setAttribute("data-evidence", "unattributed")
+    }
     el.textContent = `${dep.name} (${dep.file || "external"})`
     layer.appendChild(el)
+  }
+  if (rangeFolded > 0) {
+    const note = dom.create("div")
+    note.addClass("bb-impact-cascade-note")
+    note.setAttribute("data-range-folded", String(rangeFolded))
+    note.textContent = `${rangeFolded} of the ${result.impact.length} shown dependents are here only because the owner-cascade range widened — they are not members of ${result.root.name} (marked below)`
+    layer.appendChild(note)
+  }
+  if (unattributed > 0) {
+    const note = dom.create("div")
+    note.addClass("bb-impact-evidence-note")
+    note.setAttribute("data-unattributed", String(unattributed))
+    note.textContent = `${unattributed} of the ${result.impact.length} shown dependents carry no quoted evidence: the stored row at the depth this panel reports could not be read, so no tier, position or cross-language flag is shown for them`
+    layer.appendChild(note)
   }
   // Declared empty-state (owner live test, 2026-09-12): a resolved root with
   // zero stored reverse dependencies renders a visible note — never

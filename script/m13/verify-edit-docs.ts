@@ -14,6 +14,7 @@
 //    validateEvidence (imported from verify-evidence.ts) rejects it.
 
 import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { Harness } from "./harness"
@@ -37,7 +38,20 @@ const harness = new Harness({
   ],
 })
 
-const root = path.resolve(import.meta.dir, "..", "..")
+// `import.meta.dir` is BUN-ONLY. Under Node it is undefined, so this gate died
+// with `TypeError: The "paths[0]" argument must be of type string` before running
+// a single check — it had never executed outside Bun. The `?? "."` fallback is
+// NOT enough: the scripts are invoked from the repo ROOT, so "." plus "../.."
+// climbs one level too far and the failure becomes ENOENT on a sibling path
+// instead, which reads as a missing file rather than a wrong root.
+//
+// `fileURLToPath(import.meta.url)` is the repo's existing portable idiom
+// (script/m62/verify-docs.ts, verify-consumers.ts, verify-arrival.ts and others
+// already use exactly this). It is also the only form safe on a path containing
+// a space — this repository lives under "/Users/…/Default Project/…", and
+// `new URL(import.meta.url).pathname` percent-encodes that, so the naive
+// form would break here while working everywhere else.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const RESULTS = path.join(root, "validation", "m13", "results")
 
 // ── 1. Docs accuracy ───────────────────────────────────────────────────────

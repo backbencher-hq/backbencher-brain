@@ -67,6 +67,20 @@ export interface MigrationRelationship {
 export interface MigrationContext {
   /** Every indexed symbol matching a requested name (case-insensitive). */
   requestedSymbols: MigrationSymbol[]
+  /**
+   * What each requested path actually matched. A path that matches nothing is
+   * REPORTED, not silently dropped: an empty plan set from a typo is the worst
+   * possible way for a cohort request to fail.
+   */
+  pathResolution: {
+    paths: string[]
+    /** Number of indexed symbols the paths contributed. */
+    matched: number
+    /** Requested paths that matched no indexed file. */
+    unmatched: string[]
+    /** Distinct files the paths covered. */
+    files: string[]
+  }
   /** Relationships touching any requested symbol, in both directions. */
   relationships: MigrationRelationship[]
   /** Endpoint display names for ids referenced by those relationships. */
@@ -74,6 +88,14 @@ export interface MigrationContext {
   fileById: Map<string, string>
   /** Rows the index holds for this project, for scale reporting. */
   projectScale: { symbols: number; relationships: number }
+  /**
+   * How much of the graph this call actually READ. The bound is a property of the
+   * design, not of the machine, so it has to be observable: a wall-clock claim
+   * about "it did not load everything" is a load-dependent assertion that passes
+   * on a quiet machine and fails on a busy one. `relationshipsLoaded` next to the
+   * project's own total is checkable anywhere.
+   */
+  work: { symbolsLoaded: number; relationshipsLoaded: number }
 }
 
 /** Chunked `IN (…)` binding. SQLite's default limit is 999 variables. */
@@ -90,21 +112,154 @@ const placeholders = (n: number) => new Array(n).fill("?").join(",")
  * relationships that touch them, and the display names of those relationships'
  * other endpoints.
  */
-export async function loadMigrationContext(projectId: string, requestedNames: string[]): Promise<MigrationContext> {
+/**
+ * Resolve project-relative file or DIRECTORY paths to the symbols they contain.
+ *
+ * A path matches a file when it is that file, or when it is a directory prefix
+ * of it. Comparison is on the project-relative path with `/` separators, because
+ * that is what the index stores and what the caller wrote.
+ *
+ * Deterministic order: by file path, then by the symbol's line. The cohort
+ * order is the SELECTION order, so when the request cap drops names the ones
+ * that survive are the first in file order rather than whatever the database
+ * happened to return — and the rule is reported in `truncation.selection`.
+ */
+export async function loadMigrationSymbolsByPath(
+  projectId: string,
+  paths: string[],
+): Promise<{ symbols: MigrationSymbol[]; unmatched: string[]; files: string[] }> {
+  const empty = { symbols: [] as MigrationSymbol[], unmatched: [] as string[], files: [] as string[] }
+  const cleaned = [...new Set(paths.map((p) => String(p ?? "").trim().replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/+$/, "")))].filter(Boolean)
+  if (cleaned.length === 0) return empty
   const raw = await BrainDatabase.getRawInstance(projectId as any)
-  const names = [...new Set(requestedNames.map((name) => String(name).trim().toLowerCase()).filter(Boolean))]
 
-  if (names.length === 0) {
-    return {
-      requestedSymbols: [],
-      relationships: [],
-      nameById: new Map(),
-      fileById: new Map(),
-      projectScale: { symbols: 0, relationships: 0 },
+  const symbols: MigrationSymbol[] = []
+  const matchedFiles = new Set<string>()
+  const unmatched: string[] = []
+  for (const path of cleaned) {
+    // The project root, named three ways. `.` used to match nothing at all,
+    // because it became the prefix `.` and the LIKE pattern `./%` matches no
+    // project-relative path — so the one request that means "everything" was
+    // the one that silently returned nothing.
+    const isProjectRoot = path === "." || path === "./" || path === "/"
+    // A LIKE pattern with the prefix escaped, so `%` and `_` in a path are
+    // literal and cannot match everything.
+    const prefix = path.replace(/[%_]/g, (c) => `\\${c}`)
+    const rows = raw
+      .prepare(
+        `SELECT s.id AS id, s.name AS name, s.symbol_type AS type, s.line_start AS line,
+                COALESCE(f.language, 'unknown') AS language,
+                COALESCE(f.relative_path, 'unknown') AS file
+         FROM brain_symbol s
+         JOIN brain_file f ON f.id = s.file_id
+         WHERE s.project_id = ?
+           ${isProjectRoot ? "" : "AND (f.relative_path = ? OR f.relative_path LIKE ? ESCAPE '\\')"}
+         ORDER BY f.relative_path, s.line_start, s.name`,
+      )
+      .all(...(isProjectRoot ? [projectId] : [projectId, path, `${prefix}/%`])) as any[]
+    if (rows.length === 0) {
+      unmatched.push(path)
+      continue
+    }
+    for (const r of rows) {
+      matchedFiles.add(r.file)
+      symbols.push({ id: r.id, name: r.name, type: r.type, language: r.language, file: r.file })
     }
   }
+  // Overlapping paths (src/api and src/api/v1) can yield the same symbol twice.
+  const unique = [...new Map(symbols.map((s) => [s.id, s])).values()]
+  return { symbols: unique, unmatched, files: [...matchedFiles].sort() }
+}
 
-  const requestedSymbols: MigrationSymbol[] = []
+/** One symbol per id, de-duplicated by id. Ids are unique in a project, so there is
+ * no resolution rule here and none is applied. */
+function dedupeById(symbols: MigrationSymbol[]): MigrationSymbol[] {
+  const seen = new Map<string, MigrationSymbol>()
+  for (const symbol of symbols) seen.set(symbol.id, symbol)
+  return [...seen.values()]
+}
+
+/**
+ * Look symbols up by their INDEXED ID.
+ *
+ * An id is a name that cannot collide, which is the whole reason this exists: two
+ * components can share a name in two different files, and the tool's own
+ * ambiguity refusal tells the caller to re-run against a symbol id — an option
+ * that did not exist until round 6 made that advice true.
+ *
+ * An id that matches nothing is RETURNED, never dropped: a typo'd id that
+ * silently planned nothing would be indistinguishable from an empty module.
+ */
+async function loadMigrationSymbolsById(
+  projectId: string,
+  ids: string[],
+): Promise<{ symbols: MigrationSymbol[]; unmatched: string[] }> {
+  if (ids.length === 0) return { symbols: [], unmatched: [] }
+  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const symbols: MigrationSymbol[] = []
+  const found = new Set<string>()
+  for (const group of chunk(ids)) {
+    const rows = raw
+      .prepare(
+        `SELECT s.id AS id, s.name AS name, s.symbol_type AS type,
+                COALESCE(f.language, 'unknown') AS language,
+                COALESCE(f.relative_path, 'unknown') AS file
+         FROM brain_symbol s
+         LEFT JOIN brain_file f ON f.id = s.file_id
+         WHERE s.project_id = ? AND s.id IN (${placeholders(group.length)})
+         ORDER BY s.id`,
+      )
+      .all(projectId, ...group) as any[]
+    for (const row of rows) {
+      found.add(row.id)
+      symbols.push({ id: row.id, name: row.name, type: row.type, language: row.language, file: row.file })
+    }
+  }
+  return { symbols, unmatched: ids.filter((id) => !found.has(id)) }
+}
+
+/**
+ * PHASE 1 — resolve the request to a symbol list, WITHOUT loading any
+ * relationship.
+ *
+ * Split out because a cohort can be a whole directory while the request is
+ * capped at 100 symbols. Resolving and then loading in one pass would read
+ * every relationship of every symbol in the cohort — thousands — to plan 100 of
+ * them, which is the unbounded-load defect the bounded loader was written to
+ * remove. Resolve, cap, THEN load.
+ */
+export async function resolveMigrationSymbols(
+  projectId: string,
+  requestedNames: string[],
+  requestedPaths: string[] = [],
+  requestedIds: string[] = [],
+): Promise<{
+  symbols: MigrationSymbol[]
+  symbolsFromPaths: MigrationSymbol[]
+  /** Resolved from an explicit `symbolIds` entry, not from a name or a path. */
+  symbolsById: MigrationSymbol[]
+  /** Requested ids that no indexed symbol carries, reported rather than dropped. */
+  idsUnmatched: string[]
+  pathResolution: MigrationContext["pathResolution"]
+}> {
+  const raw = await BrainDatabase.getRawInstance(projectId as any)
+  const names = [...new Set(requestedNames.map((name) => String(name).trim().toLowerCase()).filter(Boolean))]
+  const ids = [...new Set(requestedIds.map((id) => String(id).trim()).filter(Boolean))]
+  const fromPaths = await loadMigrationSymbolsByPath(projectId, requestedPaths)
+  const pathResolution = {
+    paths: requestedPaths.map((p) => String(p ?? "").trim()).filter(Boolean),
+    matched: fromPaths.symbols.length,
+    unmatched: fromPaths.unmatched,
+    files: fromPaths.files,
+  }
+  const byId = await loadMigrationSymbolsById(projectId, ids)
+  const symbolsById = byId.symbols
+  const idsUnmatched = byId.unmatched
+  if (names.length === 0) {
+    const all = dedupeById([...fromPaths.symbols, ...symbolsById])
+    return { symbols: all, symbolsFromPaths: fromPaths.symbols, symbolsById, idsUnmatched, pathResolution }
+  }
+  const symbols: MigrationSymbol[] = []
   for (const group of chunk(names)) {
     const rows = raw
       .prepare(
@@ -117,22 +272,64 @@ export async function loadMigrationContext(projectId: string, requestedNames: st
          ORDER BY s.name, s.file_id`,
       )
       .all(projectId, ...group) as any[]
-    requestedSymbols.push(...rows)
+    symbols.push(...rows)
   }
+  const all = dedupeById([...fromPaths.symbols, ...symbolsById, ...symbols])
+  return {
+    symbols: all.sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name)),
+    // Tracked SEPARATELY from the union: a symbol named explicitly AND covered
+    // by a path is contributed by the path, and a name-only request must report
+    // zero path symbols. Reading provenance off the union cannot tell those
+    // apart, which is why `symbolsFromPaths` exists.
+    symbolsFromPaths: fromPaths.symbols,
+    symbolsById,
+    idsUnmatched,
+    pathResolution,
+  }
+}
 
-  const requestedIds = [...new Set(requestedSymbols.map((s) => s.id))]
+/**
+ * PHASE 2 — the relationship pass, bounded by the ALREADY-CAPED symbol set.
+ */
+export async function loadMigrationContext(
+  projectId: string,
+  requestedNames: string[],
+  requestedPaths: string[] = [],
+): Promise<MigrationContext> {
+  const { symbols: dedupedSymbols, pathResolution } = await resolveMigrationSymbols(projectId, requestedNames, requestedPaths)
+  return loadMigrationContextForSymbols(projectId, dedupedSymbols, pathResolution)
+}
 
-  // The display names and files of the requested symbols themselves. The far-endpoint
-  // pass below only fills in ids it has NOT already seen, so leaving these two maps
-  // empty here made every evidence row for the planned symbol itself resolve to
-  // "unknown" — and therefore made a test-file call site indistinguishable from an
-  // edge with no file at all.
+/**
+ * PHASE 2 — the relationship pass, given symbols that are ALREADY resolved.
+ *
+ * Identity is the symbol id, not the name. A cohort of a directory is resolved to
+ * symbols; re-resolving those symbols by name afterwards lost the ones sharing a
+ * name with another file's symbol (measured: 100 names, 209 symbols on a one-file
+ * cobra cohort) and silently planned only the name-collisions' first match. The
+ * relationship pass must read exactly the symbols the caller asked for.
+ */
+export async function loadMigrationContextForSymbols(
+  projectId: string,
+  dedupedSymbols: MigrationSymbol[],
+  pathResolution?: MigrationContext["pathResolution"],
+): Promise<MigrationContext> {
+  const raw = await BrainDatabase.getRawInstance(projectId as any)
+
   const nameById = new Map<string, string>()
   const fileById = new Map<string, string>()
-  for (const symbol of requestedSymbols) {
+  for (const symbol of dedupedSymbols) {
     nameById.set(symbol.id, symbol.name)
     fileById.set(symbol.id, symbol.file)
   }
+
+  const requestedIds = [...new Set(dedupedSymbols.map((s) => s.id))]
+
+  // `nameById` / `fileById` above are seeded with the requested symbols. The
+  // far-endpoint pass below only fills in ids it has NOT already seen, so an
+  // empty seed here makes every evidence row for the planned symbol resolve to
+  // "unknown" — and makes a test-file call site indistinguishable from an edge
+  // with no file at all.
 
   const relationships: MigrationRelationship[] = []
   const seen = new Set<string>()
@@ -196,10 +393,12 @@ export async function loadMigrationContext(projectId: string, requestedNames: st
     .get(projectId, projectId) as any
 
   return {
-    requestedSymbols,
+    requestedSymbols: dedupedSymbols,
     relationships,
     nameById,
     fileById,
+    pathResolution: pathResolution ?? { paths: [], matched: 0, unmatched: [], files: [] },
     projectScale: { symbols: Number(scale?.symbols ?? 0), relationships: Number(scale?.relationships ?? 0) },
+    work: { symbolsLoaded: dedupedSymbols.length, relationshipsLoaded: relationships.length },
   }
 }

@@ -10,7 +10,13 @@ tool.
 ## Output
 
 - one plan per supported symbol, each carrying its `symbolId` and `sourceFile`
+- `cohort`, a rollup of what the request resolved to — by file, by wave, by source
+  language, and by refusal reason — plus `cohort.work`, what the call actually read
 - `dependencyOrder`, a deterministic topological order with dependency nodes first
+- `waves` — that order grouped into parallel-workable layers; `waves[0]` is what
+  a team can start today
+- `scope` — how much of the component's integration surface this request actually
+  covers, and a sentence saying so
 - `dependencyGraph` — resolved edges, unresolved dependencies, cycles, and
   `orderingStatus` (`complete`, `partial`, `cyclic`, `no-edges`)
 - `relationshipEvidence` — per edge: id, type, both symbol ids, both external
@@ -39,6 +45,7 @@ are read and surfaced:
 | `sourceExternal` / `targetExternal` | same | 100% of rows carry a value |
 | `endpointsResolved` | derived | both endpoints are indexed symbols |
 | `isTestEvidence` | derived from file paths | — |
+| `isIntegrationPoint` | derived from `relationship_type` | — |
 
 There is **no fabricated constant** in this evidence. A previous version wrote
 `strength: 0.8` for every row while the row's real confidence sat unread; that
@@ -90,13 +97,24 @@ A specifier is canonicalized to the bare package name the dictionary is keyed by
 and **both** evidenced sources go through the same function — previously they used
 two different rules, so one package produced two different names.
 
-| Input | Result | Note |
-|---|---|---|
-| `@nestjs/core` | `nestjs` | dictionary is keyed by the framework, i.e. the scope |
-| `node:fs` | *excluded* | a builtin is not an installable dependency |
-| `@types/node` | *excluded* | a type stub is not a runtime dependency |
-| `./relative` | *excluded* | not a package |
-| `drizzle-orm/node-postgres` | `drizzle-orm` | subpath stripped |
+| Input | Language | Result | Note |
+|---|---|---|---|
+| `@nestjs/core` | ts/js | `nestjs` | the dictionary is keyed by framework, i.e. the scope |
+| `node:fs` | ts/js | *excluded* | a builtin is not an installable dependency |
+| `@types/node` | ts/js | *excluded* | a type stub is not a runtime dependency |
+| `./relative` | any | *excluded* | not a package |
+| `drizzle-orm/node-postgres` | ts/js | `drizzle-orm` | npm subpath stripped to the package |
+| `socket.io` | ts/js | `socket.io` | dots are KEPT — it is a real package name |
+| `net/http` | go | `net/http` | in Go the path IS the package |
+| `github.com/x/y/v2` | go | whole path | module paths keep every segment |
+| `package:flutter/material.dart` | dart | `flutter` | the PACKAGE is the first segment; the subpath names a library |
+| `core.async` | clojure | `core.async` | namespaces are dotted paths, not modules |
+| `asgiref` / `cryptography.fernet` | python | `asgiref` / `cryptography` | the first dotted segment is the module |
+
+Canonicalization is **language-aware**, and has to be: the same text means
+different things in different ecosystems. `core.async` is a whole Clojure
+namespace and would be a truncated Python module. A single rule got all of these
+wrong, which is what the audit measured.
 
 ### Known evidence limit — stated, not papered over
 
@@ -161,6 +179,299 @@ A migration plan is a claim about one specific component; silently choosing one 
 the failure this tool can least afford. Staleness is judged from the plan's own
 symbol, not from a second name-based lookup that could resolve elsewhere.
 
+**One exception, and it is not ambiguity.** Go and many other languages permit
+`Execute` and `execute` in the same file: two functions, one component, one
+file. Measured on cobra: five such pairs, all single-file. If every candidate is
+in the same file and exactly one matches the requested spelling, that is the
+answer. If no candidate matches exactly, the collision is real and is refused
+with both candidates named. The engine preserves the caller's spelling for this
+to work — it used to lowercase before planning, so asking for `Dual` returned a
+plan for `dual`.
+
+## What is charged, and what is not
+
+Two independent reasons an indexed edge is **not** billed as migration work:
+
+1. **Its endpoint is not an indexed symbol** (`endpointsResolved: false`). You
+   cannot locate, plan, or do an edge with no endpoint. The name the indexer saw
+   is preserved in `targetExternal`, and the count is reported.
+2. **It is structural** (`isIntegrationPoint: false`) — `contains` or `exports`.
+   `contains` is emitted by the indexer as an auto-generated ownership edge
+   ("owner contains member") whose `line_number` is the **member's declaration
+   line, not a call site**. Billing 2 hours to "update the place that contains
+   this function" is billing for nothing. Measured on cobra: 792 `contains` and
+   8 `exports` out of 5321 edges, ~15% of all evidence.
+
+Every other type — `calls`, `uses`, `references`, `imports`, `instantiates`,
+`extends`, `implements`, `overrides` — is an integration point and is charged.
+**An unrecognised type is charged**, not waved through: assuming a new kind of
+edge is structural would understate the work, and that is the worse error.
+
+`evidenceBreakdown` partitions every cited edge into exactly one bucket:
+
+```
+evidence: 14 production + 147 test integration points, 1 structural, 1 unresolvable
+```
+
+## Asking about a module: `paths`, and the identity problem
+
+Until round 6 the only way to ask about a module was to hand-type its symbol
+names, and the result was indistinguishable from a deliberately chosen cohort.
+"Plan the migration of `src/api`" is the question a team actually asks.
+
+| option | meaning |
+|---|---|
+| `symbolNames` | component names; ambiguous names are refused, with the candidate ids |
+| `symbolIds` | indexed symbol ids — the only unambiguous way to name a component |
+| `paths` | project-relative **file or directory** paths; every indexed symbol in them joins the request |
+
+`paths` and `symbolIds` **union** with `symbolNames` rather than replacing them:
+naming a symbol *and* the file that contains it plans it once.
+
+A path matches a file when it *is* that file or when it is a directory prefix of
+it, compared on the project-relative path. `.`, `./` and an absolute path inside
+the project all resolve to the same cohort; a path outside the project is refused
+by name, because the boundary lives in the resolver rather than in the spelling.
+The prefix is `LIKE`-escaped, so `%` and `_` in a path are literal.
+
+### A name is not an identity
+
+This was the deepest defect round 6 found, and it was found by running the
+feature rather than by reasoning about it. Planning was **name-keyed**, so:
+
+- a `paths` cohort could not plan two components sharing a name in different
+  files — they collapsed to one entry, and the caller was never told. Measured on
+  a one-file cobra cohort: **100 distinct names resolved to 209 symbols**, so a
+  cohort could never plan more than 100 of what it covered, and 109 of them were
+  unreachable with no report;
+- the ambiguity refusal said *"re-run against one file's symbol id"* — a
+  capability that **did not exist**. The advice named nothing the caller could do.
+
+Both are fixed by making the request a list of **entries** — each either a name or
+a symbol id — and by adding `symbolIds`:
+
+- a `paths` entry is a symbol id, unambiguous by construction, and planned through
+  `planMigrationById` with no resolution rule at all;
+- an explicit name still goes through the planner's single ambiguity rule (same-file
+  case variants resolve; cross-file collisions refuse and name their candidates),
+  and that refusal now points at `symbolIds`, which exist.
+
+An id no indexed symbol carries is a **refusal**, not an absence: it previously
+vanished, and a typo'd id produced a clean, empty, successful-looking result.
+
+### An empty plan set is never a clean success
+
+Scoping a repository root on cobra plans **nothing**: the first 100 components by
+file path are all `.github/workflows/*.yml`, and YAML is not migratable program
+logic. The tool used to print `total effort: 0h` and leave the reader to work that
+out. It now reports the refusal in the summary next to the totals:
+
+```
+cohort: NO PLANS: all 100 resolved component(s) were refused — 100 unsupported-source
+  (e.g. "dependabot"). The cohort's language mix is 170 yaml, 253 markdown, 11 make,
+  829 go; the 100 component(s) the cap let through were 100 yaml, so scope paths to
+  the code you mean.
+refused: 100 of 100 requested component(s) produced no plan — 100 unsupported-source;
+  the reasons are listed under "unsupported" below  NO PLANS WERE PRODUCED
+cohort languages: 829 go; 253 markdown; 170 yaml [100 processed: 0 planned, 100 refused]; 11 make
+```
+
+`cohort.byLanguage` covers the **whole resolved cohort**, not the capped slice.
+My first version counted only what the cap let through and cheerfully reported
+`100 yaml` for a repository that is 829 Go — true of the slice and false of the
+cohort, which is worse than not reporting it.
+
+## Cohort rollup
+
+`cohort` rolls the request up by file and by wave, which is the shape a programme
+is actually planned in:
+
+```
+cohort: 213 indexed symbol(s) under 1 path(s), covering 1 file(s) in the plans
+  returned (113 of 213 resolved components were dropped by the 100-component cap)
+per file: command.go (88 sym, 2108h)
+per wave: wave 1 = 61 sym, 670h; wave 2 = 1 sym, 26h; wave 3 = 26 sym, 1412h
+```
+
+`perPlanSumHours` per group is the sum of that group's **per-plan** effort, so a
+relationship cited by two symbols in the same group is counted in both. It is
+labelled the same way at the batch level, and the deduplicated figure is
+`effort.totalHours`; the two are reconciled in `effort.reconciliation`.
+
+Wave 3 above is **cycle members**. `computeDependencyOrder` cannot emit a symbol
+that sits in a cycle — Kahn's algorithm never reaches indegree 0 for it — so those
+symbols were simply **absent from the wave plan**. Measured on the one-file cobra
+cohort: **25 of 100** planned symbols sit in cycles. A cycle is a group that cannot
+be split, so its members are collected into one trailing wave, and the wave plan
+accounts for every planned symbol.
+
+Two same-named components in one file are still **one wave label**. `waves` is a
+list of names, so when two plans share a name the label cannot say which file is
+meant — `cappedNames` has the same ambiguity and resolves it by rendering
+`name (file)`. Use `cohort.wavePlan` for the identity a caller can index: the same
+partition keyed by `symbolId`, where every plan appears exactly once.
+
+`paths` and `symbolIds` may name the same component. The union de-duplicates by
+id, so it is planned once — the path loader's own de-dup cannot cover this case,
+because it only sees paths.
+
+### The cap bounds the work, and the work is observable
+
+`cohort.work` reports what the call actually read next to what the project holds:
+
+```
+work: {symbolsLoaded: 100, relationshipsLoaded: 234, projectSymbols: 1263, projectRelationships: 5321}
+```
+
+This exists because my first bound was a **60-second wall-clock limit**, and it
+*survived the exact mutant it was written for* — loading 1263 symbols'
+relationships instead of 100's still finished inside it. A timing threshold is a
+property of the load, not of the code; a relationship count is a property of the
+code. That is why the number is reported.
+
+Resolution is two-phase for the same reason: `resolveMigrationSymbols` resolves
+names, ids and paths to symbols **without reading a relationship**, the cap is
+applied, and only then does `loadMigrationContextForSymbols` read the edges of the
+already-capped set. One pass instead would have read every relationship of every
+component in the cohort to plan 100 of them.
+
+### Truncation, measured per source
+
+| field | meaning |
+|---|---|
+| `requested` | distinct **components** the request resolved to, before the cap |
+| `returned` | entries actually processed |
+| `deduplicated` | explicit **names** merged — never negative |
+| `capped` | resolved components dropped by the 100-component cap |
+| `pathSymbols` | how many processed components came from `paths` |
+| `selection` | the deterministic order the cap applied |
+
+The per-source split was not cosmetic. The original arithmetic measured
+deduplication against the *resolved* set, so the first cohort request printed
+`-212 duplicate` and `returned/requested = 100/0`. `deduplicated` is now measured
+against the names it reduces and `capped` against the components it drops.
+
+`selection` is `"first N resolved symbols by project-relative file path, then
+symbol name"`. It is deterministic on purpose — the dropped set is a property of
+the project layout, not of a query plan — but it is alphabetical, which is why
+`.github/workflows/*.yml` comes first. The tool states the rule and reports what
+the rule selected rather than quietly applying a heuristic that happens to look
+smarter.
+
+## "No route" meant 80% of all requests, and it was the wrong word
+
+A target language with no dictionary rows **for that pair** used to be refused
+outright as `unsupported-target`. The detail read:
+
+> no library-equivalence data is registered for typescript → rust; this tool has no
+> migration route between them
+
+The first clause is true. The second is not. They were one statement, and the
+false half is the one that decides the behaviour.
+
+### How much it was refusing
+
+Measured from the running module — `migrationDictionaryRows()` and
+`hasMigrationRoute`, not a regex over the source, because the dictionary literal
+contains duplicate source keys and a regex sees both:
+
+| | |
+|---|---|
+| rows / sources / targets | 486 / 30 / 21 |
+| pairs with a route | **126 of 630 (20.0%)** |
+| pairs with no route | **504 of 630 (80.0%)** |
+| of those, same-language (still correctly refused, as `same-language`) | 20 |
+
+**Four out of five language pairs produced nothing at all** — no dependency order,
+no effort model, no scope accounting, no waves. `typescript → rust` has no rows;
+`kotlin → rust`, `swift → rust` and `zig → rust` do. A Node-to-Rust port was
+refused because of which rows someone happened to write.
+
+### What happens now
+
+- A target language the tool **does not know** is still refused: `brainfuck`,
+  `cobol` and `malbolge` all come back `unsupported-target`, naming the target.
+- A **known** target with no rows for the pair is **planned**, and the gap is stated
+  twice so it cannot be skimmed past:
+  - `dependencyProvenance.note` — *"This tool registers no library-equivalence data
+    for typescript → haskell, so no mapping can be offered for any library. That is
+    **MISSING DATA, not an absence of libraries**."*
+  - a **risk factor** — *"no library-equivalence data is registered for
+    typescript → haskell, so this plan carries NO library mappings: every library
+    will need its target-language equivalent chosen by a human"*.
+- `dependencies` stays **empty** for an unrouted pair. That is the guarantee round
+  1 bought by refusing, and it is kept: no mapping is ever invented, and
+  `inferredDependencies` remains excluded from effort and risk.
+
+A **routed** pair carries neither statement, so the warning still means something
+the day it fires.
+
+### How it stayed hidden for six rounds
+
+`script/verify-visualize-migrate.ts` had been RED since round 1, for exactly this
+reason — round 1 correctly stopped fabricating library mappings, and the refusal it
+replaced was the only thing making that gate's `plans.length >= 1` assertion pass.
+I had treated the reddened gate as collateral from removing the fabrication and
+moved on. It was not collateral: it was the fabrication's last disguise, and
+pointing at a refusal that was throwing away 80% of all requests.
+
+## Scope: how much of the work this request actually covers
+
+An integration point is **in scope** when its other endpoint is one of the
+requested symbols. Everything else belongs to a component the caller did not ask
+about — and a port that ignores it does not work.
+
+This is not a formality. Measured on cobra, for a request of the top 1, 2, 4, 8
+and 16 symbols by fan-in:
+
+| symbols requested | integration points cited | inside the request | outside |
+|---|---|---|---|
+| 1 | 519 | 1 | **99.8%** |
+| 2 | 680 | 3 | **99.6%** |
+| 4 | 772 | 5 | **99.4%** |
+| 8 | 835 | 5 | **99.4%** |
+| 16 | 1017 | 14 | **98.6%** |
+
+A single `bb_migrate` request for the most-connected function in a repository
+covers about one in five hundred of its integration points. The tool now says so
+on the line directly under the effort total, because a total read without its
+qualification is the number most likely to be quoted in a plan and acted on:
+
+```
+total effort: 526h (per-plan effort sums to the methodology total)
+scope: 0 of 260 integration points (0.0%) are inside this request; 260 belong
+to components that were not asked for, so these plans alone are NOT a complete
+migration
+waves: 1[AddCommand, execute, getCommand]
+```
+
+`scope` carries `integrationPoints`, `inScope`, `outOfScope`, `unresolvable`,
+`completeness` (the in-scope ratio, or `null` when no edges are indexed at all),
+and the `statement` above. The wording follows the number: a request covering
+under half its surface is told so, and a request covering nearly all of it is
+not.
+
+**This is a property of the request, not a defect in the tool.** Asking about
+three functions will always cover a small part of a repository. The point is
+that the tool states it rather than printing a confident total and letting the
+gap be inferred.
+
+## Waves: where to start
+
+`dependencyOrder` is a total order; a team wants the first batch. `waves` groups
+it by dependency depth: **wave 0 is everything with no unresolved in-scope
+dependency**, wave 1 becomes startable once wave 0 lands, and so on.
+
+An edge to a symbol *outside* the request is a scope gap, not an ordering
+constraint, and does **not** push a wave. Treating it as one would park every
+component behind a dependency nobody was asked to migrate.
+
+Derived arithmetic over the same edge set the order uses — no new constants. A
+relationship's **source is the dependent** and its target is the dependency, so
+`middle` calling `bottom` puts `middle` in a later wave. If the graph is cyclic,
+a cycle's members land wherever their other dependencies put them, so read
+`orderingStatus` alongside: a cyclic graph does not decompose into waves.
+
 ## Effort: one number, reconciled
 
 - **`effort.totalHours`** — authoritative:
@@ -180,8 +491,15 @@ on edges cited by more than one plan, counted once in the 20h methodology total)
 Methodology constants, labelled as methodology rather than measurement:
 
 - 4 base hours per supported component
-- 2 hours per **resolvable** indexed relationship, deduplicated across the request
+- 2 hours per **chargeable** indexed relationship (resolvable AND an integration
+  point), deduplicated across the request
 - 6 hours per indexed import with no registered equivalence
+
+The batch total and the per-plan figure use **one** chargeability rule, declared
+once. When they diverged, the tool printed a "shared relationship hours" figure
+of **minus four** — a negative number in a field meant to be a saving. The
+reconciliation now reports `INTERNAL MISMATCH` rather than printing it, and a
+claim asserts the gap is never negative.
 
 These are flat per-unit figures, not estimates calibrated against completed
 migrations. Read the evidence split before reading the total.
@@ -224,7 +542,12 @@ reports `complete`.
 - `returned` — distinct names processed (cap 100)
 - `deduplicated` — names merged as duplicates
 - `capped` — names dropped by the limit
+- `cappedNames` — **which** names the cap dropped, in request order
 - `truncated` — true if either reduction applied
+
+Without `cappedNames` a caller learns only that 30 names vanished and cannot
+tell which, so a migration wave that silently excluded a component is
+indistinguishable from one that included it.
 
 A caller can always tell a merged duplicate from a dropped name.
 
@@ -237,7 +560,56 @@ not load or reconstruct the project. Measured: a 1-symbol request on a
 1216-symbol / 5228-relationship repository cites a small fraction of the edges,
 and a 12-symbol request stays in the same order of magnitude.
 
-## Limits
+## The dictionary, and what is actually in it
+
+The equivalence knowledge is a hand-written table: **486 rows** across **30
+source languages** and **21 target languages**, covering **126 of the 630
+possible source→target pairs (20%)**. It is audited by
+`script/m20/verify-migration-dictionary.ts`, which fails if:
+
+- any row cannot be reached by an import in its own source language, unless the
+  key is in the declared non-import class below;
+- a declared non-import key no longer exists, or has become reachable;
+- `hasMigrationRoute` disagrees with the row set for any pair (it is what refuses
+  an unroutable target, so a disagreement either refuses data the tool has or
+  plans data it lacks);
+- a triple is claimed twice, a row maps a language to itself, or a row names an
+  empty target.
+
+**56 of 486 rows (11.5%) are in the declared non-import class** — real,
+useful knowledge that an import-specifier lookup can never reach. They are kept
+and named rather than deleted, and each carries its reason:
+
+| Class | Rows | Why unreachable |
+|---|---|---|
+| API/idiom (`pool.query`, `Date.now`, `jest.fn`, …) | 5 | a file *calls* these; it never imports them. Needs call-expression detection. |
+| Framework (`asp.net`) | 1 | a framework, not an import. Needs manifest-level detection. |
+| Flutter widget/type names (`Container`, `Scaffold`, `Text`, …) | 16 | Dart imports `flutter`, not a widget class |
+| Display names with a space (`react context`, `redux toolkit`, …) | 6 | no import specifier contains a space |
+| Dart library paths (`flutter/material`) | 1 | collides with the reachable `flutter` package row |
+| Mis-keyed `dart → typescript` block (`axios`, `prisma`, `zod`, …) | 9 | a Dart file cannot import an npm package; the same mapping is already reachable from the TypeScript side |
+
+Only **2 keys** remain that canonicalization itself makes unreachable:
+`flutter/material` and `shadcn/ui`. Both are the compound-name cases above.
+
+**What the audit cannot do:** verify that a reachable mapping is *correct*.
+`express → fastapi` is a claim, and a wrong claim is perfectly reachable. The
+audit proves the table is internally consistent and that its rows can fire; it
+does not make the advice true.
+
+## Known limits
+
+- **Planning is bounded to 100 components per request.** `paths` does not lift the
+  cap; it makes hitting it likely. `truncation` names what was dropped and
+  `selection` states the rule.
+- **The cap's rule is alphabetical.** A repository-root cohort on cobra plans
+  nothing, because the first 100 components by file path are YAML. Reported, not
+  worked around — a heuristic that quietly prefers "migratable" sources would hide
+  the fact that a third of the repository is not code.
+- **Two components sharing a name are planned separately only when reached by
+  `paths` or `symbolIds`.** A bare `symbolNames` entry for such a name is refused,
+  with the candidate ids, because a name genuinely does not identify a component.
+
 
 - Plans are estimates. The tool does not generate, replace, or compile
   target-language source.

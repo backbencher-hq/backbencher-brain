@@ -82,7 +82,11 @@ function decodeLiteral(literal: string): string {
 // literals, which is what they are in the gate; a mutant that needed a real
 // newline in its anchor would be written with an escape, which decodeLiteral
 // handles.
-const RECORD = /id:\s*"(M\d+)",\s*name:\s*(?:"(?:[^"\\]|\\.)*")\s*,\s*file:\s*"(handler|component)",\s*\n\s*from:\s*"((?:[^"\\]|\\.)*)",\s*\n\s*to:\s*"((?:[^"\\]|\\.)*)",/g
+// Comment lines are permitted between the fields: M15 carries one, and the reason it
+// does is the finding that produced it. The pattern tolerates them so a documented
+// mutant is not silently dropped from the count — which is precisely what happened
+// when it did not, and the floor check caught it as `extracted=15 floor=16`.
+const RECORD = /id:\s*"(M\d+)",\s*name:\s*(?:"(?:[^"\\]|\\.)*")\s*,\s*file:\s*"(handler|component|component-via-handler)",(?:\s*\/\/[^\n]*\n)*\s*from:\s*"((?:[^"\\]|\\.)*)",(?:\s*\/\/[^\n]*\n)*\s*to:\s*"((?:[^"\\]|\\.)*)",/g
 
 const mutants: Array<{ id: string; file: string; from: string; to: string }> = []
 for (const m of gate.matchAll(RECORD)) {
@@ -124,7 +128,89 @@ for (const m of mutants) {
     mutated === body ? "the replacement reproduces the original text" : "")
 }
 check("every mutant anchor resolves in the file it mutates", dead.length === 0, dead.length ? `dead: ${dead.join(", ")}` : `${liveAnchors}/${mutants.length} live`)
+// An anchor that occurs MORE THAN ONCE is a mutant whose reach depends on which
+// copy `String.replace` finds — and it finds the first. M15's anchor appeared once
+// per branch of a ternary; the mutation landed on the first branch and the probe
+// exercised the second, so the mutant reported SURVIVED while looking robust, and
+// passed in one worktree only because that tree's handler happened to carry a single
+// occurrence. Uniqueness is the property, and it is checkable without a corpus.
+const ambiguous = mutants
+  .map((m) => ({ id: m.id, n: src(m.file).split(m.from).length - 1 }))
+  .filter((x) => x.n > 1)
+check("every mutant anchor is UNIQUE in the file it mutates (replace() mutates only the first)",
+  ambiguous.length === 0,
+  ambiguous.length ? ambiguous.map((x) => `${x.id} x${x.n}`).join(", ") : `${mutants.length} anchors, all unique`)
+
+
 if (dead.length === 0) console.log(`  ok  all ${liveAnchors} mutant anchors are live`)
+
+// ── THE AUDIT THAT FOUND THEM ───────────────────────────────────────────────
+//
+// This block exists because the suite reported 14/16 mutants caught while at most
+// SIX of them were actually running, and the numbers were quoted in two commits.
+//
+// The chain, in order, because each step hid the next:
+//
+//   1. `abs("")` produced a path with no trailing slash, so the catch-all import
+//      rewrite emitted `from "file:///…/src"brain/annotation-store"`. EVERY mutated
+//      module failed to parse.
+//   2. The catch block read a failed import as a caught defect, which is true of a
+//      real defect and false of a broken harness.
+//   3. So every mutant was "caught" by an import error, and the gate was green.
+//   4. A `component` mutant's probe calls `m.createToolHandlers()`, but `m` is the
+//      COMPONENT — so it threw, and step 2 banked that too.
+//   5. One probe never referenced `m` at all, so it measured unmutated code.
+//
+// Nothing here would have gone red. The question that found it was "how does each
+// probe REACH the mutated module", which no failing gate ever asks. So it is asked
+// here, where it costs two seconds and no corpus.
+//
+// The floor does not protect against any of this: it counts the mutants DECLARED, and
+// a declared mutant that throws is still declared.
+const probeText = (id: string): string | null => {
+  const i = gate.indexOf(`id: "${id}",`)
+  if (i < 0) return null
+  const j = gate.indexOf("probe:", i)
+  if (j < 0 || j - i > 3000) return null
+  return gate.slice(j, gate.indexOf("\n    },", j))
+}
+
+const notReaching: string[] = []
+const throwingOnPurpose: string[] = []
+for (const m of mutants) {
+  const probe = probeText(m.id)
+  if (probe === null) { notReaching.push(`${m.id} (no probe found)`); continue }
+  // A probe must actually touch the mutated module. `m` unused means it measured the
+  // real code, which is the failure that made M16 "SURVIVE" while looking robust.
+  if (!/\bm\b/.test(probe)) notReaching.push(`${m.id} (probe never references m)`)
+  // A probe that CALLS createToolHandlers must receive a handler module. That is
+  // what the `file:` kind determines, and getting it wrong is what broke six.
+  const callsHandlers = /createToolHandlers/.test(probe)
+  if (callsHandlers && m.file === "component") {
+    notReaching.push(`${m.id} (a 'component' mutant's probe calls createToolHandlers, but m is the component)`)
+  }
+  // And a probe may not swallow a missing subject state into `return false`, which
+  // reports as SURVIVED — indistinguishable from a working probe.
+  if (/if \(![\w.]+\) return false/.test(probe)) throwingOnPurpose.push(m.id)
+}
+check(
+  "every probe REACHES the mutated module (a probe that measures unmutated code is the failure this audit exists for)",
+  notReaching.length === 0,
+  notReaching.length ? notReaching.join("; ") : `${mutants.length}/${mutants.length} probes reach it`,
+)
+check(
+  "no probe swallows a missing subject state into `return false` (that reads as SURVIVED, not as unverifiable)",
+  throwingOnPurpose.length === 0,
+  throwingOnPurpose.length ? `${throwingOnPurpose.join(", ")} return false when their selector finds nothing` : "none do",
+)
+
+// The two harness invariants that turned a broken suite into a green one.
+check("the harness does not bank a failed import as a caught defect without checking it is not a broken probe",
+  /brokenProbe/.test(gate) && /is not a function/.test(gate),
+  "the broken-probe guard is missing — a TypeError in a probe would count as caught")
+check("the import-path helper produces a usable directory path",
+  /\$\{p \? "" : "\/"\}/.test(gate),
+  "abs() must append a trailing slash for the empty path, or the catch-all rewrite emits invalid specifiers")
 
 // ── the seeded states the guards depend on ──────────────────────────────────
 // Two counters no corpus can reach are verified by building the store state that

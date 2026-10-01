@@ -60,6 +60,12 @@ export namespace CrossLanguageMigrationAssistant {
      */
     endpointsResolved: boolean
     /**
+     * False for a structural edge (`contains`, `exports`) that records nesting
+     * or declaration rather than an integration point. Shown as evidence, not
+     * charged as work — see {@link isStructuralRelationship}.
+     */
+    isIntegrationPoint: boolean
+    /**
      * True when the edge's files look like test code. A migrating engineer needs
      * this split: measured, 55.3% of a cobra plan's evidence is test callers, and
      * a flat per-edge cost makes that dominate the headline number.
@@ -99,6 +105,8 @@ export namespace CrossLanguageMigrationAssistant {
       test: number
       /** Edges with an endpoint that is not an indexed symbol; not charged. */
       unresolvable: number
+      /** Containment/export edges: shown as evidence, not charged as work. */
+      structural: number
       /** Edges the indexer marked as crossing a language boundary. */
       crossLanguage: number
       /** Of the resolved edges, how many carry a line. */
@@ -982,45 +990,109 @@ export namespace CrossLanguageMigrationAssistant {
   }
 
   /**
-   * Canonicalize a module specifier to the bare package name the dictionary is
-   * keyed by.
+   * Canonicalize a module specifier to the name the dictionary is keyed by.
    *
-   * Round 1 got this wrong in BOTH evidenced sources and in two different ways:
-   * `@nestjs/core` became `core` from `metadata.imports` and stayed
-   * `@nestjs/core` from a node_modules path, so the same package produced two
-   * different library names depending on which source saw it. The dictionary
-   * keys are bare names, so the scope is dropped.
+   * THE SHAPE OF THE PROBLEM. A dictionary key is a name in the SOURCE
+   * ecosystem's own vocabulary: `net/http` for Go, `flutter/material` for Dart,
+   * `socket.io` for npm, `asgiref` for Python. An import specifier is whatever
+   * the source file happens to write. Collapsing one to the other without
+   * knowing the language gets it wrong in both directions, and the dictionary
+   * audit measured all three failures:
    *
-   * Returns `{ name: null }` for specifiers that are not a library at all: Node
-   * builtins (`node:fs`) and type-only packages (`@types/node`). Reporting a
-   * builtin or a type stub as a runtime dependency is a small lie that lands in
-   * every plan for a TypeScript component.
+   *   "net/http"           -> "net"            (Go subpath is the package)
+   *   "package:flutter/material.dart" -> "flutter"  (Dart subpath is the widget set)
+   *   "socket.io"          -> rejected         (a real npm package with a dot)
+   *   "@nestjs/core"       -> "core"           (the scope is the framework)
+   *   "node:fs"            -> rejected         (a builtin, not a dependency)
+   *   "@types/node"        -> rejected         (a type stub, not a runtime dep)
+   *
+   * So this is language-aware. The rules that differ:
+   *
+   *  - Go, Dart, Rust, Java, C#, PHP, Ruby, Perl: a dotted or slashed path IS
+   *    the package name. `net/http`, `package:flutter/material.dart`, `com.squareup…`
+   *  - Python, R, Elixir, Haskell, Scala, Clojure: the FIRST dotted segment is
+   *    the module. `asgiref`, `ggplot2`.
+   *  - JavaScript/TypeScript: npm scope rules — `@scope/name` collapses to the
+   *    scope (the dictionary is keyed by framework), everything else keeps its
+   *    first path segment but KEEPS dots, so `socket.io` survives.
+   *
+   * `language` is the SOURCE language, normalized. It is optional so that a
+   * caller with no language gets the JavaScript/npm rules, which are the
+   * strictest about scope and the most common case in the corpus.
    */
   export interface CanonicalPackage {
     name: string | null
     /** Why it is not a library, when it is not one. */
-    excluded?: "node-builtin" | "type-only" | "relative" | "malformed"
+    excluded?: "node-builtin" | "type-only" | "relative" | "malformed" | "absolute"
   }
 
-  export function canonicalPackageName(specifier: string): CanonicalPackage {
-    const raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
+  /** Languages where a dotted/slashed path is itself the package name. */
+  const PATH_NAMED_LANGUAGES: ReadonlySet<string> = new Set([
+    "go", "rust", "java", "csharp", "php", "ruby", "perl", "swift", "kotlin", "cpp", "c",
+    // Clojure namespaces are dotted paths, not modules: `(require '[core.async])`
+    // names `core.async` in full. Taking the first segment turned it into `core`,
+    // which is not a namespace and matches no row.
+    "clojure",
+  ])
+  /** Languages where the first dotted segment is the module. */
+  const DOTTED_MODULE_LANGUAGES: ReadonlySet<string> = new Set([
+    "python", "r", "elixir", "haskell", "scala", "erlang", "julia", "lua",
+  ])
+
+  export function canonicalPackageName(specifier: string, language?: string | null): CanonicalPackage {
+    let raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
     if (!raw) return { name: null, excluded: "malformed" }
     if (raw.startsWith("node:")) return { name: null, excluded: "node-builtin" }
-    if (raw.startsWith(".") || raw.startsWith("/")) return { name: null, excluded: "relative" }
+    if (raw.startsWith(".") || raw.startsWith("./") || raw.startsWith("../")) return { name: null, excluded: "relative" }
+    if (raw.startsWith("/")) return { name: null, excluded: "absolute" }
+
+    // `package:flutter/material.dart` is Dart's canonical spelling.
+    if (raw.startsWith("package:")) raw = raw.slice("package:".length)
+
+    const lang = normalizeMigrationLanguage(language ?? "") ?? "javascript"
+
+    if (lang === "dart") {
+      // `package:<package>/<library>.dart` — the PACKAGE is the first segment, so
+      // `package:bloc/bloc.dart` is the `bloc` package. The subpath names a
+      // LIBRARY inside it, not a package, which is why the `flutter/material`
+      // dictionary row can never be selected by an import: both it and the
+      // `flutter` row canonicalize to `flutter`. Choosing between them needs
+      // library-level granularity the lookup does not have.
+      const first = raw.split("/")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    if (PATH_NAMED_LANGUAGES.has(lang)) {
+      const withoutExt = raw
+      // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
+      // type reference, and nothing in the dictionary is keyed by one.
+      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt) && lang !== "go") {
+        const first = withoutExt.split(/[./]/)[0]
+        return first ? { name: first } : { name: null, excluded: "malformed" }
+      }
+      // Go stdlib and module paths keep every segment.
+      return withoutExt ? { name: withoutExt } : { name: null, excluded: "malformed" }
+    }
+
+    if (DOTTED_MODULE_LANGUAGES.has(lang)) {
+      const first = raw.split(".")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    // JavaScript / TypeScript and the default.
     if (raw.startsWith("@types/")) return { name: null, excluded: "type-only" }
     const segments = raw.split("/")
     if (raw.startsWith("@")) {
-      // `@scope/name[/sub]`. The dictionary is keyed by the FRAMEWORK, which for
-      // these ecosystems is the scope: `@nestjs/core` and `@nestjs/common` are both
-      // the `nestjs` row. Taking `segments[1]` instead returned `core`, which
-      // matches no row — round 1's bug, kept alive here until this run.
       if (segments.length < 2 || !segments[0] || !segments[1]) return { name: null, excluded: "malformed" }
       const scope = segments[0].slice(1)
       if (scope === "types" || scope.startsWith("types-")) return { name: null, excluded: "type-only" }
       return { name: scope }
     }
+    // Keep dots: `socket.io`, `lodash.merge` and `underscore.string` are real
+    // package names. Only strip a path, which is how a subpath import names a
+    // package that is already known by its first segment.
     const name = segments[0]
-    if (!name || name.includes(".")) return { name: null, excluded: "malformed" }
+    if (!name) return { name: null, excluded: "malformed" }
     return { name }
   }
 
@@ -1029,10 +1101,10 @@ export namespace CrossLanguageMigrationAssistant {
    * Previously this returned the whole scoped path, so a package seen here and
    * through an import produced two different names.
    */
-  export function packageFromNodeModulesPath(filePath: string): CanonicalPackage {
+  export function packageFromNodeModulesPath(filePath: string, language?: string | null): CanonicalPackage {
     const match = String(filePath ?? "").match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
     if (!match) return { name: null, excluded: "malformed" }
-    return canonicalPackageName(match[1])
+    return canonicalPackageName(match[1], language ?? "javascript")
   }
 
   /** Test-shaped evidence, so the effort split is visible instead of implied. */
@@ -1042,6 +1114,32 @@ export namespace CrossLanguageMigrationAssistant {
     const p = String(filePath ?? "")
     if (!p || p === "unknown") return false
     return TEST_PATH.test(p)
+  }
+
+  /**
+   * Is this relationship an integration point a port must satisfy, or a
+   * structural edge that records nesting?
+   *
+   * Measured on cobra: 2401 `calls`, 831 `uses`, 805 `references`, 284
+   * `instantiates`, 200 `imports` — and 792 `contains` plus 8 `exports`. That
+   * last pair is ~15% of all edges and none of it is work a migrating engineer
+   * does: `contains` is emitted by the indexer as an auto-generated ownership
+   * edge ("owner contains member") whose `line_number` is the MEMBER'S
+   * DECLARATION LINE, not a call site (see the M59/#821 comment at the emit
+   * site in parallel-indexer.ts). Billing 2 hours to "update the place that
+   * contains this function" is billing for nothing.
+   *
+   * `exports` is likewise declarative: it records that a symbol is exported.
+   *
+   * Everything else — `calls`, `uses`, `references`, `imports`, `instantiates`,
+   * `extends`, `implements`, `overrides`, and any type this list has not seen —
+   * is an integration point. An UNKNOWN type is charged, not waved through:
+   * guessing that a new kind is structural would understate the work.
+   */
+  const STRUCTURAL_RELATIONSHIP_TYPES: ReadonlySet<string> = new Set(["contains", "exports"])
+
+  export function isStructuralRelationship(relationshipType: string): boolean {
+    return STRUCTURAL_RELATIONSHIP_TYPES.has(String(relationshipType ?? "").trim().toLowerCase())
   }
 
   /**
@@ -1070,18 +1168,80 @@ export namespace CrossLanguageMigrationAssistant {
       return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
     }
     if (matches.length > 1) {
+      // Two shapes of collision, only one of which is a real ambiguity.
+      //
+      // SAME FILE, different case: Go and many other languages treat `Execute`
+      // and `execute` as one component in one file. Measured on cobra: five such
+      // pairs, all in one file. Refusing there is noise — the caller asked for
+      // one component in one file and there is only one component in one file.
+      // An exact-case match resolves it unambiguously.
+      const files = new Set(matches.map((s) => s.file))
+      const exact = matches.filter((s) => s.name === String(symbolName ?? "").trim())
+      if (files.size === 1 && exact.length === 1) {
+        log.debug(`planMigration: resolved case-variant name '${symbolName}' to '${exact[0].name}' in ${[...files][0]}`)
+        return buildPlan(exact[0], targetLanguage, source)
+      }
       const candidates = matches.map((s) => ({ id: s.id, name: s.name, language: s.language, file: s.file }))
       return {
         ok: false,
         refusal: {
           reason: "ambiguous-symbol",
-          detail: `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); re-run against one file's symbol id or rename to disambiguate`,
+          detail:
+            files.size === 1
+              ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
+              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); pass symbolIds with the id you mean, or restrict the request to one file with paths, or rename to disambiguate`,
           candidates,
         },
       }
     }
-    const symbol = matches[0]
+    return buildPlan(matches[0], targetLanguage, source)
+  }
 
+  /**
+   * Plan a component by its INDEXED SYMBOL ID, which is the only unambiguous
+   * identity a symbol has.
+   *
+   * This exists because two of the tool's own behaviours were previously
+   * impossible to act on:
+   *
+   *   - The ambiguity refusal said "re-run against one file's symbol id", and
+   *     there was no way to do that — the advice named a capability that did not
+   *     exist.
+   *   - A `paths` cohort could not plan two components that share a name in
+   *     different files, because planning was name-keyed: resolving the cohort to
+   *     names collapsed them to one, and the caller was never told. Measured on a
+   *     one-file cobra cohort, 100 distinct names resolved to 209 symbols, and
+   *     the cohort could only ever plan 100 of them.
+   *
+   * A symbol id is unique in a project, so no resolution rule is needed here and
+   * none is applied: a match is found or it is not.
+   */
+  export async function planMigrationById(
+    symbolId: string,
+    targetLanguage: string,
+    source: MigrationSource,
+  ): Promise<MigrationOutcome> {
+    const wanted = String(symbolId ?? "").trim()
+    log.debug(`planMigrationById: '${wanted}' -> '${targetLanguage}'`)
+    if (!wanted) return { ok: false, refusal: { reason: "missing-symbol", detail: "no symbol id was given" } }
+    const match = source.symbols.find((s) => String(s.id) === wanted)
+    if (!match) {
+      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol with id "${wanted}" is part of this request` } }
+    }
+    return buildPlan(match, targetLanguage, source)
+  }
+
+  /**
+   * Build the plan for an already-resolved symbol. Split out of
+   * {@link planMigration} so that a case-variant name resolved inside one file
+   * takes exactly the same path as an exact match — a resolution rule that only
+   * worked on the happy path would be a second implementation of the planner.
+   */
+  function buildPlan(
+    symbol: { id: string; name: string; type?: string; language: string; file: string; metadata?: any },
+    targetLanguage: string,
+    source: MigrationSource,
+  ): MigrationOutcome {
     const resolvedSource = resolveSourceLanguage(symbol.language)
     if (!resolvedSource.language) {
       return { ok: false, refusal: { reason: "unsupported-source", detail: resolvedSource.reason ?? "unsupported source language" } }
@@ -1095,15 +1255,26 @@ export namespace CrossLanguageMigrationAssistant {
     if (sourceLanguage === normalizedTargetLanguage) {
       return { ok: false, refusal: { reason: "same-language", detail: `source and target are both ${sourceLanguage}` } }
     }
-    if (!hasMigrationRoute(sourceLanguage, normalizedTargetLanguage)) {
-      return {
-        ok: false,
-        refusal: {
-          reason: "unsupported-target",
-          detail: `no library-equivalence data is registered for ${sourceLanguage} → ${normalizedTargetLanguage}; this tool has no migration route between them`,
-        },
-      }
-    }
+    // A KNOWN target with no dictionary rows for this PAIR is not a refusal.
+    //
+    // This used to return `unsupported-target`, and it conflated two different
+    // things: "this tool holds no library-equivalence data for typescript → rust"
+    // and "there is no such migration". Only the first is true. The dictionary
+    // carries kotlin → rust, swift → rust and zig → rust but no typescript → rust,
+    // so an entirely ordinary Node-to-Rust port was refused outright — and with it
+    // the dependency order, the effort model, the scope accounting and the waves,
+    // all of which are language-agnostic and all of which the tool can compute
+    // without a single library row.
+    //
+    // The gate `script/verify-visualize-migrate.ts` had been RED since round 1 for
+    // exactly this reason: round 1 correctly stopped fabricating mappings, the
+    // refusal it replaced had been the only thing making that assertion pass, and
+    // the assertion it was hiding went unfollowed-up.
+    //
+    // An unrecognized target language is still refused above, and no mapping is
+    // ever invented: the plan says mappings are unavailable for the pair, which is
+    // the same UNKNOWN-not-empty discipline `dependencyProvenance` already uses
+    // for import evidence.
 
     // 2. Relationship evidence, scoped to this symbol's ids. Every field is one
     //    the indexer actually stored; nothing is synthesised. The previous path
@@ -1135,6 +1306,7 @@ export namespace CrossLanguageMigrationAssistant {
             bridgeMechanism: r.bridgeMechanism ?? null,
             isCrossFile: r.isCrossFile ?? (sourceFile !== targetFile),
             endpointsResolved,
+            isIntegrationPoint: !isStructuralRelationship(r.type),
             isTestEvidence: isTestPath(sourceFile) || isTestPath(targetFile),
           }
           return [id, entry] as const
@@ -1156,12 +1328,23 @@ export namespace CrossLanguageMigrationAssistant {
     //    to update its callers — but the split is reported, because 55.3% of a
     //    cobra plan's evidence is test code and an undifferentiated number is
     //    not interpretable.
-    const charged = relationshipEvidence.filter((e) => e.endpointsResolved)
+    // Charged = resolvable AND an integration point. Two separate reasons an edge
+    // is not billed: an endpoint that is not an indexed symbol (it cannot be
+    // located), and a structural edge (it records nesting, not a call to update).
+    const structural = relationshipEvidence.filter((e) => !e.isIntegrationPoint)
+    const integration = relationshipEvidence.filter((e) => e.isIntegrationPoint)
+    const charged = integration.filter((e) => e.endpointsResolved)
     const breakdown = {
       total: relationshipEvidence.length,
       production: charged.filter((e) => !e.isTestEvidence).length,
       test: charged.filter((e) => e.isTestEvidence).length,
-      unresolvable: relationshipEvidence.length - charged.length,
+      // Within the INTEGRATION points only. This used to be
+      // `total - integration.length`, which is the structural count — so
+      // `unresolvable` and `structural` always reported the same number and the
+      // breakdown double-counted. The corpus suite caught it; the visible symptom
+      // was "2 structural, 2 unresolvable" on a plan with one of each.
+      unresolvable: integration.length - charged.length,
+      structural: structural.length,
       crossLanguage: relationshipEvidence.filter((e) => e.isCrossLanguage).length,
       withLine: charged.filter((e) => e.line != null).length,
       withConfidence: charged.filter((e) => e.confidence != null).length,
@@ -1177,7 +1360,7 @@ export namespace CrossLanguageMigrationAssistant {
     let complexityScore = 2
 
     if (charged.length > 5) {
-      riskFactors.push(`High coupling: ${charged.length} resolvable indexed relationships (${breakdown.production} production, ${breakdown.test} test).`)
+      riskFactors.push(`High coupling: ${charged.length} resolvable integration points (${breakdown.production} production, ${breakdown.test} test).`)
       complexityScore += 3
       riskLevel = "High"
     }
@@ -1192,10 +1375,19 @@ export namespace CrossLanguageMigrationAssistant {
       complexityScore += 1
       if (riskLevel === "Low") riskLevel = "Medium"
     }
+    if (breakdown.structural > 0) {
+      // Not a risk of the CODE and not a limit of the index: an accounting
+      // statement, so a reader comparing two plans knows they are comparable.
+      riskFactors.push(`${breakdown.structural} structural relationship${breakdown.structural === 1 ? "" : "s"} (containment or export) recorded but not charged; only integration points are billed.`)
+    }
     if (breakdown.unresolvable > 0) {
       // Not a risk of the CODE — a limit of what the index can see. Stated as
       // such, and it does not move the band.
-      riskFactors.push(`${breakdown.unresolvable} indexed relationship${breakdown.unresolvable === 1 ? "" : "s"} have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`)
+      riskFactors.push(
+        breakdown.unresolvable === 1
+          ? "1 indexed relationship has an endpoint that is not an indexed symbol, so the port cannot be scoped from it."
+          : `${breakdown.unresolvable} indexed relationships have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`,
+      )
     }
 
     // The index does not record per-file imports, so a component's LIBRARY
@@ -1244,7 +1436,17 @@ export namespace CrossLanguageMigrationAssistant {
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
 
-    log.debug(`planMigration: produced plan for '${symbolName}' -> ${normalizedTargetLanguage}`)
+    const hasRoute = hasMigrationRoute(sourceLanguage, normalizedTargetLanguage)
+    if (!hasRoute) {
+      // Said in the risk factors, not only in a note, because a risk factor is the
+      // one field a reader cannot miss — and "this port has no library mapping data"
+      // is a genuine risk in a plan, not a footnote.
+      riskFactors.push(
+        `no library-equivalence data is registered for ${sourceLanguage} → ${normalizedTargetLanguage}, so this plan carries NO library mappings: every library will need its target-language equivalent chosen by a human`,
+      )
+    }
+
+    log.debug(`buildPlan: produced plan for '${symbol.name}' -> ${normalizedTargetLanguage}`)
 
     return {
       ok: true,
@@ -1260,9 +1462,18 @@ export namespace CrossLanguageMigrationAssistant {
           indexedImports: evidenced.length,
           nameHeuristics: inferred.length,
           importEvidence: evidenceAvailable ? "available" : "unavailable",
-          note: evidenceAvailable
-            ? "`dependencies` is derived from indexed imports. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk."
-            : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN. `inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          // Both reasons, or neither: the pair may have no mapping data AND the
+          // index may hold no import evidence. Reporting one while implying the
+          // other is covered is how "empty" comes to mean "none".
+          note: [
+            evidenceAvailable
+              ? "`dependencies` is derived from indexed imports."
+              : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN.",
+            hasRoute
+              ? `Library mappings for ${sourceLanguage} → ${normalizedTargetLanguage} come from the registered dictionary.`
+              : `This tool registers no library-equivalence data for ${sourceLanguage} → ${normalizedTargetLanguage}, so no mapping can be offered for any library. That is MISSING DATA, not an absence of libraries.`,
+            "`inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          ].join(" "),
         },
         relationshipEvidence,
         evidenceBreakdown: breakdown,
@@ -1317,7 +1528,7 @@ export namespace CrossLanguageMigrationAssistant {
     //    which is exactly why this must not be assumed present.
     const rawImports = Array.isArray(symbol?.metadata?.imports) ? symbol.metadata.imports : []
     for (const entry of rawImports) {
-      const { name, excluded } = canonicalPackageName(String(entry ?? ""))
+      const { name, excluded } = canonicalPackageName(String(entry ?? ""), symbol?.language)
       if (name) evidenced.add(name)
       else if (excluded) log.debug(`canonicalPackageName: excluded import "${entry}" (${excluded})`)
     }
@@ -1327,7 +1538,7 @@ export namespace CrossLanguageMigrationAssistant {
     //    sources, so one package produced two different library names.
     for (const relationship of relationships) {
       for (const side of [relationship.sourceFile, relationship.targetFile]) {
-        const { name } = packageFromNodeModulesPath(side)
+        const { name } = packageFromNodeModulesPath(side, symbol?.language)
         if (name) evidenced.add(name)
       }
     }
@@ -1398,6 +1609,47 @@ export namespace CrossLanguageMigrationAssistant {
       unsupportedReason: "unknown-library",
       notes: "No evidence-backed equivalence is registered; custom research is required.",
     }
+  }
+
+  /**
+   * Every (source, target, library) row in the dictionary, flattened.
+   *
+   * Exposed so the knowledge base can be AUDITED rather than trusted. Until this
+   * existed nothing had ever read the dictionary except the lookup, and the
+   * audit immediately found rows that could not fire: `net/http` canonicalized
+   * to `net`, `package:flutter/material.dart` to `flutter`, `socket.io` to
+   * nothing at all. A dictionary nobody reads is how a dead row survives.
+   *
+   * This reports the dictionary as MERGED, which is the form the lookup actually
+   * uses, so a merge that drops a row is visible here.
+   */
+  export interface MigrationDictionaryRow {
+    sourceLanguage: string
+    targetLanguage: string
+    library: string
+    /** The target the mapping names, as written in the dictionary. */
+    target: string
+    notes?: string
+  }
+
+  export function migrationDictionaryRows(): MigrationDictionaryRow[] {
+    const out: MigrationDictionaryRow[] = []
+    for (const [sourceLanguage, targetMap] of Object.entries(POLYGLOT_LIBRARY_DICTIONARY)) {
+      for (const [targetLanguage, libraryMap] of Object.entries(targetMap ?? {})) {
+        for (const [library, entry] of Object.entries(libraryMap ?? {})) {
+          out.push({
+            sourceLanguage,
+            targetLanguage,
+            library,
+            target: (entry as { target: string }).target,
+            notes: (entry as { notes?: string }).notes,
+          })
+        }
+      }
+    }
+    return out.sort((a, b) =>
+      `${a.sourceLanguage}|${a.targetLanguage}|${a.library}`.localeCompare(`${b.sourceLanguage}|${b.targetLanguage}|${b.library}`),
+    )
   }
 
   /**

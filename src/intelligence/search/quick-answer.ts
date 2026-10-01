@@ -580,6 +580,37 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
         `(${Math.round(coverage.ratio * 100)}%) have embeddings, so a symbol matching your question may be absent from this list entirely.`,
       )
     }
+    // What the words route actually matched, stated in the answer.
+    //
+    // Without this, the terms route turned an honest refusal into a
+    // confident-looking non-answer. Measured on rake, "where is the request
+    // handled" used to return "Nothing in the index matched — that is a
+    // statement about the index, not a claim that the code doesn't exist", and
+    // now returns DEFAULT_RAKEFILES, test_rake_default and three more as
+    // "Closest matches". Those matched the single word `request`, in a GitHub
+    // Actions file, in a repository with no request handling.
+    //
+    // It is disclosed rather than used as a filter because the measurement says
+    // filtering is not available: requiring every query word to match would
+    // discard 9 of 11 answerable questions to reject 2 of 7 inapplicable ones.
+    const tm = semantic.metadata.termMatch
+    if (tm && tm.queryTerms.length > 0) {
+      const matched = tm.topMatched
+      const ignored = tm.queryTerms.filter((t) => !matched.includes(t))
+      const basis =
+        matched.length === tm.queryTerms.length
+          ? `every word you used (${matched.join(", ")})`
+          : matched.length === 1
+            ? `ONE word (${matched[0]})`
+            : `${matched.length} of ${tm.queryTerms.length} words (${matched.join(", ")})`
+      notes.push(
+        `Note: these came from a KEYWORD match on ${basis} of your query, not from understanding it. ` +
+          (ignored.length
+            ? `The result does not mention ${ignored.join(", ")} at all, so the code you asked about may simply not be here — this codebase may not do that. `
+            : "") +
+          `Treat the list below as places that happen to contain those words, not as an answer.`,
+      )
+    }
     const header = `Closest matches from the AST index for your query (search results, not a verified answer):\n\n`
     let combinedAnswer = notes.length ? notes.join("\n") + "\n\n" + header : header
     const sources: Array<{ file: string; line: number; context: string }> = []

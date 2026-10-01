@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url)
 import { cpus } from "os"
 import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
+import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
@@ -415,10 +416,45 @@ export interface ParallelIndexingStats {
      * M40.A2: what this run did about derived data (relationships/enrichment/
      * gravity/taints/health). "full" = complete pass; "bounded" = scoped pass
      * over touched symbols/edges; "deferred" = skipped by request or cancel;
-     * "skipped-unchanged" = nothing parsed, derived data untouched and still
-     * consistent. Absent on legacy persisted runs.
+     * "skipped-unchanged" = nothing was parsed, so no derived pass ran.
+     * Absent on legacy persisted runs.
+     *
+     * `derivedPass` says WHICH pass ran. It never said whether the derived data
+     * ended up CONSISTENT, and this comment used to claim it did — "untouched and
+     * still consistent" — which is false in exactly the case a user meets it.
+     * Measured: cancel a 60-file index mid-run, then `bb index --resume`. The
+     * cancel leaves 16 relationships with `target_symbol_id IS NULL` (the
+     * resolution phase was interrupted); the resume parses nothing, so its pass
+     * is "skipped-unchanged"; the relationship COUNT recovers to the clean
+     * index's 180, so every count-based check reads healthy — and those 16 edges
+     * are still unattached. Only `bb index --post` resolves them (16 -> 0).
+     * So `derivedPass` is not a consistency statement, and the count below is.
      */
     derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged"
+    /** Relationships this project holds whose target could not be attached to a
+     *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+     *  The row is present and counted, but it is not an edge — traversal reads it
+     *  as absent, so it under-reports. Measured 0 after a clean full index, 16
+     *  after a cancel, and 0 again after `runPostProcessing`. This is the
+     *  measurement `derivedPass` is not, and it is what decides whether the
+     *  remediation is `bb index --post`. */
+    unresolvedRelationships?: number
+    /** How the files were parsed: `worker-pool` or `in-process`.
+     *
+     *  When the pool's fork test fails the run degrades to in-process parsing and
+     *  indexes everything correctly — measured by SIGKILLing workers mid-run: 81
+     *  of 81 files indexed, no orphan symbols, no dangling relationship targets,
+     *  and the run returns normally rather than throwing. That is the right
+     *  behaviour and it is worth having.
+     *
+     *  But it is roughly an order of magnitude slower, and `phases.mode` already
+     *  recorded it while nothing the caller reads carried it: the measured run
+     *  took 72 s against a much faster pool-backed one, and its summary read
+     *  `workerCount: 0, retries: 0, errors: 0, timeouts: 0` — every number
+     *  pristine. A caller cannot tell a healthy parallel run from a serial one
+     *  that lost its pool, which is the same shape as derivedPass/consistency:
+     *  a real degradation with no declared measurement. */
+    parseMode?: "worker-pool" | "in-process"
   }
 }
 
@@ -579,6 +615,47 @@ export async function admitsShellShebang(filePath: string): Promise<boolean> {
     return false
   }
   return detectLanguageFromPath(filePath, head) !== null
+}
+
+/**
+ * The symbol body as stored in `brain_symbol.source_text`, bounded.
+ *
+ * This column exists so content search can reach a word that appears only
+ * inside a function — measured unreachable for 27% of body-only words on rake
+ * and 38% on ripgrep, because `searchContent` selected only
+ * name/qualified_name/docstring and the body was indexed solely as a
+ * 50-dimensional hash that cannot be queried by word.
+ *
+ * Bounded for two measured reasons:
+ *  - size. A 25 599-character body was measured on rake (a whole class body).
+ *    `searchContentClassic` loads every symbol row for a project, so an
+ *    unbounded body would make content search memory scale with total source
+ *    rather than with the query.
+ *  - diminishing returns past the cap. The median measured body is 28 tokens
+ *    and p90 is 69, so a few hundred lines is generous: a word a developer
+ *    remembers is overwhelmingly likely to be near the top of the symbol.
+ *
+ * Returns null when there is no body, so the column reads as "this symbol has
+ * no body to search" rather than as an empty string that matches everything.
+ */
+const MAX_BODY_SOURCE_CHARS = 4000
+const MAX_BODY_SOURCE_LINES = 200
+
+function boundSourceText(snippet: string | undefined | null, startLine: number, endLine: number): string | null {
+  if (!snippet) return null
+  let text = String(snippet)
+  // The analyzer's snippet is occasionally the whole file when line information
+  // is missing. Trust the line range when we have one.
+  if (endLine > startLine && startLine > 0) {
+    const lines = text.split("\n")
+    if (lines.length > endLine - startLine + 1) {
+      text = lines.slice(0, endLine - startLine + 1).join("\n")
+    }
+  }
+  const lines = text.split("\n")
+  if (lines.length > MAX_BODY_SOURCE_LINES) text = lines.slice(0, MAX_BODY_SOURCE_LINES).join("\n")
+  if (text.length > MAX_BODY_SOURCE_CHARS) text = text.slice(0, MAX_BODY_SOURCE_CHARS)
+  return text.length > 0 ? text : null
 }
 
 /**
@@ -1996,8 +2073,8 @@ export async function storeResults(
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, is_declaration, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, source_text, scope_kind, is_declaration, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -2221,7 +2298,40 @@ export async function storeResults(
        for (const result of batch) {
          if (!result.success) continue
  
-         let relativePath = path.relative(projectPath, result.filePath)
+         // M68: the relative path is computed from REAL paths on BOTH sides.
+         //
+         // `projectPath` and `result.filePath` reach this line spelled two
+         // different ways, and have done all along. `result.filePath` is the
+         // caller's own string — `results.push({ filePath: file, ... })` at the
+         // top of this loop, straight out of the `files` list — while
+         // `projectPath` is whatever the CALLER passed to indexProjectParallel.
+         // bb_edit is the one caller that realpath'd its project root, so for it
+         // the pair was `/private/var/folders/X` against `/var/folders/X`: the
+         // same directory, two spellings, and `path.relative` between them
+         // returned `../../../../var/folders/X/src/a.ts` instead of `src/a.ts`.
+         //
+         // The consequence was the worst kind of silent. `fileId` below is built
+         // from this value, so it matched no existing row, every DELETE ran
+         // against zero rows, and the INSERT created a SECOND brain_file row for
+         // a file that was already indexed. The file then appeared twice, its
+         // symbols appeared twice, and the second bb_edit on that file failed
+         // permanently with "symbol is ambiguous". MEASURED: bb_edit was usable
+         // exactly ONCE per file on macOS.
+         //
+         // No bb_edit gate saw it, because every one of them edits each symbol
+         // exactly once. A gate that only ever performs the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // Both sides are realpath'd HERE rather than at the call sites, because
+         // this is the one place the two are combined and seven callers reach it.
+         // The file side falls back to its own spelling when realpath throws,
+         // which is the create-a-new-file case where the leaf does not exist yet;
+         // for that the nearest existing ancestor's spelling is what matters and
+         // it is already consistent with the project root.
+         const realFilePath = (() => {
+           try { return realpathSync(result.filePath) } catch { return result.filePath }
+         })()
+         let relativePath = path.relative(realpathSync(projectPath), realFilePath)
          const fileId = `${projectId}:${relativePath}`
          // #756: per-file buffer for auto-generated contains edges (see the
          // symbol loop below) — flushed after the file's symbol rows exist.
@@ -2246,7 +2356,43 @@ export async function storeResults(
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
-         relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         // M68: `relativePath` is NOT recomputed here. The line this replaces was
+         //
+         //   relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         //
+         // which is a STRING replace standing in for a path operation, and it
+         // OVERWROTE the correct `path.relative(projectPath, result.filePath)`
+         // computed 25 lines above. It is only right when `result.filePath`
+         // literally contains `projectPath` as a prefix — which is false on
+         // macOS, where /var and /tmp are symlinks into /private. There
+         // projectPath is the unresolved spelling and result.filePath is a
+         // realpath, so the replace matches nothing and `relativePath` becomes
+         // the absolute path with its leading "/" stripped.
+         //
+         // The two spellings then disagree inside the SAME row: `fileId` on line
+         // 2191 came from the correct relative path, `relative_path` came from the
+         // broken one. So reindexing an already-indexed file computed a fileId
+         // that matched no existing row, every DELETE above hit zero rows, and the
+         // INSERT created a SECOND brain_file row for the same file — filed under
+         // the absolute path.
+         //
+         // MEASURED, through bb_edit, which is how this was found. Editing ONE
+         // symbol in a fresh project left:
+         //   brain_file    src/a.ts                  (the original)
+         //                 var/folders/.../src/a.ts  (the duplicate)
+         //   brain_symbol  alpha  x2
+         // and the consequence is that THE SYMBOL COULD NEVER BE EDITED AGAIN —
+         // the second edit failed with "symbol alpha is ambiguous; provide
+         // filePath and lineStart", permanently, because the duplicate never goes
+         // away. bb_edit was usable exactly once per file, on macOS.
+         //
+         // Not one bb_edit gate caught it, because every one of them edits each
+         // symbol exactly once. A gate that only ever does the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // `path.relative` is the operation that was always meant here, and it is
+         // already what the fileId above uses. If the two ever need to differ,
+         // that deserves a loud failure rather than a second spelling.
          const pathLower = relativePath.toLowerCase()
  
          let fileLayer = "core"
@@ -2834,6 +2980,13 @@ export async function storeResults(
                // docstring-based evidence matching in bb_doc (feature/api
                // lexical SQL) and degrading symbol-mode doc facts.
                symbol.docstring || null,
+               // The symbol's own source text, bounded. Content search selects
+               // name/qualified_name/docstring, so without this a word that
+               // appears ONLY inside a function was unreachable by every
+               // retrieval path — 27% of body-only words on rake, 38% on
+               // ripgrep. The body was in the database only as a
+               // 50-dimensional hash, which cannot be queried by word.
+               boundSourceText(symbol.snippet, symbolStartLine, symbolEndLine),
                // #837: the DDL column (scope_kind) and the typed schema
                // existed for years while this INSERT silently omitted them —
                // every scope value every analyzer emitted died at the store
@@ -3837,6 +3990,36 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
 // MAIN ENTRY POINT
 // ============================================================================
 
+/**
+ * How many stored relationships are NOT attached to a stored symbol:
+ * `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+ *
+ * The row is present and counted, but it is not an edge — every traversal reads
+ * it as absent, so it under-reports, and the relationship count does not show it.
+ *
+ * This is the measurement `summary.derivedPass` is not. `derivedPass` says which
+ * pass ran; nothing said whether the index ended up CONSISTENT, and the noop
+ * path's own note claimed "untouched and still consistent" on the strength of
+ * nothing. Measured, in the case a user meets it: cancel a 60-file index
+ * mid-run (leaving 16 unresolved relationships), then `bb index --resume`, which
+ * parses nothing so its pass is `skipped-unchanged` — and leaves all 16.
+ * `bb index --post` resolves them.
+ *
+ * Best-effort: a failure to measure is logged and leaves the field absent, which
+ * callers render as "not measured" rather than as a clean bill.
+ */
+async function measureUnresolvedRelationships(projectId: ProjectID): Promise<number | undefined> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return Number(
+      (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL").get(projectId) as any)?.c ?? 0,
+    )
+  } catch (e: any) {
+    log.warn("could not measure unresolved relationships", { error: e?.message })
+    return undefined
+  }
+}
+
 export async function indexProjectParallel(
   projectId: ProjectID,
   projectPath: string,
@@ -3960,6 +4143,13 @@ export async function indexProjectParallel(
         timeouts: 0,
         cancelled: 0,
         derivedPass: "skipped-unchanged",
+        // Measured here too, because this is the path `--resume` takes and it is
+        // the one that can carry a previous run's unfinished work. Measured 16 on
+        // a cancel-then-resume, and 0 after `bb index --post`.
+        unresolvedRelationships: await measureUnresolvedRelationships(projectId),
+        // Nothing was parsed, so there was no parse mode to choose. Declared
+        // rather than left undefined so "no parse ran" is a value and not a gap.
+        parseMode: "worker-pool",
       }
 
       // M40.A2: an incremental noop run can still observe DELETIONS —
@@ -4079,6 +4269,11 @@ export async function indexProjectParallel(
     }
     phases.workerStartupMs = Date.now() - workerStartupStart
     phases.mode = processFn === processInProcess ? "in-process" : "worker-pool"
+    // Carried onto the summary as well, because the summary is what callers and
+    // the CLI read and `phases` is what nobody reads. On the main path the
+    // summary is built later from `phases.mode`; this covers a path that already
+    // has one.
+    if (stats.summary) stats.summary.parseMode = phases.mode
 
     const parseStart = Date.now()
     const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0, workerStartupFailures: 0, poisonFiles: 0 }
@@ -4223,6 +4418,12 @@ export async function indexProjectParallel(
       timeouts: stats.timeoutFiles,
       cancelled: cancelledCount,
       derivedPass: "deferred", // set to full/bounded below when a pass actually runs
+      // The fork test has already resolved by the time this literal is built, so
+      // `phases.mode` is known here. An earlier version tried to assign it after
+      // the fact and silently did nothing, because on this path `stats.summary`
+      // does not exist yet — which is exactly how a measurement goes missing
+      // without an error.
+      parseMode: phases.mode,
     }
 
     // Post-processing fallback: re-process files that may have been lost
@@ -4462,6 +4663,12 @@ export async function indexProjectParallel(
         : stats.cancelled
           ? "post-processing deferred: run cancelled (resume to continue)"
           : "post-processing deferred (full-index-only path)")
+    }
+
+    // Measured after every derived path has run, so the number describes the index
+    // as handed back rather than the pass that produced it.
+    if (stats.summary) {
+      stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
@@ -5260,8 +5467,48 @@ export async function reindexFilesParallel(
   // client dies with "Header must provide a Content-Length property" —
   // found live by M25.E5). stdio callers MUST pass a stderr logger.
   options?: { logger?: { log: (...args: any[]) => void; write: (s: string) => void } },
-): Promise<{ indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
-  const result: { indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0 }
+): Promise<{ indexed: number; deleted: number; errors: number; /** Files the caller named that the indexer declined — unsupported or binary
+   *  types, and files whose parse produced nothing. It used to be indistinguishable
+   *  from a file that was indexed: a binary file answered `indexed: 0, deleted: 0,
+   *  errors: 0`, which to a caller is indistinguishable from "already current". */
+  skipped: number; skippedReason?: string; /** WHICH files failed and WHY. The delegated
+   *  `indexProjectParallel` has always collected `{ file, error }` per failure and
+   *  returned it; reindexFilesParallel counted them and dropped them. A write tool
+   *  reporting "3 errors" tells its caller nothing it can act on — not which file,
+   *  not whether to retry, and not whether the failure is transient. Bounded, so a
+   *  large failure cannot become a large payload. */
+  errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  // M68: normalise the project root ONCE, here, so every `path.relative` in this
+  // function and in storeResults agrees with what the INITIAL index wrote.
+  //
+  // The defect this fixes was found through bb_edit and is the worst in this file.
+  // A caller may spell the project root either way — `/var/folders/X` or
+  // `/private/var/folders/X` are the same directory on macOS — and the initial
+  // index and the incremental reindex were being handed DIFFERENT spellings by
+  // different callers. `storeResults` then computed
+  //
+  //   fileId        = `${projectId}:${path.relative(projectPath, filePath)}`   (correct)
+  //   relative_path = filePath.replace(projectPath, "").replace(/^\//, "")     (broken)
+  //
+  // so a reindex of an already-indexed file produced a fileId matching no
+  // existing row: every DELETE hit zero rows and the INSERT created a SECOND
+  // brain_file row filed under the absolute path. The file then appeared twice,
+  // its symbols appeared twice, and the second bb_edit on that file failed for
+  // good with "symbol is ambiguous". MEASURED: editing one symbol left
+  //
+  //   brain_file    src/a.ts                  (original)
+  //                var/folders/.../src/a.ts  (duplicate)
+  //   brain_symbol  alpha  x2
+  //
+  // and no bb_edit gate saw it, because every one of them edits each symbol once.
+  //
+  // `realpathSync` is the operation that collapses the two spellings to one. It
+  // is applied HERE rather than at each call site because seven callers pass this
+  // path and one of them passing it differently is all it takes — bb_edit was the
+  // only one that realpath'd it, and it was enough to break the whole incremental
+  // path for that project.
+  const realProjectPath = realpathSync(projectPath)
+  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
   // lock scope — a concurrent indexer must never interleave between our
@@ -5289,7 +5536,7 @@ export async function reindexFilesParallel(
 
       const tx = rawDb.transaction(() => {
         for (const change of deleted) {
-          const relativePath = path.relative(projectPath, change.path)
+          const relativePath = path.relative(realProjectPath, change.path)
           const fileId = `${projectId}:${relativePath}`
           deleteRelationships.run(fileId)
           deleteTaints.run(fileId, fileId)
@@ -5309,7 +5556,7 @@ export async function reindexFilesParallel(
   const toIndex = changes
     .filter((c) => c?.type !== "deleted")
     .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip("/" + path.relative(projectPath, c.path)))
+    .filter((c) => !shouldSkip("/" + path.relative(realProjectPath, c.path)))
     .map((c) => c.path)
 
   if (toIndex.length > 0) {
@@ -5320,9 +5567,9 @@ export async function reindexFilesParallel(
       // then the incremental run inside applies the bounded post-pass — so
       // bb_edit / LSP / MCP file-mode leave derived data consistent, not just
       // re-parsed. Snapshot cost folds into this call (pre-parse window).
-      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(realProjectPath, f)}`)
       const snapshot = await snapshotInEdges(projectId, touchedFileIds)
-      const indexResult = await indexProjectParallel(projectId, projectPath, {
+      const indexResult = await indexProjectParallel(projectId, realProjectPath, {
         files: toIndex,
         isIncremental: true,
         skipDiscovery: true,
@@ -5331,6 +5578,20 @@ export async function reindexFilesParallel(
       })
       result.indexed = indexResult.successFiles
       result.errors += indexResult.errorFiles
+      // `skippedFiles` was being computed by the delegated run and thrown away.
+      // It is the difference between "this file is not indexable" and "this file
+      // is already current", and the report could not tell them apart.
+      result.skipped += indexResult.skippedFiles ?? 0
+      // The per-file failures the delegated run already collected. Bounded at 20
+      // with the true total still in `errors`, so a caller learns which file to
+      // look at without a pathological failure becoming a huge answer.
+      for (const e of indexResult.errors ?? []) {
+        if (result.errorDetail.length >= 20) break
+        result.errorDetail.push({ file: String(e.file ?? "?"), error: String(e.error ?? "unknown") })
+      }
+      if ((indexResult.skippedFiles ?? 0) > 0 && result.indexed === 0) {
+        result.skippedReason = `${indexResult.skippedFiles} of the requested file(s) hold nothing the indexer extracts (binary or unsupported type)`
+      }
       // Bounded-pass telemetry (surfaced to tool callers; never silent).
       result.derived = {
         pass: indexResult.summary?.derivedPass ?? "deferred",
@@ -5338,10 +5599,10 @@ export async function reindexFilesParallel(
         repairedInEdges: indexResult.m40Bounded?.repairedInEdges ?? 0,
         touchedSymbols: indexResult.m40Bounded?.touchedSymbols ?? 0,
       }
-      if (result.derived.pass === "deferred") {
-        // Empty-file-set or all-skipped runs defer honestly rather than lie.
-        result.errors += 0
-      }
+      // `deferred` means the heavy phases were not run for this call. It is
+      // published in `derived.pass` and there is nothing to count, so the
+      // `result.errors += 0` that used to stand here was a statement about
+      // intent dressed as a statement about the count.
     } catch (error) {
       log.error("failed to reindex files", { error })
       result.errors++

@@ -407,6 +407,11 @@ async function keywordFallback(
       scannedRows: content.length,
       filteredRows: content.length,
       fallbackReason: reason,
+      // Carried so the ANSWER can say which query words produced these results.
+      // A terms-route match on one of three words is a coincidence with any
+      // query sharing that word, and an answer that lists five code blocks
+      // without saying so reads as a finding.
+      ...(content.termMatch ? { termMatch: content.termMatch } : {}),
       ...measureCoverage(raw, projectId),
     },
   }
