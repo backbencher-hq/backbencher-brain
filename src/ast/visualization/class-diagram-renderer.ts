@@ -95,6 +95,13 @@ export const CLASS_CSS = assemble([
   #fitall{margin:0 0 8px;background:rgba(255,255,255,.06);border:1px solid var(--edge);
     color:var(--text);border-radius:7px;padding:4px 10px;font:inherit;font-size:11.5px;cursor:pointer}
   #fitall:hover{border-color:var(--accent);color:var(--accent)}
+  /* The relationships as text. A connector is only useful if you can follow it, and
+     hundreds of dashed lines across the canvas cannot be followed. This is the same
+     data the connectors are drawn from, so it cannot disagree with the picture, and it
+     is findable with Ctrl-F. */
+  #rel-list{margin:0;max-height:30vh;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:10.5px;line-height:1.5;color:var(--muted);white-space:pre-wrap;word-break:break-word;
+    background:rgba(0,0,0,.30);border:1px solid var(--edge);border-radius:7px;padding:7px 8px}
   .ln{width:30px;height:0;border-top-width:2px;flex:none}
   #hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
     color:var(--muted);font-size:11.5px;background:var(--panel);border:1px solid var(--edge);
@@ -131,11 +138,14 @@ export const CLASS_BODY = assemble([
   <div class="row"><span class="mg">::</span><span>field or property</span></div>
   <div class="row"><span class="mg">=</span><span>enum member</span></div>
   <div class="row" style="color:var(--muted)">from the index's own containment links; at most six per box</div>
+  <h2 style="margin-top:12px">Relationships, as text</h2>
+  <pre id="rel-list"></pre>
   <h2 style="margin-top:12px">What this does NOT show</h2>
   <div class="row" style="color:var(--muted)">parameter types and return types</div>
   <div class="row" style="color:var(--muted)">cardinalities or multiplicities</div>
   <div class="row" style="color:var(--muted)">anything the index does not store</div>
 </div>
+<button id="savebtn" class="fitbtn" style="position:absolute;right:14px;top:14px;z-index:4">save as&hellip;</button>
 <div class="panel" id="detail"><span class="close" id="dclose">&#10005;</span><div id="dbody"></div></div>
 <div id="hint">drag to pan &middot; scroll to zoom &middot; click a type to focus its relationships</div>
 <noscript><p style="padding:24px">This diagram needs JavaScript. The data is embedded below.</p></noscript>
@@ -166,6 +176,38 @@ export const CLASS_SCRIPT = assemble([
     return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
       return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c];
     });
+  }
+
+  // The ancestry path of a box, used to order a depth so a child sits near its parent.
+  //
+  // The stored relationships give each type at most one parent here: the first
+  // extends/implements edge found, and failing that the first contains edge.
+  //
+  // Both, because MEASURED with inheritance alone the connectors stayed long: on cargo's
+  // src/compiler the median connector was 720px and the 90th percentile 1,567px in a
+  // 1,296px viewport -- 203 of the 304 are 'contains' between types, and those
+  // connect arbitrary pairs, so an ancestry that only follows inheritance left them
+  // stretched across the canvas. Following containment as well puts a struct next to
+  // the struct that holds it, which is also how a reader expects composition to look.
+  //
+  // Memoised, because a 400-box hierarchy asks for 400 paths.
+  var _keyMemo = {}
+  function ancestryKey(id, guard) {
+    if (_keyMemo[id] !== undefined) return _keyMemo[id]
+    if (guard[id]) return String((byId[id] || {}).name || id)
+    guard[id] = 1
+    var parent = null
+    for (var e = 0; e < E.length && !parent; e++) {
+      if (E[e].target === id && (E[e].type === "extends" || E[e].type === "implements")) parent = E[e].source
+    }
+    for (var e2 = 0; e2 < E.length && !parent; e2++) {
+      if (E[e2].type === "contains" && E[e2].target === id) parent = E[e2].source
+    }
+    var me = byId[id]
+    var out = parent ? ancestryKey(parent, guard) + "/" : ""
+    out += String((me || {}).name || id)
+    _keyMemo[id] = out
+    return out
   }
 
   // ---- layout: a real UML-ish arrangement, not a force soup.
@@ -233,17 +275,42 @@ export const CLASS_SCRIPT = assemble([
     // edges of the screen. Neither is a diagram; both come from treating a depth level
     // as an infinite line.
     //
-    // So each depth is a wrapped grid of at most PER_LINE boxes, and the running y is
+    // So each depth is a wrapped grid, and the running y is
     // an ACCUMULATOR over the lines rather than a lookup keyed by depth. Keying it by
     // depth was the earlier bug: with depths 0 and 2 and no row 1, the offset for depth
     // 2 was never written, y became 40 + undefined, and the browser rejected those SVG
     // connectors with a path attribute naming NaN. Depth gaps are normal in a real
     // hierarchy, so that was not a corner case either.
-    var PER_LINE = 5
+    //
+    // PER_LINE is per DEPTH, so it is computed inside the loop from that depth's own
+    // count. Reading it from the enclosing scope -- which is where it sat first --
+    // meant dereferencing a row that does not exist yet, and every box vanished.
     var y = 40
     for (var r = 0; r < depths.length; r++) {
       var row = rows[depths[r]]
+      var PER_LINE = columnsFor(row.length)
       row.sort(function (p, q) { return (q.gravity || 0) - (p.gravity || 0) })
+      // THEN re-sort by ancestry, so a child sits under its parent.
+      //
+      // MEASURED from a screenshot: with the boxes ordered only by gravity, an
+      // implements edge ran the FULL width of the canvas between a parent and a child
+      // hundreds of cells apart, and 100 of them turned the diagram into spaghetti.
+      // The relationship was real and drawn; it was simply unreadable.
+      //
+      // A depth is ordered by the ANCESTRY PATH of each box -- the concatenated names
+      // of its parents, then its own -- which puts siblings next to each other and a
+      // child within a few columns of its parent. Gravity becomes the tie-break, so
+      // the busiest types still lead. The result is that connectors are short and
+      // mostly vertical, which is what makes a hierarchy read as one.
+      // A fresh cycle guard per box. Passing "" here is what the first version did, and
+      // writing guard[id] = 1 on a string throws, which took the whole layout down with
+      // a message about a property that looked nothing like the bug.
+      for (var oi = 0; oi < row.length; oi++) row[oi]._key = ancestryKey(row[oi].id, {})
+      row.sort(function (p, q) {
+        if (p._key < q._key) return -1
+        if (p._key > q._key) return 1
+        return (q.gravity || 0) - (p.gravity || 0)
+      })
       var widest = 0
       for (var m = 0; m < row.length; m++) if (row[m]._w > widest) widest = row[m]._w
       var lineW = PER_LINE * widest + (PER_LINE - 1) * COL
@@ -262,7 +329,25 @@ export const CLASS_SCRIPT = assemble([
       y += 16
     }
   }
-  layout();
+
+  // The grid shape is derived from the VIEWPORT, so layout has to wait until the
+  // viewport is measured -- and has to be re-runnable when that changes.
+  //
+  // MEASURED, and this is what made the diagram unnavigable: a fixed five boxes per
+  // line turned cargo's 600 project-scope types into 120 lines, roughly 27,000 world
+  // units tall against 1,400 wide. Fitting that put the scale at 0.04, so boxes were
+  // a few pixels each and zooming drifted into the empty space below them. A
+  // 120-line column is not a diagram, it is a list with extra steps.
+  //
+  // The column count now comes from the box count and the viewport's aspect, so the
+  // grid comes out roughly as wide as the space it is drawn in and fits at a
+  // readable scale. sqrt is the right shape because it is what balances a grid's two
+  // dimensions; the 1.35 biases toward fewer, wider columns, because a class name
+  // needs more room than a line of code does.
+  function columnsFor(n) {
+    var aspect = (W > 0 && H > 0) ? (W / Math.max(1, H)) : 1.5
+    return Math.max(3, Math.min(28, Math.round(Math.sqrt(Math.max(1, n) * aspect * 1.35))))
+  }
 
   function toScreen(x, y) { return [W / 2 + (x * view.k + view.x), H / 2 + (y * view.k + view.y)] }
 
@@ -378,6 +463,30 @@ export const CLASS_SCRIPT = assemble([
       "index's containment links rather than inferred. A box shows at most " + MEMBERS +
       " of them; the rest are summarised as &ldquo;+N more stored&rdquo;.")
   }
+  // The legibility ceiling, stated where the count is.
+  //
+  // MEASURED: drawing every one of cargo's src/compiler types produced 1,400 boxes and
+  // 361 connectors. The connectors were real -- that was the previous bug -- but a
+  // thousand boxes is a hairball with names in it, not something anyone reads. So the
+  // boxes are capped and the cap is declared here rather than applied silently: a
+  // reader who sees "215 types not drawn" can go and ask for them, and a reader who
+  // does not see it cannot.
+  if (G.boxesOmitted) {
+    parts.push("<b>" + G.boxesOmitted + "</b> further type" + (G.boxesOmitted === 1 ? "" : "s") +
+      " in this scope " + (G.boxesOmitted === 1 ? "was" : "were") + " not drawn: past this many boxes " +
+      "the connectors stop being traceable and it is a hairball rather than a diagram. " +
+      "The ones drawn are the highest-gravity ones.")
+  }
+  // The orphans, declared. A type with no relationship to another type has nothing to
+  // draw, and 870 of them is what turned this into a hairball -- but they are real
+  // symbols in scope, so saying nothing about them would be a lie of omission.
+  if (G.isolatedOmitted) {
+    parts.push("<b>" + G.isolatedOmitted + "</b> type" + (G.isolatedOmitted === 1 ? "" : "s") +
+      " in this scope " + (G.isolatedOmitted === 1 ? "has" : "have") +
+      " no stored relationship to any other type, so " + (G.isolatedOmitted === 1 ? "it is" : "they are") +
+      " not drawn as boxes: a box with nothing attached to it is not part of a hierarchy. " +
+      "They are still in the JSON answer and in the scope.")
+  }
   if (parts.length) {
     w.innerHTML = parts.join(" ")
   } else if (!E.length) {
@@ -385,6 +494,25 @@ export const CLASS_SCRIPT = assemble([
   } else {
     w.textContent = "Every inheritance and containment relationship among these types is drawn. Signatures and cardinalities are not stored and are not invented."
   }
+
+  // ---- the relationships, as text.
+  //
+  // A connector is only useful if you can follow it. At any zoom where a box is
+  // readable, 361 dashed lines across the canvas are not followable -- so the panel
+  // also lists them, which is searchable with Ctrl-F and readable when the picture is
+  // not. The list is the same data the connectors are drawn from, so it cannot drift
+  // from the picture.
+  var relText = []
+  for (var ri = 0; ri < E.length; ri++) {
+    var re = E[ri]
+    var ra = byId[re.source], rb = byId[re.target]
+    if (!ra || !rb) continue
+    relText.push(re.type + ": " + ra.name + " -> " + rb.name)
+  }
+  document.getElementById("rel-list").textContent =
+    relText.length ? relText.slice(0, 400).join("\\n") +
+      (relText.length > 400 ? "\\n... and " + (relText.length - 400) + " more" : "")
+      : "none stored"
 
   // ---- pan / zoom / select
   var drag = null, moved = false
@@ -405,6 +533,22 @@ export const CLASS_SCRIPT = assemble([
     view.y = my - (my - view.y) * (nk / view.k)
     view.k = nk; render()
   }, { passive: false })
+  document.getElementById("savebtn").onclick = function () {
+    try {
+      var blob = new Blob(["<!DOCTYPE html>\\n" + document.documentElement.outerHTML], { type: "text/html" })
+      var url = URL.createObjectURL(blob)
+      var a = document.createElement("a")
+      a.href = url
+      a.download = "bb-class-diagram.html"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(function () { URL.revokeObjectURL(url) }, 4000)
+    } catch (e) {
+      var w2 = document.getElementById("warn")
+      if (w2) w2.textContent = "could not save: " + String(e).slice(0, 90)
+    }
+  }
   document.getElementById("dclose").onclick = function () {
     document.getElementById("detail").className = ""
     document.body.classList.remove("detail-open")
@@ -432,7 +576,15 @@ export const CLASS_SCRIPT = assemble([
     document.body.classList.add("detail-open")
   }
 
-  function resize() { W = svg.clientWidth; H = svg.clientHeight; render() }
+  function resize() {
+    var nw = svg.clientWidth, nh = svg.clientHeight
+    // Re-lay out only when the SIZE changed. A resize event that does not change the
+    // viewport must not move a reader's boxes under them.
+    var changed = nw !== W || nh !== H
+    W = nw; H = nh
+    if (changed && W > 0 && H > 0) layout()
+    render()
+  }
   window.addEventListener("resize", resize)
   // Frame the whole diagram before the first paint.
   //
@@ -512,6 +664,10 @@ export function renderClassDocument(o: {
   members: number
   /** Per-type member lists, taken from the stored `contains` links. */
   membersByClass: Record<string, { name: string; type: string; stale?: boolean }[]>
+  /** Types the legibility ceiling left undrawn. Declared, never applied quietly. */
+  boxesOmitted: number
+  /** Types in scope with no stored type-to-type relationship at all. */
+  isolatedOmitted: number
   totalNodesAvailable: number
   excluded?: unknown
   scope: string
@@ -523,6 +679,8 @@ export function renderClassDocument(o: {
     edges: o.edges,
     outside: o.outside,
     members: o.members,
+    boxesOmitted: o.boxesOmitted,
+    isolatedOmitted: o.isolatedOmitted,
     membersByClass: o.membersByClass,
     totalNodesAvailable: o.totalNodesAvailable,
     excluded: o.excluded ?? null,
