@@ -137,7 +137,6 @@ const BASH_RULED: Ruled[] = [
  * ontology, same gate, opposite verdicts, and neither is arbitrary.
  */
 const JSON_RULED: Ruled[] = [
-  { type: "extends", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["class_declaration", "class_specifier", "interface_declaration", "struct_declaration"], describe: "a type declaration another type could extend" },
   { type: "implements", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["implements_clause", "extends_clause", "superclass"], describe: "a supertype clause" },
   { type: "instantiates", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["new_expression", "object_creation_expression", "constructor_invocation"], describe: "a constructor call" },
   { type: "overrides", instrument: "A:grammar-inventory", nodeTypesThatWouldMeanIt: ["redefinition", "override_specifier"], describe: "a second declaration replacing a prior one" },

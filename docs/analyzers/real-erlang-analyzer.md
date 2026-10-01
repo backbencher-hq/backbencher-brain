@@ -204,6 +204,13 @@ edge is a heuristic guess** — the corpus dual lens reports a heuristic class o
   from the template would name a line that is not a call site. Macro USES inside
   a body ARE emitted — a macro-to-macro dependency is static (measured 123 per
   300 corpus files); the suppressed calls number 119.
+- **A bare atom in type syntax** (ER-D36). A type dependency is an APPLIED name:
+  you must write `foo()` to apply a type, so a bare unquoted atom in type syntax is
+  the ATOM LITERAL of that name. `-type day() :: monday | tuesday.` depends on
+  nothing, and the `id` in `-type job() :: #{id := job_id()}.` is a field
+  declaration, not a call. Emitting those edges resolves to a same-named type or
+  record property elsewhere in the file and reads as a real dependency — it is the
+  M12 false positive that started the ER3 wave, measured at 19 of them.
 - **A dynamic remote** — `M:f(X)`, `erlang:F(X)`, `apply/3` (ER-D23). The bare
   leaf would conflate every module's `f`; nothing is emitted and the count is
   kept in the review's accounting.
@@ -255,6 +262,24 @@ and by mutant `erlang/complexity-arms-flattened`.
 The dead baseline entries (`receive_expression`, `after_clause`,
 `send_expression`) and the dead `string_literal` include fallback are gone —
 those node types are never emitted by the pinned grammar.
+
+## NIFs are declarations, not annotations (ER-D37)
+
+`-nifs([f/a, …])` and `-on_load([g/0, …])` are read in both spellings the grammar
+produces (`f / a` as a `binary_op_expr`, and an `fa` on the vendor-attribute error
+path), and the two mean different things when a stub exists:
+
+- An entry **with** an Erlang clause is annotated: the clause mints the function
+  symbol and the attribute marks it `isNif` / `isOnLoad`. No duplicate symbol.
+- A `-nifs` entry **without** a clause is **published** as a Function symbol
+  (`declaredByNifsAttribute`, `clauseCount: 0`, line = the attribute's line). A NIF
+  is implemented in C and its Erlang name is declared by the attribute; the compiler
+  accepts `-nifs([n/1])` with no `n/1` anywhere in the file. Dropping those entries
+  made every call to such a NIF dangle with nothing in the graph saying a function
+  was declared.
+- `-on_load` is deliberately not extended the same way: the compiler requires the
+  named function to exist, so an entry with no symbol there is a genuine unresolved
+  reference and is counted, not invented.
 
 ## Complexity model
 
