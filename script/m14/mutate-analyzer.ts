@@ -9168,6 +9168,80 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vue/options-setup-method-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F5 regression: the Options `setup` symbol is removed, so a component whose whole body is `setup(props) { return { … } }` loses the only symbol that names its entry point — 21 corpus files produce a graph with no way in. Caught by vue/options-setup-method. That fixture also expects `mounted`, so this mutant cannot be satisfied by emitting the wrong thing: the fix has to ADD setup without disturbing the lifecycle branch it deliberately does not share a predicate with.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s?.metadata?.isSetup !== true),
+      relationships: (r.relationships ?? []).filter((e: any) => e?.from !== "setup" && e?.to !== "setup"),
+    }),
+  },
+  {
+    id: "vue/namespaced-builtin-false-positive",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "F9(a) regression: a namespaced builtin tag is reported as a component usage. tree-sitter-vue spells `<svg:circle/>` in full and neither builtin set contains a colon, so the pre-fix analyzer published `instantiates -> svg:circle` — a target no components registry holds. Caught by vue/tag-namespace-and-dotted. The mutation is synthesized rather than reverted, because after the fix the bad row is absent from the result and there is nothing to un-do; the honest simulation of \"the namespace check did not run\" is to emit the row it would have emitted. The fixture's FORBID rows also carry `svg`, `math` and `math:mi`, so an implementation that suppressed only the exact strings it knew would still be caught.",
+    transform: r => {
+      const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "instantiates")
+      if (!uses.length) return r
+      const donor = uses[0]
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          { ...donor, source: donor.source, target: "svg:circle", metadata: { ...(donor.metadata ?? {}) } },
+          { ...donor, source: donor.source, target: "svg", metadata: { ...(donor.metadata ?? {}) } },
+        ],
+      }
+    },
+  },
+  {
+    id: "vue/dotted-tag-leaf-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F9(b) regression: the leaf of a dotted tag is dropped. The grammar's `tag_name` spells only the root segment, so reading it alone — the pre-fix behaviour — made `<Form.Input/>` record `instantiates -> Form` and lose `.Input`; the graph then claimed the whole component for a template that uses one sub-component. Caught by vue/tag-namespace-and-dotted, whose expected rows require `member`. Note this mutant cannot be satisfied by pointing the target at `Form.Input` instead: the fixture FORBIDS that name, because the components registry holds `Form` and a resolver must be able to match it — the leaf belongs in metadata, which is what this mutant deletes.",
+    transform: r => {
+      const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "instantiates")
+      if (!uses.some((e: any) => e?.metadata?.member)) return r
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((e: any) =>
+          e?.metadata?.member
+            ? { ...e, metadata: { ...(e.metadata ?? {}), member: undefined, componentPath: undefined } }
+            : e,
+        ),
+      }
+    },
+  },
+  {
+    id: "vue/with-defaults-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F3 regression: the `withDefaults` defaults are dropped again. The macro handler visits the inner `defineProps` call and never looked one frame up at the withDefaults wrapping it, so `withDefaults(defineProps<T>(), { … })` — the documented way to give a typed prop a default — silently lost every default; measured on 98 corpus files, all of which use the NAMED form. BOTH paths are reverted in one mutant on purpose: a fixture that only pinned the per-prop `defaultValue` would be satisfied by a fix that wired the symbol path and skipped the edge, which is precisely the fix that would have looked complete and changed nothing on the real corpus. The fixture asserts `defaultKeys` (a count) as well as `defaultValue`, so neither path can be the only one checked.",
+    transform: r => {
+      const syms = (r.symbols ?? []).filter((s: any) => s?.metadata?.defaultValue !== undefined)
+      const edges = (r.relationships ?? []).filter(
+        (e: any) => e?.metadata?.defaults !== undefined || e?.metadata?.defaultsExpression !== undefined,
+      )
+      if (!syms.length && !edges.length) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s?.metadata?.defaultValue !== undefined
+            ? { ...s, metadata: { ...(s.metadata ?? {}), defaultValue: undefined, hasDefault: undefined } }
+            : s,
+        ),
+        relationships: (r.relationships ?? []).map((e: any) =>
+          e?.metadata?.defaults !== undefined || e?.metadata?.defaultsExpression !== undefined
+            ? { ...e, metadata: { ...(e.metadata ?? {}), defaults: undefined, defaultKeys: undefined, defaultsExpression: undefined } }
+            : e,
+        ),
+      }
+    },
+  },
+  {
     id: "vue/component-split-identity",
     language: "vue",
     defectClass: "symbol-identity",
@@ -17144,6 +17218,50 @@ export const MUTANTS: Mutant[] = [
   // and never exercised, and building the instrument that exercises it found a
   // guard that DELETED a relationship label.
   // ───────────────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────
+  // PERL-MR15 — the companion had a builder, a channel and a correct resolver,
+  // and no caller. 75.6% of the label was false. These mutants reproduce the two
+  // ways a re-broken guard misfires, now that production supplies the index.
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: "perl/withdrawn-override-kept-as-guess",
+    language: "perl",
+    defectClass: "edge-absence",
+    description: "PERL-MR15: a base that IS in the companion and does not declare the method must WITHDRAW the guess. Measured over 5,774 corpus files, 6,111 of 8,085 overrides edges are exactly this case -- the base is in the project and says otherwise -- so keeping them is 75.6% of the label being false. This is what no gate could see: the differential asks whether every edge is EXPLAINABLE from the tree, not whether it is TRUE, and a first-parent guess is perfectly explainable. The mutation RE-ADDS an edge for every method symbol that has none, which is the shape a broken withdrawal guard produces; the forbid row is target-agnostic so it catches the edge whatever target the guard invents. Caught by perl/override-companion-resolve, whose `Remote::Silent` sibling exists only so that 'present but declares nothing' is decidable.",
+    transform: r => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        ...(r.symbols ?? [])
+          .filter((s: any) => String(s.kind ?? "") === "method" && s.ownerName && s.name)
+          .filter((s: any) => !(r.relationships ?? []).some((e: any) => e.type === "overrides" && e.source === `${s.ownerName}.${s.name}`))
+          .map((s: any) => ({
+            source: `${s.ownerName}.${s.name}`,
+            target: `${String(s.ownerName).split("::").pop()}.${s.name}`,
+            type: "overrides",
+            confidence: 0.5,
+            line_number: (s.range?.startLine ?? 1),
+            metadata: { reasonCode: "first-parent-guess", evidenceClass: "inferred" },
+          })),
+      ],
+    }),
+  },
+
+  {
+    id: "perl/unknown-base-published-as-confirmed",
+    language: "perl",
+    defectClass: "false-positive",
+    description: "PERL-MR15: a base OUTSIDE the project cannot be settled by any index, and absence of knowledge is not knowledge of absence. Promoting that guess above the 0.7 patterns threshold publishes 347 corpus edges -- 4.3% -- as confident when the source proves nothing. This is PERL-MR14's original defect (conflating 'no companion opinion' with 'the base does not declare it') reappearing on the other side of the fix. Caught by perl/override-companion-resolve's `MR15::Unknown` forbid row.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((e: any) =>
+        e.type === "overrides" && e.metadata?.reasonCode === "first-parent-guess"
+          ? { ...e, confidence: 0.95, metadata: { ...(e.metadata ?? {}), reasonCode: "base-declares-method" } }
+          : e,
+      ),
+    }),
+  },
+
   {
     id: "perl/partial-companion-deletes-guesses",
     language: "perl",
