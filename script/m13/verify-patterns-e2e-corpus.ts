@@ -213,12 +213,42 @@ for (const [repo, subPath, family] of SAMPLE) {
     )
 
     // --- result types are honest (no fabricated evidence class) ---
+    //
+    // The intent is "no type string is invented". A hand-copied list cannot
+    // express that and had already drifted in both directions:
+    //
+    //   missing  "orphaned_file"  — a REAL rule. detectOrphans defaults its
+    //     `rules` set to orphaned_function | orphaned_class | orphaned_file, and
+    //     the comment at src/intelligence/patterns/orphans.ts:245 records that a
+    //     per-rule confidence constant once made the shipped default of 0.6
+    //     delete this whole rule — "a rule the documentation describes and no
+    //     user could reach". So omitting it here recorded a KNOWN-GAP against
+    //     correct product behaviour, on a real corpus, on graphql-js.
+    //
+    //   phantom  "orphaned-code" — emitted NOWHERE in src/. It made the list
+    //     look like it covered a `orphaned-code` category that does not exist,
+    //     which is the permissive direction: a real defect in that name would
+    //     have passed.
+    //
+    // So the check is structural instead, and cannot drift when a rule is added:
+    // the orphan family is a PREFIX, and the non-orphan families are the small
+    // closed set the rule engine really has. The exact orphan rule names are
+    // still asserted separately, one check lower, so "any string starting with
+    // orphaned_" is not a loophole.
+    const ORPHAN_RULES = ["orphaned_function", "orphaned_class", "orphaned_file"]
+    const NON_ORPHAN_TYPES = new Set(["high-complexity-function", "long-parameter-list", "god-class", "framework-detected"])
     const typeSet = new Set(allResult.patterns.map((p) => p.type))
-    const KNOWN_TYPES = new Set(["orphaned-code", "orphaned_function", "orphaned_class", "high-complexity-function", "long-parameter-list", "god-class", "framework-detected"])
+    const strayTypes = [...typeSet].filter((t) => !t.startsWith("orphaned_") && !NON_ORPHAN_TYPES.has(t))
     harness.check(
       `corpus ${tag}: pattern types are known categories`,
-      [...typeSet].every((t) => KNOWN_TYPES.has(t)),
-      [...typeSet].join(","),
+      strayTypes.length === 0,
+      strayTypes.length ? `unknown: ${strayTypes.join(",")} (saw ${[...typeSet].join(",")})` : [...typeSet].join(","),
+    )
+    const badOrphanRule = [...typeSet].filter((t) => t.startsWith("orphaned_") && !ORPHAN_RULES.includes(t))
+    harness.check(
+      `corpus ${tag}: every orphaned_* type is a real orphan rule`,
+      badOrphanRule.length === 0,
+      badOrphanRule.length ? `not a rule detectOrphans can emit: ${badOrphanRule.join(",")}` : [...typeSet].filter((t) => t.startsWith("orphaned_")).join(",") || "none emitted",
     )
 
     // --- framework detection: if framework_type exists in files, it must appear ---
