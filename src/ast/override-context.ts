@@ -12,10 +12,22 @@
 // This module defines the *companion index*: a project-level map of
 // `owner type name → declared method names`, built by the CALLER from the
 // symbols of previously parsed files. The M12 differential harness builds it
-// with a pre-pass over the fixture corpus; the production indexer provides
-// the same context from its global symbol space (wired via M12.44). Both the
-// Java and Kotlin analyzers use the single shared resolver below, so the
-// override-target semantics are identical across languages:
+// with a pre-pass over the fixture corpus, and `override-companion-pass.ts`
+// builds it on demand for a re-parse (PERL-MR15). BOTH Java and Kotlin use the
+// single shared resolver below, so the override-target semantics are identical
+// across languages:
+//
+// WIRING HONESTY, corrected 2026-09-30 (vue master review, VSD26). This comment
+// used to claim "the production indexer provides the same context from its global
+// symbol space (wired via M12.44)". That was and is FALSE: the BATCH indexer
+// never builds a companion, so a normal full-project index run resolves every
+// override through the deterministic first-parent fallback below and the richer
+// answer this module exists to produce is unreachable in that path. What IS true:
+// the field is accepted (`AnalyzeContext.overrideCompanion`), forwarded by
+// `pool-worker.parseFile`, and populated on demand by
+// `override-companion-pass.ts`. Building it inside the batch indexer from the
+// symbol space is the outstanding work, and until it happens a project's
+// override graph is the per-file approximation, not the project-level one.
 //
 //   "the first ancestor in declaration order that actually declares the
 //    method; fall back to the first parent only when no ancestor declares it"
