@@ -20550,13 +20550,27 @@ async function main() {
         }
       }
       if (lang === "erlang") {
-        // ER wave (M14 #275 F5): dedicated erlang
-        // calls/implements/instantiates oracle mirroring
-        // real-erlang-analyzer.ts — local calls gated on the file's declared
-        // functions, remote targets keep module qualification (ER-D1),
-        // record construction outside clause heads instantiates.
-        for (const e of deriveErlangEdges(root)) {
-          ;(truth as any[]).push(e)
+        // The erlang lane reads the PROMOTED oracle (script/m14/erlang-truth-oracle.ts),
+        // not the inline mirror that used to live here. A mirror re-derives the
+        // analyzer's rules by reading its source, so it derives whatever the analyzer
+        // derives and a label the analyzer got WRONG is invisible to the comparison —
+        // the #910 / G7 / M60 #278 gap this file already records three other times.
+        // The promoted oracle disagrees with the analyzer on purpose (ER-D34/35/36/38)
+        // and each disagreement found a real defect.
+        //
+        // `relPath` is not optional: the oracle uses the path as the owner of a file
+        // that declares no `-module` (ER-D32), and the analyzer is called with exactly
+        // this string further up. Without it the oracle emits NO `contains` for every
+        // module-less file and the gate reports thousands of analyzer-only edges that
+        // are really an identity mismatch between the two sides of the comparison.
+        //
+        // The oracle's edge fields are {type, source, target}; the truth array matched
+        // here is {label, from, target}. Map, do not rename in place.
+        {
+          const { oracleAnalyze } = await import("./erlang-truth-oracle")
+          for (const e of oracleAnalyze(root, relPath).edges) {
+            ;(truth as any[]).push({ label: e.type, from: e.source, target: e.target, line: e.line })
+          }
         }
       }
       if (lang === "clojure") {
@@ -20781,7 +20795,7 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : lang === "erlang" ? ["contains", "references", "exports", "imports"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -20914,7 +20928,7 @@ async function main() {
 // HARNESS's own matcher before being added, so this widens what is CHECKED without
 // changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
 // measurement, and it is what found the gap in the first place.
-...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "erlang" ? ["exports", "imports"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
