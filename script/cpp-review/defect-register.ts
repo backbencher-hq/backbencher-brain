@@ -178,6 +178,87 @@ const reg: any = {
   assertsOn: "analyzer OUTPUT (published symbols and relationships), not tree shapes",
   classes: {},
 }
+/**
+ * D14: an owner symbol's range does not span the edges it owns.
+ *
+ * Stated HERE, independently of the analyzer's `expandedFrom: "macro-heading"`, for
+ * D9's reason: a gate that imports the code under test cannot be run against the code
+ * it gates. So this re-derives the OWNER LEXICALLY — for each edge, the owner is the
+ * LAST symbol of that name starting at or before the edge's own line — and then asks
+ * only whether that owner's range covers the line.
+ *
+ * The lexical rule is what makes this a statement about ownership rather than about
+ * names. Matching edges to owners by name alone reads 39,787 violations, but most of
+ * that is the gate's own error: the corpora contain five separate headings spelled
+ * `SECTION( "A" )` in one file (catch2 SelfTest/IntrospectiveTests/Details.tests.cpp
+ * at lines 186, 203, 206, 212, 224), and a name-only match charges one of them for
+ * another's edges. Attributing each edge to the nearest preceding symbol of its name
+ * leaves a signal that is real: with the defect present, every one of those edges
+ * belonged to a macro heading whose range was the single heading line.
+ */
+
+/**
+ * D15: a class whose HEAD is decorated by a macro is never published.
+ *
+ * The grammar cannot read `class GTEST_API_ Widget { … };`. What it does instead is
+ * worse than giving up: it recovers the whole declaration as a FUNCTION —
+ *
+ *     function_definition
+ *       class_specifier "class GTEST_API_"
+ *         type_identifier "GTEST_API_"    <- the specifier's `name` field is the MACRO
+ *       identifier "Widget"                <- the real class name, a bare SIBLING
+ *       compound_statement "{ … }"         <- the class BODY
+ *
+ * so the specifier carries no body of its own, the forward-declaration rule declines
+ * it, and THE CLASS IS NEVER PUBLISHED. Two things follow, and the second is why
+ * this is a published-fact defect and not a tree-shape one: the bare sibling reads
+ * as a function declarator, and the out-of-line definitions of that class's members
+ * (`Widget::reset() {…}`) resolve their owner by the `Widget::` qualifier to
+ * whichever `Widget` symbol exists — the CONSTRUCTOR, which shares the class's name.
+ *
+ * Measured before the fix on fmt/test/gtest/gmock-gtest-all.cc: `UnitTestImpl` was
+ * published at `902-902`, the constructor's own declaration line, and owned 91 edges
+ * spread over lines 902-1354. After it, the class spans `900-1355` and every one of
+ * those 91 edges is inside it.
+ *
+ * The three conditions below are all required, and the third is what keeps D11 honest
+ * (see the note beside `macroDecoratedClassDecl`).
+ */
+
+/**
+ * D15: the real class name of a declaration the grammar recovered as a FUNCTION
+ * because its head carries a macro — `class GTEST_API_ Widget { … };`.
+ *
+ * All three conditions are required, and the third is what keeps D11 honest:
+ *   (1) the specifier's own `name` is an ALL-CAPS identifier — a macro spelling;
+ *   (2) a bare `identifier` is its SIBLING, outside the body — that is the real name;
+ *   (3) the parent's `compound_statement` is the class body.
+ * Condition (1) alone fires on `class X f() { … }`, an elaborated return type, where
+ * the compound_statement is the FUNCTION's body — the node D11 exists to stop
+ * publishing. Condition (2) is what separates them: in `class X f() {…}` the `f` sits
+ * inside a `function_declarator`, never as a bare sibling of the specifier.
+ *
+ * Stated HERE rather than imported from the analyzer, for D8's reason.
+ */
+const decoratedClassName = (spec: any): string | null => {
+  if (spec.type !== "class_specifier" && spec.type !== "struct_specifier" && spec.type !== "union_specifier") return null
+  for (const c of (spec.namedChildren ?? []) as any[]) {
+    if (c.type === "class_body" || c.type === "field_declaration_list") return null
+  }
+  const nf = spec.childForFieldName?.("name")?.text?.trim()
+  if (!nf || !/^[A-Z][A-Z0-9_]*$/.test(nf)) return null
+  const par = spec.parent
+  if (!par || par.type !== "function_definition") return null
+  const sibs = (par.namedChildren ?? []) as any[]
+  const body = sibs.find((c) => c.type === "compound_statement")
+  if (!body) return null
+  for (const c of sibs) {
+    if (c === spec || c === body) continue
+    if (c.type === "identifier" && c.endIndex <= body.startIndex) return c.text
+  }
+  return null
+}
+
 /** D13: does this friend declaration carry a function BODY (i.e. define, not declare)? */
 function friendDeclHasBody(decl: any): boolean {
   for (let i = 0; i < decl.namedChildCount; i++) {
@@ -277,6 +358,11 @@ const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before 
  */
 const D13 = cls("D13", "a read inside a friend function DEFINITION is attributed to the enclosing class",
   "A friend function is not a member of the class whose body it is written in, so nothing in that body belongs to the class. Reading a friend definition's parameters as members of the class that merely encloses them is a scope-attribution error, and a misleading one wherever a member shares the parameter's name.")
+
+const D14 = cls("D14", "an owner symbol's range does not span the edges it owns",
+  "An owner is a spatial claim: if an edge says a symbol owns it, that symbol's range must contain the edge. A heading macro the analyzer publishes with a one-line range while its body emits edges hundreds of lines below is an owner that cannot account for what it owns, and every consumer that filters a graph by range silently loses those edges.")
+const D15 = cls("D15", "a class whose HEAD is decorated by a macro is not published as a class",
+  "`class GTEST_API_ Widget { … };` declares a class named Widget. The macro decorates the head; it does not rename the class, and it cannot hide the declaration. A class that exists, is named, and is defined in the translation unit must be published as a class, or every consumer that asks 'what is in this file' is told it is not there.")
 
 /**
  * D11: a function is published whose RETURN TYPE is a class DEFINITION.
@@ -425,6 +511,8 @@ for (const repo of REPOS) {
     // D7: the `anonymous` publications this file made, resolved against the tree
     // after the walk. Declared BEFORE the D1/D5 loops that push into it.
     const pendingAnon: { kind: string; line: number; file: string; repo: string }[] = []
+    // D15: real class names whose HEAD carries a macro, found by asking the tree.
+    const pendingDecorated: string[] = []
     syms += r.symbols?.length ?? 0
     rels += r.relationships?.length ?? 0
 
@@ -622,9 +710,70 @@ for (const repo of REPOS) {
           }
         }
       }
+      const dec = decoratedClassName(n)
+      if (dec) pendingDecorated.push(dec)
       for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) visit(c) }
     }
     visit(tree.rootNode)
+
+    // D15 — a class whose HEAD is decorated by a macro must be published as a class.
+    // The conditions are re-derived from the TREE here, never imported from the
+    // analyzer's `macroDecoratedClassDecl`, for D8's reason.
+    if (pendingDecorated.length) {
+      const classes = new Map<string, any[]>()
+      for (const s of (r.symbols ?? []) as any[]) {
+        if (s.kind !== "class") continue
+        const a = classes.get(s.name) ?? []
+        a.push(s)
+        classes.set(s.name, a)
+      }
+      for (const nm of pendingDecorated) {
+        if (!classes.has(nm)) add(D15, `unpublished-decorated-class:${nm}`, { repo, file: rel, name: nm })
+      }
+    }
+
+    // D14 — every edge's owner must span that edge. Scoped to macro-heading symbols,
+    // because those are the owners whose range is computed from the HEADING alone;
+    // an ordinary symbol's range is its own source extent by construction, so the
+    // question does not arise there. The owner is the LEXICAL one: the last symbol of
+    // the edge's source name starting at or before the edge's line. See D14's contract
+    // for why a name-only match over-counts by two orders of magnitude and why that
+    // would be this gate's error rather than a finding.
+    //
+    // `expandedFrom` is used only to SELECT which published symbols to check. The
+    // assertion — that a range must span what it owns — is independent of how the
+    // range was computed, so the gate still runs against an analyzer that computes it
+    // wrongly, which is the whole point of it.
+    {
+      const syms = ((r.symbols ?? []) as any[]).filter((s) =>
+        s.range && s.name && s.metadata?.expandedFrom === "macro-heading")
+      if (syms.length) {
+        const byName = new Map<string, any[]>()
+        for (const s of syms) {
+          const a = byName.get(s.name) ?? []
+          a.push(s)
+          byName.set(s.name, a)
+        }
+        for (const a of byName.values()) a.sort((x, y) => x.range.startLine - y.range.startLine)
+        for (const x of (r.relationships ?? []) as any[]) {
+          const ln = Number(x.line_number ?? -1)
+          if (!Number.isFinite(ln) || ln < 1) continue
+          const cands = byName.get(String(x.source))
+          if (!cands || !cands.length) continue
+          let owner: any = null
+          for (const s of cands) if (s.range.startLine <= ln && (!owner || s.range.startLine > owner.range.startLine)) owner = s
+          if (!owner) continue
+          if (ln > owner.range.endLine) {
+            add(D14, `${owner.name}@${owner.range.startLine}-${owner.range.endLine}<-${ln}`, {
+              repo, file: rel, line: ln, owner: owner.name, ownerKind: owner.kind,
+              ownerRange: `${owner.range.startLine}-${owner.range.endLine}`,
+              target: x.target, edgeType: x.type,
+              expandedFrom: owner.metadata?.expandedFrom,
+            })
+          }
+        }
+      }
+    }
 
     // D7 verdict: for every specifier carrying a name the analyzer published as
     // `anonymous`, the name was legible. And for every enum whose name the
@@ -658,7 +807,7 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} R1=${R1.n} R2=${R2.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} D14=${D14.n} D15=${D15.n} R1=${R1.n} R2=${R2.n}\n`)
 }
 
 // D10 — the engine's own byte cap. Counted by the engine, not by this script, so
