@@ -264,42 +264,61 @@ follows. It should not be quoted as though it were the corpus result.
 
 ### The corpus differential, and why its recall is not reported
 
-A second, larger instrument — `$HOME/fixtures/xml/probes/corpus-differential.mts`,
-**outside version control** — builds an **independent oracle** from the parse tree and compares class by class
-over the whole manifest. Its last full run reported the analyzer emitting 657,432
-symbols and 228,194 relationships, 228,194/228,194 of them carrying a line, 0
-symbols without an owner, 0 names containing whitespace or NUL, and 0 files
-unrouteable.
+A second, larger instrument — `script/m12/xml-corpus-differential.mts`, **now in
+this repository** — builds an **independent oracle** from the parse tree and
+compares class by class over the whole manifest. It is the only gate here that
+measures three things nothing else does: **symbol-level** agreement (including a
+`SPURIOUS` class for symbols the analyzer minted that the tree does not support),
+**type coverage across twenty relationship classes**, and **multiset** rather than
+set comparison, because XML legitimately repeats names.
 
-**Those figures predate the M18 entity-reference work and are not current.** The
-analyzer now emits `entity_reference` edges, so the relationship count moved and
-this run has not been redone. Quoting it as the analyzer's present output would be
-quoting a measurement of a build that no longer exists; the honest state is that
-the number is stale and the re-measure is owed (see `reviews/xml/master-review.md`,
-owed item 9). The **in-repo** M14 differential, by contrast, is pinned and current:
+Its oracle is written from the grammar's own declaration with a deliberately
+different algorithm, which is what makes a disagreement a finding rather than the
+same bug counted twice. The analyzer walks an explicit worklist carrying the owner
+*down*; the oracle makes one flat pre-order sweep and reads the owner by walking
+*up* a precomputed parent map.
+
+**It was vendored, not re-measured.** The probe used to live in a sibling
+worktree at `fixtures/xml/probes/` while the artifact it produces,
+`validation/m12/results/corpus-differential.json`, was version-controlled and cited
+here — so the evidence was in the repository and the instrument was not, and a
+fresh checkout could read the number with no way to re-derive it. Only four paths
+were absolute; they are now relative and overridable (`XML_CORPUS_ROOT`,
+`XML_WASM`, `XML_DIFF_OUT`).
+
+Current run, 8,889 files over all six corpora:
 
 ```
-grails-core:xml  files=60  truth=1487  covered=1487 (100%)
-                MISSING=0  analyzer-edges=1099  unexplained=0 (0%)  17.5 ms/file
-full grails-core sweep: 314 files, missing=0, unexplained=0
+grammarNodes 5,899,555   grammarErrorNodes 48,847   grammarMissingNodes 9
+filesWithGrammarError 177   filesUnparseableByRouter 0
+symbolsEmitted 657,432      relationshipsEmitted 230,603
+per-symbol class: 13 classes at recall 1 / precision 1
+per-relationship class: 18 of 20 at recall 1 / precision 1
 ```
 
-That lane's coverage is `contains` only. It used to rest on **one corpus of six**
-— `maven` 0/0 over 3,250 files while `libxslt`, `libxml2`, `cxf` and `docx4j`
-disagreed heavily — and that was recorded as "oracle coverage rather than analyzer
-defects" on the strength of a shape rather than a measurement. The measurement
-since taken found six oracle defects and **no** analyzer defect; see *Differential
-coverage — all six corpora* below for the current 43-of-250,135 figure across all
-8,889 files.
+**The 36 `SPURIOUS` this document used to quote is now 595, and that is the
+INSTRUMENT falling behind a correct analyzer rather than a regression.** M18 taught
+the analyzer that `&name;` is a use and that the five predefined entities are
+`builtin`, which added 5,350 `entity_reference` edges corpus-wide — 4,816 of them
+`builtin`. This oracle declares nineteen relationship classes and
+`entity_reference` is **not one of them**; the string does not occur in the file.
+An oracle that derives none of them calls every one spurious.
 
-One consequence is worth stating because it is the reason this lane could be
-trusted to find anything at all: while the gap was open, a defect in the oracle
-and a defect in the analyzer produced the **same** signature — edges on one side
-only — and the only thing that distinguished them was reading the tree. Six of the
-seven fixes this review produced were of that indistinguishable kind.
+The distinction is checkable rather than asserted, and it is worth stating how:
+sample the artifact's `REL_SPURIOUS` list and **every** row either carries
+`resolvable=builtin` or names an entity the document declares in its own DTD —
+including `bigentname.xml`'s 3,965-character entity, correctly published by the
+length-cap fix. A real fabrication would not look like that.
 
-It also reports `contains-attribute` recall **0.910** and 76,372 spurious
-relationships, and **both numbers are the oracle's error**. On
+Deliberately **not** fixed here. Teaching this third oracle entity references is
+real work, and the lane already has two that cover them: `deriveTreeEdges`' xml
+branch in `script/m14/differential.ts` (which section E's 0/0 row rests on) and
+`script/m12/xml-entity-accounting.mts` (the accounting identity over 11,940 sites).
+Adding a third copy of that knowledge buys no additional coverage. The gap is
+recorded in the artifact itself as `knownGapEntityReferenceCoverage`.
+
+It once reported `contains-attribute` recall **0.910** and 76,372 spurious
+relationships, and **both numbers were the oracle's error**. On
 `grails-context.xsd` its namespace histogram is `[["…XMLSchema",1],["(none)",61]]`
 — it resolved the XSD namespace for 1 of 62 elements and therefore published
 owners as `xsd:element` where the analyzer correctly published `component-scan`.
@@ -409,14 +428,14 @@ run names files that are expected to fail and fails the run if they succeed.
 - Corpus errors: `validation/m12/results/xml-corpus-errors.json`
 - Complexity: `validation/m12/results/xml-corpus-complexity.json`
 - Shape safety: `validation/m12/results/xml-shape-safety.json`
-- Corpus differential: `fixtures/xml/out/corpus-differential.json`, runner
-  `fixtures/xml/probes/corpus-differential.mts`. **These two are outside version
-  control** — `fixtures/` is a sibling worktree at `$HOME/fixtures/`,
-  not a path relative to this repository, so the bare form above reads as a repo
-  path and resolves to nothing. 35 probe files and 32 output files live there and
-  are **not** reproducible from a clone; the durable ones still need moving in.
-  The M14 in-repo gates below do not have this problem, which is the reason the
-  numbers above are quoted from those and not from these.
+- Corpus differential: **vendored** — runner `script/m12/xml-corpus-differential.mts`,
+  artifact `validation/m12/results/corpus-differential.json`. Both are in this
+  repository and both are re-derivable from a clone (the corpus itself lives in the
+  sibling worktree and is addressed by `XML_CORPUS_ROOT`).
+  What remains outside version control is the corpus manifest
+  (`$HOME/fixtures/xml/repositories/MANIFEST.json`, ~20 KB), the grammar
+  A/B probe, and the expat agreement probe — 33 further probe files and 31 outputs
+  in `fixtures/xml/`. None of them is load-bearing for a number quoted above.
 - Lane registration and per-language record: `script/m14/completeness-inventory.ts`
   → `script/m14/spec/xml-completeness.json`, emitted by
   `script/m14/emit-xml-completeness.ts`
