@@ -229,8 +229,8 @@ comparable across grammar versions.
   without a condition is rejected). They are a corpus-selector fact, not grammar
   defects. **4 are shipping code that fails to parse**, and those are the real
   gap list below.
-- **Damage census** (`fixtures/nim/out/damage-classes.txt`,
-  `fixtures/nim/out/damage-census.txt`): 131 error sites over the 50 files,
+- **Damage census** (`grammars/_vendored/nim/damage-classes.txt`,
+  `grammars/_vendored/nim/damage-census.txt`): 131 error sites over the 50 files,
   classified by the parent node chain and the offending construct — not by
   matching source text for meaning. The classes that hit real code:
 
@@ -534,7 +534,7 @@ quiet machine will cover all 5,227 through the production path.
    a grammar-level production for it competes with the scanner that owns it. A real
    fix has to reach the scanner, not just the grammar — which is a different piece
    of work, honestly scoped rather than left as a hopeful patch. The patch
-   (`$HOME/fixtures/nim/out/0001-nim-dopragma.patch`) and the candidate
+   (`grammars/_vendored/nim/0001-nim-dopragma.patch`) and the candidate
    wasm (5,914,156 B) are both preserved for whoever takes it on.
 
    This is the strongest argument this lane has for its rebuild protocol: the

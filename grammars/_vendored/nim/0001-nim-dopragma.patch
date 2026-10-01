@@ -1,0 +1,56 @@
+--- $HOME/fixtures/nim/grammars/tree-sitter-nim-alaviss/grammar.js	2026-09-26 20:17:07.699291630 -0400
++++ grammars/tree-sitter-nim/grammar.js	2026-09-27 01:49:48.382924948 -0400
+@@ -844,6 +844,7 @@
+         $.curly_expression,
+         $.generalized_string,
+         $.pragma_expression,
++        $.do_pragma_expression,
+         $.object_type,
+         $.tuple_type,
+         $.enum_type,
+@@ -1297,6 +1298,45 @@
+     pragma_expression: $ =>
+       seq(field("left", $._basic_expression), field("right", $.pragma_list)),
+ 
++    // NIM DO-PRAGMA (added by the bb nim wave, 2026-09-27).
++    //
++    // Upstream alaviss/tree-sitter-nim has no production for `expr.#[ … ].#`,
++    // so the `#[` was consumed as a `block_comment` EXTRA and the pragma body was
++    // silently discarded; the layout scanner then desynchronised and the file
++    // recovered into ERROR nodes. Measured on the pinned nim corpus: 16 of the
++    // 48 damaged files carry this construct (and several of them carry nothing
++    // else), and the idioms are common in real Nim — `f.#[!]#`,
++    // `g().#[some pragma.]#`, `test(#[!]#)`.
++    //
++    // The Nim COMPILER models it as `identWithPragma`: a basic expression
++    // followed by the pragma brackets, producing `nkPragmaExpr`
++    // (compiler/parser.nim). The published `doc/grammar.txt` predates it, so the
++    // spec file is NOT the authority here — the compiler is. The node is a
++    // sibling of `pragma_expression` (same nkPragmaExpr idea) rather than a
++    // variant of it, so the `right` field keeps pointing at a pragma-shaped
++    // node and a consumer can treat both uniformly.
++    //
++    // The opening `#[` is `token.immediate`, so it cannot be separated from the
++    // `.` by whitespace and can never be the start of a standalone block
++    // comment; that is the whole difference between this production and the
++    // `block_comment` extra, and it is why the two cannot collide.
++    do_pragma_expression: $ =>
++      prec(
++        "suffix",
++        seq(
++          field("left", $._basic_expression),
++          ".",
++          token.immediate(prec(1, "#[")),
++          optional(
++            alias(
++              $._colon_equal_expression_list,
++              $.do_pragma_argument_list
++            )
++          ),
++          "]#"
++        )
++      ),
++
+     /* Literal construction */
+     array_construction: $ =>
+       seq("[", optional($._colon_equal_expression_list), $._bracket_close),
