@@ -34,17 +34,17 @@
     {
       "name": "the sampled mode (the indexer's hot path) declares itself an ESTIMATE",
       "pass": true,
-      "detail": "36 of 200 sampled files have changed on disk since indexing (estimated 45 total). ESTIMATE"
+      "detail": "40 of 200 sampled files have changed on disk since indexing (estimated 50 total). ESTIMATE"
     },
     {
       "name": "and is still reproducible",
       "pass": true,
-      "detail": "36 both times"
+      "detail": "40 both times"
     },
     {
       "name": "the sampled mode is still unbiased (within 2% of the true rate)",
       "pass": true,
-      "detail": "sampled 18.0% vs true 20.0%"
+      "detail": "sampled 20.0% vs true 20.0%"
     },
     {
       "name": "Files Missing from Disk describes its own method honestly",
@@ -109,7 +109,7 @@
     {
       "name": "the description no longer advertises a non-existent `complete` option",
       "pass": true,
-      "detail": "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, and file fresh"
+      "detail": "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, file freshness"
     },
     {
       "name": "the description points at the real option",
@@ -119,7 +119,7 @@
     {
       "name": "the schema has no `complete` property and never did",
       "pass": true,
-      "detail": "properties: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, includeAnalysisRuns"
+      "detail": "properties: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, includeAnalysisRuns, paths, checkUnindexed"
     },
     {
       "name": "passing `complete` is refused, and the error teaches",
@@ -324,10 +324,10 @@
   "limitations": [
     "Real-index measurements were taken against this repo's own index; a re-measurement of the complete-scan wall time was blocked by concurrent machine load, so the controlled synthetic comparison is the perf evidence."
   ],
-  "generatedAt": "2026-09-30T08:42:38.669Z",
+  "generatedAt": "2026-10-01T04:32:43.522Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T09:36:46.869Z",
-    "contentSha256": "e8c84cefd4a5c948b5351fb1532e6e8889af1c03396e4da8485794acf8705547"
+    "sealedAt": "2026-10-01T04:33:12.615Z",
+    "contentSha256": "4149b89cdca736244a54cf159595627f9fa1aba52b6076094525e4cd2229d0ee"
   }
 }
