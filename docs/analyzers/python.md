@@ -108,7 +108,7 @@ metadata.
 
 Testing frameworks sort **last**, so a file importing both an application framework and a test
 runner reports the application one — the pick must not depend on which import was written
-first. Over the corpus, **2,036 of 3,271 files (62.2%)** carry a framework.
+first. Over the corpus, **2,029 of 3,271 files (62.0%)** carry a framework.
 
 ## Evidence
 
@@ -176,8 +176,9 @@ Filed in the review, not fixed, each with the reason:
 - **PY-9** — a `calls` target is a **leaf**, never a receiver-qualified name: `self.model.save()`
   becomes `save`. This is a repository-wide convention (typescript, java, ruby, go, csharp and
   php all leaf-ify), and python has the most call edges of any lane, so it has the most to lose
-  from it. **46.0% of the lane's 90,870 call edges (41,777) are ambiguous** — more than one
-  project symbol shares the target name — and the store's name strategy requires uniqueness, so
+  from it. **42.6% of the lane's 90,869 call edges (38,674) are ambiguous** — more than one
+  project symbol shares the target name (re-measured 2026-10-01 over the full3,271-file corpus: a call is ambiguous
+  when its target name is carried by more than one distinct `owner.name` declaration) — and the store's name strategy requires uniqueness, so
   those do not resolve. Much of that collision is coincidental with stdlib method names. A
   caller doing a name-only lookup should know this before trusting the result.
 - **PY-16** — no `dialect` field exists in any lane, so Cython cannot be recorded honestly.

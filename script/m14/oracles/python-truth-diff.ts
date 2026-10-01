@@ -215,8 +215,27 @@ for (const f of files) {
   // hyphenated scripts. Deriving it independently rather than importing the analyzer's
   // helper is deliberate — two derivations that agree are evidence, one shared function is
   // not — and agreeing on the NORMALISATION is part of deriving it.
-  const stem = path.basename(f).replace(/\.py$/, "")
-  const moduleScope = stem.replace(/[^A-Za-z0-9_]/g, "_").replace(/^(\d)/, "_$1")
+  // Char walk, not regex (M49.R2) — same normalisation the lane does, derived independently:
+  // drop a trailing `.py`, replace every character that is not `[A-Za-z0-9_]` with `_`, and
+  // prefix a leading digit with `_` so the result is a legal identifier.
+  //
+  // This one is worth being pedantic about, because it is the single place where a DIFFERENT
+  // normalisation on this side would not produce one obviously-wrong row — it would produce one
+  // wrong row per module-level relationship in every hyphenated script, which is 146 edges
+  // across 63 files, and it did exactly that once. A regex-free spelling of the rule is not
+  // faster; it is one fewer place for the two sides to drift apart in style.
+  const base = path.basename(f)
+  let stem = base
+  if (stem.endsWith(".py")) stem = stem.slice(0, stem.length - 3)
+  let normalised = ""
+  for (let i = 0; i < stem.length; i++) {
+    const c = stem.charAt(i)
+    const legal =
+      (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || (c >= "0" && c <= "9") || c === "_"
+    normalised += legal ? c : "_"
+  }
+  const first = normalised.charAt(0)
+  const moduleScope = first >= "0" && first <= "9" ? `_${normalised}` : normalised
   const truth = derivePythonTruth(parser.parse(content).rootNode, moduleScope)
   const truthKeys = new Set<string>()
   for (const e of truth) {
