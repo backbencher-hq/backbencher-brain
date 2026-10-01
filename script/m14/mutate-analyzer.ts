@@ -16552,6 +16552,36 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "before-ns")),
     }),
   },
+  {
+    id: "clojure/reify-anchored-to-namespace",
+    language: "clojure",
+    defectClass: "attribution",
+    description: "F5-cert: a reify anchors to the NAMESPACE instead of the enclosing definition - the analyzer's activeFunction is the enclosing defn, core.clj:7291 publishes `future-call -> clojure.lang.IDeref` - and the counts match exactly while every key is wrong - type-relation-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => (x.type === "implements" && x.source === "builds-a-future" ? { ...x, source: "clj.fixture.typerel" } : x)),
+    }),
+  },
+  {
+    id: "clojure/proxy-anchored-to-def-name",
+    language: "clojure",
+    defectClass: "attribution",
+    description: "F5-cert: a proxy inside a `def` INITIALISER anchors to the var being defined; a def creates a var and not a function, so the analyzer falls back to the namespace - instant.clj:162 publishes `clojure.instant -> ThreadLocal` - type-relation-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => (x.type === "extends" && x.source === "clj.fixture.typerel" ? { ...x, source: "builds-a-thread" } : x)),
+    }),
+  },
+  {
+    id: "clojure/prefix-list-aliases-dropped",
+    language: "clojure",
+    defectClass: "missing-import",
+    description: "F5-cert: a PREFIX LIST `[clj-kondo…node [protocols :as p]]` is detected by asking whether its first child is a symbol, which a prefix list also has, so the nested aliases are skipped and every use publishes an unresolvable bare alias - the measured symptom was an alias table of size 1 where two aliases existed - type-relation-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !String(x.target).includes("typerel.base.")),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
