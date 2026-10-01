@@ -135,6 +135,23 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     seen.add(k)
     edges.push({ type, from, to, line })
   }
+  /**
+   * Add WITHOUT the line in the dedup key, for a relation the analyzer identifies by KIND
+   * rather than by site.
+   *
+   * `references` is that relation: the analyzer dedupes on `(source, target, relType)`, so
+   * one identifier that serves as both a parameter's annotation and a return annotation
+   * publishes TWO edges — and both name the same node, hence the same line. Keying on the
+   * line, as `add` does, collapses them into one and the differential reports a multiplicity
+   * difference of one on every such pair. The tag keeps them distinct without pretending the
+   * line is what distinguishes them.
+   */
+  const addByKind = (type: string, from: string, to: string, kind: string): void => {
+    const k = `${type}\u0000${from}\u0000${to}\u0000kind:${kind}`
+    if (seen.has(k)) return
+    seen.add(k)
+    edges.push({ type, from, to, line: 0 })
+  }
 
   // Pass 1: the class/method skeleton, so `overrides` can be derived from it in pass 2
   // rather than guessed at while walking bodies.
@@ -300,6 +317,254 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         else if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
       }
     }
+  }
+
+  // `imports` — 15,405 edges, the last large relation with no independent derivation.
+  //
+  // The target spelling is `${module}:${item}` and the module is kept WHOLE, dotted and
+  // relative alike: `from .models import User` gives target `.models:User`, not `models:User`.
+  // Keeping the leading dot matters because it is what distinguishes a package-relative
+  // import from an absolute one, and the analyzer keeps it rather than normalising it away.
+  //
+  // Two shapes, and they are spelled differently on purpose:
+  //   - `import a.b.c` binds the TOP-LEVEL package `a`, so the edge is `a.b.c:*` — the whole
+  //     dotted path with a wildcard item, because `import a.b.c` brings the module, not a
+  //     name out of it;
+  //   - `from m import x` binds `x`, so the edge is `m:x` per imported item.
+  // A bare `from . import x` has no module part at all and publishes NO edge, because there
+  // is no module to attribute it to and inventing one would be a fabricated endpoint.
+  {
+    const walkImports = (n: any): void => {
+      if (n.type === "import_statement") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const name = n.namedChild(i)
+          if (!name || !(name.type === "dotted_name" || name.type === "aliased_import")) continue
+          let mod = name.text
+          if (name.type === "aliased_import") {
+            const modNode = name.childForFieldName("name") || name.namedChild(0)
+            if (modNode) mod = modNode.text
+          }
+          add("imports", moduleName ?? "", `${mod}:*`, name.startPosition.row + 1)
+        }
+      } else if (n.type === "import_from_statement") {
+        let mod = ""
+        let seenImport = false
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "import" || c.text === "import") { seenImport = true; continue }
+          if ((c.type === "relative_import" || c.type === "dotted_name") && !seenImport && !mod) mod = c.text
+        }
+        if (mod.length === 0) {
+          for (let i = 0; i < n.namedChildCount; i++) { /* nothing to attribute */ }
+        } else {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c) continue
+            let itemName: string | null = null
+            let itemNode: any = null
+            if (c.type === "dotted_name" || c.type === "identifier") {
+              if (c.text !== mod) { itemName = c.text; itemNode = c }
+            } else if (c.type === "aliased_import") {
+              const itemNameNode = c.childForFieldName("name") || c.namedChild(0)
+              if (itemNameNode) { itemName = itemNameNode.text; itemNode = itemNameNode }
+            } else if (c.type === "wildcard_import") {
+              itemName = "*"
+              itemNode = c
+            }
+            if (itemName !== null && itemNode) {
+              add("imports", moduleName ?? "", `${mod}:${itemName}`, itemNode.startPosition.row + 1)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkImports(c)
+      }
+    }
+    walkImports(rootNode)
+  }
+
+  // `exports` — 96 edges, the smallest relation, and the one whose whole content is a
+  // contract the author wrote down. `__all__` assigned a `list` or `tuple` LITERAL, one edge
+  // per string item.
+  //
+  // Only the literal form. A `NAME` inside the literal, a concatenation and `.extend()` are
+  // data-flow questions rather than syntactic reads, and the lane declares all three as
+  // boundaries — so the oracle derives the same boundary rather than the fuller answer, or it
+  // would report the declared limits as defects.
+  {
+    // The STRING CONTENT, not the literal's text. A `string` node's `.text` is `"User"`
+    // INCLUDING the quotes, so the first version of this derived the export target as
+    // `"User"` with quotes — 2 false "missing" and 3 false "unexplained" on a ten-line file,
+    // and the kind of defect that looks like the analyzer being wrong rather than the
+    // instrument reading the wrong field.
+    const stringContent = (n: any): string => {
+      const t = String(n.text ?? "")
+      const m = /^([rubfRUBF]*)(.*)$/.exec(t)
+      const body = m && m[2] !== undefined ? m[2] : t
+      return body.replace(/^["']/, "").replace(/["']$/, "")
+    }
+    const walkExports = (n: any): void => {
+      // `assignment` AND `augmented_assignment`: `__all__ += ["extra"]` is an ordinary way
+      // to extend a module's public surface and the lane reads it, so a derivation that
+      // handled only `=` would report the augmentation as missing. Both carry a `left` and a
+      // `right`, so one clause covers them and the difference is recorded rather than
+      // re-derived.
+      if (n.type === "assignment" || n.type === "augmented_assignment") {
+        const left = n.childForFieldName("left")
+        const right = n.childForFieldName("right")
+        if (left && left.type === "identifier" && left.text === "__all__" &&
+            right && (right.type === "list" || right.type === "tuple")) {
+          for (let i = 0; i < right.namedChildCount; i++) {
+            const el = right.namedChild(i)
+            if (el && el.type === "string") {
+              add("exports", moduleName ?? "", stringContent(el), el.startPosition.row + 1)
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkExports(c)
+      }
+    }
+    walkExports(rootNode)
+  }
+
+  // `uses` — MEMBER READS. The largest relation type in the lane by volume (69,537 edges
+  // over the corpus), and until now the one with no independent derivation at all: 42% of
+  // every relationship the analyzer emits was unchecked, and `uses` was two thirds of that.
+  //
+  // The rule is "an attribute read that is not a write, a callee, or a receiver", and each
+  // exclusion exists because something else already carries the fact:
+  //   - assignment LHS (`self.x = v`) is a WRITE, and `extractAssignment` emits the isWrite
+  //     edge there, so a `uses` here would double-count one fact two ways;
+  //   - a call's function child (`self.ping()`) is the caller's `calls self.ping`;
+  //   - the receiver position of a member call (`self.svc.ping()`) is traversal, so only the
+  //     DEEPEST read leaf is emitted and `self.svc.inner` yields one edge rather than two.
+  //
+  // The `!inFn` guard is the same rule the call derivation uses: a nested `def` does not open
+  // a scope, so its reads belong to the enclosing function. Stating it once in each place is
+  // a duplication risk, which is why the two walks are checked against each other here rather
+  // than trusted separately.
+  {
+    const walkUses = (n: any, inFn: string | null, parent: any): void => {
+      let nextFn = inFn
+      if (n.type === "function_definition" && !inFn) {
+        const nameNode = n.childForFieldName("name")
+        nextFn = nameNode ? nameNode.text : inFn
+      }
+      if (n.type === "attribute" && inFn && parent) {
+        const leaf = parent === n ? null : n.namedChild(n.namedChildCount - 1)
+        if (leaf && leaf.type !== "attribute") {
+          const gp = parent.parent
+          const covers = (a: any, b: any): boolean => !!a && !!b && a.startIndex === b.startIndex && a.endIndex === b.endIndex
+          const isAssignLhs = parent.type === "assignment" && covers(parent.namedChild(0), n)
+          const gpLhs = gp?.type === "assignment" ? gp.namedChild(0) : undefined
+          const isGpAssignLhs = covers(gpLhs, n)
+          const isAugLhs = parent.type === "augmented_assignment" && covers(parent.namedChild(0), n)
+          const isCallFn = parent.type === "call" && covers(parent.namedChild(0), n)
+          const gpFn = gp?.type === "call" ? gp.namedChild(0) : undefined
+          const isReceiverOfCall = !!gpFn && gpFn.type === "attribute" && covers(gpFn, n)
+          if (!isAssignLhs && !isGpAssignLhs && !isAugLhs && !isCallFn && !isReceiverOfCall) {
+            add("uses", inFn, leaf.text, leaf.startPosition.row + 1)
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkUses(c, nextFn, n)
+      }
+    }
+    walkUses(rootNode, null, null)
+  }
+
+  // `references` — DECLARED TYPES. The second-largest unchecked relation (13,336 edges), and
+  // the one where the analyzer's own choice of source is the interesting part.
+  //
+  // Python's type information lives in ANNOTATIONS, so a reference edge's source is "whoever
+  // wrote the annotation" rather than "whoever is mentioned". `x: T` at module scope belongs
+  // to the MODULE, and inside a function it belongs to the FUNCTION — which is why the source
+  // is resolved by walking UP to the nearest enclosing `function_definition` or
+  // `class_definition` rather than by taking the annotated name.
+  //
+  // The set is deduped per (source, target, kind) across the whole file, so a function that
+  // annotates `T` on three parameters publishes ONE edge. That is a deliberate payload choice
+  // and the differential has to reproduce it rather than approximate it: a per-site derivation
+  // would report every annotation after the first as a multiplicity difference.
+  {
+    const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
+    const emittedRefs = new Set<string>()
+    const resolveSource = (start: any): string => {
+      let p: any = start.type === "function_definition" || start.type === "class_definition" ? start : start.parent
+      while (p) {
+        if (p.type === "function_definition" || p.type === "class_definition") {
+          for (let i = 0; i < p.namedChildCount; i++) {
+            const c = p.namedChild(i)
+            if (c && c.type === "identifier") return c.text
+          }
+        }
+        p = p.parent
+      }
+      return moduleName ?? ""
+    }
+    const collectTypeNodes = (n: any, out: any[]): void => {
+      if (n.type === "identifier") {
+        if (!PRIMITIVES.has(n.text) && !out.some((x) => x.text === n.text)) out.push(n)
+        return
+      }
+      if (n.type === "none" || n.type === "string" || n.type === "concatenated_string") return
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) collectTypeNodes(c, out)
+      }
+    }
+    const typeClauseOf = (n: any): any => {
+      const f = typeof n.childForFieldName === "function" ? n.childForFieldName("type") : null
+      if (f) return f
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "type") return c
+      }
+      return null
+    }
+    const emitRefs = (source: string, roots: any[], kind: string): void => {
+      for (const r of roots) {
+        if (!r) continue
+        const nodes: any[] = []
+        collectTypeNodes(r, nodes)
+        for (const tn of nodes) {
+          const key = `${source}|${tn.text}|${kind}`
+          if (emittedRefs.has(key)) continue
+          emittedRefs.add(key)
+          addByKind("references", source, tn.text, kind)
+        }
+      }
+    }
+    const walkRefs = (n: any): void => {
+      if (n.type === "assignment") {
+        emitRefs(resolveSource(n), [typeClauseOf(n)], "declared_type")
+      } else if (n.type === "typed_parameter" || n.type === "typed_default_parameter") {
+        emitRefs(resolveSource(n), [typeClauseOf(n)], "declared_type")
+      } else if (n.type === "function_definition") {
+        emitRefs(resolveSource(n), [typeClauseOf(n)], "return_type")
+      } else if (n.type === "call") {
+        const fn = n.childForFieldName("function")
+        if (fn && (fn.text === "isinstance" || fn.text === "issubclass")) {
+          const args = n.childForFieldName("arguments")
+          if (args && args.namedChildCount >= 2) {
+            emitRefs(resolveSource(n), [args.namedChild(args.namedChildCount - 1)], "isinstance")
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walkRefs(c)
+      }
+    }
+    walkRefs(rootNode)
   }
 
   // `calls` — every call, attributed to the INNERMOST enclosing definition.

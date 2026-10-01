@@ -43,7 +43,7 @@ parser.setLanguage(await wts.Language.load(fs.readFileSync(path.join(ROOT, "wasm
 const engine: any = await import(path.join(ROOT, "src/ast/engine"))
 const { derivePythonTruth } = await import(path.join(ROOT, "script/m14/oracles/python-truth"))
 
-const TYPES = ["contains", "extends", "overrides", "calls", "instantiates"] as const
+const TYPES = ["contains", "extends", "overrides", "calls", "instantiates", "uses", "references", "imports", "exports"] as const
 const SHOW = 8
 
 const args = process.argv.slice(2)
@@ -131,6 +131,13 @@ const sample = (m: Map<string, string[]>, t: string, s: string): void => {
 
 for (const f of files) {
   currentFile = f
+  // PER FILE. The multiplicity pass runs inside this loop, so the count maps must not
+  // accumulate across the corpus: their keys are (type, from, to) with no file, so a
+  // leftover entry from an earlier file would be compared against this file's edges and
+  // report a difference that is not one. That bug made `references` look like 972,753
+  // multiplicity disagreements when the real figure is per-file and per-site.
+  truthCount.clear()
+  analyzerCount.clear()
   const raw = fs.readFileSync(f, "utf8")
 
   // MIRROR THE ENGINE'S PREPROCESSING, or the two sides are not reading the same bytes.
