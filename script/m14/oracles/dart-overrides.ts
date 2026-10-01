@@ -215,8 +215,26 @@ function declarationName(node: any): string | null {
  *  Two copies of one rule is one copy too many. There is now one. */
 function memberNamesOf(m: any): string[] {
   const out: string[] = []
+  // A STATIC member is not overridable, so it is not a member for this purpose.
+  // Dart resolves a static call against the static type it was written on, so a
+  // subclass declaring the same static name shadows nothing. The analyzer gained
+  // this gate from the corpus; the oracle had no static concept at all and claimed
+  // `Shadow.connect -> HasStatic.connect` through the ordinary in-file path, with no
+  // `@override` anywhere in sight, because "static" simply was not a question it
+  // asked. The keyword is a token on the declaration or its signature.
+  const isStatic = (node: any): boolean => {
+    for (let cur = node, hop = 0; cur && hop < 3; hop++) {
+      for (let i = 0; i < cur.childCount; i++) {
+        const c = cur.child(i)
+        if (c && !c.isNamed && c.text === "static") return true
+      }
+      cur = cur.previousNamedSibling
+    }
+    return false
+  }
   const add = (nm: string | null): void => { if (nm && IDENT.test(nm) && !out.includes(nm)) out.push(nm) }
   if (m.type === "method_signature") {
+    if (isStatic(m)) return out
     for (const w of named(m)) {
       if (!NAME_WRAPPERS.has(w.type)) continue
       const nm = field(w, "name")
@@ -231,6 +249,7 @@ function memberNamesOf(m: any): string[] {
     return out
   }
   if (m.type === "declaration") {
+    if (isStatic(m)) return out
     for (const c of named(m)) {
       if (NAME_WRAPPERS.has(c.type)) { const nm = field(c, "name"); if (nm) add(nm); continue }
       // an ANNOTATED FIELD overrides an inherited accessor — see methodNames for why
@@ -267,6 +286,20 @@ function hasOverrideAnnotation(m: any): boolean {
       }
     }
     cur = sib
+  }
+  return false
+}
+function hasStaticToken(m: any): boolean {
+  for (let i = 0; i < m.childCount; i++) {
+    const c = m.child(i)
+    if (c && !c.isNamed && c.text === "static") return true
+  }
+  const sib = m.previousNamedSibling
+  if (sib) {
+    for (let i = 0; i < sib.childCount; i++) {
+      const c = sib.child(i)
+      if (c && !c.isNamed && c.text === "static") return true
+    }
   }
   return false
 }
@@ -535,8 +568,16 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         // method. Gated on the annotation because that is the only evidence in the
         // file that this member is overriding something rather than coincidentally
         // sharing a name.
-        const fieldWitness =
-          (fieldsOf.get(sup) ?? []).includes(m) && (overrideOf.get(cls)?.has(m) ?? false)
+        // No annotation required on THIS side. A subclass INSTANCE field provides a
+        // getter, so it overrides an inherited one, and `final String walletId` over
+        // a base `walletId` is legal Dart that the compiler accepts. Requiring
+        // `@override` here was my own over-correction: I had just written the
+        // annotation gate to stop the oracle claiming generated overrides, and then
+        // applied the same gate to a case where the field genuinely IS the override.
+        // The annotation is what distinguishes a MEMBER overriding from a name
+        // coinciding; a field in the subclass whose base has a field of that name is
+        // already an override by Dart's own rules.
+        const fieldWitness = (fieldsOf.get(sup) ?? []).includes(m)
         if ((exposed.get(sup) ?? supMethods).has(m) || fieldWitness) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
