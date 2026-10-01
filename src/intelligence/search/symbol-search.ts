@@ -275,29 +275,10 @@ export function symbolSearchPhases(query: string, exact: boolean, caseSensitive:
 // Candidate caps. These bound the un-indexable scans; they scale with the page
 // so `offset` stays reachable, and reaching one sets `truncated` instead of
 // quietly returning a short answer.
-//
-// The values are deliberately large. These caps exist to bound a SCAN, and the
-// scan is the cheap part: on a 20k-symbol index, reading (id, name) for every
-// row costs ~1s, while the earlier 2,000-row cap cost up to 5x recall on a real
-// corpus (an exact query for `name` in phpunit returned 5,000 of 6,277 rows;
-// rebar3's `format_error` returned 61 of 75). A cap small enough to be
-// unnoticeable is not a cap, and a retrieval tool that silently under-answers
-// is worse than a slow one — especially when it declares the cap only after
-// the caller has already trusted the number.
-const MIN_FETCH_CAP = 20000
-const FETCH_CAP_MAX = 200000
-const MIN_ID_CAP = 20000
-const ID_CAP_MAX = 200000
-
-/**
- * Chunk size for the id-set join.
- *
- * SQLite refuses a statement with more bound parameters than its compiled
- * limit, and one `IN (?, ?, …)` over a 20,000-row id set is a raw "too many SQL
- * variables" driver error reaching the caller for a query that should simply
- * return its matches.
- */
-const ID_JOIN_CHUNK = 500
+const MIN_FETCH_CAP = 2000
+const FETCH_CAP_MAX = 50000
+const MIN_ID_CAP = 2000
+const ID_CAP_MAX = 50000
 
 type PhaseRun = { rows: Candidate[]; truncated: boolean }
 
@@ -348,18 +329,13 @@ async function runPhase(
     .all(projectId, ...idFilterParams, phase.value, ctx.idCap) as Array<{ id: string }>
   if (idRows.length === 0) return { rows: [], truncated: false }
   const distinct = [...new Set(idRows.map((row) => row.id))]
+  const placeholders = distinct.map(() => "?").join(",")
   // The filter is re-applied here for the same reason the phase runs again: the
   // id set is the *candidate* set, and the joined row is what gets ranked. A
   // filter is never assumed to hold across the two.
-  const rows: Candidate[] = []
-  for (let start = 0; start < distinct.length; start += ID_JOIN_CHUNK) {
-    const chunk = distinct.slice(start, start + ID_JOIN_CHUNK)
-    const placeholders = chunk.map(() => "?").join(",")
-    const page = raw
-      .prepare(`${SELECT_COLUMNS} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.id IN (${placeholders})${filters}`)
-      .all(...chunk, ...params) as Candidate[]
-    rows.push(...page)
-  }
+  const rows = raw
+    .prepare(`${SELECT_COLUMNS} FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.id IN (${placeholders})${filters}`)
+    .all(...distinct, ...params) as Candidate[]
   return { rows, truncated: idRows.length >= ctx.idCap }
 }
 

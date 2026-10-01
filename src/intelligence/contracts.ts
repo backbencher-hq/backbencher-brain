@@ -89,12 +89,6 @@ export type SearchResults = SearchResult[] & {
    */
   rankedMatches?: number
   /**
-   * How many candidate rows the scan actually looked at. Present so a bounded
-   * answer can say "stopped after N of M" rather than only "stopped", and
-   * absent when the scan completed.
-   */
-  scannedRows?: number
-  /**
    * Why the candidate set is smaller than the raw match set, when it is: a
    * per-phase candidate cap was reached, the noise filter removed rows after
    * the cap, or (regex mode) the row cap or the time budget stopped the scan.
@@ -478,22 +472,15 @@ export interface CouplingEntry {
 export interface FileDependency {
   file: string           // relative path
   fileId: string
-  /** The project-relative path of the target (`external: false` and resolved),
-   *  or the specifier as written when it is external or unresolved. No
-   *  `fileId`: one embeds the project id AND the relative path, so it repeated
-   *  the path beside it. The path is the locator. */
   dependencies: Array<{
     path: string
     external: boolean
+    fileId?: string
     /** How this target was reached: an exact path match, a segment-anchored
-     *  suffix match, or nothing (the specifier the caller wrote, unresolved).
-     *  This is the part a path cannot tell you. */
+     *  suffix match, or nothing (the specifier the caller wrote, unresolved). */
     resolution?: "resolved" | "suffix-match" | "unresolved"
   }>
-  /** The project-relative path only. A file id embeds the project id AND the
-   *  relative path, so carrying both repeated the path for every edge; the path
-   *  is the locator. */
-  dependents: Array<{ path: string }>
+  dependents: Array<{ path: string; fileId: string }>
   /** The TRUE sizes of the two lists above. They are capped so one widely
    *  imported file cannot dominate a page; these are the real counts. */
   dependenciesTotal: number
