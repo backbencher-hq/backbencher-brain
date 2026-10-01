@@ -8543,6 +8543,19 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "rust/prelude-name-collision-instantiates",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "RUST-D30: a BARE PascalCase callee was resolved to a same-named LOCAL type by the in-file filter, so a prelude `Ok(())` in a file that also declares `struct Ok;` published `instantiates -> Ok` \u2014 an edge created by a name collision rather than by any relationship, and the last remaining F5 disagreement on the full serde corpus. A construction resolves to a local type only when the receiver is SPELLED as one; `Self(..)` stays exempt because it is a keyword with one meaning.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "instantiates", source: "uses_prelude_ok", target: "Ok", fromSymbol: "uses_prelude_ok", toSymbol: "Ok", confidence: 0.8, line_number: 1, metadata: { isConstructor: true } },
+      ],
+    }),
+  },
+  {
     id: "rust/comment-becomes-a-module-path",
     language: "rust",
     defectClass: "relationship-fabrication",
