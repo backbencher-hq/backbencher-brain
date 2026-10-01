@@ -910,20 +910,25 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     // The rate is one number, so which edges it is being applied to is part of the
     // number. Printing only the total let a reader assume it was mostly call sites
     // to port, and measured, it usually is not.
-    ...(result.methodology.relationshipByKind.length > 0
-      ? [
-          `  charged edges by kind (one flat ${result.methodology.rates.relationshipHoursPerEdge}h rate, uncalibrated): ` +
-            result.methodology.relationshipByKind
-              .map((k) => `${k.kind} ${k.edges}=${k.hours}h (${(k.shareOfRelationshipHours * 100).toFixed(0)}%)`)
-              .join(", "),
-          ...(() => {
-            const top = result.methodology.relationshipByKind[0]
-            return top && top.kind !== "calls" && top.shareOfRelationshipHours > 0.25
-              ? [`  note: the largest share is \`${top.kind}\`, not \`calls\`. Porting a \`references\` edge is usually an import or a type annotation, not an invocation — the same rate is applied to both and nothing here can say by how much they differ.`]
-              : []
-          })(),
-        ]
-      : []),
+    //
+    // The caveat is a CONDITION and not a sentence: a note that appears on every
+    // result is a note the reader learns to skip, which is the one outcome that makes
+    // it worse than printing nothing.
+    ...(() => {
+      const byKind = result.methodology.relationshipByKind ?? []
+      if (byKind.length === 0) return []
+      const top = byKind[0]
+      const split =
+        `  charged edges by kind (one flat ${result.methodology.rates.relationshipHoursPerEdge}h rate, uncalibrated): ` +
+        byKind.map((k) => `${k.kind} ${k.edges}=${k.hours}h (${(k.shareOfRelationshipHours * 100).toFixed(0)}%)`).join(", ")
+      if (top.kind === "calls" || top.shareOfRelationshipHours <= 0.25) return [split]
+      return [
+        split,
+        `  note: the largest share is \`${top.kind}\` (${(top.shareOfRelationshipHours * 100).toFixed(0)}%), not \`calls\`. ` +
+          `A \`calls\` edge is an invocation to rewrite; a \`${top.kind}\` edge usually is not. The same rate is applied to ` +
+          `both and nothing here can say by how much they differ.`,
+      ]
+    })(),
     // The authoritative figure, with the arithmetic that reconciles it against
     // the per-plan numbers printed below. Previously the header and the per-plan
     // `effort=` lines were both presented as totals and differed by 8h on a
