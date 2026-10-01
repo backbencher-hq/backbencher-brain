@@ -406,7 +406,7 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "no vendored source for this lane; the surface above is measured from the wired bytes through web-tree-sitter, which is the runtime the product parses with. The source of record is the grammar repository (tree-sitter-clean, master), and the constructs this surface gained \u2014 foreign_code_import/foreign_code_item, let_group, record_binding \u2014 are grammar-source changes, so the pin moves with them rather than describing them."
+        "note": "no vendored source for this lane; the surface above is measured from the wired bytes through web-tree-sitter, which is the runtime the product parses with. The source of record is the grammar repository (tree-sitter-clean, master), and the constructs this surface gained — foreign_code_import/foreign_code_item, let_group, record_binding — are grammar-source changes, so the pin moves with them rather than describing them."
       },
       "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
@@ -795,8 +795,8 @@
             "bytes": 795
           },
           "PIN.md": {
-            "sha256": "51a6268618042c0f79221dc5a594a0e3b3059975079ac12a64db41f1a1744973",
-            "bytes": 6726
+            "sha256": "d8ac539f2e44d431c0ec68931b7b1255a64cbdb7ed436221b61f16195a6e30c7",
+            "bytes": 10612
           },
           "queries/highlights.scm": {
             "sha256": "feda18993ae651016a36a3d9e936715e6bc31626ecad9ae29006996d597256a8",
@@ -859,7 +859,7 @@
             "bytes": 952
           }
         },
-        "digest": "7e3bae6e37fd32f4ebb9ebf1df6a0fd383443ad6a90016c7b616ed1698501b2a",
+        "digest": "edcdf9c8f92ca2e5d9919b2053b168a69fcb2ffefe8a5885e195291a3ca966c2",
         "fileCount": 19
       },
       "sourceVsWasm": {
@@ -924,8 +924,8 @@
             "bytes": 787
           },
           "PIN.md": {
-            "sha256": "53f118eb96aedfbfe11a897fe2c6b0cc7fee65b459123b9c85304b166dc89fc8",
-            "bytes": 8945
+            "sha256": "208b7b508f1917577e0a7ae8ad2ba3e2fade8d3159dd5fe302f729a787528e10",
+            "bytes": 15817
           },
           "README.md": {
             "sha256": "9889ad6e5cfce5a48f3eec592950ad96b15a56c0b0b73abff725d204efebcec5",
@@ -944,7 +944,7 @@
             "bytes": 370
           }
         },
-        "digest": "d95e88fb9092868fa74d3afbf52e998a3ab2206dcf664f00af4209826dae3c6d",
+        "digest": "15d94f069bb4af377d018ee14ae5c722dd5304fdcc4977c39331e4e14f478cd0",
         "fileCount": 8
       },
       "sourceVsWasm": {

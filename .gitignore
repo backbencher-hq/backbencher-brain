@@ -243,3 +243,10 @@ validation/m55/profile/
 .bb-tmp*.ts
 which2.ts
 _data2_poly/
+
+# `grammar-candidate.json` is what grammar-gate.sh WRITES on every run — a
+# measurement of the corpora right now, not a record. The recorded baseline it is
+# compared against is grammar-floor.json beside it, and that one IS tracked (it
+# is the floor the VB lane's "no 32 % regression" claim rests on, with the wasm
+# hash it was taken against). Only the candidate is regenerated.
+grammars/_vendored/vbnet/grammar-candidate.json
