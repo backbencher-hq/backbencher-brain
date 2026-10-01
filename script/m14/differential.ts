@@ -4474,6 +4474,21 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
     // `template_value_parameter` names here; they never occur in the pinned
     // grammar, so their absence changes nothing.
     "structured_binding_declarator",
+    // A DESTRUCTOR's name is declared, never read. `~json_sax()` puts the class
+    // name inside a `destructor_name` node, and with this entry missing the guard
+    // below returned false and the class name read as a bare value use.
+    //
+    // This set is the analyzer's `DECL_PARENT_TYPES` and the two were identical
+    // until this line; keeping them identical is the entire point, because a
+    // shared set is what stops one side drifting alone. The analyzer's output
+    // was already right (its destructor branch reads the name to BUILD the
+    // symbol and never emitted a `uses` for it), so this side was the only one
+    // producing the false read — measured as 27 `uses` truth rows on nlohmann's
+    // ABI test header for names that are all constructor/destructor
+    // declarations: `json_sax`, `lexer`, `binary_reader`, `iter_impl`,
+    // `nonesuch`, `file_input_adapter`, `input_stream_adapter`,
+    // `json_sax_dom_parser`. The analyzer published ZERO `uses` for all of them.
+    "destructor_name",
   ])
   const isDeclaringPos = (n: any): boolean => {
     const p = n.parent
@@ -4734,6 +4749,21 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
               const nm = namespaceValues.get(used)
               if (nm && nm.has(n.text)) { ok = true; break }
             }
+          }
+          if (ok) {
+            // D1 mirror, SECOND position. The callee-leaf gate in
+            // `deriveCppEdges` was the first; this is the bare-read path, and it
+            // needed the same ruling for the same reason. The analyzer applies
+            // `isCppSpelledName` at three extraction points — call target, `uses`
+            // target, and declared symbol name — because "one set, three gates,
+            // one impossibility" is the whole contract: C++ has no identifier
+            // spelled `void`, so such a name resolves to nothing for a consumer
+            // at ANY extraction point.
+            //
+            // Measured on nlohmann-json's full 523-file corpus, this was the last
+            // keyword leak in truth: `uses -> void` and `uses -> noexcept`, both
+            // of which the analyzer has never published.
+            if (!isCppSpelledName(n.text)) ok = false
           }
           if (ok) {
             const k = "uses|" + n.text
