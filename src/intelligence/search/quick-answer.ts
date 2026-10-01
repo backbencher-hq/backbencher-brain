@@ -27,15 +27,12 @@ export interface QuickAnswerResult {
    * was presented exactly like a production embedding's, with no way to tell.
    */
   retrieval?: {
-    method: "vector" | "keyword-fallback" | "exact-name"
+    method: "vector" | "keyword-fallback"
     queryModel: string
     indexModel: string
     dimension: number
     fallbackReason?: string
     embeddingCoverage: { embedded: number; symbols: number; ratio: number }
-    /** The ranking could not tell its top results apart — see the note in the answer. */
-    discriminative?: boolean
-    nonDiscriminativeCompetitors?: number
     /**
      * The query produced a vector of all zeros. Cosine against such a vector is
      * 0 for every row, so NOTHING was actually compared and the answer came
@@ -184,33 +181,12 @@ function has(lower: string, phrase: string): boolean {
 }
 
 /**
- * Coverage, read from what the engine ALREADY measured.
+ * How much of the index is actually embedded. Measured per run, not assumed.
  *
- * semantic-search.ts computes `indexSymbolCount` / `embeddedSymbolCount` once
- * per call and hands them back in `metadata`. Re-querying them here cost a
- * measured 53ms median (90ms p95) on a 45 018-symbol corpus — the most
- * expensive thing this lane added, and entirely redundant work. The engine's
- * numbers are from the same database, in the same call, so they are the same
- * numbers for free.
- *
- * Kept as a fallback for a metadata shape that predates the fields, so the
- * disclosure is never silently zero because a caller omitted them.
- */
-function coverageFrom(metadata: { indexSymbolCount?: number; embeddedSymbolCount?: number }): { embedded: number; symbols: number; ratio: number } {
-  const symbols = metadata?.indexSymbolCount ?? 0
-  const embedded = metadata?.embeddedSymbolCount ?? 0
-  if (symbols === 0 && embedded === 0) return { embedded: 0, symbols: 0, ratio: 0 }
-  return { embedded, symbols, ratio: symbols > 0 ? embedded / symbols : 0 }
-}
-
-/**
- * How much of the index is actually embedded, measured directly.
- *
- * Retained only for the case where no engine call has happened and no metadata
- * exists to read. Every live route reads `coverageFrom(semantic.metadata)`
- * instead: this aggregate costs a measured 53ms median (90ms p95) on a
- * 45 018-symbol corpus, and semantic-search.ts already computes the same two
- * numbers on every call.
+ * The documented coverage-honesty note used to fire only when the whole vector
+ * path failed, which is a PATH condition and not a COVERAGE condition: at 22%
+ * coverage the vector path succeeds and the tool printed similarity numbers
+ * with no disclosure at all. This is the number that note is about.
  */
 async function embeddingCoverage(projectId: ProjectID): Promise<{ embedded: number; symbols: number; ratio: number }> {
   try {
@@ -227,45 +203,6 @@ async function embeddingCoverage(projectId: ProjectID): Promise<{ embedded: numb
     return { embedded, symbols, ratio: symbols > 0 ? embedded / symbols : 0 }
   } catch {
     return { embedded: 0, symbols: 0, ratio: 0 }
-  }
-}
-
-/**
- * Resolve a query that IS a symbol name, exactly.
- *
- * Case-insensitive on the name, because code is written in a dozen casings and
- * the caller should not have to remember which. Surrounding whitespace and
- * trailing punctuation are stripped, so `"FileTask."` and `" FileTask "` both
- * resolve. A query containing whitespace is not a name, and the caller falls
- * through to retrieval.
- *
- * Deterministic when the same name exists more than once (overloads, partial
- * classes): the lowest symbol id wins, so repeated calls agree.
- */
-async function exactSymbolMatch(
-  projectId: ProjectID,
-  query: string,
-): Promise<{ name: string; symbolType: string; file: string; line: number; stale: boolean } | null> {
-  const name = query.trim().replace(/[.,;:!?]+$/, "").trim()
-  // A symbol name is a single token.
-  if (name.length < 2 || name.length > 120 || /\s/.test(name)) return null
-  try {
-    const raw = await BrainDatabase.getRawInstance(projectId)
-    const row = raw.prepare(
-      "SELECT s.name, s.symbol_type AS symbolType, COALESCE(s.line_start, 0) AS line, " +
-        "f.relative_path AS file, f.file_hash AS fileHash, f.path AS filePath, f.size_bytes AS sizeBytes, f.last_modified AS lastModified " +
-        "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-        "WHERE s.project_id = ? AND s.name = ? COLLATE NOCASE AND COALESCE(s.line_start, 0) > 0 " +
-        "ORDER BY s.id ASC LIMIT 1",
-    ).get(projectId, name) as any
-    if (!row) return null
-    // The one freshness resolver every read path uses, so an exact match is
-    // marked stale on exactly the same terms as a similarity result.
-    const { fileUnchangedSince } = await import("../../brain/freshness")
-    const stale = !fileUnchangedSince(row.filePath, row.fileHash, row.sizeBytes, row.lastModified)
-    return { name: row.name, symbolType: row.symbolType ?? "symbol", file: row.file, line: row.line, stale }
-  } catch {
-    return null
   }
 }
 
@@ -374,16 +311,11 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
     const raw = await BrainDatabase.getRawInstance(projectId)
 
     // "total symbols" with no explicit noun still means symbols.
-    const wantsTotalOnly = has(lowerQuery, "total") && !COUNTABLE.some((entry) => entry.nouns.some((n) => tokens.includes(n)))
+    const wantsTotalOnly = has(lowerQuery, "total") && !COUNTABLE.some((entry) => entry.nouns.some((n) => lowerQuery.includes(n)))
 
     if (!wantsTotalOnly) {
-      // Nouns match WHOLE WORDS, never substrings. A substring test routes
-      // "how many typescript files" to the `type` counter, because "typescript"
-      // contains "type" — caught by the behavioural half of the M15.A2 gate,
-      // and a whole class of defect a source-text census cannot see.
-      const tokenSet = new Set(tokens)
       for (const entry of COUNTABLE) {
-        if (!entry.nouns.some((noun) => tokenSet.has(noun))) continue
+        if (!entry.nouns.some((noun) => lowerQuery.includes(noun))) continue
         let value: number
         let aggregate: string
         const types = entry.types
@@ -471,71 +403,8 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
     }
   }
 
-  // The similarity results are computed either way: below an exact match they
-  // are the symbol's neighbours, and on their own they are the answer.
   const semantic = await semanticVectorSearch(projectId, query, { maxResults: limit })
-
-  // ── exact symbol name ────────────────────────────────────────────────────
-  // A query that IS a symbol name must return that symbol. This runs BEFORE
-  // similarity ranking because similarity cannot be trusted to do it: the local
-  // model is a bag of words with no inverse-document-frequency weighting, so a
-  // two-word query vector is compared against whole symbol BODIES, and the
-  // winner is whichever unrelated snippet happens to quote the name in passing.
-  // Measured on 8 real repositories before this: naming a symbol that provably
-  // exists returned it 23 times out of 84 — 27%, and 0/12 on two corpora.
-  // `FileTask` in rake came back never; the answer led with
-  // `synthesize_file_task` at similarity 0.833, because that method's body
-  // mentions `Rake::FileTask` in passing.
-  //
-  // This is a NAME lookup, not a similarity claim, and the answer says so. The
-  // similarity results follow below it, so the caller still sees neighbours.
-  const exact = await exactSymbolMatch(projectId, query)
-  if (exact) {
-    const rest = limit > 1 ? semantic.results.slice(0, limit - 1) : []
-    const sources: Array<{ file: string; line: number; context: string }> = [
-      { file: exact.file, line: exact.line, context: exact.name + (exact.stale ? " (STALE)" : "") },
-      ...rest.map((r) => ({ file: r.file, line: r.line, context: r.symbolName + (r.stale ? " (STALE)" : "") })),
-    ]
-    const body = `\`${exact.name}\` is a symbol in this project (${exact.symbolType}). Matched by NAME, not by similarity — this is an exact lookup, so what follows is its neighbours, not better matches.\n\n`
-    const neighbours = rest.length
-      ? rest.map((r) => `--- ${r.file}:${r.line}${r.stale ? " [STALE — file changed since index]" : ""} — ${r.symbolType} ${r.symbolName}\n`).join("")
-      : ""
-    const staleNote = exact.stale ? "\nNote: the file behind this symbol changed on disk since the last index run.\n" : ""
-    return {
-      answer: `Closest matches from the AST index for your query (search results, not a verified answer):\n\n${body}${staleNote}${neighbours}`,
-      // A certainty about the INDEX, not about behaviour — high for the
-      // identity claim, and the answer says the neighbours are not better.
-      confidence: exact.stale ? 0.8 : 0.9,
-      sources,
-      route: "retrieval",
-      retrieval: {
-        method: "exact-name",
-        queryModel: "name-lookup",
-        indexModel: "name-lookup",
-        dimension: 0,
-        fallbackReason: semantic.metadata.fallbackReason,
-        // Read from the engine's own measurement, like every other route. This
-        // branch runs after `semanticVectorSearch` has already computed both
-        // numbers, so re-querying them here was the same 53ms of redundant work
-        // removed from the other routes.
-        embeddingCoverage: coverageFrom(semantic.metadata),
-        discriminative: semantic.metadata.discriminative,
-        nonDiscriminativeCompetitors: semantic.metadata.nonDiscriminativeCompetitors,
-        degenerateQueryVector: semantic.metadata.fallbackReason === "degenerate-query-vector",
-      },
-      provenance: makeProvenance({
-        evidenceClass: "indexed",
-        engine: ENGINE,
-        engineVersion: ENGINE_VERSION,
-        projectId,
-        source: "exact-symbol-name (brain_symbol.name)",
-        limitations: ["Identity of the symbol is exact; its behaviour is not described and no similarity ranking decided this result."],
-        unknowns: exact.stale ? ["The file behind this symbol changed on disk since the last index run."] : [],
-      }),
-    }
-  }
-
-  const coverage = coverageFrom(semantic.metadata)
+  const coverage = await embeddingCoverage(projectId)
   const isFallback = semantic.metadata.method === "keyword-fallback"
   // A degenerate query vector is not "no vector was close enough" — it is
   // "nothing was compared at all". The engine reports it as such; the answer
@@ -548,8 +417,6 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
     dimension: semantic.metadata.dimension,
     fallbackReason: semantic.metadata.fallbackReason,
     embeddingCoverage: coverage,
-    discriminative: semantic.metadata.discriminative,
-    nonDiscriminativeCompetitors: semantic.metadata.nonDiscriminativeCompetitors,
     degenerateQueryVector: degenerate,
   }
 
@@ -569,10 +436,6 @@ export async function quickAnswer(projectId: ProjectID, query: string, options: 
         degenerate
           ? "Note: no vector was produced for this query — the embedding model could not represent its terms — so the matches below come from lexical search, not from similarity. No similarity score is shown because none was computed."
           : "Note: semantic embeddings are unavailable or insufficient for this query (coverage too low), so the matches below are lexical, not semantic — I cannot confidently answer this from embeddings.",
-      )
-    } else if (semantic.metadata.discriminative === false) {
-      notes.push(
-        `Note: this ranking does not distinguish its top results — ${semantic.metadata.nonDiscriminativeCompetitors ?? 0} other symbol(s) scored within ${(semantic.metadata.nonDiscriminativeCompetitors ?? 0) === 1 ? "the same margin" : "that margin"} of the best. The similarity numbers below separate candidates by an accident of length, not by relevance to the question, so treat the ORDER as unreliable and the scores as a weak signal at best.`,
       )
     } else if (coverage.ratio < 0.9) {
       notes.push(

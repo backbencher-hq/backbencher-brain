@@ -3,6 +3,7 @@
   "grammar": "tree-sitter-javascript.wasm",
   "handled_verified": {
     "types": [
+      "identifier",
       "arguments",
       "array",
       "arrow_function",
@@ -13,6 +14,7 @@
       "break_statement",
       "call_expression",
       "catch_clause",
+      "class",
       "class_body",
       "class_declaration",
       "class_heritage",
@@ -22,7 +24,6 @@
       "decorator",
       "do_statement",
       "else_clause",
-      "ERROR",
       "export_clause",
       "export_specifier",
       "export_statement",
@@ -31,13 +32,12 @@
       "field_definition",
       "finally_clause",
       "for_in_statement",
-      "for_statement",
       "formal_parameters",
+      "for_statement",
       "function_declaration",
       "function_expression",
       "generator_function",
       "generator_function_declaration",
-      "identifier",
       "if_statement",
       "import_clause",
       "import_specifier",
@@ -62,6 +62,7 @@
       "private_property_identifier",
       "program",
       "property_identifier",
+      "regex",
       "rest_pattern",
       "return_statement",
       "sequence_expression",
@@ -91,12 +92,12 @@
       "variable_declarator",
       "while_statement",
       "yield_expression"
-    ],
-    "_description": "the analyzer emits correctly (probe/fixture-confirmed). A type belongs here only if it contributes a symbol or a relationship, OR the analyzer deliberately consults it to refuse an emission (ERROR — the scoped damage guard at real-javascript-analyzer.ts:302, the same ruling as bash BD5). A node the analyzer merely reads but attributes elsewhere (e.g. a class EXPRESSION, whose heritage rides its binding) is RULED under design_decision instead, not asserted here."
+    ]
   },
   "internal_silent": {
     "types": [
       "assignment_pattern",
+      "class_static_block",
       "debugger_statement",
       "empty_statement",
       "escape_sequence",
@@ -109,14 +110,13 @@
       "import",
       "import_attribute",
       "meta_property",
-      "MISSING",
+      "pair_pattern",
       "regex",
       "regex_flags",
       "regex_pattern",
       "statement_identifier",
       "with_statement"
-    ],
-    "_description": "container/literal/keyword correctly emitting nothing. Also holds the tree-sitter synthetic error-recovery marker MISSING: not a grammar construct, emits no symbol — the same guard that covers ERROR reports it on result.errors."
+    ]
   },
   "gap": {
     "_description": "Confirmed missing emissions (probe-verified against the real WASM)",
@@ -195,7 +195,6 @@
       },
       {
         "id": "JSD-744",
-        "status": "CLOSED",
         "node_type": "member_expression,identifier",
         "severity": "medium",
         "missing": "M49 #744 (web fix wave, java #739 family contract): member-chain ROOT identifier dropped (config.inner.deeper.leaf emitted uses inner/deeper/leaf but not config) and BARE identifier reads (return config, if (flag)) emitted nothing — only member chains were scanned. Pre-fix the F5 javascript lane could not see either gap: its analyzer-side filter compared only calls, so uses was differential-invisible.",
@@ -414,7 +413,7 @@
         "question": "M49 W2: #762 closed as `verified ALREADY-FIXED` on vue/prop-default-factory-calls - a fixture with ONE factory, whose assertions pass with or without the sibling-object collision - while the corpus file (MarkdownEditor) kept MISSING={toFixed,random}. What must a corpus-derived fixture reproduce?",
         "decision": "RULED - the corpus file's ACTUAL shape, including the interaction that makes it fail. A one-factory reconstruction of a two-factory file tested an adjacent shape and produced false confidence for two waves. Re-authored vue/prop-default-factory-calls to the real shape (two sibling factories + interleaved plain `default:` members) and verified it FAILS against the pre-fix code (mutant vue/prop-default-multi-collapse) before accepting the green.",
         "date": "2026-09-12"
-      },
+      }      ,
       {
         "id": "JSD29",
         "node_type": "template_substitution (read positions)",
@@ -439,22 +438,6 @@
         "question": "M49 W13 (deep-measurement finding; W12 residual): the member-segment dedup key was `${source}.${seg}`, and a private segment's text is literally `#x` - so the key became `${source}.#` + `x`, BYTE-IDENTICAL to the bare-read/chain-root key of the plain identifier `x` (`${source}.#` + `x`). Whichever node was walked first claimed it. Measured on the svelte corpus: packages/svelte/src/reactivity/set.js - the field initializer `#update_version = update_version || -1` (line 52) reads the IMPORTED binding update_version first, claiming key SvelteSet.#update_version, so the genuine read this.#update_version (line 88) was dropped as a duplicate - the FIRST javascript-lane MISSING edge W12's 400-file measurement registered. #version/#size survived only because no plain binding of those names is read in the same container.",
         "decision": "RULED - a private segment's key uses a `#`-marked namespace (`${source}.$private${seg}`); `#` cannot appear inside an identifier, so no bare/root/segment key can collide with it and the private read and the same-named bare read are distinct edges that never suppress each other. The emitted target keeps the `#` spelling. Pinned by fixture javascript/private-member-read-identity (uses Store->#update_version LOST pre-fix) with mutant javascript/private-read-key-collision.",
         "date": "2026-09-13"
-      },
-      {
-        "id": "JSD31",
-        "node_type": "class",
-        "status": "RULED",
-        "question": "F8 re-audit (M60 javascript deep review): `class` sat in handled_verified.types while the analyzer emits NO Class symbol for a class EXPRESSION - the overclaim the lane formula forbids ('green with committed evidence OR explicitly ruled'). Is the absence a gap, a defect, or a deliberate design decision?",
-        "decision": "RULED - the class EXPRESSION deliberately emits no Class symbol; it is not a gap. A class expression is a VALUE expression, so the binding that holds it is its identity - the same reason a function expression yields no Function symbol and is pinned by javascript/class-expression-unresolved. Probed all four binding forms at f10ea18f: `class S{}` -> S:class (class_declaration, the Class symbol case, still handled); `const C = class{}` -> C:constant + m:method; `const C = class Inner{}` -> C:constant + m:method; `let C; C = class{}` -> C:variable + m:method; `sink(class{})` -> no symbol at all. Critically, heritage is NOT lost - it is re-anchored onto the binding: `class S extends Base` -> extends:S->Base + uses:S->Base, while `const C = class extends Base` -> extends:C->Base + uses:T->Base (JD4). An unbound anonymous class emits nothing (extends:C->Base is refused rather than fabricated), which is the lane's standing rule: an unresolved edge is honest, a wrong one is not. The method m:method survives in every form with its container taken from the class_body span - JSD30. So: the DECLARATION path is handled and fixture-pinned; the EXPRESSION path is a deliberate attribution choice, pinned by javascript/class-expression-heritage and javascript/class-expression-member-identity.",
-        "date": "2026-09-27"
-      },
-      {
-        "id": "JSD32",
-        "node_type": "ERROR, MISSING",
-        "status": "RULED",
-        "question": "F8 re-audit: the census injects ERROR and MISSING into every language's node-type set (completeness-inventory.ts:609 — they are not in the wasm symbol table, so the gate adds them by hand), yet no javascript spec row claimed them, so section-a failed for javascript and for 10+ other lanes on the same pair. Gap, silent omission, or handled?",
-        "decision": "RULED - HANDLED, and this is the javascript analog of bash BD5 (which the gate's own comment at completeness-inventory.ts:601-608 cites as the precedent: 'a spec that classifies ERROR - correctly, since the analyzer consults it - was being told its own row was grammar drift ... the fix is never to delete the correct row'). javascript holds an EXPLICIT guard, real-javascript-analyzer.ts:302: `if (n.type === \"ERROR\" || n.isMissing)`, which records a warning on result.errors and skips the damaged subtree. ERROR is therefore handled_verified: the analyzer consults it on purpose, exactly as bash does at real-bash-analyzer.ts:663/703/715. The guard is SCOPED to the damaged region, never a blanket file refusal - the property BD5 insists on, because a blanket refusal swallows valid declarations in a partially broken file. Measured at f10ea18f: `function good(){} function bad( { } const x = ;` -> good:function SURVIVES; the same file with the damage first -> BOTH x:constant and good:function survive; `function good(){} const arr = [1, 2` (unterminated) -> good:function survives, the array yielding only uses:T->arr. A clean control emits the same good:function with no errors, and a wholly-damaged file yields symbols:[] with one warning per ERROR. MISSING is filed internal_silent: the same guard reports it, but it contributes no symbol of its own. No fabrication is possible here - an unresolved name stays unresolved.",
-        "date": "2026-09-27"
       }
     ]
   }

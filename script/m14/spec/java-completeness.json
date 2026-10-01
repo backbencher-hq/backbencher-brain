@@ -1,402 +1,384 @@
 {
-  "_comment": "#419 java pilot — complete classification of ALL 143 public named node types in the pinned tree-sitter-java wasm. Every type is bucketed; a type in no bucket is itself a gate failure (silence is guilt). Buckets: handled_verified (analyzer emits correctly, probe/fixture-confirmed), internal_silent (container/literal/keyword correctly emitting nothing itself), gap (confirmed missing emission, numbered G1..), design_decision (owner ruling required before closure). Generated mechanically + probe-verified 2026-08-26 (see script/m14/completeness-inventory.ts).",
-  "handled_verified": {
-    "_description": "Node types whose required emissions are produced and verified by probes and/or existing F3 fixtures",
-    "types": [
-      "class_declaration",
-      "interface_declaration",
-      "enum_declaration",
-      "record_declaration",
-      "annotation_type_declaration",
-      "method_declaration",
-      "constructor_declaration",
-      "compact_constructor_declaration",
-      "field_declaration",
-      "constant_declaration",
-      "enum_constant",
-      "annotation_type_element_declaration",
-      "package_declaration",
-      "import_declaration",
-      "modifiers",
-      "marker_annotation",
-      "annotation",
-      "annotation_argument_list",
-      "element_value_pair",
-      "formal_parameters",
-      "formal_parameter",
-      "receiver_parameter",
-      "spread_parameter",
-      "variable_declarator",
-      "local_variable_declaration",
-      "superclass",
-      "super_interfaces",
-      "extends_interfaces",
-      "type_list",
-      "permits",
-      "type_parameters",
-      "type_parameter",
-      "method_invocation",
-      "object_creation_expression",
-      "field_access",
-      "method_reference",
-      "cast_expression",
-      "instanceof_expression",
-      "class_literal",
-      "array_creation_expression",
-      "lambda_expression",
-      "ternary_expression",
-      "binary_expression",
-      "assignment_expression",
-      "switch_expression",
-      "switch_rule",
-      "switch_block_statement_group",
-      "if_statement",
-      "while_statement",
-      "do_statement",
-      "for_statement",
-      "enhanced_for_statement",
-      "pattern",
-      "type_pattern",
-      "type_identifier",
-      "scoped_type_identifier",
-      "generic_type",
-      "array_type",
-      "annotated_type",
-      "integral_type",
-      "floating_point_type",
-      "boolean_type",
-      "void_type",
-      "throws",
-      "catch_clause",
-      "catch_type",
-      "catch_formal_parameter",
-      "identifier",
-      "scoped_identifier",
-      "enum_body",
-      "ERROR"
-    ],
-    "_verified_by": "live analyzer probes on synthetic fixtures (record patterns aside) + existing F3 fixtures + differential corpus (grails-core@a83f87480e)"
-  },
-  "internal_silent": {
-    "_description": "Containers, wrappers, grouping nodes, literals, and keywords whose named children are walked independently — emitting nothing at this node is correct",
-    "types": [
-      "program",
-      "block",
-      "expression_statement",
-      "labeled_statement",
-      "argument_list",
-      "type_arguments",
-      "wildcard",
-      "dimensions",
-      "dimensions_expr",
-      "parenthesized_expression",
-      "condition",
-      "inferred_parameters",
-      "switch_block",
-      "switch_label",
-      "guard",
-      "record_pattern_body",
-      "record_pattern_component",
-      "enum_body_declarations",
-      "class_body",
-      "constructor_body",
-      "interface_body",
-      "annotation_type_body",
-      "module_body",
-      "type_bound",
-      "resource_specification",
-      "resource",
-      "finally_clause",
-      "try_statement",
-      "synchronized_statement",
-      "return_statement",
-      "break_statement",
-      "continue_statement",
-      "yield_statement",
-      "unary_expression",
-      "update_expression",
-      "array_initializer",
-      "element_value_array_initializer",
-      "string_fragment",
-      "multiline_string_fragment",
-      "escape_sequence",
-      "underscore_pattern",
-      "asterisk",
-      "decimal_integer_literal",
-      "hex_integer_literal",
-      "octal_integer_literal",
-      "binary_integer_literal",
-      "decimal_floating_point_literal",
-      "hex_floating_point_literal",
-      "true",
-      "false",
-      "null_literal",
-      "character_literal",
-      "string_literal",
-      "string_interpolation",
-      "template_expression",
-      "this",
-      "super",
-      "static_initializer",
-      "line_comment",
-      "block_comment",
-      "MISSING"
-    ],
-    "_notes": {
-      "type_bound": "generic bound container (T extends Number) — the bound TYPE reference is not emitted; tracked as design_decision G6, the container itself is correctly silent",
-      "template_expression": "Java 21 string templates / text blocks — embedded expressions are walked and their calls/uses emitted; the template wrapper itself is silent",
-      "synchronized_statement": "not a decision point per McCabe; block body walked",
-      "static_initializer": "symbol: null per spec table; body IS walked but calls inside it are lost — tracked as gap G4"
-    }
-  },
-  "gap": {
-    "_description": "Confirmed missing emissions (probe-verified: the analyzer emits nothing where the spec table requires an emission)",
-    "gaps": [
-      {
-        "id": "G1",
-        "node_type": "array_access",
-        "missing": "Uses relationship on the array expression",
-        "evidence": "probe: class A { int[] xs; void f(int i) { xs[i] = 5; int v = xs[i]; } } emits contains only — no uses on xs for reads or writes",
-        "spec_row": "expressions_requiring_uses_or_calls: array_access",
-        "severity": "medium"
-      },
-      {
-        "id": "G2",
-        "node_type": "explicit_constructor_invocation",
-        "missing": "Calls relationship for super(...) / this(...)",
-        "evidence": "probe: class A { A() { super(); } } emits no calls",
-        "spec_row": "declarations.constructor_declaration — constructor delegation is a call edge",
-        "severity": "medium"
-      },
-      {
-        "id": "G3",
-        "node_type": "record_pattern",
-        "missing": "Type reference for the record type in instanceof Point(int x, int y)",
-        "evidence": "probe: if (o instanceof Point p) emits instanceof_check, but if (o instanceof Point(int a, int b)) emits nothing",
-        "spec_row": "expressions_requiring_uses_or_calls: instanceof_expression (record-pattern form)",
-        "severity": "medium"
-      },
-      {
-        "id": "G4",
-        "node_type": "method_invocation (non-method scope)",
-        "missing": "Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies",
-        "evidence": "probes: static { x = compute(); }, { x = compute(); }, static int x = compute(), enum { int x = compute(); } all emit no calls. Root cause: src/ast/real-java-analyzer.ts method_invocation handler guards on parentContext.kind === SymbolKind.Method, so calls attributed to no method scope are dropped; qualified_calls likewise never recorded",
-        "spec_row": "expressions_requiring_uses_or_calls: method_invocation (all statement/expression positions)",
-        "severity": "high"
-      }
-    ]
-  },
-  "design_decision": {
-    "_description": "Items where the correct emission is a ruling, not a defect. Closure requires an explicit owner decision recorded here",
-    "decisions": [
-      {
-        "id": "G5",
-        "node_type": "module_declaration, requires_module_directive, requires_modifier, exports_module_directive, opens_module_directive, uses_module_directive, provides_module_directive",
-        "question": "module-info.java currently emits zero symbols and zero relationships. Options: (a) declare module-info out of scope (documented limitation), (b) emit requires/exports/uses targets as References/imports (dependency edges)",
-        "recommendation": "(a) declare out of scope — module-info is rare, low-value for AI code understanding, and the analyzer already extracts imports elsewhere",
-        "ruling": "(a) DECLARED OUT OF SCOPE — owner approval 2026-08-26. module-info.java is a documented limitation; requires/exports/opens/uses/provides emit no edges by design",
-        "status": "RULED"
-      },
-      {
-        "id": "G6",
-        "node_type": "type_bound",
-        "question": "generic bound types (class Box<T extends Number & Comparable<T>>) emit no type references for Number/Comparable. Options: (a) emit declared_type references for bounds, (b) declare limitation (bounds captured only as type_parameter names)",
-        "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
-        "ruling": "(b) DECLARED LIMITATION — owner approval 2026-08-26. type_bound emits no type references; typeParameters payload carries the parameter names",
-        "status": "RULED"
-      },
-      {
-        "id": "S1",
-        "node_type": "throw_statement, assert_statement, try_with_resources_statement",
-        "question": "java-spec-table.json lists these in statements_affecting_complexity, but calculateJavaMethodComplexity does not count them (standard McCabe counts only if/while/for/do/case/catch/&&/||/ternary). Either the spec table over-claims or the analyzer under-counts",
-        "recommendation": "correct the spec table (remove from complexity list) — matches the analyzer, matches textbook McCabe, and keeps complexity comparable across JVM languages (CC1 contract)",
-        "ruling": "SPEC TABLE CORRECTED — owner approval 2026-08-26: throw_statement, assert_statement, try_with_resources_statement removed from statements_affecting_complexity in java-spec-table.json",
-        "status": "RULED"
-      },
-      {
-        "id": "JAO1",
-        "node_type": "method_declaration (un-annotated override)",
-        "status": "RULED",
-        "question": "The analyzer queues override tasks only for methods carrying @Override. Most real Java omits the annotation (clojure/ASF code) — are un-annotated overrides relationships?",
-        "resolution": "Yes — JLS 8.4.8: @Override is a compile-time check, not a requirement; an un-annotated instance method whose signature matches an accessible ancestor method overrides it. Two-corpus gate wave 2026-09 (clojure:java SubVector.iterator). The analyzer now queues implicit tasks for every non-static, non-private, non-constructor instance method, but emits ONLY on a verified exact-signature in-file match (pass 1). Explicit @Override tasks alone keep the companion-index (pass 2) and first-parent guess (pass 3) tiers, so overloads never fabricate."
-      },
-      {
-        "id": "JAO2",
-        "node_type": "override truth (signature awareness)",
-        "status": "RULED",
-        "question": "The override TRUTH pairs by method NAME only — same-name-different-signature overloads (SubVector.nth(int) vs APersistentVector.nth(int, Object)) were asserted as overrides. Signature-exact?",
-        "resolution": "Yes. Two-corpus gate wave 2026-09: the shared oracle collected members with the return type / nested-type-name bugs (the /identifier/ test matched type_identifier first and the field_declaration|declaration guard swallowed method_declaration AND let nested class_declaration through). All fixed: method names come from the grammar name field, member collection is field_declaration-only for variables with nested type nodes excluded, and override pair emission is signature-aware (parameter-type signature overlap required when both sides record signatures). Private ancestor methods never pair (JLS 8.4.8.1)."
-      },
-      {
-        "id": "JD18",
-        "node_type": "anonymous class body (new Comparator<String>() { ... })",
-        "status": "FIXED",
-        "question": "M37.21 #610 user-suspect wave: methods inside anonymous bodies were attributed to the enclosing class (contains Service->compare on the probe) and no symbol existed for the anonymous type.",
-        "resolution": "Mirror the kotlin family convention: anonymous_<SuperName> Class symbol (noise name, never leaks into the index), ownerName = enclosing type, scope pushed for the class_body so members attribute to the anonymous type (contains anonymous_Comparator->compare). object_creation_expression handler pushes the scope; exit-scheduling is the walk's uniform tail. Fixture java/anonymous-and-multihop-overrides pins both directions (expect + forbid contains Service->compare/run); mutants java/anonymous-body-scope-leak + java/override-multihop-bare-name."
-      },
-      {
-        "id": "JD19",
-        "node_type": "multi-hop nested-class override resolution (BlackVal extends Black extends Node)",
-        "status": "FIXED",
-        "question": "M37.21 #610 clojure PersistentTreeMap: overrides through a NON-declaring ancestor (BlackVal.val -> Node.val, Black declares no val) were lost — classHierarchy is FQN-keyed but parents are bare leaf names, so hop-2 looked up classHierarchy with the bare name and missed.",
-        "resolution": "Suffix-resolve every bare parent name to its FQN candidate(s) during the BFS; symbolMap method-symbol hits disambiguate same-named classes. JLS 8.4.8.1 nearest-declaring-ancestor semantics unchanged (BFS level-by-level, private-ancestor skip). Both java lanes 100%/0/0 at 200 files after the fix."
-      },
-      {
-        "id": "JD20",
-        "node_type": "call-edge overload disambiguation",
-        "status": "RULED",
-        "question": "M37.21 #610 user-suspect: method_invocation targets collapse overloads to the bare leaf name (callExpression.split('.').pop()) — two same-name overloads are indistinguishable.",
-        "resolution": "Deliberate contract: the universal call graph is name-leaf based family-wide (java/kotlin/scala/groovy/php/ruby/python all emit leaf targets); overload signature matching requires type inference the tree-sitter layer does not have. Recorded so a downstream consumer needing overload identity knows the boundary. Not a defect."
-      },
-      {
-        "id": "JD21",
-        "node_type": "varargs vs array-type override equivalence (foo(int...) vs foo(int[]))",
-        "status": "VERIFIED-NOT-A-DEFECT",
-        "question": "M37.21 #610 user-suspect: signature strings built from parameters[i].type might not normalize int... and int[] to the same string, silently missing overrides.",
-        "resolution": "Probe-verified on the exact JLS shape: @Override void foo(int[] xs) over varargs foo(int... xs) AND the reverse (bar(int...) over bar(int[])) both resolve (Child.foo->Base.foo, Child.bar->Base.bar). extractJavaParameterType already normalizes. No change."
-      },
-      {
-        "id": "JD22",
-        "node_type": "multi-catch union_type (catch (A | B | C e))",
-        "status": "VERIFIED-NOT-A-DEFECT",
-        "question": "M37.21 #610 user-suspect: collectJavaTypeNames might descend only into the first union member inside catch_formal_parameter.",
-        "resolution": "Probe-verified: all three union members emit references (IllegalStateException, IllegalArgumentException, IndexOutOfBoundsException). No change."
-      },
-      {
-        "id": "JD23",
-        "node_type": "dead private helper filterChildren",
-        "status": "FIXED",
-        "question": "M37.21 #610 user-suspect #4: filterChildren defined and never called — dead code.",
-        "resolution": "Deleted. F7 hygiene re-run green."
-      },
-      {
-        "id": "JD24",
-        "node_type": "constructor symbols (constructor_declaration / compact_constructor_declaration)",
-        "status": "FIXED",
-        "question": "C3: all ctors emitted the literal name 'constructor' — Contains edges from distinct classes collided (A->constructor vs B->constructor) and overloads were indistinguishable",
-        "decision": "Ctor symbols carry their CLASS NAME (A, kind=constructor) mirroring the csharp family convention. Fixtures ctor-delegation / ctor-value-injection / record-varargs-compact-ctor re-pinned 2026-09-08; mutant java/anonymous-body-scope-leak unchanged, java/return-type-refs-drop + java/per-segment-builtin-filter added (346/346)"
-      },
-      {
-        "id": "JD25",
-        "node_type": "cast_type / var locals in References graph",
-        "status": "FIXED",
-        "question": "C4: `var x = foo()` emitted References foo->var — var is an inference keyword, not a type; cast positions already filtered but locals/params/formals did not",
-        "decision": "var filtered at ALL declared-type positions (locals, params, formals, fields). Probe-verified: zero var edges on the C4 probe source"
-      },
-      {
-        "id": "JD26",
-        "node_type": "builtin/stdlib call exclusion (isJavaBuiltin)",
-        "status": "FIXED",
-        "question": "C5: per-segment check dropped user calls whose MID-CHAIN segment collides with a stdlib root (com.mycompany.Service.doWork on 'com', foo.Logger.bar on 'Logger')",
-        "decision": "ROOT segment only (segments[0]) + exact-match list. Mid-chain collisions never suppress; static-imported bare names (println, assertEquals) remain emitted (documented under-filter, conservative). Oracle mirror updated in lockstep (isJavaBuiltinCall). Fixture root-segment-builtin-filter pins; mutant java/per-segment-builtin-filter"
-      },
-      {
-        "id": "JD27",
-        "node_type": "Spring route / httpMethod extraction (@GetMapping, @RequestMapping, array values, concat values)",
-        "status": "FIXED",
-        "question": "C6/C7/C8/C23: bare @GetMapping fabricated route '/'; method=GET on @RequestMapping ignored; {\"/a\",\"/b\"} array leaked raw text; \"/a\"+\"/b\" and text blocks leaked raw source",
-        "decision": "Empty class+method paths yield NO api endpoint edge (no fabricated '/'); @RequestMapping reads method= (default GET for mapping-style, ANY only when explicitly unspecified-semantic); element_value_array_initializer joins values; extractStringValue constant-folds + chains (literals/text blocks/parens only) and reads multiline_string_fragment for text blocks. Probe-verified: /a/b folded, text block unquoted"
-      },
-      {
-        "id": "JD28",
-        "node_type": "return type References",
-        "status": "FIXED",
-        "question": "C9: fields/params/locals/catch/throws emitted declared_type edges but method return types emitted zero edges (List<User> getUsers() -> nothing)",
-        "decision": "Return positions emit References (declared_type, declaredOn=return_type, conf 0.95). type-usage-graph fixture lifted its stale forbid on R and now PINS the R return edge; mutant java/return-type-refs-drop"
-      },
-      {
-        "id": "JD29",
-        "node_type": "per-method vs file complexity (switch_rule)",
-        "status": "FIXED",
-        "question": "C10: method complexity counted switch_rule (arrow switches) but the file-level walk did not — file total != sum(methods)+1",
-        "decision": "Both sides count the same decision-point set (if/for/enhanced_for/while/do/catch/switch_block_statement_group/switch_rule/ternary/&&/||). Probe: method=4 file=4 parity. complexity-parity fixture guards"
-      },
-      {
-        "id": "JD30",
-        "node_type": "Lombok / Spring-Data triggers",
-        "status": "FIXED",
-        "question": "C20/C21: substring tests (indexOf('Data'), indexOf('JpaRepository')) fired on @Metadata/@Database/MyJpaRepositoryFoo; phantom Spring-Data methods carried parameters:[] inconsistent with sig (Object)",
-        "decision": "Exact short-name annotation test (hasJavaAnnotation) for Lombok; phantom accessors carry the matching (Object) parameter. Probe-verified"
-      },
-      {
-        "id": "JD31",
-        "node_type": "resolveOverrides performance",
-        "status": "FIXED",
-        "question": "C11: suffixIndex rebuilt per override task O(T*C) + queue.shift() O(N) — contradicted the header's O(N) claim",
-        "decision": "suffixIndex hoisted to build-once; shift replaced with head-index cursor. Corpus perf unchanged (already sub-ms/file), complexity now honest"
-      },
-      {
-        "id": "JD32",
-        "node_type": "anonymous class bodies (object_creation_expression + class_body)",
-        "status": "FIXED",
-        "question": "C30 (user-suspect #1): anon body members attributed to the enclosing scope; no anonymous_<Super> symbol; classHierarchy never registered so @Override in anon bodies resolved to nothing",
-        "decision": "anonymous_${Super} Class symbol (ownerName=enclosing type), pushed scope for body members (contains:anonymous_Comparator->compare), classHierarchy.set(anonFqn,[Super]) so pass-1 BFS resolves in-file supertypes (exact-in-file). External-supertype anon bodies stay override-free (truth is in-file). Fixture extended with in-file Handler anon + external forbids; oracle anon mirror added (grails-core 13 anon bodies -> 100/0/0)"
-      },
-      {
-        "id": "JD33",
-        "node_type": "@interface (annotation_type_declaration) member reads",
-        "status": "FIXED",
-        "question": "C17: collectFieldAccessUses type branch missed annotation_type_declaration — reads inside @interface fell back to the receiver variable",
-        "decision": "annotation_type_declaration joins the type-declaration rebind branch. Probe: @interface body read emits Mine->thing"
-      },
-      {
-        "id": "JD34",
-        "node_type": "route constant-string values (concat / text blocks)",
-        "status": "FIXED",
-        "question": "C23: extractStringValue returned raw quoted source for \"/a\"+\"/b\" and text blocks",
-        "decision": "Constant-folder: literals (string_fragment + multiline_string_fragment), parens, and + chains only; any non-literal operand -> undefined (never fabricated from names). Probe: /a/b and /\\n/x\\n"
-      },
-      {
-        "id": "JD35",
-        "node_type": "frameworkPatterns payload",
-        "status": "FIXED",
-        "question": "C25: only bare 'spring' surfaced patterns; spring_mvc/spring_data/jpa/hibernate flags produced zero pattern payload",
-        "decision": "Spring MVC -> mvc_pattern+api_endpoints; Spring Data -> repository_pattern+orm_mapping; JPA/Hibernate -> orm_mapping (first match). Vocabulary matches the spring block"
-      },
-      {
-        "id": "JD36",
-        "node_type": "syntax-error reporting (ERROR/MISSING vs hasError on typed nodes)",
-        "status": "RULED",
-        "question": "Hygiene: only ERROR/MISSING nodes push errors; hasError on a WELL-TYPED node (a method containing one bad child) is silent",
-        "decision": "Ruled intentional: a typed node with an embedded error still ANALYZES correctly (tree-sitter recovery keeps the valid subtree); pushing a file-level error per bad child would flood output on generated/amalgamated files. The C-wave guarantee (error-containing files still emit recoverable content) is the standing probe. receiver_parameter (skip-listed) joins the documented skip set — receiver params (void m(Outer this)) are receiver binders, not user parameters"
-      },
-      {
-        "id": "JD37",
-        "node_type": "bare-name symbolMap alias",
-        "status": "FIXED",
-        "question": "Hygiene: symbolMap.set(name, sym) bare overwrite lets nested same-name classes (Outer.Inner vs Other.Inner) repoint the alias",
-        "decision": "Set-if-absent (first-wins). Verified: the only symbolMap.get is FQN-keyed (override BFS), so bare keys are informational and can never misresolve — the fix removes the silent-repoint hazard"
-      },
-      {
-        "id": "JD38",
-        "node_type": "metadata.framework single pick",
-        "status": "FIXED",
-        "question": "Hygiene: finalFrameworks[0] depended on import order — same file could report spring_mvc or spring depending on which import came first",
-        "decision": "Deterministic pickJavaFramework: fixed priority list (spring_data > spring_mvc > spring_core > spring > jpa > hibernate > ...), alphabetical tiebreak. No fixture pinned framework (verified), lanes unaffected"
-      },
-      {
-        "id": "JD39",
-        "node_type": "method_invocation calls-edge payload (overload disambiguation)",
-        "status": "FIXED",
-        "question": "M49 R3 claim 1: overloads collapse to the same bare leaf target (process(String) vs process(int) both -> process) and even metadata carried no discriminator",
-        "decision": "Bare-leaf target STAYS the matching contract (JD20; oracle mirrors it) but every calls edge now carries metadata.argumentCount (named children of argument_list) — additive payload; downstream consumers can disambiguate by arity without a resolution engine. Probe: process sites carry argumentCount=1, other.a.b carries 3. Fixture overload-arity-varargs-multicatch pins; mutants java/drop-arity-payload + java/varargs-sig-not-normalized (348/348). Claims 2+3 verified-working and pinned: JLS 8.4.1 int.../int[] equivalence resolves both cross combinations exact-in-file (was true by construction, unproven until this probe); multi-catch unions emit declared_type for EVERY member"
-      },
-      {
-        "id": "JDJ-1",
-        "node_type": "method_declaration (@Override against an out-of-file ancestor)",
-        "status": "RULED",
-        "question": "The override resolver has three tiers. Pass 1 resolves by exact signature against an in-file ancestor (1.0, `exact-in-file`); pass 2 handles generic substitution (0.9); pass 3 fires when neither applies — the declaring ancestor lives in another compilation unit, so from this file alone it is unknowable — and names the FIRST hierarchy parent at 0.5. Pass 3 is justified in the code by reasoning: 'the explicit @Override annotation asserts intent'. Is that justification sufficient, and what is its actual error rate?",
-        "decision": "RULED — the tier STAYS, and its justification is replaced by a measurement. The reasoning was true but unquantified, which is not the same as verified. Measured on grails-core (60-file draw, every guess checked against a repo-wide index of 2,157 type declarations built from 1,942 files): 82 guess edges — 34 CORRECT (the guessed owner does declare the method), 15 WRONG (it does not; typically an external interface declares it instead, e.g. `JdkVersionDTO extends Linkable implements Named, Described, Selectable<T>` guessing `Linkable.getLabel` where Linkable declares only getLinks/addLink and Selectable declares getLabel), and 33 unverifiable because the owner is itself outside the repo. That is 30.6% of the VERIFIABLE guesses. Suppressing the tier was considered and rejected on the evidence: it would remove the 15 wrong edges AND the 34 right ones, because the two are indistinguishable at analysis time — passes 1 and 2 have already walked the whole hierarchy and found no declarer, so every remaining candidate is equally unproven, and no ordering of them can be justified from one file. The tier is already below the 0.7 fabrication threshold, so these are declared suspicion rather than counted relationships. What was missing is that nothing EXERCISED it: the tier is reachable from a single-file fixture (the ancestor only has to be absent from that file), so the absence was a gap in the fixture lane rather than a property of the tier. Pinned now by `java/override-guess-tier`, which asserts the guess edge together with its `reasonCode` and forbids the documented NEGATIVE — an un-annotated method must produce no guess, since guessing there would fabricate an override that is really an overload. Proven load-bearing: disabling the tier fails the fixture (java 46/47), restored 47/47. A consumer that wants only resolved overrides should filter on `reasonCode`, not on a magic 0.5.",
-        "date": "2026-09-27"
-      },
-      {
-        "id": "JDJ-2",
-        "node_type": "ERROR, MISSING",
-        "status": "RULED",
-        "question": "The F8 census injects ERROR and MISSING into every language's node-type set by hand (completeness-inventory.ts:609 — they are not in the wasm symbol table), yet no java spec row claimed them, so section-a failed for java on the same pair that fails 10+ other lanes. Gap, silent omission, or handled?",
-        "decision": "RULED — HANDLED, following the precedent the gate itself names. completeness-inventory.ts:601-608 cites bash BD5: 'a spec that classifies ERROR — correctly, since the analyzer consults it — was being told its own row was grammar drift ... the fix is never to delete the correct row.' java holds the same EXPLICIT guard the JVM family uses, at real-java-analyzer.ts:221 — `if (node.type === \"ERROR\" || node.type === \"MISSING\")` — which records a diagnostic on result.errors and skips the damaged subtree. So ERROR is handled_verified and MISSING is internal_silent, the same split bash and javascript use. Measured on the pinned grammar: a wholly damaged file yields symbols=[] with one diagnostic per ERROR; a clean file yields none. And the guard is SCOPED, never a blanket file refusal — the property BD5 insists on, because a blanket refusal swallows valid declarations in a partially broken file. Verified: `class Good { void ok(){} } class Bad { void m( { int x = ; }` still yields Good, ok, Bad and m, with exactly one diagnostic. No fabrication is possible here: an unresolved name stays unresolved.",
-        "date": "2026-09-27"
-      }
-    ]
+ "_comment": "#419 java pilot — complete classification of ALL 143 public named node types in the pinned tree-sitter-java wasm. Every type is bucketed; a type in no bucket is itself a gate failure (silence is guilt). Buckets: handled_verified (analyzer emits correctly, probe/fixture-confirmed), internal_silent (container/literal/keyword correctly emitting nothing itself), gap (confirmed missing emission, numbered G1..), design_decision (owner ruling required before closure). Generated mechanically + probe-verified 2026-08-26 (see script/m14/completeness-inventory.ts).",
+ "handled_verified": {
+  "_description": "Node types whose required emissions are produced and verified by probes and/or existing F3 fixtures",
+  "types": [
+   "class_declaration",
+   "interface_declaration",
+   "enum_declaration",
+   "record_declaration",
+   "annotation_type_declaration",
+   "method_declaration",
+   "constructor_declaration",
+   "compact_constructor_declaration",
+   "field_declaration",
+   "constant_declaration",
+   "enum_constant",
+   "annotation_type_element_declaration",
+   "package_declaration",
+   "import_declaration",
+   "modifiers",
+   "marker_annotation",
+   "annotation",
+   "annotation_argument_list",
+   "element_value_pair",
+   "formal_parameters",
+   "formal_parameter",
+   "receiver_parameter",
+   "spread_parameter",
+   "variable_declarator",
+   "local_variable_declaration",
+   "superclass",
+   "super_interfaces",
+   "extends_interfaces",
+   "type_list",
+   "permits",
+   "type_parameters",
+   "type_parameter",
+   "method_invocation",
+   "object_creation_expression",
+   "field_access",
+   "method_reference",
+   "cast_expression",
+   "instanceof_expression",
+   "class_literal",
+   "array_creation_expression",
+   "lambda_expression",
+   "ternary_expression",
+   "binary_expression",
+   "assignment_expression",
+   "switch_expression",
+   "switch_rule",
+   "switch_block_statement_group",
+   "if_statement",
+   "while_statement",
+   "do_statement",
+   "for_statement",
+   "enhanced_for_statement",
+   "pattern",
+   "type_pattern",
+   "type_identifier",
+   "scoped_type_identifier",
+   "generic_type",
+   "array_type",
+   "annotated_type",
+   "integral_type",
+   "floating_point_type",
+   "boolean_type",
+   "void_type",
+   "throws",
+   "catch_clause",
+   "catch_type",
+   "catch_formal_parameter",
+   "identifier",
+   "scoped_identifier",
+   "enum_body"
+  ],
+  "_verified_by": "live analyzer probes on synthetic fixtures (record patterns aside) + existing F3 fixtures + differential corpus (grails-core@a83f87480e)"
+ },
+ "internal_silent": {
+  "_description": "Containers, wrappers, grouping nodes, literals, and keywords whose named children are walked independently — emitting nothing at this node is correct",
+  "types": [
+   "program",
+   "block",
+   "expression_statement",
+   "labeled_statement",
+   "argument_list",
+   "type_arguments",
+   "wildcard",
+   "dimensions",
+   "dimensions_expr",
+   "parenthesized_expression",
+   "condition",
+   "inferred_parameters",
+   "switch_block",
+   "switch_label",
+   "guard",
+   "record_pattern_body",
+   "record_pattern_component",
+   "enum_body_declarations",
+   "class_body",
+   "constructor_body",
+   "interface_body",
+   "annotation_type_body",
+   "module_body",
+   "type_bound",
+   "resource_specification",
+   "resource",
+   "finally_clause",
+   "try_statement",
+   "synchronized_statement",
+   "return_statement",
+   "break_statement",
+   "continue_statement",
+   "yield_statement",
+   "unary_expression",
+   "update_expression",
+   "array_initializer",
+   "element_value_array_initializer",
+   "string_fragment",
+   "multiline_string_fragment",
+   "escape_sequence",
+   "underscore_pattern",
+   "asterisk",
+   "decimal_integer_literal",
+   "hex_integer_literal",
+   "octal_integer_literal",
+   "binary_integer_literal",
+   "decimal_floating_point_literal",
+   "hex_floating_point_literal",
+   "true",
+   "false",
+   "null_literal",
+   "character_literal",
+   "string_literal",
+   "string_interpolation",
+   "template_expression",
+   "this",
+   "super",
+   "static_initializer",
+   "line_comment",
+   "block_comment"
+  ],
+  "_notes": {
+   "type_bound": "generic bound container (T extends Number) — the bound TYPE reference is not emitted; tracked as design_decision G6, the container itself is correctly silent",
+   "template_expression": "Java 21 string templates / text blocks — embedded expressions are walked and their calls/uses emitted; the template wrapper itself is silent",
+   "synchronized_statement": "not a decision point per McCabe; block body walked",
+   "static_initializer": "symbol: null per spec table; body IS walked but calls inside it are lost — tracked as gap G4"
   }
+ },
+ "gap": {
+  "_description": "Confirmed missing emissions (probe-verified: the analyzer emits nothing where the spec table requires an emission)",
+  "gaps": [
+   {
+    "id": "G1",
+    "node_type": "array_access",
+    "missing": "Uses relationship on the array expression",
+    "evidence": "probe: class A { int[] xs; void f(int i) { xs[i] = 5; int v = xs[i]; } } emits contains only — no uses on xs for reads or writes",
+    "spec_row": "expressions_requiring_uses_or_calls: array_access",
+    "severity": "medium"
+   },
+   {
+    "id": "G2",
+    "node_type": "explicit_constructor_invocation",
+    "missing": "Calls relationship for super(...) / this(...)",
+    "evidence": "probe: class A { A() { super(); } } emits no calls",
+    "spec_row": "declarations.constructor_declaration — constructor delegation is a call edge",
+    "severity": "medium"
+   },
+   {
+    "id": "G3",
+    "node_type": "record_pattern",
+    "missing": "Type reference for the record type in instanceof Point(int x, int y)",
+    "evidence": "probe: if (o instanceof Point p) emits instanceof_check, but if (o instanceof Point(int a, int b)) emits nothing",
+    "spec_row": "expressions_requiring_uses_or_calls: instanceof_expression (record-pattern form)",
+    "severity": "medium"
+   },
+   {
+    "id": "G4",
+    "node_type": "method_invocation (non-method scope)",
+    "missing": "Calls relationships for invocations outside method bodies: static initializers, instance initializers, field initializers, enum constant bodies",
+    "evidence": "probes: static { x = compute(); }, { x = compute(); }, static int x = compute(), enum { int x = compute(); } all emit no calls. Root cause: src/ast/real-java-analyzer.ts method_invocation handler guards on parentContext.kind === SymbolKind.Method, so calls attributed to no method scope are dropped; qualified_calls likewise never recorded",
+    "spec_row": "expressions_requiring_uses_or_calls: method_invocation (all statement/expression positions)",
+    "severity": "high"
+   }
+  ]
+ },
+ "design_decision": {
+  "_description": "Items where the correct emission is a ruling, not a defect. Closure requires an explicit owner decision recorded here",
+  "decisions": [
+   {
+    "id": "G5",
+    "node_type": "module_declaration, requires_module_directive, requires_modifier, exports_module_directive, opens_module_directive, uses_module_directive, provides_module_directive",
+    "question": "module-info.java currently emits zero symbols and zero relationships. Options: (a) declare module-info out of scope (documented limitation), (b) emit requires/exports/uses targets as References/imports (dependency edges)",
+    "recommendation": "(a) declare out of scope — module-info is rare, low-value for AI code understanding, and the analyzer already extracts imports elsewhere",
+    "ruling": "(a) DECLARED OUT OF SCOPE — owner approval 2026-08-26. module-info.java is a documented limitation; requires/exports/opens/uses/provides emit no edges by design",
+    "status": "RULED"
+   },
+   {
+    "id": "G6",
+    "node_type": "type_bound",
+    "question": "generic bound types (class Box<T extends Number & Comparable<T>>) emit no type references for Number/Comparable. Options: (a) emit declared_type references for bounds, (b) declare limitation (bounds captured only as type_parameter names)",
+    "recommendation": "(b) declare limitation — bounds are rarely load-bearing for AI consumers; type_parameters payload already records parameter names",
+    "ruling": "(b) DECLARED LIMITATION — owner approval 2026-08-26. type_bound emits no type references; typeParameters payload carries the parameter names",
+    "status": "RULED"
+   },
+   {
+    "id": "S1",
+    "node_type": "throw_statement, assert_statement, try_with_resources_statement",
+    "question": "java-spec-table.json lists these in statements_affecting_complexity, but calculateJavaMethodComplexity does not count them (standard McCabe counts only if/while/for/do/case/catch/&&/||/ternary). Either the spec table over-claims or the analyzer under-counts",
+    "recommendation": "correct the spec table (remove from complexity list) — matches the analyzer, matches textbook McCabe, and keeps complexity comparable across JVM languages (CC1 contract)",
+    "ruling": "SPEC TABLE CORRECTED — owner approval 2026-08-26: throw_statement, assert_statement, try_with_resources_statement removed from statements_affecting_complexity in java-spec-table.json",
+    "status": "RULED"
+   },
+   {
+    "id": "JAO1",
+    "node_type": "method_declaration (un-annotated override)",
+    "status": "RULED",
+    "question": "The analyzer queues override tasks only for methods carrying @Override. Most real Java omits the annotation (clojure/ASF code) — are un-annotated overrides relationships?",
+    "resolution": "Yes — JLS 8.4.8: @Override is a compile-time check, not a requirement; an un-annotated instance method whose signature matches an accessible ancestor method overrides it. Two-corpus gate wave 2026-09 (clojure:java SubVector.iterator). The analyzer now queues implicit tasks for every non-static, non-private, non-constructor instance method, but emits ONLY on a verified exact-signature in-file match (pass 1). Explicit @Override tasks alone keep the companion-index (pass 2) and first-parent guess (pass 3) tiers, so overloads never fabricate."
+   },
+   {
+    "id": "JAO2",
+    "node_type": "override truth (signature awareness)",
+    "status": "RULED",
+    "question": "The override TRUTH pairs by method NAME only — same-name-different-signature overloads (SubVector.nth(int) vs APersistentVector.nth(int, Object)) were asserted as overrides. Signature-exact?",
+    "resolution": "Yes. Two-corpus gate wave 2026-09: the shared oracle collected members with the return type / nested-type-name bugs (the /identifier/ test matched type_identifier first and the field_declaration|declaration guard swallowed method_declaration AND let nested class_declaration through). All fixed: method names come from the grammar name field, member collection is field_declaration-only for variables with nested type nodes excluded, and override pair emission is signature-aware (parameter-type signature overlap required when both sides record signatures). Private ancestor methods never pair (JLS 8.4.8.1)."
+   },
+   {
+    "id": "JD18",
+    "node_type": "anonymous class body (new Comparator<String>() { ... })",
+    "status": "FIXED",
+    "question": "M37.21 #610 user-suspect wave: methods inside anonymous bodies were attributed to the enclosing class (contains Service->compare on the probe) and no symbol existed for the anonymous type.",
+    "resolution": "Mirror the kotlin family convention: anonymous_<SuperName> Class symbol (noise name, never leaks into the index), ownerName = enclosing type, scope pushed for the class_body so members attribute to the anonymous type (contains anonymous_Comparator->compare). object_creation_expression handler pushes the scope; exit-scheduling is the walk's uniform tail. Fixture java/anonymous-and-multihop-overrides pins both directions (expect + forbid contains Service->compare/run); mutants java/anonymous-body-scope-leak + java/override-multihop-bare-name."
+   },
+   {
+    "id": "JD19",
+    "node_type": "multi-hop nested-class override resolution (BlackVal extends Black extends Node)",
+    "status": "FIXED",
+    "question": "M37.21 #610 clojure PersistentTreeMap: overrides through a NON-declaring ancestor (BlackVal.val -> Node.val, Black declares no val) were lost — classHierarchy is FQN-keyed but parents are bare leaf names, so hop-2 looked up classHierarchy with the bare name and missed.",
+    "resolution": "Suffix-resolve every bare parent name to its FQN candidate(s) during the BFS; symbolMap method-symbol hits disambiguate same-named classes. JLS 8.4.8.1 nearest-declaring-ancestor semantics unchanged (BFS level-by-level, private-ancestor skip). Both java lanes 100%/0/0 at 200 files after the fix."
+   },
+   {
+    "id": "JD20",
+    "node_type": "call-edge overload disambiguation",
+    "status": "RULED",
+    "question": "M37.21 #610 user-suspect: method_invocation targets collapse overloads to the bare leaf name (callExpression.split('.').pop()) — two same-name overloads are indistinguishable.",
+    "resolution": "Deliberate contract: the universal call graph is name-leaf based family-wide (java/kotlin/scala/groovy/php/ruby/python all emit leaf targets); overload signature matching requires type inference the tree-sitter layer does not have. Recorded so a downstream consumer needing overload identity knows the boundary. Not a defect."
+   },
+   {
+    "id": "JD21",
+    "node_type": "varargs vs array-type override equivalence (foo(int...) vs foo(int[]))",
+    "status": "VERIFIED-NOT-A-DEFECT",
+    "question": "M37.21 #610 user-suspect: signature strings built from parameters[i].type might not normalize int... and int[] to the same string, silently missing overrides.",
+    "resolution": "Probe-verified on the exact JLS shape: @Override void foo(int[] xs) over varargs foo(int... xs) AND the reverse (bar(int...) over bar(int[])) both resolve (Child.foo->Base.foo, Child.bar->Base.bar). extractJavaParameterType already normalizes. No change."
+   },
+   {
+    "id": "JD22",
+    "node_type": "multi-catch union_type (catch (A | B | C e))",
+    "status": "VERIFIED-NOT-A-DEFECT",
+    "question": "M37.21 #610 user-suspect: collectJavaTypeNames might descend only into the first union member inside catch_formal_parameter.",
+    "resolution": "Probe-verified: all three union members emit references (IllegalStateException, IllegalArgumentException, IndexOutOfBoundsException). No change."
+   },
+   {
+    "id": "JD23",
+    "node_type": "dead private helper filterChildren",
+    "status": "FIXED",
+    "question": "M37.21 #610 user-suspect #4: filterChildren defined and never called — dead code.",
+    "resolution": "Deleted. F7 hygiene re-run green."
+   },
+   {
+    "id": "JD24",
+    "node_type": "constructor symbols (constructor_declaration / compact_constructor_declaration)",
+    "status": "FIXED",
+    "question": "C3: all ctors emitted the literal name 'constructor' — Contains edges from distinct classes collided (A->constructor vs B->constructor) and overloads were indistinguishable",
+    "decision": "Ctor symbols carry their CLASS NAME (A, kind=constructor) mirroring the csharp family convention. Fixtures ctor-delegation / ctor-value-injection / record-varargs-compact-ctor re-pinned 2026-09-08; mutant java/anonymous-body-scope-leak unchanged, java/return-type-refs-drop + java/per-segment-builtin-filter added (346/346)"
+   },
+   {
+    "id": "JD25",
+    "node_type": "cast_type / var locals in References graph",
+    "status": "FIXED",
+    "question": "C4: `var x = foo()` emitted References foo->var — var is an inference keyword, not a type; cast positions already filtered but locals/params/formals did not",
+    "decision": "var filtered at ALL declared-type positions (locals, params, formals, fields). Probe-verified: zero var edges on the C4 probe source"
+   },
+   {
+    "id": "JD26",
+    "node_type": "builtin/stdlib call exclusion (isJavaBuiltin)",
+    "status": "FIXED",
+    "question": "C5: per-segment check dropped user calls whose MID-CHAIN segment collides with a stdlib root (com.mycompany.Service.doWork on 'com', foo.Logger.bar on 'Logger')",
+    "decision": "ROOT segment only (segments[0]) + exact-match list. Mid-chain collisions never suppress; static-imported bare names (println, assertEquals) remain emitted (documented under-filter, conservative). Oracle mirror updated in lockstep (isJavaBuiltinCall). Fixture root-segment-builtin-filter pins; mutant java/per-segment-builtin-filter"
+   },
+   {
+    "id": "JD27",
+    "node_type": "Spring route / httpMethod extraction (@GetMapping, @RequestMapping, array values, concat values)",
+    "status": "FIXED",
+    "question": "C6/C7/C8/C23: bare @GetMapping fabricated route '/'; method=GET on @RequestMapping ignored; {\"/a\",\"/b\"} array leaked raw text; \"/a\"+\"/b\" and text blocks leaked raw source",
+    "decision": "Empty class+method paths yield NO api endpoint edge (no fabricated '/'); @RequestMapping reads method= (default GET for mapping-style, ANY only when explicitly unspecified-semantic); element_value_array_initializer joins values; extractStringValue constant-folds + chains (literals/text blocks/parens only) and reads multiline_string_fragment for text blocks. Probe-verified: /a/b folded, text block unquoted"
+   },
+   {
+    "id": "JD28",
+    "node_type": "return type References",
+    "status": "FIXED",
+    "question": "C9: fields/params/locals/catch/throws emitted declared_type edges but method return types emitted zero edges (List<User> getUsers() -> nothing)",
+    "decision": "Return positions emit References (declared_type, declaredOn=return_type, conf 0.95). type-usage-graph fixture lifted its stale forbid on R and now PINS the R return edge; mutant java/return-type-refs-drop"
+   },
+   {
+    "id": "JD29",
+    "node_type": "per-method vs file complexity (switch_rule)",
+    "status": "FIXED",
+    "question": "C10: method complexity counted switch_rule (arrow switches) but the file-level walk did not — file total != sum(methods)+1",
+    "decision": "Both sides count the same decision-point set (if/for/enhanced_for/while/do/catch/switch_block_statement_group/switch_rule/ternary/&&/||). Probe: method=4 file=4 parity. complexity-parity fixture guards"
+   },
+   {
+    "id": "JD30",
+    "node_type": "Lombok / Spring-Data triggers",
+    "status": "FIXED",
+    "question": "C20/C21: substring tests (indexOf('Data'), indexOf('JpaRepository')) fired on @Metadata/@Database/MyJpaRepositoryFoo; phantom Spring-Data methods carried parameters:[] inconsistent with sig (Object)",
+    "decision": "Exact short-name annotation test (hasJavaAnnotation) for Lombok; phantom accessors carry the matching (Object) parameter. Probe-verified"
+   },
+   {
+    "id": "JD31",
+    "node_type": "resolveOverrides performance",
+    "status": "FIXED",
+    "question": "C11: suffixIndex rebuilt per override task O(T*C) + queue.shift() O(N) — contradicted the header's O(N) claim",
+    "decision": "suffixIndex hoisted to build-once; shift replaced with head-index cursor. Corpus perf unchanged (already sub-ms/file), complexity now honest"
+   },
+   {
+    "id": "JD32",
+    "node_type": "anonymous class bodies (object_creation_expression + class_body)",
+    "status": "FIXED",
+    "question": "C30 (user-suspect #1): anon body members attributed to the enclosing scope; no anonymous_<Super> symbol; classHierarchy never registered so @Override in anon bodies resolved to nothing",
+    "decision": "anonymous_${Super} Class symbol (ownerName=enclosing type), pushed scope for body members (contains:anonymous_Comparator->compare), classHierarchy.set(anonFqn,[Super]) so pass-1 BFS resolves in-file supertypes (exact-in-file). External-supertype anon bodies stay override-free (truth is in-file). Fixture extended with in-file Handler anon + external forbids; oracle anon mirror added (grails-core 13 anon bodies -> 100/0/0)"
+   },
+   {
+    "id": "JD33",
+    "node_type": "@interface (annotation_type_declaration) member reads",
+    "status": "FIXED",
+    "question": "C17: collectFieldAccessUses type branch missed annotation_type_declaration — reads inside @interface fell back to the receiver variable",
+    "decision": "annotation_type_declaration joins the type-declaration rebind branch. Probe: @interface body read emits Mine->thing"
+   },
+   {
+    "id": "JD34",
+    "node_type": "route constant-string values (concat / text blocks)",
+    "status": "FIXED",
+    "question": "C23: extractStringValue returned raw quoted source for \"/a\"+\"/b\" and text blocks",
+    "decision": "Constant-folder: literals (string_fragment + multiline_string_fragment), parens, and + chains only; any non-literal operand -> undefined (never fabricated from names). Probe: /a/b and /\\n/x\\n"
+   },
+   {
+    "id": "JD35",
+    "node_type": "frameworkPatterns payload",
+    "status": "FIXED",
+    "question": "C25: only bare 'spring' surfaced patterns; spring_mvc/spring_data/jpa/hibernate flags produced zero pattern payload",
+    "decision": "Spring MVC -> mvc_pattern+api_endpoints; Spring Data -> repository_pattern+orm_mapping; JPA/Hibernate -> orm_mapping (first match). Vocabulary matches the spring block"
+   },
+   {
+    "id": "JD36",
+    "node_type": "syntax-error reporting (ERROR/MISSING vs hasError on typed nodes)",
+    "status": "RULED",
+    "question": "Hygiene: only ERROR/MISSING nodes push errors; hasError on a WELL-TYPED node (a method containing one bad child) is silent",
+    "decision": "Ruled intentional: a typed node with an embedded error still ANALYZES correctly (tree-sitter recovery keeps the valid subtree); pushing a file-level error per bad child would flood output on generated/amalgamated files. The C-wave guarantee (error-containing files still emit recoverable content) is the standing probe. receiver_parameter (skip-listed) joins the documented skip set — receiver params (void m(Outer this)) are receiver binders, not user parameters"
+   },
+   {
+    "id": "JD37",
+    "node_type": "bare-name symbolMap alias",
+    "status": "FIXED",
+    "question": "Hygiene: symbolMap.set(name, sym) bare overwrite lets nested same-name classes (Outer.Inner vs Other.Inner) repoint the alias",
+    "decision": "Set-if-absent (first-wins). Verified: the only symbolMap.get is FQN-keyed (override BFS), so bare keys are informational and can never misresolve — the fix removes the silent-repoint hazard"
+   },
+   {
+    "id": "JD38",
+    "node_type": "metadata.framework single pick",
+    "status": "FIXED",
+    "question": "Hygiene: finalFrameworks[0] depended on import order — same file could report spring_mvc or spring depending on which import came first",
+    "decision": "Deterministic pickJavaFramework: fixed priority list (spring_data > spring_mvc > spring_core > spring > jpa > hibernate > ...), alphabetical tiebreak. No fixture pinned framework (verified), lanes unaffected"
+   },
+   {
+    "id": "JD39",
+    "node_type": "method_invocation calls-edge payload (overload disambiguation)",
+    "status": "FIXED",
+    "question": "M49 R3 claim 1: overloads collapse to the same bare leaf target (process(String) vs process(int) both -> process) and even metadata carried no discriminator",
+    "decision": "Bare-leaf target STAYS the matching contract (JD20; oracle mirrors it) but every calls edge now carries metadata.argumentCount (named children of argument_list) — additive payload; downstream consumers can disambiguate by arity without a resolution engine. Probe: process sites carry argumentCount=1, other.a.b carries 3. Fixture overload-arity-varargs-multicatch pins; mutants java/drop-arity-payload + java/varargs-sig-not-normalized (348/348). Claims 2+3 verified-working and pinned: JLS 8.4.1 int.../int[] equivalence resolves both cross combinations exact-in-file (was true by construction, unproven until this probe); multi-catch unions emit declared_type for EVERY member"
+   }
+  ]
+ }
 }

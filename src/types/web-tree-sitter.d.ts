@@ -5,19 +5,7 @@ declare module "web-tree-sitter" {
     text: string
     startPosition: { row: number; column: number }
     endPosition: { row: number; column: number }
-    /**
-     * Start of this node, as a UTF-16 CODE-UNIT offset into the source string.
-     *
-     * This is NOT a byte offset, which is the single most load-bearing fact in this file
-     * and was previously unstated. Upstream tree-sitter reports BYTES, so code ported from
-     * the C or Node API silently computes the wrong span on any source containing a
-     * non-ASCII character. Measured on this build: for a file mixing 2-, 3- and 4-byte
-     * characters, a node at byte 29 was reported as 28, at byte 57 as 54, at byte 87 as 82.
-     *
-     * The same applies to `startPosition.column` / `endPosition.column`.
-     */
     startIndex: number
-    /** End of this node, in UTF-16 code units. See `startIndex`. */
     endIndex: number
     childCount: number
     namedChildCount: number

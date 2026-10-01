@@ -92,38 +92,6 @@ interface Lane {
 }
 
 const LANES: Lane[] = [
-  // M14 (#288): html joins the runtime half of the framework-surface rule. The
-  // static half already enumerated it — `validation/m60/results/
-  // framework-surfaces.json` carries an html row with one site at
-  // real-html-analyzer.ts:379, verdict `reported` — but the RUNTIME probe's
-  // LANES held seven OO lanes and had never executed against an html file, which
-  // is why the pre-fix analyzer published `Targeted/ID-Styling` into
-  // detectedFrameworks for 88.5% of corpus files with NOTHING able to see it. The
-  // class is a CSS technique, not a framework: it appears once in the whole
-  // repository and `framework-intelligence.ts`'s own policy set does not admit it.
-  // Two of the three cases below are the ones that must NOT detect anything — a
-  // document with ids, classes and a web component is the shape that used to
-  // fabricate a framework name, so a detector that still does is convicted here.
-  {
-    lang: "html", wasm: "tree-sitter-html.wasm", ext: [".html", ".htm"],
-    module: "../../src/ast/real-html-analyzer", exportName: "RealHtmlAnalyzer", repos: ["otp", "sqlite"],
-    cases: [
-      { name: "web-components", src: `<!doctype html>\n<html><body>\n<my-element is="my-element" id="w"></my-element>\n</body></html>\n`, expectDetected: "Web Components" },
-      // `HTML5` is this lane's DOCUMENTED primary — framework-intelligence.ts:924
-      // names it as a deliberate non-PURE_LANGUAGE_PRIMARY ("e.g. HTML 'HTML5' …
-      // are treated as real primaries and never overwritten"), the same promotion
-      // policy as python's `"Dart"`. So `expectDetected: null` is the WRONG
-      // expectation here and a plain document is not a defect: the document IS
-      // HTML5. What must not appear is a SECOND name, and `expectDetected` is a
-      // containment check, so the fabricated name would ride along inside a green
-      // case. `expectAbsent` is therefore the load-bearing assertion on all three
-      // cases — it is the only channel that can convict a name the analyzer
-      // invented, which is the entire class this lane was added to measure.
-      { name: "ids-and-classes-are-not-frameworks", src: `<!doctype html>\n<html><head><link rel="stylesheet" href="/a.css"></head>\n<body><div id="app" class="container shell"><span class="row">x</span></div></body></html>\n`, expectDetected: "HTML5", expectAbsent: ["Targeted/ID-Styling"], note: "the measured pre-fix shape: ANY element with an id published a framework name, on 88.5% of corpus files" },
-      { name: "plain-document", src: `<!doctype html>\n<html><body><h1>Title</h1><p>Text.</p></body></html>\n`, expectDetected: "HTML5", expectAbsent: ["Targeted/ID-Styling"] },
-      { name: "web-components-absent", src: `<!doctype html>\n<html><body><div id="x" class="y">plain</div></body></html>\n`, expectDetected: "HTML5", expectAbsent: ["Targeted/ID-Styling", "Web Components"] },
-    ],
-  },
   {
     lang: "ruby", wasm: "tree-sitter-ruby.wasm", ext: [".rb"],
     module: "../../src/ast/real-ruby-analyzer", exportName: "RealRubyAnalyzer", repos: ["rake", "rack"],

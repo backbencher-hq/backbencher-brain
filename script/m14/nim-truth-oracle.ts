@@ -279,9 +279,6 @@ interface Inventory {
   subtypes: Map<string, Set<string>>
 }
 
-/** Literal keywords: values, never type names. */
-const LITERAL_KEYWORDS = new Set(["true", "false", "nil", "void", "auto"])
-
 function buildInventory(symbols: any[]): Inventory {
   const inv: Inventory = {
     values: new Set(), types: new Set(), callables: new Set(),
@@ -422,23 +419,10 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       }
     } else if (n.type === "import_from_statement") {
       const m = field(n, "module")
-      // modulePaths, NOT modulePathOf: a from-import's module is frequently an
-      // infix chain carrying an `as ALIAS` and a `{.all.}` qualifier, and
-      // modulePathOf returns the node's raw text. That is how the oracle came to
-      // publish `std/uri {.all.} as uri2` as a module — a name no file has —
-      // while the analyzer published `std/uri`. The analyzer was right.
-      const fromPaths = m ? modulePaths(m) : []
-      for (const mp of fromPaths) emitImport(mp)
+      emitImport(m ? modulePathOf(m) : "")
     } else if (n.type === "include_statement") {
       const list = firstOfType(n, "expression_list")
-      // modulePaths, NOT modulePathOf — the same correction the from-import arm
-      // needed, for the same reason. `include` takes a module LIST and an
-      // ALIAS, and modulePathOf returns the node's raw text, so the oracle
-      // published `m9627 / [a, b]` as one module and `foobar as foo` as another.
-      // Both are wrong: the first names a module list as a single module, and
-      // the second folds a local ALIAS into the dependency's name. The analyzer
-      // published `m9627/a` and `m9627/b`, and `foobar`.
-      for (const operand of list ? named(list) : []) for (const mp of modulePaths(operand)) emitImport(mp)
+      for (const operand of list ? named(list) : []) emitImport(modulePathOf(operand))
     }
   }
 
@@ -527,19 +511,17 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
     if (member) return true
     return left.type === "identifier"
   }
-  // Recursive, because the pattern NESTS: `let (a, (b, c)): (int, (int, int))`
-  // is a tuple_deconstruct_declaration containing a symbol_declaration AND
-  // another tuple_deconstruct_declaration. The previous version read one level
-  // and then asked a nested destructuring node for its own name, which has none
-  // — so `b` and `c` were never bound and the reads of them were published.
-  const bindNames = (frame: Scope | null, listNode: any, depth = 0): void => {
-    if (!frame || !listNode || depth > 8) return
+  const bindNames = (frame: Scope | null, listNode: any): void => {
+    if (!frame || !listNode) return
     for (const d of named(listNode)) {
       if (d.type === "symbol_declaration") {
         const info = nameOf(field(d, "name"))
         if (info.name && info.name !== "_") frame.names.add(info.name)
       } else if (d.type === "tuple_deconstruct_declaration") {
-        bindNames(frame, d, depth + 1)
+        for (const inner of named(d)) {
+          const info = nameOf(inner)
+          if (info.name && info.name !== "_") frame.names.add(info.name)
+        }
       }
     }
   }
@@ -581,22 +563,6 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       scopes.push({ names: new Set<string>(), fn: null })
       pushedScope = true
       bindNames(top(), field(node, "left"))
-    } else if (t === "concept_declaration") {
-      // A CONCEPT binds a formal parameter, and it is the one binder in Nim
-      // written with no `symbol_declaration` wrapper and no type annotation —
-      // just a bare identifier in a `parameter_list`. So it needs its own frame,
-      // and the body's reads of that parameter are reads of a BINDING.
-      const frame: Scope = { names: new Set<string>(), fn: null }
-      const owner = node.parent && node.parent.type === "type_declaration" ? node.parent.namedChild(0) : null
-      if (owner) frame.fn = nameOf(field(owner, "name")).name || null
-      const params = firstOfType(node, "parameter_list")
-      if (params) {
-        for (const c of named(params)) {
-          if (c.type === "identifier" && c.text !== "_") frame.names.add(c.text)
-        }
-      }
-      scopes.push(frame)
-      pushedScope = true
     } else if (t === "variable_declaration") {
       bindNames(top(), named(node)[0])
     } else if (t === "except_branch") {
@@ -655,20 +621,7 @@ export function deriveNimEdges(root: any, symbols: any[]): TruthEdge[] {
       const right = field(node, "right")
       const leafText = right && (right.type === "identifier" || right.type === "accent_quoted") ? right.text : ""
       const inCallee = node.parent && (node.parent.type === "call" || node.parent.type === "dot_generic_call")
-      // A member leaf that names a CALLABLE this file declares is a PARENLESS
-      // UFCS CALL: `r.describe` invokes `describe(r)`, written with no
-      // parentheses and no call node, so the `inCallee` test never fires for it.
-      // It is a `calls` edge and NOT a `uses` read — a callee is not a value
-      // read, and emitting both is the double-count a fixture forbids.
-      //
-      // This oracle had the same omission as the analyzer, so the differential
-      // agreed with a wrong shape and reported 0% unexplained. It was found by
-      // the M12 ground truth, whose audit asserted the `calls` row from reading
-      // the source — which is precisely the case an oracle that mirrors the
-      // analyzer cannot make, because both would be wrong in the same direction.
-      if (leafText && leafText !== "_" && !inCallee && inv.callables.has(leafText)) {
-        push("calls", currentFn(), leafText)
-      } else if (leafText && leafText !== "_" && !inCallee && resolvable(leafText) && !KEYWORD_LIKE.has(leafText)) {
+      if (leafText && leafText !== "_" && !inCallee && resolvable(leafText) && !KEYWORD_LIKE.has(leafText)) {
         push("uses", currentFn(), leafText)
       }
     }
@@ -739,16 +692,6 @@ function pushTypeRef(site: any, owner: string, inv: Inventory, push: (l: string,
   if (!leaf) return
   if (BUILTIN_TYPES.has(leaf)) return
   if (inv.genericParams.has(leaf)) return
-  // A declared-type reference names a TYPE. Two kinds of identifier sit in a type
-  // POSITION without being type names, and this oracle had the same blind spot
-  // the analyzer had — which is how `type Foo = typeof(p(fail(123)))` came to
-  // publish `references -> p` and `references -> fail` for two PROCS, and
-  // `TNestedChoices(outerChoice: false, …)` came to publish a reference to a
-  // boolean LITERAL. Written from the rule, not from the analyzer's filter: a
-  // name the file declares as a value or a callable is a use of that value, and
-  // a literal keyword is a value.
-  if (inv.values.has(leaf) || inv.callables.has(leaf)) return
-  if (LITERAL_KEYWORDS.has(leaf)) return
   push("references", owner, leaf)
 }
 
@@ -826,24 +769,7 @@ function modulePaths(node: any): string[] {
   if (node.type === "interpreted_string_literal" || node.type === "raw_string_literal" || node.type === "long_string_literal") {
     return [modulePathOf(node)]
   }
-  if (node.type === "dot_expression") return [node.text]
-  if (node.type === "prefix_expression") {
-    // A relative path that also carries a QUALIFIER SET:
-    //   prefix_expression(operator("./"), pragma_expression(identifier(m1), pragma_list))
-    // The node's own text is the whole "./m1 {.all.}", so the module is the
-    // prefix token plus the pragma's left leaf.
-    const op = field(node, "operator")
-    // The `operator` node is NAMED and is the first named child, so the operand
-    // is the first named child that is not the operator — by identity, because
-    // both nodes can share a type string.
-    const operand = op ? named(node).find((c: any) => c.id !== op.id) : named(node)[0]
-    if (op && operand && operand.type === "pragma_expression") {
-      const inner = field(operand, "left")
-      if (inner && (inner.type === "identifier" || inner.type === "accent_quoted")) return [`${op.text}${inner.text}`]
-      return []
-    }
-    return [node.text]
-  }
+  if (node.type === "prefix_expression" || node.type === "dot_expression") return [node.text]
   if (node.type === "array_construction") {
     const out: string[] = []
     for (const c of named(node)) out.push(...modulePaths(c))
@@ -854,22 +780,9 @@ function modulePaths(node: any): string[] {
     const left = field(node, "left")
     const right = field(node, "right")
     if (!op || !left || !right) return []
-    // `as` — the right side is the LOCAL ALIAS, not a module. The module is the
-    // LEFT side, so an aliased import publishes the module and the alias goes to
-    // metadata; the pre-fix oracle kept the whole "m as alias" text as the
-    // target, which disagreed with the analyzer on 6 real files for a reason that
-    // was the ORACLE's fault, not the analyzer's.
+    // `as` — the right side is the LOCAL ALIAS, not a module.
     if (op.type === "as" || op.text === "as") return modulePaths(left)
     if (!op.text.includes("/")) return []
-    // A QUALIFIER SET: `from std/uri {.all.} as uri2 import x` puts a
-    // pragma_expression on the right whose LEFT is the path's last segment and
-    // whose RIGHT is the `{.all.}` request. The module is left + that leaf; the
-    // qualifier is not part of the path.
-    if (right.type === "pragma_expression") {
-      const inner = field(right, "left")
-      if (!inner || (inner.type !== "identifier" && inner.type !== "accent_quoted")) return []
-      return [`${left.text}/${inner.text}`]
-    }
     // A `[...]` right side is a module LIST, not a path: one module per element.
     if (right.type === "array_construction") {
       const out: string[] = []

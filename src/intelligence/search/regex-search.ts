@@ -18,26 +18,9 @@ type CorpusRow = {
   language: string
 }
 
-// Rows examined, not rows returned. Bounds the scan a single pattern can cause.
+// Cap the candidate scan so a pathological pattern cannot walk an unbounded
+// corpus. This is the number of DB rows examined, not results returned.
 const REGEX_SCAN_CAP = 20000
-
-/**
- * Wall-clock budget for one regex scan.
- *
- * The row cap bounds how many names are tested but NOT how long a single
- * `test()` takes: JS `RegExp` has no timeout, so a pattern like `(a|a)+$`
- * against a 200-character identifier backtracks for minutes on the one thread
- * that also owns the database handle. Measured on a five-file project: 177ms
- * for `(a|a)+$`, which is ~0.03s per name, i.e. ~10 minutes across the 20 000
- * row cap — and the caller sees a hung server, not an error.
- *
- * The deadline is checked between rows, so it bounds the SCAN. A single
- * pathological name can still exceed it; that residual risk is stated in
- * docs/BB_SEARCH.md rather than papered over. When the deadline is reached the
- * answer is returned with `truncated: true` and `truncationReason:
- * "time-budget"`, so a bounded answer is never presented as a complete one.
- */
-const REGEX_TIME_BUDGET_MS = 2000
 
 export class InvalidRegexError extends Error {
   constructor(pattern: string, cause: string) {
@@ -54,52 +37,22 @@ function compileRegex(pattern: string, caseSensitive: boolean): RegExp {
   }
 }
 
-function normalizePageSize(value: unknown): number {
-  if (value === undefined || value === null) return 100
-  const n = Math.trunc(Number(value))
-  if (!Number.isFinite(n) || n < 0) return 100
-  return n
-}
-
-function normalizeOffset(value: unknown): number {
-  if (value === undefined || value === null) return 0
-  const n = Math.trunc(Number(value))
-  if (!Number.isFinite(n) || n < 0) return 0
-  return n
-}
-
-function compareCodeUnits(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0
-}
-
 // Regex search over indexed symbol names. Returns results tagged with the
-// regex retrieval mode plus truncation flags when the scan cap or the time
-// budget stopped the scan.
-export async function searchRegex(projectId: ProjectID, rawPattern: string, options: SearchOptions = {}): Promise<SearchResults> {
+// regex retrieval mode and a truncation flag when the scan cap is reached.
+export async function searchRegex(projectId: ProjectID, pattern: string, options: SearchOptions = {}): Promise<SearchResults> {
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const maxResults = normalizePageSize(options.maxResults)
-  const offset = normalizeOffset(options.offset)
-  // Trimmed like every other mode: a pattern is a pattern, not a sentence with
-  // accidental surrounding whitespace.
-  const pattern = String(rawPattern ?? "").trim()
-  if (!pattern) {
-    const empty = [] as unknown as SearchResults
-    empty.searchMode = "regex"
-    empty.staleCount = 0
-    empty.freshCount = 0
-    empty.totalMatches = 0
-    return empty
-  }
+  const maxResults = options.maxResults || 100
+  const offset = options.offset || 0
   const expression = compileRegex(pattern, options.caseSensitive === true)
 
   const params: unknown[] = [projectId]
   let filters = ""
   if (options.languages?.length) {
-    filters += " AND f.language COLLATE NOCASE IN (" + options.languages.map(() => "?").join(",") + ")"
+    filters += " AND f.language IN (" + options.languages.map(() => "?").join(",") + ")"
     params.push(...options.languages)
   }
   if (options.symbolKind) {
-    filters += " AND s.symbol_type COLLATE NOCASE = ?"
+    filters += " AND s.symbol_type = ?"
     params.push(options.symbolKind)
   }
 
@@ -115,20 +68,11 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
       " LIMIT ?",
   ).all(...params, REGEX_SCAN_CAP + 1) as CorpusRow[]
 
-  const rowCapReached = corpus.length > REGEX_SCAN_CAP
-  const scannable = rowCapReached ? corpus.slice(0, REGEX_SCAN_CAP) : corpus
+  const truncated = corpus.length > REGEX_SCAN_CAP
+  const scannable = truncated ? corpus.slice(0, REGEX_SCAN_CAP) : corpus
 
   const matched: CorpusRow[] = []
-  const deadline = Date.now() + REGEX_TIME_BUDGET_MS
-  let timeBudgetReached = false
-  for (let i = 0; i < scannable.length; i++) {
-    // Deadline checked every row: the loop is the only unbounded dimension
-    // reachable from a caller's pattern.
-    if ((i & 0xFF) === 0 && Date.now() > deadline) {
-      timeBudgetReached = true
-      break
-    }
-    const row = scannable[i]!
+  for (const row of scannable) {
     if (AnalysisExclusions.isHardNoisePath(row.relativePath) || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
     if (expression.test(row.name)) matched.push(row)
   }
@@ -137,17 +81,14 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
     (a, b) =>
       (AnalysisExclusions.isTestPath(a.relativePath) ? 1 : 0) - (AnalysisExclusions.isTestPath(b.relativePath) ? 1 : 0) ||
       b.complexity - a.complexity ||
-      compareCodeUnits(a.relativePath, b.relativePath) ||
-      compareCodeUnits(a.name, b.name),
+      a.relativePath.localeCompare(b.relativePath) ||
+      a.name.localeCompare(b.name),
   )
 
   const page = matched.slice(offset, offset + maxResults)
-  const results = [] as unknown as SearchResults
+  const results: SearchResults = []
   results.searchMode = "regex"
-  results.truncated = rowCapReached || timeBudgetReached
-  if (rowCapReached) results.truncationReason = "scan-cap"
-  else if (timeBudgetReached) results.truncationReason = "time-budget"
-  results.totalMatches = matched.length
+  results.truncated = truncated
   for (const row of page) {
     results.push({
       file: row.relativePath,
@@ -176,9 +117,7 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
     }
     results.staleCount = staleCount
     results.freshCount = results.length - staleCount
-  } catch {
-    results.freshnessError = true
-  }
+  } catch {}
 
   return results
 }

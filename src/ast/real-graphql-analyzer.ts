@@ -1169,23 +1169,18 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private collectDirectiveLocations(node: Node): Array<{ name: string; node: Node }> {
     const out: Array<{ name: string; node: Node }> = []
-    // Iterative for the same reason as `collectNamedTypes`: `on A | B | C` nests
-    // once per clause, and a 20,000-clause location list exhausted the stack.
-    const stack: Node[] = [node]
-    while (stack.length) {
-      const n = stack.pop()!
+    const walk = (n: Node) => {
       if (this.typeOf(n) === "DirectiveLocation") {
         const inner = this.findChild(n, (c) => this.typeOf(c) === "ExecutableDirectiveLocation" || this.typeOf(c) === "TypeSystemDirectiveLocation")
         const leaf = inner ? (inner.namedChild(0) ?? inner) : n
         out.push({ name: leaf.text, node: leaf })
-        continue
+        return
       }
-      const kids = n.namedChildren
-      for (let i = kids.length - 1; i >= 0; i--) {
-        const c = kids[i]
-        if (c) stack.push(c)
+      for (const c of n.namedChildren) {
+        if (c) walk(c)
       }
     }
+    walk(node)
     return out
   }
 
@@ -1203,27 +1198,20 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private collectNamedTypes(node: Node): Array<{ name: string; node: Node }> {
     const out: Array<{ name: string; node: Node }> = []
     const seen = new Set<string>()
-    // Iterative for the same reason as `findDescendant`: `ImplementsInterfaces` and
-    // `UnionMemberTypes` are LEFT-recursive, so the tree nests once per clause and a
-    // 20,000-clause chain exhausted the stack. Children are pushed in reverse so
-    // they pop in order, preserving the pre-order the recursion produced.
-    const stack: Node[] = [node]
-    while (stack.length) {
-      const n = stack.pop()!
+    const walk = (n: Node) => {
       if (this.typeOf(n) === "NamedType") {
         const name = this.nameOf(n)
         if (name && !seen.has(name)) {
           seen.add(name)
           out.push({ name, node: n })
         }
-        continue
+        return
       }
-      const kids = n.namedChildren
-      for (let i = kids.length - 1; i >= 0; i--) {
-        const c = kids[i]
-        if (c) stack.push(c)
+      for (const c of n.namedChildren) {
+        if (c) walk(c)
       }
     }
+    walk(node)
     return out
   }
 
@@ -1270,24 +1258,17 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   private enumValueReferences(valueNode: Node | null | undefined): Array<{ name: string; line: number }> {
     const out: Array<{ name: string; line: number }> = []
     if (!valueNode) return out
-    // Iterative for the same reason as `findDescendant`: this walks a whole `Value`
-    // subtree, and a value nested thousands of levels deep would exhaust the stack.
-    // A matched `EnumValue` is still a leaf here — `continue`, not `return`, because
-    // the walk is a loop now and returning would abandon the rest of the subtree.
-    const stack: Node[] = [valueNode]
-    while (stack.length) {
-      const n = stack.pop()!
+    const walk = (n: Node): void => {
       if (this.typeOf(n) === "EnumValue" && n.parent?.type === "Value") {
         const name = this.nameOf(n)
         if (name) out.push({ name, line: this.lineOf(n) })
-        continue
+        return
       }
-      const kids = n.namedChildren
-      for (let i = kids.length - 1; i >= 0; i--) {
-        const c = kids[i]
-        if (c) stack.push(c)
+      for (const c of n.namedChildren) {
+        if (c) walk(c)
       }
     }
+    walk(valueNode)
     return out
   }
 
@@ -1601,41 +1582,12 @@ export class RealGraphqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     return null
   }
 
-  /**
-   * The first descendant satisfying `predicate`, in pre-order.
-   *
-   * ITERATIVE, and the recursion was a real defect rather than a style choice. This
-   * walks to the depth of the subtree when the predicate does not match early, and
-   * `[[[…[Int]]]]` is exactly that case: the `NamedType` sits at the BOTTOM, so the
-   * recursion went as deep as the nesting. Measured, list nesting **2,749 deep
-   * threw `RangeError: Maximum call stack size exceeded`**, and because the engine's
-   * guard turns any throw into a minimal result, that file yielded ZERO symbols and
-   * one opaque error — silently losing a whole type definition. The threshold is a
-   * function of stack-frame size, so it is a platform figure, not a guarantee.
-   *
-   * `A & B & C` was never affected, which is why the bug survived the corpus: the
-   * left-recursive rules put a `NamedType` at depth 1, so the predicate matched
-   * immediately and the recursion never went deep. 5,000 clauses still work.
-   *
-   * Children are pushed in reverse so they POP in order, which keeps this a
-   * pre-order DFS with first-match-wins — the same order, and the same result, as
-   * the recursion it replaces.
-   */
   private findDescendant(node: Node, predicate: (n: Node) => boolean): Node | null {
-    const stack: Node[] = []
-    const rootKids = node.namedChildren
-    for (let i = rootKids.length - 1; i >= 0; i--) {
-      const c = rootKids[i]
-      if (c) stack.push(c)
-    }
-    while (stack.length) {
-      const n = stack.pop()!
-      if (predicate(n)) return n
-      const kids = n.namedChildren
-      for (let i = kids.length - 1; i >= 0; i--) {
-        const c = kids[i]
-        if (c) stack.push(c)
-      }
+    for (const child of node.namedChildren) {
+      if (!child) continue
+      if (predicate(child)) return child
+      const found = this.findDescendant(child, predicate)
+      if (found) return found
     }
     return null
   }

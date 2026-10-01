@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "validation/m12/fixtures/erlang/ (Service.erl, Negative.erl) — hand-audited against Erlang semantics: -module→module, -define→constant, -type/-typep/-opaque→type, -record→struct + field properties (fields owned by the record), functions (multi-clause fun_decl merged); relationships: contains (module owns types/constants/records/functions, record owns fields), implements (-behaviour any behaviour, incl. custom), calls (function-leaf sources; remote calls qualified Module:Function; local calls only when the callee is declared in the file — BIFs length/self/element/hd and imported functions excluded; forward references resolve), instantiates (#Record{} constructions in body position only — head patterns and record updates/accesses excluded), references (-import/-include/-include_lib module deps, ?MACRO uses -> the macro name whether or not it is defined here, fun values fun f/1 and fun m:f/1, and type dependencies). ER2/ER3 contract extension (2026-09-25, semantics-audited per fact, never copied from analyzer output): (a) uses edges for record member READS and UPDATES (S#state.queue, State#state{q = Q}) — the record and the field are both used; a head-position record pattern (a match, not an evaluation) and a construction stay silent, so instantiates keeps its body-position-only rule; (b) references for ?MACRO uses (?MODULE included: a use of a header-defined macro is still a use, and an unresolved target is honest), for fun VALUES (a value is not an invocation — the call happens at apply time), and for type dependencies where a type APPLIES a name (name(...), mod:name(...)) or names a record type (#rec{...}): a bare unquoted atom in type syntax is the atom LITERAL of that name (writing `integer` without parens is the atom, not the type integer()) and a map/record field key is a DECLARATION, so neither emits a dependency — the ER2 authoring counted every bare atom and fabricated job -> id / job -> kind out of the map keys of #{id := job_id()}.",
+  "source": "validation/m12/fixtures/erlang/ (Service.erl, Negative.erl) — hand-audited against Erlang semantics: -module→module, -define→constant, -type/-typep/-opaque→type, -record→struct + field properties (fields owned by the record), functions (multi-clause fun_decl merged); relationships: contains (module owns types/constants/records/functions, record owns fields), implements (-behaviour any behaviour, incl. custom), calls (function-leaf sources; remote calls qualified Module:Function; local calls only when the callee is declared in the file — BIFs length/self/element/hd and imported functions excluded; forward references resolve), instantiates (#Record{} constructions in body position only — head patterns and record updates/accesses excluded), references (-import/-include/-include_lib module deps).",
   "facts": [
     {
       "layer": "ast_extraction",
@@ -609,160 +609,6 @@
       "state": "resolved"
     },
     {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "handle_cast",
-      "targetId": "state",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "handle_cast",
-      "targetId": "queue",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "is_stale",
-      "targetId": "job",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "is_stale",
-      "targetId": "kind",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "sweep",
-      "targetId": "state",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "sweep",
-      "targetId": "queue",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "handle_cast",
-      "targetId": "MAX_JOBS",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "start_link",
-      "targetId": "MODULE",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "stop",
-      "targetId": "MODULE",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "submit",
-      "targetId": "MODULE",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "sweep",
-      "targetId": "is_stale",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "job",
-      "targetId": "job_id",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "job",
-      "targetId": "atom",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Service.erl",
-      "sourceId": "job_id",
-      "targetId": "integer",
-      "attributes": {
-        "type": "references"
-      },
-      "state": "resolved"
-    },
-    {
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Negative.erl",
@@ -913,39 +759,6 @@
       "targetId": "uses_import",
       "attributes": {
         "type": "contains"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.erl",
-      "sourceId": "member_access",
-      "targetId": "job",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.erl",
-      "sourceId": "member_access",
-      "targetId": "id",
-      "attributes": {
-        "type": "uses"
-      },
-      "state": "resolved"
-    },
-    {
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.erl",
-      "sourceId": "member_access",
-      "targetId": "kind",
-      "attributes": {
-        "type": "uses"
       },
       "state": "resolved"
     }

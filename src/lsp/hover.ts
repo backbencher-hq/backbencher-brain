@@ -453,17 +453,9 @@ export async function hover(
   // Both path spellings are matched: the index stores `relative_path`, and an
   // agent annotating with the absolute path it was just handed would otherwise
   // have its note silently invisible here.
-  //
-  // The name predicate matches BOTH name forms: the symbol's own name AND its
-  // qualified name. It used to match only `name`, so a note an agent attached to
-  // a qualified name — what it reads in source, and what the index publishes for
-  // 27% of symbols — matched nothing. Measured on a real corpus, 1046 of 1046
-  // qualified-name notes were stored, readable, reported as surfacing, and never
-  // displayed. This is the same predicate annotationReachability() measures, so
-  // the write door's surfacing claim and this read cannot drift apart again.
   const annotationRows = raw.prepare(
-    "SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND (symbol_name = ? OR symbol_name = ?) AND (symbol_path IS NULL OR symbol_path = ? OR symbol_path = ?) ORDER BY time_updated DESC, id",
-  ).all(file.id, symbol.name, symbol.qualified_name, file.relative_path, file.path) as AnnotationRow[]
+    "SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? AND (symbol_path IS NULL OR symbol_path = ? OR symbol_path = ?) ORDER BY time_updated DESC, id",
+  ).all(file.id, symbol.name, file.relative_path, file.path) as AnnotationRow[]
   const annotationSection = annotationHoverSection(annotationRows)
 
   // The definition location (declaration of the hovered symbol) is the hover

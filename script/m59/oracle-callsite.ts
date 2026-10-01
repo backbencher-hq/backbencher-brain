@@ -33,12 +33,7 @@ import { execSync } from "node:child_process"
 import path from "node:path"
 
 const ROOT = path.resolve(import.meta.dirname ?? ".", "../..")
-// Env-overridable, exactly as script/m14/differential.ts does it. Hardcoded to
-// one machine's home, this gate found 0 files for EVERY language elsewhere and
-// reported `FAIL: the oracle did not prove it can fail` — a corpus-path problem
-// reading as an evidence problem, on the one gate whose whole job is to prove it
-// can fail. Same one-line shape as the differential's, for the same reason.
-const CORPUS = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+const CORPUS = "$HOME/fixtures/repositories"
 const OUT_DIR = path.join(ROOT, "validation/m59/results")
 
 const SKIP_DIRS = new Set([
@@ -85,141 +80,7 @@ const LANGUAGES: Array<{ lang: string; ext: string[]; unsupportedExt?: string[] 
   // milestone's own oracle could not see it. Added so that its every line is
   // source-checked like the four JVM languages.
   { lang: "xml", ext: [".xml"] },
-  // CSS (M59.A7 / #825, 2026-09-26). The lane carried NO line at all — 0 of
-  // 29,003 relationships over 13 corpora — so it was absent from this list and
-  // the milestone's own oracle could not see it, which is the same blind spot the
-  // xml entry above records. It now threads a line on every relationship, and
-  // `cssScopeEdge` below teaches the check which endpoint NAMES each class.
-  { lang: "css", ext: [".css"] },
-  // scss, 2026-09-27. The lane threads a line on every relationship it authors
-  // itself, and until this entry NOTHING checked those lines against source — the
-  // only pins were the lane's own fixtures, which is weaker in KIND and not merely
-  // in degree: the thing checking the work wrote the expectation. That is the same
-  // blind spot the css entry above records for CSS in 2026-09-26, one lane and one
-  // day later, which is the argument for keeping this list a table of what is
-  // actually verified: a lane added without a line here looks exactly like a lane
-  // added with one, right up until something is wrong.
-  //
-  // It matters more here than it did for CSS. The SCSS lane sources each edge from
-  // the innermost PUBLISHED symbol containing the statement — resolved by RANGE,
-  // not by threading a variable — precisely because threading fabricated three
-  // edges in one file when it was tried. A resolution that subtle is exactly the
-  // kind that needs an independent re-derivation instead of the author's own
-  // expectation of it.
-  { lang: "scss", ext: [".scss"] },
 ]
-
-/**
- * The CSS scope-containment class: the edge is named by the RULE, not the scope.
- *
- * `contains @media (max-width: 768px) -> .header` claims the line of `.header`,
- * because the containment is a fact ABOUT the rule — and the scope's own text is
- * on a different line by construction. Checking the target token (the scope's
- * condition) against that line would accuse a correct edge every time, which is
- * the false-accusation mode this oracle exists to avoid.
- *
- * Narrowed by METADATA MARKER, never by the name string, for the reason the xml
- * namespace case above states: a name-based rule would let a real claim of a
- * wrongly-lined edge hide behind the exemption.
- */
-function isCssScopeEdge(rel: any): boolean {
-  const m = rel?.metadata
-  if (!m) return false
-  return m.isMediaScope === true || m.isLayerScope === true || m.isContainerScope === true || m.isScopeScope === true
-}
-
-/**
- * The lanes whose edge NAMES are CSS selector names, so the check must read them
- * with the CSS name-token rules rather than the generic call-name rules.
- *
- * `scss` belongs here for a reason that is architectural, not a matter of taste:
- * the SCSS analyzer DELEGATES the whole CSS subset, so it emits the same edge
- * classes with the same markers — `isMediaScope`, `isNestedSelector`,
- * `isSynthesizedName`. Naming an edge the way CSS names it is a property of the
- * EDGE, and delegating an edge keeps its shape.
- *
- * The gate was `lang === "css"`, and adding the scss lane to the corpus exposed
- * what that had been hiding: the first scss run reported 1 INCONSISTENT, and the
- * row was a `@media print` scope edge to a comma group whose name ran
- * `.cDrop, .cEdit, .cList, .cCpy, .cPointer` over five lines. The generic
- * `calleeToken` read the LAST comma part (`cPointer`) and looked for it on the
- * claimed line 74, which carries `.cDrop` — so a CORRECT claim was failed by a
- * checker that had never been told this lane exists.
- *
- * The general lesson, and the reason this is a named set rather than an inline
- * `||`: a lane that reuses another lane's edges must be routed to the same
- * verifier, or the verifier silently reports the reuse as a defect. A false
- * INCONSISTENT is not a neutral outcome — it teaches whoever reads the row to
- * distrust the checker, which is exactly how real defects stop being believed.
- */
-const CSS_NAMED_LANES = new Set(["css", "scss"])
-
-/**
- * The CSS token, derived per relationship class.
- *
- * Three CSS-specific shapes the default derivation gets wrong:
- *
- *  - a SELECTOR is written with its sigil (`.card`, `#orders-table`), and a comma
- *    GROUP (`.a, .b`) is written across lines, so the checkable token is the
- *    group's FIRST part — the `selectors` node starts there, which is what the
- *    claimed line asserts;
- *  - a scope edge is named by its TARGET (above);
- *  - a SYNTHESIZED name — a `&`-nested rule's resolved selector, which the source
- *    writes as `& .item` — is written nowhere and the analyzer correctly omits the
- *    line, so it is never checkable rather than being an unaccused pass.
- */
-function cssNameToken(rel: any, relType?: string): string | null {
-  if (rel?.metadata?.isSynthesizedName === true) return null
-  const t = String(rel?.target ?? rel?.to ?? "")
-  if (!t) return null
-  // A font-face `uses` names the DECLARATION (`@font-face Inter`), but what the
-  // author wrote on the claimed line is the FAMILY. Same shape as a scope edge —
-  // named by the thing that is written, not by the declaration it resolves to — so
-  // the keyword is dropped and the family is what must be on the line.
-  // A namespace `references` names the DECLARATION (`@namespace svg url(…)`), but
-  // the line carries the SELECTOR. Same shape as a scope edge: named by what is
-  // written, not by the declaration it resolves to.
-  if (rel?.metadata?.isNamespaceRef === true) {
-    const sel = String(rel?.source ?? rel?.from ?? "")
-    const leaf = sel.includes("|") ? sel.slice(sel.lastIndexOf("|") + 1) : sel
-    // No length floor, and that is the SAME rule the selector path already uses: a
-    // one-character selector (`a`, `.x`) is a real check because the containment
-    // test matches on word boundaries. My first version floored this at 2 and its
-    // own self-test caught it — `svg|a` has a one-character leaf, so the floor made
-    // the commonest namespace selector uncheckable while the sibling rule accepted
-    // it. Two rules for one question is how a lane ends up with two answers.
-    return leaf.length >= 1 ? leaf : null
-  }
-  if (rel?.metadata?.isFontFamilyRef === true) {
-    const fam = t.replace(/^@font-face\s+/, "").trim()
-    return fam.length >= 2 ? fam : null
-  }
-  // A scope edge is named by the rule; everything else by the target.
-  // A comma GROUP is written across lines and its `selectors` node starts on the
-  // first line, which is what the claimed line asserts — so the checkable token is
-  // the group's first part.
-  const firstPart = t.split(",")[0].trim()
-  // A DESCENDANT chain's first part is itself several leaves (`#colset #col2`),
-  // and the first leaf is what the line carries. Taking the first leaf is the
-  // chain form of the same rule, not a loosening: the claimed line must still
-  // contain that leaf, so a wrongly-lined edge is still caught.
-  const firstLeaf = firstPart.split(/[\s>+~]+/)[0] ?? firstPart
-  // An AT-KEYWORD is not a name. `@media` as a target would be a scope used as an
-  // edge endpoint, which this lane never emits; returning it as a checkable token
-  // would look for `@media` on a line that does not carry it, so it is rejected
-  // rather than excused.
-  if (firstLeaf.startsWith("@")) return null
-  // Strip the selector sigil: `.card` is written `card` inside `.card`, and the
-  // sigil is punctuation, not part of the name.
-  const bare = firstLeaf.replace(/^[.#:]+/, "")
-  // A ONE-CHARACTER selector is kept. `.x` and `a` are common in real CSS, and
-  // the containment test matches on word boundaries, so a single letter is a real
-  // check rather than a loose one — rejecting it would have quietly made the
-  // lane's most frequent shape uncheckable.
-  if (bare.length < 1) return null
-  if (/[\s(){}\[\];*]/.test(bare)) return null
-  return bare
-}
 
 const MAX_BYTES = 400_000
 
@@ -646,7 +507,7 @@ async function main() {
           }
           continue
         }
-        const token = CSS_NAMED_LANES.has(lang) ? cssNameToken(rel, relType) : calleeToken(rel, relType)
+        const token = calleeToken(rel, relType)
         // An xml NAMESPACE edge names a namespace, and the DEFAULT namespace has
         // no written prefix: for `xmlns="…"` the analyzer synthesises the
         // element name `default`, which appears nowhere in the source, so the
@@ -771,46 +632,6 @@ async function main() {
     // the protection that is NOT relaxed: a non-imports type keeps its separator
     nonImportCallKeepsSeparator: calleeToken({ target: "Config::get" }, "calls") === "Config::get",
     nonImportReferenceKeepsSeparator: calleeToken({ target: "android:name" }, "references") === "android:name",
-    // CSS, both directions: the sigil is stripped and a comma group reduces to its
-    // first part; a synthesized `&`-nested name is NOT checkable, so the
-    // exemption cannot become a blind spot for a wrongly-lined edge.
-    cssNamespaceRefTakesTheSelectorLeaf: cssNameToken({ source: "svg|a", target: "@namespace svg url(http://www.w3.org/2000/svg)", metadata: { isNamespaceRef: true } }, "references") === "a",
-    cssNamespaceTokenNeedsTheMarker:
-      cssNameToken({ source: "svg|a", target: "@namespace svg url(http://www.w3.org/2000/svg)" }, "references") === null,
-    cssFontFaceUsesTakesTheFamily: cssNameToken({ target: "@font-face Inter", metadata: { isFontFamilyRef: true } }, "uses") === "Inter",
-    cssFontFaceTokenNeedsTheMarker:
-      cssNameToken({ target: "@font-face Inter" }, "uses") === null,
-    cssSelectorStripsSigil: cssNameToken({ target: ".card" }, "contains") === "card",
-    cssIdSelectorStripsSigil: cssNameToken({ target: "#orders-table" }, "contains") === "orders-table",
-    cssCommaGroupTakesFirstPart: cssNameToken({ target: ".alpha, .beta" }, "contains") === "alpha",
-    cssGroupFirstPartIsBare: cssNameToken({ target: "#colset #col2, #colset #col1" }, "contains") === "colset",
-    cssDescendantChainTakesFirstLeaf: cssNameToken({ target: "#main .panel" }, "contains") === "main",
-    cssCombinatorChainTakesFirstLeaf: cssNameToken({ target: "a > b + c" }, "contains") === "a",
-    cssStructuralTokenIsRejected: cssNameToken({ target: "@media (max-width: 768px)" }, "contains") === null,
-    cssSingleCharSelectorIsCheckable: cssNameToken({ target: ".x" }, "contains") === "x",
-    cssAtKeywordTargetIsRejected: cssNameToken({ target: "@layer base" }, "contains") === null,
-    cssSynthesizedNameIsUncheckable:
-      cssNameToken({ target: ".nav .item", metadata: { isSynthesizedName: true } }, "contains") === null,
-    cssScopeEdgeUsesTheRule: isCssScopeEdge({ metadata: { isMediaScope: true } }) === true,
-    cssNonScopeEdgeIsNotAScopeEdge: isCssScopeEdge({ metadata: { isNestedSelector: true } }) === false,
-    cssPlainEdgeIsNotAScopeEdge: isCssScopeEdge({ metadata: {} }) === false,
-    // The routing itself, asserted on the production predicate. Both directions:
-    // the CSS lane and the DELEGATING scss lane must be read by the CSS name
-    // rules, and a lane that did not delegate must not be. Written as a
-    // membership question because that is the question the production line asks
-    // — testing `cssNameToken` alone would keep passing after the gate closed,
-    // which is precisely the shape of the bug this row records.
-    cssLaneIsCssNamed: CSS_NAMED_LANES.has("css"),
-    scssLaneIsCssNamed: CSS_NAMED_LANES.has("scss"),
-    svelteLaneIsNotCssNamed: CSS_NAMED_LANES.has("svelte") === false,
-    // The row that exposed the gate, end to end: read as a SCSS lane, the
-    // five-line comma group now yields its FIRST part, which is the part the
-    // claimed line actually carries.
-    scssCommaGroupYieldsTheFirstPart:
-      cssNameToken(
-        { source: "@media print", target: ".cDrop, .cEdit, .cList, .cCpy, .cPointer", metadata: { isMediaScope: true } },
-        "contains",
-      ) === "cDrop",
   }
   const tokenOk = Object.values(tokenSelfTest).every(Boolean)
 

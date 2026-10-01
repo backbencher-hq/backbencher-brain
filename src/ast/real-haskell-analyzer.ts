@@ -5,25 +5,6 @@ interface Scope {
   node: Node
   name: string
   kind: ASTEngine.SymbolKind
-  // Local binders visible from this scope: name -> scoped identity
-  // (`owner.local`). Only callable frames (isFrame) and local blocks carry it.
-  locals?: Map<string, string>
-  // A callable frame owns the edge attribution for its RHS (`currentFunction`).
-  isFrame?: boolean
-}
-
-// Scoped local identity (M60 functional lane, 2026-09-26). A where/let local is
-// NOT a module symbol, but its edges must be distinguishable from a
-// module-level callable of the same name (the shadowing class): every local
-// gets a lexical identity `${owner}.${name}`, and target resolution walks the
-// scope stack so a local is only ever a target from inside its own scope.
-interface LocalScopes {
-  // callable node id -> scoped identity (bare name for module-level callables)
-  callableScoped: Map<number, string>
-  // local_binds/let block node id -> the binders it declares
-  blockLocals: Map<number, Map<string, string>>
-  // callable node id -> where-locals visible across that callable's whole RHS
-  frameLocals: Map<number, Map<string, string>>
 }
 
 interface HaskellContext {
@@ -40,8 +21,6 @@ interface HaskellContext {
   // so unqualified calls resolve even to LATER-defined functions (forward
   // references) and to class/instance methods.
   declaredFunctions: Set<string>
-  // Lexical local identity (see LocalScopes).
-  localScopes: LocalScopes
   // Module name set by the header; module-level symbols get ownerName = module
   // so the post-loop emits module → member contains edges. (The header subtree
   // ends before the body, so the scope stack cannot carry the module.)
@@ -63,7 +42,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       typeSignatures: {},
       functionSymbolIndex: {},
       declaredFunctions: new Set(),
-      localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
       currentModule: undefined,
       currentFunction: undefined,
       seenRels: new Set(),
@@ -74,10 +52,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Pre-pass: collect declared function/method names so unqualified calls
     // resolve (module-level functions, class signatures, instance methods).
-    // Where/let locals are NOT module-level callables — they are resolved
-    // lexically (collectLocalScopes), so this prepass skips local blocks.
     this.collectDeclaredFunctions(rootNode, ctx.declaredFunctions)
-    this.collectLocalScopes(rootNode, ctx.localScopes)
 
     while (stack.length > 0) {
       const { node, isExit, restoreFn } = stack.pop()!
@@ -131,9 +106,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         const p = node.parent?.type
         const isDeclSig = p === "declarations" || p === "local_binds" || p === "class" || p === "instance" || p === "class_declarations" || p === "instance_declarations"
         if (isDeclSig) {
-          // A signature inside a local block types a LOCAL — it must not
-          // overwrite a module-level name's signature record.
-          this.processSignature(node, ctx, currentScope, currentScope?.kind === ASTEngine.SymbolKind.Namespace)
+          this.processSignature(node, ctx, currentScope)
           continue
         }
         const expr = node.namedChildCount > 0 ? node.namedChild(0) : null
@@ -171,75 +144,35 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // dropping them entirely hid real calls.
           stack.push({ node, isExit: true, restoreFn: ctx.currentFunction })
           const head = node.namedChildCount > 0 ? node.namedChild(0) : null
-          let localName: string | undefined
           if (head?.type === "variable") {
-            localName = head.text
+            ctx.currentFunction = head.text
           } else if (head && (head.type === "infix" || head.type === "prefix_id")) {
             const op = this.findNamedChildByType(head, ["operator"])?.text
             if (op) {
-              localName = op
+              ctx.currentFunction = op
             } else {
               // HSD19: local backtick-operator definition — name is the
               // infix_id's variable; without this the currentFunction was
               // wiped to undefined and the body's calls were dropped.
               const infixId = this.findNamedChildByType(head, ["infix_id"])
               const tv = infixId ? this.findNamedChildByType(infixId, ["variable"]) : undefined
-              if (tv?.text) localName = tv.text
+              if (tv?.text) ctx.currentFunction = tv.text
             }
           }
-          // Scoped identity (M60 functional lane 2026-09-26): a local's edges
-          // carry its lexical owner chain (`owner.local`) so a same-named
-          // module-level callable can never merge with it. The symbol contract
-          // is unchanged — a local still publishes NO symbol.
-          const scopedLocal = ctx.localScopes.callableScoped.get(node.id) ?? localName
-          ctx.currentFunction = scopedLocal
-          scopeStack.push({
-            node,
-            name: scopedLocal ?? "local",
-            kind: ASTEngine.SymbolKind.Namespace,
-            locals: ctx.localScopes.frameLocals.get(node.id),
-            isFrame: true,
-          })
+          scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
         } else {
           // Where/let-local BIND (`x = compute 1`): not a module symbol, but
           // it IS a named nullary callable (HSD6) — its body's calls attribute
           // to itself, never leaking to the enclosing function.
           stack.push({ node, isExit: true, restoreFn: ctx.currentFunction })
           const head = node.namedChildCount > 0 ? node.namedChild(0) : null
-          const scopedLocal =
-            ctx.localScopes.callableScoped.get(node.id) ?? (head?.type === "variable" ? head.text : undefined)
-          if (scopedLocal !== undefined) {
-            ctx.currentFunction = scopedLocal
-            scopeStack.push({
-              node,
-              name: scopedLocal,
-              kind: ASTEngine.SymbolKind.Namespace,
-              locals: ctx.localScopes.frameLocals.get(node.id),
-              isFrame: true,
-            })
-          }
+          if (head?.type === "variable") ctx.currentFunction = head.text
         }
       } else if (node.type === "let" || node.type === "local_binds" || node.type === "list_comprehension") {
         // Scoped blocks: locals are not module symbols. (do is NOT included —
         // monadic actions execute in the enclosing function and their applies
         // attribute to it.)
-        const blockLocals = ctx.localScopes.blockLocals.get(node.id)
-        // Do-block `let`: its binders stay visible for the REST of the do
-        // block, whose later statements are SIBLINGS of this block — fold them
-        // into the nearest callable frame as the walk reaches them (source
-        // order), or `do { let addPaths ...; ... addPaths ... }` loses the
-        // edge the old flat set happened to provide (HSD10's cabal case).
-        if (blockLocals && this.isForwardVisibleLocalBlock(node)) {
-          for (let i = scopeStack.length - 1; i >= 0; i--) {
-            if (scopeStack[i].isFrame) {
-              const fm = scopeStack[i].locals ?? new Map<string, string>()
-              for (const [k, v] of blockLocals) fm.set(k, v)
-              scopeStack[i].locals = fm
-              break
-            }
-          }
-        }
-        scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace, locals: blockLocals })
+        scopeStack.push({ node, name: "local", kind: ASTEngine.SymbolKind.Namespace })
         pushedScope = true
       } else if (node.type === "class") {
         pushedScope = this.processClass(node, ctx, scopeStack)
@@ -257,7 +190,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // parens heads are invalid Haskell — the grammar itself ERRORs.)
         const grab = (nn: Node) => {
           let cls: string | undefined
-          let clsNode: Node | null = null
           let target: string | undefined
           for (let i = 0; i < nn.namedChildCount; i++) {
             const c = nn.namedChild(i)
@@ -268,33 +200,20 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // or an apply head (class application). Previously the qualified
             // class form emitted NOTHING here even though the data-level
             // deriving path already handled it.
-            if (c.type === "name" || c.type === "qualified") {
-              cls = c.text
-              clsNode = c
-            } else if (c.type === "apply") {
+            if (c.type === "name" || c.type === "qualified") cls = c.text
+            else if (c.type === "apply") {
               const h = c.namedChildCount > 0 ? c.namedChild(0) : null
-              if (h?.text) {
-                cls = h.text
-                clsNode = h
-              }
+              if (h?.text) cls = h.text
             } else if (c.type === "type_patterns") {
               const t2 = this.findNamedChildByType(c, ["name", "constructor"])
               target = t2?.text
             } else if (c.type === "parens") grab(c)
           }
           if (cls && target) {
-            this.pushRel(
-              ctx,
-              target,
-              cls,
-              ASTEngine.RelationshipType.Implements,
-              1.0,
-              {
-                derived: true,
-                isStandaloneDeriving: true,
-              },
-              this.lineOf(clsNode),
-            )
+            this.pushRel(ctx, target, cls, ASTEngine.RelationshipType.Implements, 1.0, {
+              derived: true,
+              isStandaloneDeriving: true,
+            })
           }
         }
         grab(node)
@@ -309,23 +228,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         // guard) carry a constructor head and previously fabricated
         // `instantiates` from pattern position. Same gate as apply sites.
         if (ctor?.text && ctx.currentFunction && !this.isDataDeclarationPosition(node) && !this.isPatternPosition(node)) {
-          this.pushRel(
-            ctx,
-            ctx.currentFunction,
-            ctor.text,
-            ASTEngine.RelationshipType.Instantiates,
-            0.9,
-            {
-              haskellSpecific: true,
-              isRecordConstruction: true,
-            },
-            this.lineOf(ctor),
-          )
+          this.pushRel(ctx, ctx.currentFunction, ctor.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
+            haskellSpecific: true,
+            isRecordConstruction: true,
+          })
         }
       } else if (node.type === "apply") {
-        this.extractApplyCall(node, ctx, scopeStack)
+        this.extractApplyCall(node, ctx)
       } else if (node.type === "infix") {
-        this.processInfix(node, ctx, scopeStack)
+        this.processInfix(node, ctx)
       }
 
       if (pushedScope) stack.push({ node, isExit: true })
@@ -359,7 +270,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || (s.scope && s.scope !== ctx.currentModule ? s.scope : undefined)
       if (_owner && _owner !== s.name) {
-        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
+        this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {})
       }
     }
 
@@ -404,19 +315,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Relationship emission (dedupe by source|type|target identity).
   // ==========================================================================
-  // M59.A7 / formula §8 (dimension 8) — the site line, the clean/erlang
-  // contract verbatim:
-  //   * the line is part of the DEDUPE KEY: a function called from three lines
-  //     is three edges at three lines, not one edge at whichever line the walk
-  //     saw first (the store keys its rows the same way, parallel-indexer.ts);
-  //   * the anchor is the NAME-BEARING node — the callee head for a call, the
-  //     constructed name for an `instantiates`, the class name for
-  //     `implements`/`extends`, the imported module name for `references`, and
-  //     the child's OWN naming line for `contains` (#921: it is what resolves
-  //     the intended target among same-named siblings);
-  //   * a line that is not a positive integer is recorded as ABSENT, never as 0
-  //     (M59.O2: the contract is "the site line or NULL" — a fabricated 0 reads
-  //     as "line 0" to every reader downstream).
   private pushRel(
     ctx: HaskellContext,
     source: string,
@@ -424,27 +322,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     type: ASTEngine.RelationshipType,
     confidence: number,
     metadata: Record<string, any> = {},
-    line?: number,
   ) {
-    const hasLine = typeof line === "number" && Number.isInteger(line) && line > 0
-    const key = `${source}|${type}|${target}|${hasLine ? line : ""}`
+    const key = `${source}|${type}|${target}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
-    ctx.relationships.push({
-      source,
-      target,
-      type,
-      confidence,
-      metadata,
-      ...(hasLine ? { line_number: line as number } : {}),
-    })
-  }
-
-  /** 1-based line of a node, or undefined — never 0 (M59.O2). */
-  private lineOf(node: Node | null | undefined): number | undefined {
-    if (!node) return undefined
-    const line = node.startPosition.row + 1
-    return line > 0 ? line : undefined
+    ctx.relationships.push({ source, target, type, confidence, metadata })
   }
 
   // ==========================================================================
@@ -500,148 +382,8 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (!child) continue
-      // Where/let locals declare SCOPED callables, never module-level ones
-      // (M60 functional lane 2026-09-26): their identity is `${owner}.${name}`
-      // and their visibility is lexical, so they must not enter the flat
-      // module-level set — that set made a local of ANY function a candidate
-      // target from anywhere in the file.
-      if (child.type === "local_binds" || child.type === "let" || child.type === "let_in") continue
-      this.collectDeclaredFunctions(child, out)
+      if (child) this.collectDeclaredFunctions(child, out)
     }
-  }
-
-  // ==========================================================================
-  // Pre-pass: lexical local identity (M60 functional lane, 2026-09-26).
-  // A callable declared inside a where/let block is a real callable but NOT
-  // a module symbol (HSD6/HSD19 contract, unchanged). Its identity carries
-  // its lexical owner chain: `outer.local` (nested: `outer.inner.local`), so
-  // it can never be confused with a module-level callable of the same name.
-  // ==========================================================================
-  private collectLocalScopes(root: Node, out: LocalScopes): void {
-    const stack: { n: Node; frameId: number; frameScoped: string | undefined }[] = [
-      { n: root, frameId: -1, frameScoped: undefined },
-    ]
-    while (stack.length > 0) {
-      const { n, frameId, frameScoped } = stack.pop()!
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const child = n.namedChild(i)
-        if (!child) continue
-        const t = child.type
-        if (t === "local_binds" || t === "let" || t === "let_in") {
-          const binders = this.localBlockBinders(child)
-          if (binders.length > 0) {
-            const map = new Map<string, string>()
-            for (const b of binders) {
-              const nm = this.callableHeadName(b)
-              if (!nm) continue
-              const scoped = frameScoped !== undefined ? `${frameScoped}.${nm}` : nm
-              map.set(nm, scoped)
-              out.callableScoped.set(b.id, scoped)
-            }
-            if (map.size > 0) {
-              out.blockLocals.set(child.id, map)
-              // A where-block shadows for the WHOLE RHS of its callable, not
-              // just its own subtree — its binders join the frame's visible
-              // set. Do-block `let` blocks are forward-only (handled at walk
-              // time, where source order is known).
-              if (t === "local_binds" && frameId >= 0) {
-                const fm = out.frameLocals.get(frameId) ?? new Map<string, string>()
-                for (const [k, v] of map) fm.set(k, v)
-                out.frameLocals.set(frameId, fm)
-              }
-            }
-          }
-          // Descend: binders open their own frames; their siblings (and the
-          // let's other children) keep the enclosing frame.
-          for (let j = 0; j < child.namedChildCount; j++) {
-            const c = child.namedChild(j)
-            if (!c) continue
-            const scoped = out.callableScoped.get(c.id)
-            if (scoped !== undefined && this.callableHeadName(c) !== undefined) {
-              stack.push({ n: c, frameId: c.id, frameScoped: scoped })
-            } else {
-              stack.push({ n: c, frameId, frameScoped })
-            }
-          }
-          continue
-        }
-        const nm = this.callableHeadName(child)
-        if (nm !== undefined) {
-          const scoped = frameScoped !== undefined ? `${frameScoped}.${nm}` : nm
-          out.callableScoped.set(child.id, scoped)
-          stack.push({ n: child, frameId: child.id, frameScoped: scoped })
-        } else {
-          stack.push({ n: child, frameId, frameScoped })
-        }
-      }
-    }
-  }
-
-  /** Direct callable children of a where/let block (the local binders). */
-  private localBlockBinders(block: Node): Node[] {
-    const out: Node[] = []
-    for (let i = 0; i < block.namedChildCount; i++) {
-      const c = block.namedChild(i)
-      if (!c || (c.type !== "function" && c.type !== "bind")) continue
-      if (this.callableHeadName(c) === undefined) continue
-      out.push(c)
-    }
-    return out
-  }
-
-  /**
-   * The declared name of a callable node, or undefined when the node is not a
-   * callable at all (type-position function, do-bind, pattern-headed bind).
-   * Mirrors collectDeclaredFunctions' naming rules exactly — one ruler for
-   * module-level and local callables.
-   */
-  private callableHeadName(node: Node): string | undefined {
-    if (node.type !== "function" && node.type !== "bind") return undefined
-    if (node.type === "function" && (node.childForFieldName("parameter") || node.childForFieldName("result"))) {
-      return undefined
-    }
-    if (node.type === "bind" && this.hasChildOfType(node, "<-")) return undefined
-    const head = node.namedChildCount > 0 ? node.namedChild(0) : null
-    if (!head) return undefined
-    if (head.type === "variable") return head.text
-    if (head.type === "infix" || head.type === "prefix_id") {
-      const op = this.findNamedChildByType(head, ["operator"])
-      if (op?.text) return op.text
-      const infixId = this.findNamedChildByType(head, ["infix_id"])
-      const tv = infixId ? this.findNamedChildByType(infixId, ["variable"]) : undefined
-      return tv?.text
-    }
-    return undefined
-  }
-
-  /**
-   * A do-block `let` (`do { let g = ...; ... g x }`): its binders stay visible
-   * for the REST of the do block — subsequent statements are siblings, not
-   * descendants, so the block scope alone cannot carry them. Folded into the
-   * nearest callable frame as the walk reaches the block (source order).
-   */
-  private isForwardVisibleLocalBlock(node: Node): boolean {
-    if (node.type !== "local_binds") return false
-    const p = node.parent
-    return p?.type === "let" && p.parent?.type === "do"
-  }
-
-  /**
-   * Resolve a bare variable head to its callable target: the innermost
-   * visible local wins (Haskell scoping — a where-binder shadows the module
-   * binding for its whole RHS), else the module-level declared set, else no
-   * edge (imported/Prelude/parameter names produce none).
-   */
-  private resolveCallableTarget(name: string, scopeStack: Scope[], ctx: HaskellContext): string | undefined {
-    for (let i = scopeStack.length - 1; i >= 0; i--) {
-      const locals = scopeStack[i].locals
-      if (locals !== undefined) {
-        const hit = locals.get(name)
-        if (hit !== undefined) return hit
-      }
-    }
-    return ctx.declaredFunctions.has(name) ? name : undefined
   }
 
   private processModule(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
@@ -710,7 +452,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processImport(node: Node, ctx: HaskellContext) {
     let isQualified = false
     const items: string[] = []
-    const modulesToImport: { name: string; alias?: string; isHiding?: boolean; node?: Node }[] = []
+    const modulesToImport: { name: string; alias?: string; isHiding?: boolean }[] = []
     let currentIsHiding = this.findChildIndexByText(node, "hiding") !== -1
 
     for (let i = 0; i < node.childCount; i++) {
@@ -725,7 +467,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           const lastMod = modulesToImport[modulesToImport.length - 1]
           if (lastMod) lastMod.alias = name
         } else {
-          modulesToImport.push({ name, isHiding: currentIsHiding, node: child })
+          modulesToImport.push({ name, isHiding: currentIsHiding })
         }
       } else if (child.type === "hiding") {
         currentIsHiding = true
@@ -761,17 +503,9 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
       // DependsOn for imports — source is the MODULE (FP-family contract:
       // references module -> dep), never the import itself.
-      this.pushRel(
-        ctx,
-        ctx.currentModule || "",
-        mod.name,
-        ASTEngine.RelationshipType.References,
-        0.9,
-        {
-          isHaskellImport: true,
-        },
-        this.lineOf(mod.node),
-      )
+      this.pushRel(ctx, ctx.currentModule || "", mod.name, ASTEngine.RelationshipType.References, 0.9, {
+        isHaskellImport: true,
+      })
 
       if (mod.name.indexOf("Scotty") !== -1) ctx.frameworks["Scotty"] = true
       if (mod.name.indexOf("Servant") !== -1) ctx.frameworks["Servant"] = true
@@ -781,14 +515,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
-  private processSignature(node: Node, ctx: HaskellContext, currentScope: Scope | undefined, inLocalBlock = false) {
+  private processSignature(node: Node, ctx: HaskellContext, currentScope: Scope | undefined) {
     // Pinned grammar: signature → variable (name) + function (type); the
     // `signature_type`/`identifier`/`varid` literals do not exist (F1 audit
     // 2026-09-03). The `::` text slice is the honest type extraction — it
     // also covers context-carrying signatures (`merge :: (Semigroup a) => ...`).
     const nameNode = this.findNamedChildByType(node, ["variable"])
 
-    if (nameNode && !inLocalBlock) {
+    if (nameNode) {
       const idx = node.text.indexOf("::")
       if (idx !== -1) {
         ctx.typeSignatures[nameNode.text] = node.text.slice(idx + 2).trim()
@@ -880,13 +614,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         existing.complexity = Math.max(existing.complexity, this.calculateNodeComplexity(node))
       }
       ctx.currentFunction = name
-      scopeStack.push({
-        node,
-        name,
-        kind: existing.kind,
-        locals: ctx.localScopes.frameLocals.get(node.id),
-        isFrame: true,
-      })
+      scopeStack.push({ node, name, kind: existing.kind })
       return true
     }
 
@@ -924,7 +652,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     ctx.functionSymbolIndex[functionKey] = ctx.symbols.length - 1
 
     ctx.currentFunction = name
-    scopeStack.push({ node, name, kind, locals: ctx.localScopes.frameLocals.get(node.id), isFrame: true })
+    scopeStack.push({ node, name, kind })
     return true
   }
 
@@ -1016,41 +744,23 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const deriving = this.findNamedChildByType(node, ["deriving", "deriving_strategy"])
     if (deriving) {
       const derived: string[] = []
-      // Parallel to `derived`, pushed in lockstep: the CLASS's own node, which is
-      // the name-bearing anchor for this edge (the clean lane's instance rule).
-      const derivedNodes: Node[] = []
       const grab = (nn: Node) => {
         for (let i = 0; i < nn.namedChildCount; i++) {
           const c = nn.namedChild(i)
           if (!c) continue
-          if (c.type === "name") {
-            derived.push(c.text)
-            derivedNodes.push(c)
-          } else if (c.type === "qualified") {
-            derived.push(c.text)
-            derivedNodes.push(c)
-          } else if (c.type === "apply") {
+          if (c.type === "name") derived.push(c.text)
+          else if (c.type === "qualified") derived.push(c.text)
+          else if (c.type === "apply") {
             const h = c.namedChildCount > 0 ? c.namedChild(0) : null
-            if (h?.text) {
-              derived.push(h.text)
-              derivedNodes.push(h)
-            }
+            if (h?.text) derived.push(h.text)
           } else if (c.type === "parens") grab(c)
         }
       }
       const tuple = this.findNamedChildByType(deriving, ["tuple"])
       if (tuple) grab(tuple)
       grab(deriving)
-      for (let i = 0; i < derived.length; i++) {
-        this.pushRel(
-          ctx,
-          name,
-          derived[i],
-          ASTEngine.RelationshipType.Implements,
-          1.0,
-          { derived: true },
-          this.lineOf(derivedNodes[i]),
-        )
+      for (const dc of derived) {
+        this.pushRel(ctx, name, dc, ASTEngine.RelationshipType.Implements, 1.0, { derived: true })
       }
     }
 
@@ -1112,8 +822,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     const context = this.findNamedChildByType(node, ["context"])
     if (context) {
       const superNames = new Set<string>()
-      // class name text -> the node that carried it (the extends anchor).
-      const superNodes = new Map<string, Node>()
       const stack: Node[] = [context]
       while (stack.length > 0) {
         const x = stack.pop()!
@@ -1123,21 +831,12 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           while (head && head.type === "apply") head = head.namedChildren[0] ?? null
           if (head && (head.type === "name" || head.type === "constructor" || head.type === "qualified")) {
             superNames.add(head.text)
-            if (!superNodes.has(head.text)) superNodes.set(head.text, head)
           }
         }
         for (const c of x.namedChildren) if (c) stack.push(c)
       }
       for (const sn of superNames) {
-        this.pushRel(
-          ctx,
-          name,
-          sn,
-          ASTEngine.RelationshipType.Extends,
-          1.0,
-          { isSuperclass: true },
-          this.lineOf(superNodes.get(sn)),
-        )
+        this.pushRel(ctx, name, sn, ASTEngine.RelationshipType.Extends, 1.0, { isSuperclass: true })
       }
     }
 
@@ -1153,31 +852,6 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Interface })
     return true
-  }
-
-  /**
-   * M60 (#924, haskell E half): the TYPE NAME at the head of an applied type.
-   *
-   * An instance declaration such as  instance GArbitrary (M1 i c f)  declares an
-   * implementation FOR the type M1 i c f, whose name is its head type constructor
-   * M1; the published symbol was the whole application (M1 i c), i.e. a payload
-   * where a name belongs — measured as 2 distinct strings over 6 occurrences on the
-   * census's own haskell samples (script/m14/tmp/c924-name-surface-probe.ts). Walks
-   * the APPLICATION SPINE (apply / parens / strict) to the leftmost leaf and returns
-   * its text verbatim (a qualified head keeps its dots). The class head already
-   * takes this same left-spine descent; only the instance TARGET did not.
-   */
-  private haskellAppliedHeadName(node: Node | null | undefined): string | undefined {
-    let cur: Node | null | undefined = node
-    let guard = 0
-    while (cur && guard++ < 64) {
-      if (cur.type === "apply" || cur.type === "parens" || cur.type === "strict") {
-        cur = cur.namedChildCount > 0 ? cur.namedChild(0) : null
-        continue
-      }
-      break
-    }
-    return cur?.text || undefined
   }
 
   private processInstance(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
@@ -1204,10 +878,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (parens) {
             const ap = this.findNamedChildByType(parens, ["apply"])
             const first = ap?.namedChildCount ? ap.namedChild(0) : null
-            // M60 (#924, haskell E half): the TARGET TYPE's NAME, not the whole
-            // application — (M1 i c f) names the type M1, and publishing M1 i c
-            // put a payload where a name belongs. See haskellAppliedHeadName.
-            if (first) targetType = this.haskellAppliedHeadName(first) ?? first.text
+            if (first) targetType = first.text
           }
         }
       }
@@ -1243,15 +914,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
 
     if (className && targetType) {
-      this.pushRel(
-        ctx,
-        targetType,
-        className,
-        ASTEngine.RelationshipType.Implements,
-        1.0,
-        { isInstance: true },
-        this.lineOf(classNode),
-      )
+      this.pushRel(ctx, targetType, className, ASTEngine.RelationshipType.Implements, 1.0, { isInstance: true })
     }
 
     scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
@@ -1261,7 +924,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Call extraction — apply nodes in body position.
   // ==========================================================================
-  private extractApplyCall(node: Node, ctx: HaskellContext, scopeStack: Scope[]) {
+  private extractApplyCall(node: Node, ctx: HaskellContext) {
     const head = node.namedChildCount > 0 ? node.namedChild(0) : null
     if (!head) return
     const fn = ctx.currentFunction
@@ -1274,18 +937,10 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // node are patterns, never construction sites.
     if (head.type === "constructor" || head.type === "prefix") {
       if (this.isPatternPosition(node)) return
-      this.pushRel(
-        ctx,
-        fn,
-        head.text,
-        ASTEngine.RelationshipType.Instantiates,
-        0.9,
-        {
-          haskellSpecific: true,
-          isConstructorApplication: true,
-        },
-        this.lineOf(head),
-      )
+      this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Instantiates, 0.9, {
+        haskellSpecific: true,
+        isConstructorApplication: true,
+      })
       return
     }
 
@@ -1303,59 +958,32 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const ctor = this.findNamedChildByType(head, ["constructor"])
       if (modText && ctor?.text) {
         if (!this.isPatternPosition(node)) {
-          this.pushRel(
-            ctx,
-            fn,
-            `${modText}.${ctor.text}`,
-            ASTEngine.RelationshipType.Instantiates,
-            0.9,
-            {
-              haskellSpecific: true,
-              isQualifiedConstructorApplication: true,
-            },
-            this.lineOf(head),
-          )
+          this.pushRel(ctx, fn, `${modText}.${ctor.text}`, ASTEngine.RelationshipType.Instantiates, 0.9, {
+            haskellSpecific: true,
+            isQualifiedConstructorApplication: true,
+          })
         }
         return
       }
       const func = this.findNamedChildByType(head, ["variable"])
       if (modText && func?.text) {
-        this.pushRel(
-          ctx,
-          fn,
-          `${modText}.${func.text}`,
-          ASTEngine.RelationshipType.Calls,
-          0.9,
-          {
-            haskellSpecific: true,
-            isQualifiedCall: true,
-          },
-          this.lineOf(head),
-        )
+        this.pushRel(ctx, fn, `${modText}.${func.text}`, ASTEngine.RelationshipType.Calls, 0.9, {
+          haskellSpecific: true,
+          isQualifiedCall: true,
+        })
       }
       return
     }
 
     // Local call: variable/identifier head → leaf target, only when declared
     // in this file (FP-family resolution: imported/Prelude functions and type
-    // variables produce no edge). Self-recursion IS emitted. A VISIBLE local
-    // wins over a module-level namesake and resolves to its scoped identity
-    // (`owner.local`); an invisible local is not a target at all.
+    // variables produce no edge). Self-recursion IS emitted.
     if (head.type === "variable") {
-      const target = this.resolveCallableTarget(head.text, scopeStack, ctx)
-      if (target !== undefined) {
-        this.pushRel(
-          ctx,
-          fn,
-          target,
-          ASTEngine.RelationshipType.Calls,
-          0.9,
-          {
-            haskellSpecific: true,
-            context: "local function call",
-          },
-          this.lineOf(head),
-        )
+      if (ctx.declaredFunctions.has(head.text)) {
+        this.pushRel(ctx, fn, head.text, ASTEngine.RelationshipType.Calls, 0.9, {
+          haskellSpecific: true,
+          context: "local function call",
+        })
       }
     }
   }
@@ -1406,7 +1034,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // operator "$" is function application — Haskell's most common idiom. Both
   // were previously dropped entirely.
   // =========================================================================
-  private processInfix(node: Node, ctx: HaskellContext, scopeStack: Scope[]) {
+  private processInfix(node: Node, ctx: HaskellContext) {
     const opNode = this.findNamedChildByType(node, ["operator"])
     const infixId = this.findNamedChildByType(node, ["infix_id"])
 
@@ -1418,20 +1046,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.isPatternPosition(node)) return
       const fn = ctx.currentFunction
       const target = this.findNamedChildByType(infixId, ["variable"])
-      const resolved = target?.text !== undefined ? this.resolveCallableTarget(target.text, scopeStack, ctx) : undefined
-      if (fn && resolved !== undefined) {
-        this.pushRel(
-          ctx,
-          fn,
-          resolved,
-          ASTEngine.RelationshipType.Calls,
-          0.9,
-          {
-            haskellSpecific: true,
-            context: "backtick infix call",
-          },
-          this.lineOf(target),
-        )
+      if (fn && target?.text && ctx.declaredFunctions.has(target.text)) {
+        this.pushRel(ctx, fn, target.text, ASTEngine.RelationshipType.Calls, 0.9, {
+          haskellSpecific: true,
+          context: "backtick infix call",
+        })
       }
     } else if (opNode?.text === "$") {
       // `$` application: LHS is the applied function (possibly qualified),
@@ -1442,38 +1061,21 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let i = 0; i < node.namedChildCount; i++) {
           const c = node.namedChild(i)
           if (!c || c.type === "operator") continue
-          const resolved = c.type === "variable" ? this.resolveCallableTarget(c.text, scopeStack, ctx) : undefined
-          if (resolved !== undefined) {
-            this.pushRel(
-              ctx,
-              fn,
-              resolved,
-              ASTEngine.RelationshipType.Calls,
-              0.9,
-              {
-                haskellSpecific: true,
-                context: "$ application",
-              },
-              this.lineOf(c),
-            )
+          if (c.type === "variable" && ctx.declaredFunctions.has(c.text)) {
+            this.pushRel(ctx, fn, c.text, ASTEngine.RelationshipType.Calls, 0.9, {
+              haskellSpecific: true,
+              context: "$ application",
+            })
           } else if (c.type === "qualified") {
             const mod = this.findNamedChildByType(c, ["module"])
             const func = this.findNamedChildByType(c, ["variable"])
             const modText = mod ? this.stripTrailingDot(mod.text) : ""
             if (modText && func?.text) {
-              this.pushRel(
-                ctx,
-                fn,
-                `${modText}.${func.text}`,
-                ASTEngine.RelationshipType.Calls,
-                0.9,
-                {
-                  haskellSpecific: true,
-                  isQualifiedCall: true,
-                  context: "$ application",
-                },
-                this.lineOf(c),
-              )
+              this.pushRel(ctx, fn, `${modText}.${func.text}`, ASTEngine.RelationshipType.Calls, 0.9, {
+                haskellSpecific: true,
+                isQualifiedCall: true,
+                context: "$ application",
+              })
             }
           }
           break

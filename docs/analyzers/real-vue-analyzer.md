@@ -9,19 +9,6 @@
   the TS analyzer has no method_definition scope resolution and emitted
   Options-API calls as `module`, so Vue scripts deliberately use the JS
   analyzer for uniform behavior, verified in M12.12)
-  <!-- provenance: find-grammar-provenance -->
-  Provenance of the shipped bytes: a **REDISTRIBUTOR BUILD**, not a build of this lane's own
-  npm package. `wasm/tree-sitter-vue.wasm` is
-  byte-identical to `tree-sitter-wasms@0.1.12`'s `out/` wasm (sha256 `6244521bb3fb60f3…`).
-
-  **That collection publishes no source** — 0 `grammar.js`, 0 `parser.c`, only prebuilt wasms —
-  so these bytes cannot be regenerated from it, and the underlying GRAMMAR version is recorded
-  nowhere in this repository and must not be inferred from the collection's version.
-
-  Established by `script/m60/find-grammar-provenance.ts` (exact sha256 match, no inference from
-  size or date); evidence in `validation/m60/results/G-PROVENANCE.json`. This matters for the
-  web-tree-sitter 0.27.0 migration: this is one of the lanes whose wasm cannot simply be
-  rebuilt from what we have, only re-sourced and re-admitted.
 - Script pre-parse wiring: `engine.ts` parses the `<script>` block content
   (exact `raw_text` byte offsets from the SFC tree, pure AST — no regex
   extraction) and passes the tree via `AnalyzeContext.vueScriptTree`; the

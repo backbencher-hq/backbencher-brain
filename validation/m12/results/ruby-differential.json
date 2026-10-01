@@ -20,8 +20,8 @@
         "bytes": 23350
       },
       "src/ast/framework-intelligence.ts": {
-        "sha256": "de307ac2a68ab6baee1f9f4cd0d3b4690d189d21b17e41b78e91c6206106f000",
-        "bytes": 46065
+        "sha256": "7e7d75a8e0e3a7d1cadda72e1897b65b11e336fa3dfa6168fe01243fff13b481",
+        "bytes": 45000
       },
       "src/ast/language-detection.ts": {
         "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
@@ -40,16 +40,16 @@
         "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
-        "bytes": 36816
+        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
+        "bytes": 22600
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
         "bytes": 89802
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
-        "bytes": 134291
+        "sha256": "0b0ffae2fcc14189d6507710dbb12dc639b737975b1c85bcd8334be29c3499f5",
+        "bytes": 119254
       },
       "src/ast/real-csharp-analyzer.ts": {
         "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
@@ -60,8 +60,8 @@
         "bytes": 33011
       },
       "src/ast/real-dart-analyzer.ts": {
-        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
-        "bytes": 119919
+        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
+        "bytes": 102001
       },
       "src/ast/real-elixir-analyzer.ts": {
         "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
@@ -76,20 +76,20 @@
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
-        "bytes": 169638
+        "sha256": "fb1e509caa798ce5a9dd750b8c4b8276063edfec631ed5016d7ac00dc0e2c21d",
+        "bytes": 161744
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
-        "bytes": 126319
+        "sha256": "df52f3a53ab76a1c2133c4faa037ee3a43b8d9ffb6ddcd1bae8bd4a9ef36449b",
+        "bytes": 125447
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
-        "bytes": 55753
+        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
+        "bytes": 54878
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -128,8 +128,8 @@
         "bytes": 13413
       },
       "src/ast/real-objective-c-analyzer.ts": {
-        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
-        "bytes": 74340
+        "sha256": "168caf9cf6d3a8d8249e4933e77c11824498bdde16481779c640522899b5f794",
+        "bytes": 65722
       },
       "src/ast/real-perl-analyzer.ts": {
         "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
@@ -144,8 +144,8 @@
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
-        "bytes": 69581
+        "sha256": "9dfe33702e52bc2a2529d49e8bd41d42fe1f4ea6ffa92e15dc617ab2ba8df192",
+        "bytes": 60855
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
@@ -156,8 +156,8 @@
         "bytes": 88887
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
-        "bytes": 107870
+        "sha256": "9b3beab78a85f835718a8d4ded9bc38f2921f7f6163a0010ce23db3c22182d2a",
+        "bytes": 107206
       },
       "src/ast/real-scala-analyzer.ts": {
         "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
@@ -172,8 +172,8 @@
         "bytes": 71997
       },
       "src/ast/real-swift-analyzer.ts": {
-        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
-        "bytes": 107709
+        "sha256": "face98a78cf079d36fc98760b446966a3399b4fbe0d6926c3d4bdff4d16da90b",
+        "bytes": 85632
       },
       "src/ast/real-typescript-analyzer.ts": {
         "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
@@ -192,8 +192,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
-        "bytes": 62122
+        "sha256": "4667d50a6e106580980d82aac2f9a2dd3398d8da11ffe2538efca71676827d51",
+        "bytes": 61224
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -204,16 +204,16 @@
         "bytes": 31754
       },
       "src/brain/brain.sql.ts": {
-        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
-        "bytes": 18451
+        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
+        "bytes": 18297
       },
       "src/brain/database.ts": {
-        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
-        "bytes": 18136
+        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
+        "bytes": 17626
       },
       "src/brain/schema-ddl.ts": {
-        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
-        "bytes": 29793
+        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
+        "bytes": 28163
       },
       "src/project/project.sql.ts": {
         "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
@@ -236,8 +236,8 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
-        "bytes": 8218
+        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
+        "bytes": 6897
       },
       "validation/m12/fixtures/ruby/BaseService.rb": {
         "sha256": "97cbb010487d14e5ba73682743e87932edea95e527f6b6d2821cb98b3525f32e",
@@ -256,7 +256,7 @@
         "bytes": 12813
       }
     },
-    "digest": "362c26d8fff5b5d51ed5b31c03d43f0427f741cade12fda6295e8d8657239ccb",
+    "digest": "db6f80eca2f30c66592f905e8dc365e4476d9641004153f484217c6d49976e5d",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-ruby_tree-sitter-ruby.wasm",
       "sha256": "93a5022855314cdb45458c7bb026a24a0ebc3a5ff6439e542e881f14dfa13a39",
@@ -354,11 +354,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:ruby",
-      "wallTimeMs": 229.237514,
-      "userCpuMs": 43.474,
-      "systemCpuMs": 10.458,
-      "peakRssBytes": 229629952,
-      "rssDeltaBytes": 1638400,
+      "wallTimeMs": 13.580525,
+      "userCpuMs": 27.43,
+      "systemCpuMs": 7.719,
+      "peakRssBytes": 241106944,
+      "rssDeltaBytes": 3276800,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -371,7 +371,7 @@
   "note": "M12 per-analyzer differential for ruby. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T02:54:46.334Z",
-    "contentSha256": "6c7440a7785ed3737064ab726487afde6082a26b60932e1c47481754bdddbad6"
+    "sealedAt": "2026-09-14T23:42:47.963Z",
+    "contentSha256": "e4039826b610afac061a31eb984f5cc5d0cc3d5b850e214ab24ad29228b367ac"
   }
 }

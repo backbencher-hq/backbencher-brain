@@ -20,8 +20,5 @@
     "Float32": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
     "Float64": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification.",
     "Double": "M49.S1 ENUM_RAW_VALUE_TYPES type-name table — see String justification."
-  },
-  "typescript": {
-    "default_export_expression": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code."
   }
 }

@@ -65,13 +65,6 @@ interface CallAttribution {
 }
 
 export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
-  /**
-   * UTF-16 code-unit index -> byte offset, set for the duration of an `analyze` call and
-   * cleared on return, so that every `getRange` call populates `byteStart`/`byteEnd`
-   * without each of them having to be handed the source text.
-   */
-  private byteOffsetOf: ((utf16Index: number) => number) | null = null
-
   analyze(
     rootNode: Node,
     content: string,
@@ -96,50 +89,6 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (!rootNode) return { symbols, imports, errors: [] }
 
-    // UTF-16 index -> byte offset, for `byteStart`/`byteEnd` on every range.
-    //
-    // web-tree-sitter reports startIndex/endIndex as UTF-16 CODE UNITS, while upstream
-    // tree-sitter reports BYTES and `range.startIndex` is widely read as a byte offset. The
-    // two agree for ASCII and diverge by the surplus UTF-8 bytes before the position, so on
-    // a file with an accented character at byte 0 a byte-index consumer slices the wrong
-    // span. The existing fields are left exactly as they are -- changing them would break
-    // every lane that already reads them -- and the byte offsets are added ALONGSIDE.
-    //
-    // The index stores only the positions where a character is not one ASCII byte, which for
-    // nearly all source files means it is empty and `byteOffset` is the identity. The
-    // alternative, a table with one entry per character, would cost memory proportional to
-    // file size on every parse to serve a case that is rare.
-    const nonAscii: number[] = []   // UTF-16 index of each non-ASCII character
-    const surplus: number[] = []    // surplus bytes accumulated BEFORE that index
-    for (let i = 0, extra = 0; i < content.length; i++) {
-      const c = content.charCodeAt(i)
-      if (c < 128) continue
-      // Surrogate pairs are two UTF-16 units for one character; count the character once.
-      const cp = c >= 0xd800 && c <= 0xdbff ? content.codePointAt(i)! : c
-      const units = cp > 0xffff ? 2 : 1
-      const bytes = cp <= 0x7f ? 1 : cp <= 0x7ff ? 2 : cp <= 0xffff ? 3 : 4
-      nonAscii.push(i)
-      surplus.push(extra)
-      extra += bytes - units
-      if (units === 2) i++
-    }
-    /** UTF-16 code-unit index -> byte offset, by counting surplus bytes before it. */
-    const byteOffset = (utf16Index: number): number => {
-      if (nonAscii.length === 0) return utf16Index
-      let lo = 0
-      let hi = nonAscii.length - 1
-      let lastBefore = -1
-      while (lo <= hi) {
-        const mid = (lo + hi) >> 1
-        if (nonAscii[mid] <= utf16Index) { lastBefore = mid; lo = mid + 1 } else { hi = mid - 1 }
-      }
-      return lastBefore < 0 ? utf16Index : utf16Index + surplus[lastBefore]
-    }
-    // Held as analyzer state for the rest of this call rather than threaded through the 23
-    // `getRange` call sites: a parameter would be noise at every one of them, and omitting
-    // it at a site would silently leave the byte fields absent instead of failing.
-    this.byteOffsetOf = byteOffset
-
     /** name -> the line the NAME is written on, so an edge that names the symbol
      *  points at the name rather than at the start of a multi-line declaration. */
     const symbolLine = new Map<string, number>()
@@ -157,10 +106,6 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       callsUnresolvedScope: 0,
       callsAttributedThroughClosure: 0,
       heuristicS3Generic: 0,
-      // A call whose callee is not a name at all -- `(if (uplo == "U") triu else
-      // tril)(x)`. Counted, because the alternative is that these vanish from the totals
-      // and a reader cannot tell "no such calls" from "not measured".
-      callsToUnnameableCallee: 0,
     }
 
     if (rootNode.hasError) {
@@ -251,30 +196,6 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (metadata.cyclomaticComplexity !== undefined) {
           metadata.cyclomaticComplexity++
         }
-      }
-
-      // A branch R can never execute declares nothing.
-      //
-      //     if (FALSE) { sNms <- c("Dim","i","p","x"); L <- lapply(sNms, ...) }
-      //
-      // is not a declaration, and publishing one is a false positive of a kind the
-      // R-oracle could not see: its walk descended into the branch too, so the two agreed on
-      // the wrong answer and 8,798/8,798 stayed at 1.0. Found by a red-team cross-check that
-      // EVALUATED each file and asked R what it held -- Matrix/data/CAex.R binds `CAex` and
-      // nothing else, and the analyzer published three names for it.
-      //
-      // Only the LITERAL constants FALSE/F/false count. R's parser does not constant-fold, so
-      // a variable that happens to hold FALSE is not statically knowable, and treating it as
-      // dead would silently drop real declarations -- the failure mode of guessing.
-      if (type === "if_statement" && this.isStaticallyFalseCondition(current)) {
-        const elseBranch = current.childForFieldName("alternative")
-        if (elseBranch) {
-          for (let i = elseBranch.childCount - 1; i >= 0; i--) {
-            const c = elseBranch.child(i)
-            if (c) stack.push(c)
-          }
-        }
-        continue
       }
 
       for (let i = current.childCount - 1; i >= 0; i--) {
@@ -401,25 +322,6 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       `r.ambiguity.heuristicS3Generic=${ambiguity.heuristicS3Generic}`,
     ]
 
-    // The comment on the counter's declaration has claimed these are "surfaced in
-    // metadata so a claim of completeness can be audited" since the counter was
-    // introduced. They were not: the object was created, incremented, and dropped on the
-    // floor. That is not a cosmetic gap. `callsUnresolvedScope` is the count of calls the
-    // analyzer could not attribute to any symbol, and because 55.6% of call sites in R sit
-    // at FILE SCOPE -- R packages are mostly top-level code -- it is the single largest
-    // hole in this lane's coverage. A completeness claim that cannot be read is not
-    // auditable, and the number that would have exposed it was being discarded.
-    //
-    // Surfaced as a copy so a later increment cannot mutate the metadata a caller already
-    // holds, and under a name that says what it is rather than repeating the internal one.
-    ;(metadata as any).callAttribution = {
-      unresolvedScope: ambiguity.callsUnresolvedScope,
-      throughClosure: ambiguity.callsAttributedThroughClosure,
-      heuristicS3Generic: ambiguity.heuristicS3Generic,
-      unnameableCallee: ambiguity.callsToUnnameableCallee ?? 0,
-    }
-
-    this.byteOffsetOf = null
     return {
       symbols,
       imports: uniqueImports,
@@ -552,37 +454,8 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // A name being bound is a declaration. Subsets and `$`/`@` extraction targets are
-    // mutations, not stable variable identities, so those are still excluded -- but a
-    // target may be written as a STRING as well as bare or backticked, and R accepts all
-    // three:
-    //
-    //     "%+replace%" <- function(e1, e2) ...      # ggplot2/R/theme-current.R:130
-    //     "plain quoted" <- 42
-    //     `backticked`   <- 1
-    //
-    // Requiring `identifier` dropped the quoted form entirely, so a name R binds was
-    // published by nobody. Found by a red-team cross-check that EXECUTED each file and asked
-    // R what it bound: R reported 4 names, the analyzer reported 2. The R-oracle missed it
-    // too -- its walk also required a name node -- so 8,798/8,798 was blind to this on BOTH
-    // sides, which is the failure mode an oracle written by the same author can have.
-    if (targetNode.type === "string") {
-      // A quoted target cannot be an S3 `generic.class` name: R dispatches on the literal
-      // name, and `"a.b" <- function()` is one name, not a method. So the S3 logic below is
-      // deliberately not reached from here.
-      const strName = this.unquoteString(targetNode.text)
-      if (!strName) return
-      if (insideFunction) return
-      if (this.hasLocalBoundary(node)) return
-      symbols.push({
-        name: strName,
-        kind: value.type === "function_definition" ? ASTEngine.SymbolKind.Function : ASTEngine.SymbolKind.Variable,
-        range: this.getRange(node),
-        docstring: this.extractDocstring(node),
-        metadata: { rSpecific: true, quotedAssignmentTarget: true, declarationOperator: node.childForFieldName("operator")?.text },
-      })
-      return
-    }
+    // Only a plain identifier being bound is a declaration. Subsets and
+    // `$`/`@` extraction targets are mutations, not stable variable identities.
     if (targetNode.type !== "identifier") return
     const name = this.unquoteIdentifier(targetNode.text)
     if (!name) return
@@ -1565,7 +1438,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     metadata: Partial<ASTEngine.FileMetadata>,
     declaredTypes: Set<string>,
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
     fnStack: Array<{ node: Node; attribution: CallAttribution | null }>,
   ): void {
     const fnNode = node.childForFieldName("function")
@@ -1631,7 +1504,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       const callTarget = this.callTargetName(fnNode, fnName)
       // An unnameable callee produces no edge. Counting it keeps the gap visible instead
       // of letting it vanish into a total.
-      if (!callTarget) ambiguity.callsToUnnameableCallee++
+      if (!callTarget) ambiguity.callsToUnnameableCallee = (ambiguity.callsToUnnameableCallee ?? 0) + 1
       else this.pushRel(relationships, attribution.name, callTarget, ASTEngine.RelationshipType.Calls, attribution.confidence, relMeta, this.callTargetNode(fnNode, callTarget))
       if (attribution.confidence < 1.0) ambiguity.callsAttributedThroughClosure++
 
@@ -1655,29 +1528,6 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     if (fnName === "library" || fnName === "require") {
       this.handleLibraryCall(node, args, imports, relationships)
-      return
-    }
-
-    // `rm(x)` at file level UNBINDS, so `x` is not a name the file leaves behind.
-    //
-    // A package that defines a helper, uses it to register S4 methods, and removes it is
-    // ordinary practice -- Matrix does it in at least 8 files, and Cholesky.R does it twice
-    // in one file. The analyzer published those helpers as declarations, which R's
-    // cross-check (execute the file, ask the environment) says is wrong: 59 of them.
-    //
-    // This is the same judgement already applied to `local()` and to function-local
-    // assignments -- a name that does not exist at file level when the file has finished is
-    // not a file-level binding -- so handling `rm` makes the analyzer internally consistent
-    // rather than introducing a new rule.
-    //
-    // Only at file level. `rm()` inside a function removes a local, and a local was never
-    // published, so there is nothing to do.
-    if (fnName === "rm" && fnStack.length === 0) {
-      const removed = this.removeTopLevelBindings(node, args, symbols, relationships, metadata)
-      if (removed) {
-        if (metadata.ambiguity === undefined) (metadata as any).ambiguity = {}
-        ;(metadata as any).ambiguity.removedByTopLevelRm = ((metadata as any).ambiguity.removedByTopLevelRm ?? 0) + removed
-      }
       return
     }
 
@@ -1879,7 +1729,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     exports: ASTEngine.ExportInfo[],
     relationships: ASTEngine.UniversalRelationship[],
-    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee: number },
+    ambiguity: { callsUnresolvedScope: number; callsAttributedThroughClosure: number; heuristicS3Generic: number; callsToUnnameableCallee?: number },
   ) {
     if (!args) return
     const fnName = this.calleeName(node.childForFieldName("function"))
@@ -2491,7 +2341,7 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
    * silently omits the name.
    */
   private getDeclarationRange(nameNode: Node, valueNode: Node) {
-    const r: ASTEngine.UniversalSymbol["range"] = {
+    return {
       startLine: nameNode.startPosition.row + 1,
       startColumn: nameNode.startPosition.column + 1,
       endLine: valueNode.endPosition.row + 1,
@@ -2499,93 +2349,10 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       startIndex: nameNode.startIndex,
       endIndex: valueNode.endIndex,
     }
-    // The byte fields from the same analyzer state `getRange` uses, so a member range is
-    // not the one kind of range that quietly lacks them.
-    const toBytes = this.byteOffsetOf
-    if (toBytes) {
-      r.byteStart = toBytes(nameNode.startIndex)
-      r.byteEnd = toBytes(valueNode.endIndex)
-    }
-    return r
   }
 
-  /**
-   * The range of a node.
-   *
-   * `startIndex`/`endIndex` are whatever the parser reported -- UTF-16 code units, for
-   * web-tree-sitter -- and are passed through unchanged so nothing that already reads them
-   * moves. `byteStart`/`byteEnd` are the same positions in BYTES, added alongside, which is
-   * what a consumer slicing a Buffer needs. `byteOffset` is supplied by `analyze`, which is
-   * the only place that has the source text; a node range built outside an analyze call
-   * simply omits the byte fields rather than reporting a wrong one.
-   */
-  /**
-   * Is this `if` condition the literal FALSE, so the `then` branch never executes?
-   *
-   * Only the literals. A variable holding FALSE is not statically knowable, and R does not
-   * constant-fold, so guessing there would drop real declarations.
-   */
-  /**
-   * Remove the symbols a top-level `rm(...)` unbinds, and any relationship that named one
-   * as its source. Returns how many were removed, so the removal is countable rather than
-   * silent.
-   */
-  private removeTopLevelBindings(
-    node: Node,
-    args: Node | null,
-    symbols: ASTEngine.UniversalSymbol[],
-    relationships: ASTEngine.UniversalRelationship[],
-    metadata: Partial<ASTEngine.FileMetadata>,
-  ): number {
-    if (!args) return 0
-    const doomed = new Set<string>()
-    for (let i = 0; i < args.namedChildCount; i++) {
-      const arg = args.namedChild(i)
-      if (!arg) continue
-      // `rm(x)` and `rm(x = ...)` are both legal; only the former carries a bare name.
-      if (arg.childForFieldName("name")) continue
-      const v = arg.childForFieldName("value") ?? (arg.type === "identifier" ? arg : null)
-      if (!v) continue
-      const nm = v.type === "identifier" ? this.unquoteIdentifier(v.text) : v.type === "string" ? this.unquoteString(v.text) : null
-      if (nm) doomed.add(nm)
-    }
-    if (doomed.size === 0) return 0
-    const before = symbols.length
-    for (let i = symbols.length - 1; i >= 0; i--) {
-      const s = symbols[i]
-      if (s.ownerName || !doomed.has(s.name)) continue   // a CLASS MEMBER is not a binding
-      symbols.splice(i, 1)
-    }
-    for (let i = relationships.length - 1; i >= 0; i--) {
-      const r = relationships[i]
-      if (doomed.has(String(r.source))) relationships.splice(i, 1)
-    }
-    void node; void metadata
-    return before - symbols.length
-  }
-
-  private isStaticallyFalseCondition(ifNode: Node): boolean {
-    const cond = ifNode.childForFieldName("condition")
-    if (!cond) return false
-    // The grammar gives the LITERAL its own node type. Measured, not assumed:
-    //
-    //     if(FALSE) { ... }   -> condition.type = "false"     (a dedicated node)
-    //     if (F) ...          -> condition.type = "identifier" (F is just a name)
-    //
-    // A first version of this checked for `identifier` only, so it handled `if (F)` and
-    // silently missed every `if (FALSE)` -- which is the form packages actually write, and
-    // exactly the one the red-team finding was about. The instrumentation printed
-    // `staticallyFalse=false` for a condition whose text was plainly "FALSE", which is what
-    // sent me to the grammar instead of to another guess.
-    if (cond.type === "false") return true
-    if (cond.type !== "identifier") return false
-    const t = this.unquoteIdentifier(cond.text)
-    return t === "F" || t === "FALSE" || t === "false"
-  }
-
-  private getRange(node: Node, byteOffset?: (i: number) => number) {
-    const toBytes = byteOffset ?? this.byteOffsetOf
-    const r: ASTEngine.UniversalSymbol["range"] = {
+  private getRange(node: Node) {
+    return {
       startLine: node.startPosition.row + 1,
       startColumn: node.startPosition.column + 1,
       endLine: node.endPosition.row + 1,
@@ -2593,10 +2360,5 @@ export class RealRAnalyzer implements ASTEngine.LanguageAnalyzer {
       startIndex: node.startIndex,
       endIndex: node.endIndex,
     }
-    if (toBytes) {
-      r.byteStart = toBytes(node.startIndex)
-      r.byteEnd = toBytes(node.endIndex)
-    }
-    return r
   }
 }

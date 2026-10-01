@@ -1,304 +1,143 @@
 {
   "language": "clean",
-  "grammar": "tree-sitter-clean.wasm v1.2.7 (wasm sha256 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec; grammar source tree-sitter/tree-sitter-clean @ 302fb5d0 \u2014 reviews/m60-clean-grammar-127-adjudication.md)",
-  "_why_this_file_is_whole_now": "M14.0 clean-completeness round, 2026-09-28. The previous version of this file classified 50 of the pinned grammar's 139 declared NAMED node types. The 89 it did not name cover 81,531 sites in the 312-file corpus \u2014 the whole generic machinery, every macro, the class contexts, the record-field access graph, the selective-import lists, the where-locals, and every type reference. F8 is the blind-spot detector: an unclassified type is an unmeasured hole, and 89 of them were unmeasured. Every one of the 139 is now in exactly one bucket, and the membership is derived, not asserted: `script/m14/clean-census.mts` walks the pinned grammar's node-type table and this repository's fixtures and prints, per type, whether the analyzer names it and whether a fixture parse tree contains it. The census is the evidence; this file is the ruling.",
-  "_buckets": {
-    "handled_verified": "the analyzer emits correctly for this type, AND a committed fixture's parse tree contains the type. The second half is the F6 half and it is the half that was missing: before this round the analyzer handled 35 types and no fixture reached 11 of them, so a type could be handled and unverified at the same time.",
-    "internal_silent": "a container, a literal, a keyword token or a marker that correctly emits nothing of its own. The count in the corpus is given for scale.",
-    "gap": "a confirmed missing emission, numbered, with its measured size and the reason it is not fixed here.",
-    "design_decision": "an owner ruling, with the reason. Never a silent absence."
-  },
-  "_population_check": {
-    "declared_named_types": 137,
-    "classified": 137,
-    "in_corpus": 136,
-    "never_in_corpus": [
-      "lazy_pattern",
-      "unit_pattern",
-      "qualified_identifier"
-    ],
-    "note": "`qualified_identifier` is listed as never-in-corpus and is ALSO in `handled_verified`, because it is real: it is what the ALIAS qualified form (`M.lookup` after `import qualified Data.Map as M`) desugars to. Measured over the 320-file Clean universe it occurs exactly TWICE and both sites are this repository's own fixtures, so the lane's only qualified-name coverage until this round was a form no Clean codebase contains. The form real Clean code uses is `single_quoted_name` (233 corpus sites, 87 in application-head position) and it is now handled and fixture-backed by `validation/m14/fixtures/clean/qualified-names.icl`. Both are in handled_verified because both are emitted; the corpus asymmetry is recorded here so the next reader does not read the handled count as a coverage claim about real code.",
-    "classified_as": {
-      "handled_verified": 99,
-      "internal_silent": 29,
-      "gap": 1,
-      "design_decision": 8
-    },
-    "declared_grammar_slots": 139
-  },
+  "grammar": "tree-sitter-clean.wasm v1.2.7 (tag commit 302fb5d0, adopted 2026-09-25 — reviews/m60-clean-grammar-127-adjudication.md; wasm sha256 9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec)",
   "handled_verified": {
-    "_description": "99 types. Each one is named by real-clean-analyzer.ts AND occurs in the parse tree of at least one committed clean fixture, which is the F6 conjunction. The three fixtures that made the difference are `declaration-forms.icl` (the Clean-only declaration forms), `qualified-names.icl` (both qualified-name spellings) and `type-and-expression-shapes.icl` (the type and expression spine plus every operator and pattern spelling). 11 of these 99 were handled but unverified before this round.",
+    "_description": "Every node type real-clean-analyzer.ts compares against, each one exercised by a committed fixture — this list is evidence only because the F6 gate parses the fixtures and reports any type no parse tree contains. Fixtures: definition-module-interface.dcl (the declaration contract, four signature_name shapes), signature-definition-merge.icl (the declaration/definition merge, an operator callable and its scope exit), instance-target-name-collision.icl (a type colliding with an instance for it), expression-shapes.icl (case, lambda, guards, where block, list comprehension, qualified call, records, class/instance), import-modules-alias-884.icl (comma-separated imports).",
     "types": [
       "application",
-      "array_comprehension",
-      "array_type",
       "arrow",
-      "backtick_operator",
       "binary_expression",
-      "block_comment",
-      "builtin_question_type",
       "case_alternative",
       "case_expression",
-      "class_context",
       "class_declaration",
-      "class_method_name",
+      "class_member",
       "class_name",
-      "code_expression",
-      "comprehension_qualifier",
-      "cons_pattern",
       "constructor",
-      "constructor_pattern",
-      "constructor_subset",
       "data_constructor",
       "data_constructors",
-      "derive_declaration",
-      "dotted_type",
-      "field_access",
-      "fixity_annotation",
-      "fixity_declaration",
-      "foreign_export",
       "function_declaration",
-      "generic_case_definition",
-      "generic_declaration",
       "guard",
       "guard_equation",
       "identifier",
-      "if_expression",
       "import_declaration",
+      "instance_class",
       "instance_declaration",
+      "instance_member",
       "lambda_expression",
-      "let_expression",
-      "line_comment",
       "list_comprehension",
-      "list_pattern",
-      "list_type",
-      "local_binding",
-      "macro_definition",
       "module_declaration",
       "module_name",
-      "monad_bind",
-      "number",
       "operator",
-      "operator_add",
-      "operator_and",
-      "operator_compare",
-      "operator_cons",
-      "operator_cons_strict",
       "operator_definition",
-      "operator_dot",
-      "operator_exp",
-      "operator_mul",
-      "operator_or",
-      "operator_pipe",
-      "paren_pattern",
       "parenthesized_name",
       "parenthesized_operator",
+      "qualified",
       "qualified_identifier",
-      "question_type",
-      "range_operator",
       "record_definition",
-      "record_expression",
       "record_field",
-      "record_pattern",
-      "record_subset",
-      "record_update",
-      "record_update_pattern",
       "signature_name",
-      "single_quoted_name",
-      "special_block",
-      "special_member",
-      "strict_binding_pattern",
-      "strict_pattern",
-      "strict_type",
-      "tuple_pattern",
-      "tuple_type",
-      "type_application",
       "type_definition",
       "type_definition_body",
       "type_function",
-      "type_paren",
       "type_signature",
-      "type_variable",
-      "unboxed_expression",
-      "unboxed_pattern",
-      "unique_var_type",
-      "uniqueness_star",
-      "uniqueness_type",
-      "update_field",
-      "where_block",
-      "wildcard",
-      "with_block"
+      "where_block"
     ]
   },
   "internal_silent": {
-    "_description": "25 types. Each is a container, a literal, a keyword token or a marker with no entity of its own, and the walk descends through it or reads it as a leaf. The corpus count is given so a reader can see the scale of what is being declared silent.",
+    "_description": "Structural wrappers, type-tree internals and literals that correctly emit nothing. A type_signature is a TYPE tree, so the walk skips its children wholesale (no call site can live inside one) — strict_type/type_application/type_variable are traversed, never dispatched on. local_binding wraps a where-local, which is scoped noise by contract (M11.11): its body attributes to no caller and its signature publishes no symbol.",
     "types": [
-      "abc_instruction",
-      "array_expression",
-      "array_generator_sep",
-      "boolean",
-      "char",
       "char_list",
-      "class_member",
-      "comprehension_sep",
-      "continuation_binding",
-      "float",
-      "generator",
-      "generator_sep",
-      "guard_binding",
-      "guard_body",
-      "instance_class",
-      "instance_member",
       "integer",
-      "lambda_start",
-      "let_before_expression",
-      "let_qualifier",
-      "list_expression",
-      "module_identifier",
-      "paren_expression",
-      "question_marker",
+      "local_binding",
+      "number",
       "source_file",
-      "strict_equal",
+      "strict_type",
       "string",
-      "tuple_expression",
-      "unary_expression"
-    ],
-    "notes": {
-      "source_file": "312 \u2014 the root; its children are the declarations and the walk iterates them",
-      "instance_member": "1009 \u2014 a class or instance member CONTAINER. Its children are the member's own declaration and run through the same handlers as module-level ones, with the class/instance on the scope stack. This is the change that stopped a class member's `special` block (90 sites) and inline `code` body (74 sites) from being unreachable, and that let an instance member be a signature as well as a definition.",
-      "class_member": "161 \u2014 the same, for a class",
-      "instance_class": "741 \u2014 the `name` field of an `instance_declaration`; the analyzer reads it as a FIELD, so the node is a leaf that names the class",
-      "module_identifier": "2788 \u2014 the dotted-name leaf inside `module_name`; `assembleModuleName` composes the dotted form from these",
-      "guard_body": "3666 \u2014 the `body` field of a guard equation; the walk descends into it and the applications inside it attribute to the guard's function",
-      "guard_binding": "2283 \u2014 `# x = expr`, a let-binding inside a definition. The walk descends; the applications in the VALUE attribute to the enclosing function, which is the right owner: the binding is a local, not a call target",
-      "continuation_binding": "81 \u2014 `x = e` in a guard equation, the un-`#` form. Same rule as `guard_binding`",
-      "let_before_expression": "4 \u2014 `# x = e` before a lambda body; same rule",
-      "let_qualifier": "4 \u2014 a comprehension's `let x = e` qualifier; same rule",
-      "generator": "145 \u2014 a comprehension's `x <- xs` generator. It binds a variable, not a name, and its expression is walked",
-      "comprehension_sep": "126, generator_sep: 108, array_generator_sep: 33 \u2014 the `\\\\` and `<-` and `<-:` separators. Lexical punctuation with no payload",
-      "unary_expression": "117 \u2014 a container over the `operator` field; the decision point is counted and the operand is walked",
-      "tuple_expression, list_expression, array_expression, paren_expression": "2171 / 1526 / 48 / 2941 \u2014 expression CONTAINERS. Their children are walked and the applications inside attribute to the enclosing callable, which is correct: a tuple is not a call",
-      "string, integer, float, char, char_list, boolean": "4846 / 2730 / 258 / 615 / 15 / 1081 \u2014 LITERALS. A literal is a value, and the lane emits no `uses` edge for a bare value read (the FP-family rule): 1,406 `uses` edges are emitted over the corpus and every one names a declared record field or data constructor",
-      "lambda_start": "329 \u2014 the `\\\\` token that opens a `lambda_expression`. A leaf with no payload; the lambda's `parameter` and `body` fields carry the meaning",
-      "question_marker": "369 \u2014 the `?` / `?^` / `?#` token of a boxed-maybe type or pattern. The `?`-decorated TYPE it decorates is a real type position (`question_type`, 369 sites, handled); the marker itself is punctuation",
-      "strict_equal": "270 \u2014 the `=:` operator token. It is a `binary_expression`'s `operator` field and its decision point is counted there",
-      "abc_instruction": "867 \u2014 an assembly mnemonic inside a `code { \u2026 }` block. Ruled in CL-D9: it names an instruction, a symbol and a line, and only the middle one is a Clean entity"
-    }
+      "type_application",
+      "type_variable"
+    ]
   },
   "gap": {
-    "_description": "1 gap. Confirmed missing emission, with its measured size.",
+    "_description": "Named worklists, not hidden ones. The differential does not depend on any of them (F5 is 0 MISSING / 0 UNEXPLAINED exhaustively over all 312 corpus files of the lane's five bases), so each gap is a coverage statement, not a correctness claim.",
     "gaps": [
       {
         "id": "CL-G1",
         "severity": "low",
-        "node_type": "index_access",
-        "missing": "`xs.[i]` \u2014 Clean's array index \u2014 emits nothing. 307 corpus sites, on `binary_expression` 161, `guard_binding` 57, `function_declaration` 29, `paren_expression` 19, `application` 14 and eight more. The reason it is a gap and not a silent success: an index IS a real operation on the indexed value's type, and the analyzer declines to name that type. It is not the same shape as the other silent containers above, because those have no entity to name and this one does. What would fix it: resolving the receiver's type, which needs either cross-file resolution or a per-file dataflow pass, and both are outside what a single-file analyzer may assume. Recorded rather than ruled, because the honest answer is that the lane does not yet know.",
-        "not_fixed_because": "it needs a type the analyzer does not have. The alternative \u2014 emitting an edge to the receiver's NAME \u2014 would be a `uses` edge to a value, which is the FP family the lane forbids."
+        "node_type": "monad_bind,array_generator_sep,open_range_expression",
+        "missing": "the three node types introduced in v1.2.7 that this analyzer names nowhere. They are lexer-level refinements of shapes the analyzer already handles through other nodes (`>>=`, array generators, `[1..]`), so nothing is lost today; the gap is that their arrival is not measured by any fixture. The fourth new type, char_list, is classified internal_silent above because it wraps a literal."
+      },
+      {
+        "id": "CL-G2",
+        "severity": "medium",
+        "node_type": "ERROR",
+        "missing": "inline `code { ... }` machine-code blocks (clean-stdlib/_SystemDynamic.icl) are not parseable Clean, so the whole file carries ERROR nodes and nothing inside them can be attributed honestly. This is the lane's single grammar-error file on the five bases (F10: Clyde 17 of 109 files damaged, clean-stdlib 1 of 74, and every one of them is a deliberate, classified residual rather than a silent drop). Same category as Go's testdata and Haskell's TemplateHaskell quasiquotes."
+      },
+      {
+        "id": "CL-G3",
+        "severity": "low",
+        "node_type": "class_declaration",
+        "missing": "a class declaration's CONTEXT (`class Eq a | == a`) is not modelled: the constraint identifiers publish nothing and emit no edge. Measured on clean-stdlib/StdClass.dcl, where the whole file is class declarations with contexts."
       }
     ]
   },
   "design_decision": {
-    "_description": "14 rulings. Each is a construct whose correct treatment is a choice, and the choice is recorded with its reason rather than left as an absence.",
+    "description": "The Clean FP-family contract, each ruling probe- or fixture-verified (see the fixtures named in handled_verified, plus script/m14/tmp/clean-fixture-probe.ts and the four CLEAN probes of the F9 battery).",
     "decisions": [
       {
         "id": "CL-D1",
-        "node_type": "lazy_pattern",
-        "ruling": "A pattern that binds a value LAZILY. Never occurs in the 312-file corpus (0 sites) and the grammar's own spelling is not reachable from Clean source this lane has seen. Ruled silent: a lazy pattern binds names exactly as a strict one does, and the analyzer's pattern reader handles it through the same recursion. If a corpus ever produces one, the recursion already covers it and the `internal_silent` row would become a `handled_verified` one."
+        "node_type": "identifier",
+        "status": "RULED",
+        "question": "are bare value reads emitted as `uses`?",
+        "resolution": "No — the FP-family contract (Clojure/Elixir/Erlang/Haskell precedent): variable references are noise. The lane emits contains/implements/calls/instantiates/references only."
       },
       {
         "id": "CL-D2",
-        "node_type": "unit_pattern",
-        "ruling": "The `()` pattern. 0 corpus sites. Ruled silent: it binds nothing, and the analyzer's pattern reader returns no names for a node type it does not recognize, which is the correct answer here."
+        "node_type": "type_signature",
+        "status": "RULED",
+        "question": "what does a module-level signature publish, given that a `.dcl` is declarations only?",
+        "resolution": "A Function symbol marked `metadata.isDeclaration`, keyed `::name`. A later in-file definition REPLACES it (one entity, the definition's range) — the C prototype/definition merge, real-c-analyzer.ts. Class/instance member signatures are already Method symbols from the class/instance path; a where-local signature publishes nothing."
       },
       {
         "id": "CL-D3",
-        "node_type": "unit_type, unit_expression",
-        "ruling": "`()` as a type and as a value. 20 and 12 corpus sites, none in a fixture. Ruled silent: the unit type names no other type, so a signature using it emits no `references` edge, and a `unit_expression` builds nothing. Both are the absence of a value, and an edge to an absence is not an edge."
+        "node_type": "operator_definition",
+        "status": "RULED",
+        "question": "is an operator definition a callable, and where does its attribution stop?",
+        "resolution": "It is a callable wherever it lives (module level, instance member, class member), so its body's applications attribute to the operator's unparenthesized name. Inside a where block it is scoped noise, and a comma/brace pattern mis-shape (`# (a,b,c) = e;`, `(r,{gst & ls=s})`) names nothing. The attribution is RELEASED when the operator's scope exits: before that fix the operator stayed `currentFunction` and swallowed the next module-level application (`calls ++| -> flatten` in clean-stdlib/StdOverloadedList.icl)."
       },
       {
         "id": "CL-D4",
-        "node_type": "uniqueness_constraints",
-        "ruling": "`[u v <= w]` \u2014 a uniqueness constraint in a signature's class context. 78 corpus sites. Ruled silent: the constraint is a RELATION between type variables, not a reference to a named type, and its variables are bindings. `unique_var_type` (618 sites) IS handled, because it does name a type after its `u:` prefix (`u:List` names `List`); the bare bracket form names none."
+        "node_type": "instance_declaration",
+        "status": "RULED",
+        "question": "what is an instance named, and what happens when the name collides with its target type?",
+        "resolution": "Named after the TARGET type (the universal impl-naming contract: Rust `impl User`, Elixir `defimpl`, Haskell `instance ... User`), and `implements targetType -> className`. A file that also defines that type therefore offers the name twice; the export list is deduped by NAME first-wins (the type, which comes first, is the importable unit) because the exports-family invariant requires a name a duplicate cannot identify its provider for."
       },
       {
         "id": "CL-D5",
-        "node_type": "kind_expression, generic_kind_type",
-        "ruling": "`{|*|}` and a generic's kind \u2014 the type OF types, which is Clean's type-level machinery. 13 and 9 corpus sites. Ruled silent: a kind names a universe, not a type in this file, and the analyzer has no `kind` symbol kind. `generic_declaration` (11 sites) IS published as an Interface, so the generic itself is present; its kind is metadata on that symbol."
+        "node_type": "record_definition,record_field",
+        "status": "RULED",
+        "question": "does a record emit an instantiation, and what do its fields publish?",
+        "resolution": "Fields publish Property symbols owned by their type and are contained by it. A record CONSTRUCTION or UPDATE emits no `instantiates` — only a constructor-headed application does, so a record literal is never an instantiation."
       },
       {
         "id": "CL-D6",
-        "node_type": "open_range_expression",
-        "ruling": "`0..` \u2014 an open-ended range. 13 corpus sites. Ruled silent: the `range_operator` inside it IS counted as a decision point and IS fixture-backed (`range_operator`, 95 sites), and the open end names no value. The construct is a pattern the lane marks (`Range Expressions`, 30 files) and publishes no symbol for, which is the same treatment Haskell's `[1..]` receives."
-      }
-    ],
-    "rulings_without_a_bucket": {
-      "_description": "Eleven rulings are recorded here rather than as bucket members, because the TYPE each is about is already in `handled_verified` or `internal_silent` and the F8 partition allows a type in exactly one bucket. The BUCKET is the behaviour and this list is the reasoning; each entry names its type so the pairing is explicit. `design_decision.decisions` below holds the rulings whose type really is silent.",
-      "items": [
-        {
-          "id": "CL-D8",
-          "node_type": "unboxed_pattern",
-          "ruling": "The unboxed BUILD direction (`?Just 0` in a body). `unboxed_pattern` is in `handled_verified` because the PATTERN direction is a match and a match is a `uses` edge. The build direction is ruled unreachable: measured, `?Just 0` in a body is an ERROR in the pinned grammar, so there is no Clean source to read. The two halves of one notation therefore sit in different states, and that is the grammar's state, not the analyzer's."
-        },
-        {
-          "id": "CL-D9",
-          "node_type": "code_expression",
-          "ruling": "`code { \u2026 }` is handled \u2014 it sets the enclosing callable's `metadata.hasInlineCodeBody` and the `Inline Machine Code` pattern \u2014 while its `abc_instruction` payload is `internal_silent`. Publishing 867 mnemonics as symbols would be fabrication: `pushLc orderFrontStandardAboutPanel` names an instruction, a symbol and a line, and only the middle one is a Clean entity."
-        },
-        {
-          "id": "CL-D15",
-          "node_type": "array_expression",
-          "ruling": "An array literal. `internal_silent` is the correct bucket: it is an expression container whose children are walked, and a literal is a value \u2014 the FP-family rule forbids a `uses` edge to a bare value read."
-        },
-        {
-          "id": "CL-D16",
-          "node_type": "let_expression",
-          "ruling": "`let` is in `handled_verified` because a `let` binder publishes as a local symbol owned by its frame. What is ruled here is its QUALIFIER form (a `let` inside a comprehension), which binds nothing visible to a sibling qualifier, so the qualifier is `internal_silent` while the expression is handled."
-        },
-        {
-          "id": "CL-D7",
-          "node_type": "fixity_annotation",
-          "ruling": "The `fixity` field of a class declaration \u2014 28 of the type's 93 corpus sites. Ruled as a metadata attachment rather than a symbol: a fixity names an OPERATOR, and an operator is a symbol, so a fixity is a fact ABOUT that symbol. `fixity_declaration` (17 sites, its own declaration form) is ruled the same way, and both reach one attachment. What is published is the symbol that carries the name; the fixity is its `metadata.fixity`."
-        },
-        {
-          "id": "CL-D10",
-          "node_type": "with_block",
-          "ruling": "A `with` clause \u2014 a third local-binding container alongside `where` and `let`. 20 corpus sites, and the analyzer treats it identically to `where`: its binders publish as local symbols owned by the enclosing frame, resolve as call targets by scoped identity, and stay out of the export surface. The FIRST implementation handled only `where_block`, and on Clyde/cleantools/Pm/PmDriver.icl the 8 `with`-block binders after line 688 published with `ownerName` undefined \u2014 a member without an owner, which the lane's `members without ownerName = 0` invariant forbids. The cause was a scope exit restoring `currentFunction` unconditionally; see reviews/clean/m14-0-clean-completeness.md."
-        },
-        {
-          "id": "CL-D11",
-          "node_type": "let_expression, let_qualifier",
-          "ruling": "`let x = e` inside a comprehension qualifier. 4 corpus sites. Ruled with the other local containers: it binds, its value is walked, and the applications in that value attribute to the enclosing callable. A qualifier is not a scope \u2014 a later `let` in the same comprehension cannot see an earlier one's binder, so there is nothing to resolve."
-        },
-        {
-          "id": "CL-D12",
-          "node_type": "constructor",
-          "ruling": "The grammar declares `constructor` twice \u2014 an alias, the same way html's spec records `start_tag`/`script_start_tag`. The census counts 22,210 sites under the single distinct name and the analyzer reads it once. Noted so the raw grammar-slot count (139) and the distinct-name count (137) are both stated, and so a future reader does not read the difference as a missing type."
-        },
-        {
-          "id": "CL-D13",
-          "node_type": "special_member",
-          "ruling": "`special a=Int` \u2014 a class signature's specialisation. 507 corpus sites, and the member publishes NO symbol: the variable is the enclosing declaration's own type parameter (`_from :: a -> .[a] | Enum, Ord a` specialises `_from` at `Int`, it does not declare a member called `a`). What it declares is a SET OF TYPES, and each is a real `references` edge labelled `special_type`. Publishing a `Property` named `a` would fabricate a name the source does not declare, and it would collide with the type variable of every other signature in the file."
-        },
-        {
-          "id": "CL-D14",
-          "node_type": "uniqueness_star",
-          "ruling": "`| * , toInt a` \u2014 the unboxedness constraint. 5 of the 474 corpus contexts. Ruled silent: it names no class, and the analyzer's context reader splits the constraint list at the `,` CHILD nodes and publishes only a name. The other 469 contexts DO publish a `references` edge to the class they constrain on, which is the whole of spec gap CL-G3 (closed by this round)."
-        }
-      ]
-    }
-  },
-  "closed_gaps": {
-    "_description": "Gaps this round closed, kept so the number does not look like it was always this small.",
-    "items": [
-      {
-        "id": "CL-G3",
-        "was": "a class declaration's CONTEXT (`class Eq a | == a`) was not modelled: the constraint identifiers published nothing and emitted no edge. Measured on clean-stdlib/StdClass.dcl, where the whole file is class declarations with contexts.",
-        "now": "CLOSED. 474 `class_context` sites are read, split at their `,` children, and each named constraint emits a `references` edge from the declaring symbol to the class. 469 of the 474 name a class; the other 5 are the unboxedness constraint and are ruled in CL-D14. Pinned by `declaration-forms.icl` (`class Sized a | Ord a` \u2192 `references Sized \u2192 Ord`)."
+        "node_type": "guard_equation,guard",
+        "status": "RULED",
+        "question": "which guard shapes are decision points for cyclomatic complexity?",
+        "resolution": "Both, and they are different things: `guard_equation` is a function guard (1,594 sites over the five bases) and `guard` is a list-comprehension qualifier (23 sites, every one under a comprehension_qualifier). The counter used to read `guard` alone, so it measured comprehension filters while every function guard went uncounted."
       },
       {
-        "id": "CL-G1-old",
-        "was": "the three node types introduced in grammar v1.2.7 \u2014 `monad_bind`, `array_generator_sep`, `open_range_expression` \u2014 were named nowhere. `char_list` was classified internal_silent.",
-        "now": "SUPERSEDED. `monad_bind` (50 sites) and `array_generator_sep` (33) are handled and fixture-backed; `char_list` (15) and `open_range_expression` (13) are ruled in CL-D3/CL-D6. The gap is replaced by the single, differently-shaped CL-G1 above."
+        "id": "CL-D7",
+        "node_type": "function_declaration",
+        "status": "RULED",
+        "question": "where does pattern territory end inside a function definition?",
+        "resolution": "At the body FIELD: everything before it is a pattern, so a constructor there never becomes `instantiates`. The pre-fix gate tested each child for `type === \"operator\" && text === \"=\"`, which this grammar cannot produce (a definition's children are name/pattern…/body and the `=` is not a child; the 1,576 corpus `operator` nodes are operator symbols under binary_expression/unary_expression/paren_pattern), so the gate was dead — a grammar that app-lifts a head pattern would have started fabricating with nothing in the way."
+      },
+      {
+        "id": "CL-D8",
+        "node_type": "module_declaration",
+        "status": "RULED",
+        "question": "what is exported from a module that has no export keyword?",
+        "resolution": "The module-level symbols: `ownerName === currentModule` (or ownerless) — the haskell rule, since the module is the namespace and `import M (f)` binds `f` — restricted to exportable kinds and deduped by name. Measured over the five bases: 4,443 exports over 305 of 312 files; the 7 without one are the `_`-prefixed compiler-internal modules, whose names are private by Clean convention. The predicate used to be `!sym.ownerName`, the exact negation of the rule its own comment stated, which left 312 of 312 files exporting at most one thing."
       }
     ]
   }

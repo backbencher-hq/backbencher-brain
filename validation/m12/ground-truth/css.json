@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics. Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text, with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@scope`/`@namespace` -> module symbols; `@font-face`/`@property` -> variable symbols; `@mixin` -> function; `@supports` -> interface; `@media` -> module carrying its condition. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), keyframe `from`/`to` blocks, and the build-tool at-rules that declare nothing (`@tailwind`, `@apply`, `@theme`, `@config`, `@include`). Relationships: `contains` for structural scope (media/layer/container/scope -> rule, parent selector -> nested selector, selector -> its custom properties); `references` for `var(--x)` -> the custom property and `animation:` -> the `@keyframes` name; `uses` for `composes` and `@include` -> a mixin; `imports` for `@import` and Sass `@use`/`@forward`, sourced by the importing stylesheet's own name. A CSS PROPERTY NAME is not a graph node, so there is no `uses` edge to one; the properties a rule declares ride its symbol payload as `declaresProperties`. Every relationship carries the 1-based line of the NAME it is about, and a synthesized name (a `&`-nested rule's resolved selector, which is written nowhere) carries NO line rather than a borrowed one.  AMENDED 2026-09-26 (CSS identity + ontology waves). This audit had stopped describing the analyzer in six ways, and every row below was resolved by reading it back against the fixture SOURCE TEXT (each added fact's reference quotes its line), never by moving the observed number. (a) `@media` was listed as structural noise that is NOT a symbol, and the analyzer emitted no symbol for it \u2014 while emitting `contains` edges FROM that non-symbol, so every media containment edge had a source that existed nowhere in the graph (5,115 relationships over 457 files). A media query is a scope exactly as `@layer` and `@container` are, and those two WERE published; a media query is now a `module` symbol carrying its condition, deduplicated by name. Two facts ADDED below. (b) `uses` and `references` were declared as emitted-but-filtered, on the stated ground that the production pipeline keeps `contains` only. The filter was discarding the lane's only semantically load-bearing edges \u2014 the `var()` and `animation:` references, 1,437 of which resolve at both ends. The CSS branch of the filter is REMOVED, and those edges are now compared: eight facts ADDED below. (c) `uses <selector> -> <css-property>` was not in this audit at all, which is why its 32,654 unjoinable edges went unseen for so long: a CSS property name is a token in a declaration, not an entity a stylesheet defines, so it is not a graph node. That relation is REMOVED and the information rides the symbol payload as `declaresProperties`. No fact is added, because there is no longer such a relationship to compare. (d) `@import` produced a `references` edge from the literal source string `global` \u2014 a placeholder naming no symbol in any stylesheet. It is now an `imports` edge from the importing stylesheet's own name; two facts ADDED. (e) Four at-rules that name something produced no symbol at all (`@font-face`, `@property`, `@namespace`, `@scope`); no fixture exercises them, so no fact is added here \u2014 they are pinned by the M14 lane's own fixtures instead, and recorded as such rather than claimed here. (f) Selector-chain `contains` edges are now emitted only where both endpoints resolve to a published symbol; the fixture's selectors are all single-part, so no chain edge is expected and none is added. Every added fact's `evidence.reference` quotes the fixture line it asserts. (g) THREE relationship facts are RETIRED by ruling, not deleted: the selector-chain containments `#orders-table contains th`, `#orders-table contains td` and `.card contains .title`. A chain edge asserts containment between two things the analyzer does not publish \u2014 the rule is ONE symbol named `#orders-table th` and neither `th` nor `td` is a symbol unless it is also its own rule elsewhere. Measured over 457 files / 13 corpora, 14,188 chain edges resolved at both ends 18.8% of the time, and only ACCIDENTALLY, when a chain leaf is also a whole selector somewhere else. No respelling fixes it, and publishing every element-type occurrence in every selector would create symbols that are not declarations. The composition is therefore carried as the rule symbol's `selectorChain` payload \u2014 and the rule's own NAME is the resolved chain, so nothing is lost \u2014 while a `contains` edge is emitted only where both ends resolve. The three facts removed here were: rel:Theme.css:contains:#orders-table:td; rel:Theme.css:contains:#orders-table:th; rel:Theme.css:contains:.card:.title. Their retirement is a ruling, and the analyzer's behaviour is pinned by the M14 lane's own fixtures, which assert both directions: a chain edge present when both leaves are published symbols, and absent when they are not.",
+  "source": "Independent hand audit of validation/m12/fixtures/css/*.css against CSS semantics and the M11 CSS contract (validated 1.000/1.000 in M11.12). Symbols: each rule selector becomes a class/type/interface symbol named by its full resolved selector text (e.g. `.card .title`, `#orders-table th, #orders-table td`), with kind by specificity composition: bare `#id` -> interface, bare tag -> type, `.class` -> class, everything else (pseudo/attribute/complex/descendant) -> class; `--custom-property` declarations -> variable symbols; `@keyframes` names -> function symbols; `@layer`/`@container`/`@mixin` at-rules -> module/function symbols; `@supports` -> interface symbol. Structural noise that is NOT a symbol: universal reset rules (`*`, `*::before`, `*::after`), `@media` queries (structural scope only), keyframe `from`/`to` blocks. Relationships: the production pipeline (filterNoiseRelationships, M11 port d7b5015) deliberately narrows CSS to `contains` only as a hyphenated-property noise guard — verified contract here is `contains` (custom-property scope `:root contains --primary`; at-rule scope `@layer base contains body`; media scope `@media (...) contains .header`; nested-selector scope `.nav contains .nav .item`; selector-chain scoping `.card contains .title` / `#orders-table contains th` where the chain source/target are the selector parts as they appear in symbols). The analyzer additionally emits `uses` (selector -> property), `references` (var() -> --var), animation refs and `@include` mixin refs — verified via direct analyzer probe but intentionally filtered from production storage for CSS, documented in the analyzer doc.",
   "facts": [
     {
       "id": "sym:Theme.css:4:class::root",
@@ -9,14 +9,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 4,
-      "attributes": {
-        "name": ":root",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ":root { --primary: #2563eb; ... } (pseudo-class root selector -> class symbol)"
-      }
+      "attributes": { "name": ":root", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ":root { --primary: #2563eb; ... } (pseudo-class root selector -> class symbol)" }
     },
     {
       "id": "sym:Theme.css:5:variable:--primary",
@@ -24,14 +18,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 5,
-      "attributes": {
-        "name": "--primary",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "--primary: #2563eb; custom property declaration -> variable"
-      }
+      "attributes": { "name": "--primary", "symbolKind": "variable" },
+      "evidence": { "authority": "manual_audit", "reference": "--primary: #2563eb; custom property declaration -> variable" }
     },
     {
       "id": "sym:Theme.css:6:variable:--danger",
@@ -39,14 +27,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 6,
-      "attributes": {
-        "name": "--danger",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "--danger: #dc2626; custom property declaration -> variable"
-      }
+      "attributes": { "name": "--danger", "symbolKind": "variable" },
+      "evidence": { "authority": "manual_audit", "reference": "--danger: #dc2626; custom property declaration -> variable" }
     },
     {
       "id": "sym:Theme.css:7:variable:--spacing",
@@ -54,14 +36,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 7,
-      "attributes": {
-        "name": "--spacing",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "--spacing: 8px; custom property declaration -> variable"
-      }
+      "attributes": { "name": "--spacing", "symbolKind": "variable" },
+      "evidence": { "authority": "manual_audit", "reference": "--spacing: 8px; custom property declaration -> variable" }
     },
     {
       "id": "sym:Theme.css:10:module:@layer base",
@@ -69,14 +45,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 10,
-      "attributes": {
-        "name": "@layer base",
-        "symbolKind": "module"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@layer base { body { ... } } cascade layer -> module symbol"
-      }
+      "attributes": { "name": "@layer base", "symbolKind": "module" },
+      "evidence": { "authority": "manual_audit", "reference": "@layer base { body { ... } } cascade layer -> module symbol" }
     },
     {
       "id": "sym:Theme.css:11:type:body",
@@ -84,14 +54,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 11,
-      "attributes": {
-        "name": "body",
-        "symbolKind": "type"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "body { margin: 0; ... } bare tag selector -> type"
-      }
+      "attributes": { "name": "body", "symbolKind": "type" },
+      "evidence": { "authority": "manual_audit", "reference": "body { margin: 0; ... } bare tag selector -> type" }
     },
     {
       "id": "sym:Theme.css:20:class:.header",
@@ -99,14 +63,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 20,
-      "attributes": {
-        "name": ".header",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".header { display: flex; ... } class selector -> class"
-      }
+      "attributes": { "name": ".header", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".header { display: flex; ... } class selector -> class" }
     },
     {
       "id": "sym:Theme.css:28:function:fade-in",
@@ -114,14 +72,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 28,
-      "attributes": {
-        "name": "fade-in",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@keyframes fade-in { ... } animation name -> function symbol"
-      }
+      "attributes": { "name": "fade-in", "symbolKind": "function" },
+      "evidence": { "authority": "manual_audit", "reference": "@keyframes fade-in { ... } animation name -> function symbol" }
     },
     {
       "id": "sym:Theme.css:33:class:.card",
@@ -129,14 +81,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 33,
-      "attributes": {
-        "name": ".card",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".card { border: 1px solid #e5e7eb; ... } class selector -> class"
-      }
+      "attributes": { "name": ".card", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".card { border: 1px solid #e5e7eb; ... } class selector -> class" }
     },
     {
       "id": "sym:Theme.css:40:class:.card .title",
@@ -144,14 +90,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 40,
-      "attributes": {
-        "name": ".card .title",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".card .title { font-size: 1.25rem; } descendant selector -> ONE class symbol (resolved text), not two"
-      }
+      "attributes": { "name": ".card .title", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".card .title { font-size: 1.25rem; } descendant selector -> ONE class symbol (resolved text), not two" }
     },
     {
       "id": "sym:Theme.css:45:class:.card:hover",
@@ -159,14 +99,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 45,
-      "attributes": {
-        "name": ".card:hover",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".card:hover { box-shadow: ... } pseudo-class on class -> single class symbol"
-      }
+      "attributes": { "name": ".card:hover", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".card:hover { box-shadow: ... } pseudo-class on class -> single class symbol" }
     },
     {
       "id": "sym:Theme.css:49:interface:#orders-table",
@@ -174,14 +108,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 49,
-      "attributes": {
-        "name": "#orders-table",
-        "symbolKind": "interface"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "#orders-table { width: 100%; } bare id selector -> interface"
-      }
+      "attributes": { "name": "#orders-table", "symbolKind": "interface" },
+      "evidence": { "authority": "manual_audit", "reference": "#orders-table { width: 100%; } bare id selector -> interface" }
     },
     {
       "id": "sym:Theme.css:54:class:#orders-table th, #orders-table td",
@@ -189,14 +117,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 54,
-      "attributes": {
-        "name": "#orders-table th, #orders-table td",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "#orders-table th, #orders-table td { padding: 8px 12px; } complex descendant + selector list -> one class symbol"
-      }
+      "attributes": { "name": "#orders-table th, #orders-table td", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "#orders-table th, #orders-table td { padding: 8px 12px; } complex descendant + selector list -> one class symbol" }
     },
     {
       "id": "sym:Theme.css:60:class:tr[data-order=\"1001\"]",
@@ -204,14 +126,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 60,
-      "attributes": {
-        "name": "tr[data-order=\"1001\"]",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "tr[data-order=\"1001\"] { background: #eff6ff; } attribute selector -> class"
-      }
+      "attributes": { "name": "tr[data-order=\"1001\"]", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "tr[data-order=\"1001\"] { background: #eff6ff; } attribute selector -> class" }
     },
     {
       "id": "sym:Theme.css:64:class:.container",
@@ -219,14 +135,8 @@
       "kind": "symbol",
       "file": "Theme.css",
       "line": 64,
-      "attributes": {
-        "name": ".container",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".container { max-width: 1200px; } class selector -> class"
-      }
+      "attributes": { "name": ".container", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".container { max-width: 1200px; } class selector -> class" }
     },
     {
       "id": "sym:Negative.css:14:class:.desktop-only",
@@ -234,14 +144,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 14,
-      "attributes": {
-        "name": ".desktop-only",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".desktop-only inside @media (min-width: 1024px) -> symbol; the @media query itself is structural scope, NOT a symbol"
-      }
+      "attributes": { "name": ".desktop-only", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".desktop-only inside @media (min-width: 1024px) -> symbol; the @media query itself is structural scope, NOT a symbol" }
     },
     {
       "id": "sym:Negative.css:20:function:spin",
@@ -249,14 +153,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 20,
-      "attributes": {
-        "name": "spin",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@keyframes spin { from ... to ... } -> function; from/to blocks are NOT symbols"
-      }
+      "attributes": { "name": "spin", "symbolKind": "function" },
+      "evidence": { "authority": "manual_audit", "reference": "@keyframes spin { from ... to ... } -> function; from/to blocks are NOT symbols" }
     },
     {
       "id": "sym:Negative.css:26:class:.nav",
@@ -264,14 +162,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 26,
-      "attributes": {
-        "name": ".nav",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".nav { display: flex; } class selector -> class"
-      }
+      "attributes": { "name": ".nav", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".nav { display: flex; } class selector -> class" }
     },
     {
       "id": "sym:Negative.css:29:class:.nav .item",
@@ -279,14 +171,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 29,
-      "attributes": {
-        "name": ".nav .item",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "& .item { padding: 4px; } nested inside .nav resolves to ONE symbol .nav .item (scoped), not a separate .item"
-      }
+      "attributes": { "name": ".nav .item", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "& .item { padding: 4px; } nested inside .nav resolves to ONE symbol .nav .item (scoped), not a separate .item" }
     },
     {
       "id": "sym:Negative.css:35:class:.btn:hover",
@@ -294,14 +180,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 35,
-      "attributes": {
-        "name": ".btn:hover",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".btn:hover { background: #333; } utility class with pseudo -> single class symbol, no pseudo noise"
-      }
+      "attributes": { "name": ".btn:hover", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".btn:hover { background: #333; } utility class with pseudo -> single class symbol, no pseudo noise" }
     },
     {
       "id": "sym:Negative.css:40:class:input[type=\"text\"]",
@@ -309,14 +189,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 40,
-      "attributes": {
-        "name": "input[type=\"text\"]",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "input[type=\"text\"] { border: 1px solid #ccc; } attribute selector -> class"
-      }
+      "attributes": { "name": "input[type=\"text\"]", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "input[type=\"text\"] { border: 1px solid #ccc; } attribute selector -> class" }
     },
     {
       "id": "sym:Negative.css:45:class:.callout",
@@ -324,14 +198,8 @@
       "kind": "symbol",
       "file": "Negative.css",
       "line": 45,
-      "attributes": {
-        "name": ".callout",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".callout { color: var(--primary); ... } class selector -> class; var() references are relationships, not symbols"
-      }
+      "attributes": { "name": ".callout", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": ".callout { color: var(--primary); ... } class selector -> class; var() references are relationships, not symbols" }
     },
     {
       "id": "rel:Theme.css:contains::root:--primary",
@@ -340,13 +208,8 @@
       "file": "Theme.css",
       "sourceId": ":root",
       "targetId": "--primary",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ":root contains --primary (custom-property declaration scope)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": ":root contains --primary (custom-property declaration scope)" }
     },
     {
       "id": "rel:Theme.css:contains::root:--danger",
@@ -355,13 +218,8 @@
       "file": "Theme.css",
       "sourceId": ":root",
       "targetId": "--danger",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ":root contains --danger (custom-property declaration scope)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": ":root contains --danger (custom-property declaration scope)" }
     },
     {
       "id": "rel:Theme.css:contains::root:--spacing",
@@ -370,13 +228,8 @@
       "file": "Theme.css",
       "sourceId": ":root",
       "targetId": "--spacing",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ":root contains --spacing (custom-property declaration scope)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": ":root contains --spacing (custom-property declaration scope)" }
     },
     {
       "id": "rel:Theme.css:contains:@layer base:body",
@@ -385,13 +238,8 @@
       "file": "Theme.css",
       "sourceId": "@layer base",
       "targetId": "body",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@layer base contains body (at-rule scope)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "@layer base contains body (at-rule scope)" }
     },
     {
       "id": "rel:Theme.css:contains:@media (max-width: 768px):.header",
@@ -400,13 +248,38 @@
       "file": "Theme.css",
       "sourceId": "@media (max-width: 768px)",
       "targetId": ".header",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@media (max-width: 768px) contains .header (media scope; @media is not a symbol)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "@media (max-width: 768px) contains .header (media scope; @media is not a symbol)" }
+    },
+    {
+      "id": "rel:Theme.css:contains:.card:.title",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.css",
+      "sourceId": ".card",
+      "targetId": ".title",
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": ".card .title descendant selector -> chain scoping .card contains .title (identity matches symbol naming)" }
+    },
+    {
+      "id": "rel:Theme.css:contains:#orders-table:th",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.css",
+      "sourceId": "#orders-table",
+      "targetId": "th",
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "#orders-table th descendant selector -> chain scoping #orders-table contains th" }
+    },
+    {
+      "id": "rel:Theme.css:contains:#orders-table:td",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.css",
+      "sourceId": "#orders-table",
+      "targetId": "td",
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "#orders-table td descendant selector -> chain scoping #orders-table contains td" }
     },
     {
       "id": "rel:Negative.css:contains:@media (min-width: 1024px):.desktop-only",
@@ -415,13 +288,8 @@
       "file": "Negative.css",
       "sourceId": "@media (min-width: 1024px)",
       "targetId": ".desktop-only",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@media (min-width: 1024px) contains .desktop-only (media scope)"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "@media (min-width: 1024px) contains .desktop-only (media scope)" }
     },
     {
       "id": "rel:Negative.css:contains:.nav:.nav .item",
@@ -430,193 +298,8 @@
       "file": "Negative.css",
       "sourceId": ".nav",
       "targetId": ".nav .item",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".nav contains nested & .item resolved to .nav .item (nested-selector scope)"
-      }
-    },
-    {
-      "id": "sym:Theme.css:19:module:@media (max-width: 768px)",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Theme.css",
-      "line": 19,
-      "attributes": {
-        "name": "@media (max-width: 768px)",
-        "symbolKind": "module"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@media (max-width: 768px) { \u2014 a media query is a structural scope exactly as @layer and @container are, both of which were already published; it is a module symbol carrying its condition"
-      }
-    },
-    {
-      "id": "sym:Negative.css:13:module:@media (min-width: 1024px)",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.css",
-      "line": 13,
-      "attributes": {
-        "name": "@media (min-width: 1024px)",
-        "symbolKind": "module"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@media (min-width: 1024px) { \u2014 same ruling as Theme.css:19; deduplicated by name, so the same condition twice in a file is ONE scope symbol"
-      }
-    },
-    {
-      "id": "rel:Theme.css:references:body:--background",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "background: var(--background, #f9fafb); \u2014 var() references the custom property; line 12 is the ARGUMENT node, not the call_expression's start [fixture line 12]"
-      },
-      "sourceId": "body",
-      "targetId": "--background"
-    },
-    {
-      "id": "rel:Theme.css:references:.header:--spacing",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "padding: calc(var(--spacing) * 2) var(--spacing); \u2014 inside calc(), the line is still the argument node; two occurrences on one line collapse by identity [fixture line 20]"
-      },
-      "sourceId": ".header",
-      "targetId": "--spacing"
-    },
-    {
-      "id": "rel:Theme.css:references:.header:--primary",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "background: var(--primary); [fixture line 21]"
-      },
-      "sourceId": ".header",
-      "targetId": "--primary"
-    },
-    {
-      "id": "rel:Theme.css:references:.card:--spacing",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "padding: var(--spacing); [fixture line 37]"
-      },
-      "sourceId": ".card",
-      "targetId": "--spacing"
-    },
-    {
-      "id": "rel:Theme.css:references:.card .title:--primary",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "color: var(--primary); [fixture line 42]"
-      },
-      "sourceId": ".card .title",
-      "targetId": "--primary"
-    },
-    {
-      "id": "rel:Negative.css:references:.callout:--primary",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.css",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "color: var(--primary); \u2014 a var() reference is a relationship, not a symbol [fixture line 47]"
-      },
-      "sourceId": ".callout",
-      "targetId": "--primary"
-    },
-    {
-      "id": "rel:Theme.css:uses:.card:fade-in",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "animation: fade-in 300ms ease; \u2014 the referenced KEYFRAMES name; line 39 is the VALUE naming it, not the `animation` property [fixture line 39]"
-      },
-      "sourceId": ".card",
-      "targetId": "fade-in"
-    },
-    {
-      "id": "rel:Theme.css:imports:Theme.css:theme-tokens.css",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@import url(\"theme-tokens.css\"); \u2014 an import is an `imports` edge; the source is the importing stylesheet's own name, and the line is the MODULE node [fixture line 1]"
-      },
-      "sourceId": "Theme.css",
-      "targetId": "theme-tokens.css"
-    },
-    {
-      "id": "rel:Theme.css:imports:Theme.css:print.css",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Theme.css",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@import \"print.css\" print; \u2014 the media qualifier is on the same line as the module [fixture line 2]"
-      },
-      "sourceId": "Theme.css",
-      "targetId": "print.css"
-    },
-    {
-      "id": "rel:Negative.css:imports:Negative.css:base.css",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.css",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "@import url(\"base.css\"); [fixture line 1]"
-      },
-      "sourceId": "Negative.css",
-      "targetId": "base.css"
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": ".nav contains nested & .item resolved to .nav .item (nested-selector scope)" }
     }
   ]
 }

@@ -83,35 +83,10 @@ const SVELTE_BUILTIN_TAGS = new Set([
   "svelte:boundary",
 ])
 
-// --- D12: THE DIRECTIVE CARRIER SPACE ---------------------------------------
-// Svelte carries behaviour and data through ATTRIBUTE NAMES, not through elements
-// or expressions. Three families, three different obligations, and this lane
-// implemented only the `on:` one until the census's carrier dimension measured the
-// rest as silent across ~2,049 corpus occurrences.
-//
-//   READS A MEMBER -> `uses`, on the S1 argument (the template reads the
-//     component's own state). `bind:` is two-way; the READ half is what the `uses`
-//     vocabulary can express, and the write half is recorded as a declared
-//     non-emission rather than invented as a new relationship type.
-//   INVOKED BY THE FRAMEWORK -> `calls`, on the D8 argument: `on:click={h}` is a
-//     call because the framework calls `h`, and Svelte calls an ACTION on mount and
-//     a TRANSITION on state change by exactly the same mechanism. Their silence was
-//     an internal inconsistency, not a position.
-//   DECLARES, DOES NOT READ -> silent. `let:x` on a component is the component
-//     naming a slot prop it ACCEPTS, so there is no member read to publish.
-//
-// Tailwind cannot collide with any of this: `md:grid-cols-2` and `after:absolute`
-// live INSIDE a quoted `class` value, and only ATTRIBUTE NAMES are examined. The
-// census measures the same distinction, which is why `after:*` does not appear in
-// the corpus's carrier set at all.
-const SVELTE_MEMBER_READ_DIRECTIVES = new Set(["bind", "class", "style"])
-const SVELTE_INVOKED_DIRECTIVES = new Set(["use", "transition", "in", "out", "animate"])
-const SVELTE_DECLARING_DIRECTIVES = new Set(["let"])
-
 // Svelte compiler macros / runes — calls to these are never relationships.
 const SVELTE_RUNES = new Set([
-  "$state", "$state.raw", "$state.snapshot", "$state.eager", "$derived", "$derived.by",
-  "$effect", "$effect.pre", "$effect.tracking", "$effect.root", "$effect.untracked", "$effect.pending",
+  "$state", "$state.raw", "$state.snapshot", "$derived", "$derived.by",
+  "$effect", "$effect.pre", "$effect.tracking", "$effect.root", "$effect.untracked",
   "$props", "$props.id", "$props.is_safe", "$bindable", "$host", "$inspect",
   "$inspect.trace", "$render", "$props",
 ])
@@ -158,45 +133,6 @@ const RUNE_LEAF_SEGMENTS = new Set([
   "inspect", "trace", "render",
 ])
 
-// D7 (RULED 2026-09-27): a rune that INVOKES its argument turns a named function
-// reference into a real call site, exactly as `on:click={inc}` is one. The set is
-// the invoking half of Svelte's rune surface, and the split is the whole ruling —
-// it is not "any `$`-call with an argument", because the value-taking runes
-// (`$derived(count)`, `$state(0)`, `$bindable(v)`) hand over a VALUE that is
-// never called, and an edge there would point a call at an expression.
-//
-//   INVOKING   — the primitive calls what it is given: $effect, $effect.pre,
-//                $effect.root, $effect.untracked, $derived.by, $host.
-//   VALUE-TAKING, deliberately absent: $derived (an expression), $state and its
-//                raw/snapshot forms, $props/$props.id/$props.is_safe, $bindable,
-//                $inspect/$inspect.trace, $render, and $effect.tracking (no
-//                argument at all).
-// A user's own `$`-prefixed function is not in either set, so `$myHelper(fn)`
-// stays out — the same reason `isRuneCallee` refuses a bare `$` prefix.
-const SVELTE_INVOKING_RUNES = new Set([
-  "$effect", "$effect.pre", "$effect.root", "$effect.untracked", "$derived.by", "$host",
-])
-
-function isInvokingRune(calleeExpression: string): boolean {
-  return SVELTE_INVOKING_RUNES.has(calleeExpression)
-}
-
-// `$state.eager` and `$effect.pending` are added as EXACT names, never as leaf
-// segments in RUNE_LEAF_SEGMENTS, and that is load-bearing rather than stylistic.
-// Measured over the 6,143-file corpus: the same `$name.member` SHAPE is also how
-// ordinary user data is written — `$order.scoops` (6), `$value.foo` (6),
-// `$a.foo` (5), `$formData.dob` (5), `$storeDeeper.items` (3) — plus SvelteKit's
-// import aliases `$lib` (3,549) and `$app` (25) and 78 distinct dotted forms in
-// total. Adding the bare leaves `eager`/`pending` would suppress any
-// `$anything.eager`, and a framework primitive leaking into the graph is exactly
-// what this filter exists to prevent. Before the fix both leaked: `$state.eager(0)`
-// published `calls -> eager` and `$effect.pending()` published `calls -> pending`,
-// naming framework plumbing as though it were a component member.
-//
-// Found by the construct census (`script/m14/verify-svelte-census.ts`), which
-// consults NEITHER this analyzer nor the F5 oracle — a census that read either
-// side would inherit the same omission, which is how a shared premise survives a
-// 100% differential.
 function isRuneCallee(calleeExpression: string): boolean {
   if (!calleeExpression.startsWith("$")) return false
   if (SVELTE_RUNES.has(calleeExpression)) return true
@@ -233,20 +169,8 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
             severity: "warning",
           })
         }
-        // ALL children, not `namedChild`: a MISSING node carries the grammar's
-        // expected token, and for a tag terminator that token is the ANONYMOUS `>`.
-        // Walking named children only therefore made the analyzer blind to exactly
-        // the recovery case it was written to report — measured on a real corpus
-        // file (`parser-legacy/samples/loose-unclosed-tag/input.svelte`), where the
-        // engine reported `Syntax error (missing node)` at L16 and this analyzer
-        // reported nothing. Nothing was lost operationally, because the engine's own
-        // walk uses `children` and covers it — but the analyzer's three-part
-        // contract (report at the node's OWN span, bypass it, keep publishing) was
-        // honoured for ERROR and silently not for MISSING, and a contract that
-        // depends on a caller to be complete is not a contract. The engine's walk is
-        // the model, and this now matches it.
-        for (let i = n.childCount - 1; i >= 0; i--) {
-          const child = n.child(i)
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const child = n.namedChild(i)
           if (child) errStack.push(child)
         }
       }
@@ -289,15 +213,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
     // value} binds value; {:catch err} binds err; {#snippet row(label)}
     // binds label+count. A shadowed name must NOT emit a use.
     const templateExprNames = new Map<string, number>()
-    // D12: framework-invoked carriers (`use:`, `transition:`, `in:`, `out:`,
-    // `animate:`) are CALL SITES. Accumulated here and emitted after the walk, so
-    // the edges pass through the same DEDUPE and the same central `classifyEvidenceTier`
-    // as every other edge rather than hardcoding a tier here.
-    const directiveCalls: Array<{ leaf: string; line: number; context: string }> = []
-    const seenDirectiveCalls = new Set<string>()
-    // `name@line` for every member read contributed by a `bind:`/`class:`/`style:`
-    // carrier, so the emitted `uses` edge can say which carrier produced it.
-    const carrierReadKeys = new Set<string>()
     // H2 (review wave): `this=` targets on svelte:component/svelte:element
     // with a bare-identifier value are DYNAMIC component references,
     // resolved post-merge (imports are unknown until the script pass).
@@ -417,25 +332,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (t === "element" || t === "self_closing_tag") {
         const tag = this.elementTagName(n)
-        // D9/D11 (RULED 2026-09-27): the `svelte:` prefix is a RESERVED NAMESPACE.
-        // Only the elements in SVELTE_BUILTIN_TAGS exist; an undeclared `svelte:*`
-        // is a compile error and cannot name a component, so it must not become an
-        // `instantiates` target. Without this, `<svelte:selfdestructive x="{x-1}"/>`
-        // — a deliberate near-miss of `svelte:self` in the corpus's own
-        // `compiler-errors/samples/` — published `instantiates ->
-        // svelte:selfdestructive`, naming a component that cannot exist.
-        //
-        // THE INTERESTING PART IS THAT NO GATE COULD SEE IT. The F5 oracle's emit
-        // condition is `!ORACLE_HTML_TAGS.has(name) && !VUE_STYLE_BUILTINS.has(name)`,
-        // and that name is in neither set either — so the oracle derived the SAME
-        // edge. Both sides agreed, the differential reported 0 missing and 0
-        // unexplained, and the lane read clean. A shared-premise defect is strictly
-        // worse than an ordinary one: it is invisible to the only gate that compares
-        // the two sides, which is why the construct census exists. Recorded as gap
-        // X4, owner the oracle; the analyzer is the side that can be fixed here.
-        if (tag && tag.startsWith("svelte:") && !SVELTE_BUILTIN_TAGS.has(tag)) {
-          // reserved namespace, undeclared member — deliberately not a component
-        } else if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
+        if (tag && !HTML_BUILTIN_TAGS.has(tag) && !SVELTE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
           seenUsages.add(tag)
           const tagNode = this.elementTagNameNode(n)
           relationships.push({
@@ -486,68 +383,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
               // attribute's (the name is written on the tag it belongs to).
               this.collectIdentifiersFromText(expr, templateExprNames, childShadowed, attr.startPosition.row + 1)
             }
-          }
-        }
-        // --- D12: the directive carrier space ---------------------------------
-        // `on:` is handled below, and everything else that Svelte spells as
-        // `prefix:name` on an attribute was silent until this. Two obligations, one
-        // table each, and the member-read half feeds the SAME `templateExprNames`
-        // the block constructs use, so a `bind:value={m}` read and a `{m}` read are
-        // indistinguishable downstream — which is the point: they are the same fact.
-        // `startTag2` is NULL for a bare self-closing tag: the node IS the
-        // `self_closing_tag`, so `findChildByType(n, "self_closing_tag")` looks for
-        // a child of that type and finds none. The shorthand pass above guards for
-        // exactly this and my first version did not, so every self-closing tag with
-        // an expression-valued attribute — `<input bind:value={m} />`,
-        // `<svelte:component this={C} />` — threw and the engine returned a BASIC
-        // PARSE RESULT: zero symbols for the whole file.
-        for (let i = 0; startTag2 && i < startTag2.namedChildCount; i++) {
-          const attr = startTag2.namedChild(i)
-          if (!attr || attr.type !== "attribute") continue
-          const attrName = this.attributeName(attr)
-          if (!attrName) continue
-          const colon = attrName.indexOf(":")
-          if (colon <= 0) continue
-          const prefix = attrName.slice(0, colon)
-          const rest = attrName.slice(colon + 1)
-          if (!rest) continue
-          if (attrName.startsWith("on:")) continue // its own pass below
-          if (SVELTE_DECLARING_DIRECTIVES.has(prefix)) continue
-
-          const exprNode = this.findChildByType(attr, "expression")
-          // The READ families: collect from the value expression at the value's own
-          // line, falling back to the attribute's for the valueless forms.
-          if (SVELTE_MEMBER_READ_DIRECTIVES.has(prefix)) {
-            const text = exprNode ? this.expressionText(exprNode) : ""
-            if (!text) continue
-            const base = exprNode ? exprNode.startPosition.row + 1 : attr.startPosition.row + 1
-            const before = new Set(templateExprNames.keys())
-            this.collectIdentifiersFromText(text, templateExprNames, childShadowed, base)
-            // D12 provenance. The read joins the SAME `templateExprNames` the block
-            // constructs use, which is deliberate — a `bind:value={m}` read and a
-            // `{m}` read are the same fact — but it means the collection site is
-            // otherwise unrecoverable from the edge. Recording WHICH CARRIER produced
-            // it is information a consumer wants in its own right: "is this member read
-            // a two-way binding, a class toggle or a style value?" is not answerable
-            // from `uses` alone, and `bind:` is the one family that is two-way.
-            for (const nm of templateExprNames.keys()) if (!before.has(nm)) carrierReadKeys.add(`${nm}@${templateExprNames.get(nm)}`)
-            continue
-          }
-          // The INVOKED families: the target is the directive's own name, written in
-          // the attribute name, so the line is the attribute's — the same rule the
-          // shorthand pass uses for a name that lives in the attribute name.
-          if (SVELTE_INVOKED_DIRECTIVES.has(prefix)) {
-            if (rest === moduleName) continue
-            // A dotted directive value is a namespace (`transition:helpers.slide`),
-            // and the callable leaf is what a `calls` edge can name.
-            const leaf = rest.includes(".") ? rest.slice(rest.lastIndexOf(".") + 1) : rest
-            if (!leaf) continue
-            seenDirectiveCalls.add(`${leaf}@${attr.startPosition.row + 1}`)
-            directiveCalls.push({
-              leaf,
-              line: attr.startPosition.row + 1,
-              context: `Svelte ${prefix} directive ${attrName}`,
-            })
           }
         }
         // on: directives — the handler is the first call-target identifier or
@@ -685,15 +520,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       // 3a. Svelte-specific symbols from the script tree: $props() destructure
       //     → Property; $: reactive declaration targets → Variable.
       this.extractSvelteDeclarations(scriptTree.rootNode, moduleName, symbols, lineOffset, colOffset, scriptBlockIndex)
-
-      // 3a-runes (D7): a named function handed to an INVOKING rune is a call
-      // site. The JS sub-analyzer sees `$effect(fn)` and correctly suppresses the
-      // rune itself, but `fn` is an ordinary argument and the delegate emits no
-      // edge for it — so before the ruling the component's own graph could not
-      // show that it runs `fn` on every effect tick. The ARROW form
-      // `$effect(() => ...)` is deliberately untouched: its body is already walked,
-      // and an arrow is not a name. Only a bare identifier argument qualifies.
-      this.extractRuneInvocations(scriptTree.rootNode, moduleName, relationships, lineOffset)
 
       // Block-kind: context="module" exports are MODULE API, never
       // component props. Only instance-block export-let/const bindings are
@@ -875,13 +701,7 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
           // base line for a fragment it could not locate — the oracle counts
           // that as a wrong line rather than a silent pass.
           ...(line > 0 ? { line_number: line } : {}),
-          metadata: {
-            isTemplateExpression: true,
-            // D12: present only for a carrier-sourced read. Absent means the read came
-            // from a block construct, a store subscription or a tag expression, so a
-            // consumer can tell a two-way binding from an ordinary template read.
-            ...(carrierReadKeys.has(`${resolved}@${line}`) ? { carrierDirective: true } : {}),
-          },
+          metadata: { isTemplateExpression: true },
         })
       }
     }
@@ -936,22 +756,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
       framework: "Svelte",
       patterns: [{ type: "usage", detected: true, description: p }],
     }))
-
-    // D12: the invoked-carrier call edges, emitted HERE so they flow through the
-    // dedupe below and the central evidence-tier classifier with everything else.
-    // The target is the directive's own name — written in the ATTRIBUTE NAME, so the
-    // line is the attribute's — and the confidence matches the `on:` handler tier
-    // (0.85), because it is the same argument: the framework invokes this name.
-    for (const dc of directiveCalls) {
-      relationships.push({
-        source: moduleName,
-        target: dc.leaf,
-        type: ASTEngine.RelationshipType.Calls,
-        confidence: 0.85,
-        line_number: dc.line,
-        metadata: { context: dc.context },
-      })
-    }
 
     // DEDUPE: sub-analyzers emit their own contains edges; combined with
     // the ownerName-based pass above, identical triples appeared twice.
@@ -1093,66 +897,6 @@ export class RealSvelteAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
-    }
-  }
-
-  /** D7 (RULED 2026-09-27): `calls` edges for named functions passed to an
-   *  INVOKING rune. See SVELTE_INVOKING_RUNES for why the set is the invoking
-   *  half of the rune surface and not all of it.
-   *
-   *  Only a BARE IDENTIFIER argument produces an edge. An arrow function is not a
-   *  name and its body is already walked; a call argument (`$effect(doThing())`)
-   *  is a use, not a call of `doThing`; a member expression (`$effect(obj.m)`)
-   *  names a method the analyzer does not resolve here. Emitting for those would
-   *  be the fabrication class this lane already fixed twice.
-   */
-  private extractRuneInvocations(
-    root: Node,
-    componentName: string,
-    relationships: any[],
-    lineOffset: number,
-  ): void {
-    const seen = new Set<string>()
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "call_expression") {
-        const callee = n.childForFieldName?.("function") ?? n.namedChild(0)
-        const calleeText = callee?.text ?? ""
-        if (isInvokingRune(calleeText)) {
-          const argsField = n.childForFieldName?.("arguments")
-          const argList: Node[] = []
-          if (argsField) {
-            for (let i = 0; i < argsField.namedChildCount; i++) {
-              const a = argsField.namedChild(i)
-              if (a) argList.push(a)
-            }
-          }
-          const line = this.nodeToRange(n).startLine + lineOffset
-          for (const arg of argList) {
-            if (arg.type !== "identifier") continue
-            const name = arg.text
-            // A rune is never its own argument, and a call to the component
-            // itself is not an invocation of one of its members.
-            if (name === componentName || isRuneCallee(name)) continue
-            const key = `${calleeText}|${name}|${line}`
-            if (seen.has(key)) continue
-            seen.add(key)
-            relationships.push({
-              source: componentName,
-              target: name,
-              type: ASTEngine.RelationshipType.Calls,
-              confidence: 0.85,
-              line_number: line,
-              metadata: { context: `Svelte rune ${calleeText}`, runeCallee: calleeText, evidenceClass: "structural" },
-            })
-          }
-        }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }

@@ -1,166 +1,29 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
-/**
- * Bash analyzer.
- *
- * Contract notes that are not obvious from the code, each one a ruling recorded
- * in `script/m14/spec/bash-completeness.json`:
- *
- *  - BD1  Every relationship carries `line_number` (1-based, on the node that
- *    BEARS THE NAME) and the line is part of the edge's identity, so two call
- *    sites of one callee are two rows. The store's `relId` already keys on the
- *    line (M59/#822) and the `contains` resolver already resolves a containment
- *    edge by the line it carries (#612 follow-up), so a line-less edge from
- *    this lane could never be either per-site or correctly attributed.
- *  - BD2  The file is the unit of bash, so the file is a real owner: every
- *    script emits a `module` symbol named after its own basename, and
- *    top-level declarations and top-level edges are owned by it. The previous
- *    `relSource() || "global"` wrote the literal string `global` onto 621 edges
- *    on the pinned corpus, and `isIndexArtifactName` (src/ast/
- *    analysis-exclusions.ts) rejects `global` as a symbol name — so not one of
- *    those edges could ever resolve to a stored symbol. bb_graph and bb_impact
- *    on a top-level bash edge answered from an unresolvable id.
- *  - BD3  A signal is not code. `trap 'cleanup' EXIT` used to emit
- *    `calls: EXIT -> cleanup`, with a signal as the edge SOURCE. The handler is
- *    a command string; the edge belongs to the scope that installs the trap.
- *  - BD4  A command whose name is an unexpanded expression is not a call to a
- *    name. `${dotnetPath} --info` used to emit `calls: -> "${dotnetPath}
- *    --info"` — a target no symbol can ever have. The variable that decides the
- *    command is real and gets a `uses` edge; the call does not exist.
- *  - BD5  Nothing is emitted out of a damaged region. A `command` whose name
- *    comes from inside an ERROR/MISSING node is recovery noise, not a call:
- *    `${value/]/%5D}` in the pinned corpus emitted `calls: -> ]/%5D}`.
- *  - BD6  `unset` is ruled, not emitted: no relationship type in the ontology
- *    expresses unbinding a binding, so a `uses` edge would assert a read that
- *    does not happen and an `imports` edge would assert a dependency.
- */
-
-// Shell builtins and reserved words that do not represent project-level command
-// calls. `echo`, `cd`, `printf`, … are execution primitives, not symbols;
-// emitting a Calls edge for them would drown the relationship graph in noise.
-// External binaries (`docker`, `git`, `jq`, …) and project-defined functions are
-// still emitted as Calls.
+// Shell builtins and reserved words that do not represent project-level
+// command calls. `echo`, `cd`, `printf`, … are execution primitives, not
+// symbols; emitting a Calls edge for them would drown the relationship graph
+// in noise. External binaries (`docker`, `git`, `jq`, …) and project-defined
+// functions are still emitted as Calls.
 const SHELL_BUILTINS = new Set([
   "echo", "printf", "cd", "pwd", "exit", "return", "break", "continue",
   "shift", "source", ".", "export", "local", "declare", "typeset", "readonly",
   "set", "unset", "alias", "unalias", "trap", "eval", "exec", "true", "false",
+  "sudo",
   "test", "[", "command", "builtin", "type", "let", "pushd", "popd", "dirs",
   "wait", "jobs", "fg", "bg", "kill", "read", "readarray", "mapfile",
   "getopts", "ulimit", "umask", "times", "enable", "help", "hash", "bind",
   "compgen", "complete", "compopt", "logout", "suspend", "caller", "disown",
   "shopt", "history", "fc", "getopts", "coproc",
-  // `:` is the POSIX no-op utility — a builtin, and also the shape an
-  // ERROR-recovered `command` can carry when the grammar lost the real command
-  // word (see isRecoveredCommandWord), so naming it here keeps a recovery
-  // artifact off the call graph as well.
-  ":",
-  // `sudo` is DELIBERATELY absent. It is an external binary that happens to be
-  // installed everywhere, not a shell builtin, and the pre-wave list filed it
-  // under builtins — which withheld the edge for `sudo docker build …` and left
-  // the privilege-escalation pattern as the only trace of the call. The pattern
-  // is still raised (see the classification block); the edge is emitted too.
 ])
 
 const DECLARATION_KEYWORDS = new Set(["export", "local", "declare", "typeset", "readonly"])
 
-// Commands the analyzer interprets itself and therefore does not also emit as
-// Calls: the builtin forms above plus the few whose whole point is a
-// side-effect classification rather than a call target.
-const INTERPRETED_COMMANDS = new Set(["source", ".", "export", "alias", "trap", "set"])
-
-// $@, $*, $?, $$, $#, $!, $_ — positional/special parameter punctuation. They
-// are tracked as function parameters but are shell bookkeeping, not project
-// variables, so they never become Uses edges.
+// $@, $*, $?, $$, $#, $!, $_ — positional/special parameter punctuation.
+// They are tracked as function parameters but are shell bookkeeping, not
+// project variables, so they never become Uses edges.
 const SPECIAL_VAR_PUNCTUATION = new Set(["@", "*", "?", "$", "#", "!", "_"])
-
-// Bash variables the shell itself defines. Referencing one is a fact about the
-// runtime, not a project declaration, so it is recorded as a read of a known
-// shell name rather than left to look like an undeclared project variable.
-const SHELL_DEFINED_VARS = new Set([
-  "BASH", "BASHOPTS", "BASHPID", "BASH_ALIASES", "BASH_ARGC", "BASH_ARGV",
-  "BASH_ARGV0", "BASH_CMDS", "BASH_COMMAND", "BASH_EXECUTION_STRING",
-  "BASH_LINENO", "BASH_LOADABLES_PATH", "BASH_REMATCH", "BASH_SOURCE",
-  "BASH_SUBSHELL", "BASH_VERSINFO", "BASH_VERSION", "COMP_CWORD",
-  "COMP_LINE", "COMP_POINT", "COMP_TYPE", "COMP_WORDBREAKS", "COMP_WORDS",
-  "COMP_KEY", "COMP_WORDBREAKS", "DIRSTACK", "EPOCHREALTIME", "EPOCHSECONDS",
-  "EUID", "FUNCNAME", "GROUPS", "HISTCMD", "HOSTNAME", "HOSTTYPE", "LINENO",
-  "LINES", "MACHTYPE", "MAIL", "MAILCHECK", "OLDPWD", "OPTARG", "OPTERR",
-  "OPTIND", "OSTYPE", "PIPESTATUS", "PPID", "PROMPT_COMMAND", "PS0", "PS1",
-  "PS2", "PS3", "PS4", "PWD", "RANDOM", "SECONDS", "SHELL", "SHELLOPTS",
-  "SRANDOM", "UID", "OTEST",
-])
-
-/**
- * Is this text a command NAME rather than an unexpanded expression?
- *
- * Only used where the text has already been detached from the tree (a `trap`
- * handler's command list, which the grammar hands over as one string). The
- * AST-side test for the same question is `containsExpansion`, which is
- * structural and therefore cannot be fooled by a character the test forgot.
- *
- * Characters refused: `$` and backtick (an unexpanded value), whitespace, the
- * shell metacharacters that mean the string is a compound command rather than a
- * name, and both quote characters. Characters ALLOWED include everything a real
- * command name is made of — `-`, `.`, `/`, `+`, `:`, `,`, `@`, `%` — because
- * `apt-get`, `python3`, `xcode-select`, `sha256sum`, `docker-compose` and
- * `/usr/bin/env` are all commands, and a test that refuses them silently drops
- * the majority of a real script's calls. That regression was measured, not
- * predicted: the first cut of this guard used an identifier character class and
- * a `case` fixture carrying `apt-get install -y curl` emitted ZERO
- * relationships.
- */
-/**
- * Is `text` a shell identifier — `[A-Za-z_][A-Za-z0-9_]*`?
- *
- * Written as a char loop rather than a regex for two reasons, both the lane's
- * own: the M12 contract probe asserts the analyzer source contains NO regex
- * literals, and a char loop is the style `isCommandNameText` already uses. It is
- * also the cheaper of the two on the hot path, where this runs once per declared
- * name and the strings are short.
- */
-const isShellIdentifierName = (text: string): boolean => {
-  if (text.length === 0) return false
-  const first = text.charCodeAt(0)
-  const firstOk = (first >= 97 && first <= 122) || (first >= 65 && first <= 90) || first === 95 /* _ */
-  if (!firstOk) return false
-  for (let i = 1; i < text.length; i++) {
-    const c = text.charCodeAt(i)
-    if ((c >= 97 && c <= 122) || (c >= 65 && c <= 90) || (c >= 48 && c <= 57) || c === 95) continue
-    return false
-  }
-  return true
-}
-
-const isCommandNameText = (text: string): boolean => {
-  if (text.length === 0) return false
-  // A bare NUMBER is never a command name — it is an arithmetic token or an
-  // argument fragment. This predicate is the single gate for BOTH command paths
-  // (the `command_name` walk and the trap-handler splitter), and it was admitting
-  // digits, so a trap handler whose text ran `... ; 129 ...` emitted
-  // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143`: 12 rows on the 385 extensionless
-  // files the shebang rule had just opened, none of which any symbol can be.
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i)
-    if (c >= 48 && c <= 57 /* 0-9 */) {
-      let allDigits = true
-      for (let j = 0; j < text.length; j++) {
-        const d = text.charCodeAt(j)
-        if (d < 48 || d > 57) { allDigits = false; break }
-      }
-      if (allDigits) return false
-      break
-    }
-  }
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i)
-    if (c === 36 /* $ */ || c === 96 /* ` */ || c === 34 /* " */ || c === 39 /* ' */) return false
-    if (c === 32 || c === 9 || c === 10 || c === 13) return false
-    if (c === 59 /* ; */ || c === 124 /* | */ || c === 38 /* & */) return false
-    if (c === 40 /* ( */ || c === 41 /* ) */ || c === 60 /* < */ || c === 62 /* > */) return false
-  }
-  return true
-}
 
 export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
@@ -170,55 +33,15 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const patterns = new Set<string>()
 
-    // BD2: the script is the module. Its name is the file's own basename WITH
-    // the extension, which is deterministic (no machine path, so the index
-    // fingerprint is stable), cannot collide with a shell identifier (no shell
-    // name contains a `.`), and is not rejected by isIndexArtifactName.
-    const scriptName = this.scriptNameOf(filePath)
-    const scriptRange = this.nodeToRange(rootNode)
-    symbols.push({
-      name: scriptName,
-      kind: ASTEngine.SymbolKind.Module,
-      range: scriptRange,
-      visibility: "public",
-      metadata: { bashSpecific: true, isScript: true, scriptPath: filePath },
-    })
-
-    // Scope tracking: only real scopes (the script, or a function) ever enter
-    // the stack. There is no synthetic `global` / `script` / `subshell_N` scope.
+    // Scope tracking: only real function scopes (no synthetic `global` /
+    // `script` / `subshell_N` scopes ever enter the stack).
     const declaredSymbols = new Set<string>()
-    // Every function name in the file, collected BEFORE the main walk.
-    //
-    // The pre-order walk reaches a `command` before the `function_definition`
-    // that declares it whenever the script calls a function defined further
-    // down — the normal shape of a shell script. Deciding `isFunctionCall` from
-    // what the walk has seen so far made the flag depend on declaration order,
-    // so the same call could be reported as a local call or an external binary
-    // depending on where the definition sat. One linear pre-pass over the
-    // function_definition nodes makes the answer order-independent, and costs
-    // O(declarations) once rather than O(symbols) per command.
-    const localFunctions = this.collectFunctionNames(rootNode)
-    // The same set answers "is this owner a scope?", which is what a
-    // declaration's visibility asks. O(1), and the alias branch below keeps it
-    // current as aliases are discovered.
-    const scopeOwners: Set<string> = localFunctions
     const functionStack: string[] = []
-    // First declaration line per function name, for the BD8b `overrides` edge.
-    const functionFirstDeclaration = new Map<string, number>()
     const functionParams = new Map<string, Set<string>>()
     const relKeys = new Set<string>()
-    // BD1: the line is part of an edge's identity. Keyed with the line so two
-    // sites of one callee are two relationships, and so the store's per-site
-    // `relId` has something to key on.
-    const sourceDir = this.dirnameOf(filePath)
+    let caseDepth = 0
 
     let cyclomaticComplexity = 1
-    // Per-scope decision points. The lane published a FILE-level
-    // `cyclomaticComplexity` and nothing per symbol, so the payload matrix row
-    // for complexity had nothing to pin and a reader asking "how complex is this
-    // function" had no answer. Counted in the same pass as the file total, so
-    // the two can never disagree about the same decision point.
-    const scopeComplexity = new Map<string, number>()
     let hasStrictError = false
     let usesEval = false
     let usesSudo = false
@@ -227,54 +50,28 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     let hasRmRoot = false
 
     const enclosingFunction = (): string => functionStack[functionStack.length - 1] ?? ""
-    const relSource = (): string => enclosingFunction() || scriptName
-
-    /**
-     * How an edge is KNOWN, in the vocabulary the graph engine already uses
-     * (structural / import_based / usage_contextual / reference_qualified /
-     * inferred). The lane published relationships with no tier at all, so every
-     * consumer had to treat a lexical containment and a read the same way.
-     *
-     *   structural       — the tree states it outright: a declaration's owner, a
-     *                      command word, an `export`
-     *   import_based     — a `source`/`.` dependency
-     *   usage_contextual — a read: a variable named at an expansion or inside
-     *                      `$(( ))`
-     *
-     * Nothing in this lane is `inferred` and nothing is
-     * `reference_qualified`: bash has no qualified names to disambiguate, and
-     * the analyzer guesses nothing it cannot see — which is the property that
-     * makes those two tiers meaningful when they are absent.
-     */
-    const evidenceClassFor = (type: ASTEngine.RelationshipType): string => {
-      if (type === ASTEngine.RelationshipType.Imports || type === ASTEngine.RelationshipType.References) return "import_based"
-      if (type === ASTEngine.RelationshipType.Uses) return "usage_contextual"
-      return "structural"
-    }
+    const relSource = (): string => enclosingFunction() || "global"
 
     const addRel = (
       source: string,
       target: string,
       type: ASTEngine.RelationshipType,
       confidence: number,
-      line: number,
       metadata: Record<string, unknown> = {},
     ) => {
-      // BD1: a line is mandatory. An edge with no line cannot be per-site and
-      // cannot be attributed by the store, so it is not emitted at all rather
-      // than emitted as a fact the product cannot use.
-      if (!Number.isInteger(line) || line < 1) return
-      const key = `${source}\u0000${type}\u0000${target}\u0000${line}`
+      const key = `${source}\u0000${type}\u0000${target}`
       if (relKeys.has(key)) return
       relKeys.add(key)
-      relationships.push({
-        source,
-        target,
-        type,
-        confidence,
-        metadata: { evidenceClass: evidenceClassFor(type), ...metadata },
-        line_number: line,
-      })
+      relationships.push({ source, target, type, confidence, metadata })
+    }
+
+    const isAllDigits = (text: string): boolean => {
+      if (text.length === 0) return false
+      for (let i = 0; i < text.length; i++) {
+        const code = text.charCodeAt(i)
+        if (code < 48 || code > 57) return false
+      }
+      return true
     }
 
     const stack: { node: Node; exit: boolean }[] = [{ node: rootNode, exit: false }]
@@ -284,15 +81,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (exit) {
         if (node.type === "function_definition") functionStack.pop()
+        else if (node.type === "case_item") caseDepth--
         continue
       }
 
       stack.push({ node, exit: true })
 
-      // Cyclomatic complexity: one count per decision point. `[[ … ]]` reaches
-      // the counter as `test_command` and its operand tree as
-      // `binary_expression` / `unary_expression`, so a compound condition with
-      // three operands is counted three times — the shape a reader expects.
+      // Cyclomatic complexity: one count per decision point.
       if (
         node.type === "if_statement" ||
         node.type === "for_statement" ||
@@ -300,61 +95,22 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         node.type === "case_item" ||
         node.type === "elif_clause" ||
         node.type === "test_command" ||
-        node.type === "binary_expression" ||
-        node.type === "c_style_for_statement"
+        node.type === "binary_expression"
       ) {
         cyclomaticComplexity++
-        // Attributed to the scope the decision point is IN. A
-        // `function_definition` node is not itself a decision point, so by the
-        // time this runs for a node inside a body the scope stack is correct.
-        const scope = enclosingFunction() || scriptName
-        scopeComplexity.set(scope, (scopeComplexity.get(scope) ?? 0) + 1)
       }
 
       if (node.type === "function_definition") {
         const parentFn = enclosingFunction()
-        this.extractFunction(node, symbols, parentFn || scriptName)
+        this.extractFunction(node, symbols, parentFn)
         const name = this.functionName(node)
         if (name) {
           functionStack.push(name)
           if (!functionParams.has(name)) functionParams.set(name, new Set())
-          // BD8b: a RE-DEFINITION replaces the prior one. Bash has no classes and
-          // no inheritance, so `overrides` has no superclass to point at — but
-          // redefining a function IS an override in the only sense the language
-          // has one, and the lane was silently omitting the type on a prose
-          // justification that did not hold. The ontology-coverage gate
-          // (`script/m14/ontology-coverage-gate.ts`) is what found it: the
-          // differential could not, because the oracle omitted `overrides` too,
-          // and two implementations that both say nothing agree perfectly.
-          // Measured on the corpus before this was added: 57 redefinitions across
-          // 38 of 2,747 admitted files, e.g. otp/make/test_target_script.sh
-          // declaring `print_msg` four times.
-          //
-          // The edge runs from the LATER definition to the EARLIER one, so both
-          // endpoints are the same name and the lines are what distinguish them —
-          // `overridesLine` carries the prior declaration's line explicitly so a
-          // consumer does not have to infer it. `contains` already emits both
-          // declarations, so the pair is resolvable.
-          const prior = functionFirstDeclaration.get(name)
-          if (prior !== undefined) {
-            addRel(
-              parentFn || scriptName,
-              name,
-              ASTEngine.RelationshipType.Overrides,
-              1.0,
-              node.startPosition.row + 1,
-              {
-                bashSpecific: true,
-                overridesLine: prior,
-                redefinition: true,
-                evidenceClass: "structural",
-              },
-            )
-          } else {
-            functionFirstDeclaration.set(name, node.startPosition.row + 1)
-          }
         }
         patterns.add("Function Definition")
+      } else if (node.type === "case_item") {
+        caseDepth++
       } else if (node.type === "command_substitution") {
         patterns.add("Command Substitution")
       } else if (node.type === "subshell") {
@@ -381,36 +137,36 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           hasCurlPipeBash = true
           patterns.add("Insecure Pipe Execution")
         }
-      } else if (
-        node.type === "simple_expansion" ||
-        node.type === "expansion" ||
-        // BD-gap closure: a variable read inside an arithmetic context is a
-        // read. `$((i + 1))`, `((count++))` and `for ((i=0; i<n; i++))` all
-        // name real project variables and the analyzer reached none of them:
-        // `expansionVariableName` was only consulted for the two string
-        // expansion forms, so every arithmetic operand was invisible. The
-        // census then named `arithmetic_expression` as a fourth form to add —
-        // a literal the pinned grammar does not have, which the rewritten
-        // F8 gate reported as a dead branch on the same day it was written.
-        // That is the gate working: a plausible guess, refused by evidence.
-        node.type === "arithmetic_expansion" ||
-        node.type === "postfix_expression" ||
-        node.type === "c_style_for_statement"
-      ) {
-        this.emitVariableUses(node, symbols, relSource, addRel, declaredSymbols, functionStack, functionParams)
+      } else if (node.type === "simple_expansion" || node.type === "expansion") {
+        // Uses: $VAR, ${VAR}, ${VAR:-x}, ${arr[1]} → target variable name.
+        const name = this.expansionVariableName(node)
+        if (name && name.length > 0) {
+          if (isAllDigits(name) && name !== "0") {
+            // Positional parameter reference ($1..$9) — feeds the enclosing
+            // function's parameter list, never a Uses edge. $0 is the script
+            // name, not a parameter, and is excluded.
+            const fn = enclosingFunction()
+            if (fn) functionParams.get(fn)?.add(name)
+          } else if (name === "0") {
+            // $0 — script name reference; not a project variable.
+          } else if (!SPECIAL_VAR_PUNCTUATION.has(name)) {
+            addRel(relSource(), name, ASTEngine.RelationshipType.Uses, 0.8, {
+              isVariableReference: true,
+              bashSpecific: true,
+            })
+          }
+        }
       } else if (node.type === "variable_assignment") {
         if (node.parent?.type !== "declaration_command") {
-          this.extractAssignment(node, symbols, enclosingFunction() || scriptName, declaredSymbols, scopeOwners)
+          this.extractAssignment(node, symbols, enclosingFunction(), false, declaredSymbols)
         }
       } else if (node.type === "declaration_command") {
-        this.extractDeclaration(node, symbols, enclosingFunction() || scriptName, functionParams, declaredSymbols, scopeOwners, addRel)
+        this.extractDeclaration(node, symbols, enclosingFunction(), functionParams, declaredSymbols)
       } else if (node.type === "command") {
         this.extractCommand(node, symbols, imports, patterns, {
           addRel,
           relSource,
-          scriptName,
-          localFunctions,
-          scopeOwners,
+          caseDepth,
           flags: {
             usesEval: () => usesEval,
             usesSudo: () => usesSudo,
@@ -428,10 +184,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
       }
 
-      // Traversal: every child, named and anonymous, pushed in reverse so the
-      // walk is pre-order. Iterative and O(1) stack depth per node — a 5,000-line
-      // script nests no deeper than its block structure, so nothing here is
-      // recursive and nothing here is O(n) per node.
       for (let i = node.childCount - 1; i >= 0; i--) {
         const child = node.child(i)
         if (child) stack.push({ node: child, exit: false })
@@ -439,25 +191,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // ------------------------------------------------------------- post pass
-    // Per-symbol cyclomatic complexity: 1 + the decision points in that scope.
-    //
-    // The key is the scope a symbol OWNS, and for a function or an alias that is
-    // its OWN NAME, not its owner: `setup` is keyed by `setup`, while a `local`
-    // inside it is keyed by `setup` too — so keying the function by its owner
-    // gave the function nothing and handed its count to its own locals. The
-    // first run of this produced `count complexity=8` and no complexity at all
-    // on `setup`, which is the shape a reader would read as "the variable is
-    // complex".
-    // Only a scope owner carries complexity. A `local` inside a function is not
-    // itself complex, and giving it the enclosing function's number is the same
-    // error as giving a variable the class's method count: a reader sees a
-    // number on a row where no decision point can occur.
-    for (const sym of symbols) {
-      if (sym.kind !== ASTEngine.SymbolKind.Module && sym.kind !== ASTEngine.SymbolKind.Function) continue
-      const points = scopeComplexity.get(sym.name)
-      if (points === undefined) continue
-      sym.complexity = 1 + points
-    }
     for (let i = 0; i < symbols.length; i++) {
       const sym = symbols[i]
       if (sym.kind === ASTEngine.SymbolKind.Function) {
@@ -468,15 +201,8 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           sym.parameters = paramObjects
         }
       }
-      // BD1: a containment edge's line is the line the CHILD'S NAME is written
-      // on, not the line its declaration node starts (M60 #921). The store
-      // resolves a `contains` edge by exactly this line (#612 follow-up), so a
-      // declaration that wraps onto another line would otherwise resolve to the
-      // wrong row.
       if (sym.ownerName) {
-        addRel(sym.ownerName, sym.name, ASTEngine.RelationshipType.Contains, 1.0, this.nameLineOf(sym), {
-          bashSpecific: true,
-        })
+        addRel(sym.ownerName, sym.name, ASTEngine.RelationshipType.Contains, 1.0, {})
       }
     }
 
@@ -512,21 +238,19 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       symbols,
       relationships,
       imports,
-      exports: symbols
-        .filter((s) => s.metadata?.isExported)
-        .map((s) => ({
-          name: s.name,
-          type: s.kind,
-          range: s.range,
-          isType: false,
-        })),
+      exports: symbols.filter((s) => s.metadata?.isExported).map((s) => ({
+        name: s.name,
+        type: s.kind,
+        range: s.range,
+        isType: false,
+      })),
       // Syntax errors are engine-owned (engine.ts merges treeErrors) — this
       // analyzer never duplicates them.
       metadata: {
         complexity: symbols.length + relationships.length,
         linesOfCode: content.split("\n").length,
         cyclomaticComplexity,
-        framework: frameworks.length > 1 ? frameworks[1] : "Bash Script",
+        framework: "Bash Script",
         patterns: patternsArray,
         detectedFrameworks: frameworks,
         frameworkPatterns: [{ framework: "Bash", patterns: patternsArray }],
@@ -534,50 +258,15 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         architecturalScore: score,
         codeQuality: score >= 80 ? "Excellent" : score >= 60 ? "Good" : "Fair",
         hasTypeInference: false,
-        // A framework claim must be earned. This used to be an unconditional
-        // `true` on every bash file, which asserted framework intelligence for a
-        // file that had none; it is now true only when a framework beyond the
-        // language itself was actually detected from the file's own commands.
-        hasFrameworkIntelligence: frameworks.length > 1,
+        hasFrameworkIntelligence: true,
         securityScore: Math.min(100, Math.max(0, security)),
         maintainabilityScore: Math.min(100, Math.max(0, maintainability)),
-        analysisVersion: "5.0-bash-module-owner-per-site-lines",
+        analysisVersion: "4.1-bash-pure-ast-no-regex",
       },
     }
   }
 
   // -------------------------------------------------------------- functions
-
-  /** BD2: the file's own basename, extension included. */
-  private scriptNameOf(filePath: string): string {
-    const normalized = filePath.split("\\").join("/")
-    const base = normalized.slice(normalized.lastIndexOf("/") + 1)
-    return base.length > 0 ? base : "script.sh"
-  }
-
-  private dirnameOf(filePath: string): string {
-    const normalized = filePath.split("\\").join("/")
-    const cut = normalized.lastIndexOf("/")
-    return cut > 0 ? normalized.slice(0, cut) : "."
-  }
-
-  /** The 1-based line a symbol's NAME is written on (M60 #921). */
-  private nameLineOf(sym: ASTEngine.UniversalSymbol): number {
-    const line = sym.range?.startLine
-    return typeof line === "number" && line >= 1 ? line : 1
-  }
-
-  /** Remove quote characters from a path expression. Index arithmetic over the
-   *  two quote code points; a path cannot contain either. */
-  private dequotePath(text: string): string {
-    let out = ""
-    for (let i = 0; i < text.length; i++) {
-      const c = text.charCodeAt(i)
-      if (c === 34 || c === 39) continue
-      out += text[i]
-    }
-    return out
-  }
 
   private stripQuotes(text: string): string {
     if (text.length >= 2) {
@@ -588,158 +277,26 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return text
   }
 
-  private commandNameNode(node: Node): Node | null {
+  private commandNameOf(node: Node): string {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
-      if (child && child.type === "command_name") return child
-    }
-    return null
-  }
-
-  private commandNameOf(node: Node): string {
-    const cn = this.commandNameNode(node)
-    if (!cn) return ""
-    for (let j = 0; j < cn.namedChildCount; j++) {
-      const word = cn.namedChild(j)
-      if (word && word.type === "word") return word.text
-    }
-    return cn.text
-  }
-
-  /**
-   * BD4 (structural): does this node's subtree contain an unexpanded value?
-   * `command_name` holding `$cmd`, `${cmd}` or `$(cmd)` names a command only at
-   * run time, so there is no callee to point at. The test is on the TREE, not
-   * on the text: a character-class test cannot tell `apt-get` from `$pkg_mgr`
-   * without a rule per metacharacter, and the first cut of this guard was
-   * exactly that and swallowed every hyphenated command in the corpus.
-   */
-  private containsExpansion(node: Node): boolean {
-    const stack: Node[] = [node]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (
-        n.type === "simple_expansion" ||
-        n.type === "expansion" ||
-        n.type === "command_substitution" ||
-        n.type === "arithmetic_expansion" ||
-        n.type === "process_substitution"
-      ) {
-        return true
-      }
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c) stack.push(c)
+      if (child && child.type === "command_name") {
+        for (let j = 0; j < child.namedChildCount; j++) {
+          const word = child.namedChild(j)
+          if (word && word.type === "word") return word.text
+        }
+        return child.text
       }
     }
-    return false
-  }
-
-  /**
-   * BD5: a call whose name the grammar cannot vouch for.
-   *
-   * Two facts, both needed. The first attempt walked UP from the name node
-   * looking for an ERROR or MISSING ancestor and found nothing, because the
-   * damage in the real shape is a SIBLING: `value=${value/]/%5D}` parses as
-   *
-   *   (command (variable_assignment … value: (expansion … (MISSING "}")))
-   *            name: (command_name (concatenation (word) (word) (word))))
-   *
-   * so the MISSING token hangs off the assignment on the same command line while
-   * the name's own ancestor chain is `command <- program` — clean. The
-   * fabricated edge was `calls: -> ]/%5D}`, three grammar fragments glued into
-   * something no source declares.
-   *
-   * The rule is therefore: the command's SUBTREE is damaged (it holds an ERROR
-   * or MISSING node) AND the name is not a single plain `word` (it is a
-   * concatenation or another derived shape). Both halves are load-bearing.
-   * Damage alone is not enough — refusing every command in a damaged file is
-   * the `#907` swallow class, and it would lose real declarations in a partly
-   * broken script. A glued name alone is not enough either: a legitimately
-   * quoted command is also derived, and it is handled by BD4 rather than here.
-   */
-  private isRecoveredCommandWord(command: Node, nameNode: Node | null): boolean {
-    if (!nameNode) return true
-    if (nameNode.isMissing) return true
-
-    // A command's name is a WORD, and a plain `word` name is trusted outright.
-    // The two real-world shapes that put something else in `command_name` are
-    // both fabrications: a zsh `case` arm's alternation, and a quoted string or
-    // number the grammar could not classify. Measured on ohmyzsh's
-    // `tools/changelog.sh` the analyzer emitted `calls: -> ]+` and
-    // `calls: -> \e[2m\1\e[0m`; measured on the 385 extensionless files the
-    // shebang rule had just opened (nvm, rbenv, ohmyzsh, otp) it emitted
-    // `calls: -> 129`, `-> 130`, `-> 141`, `-> 143` and `-> 6` — numeric literals
-    // promoted to callees, 18 rows the independent oracle refused.
-    const name: Node = nameNode
-    const nameIsPlainWord =
-      name.namedChildCount === 0 ||
-      (name.namedChildCount === 1 && name.namedChild(0)?.type === "word")
-    if (!nameIsPlainWord) {
-      // Not a word, and therefore not a name — no callee exists to point at.
-      // The bidirectional damage check below used to be the ONLY thing standing
-      // between this shape and an edge, which meant an UNDAMAGED `number` fell
-      // straight through it and became a callee.
-      return true
-    }
-    // A word that OPENS with a backslash is an escape, not a name. `\.` is what
-    // the grammar leaves behind when it splits a sed argument such as
-    // `s/\./-/g`, and a command named `\.` is a name no symbol can ever have.
-    if (name.text.charCodeAt(0) === 92 /* \ */) return true
-    // A plain word is trusted for its shape. BD5's damage check deliberately
-    // stays scoped to the shapes above: running it for a plain word too costs
-    // 31 calls the independent oracle DOES corroborate, because that oracle is
-    // structure-only and cannot see damage at all. Those rows are the oracle's
-    // blind spot rather than an analyzer error, and "fixing" them would trade a
-    // real call for a phantom one.
-    return false
-  }
-
-  /** Is there an ERROR/MISSING node between `node` and its enclosing statement? */
-  private enclosingStatementIsDamaged(node: Node): boolean {
-    let p: Node | null = node.parent
-    let depth = 0
-    while (p && depth < 8) {
-      if (p.type === "ERROR" || p.isMissing) return true
-      if (p.type === "list" || p.type === "program" || p.type === "compound_statement") return false
-      p = p.parent
-      depth++
-    }
-    return false
-  }
-
-  private subtreeIsDamaged(root: Node): boolean {
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "ERROR" || n.isMissing) return true
-      for (let i = 0; i < n.childCount; i++) {
-        const c = n.child(i)
-        if (c) stack.push(c)
-      }
-    }
-    return false
+    return ""
   }
 
   private functionName(node: Node): string {
-    // The grammar's own `name` field is the authority. `function_definition`
-    // carries `name:` and `body:` in the pinned wasm, so the positional scan
-    // that used to find the name is a fallback for a grammar that does not
-    // label it — not the primary path. Reading the field is what makes the
-    // extraction survive a shape the scan mis-reads, and it is the same
-    // field-first rule M60 #924 established for include names.
-    const named = node.childForFieldName?.("name")
-    if (named && named.text) return named.text
     let prev: Node | null = null
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      // `name() { … }` and `function name() { … }` both put the name word
-      // immediately before the body. The pinned tree-sitter-bash grammar has
-      // no `identifier` node type (F1: unknown literal), so the alternative
-      // spelling this branch used to accept could never fire — the dead branch
-      // is deleted rather than kept as decoration.
-      if (child.type === "compound_statement" && prev && prev.type === "word") {
+      if (child.type === "compound_statement" && prev && (prev.type === "word" || prev.type === "identifier")) {
         return prev.text
       }
       prev = child
@@ -751,239 +308,54 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ""
   }
 
-  /**
-   * Every function name the file declares, in one linear pass over the
-   * function_definition nodes. Order-independent by construction: a call to a
-   * function defined later in the file resolves the same as one defined above
-   * it, which is the property the pre-order walk cannot provide on its own.
-   */
-  private collectFunctionNames(root: Node): Set<string> {
-    const names = new Set<string>()
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const node = stack.pop()!
-      if (node.type === "function_definition") {
-        const name = this.functionName(node)
-        if (name) names.add(name)
-      }
-      for (let i = node.childCount - 1; i >= 0; i--) {
-        const child = node.child(i)
-        if (child) stack.push(child)
-      }
-    }
-    return names
-  }
-
-  private extractFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], owner: string) {
+  private extractFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], parentFn: string) {
     const name = this.functionName(node)
     if (!name) return
     symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Function,
       range: this.nodeToRange(node),
-      scope: owner,
+      scope: parentFn || undefined,
       visibility: "public",
-      ownerName: owner,
+      ownerName: parentFn || undefined,
       parameters: [],
-      metadata: { bashSpecific: true, isScriptFunction: true },
+      metadata: { bashSpecific: true },
     })
-  }
-
-  /**
-   * Every variable READ the analyzer can see, at any expansion or arithmetic
-   * site. Positional parameters and shell bookkeeping never become Uses edges.
-   */
-  private emitVariableUses(
-    node: Node,
-    symbols: ASTEngine.UniversalSymbol[],
-    relSource: () => string,
-    addRel: (
-      source: string,
-      target: string,
-      type: ASTEngine.RelationshipType,
-      confidence: number,
-      line: number,
-      metadata?: Record<string, unknown>,
-    ) => void,
-    declaredSymbols: Set<string>,
-    functionStack: string[],
-    functionParams: Map<string, Set<string>>,
-  ) {
-    const names: { rawName: string; line: number }[] = []
-    this.collectReadNames(node, names)
-
-    // Was this read name ASSIGNED anywhere in this file? `declaredSymbols` is the
-    // one per-file store both the declaration collector and this emitter see, but
-    // its keys are `${owner}\u0000${name}` — a read inside a function cannot
-    // reach a module-level assignment by asking for its own owner, which is
-    // exactly the case that matters most. So the suffixes are indexed once and
-    // the memo is keyed on the set's size, which only ever grows as declarations
-    // are collected.
-    let assignedIndex: { size: number; names: Set<string> } | null = null
-    const assignedInFile = (n: string): boolean => {
-      if (!assignedIndex || assignedIndex.size !== declaredSymbols.size) {
-        const s = new Set<string>()
-        for (const k of declaredSymbols) {
-          const i = k.indexOf("\u0000")
-          if (i >= 0) s.add(k.slice(i + 1))
-        }
-        assignedIndex = { size: declaredSymbols.size, names: s }
-      }
-      return assignedIndex.names.has(n)
-    }
-    for (const { rawName, line } of names) {
-      // Read names are trimmed at the single point they are emitted. A zsh
-      // `$ _iterm2_command` left the differential reporting
-      // `uses: -> " _iterm2_command"` — a target with a LEADING SPACE that
-      // cannot match any declaration, so the edge could never be resolved. The
-      // walk that collects names has several sources and only this loop is
-      // common to all of them.
-      const name = rawName.trim()
-      if (name.length === 0) continue
-      if (isAllDigits(name)) {
-        // Positional parameter reference ($1..$9) — feeds the enclosing
-        // function's parameter list, never a Uses edge. $0 is the script name.
-        if (name === "0") continue
-        const fn = functionStack[functionStack.length - 1]
-        if (fn) functionParams.get(fn)?.add(name)
-        continue
-      }
-      if (SPECIAL_VAR_PUNCTUATION.has(name)) continue
-      addRel(
-        relSource(),
-        name,
-        ASTEngine.RelationshipType.Uses,
-        0.8,
-        line,
-        {
-          isVariableReference: true,
-          bashSpecific: true,
-          // A read of a name the shell itself defines is recorded as such, so
-          // a consumer can tell `${BASH_SOURCE[0]}` from a project variable
-          // instead of seeing 23 undiagnosable edges to one shell name.
-          ...(SHELL_DEFINED_VARS.has(name) ? { isShellDefined: true } : {}),
-          ...(declaredSymbols.has(`global\u0000${name}`) ? { isDeclaredGlobal: true } : {}),
-          // BD11. The lane's classification previously stopped at "a symbol, a
-          // known noise leaf, or nothing", and 407 of the `uses` edges on the
-          // pinned corpus fell into the last bucket: the read is real and the
-          // name is honest, but nothing said WHETHER this file assigns it. A
-          // consumer therefore had to guess whether `$TMPDIR` was a project
-          // variable it could not see or an environment-supplied one it never
-          // will. Emitted on true only, matching `isShellDefined` and
-          // `isDeclaredGlobal` above — ABSENCE MEANS FALSE, and the contract is
-          // stated in the spec rather than left to be inferred from a pattern.
-          ...(assignedInFile(name) ? { isAssignedInFile: true } : {}),
-        },
-      )
-    }
-    void symbols
-  }
-
-  /** Variable names read anywhere under `node`, each with the line it is on. */
-  private collectReadNames(node: Node, out: { rawName: string; line: number }[]): void {
-    const visit = (n: Node) => {
-      if (n.type === "variable_name" || n.type === "special_variable_name") {
-        const text = n.text
-        if (text.length > 0) out.push({ rawName: text, line: n.startPosition.row + 1 })
-        return
-      }
-      // `${arr[i]}` — the READ is the base name; the index is a separate
-      // subscript_expression whose own base is picked up by the same walk.
-      if (n.type === "subscript") {
-        for (let j = 0; j < n.namedChildCount; j++) {
-          const c = n.namedChild(j)
-          if (c) visit(c)
-        }
-        return
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c) visit(c)
-      }
-    }
-    visit(node)
   }
 
   private extractAssignment(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    owner: string,
+    parentFn: string,
+    isArray: boolean,
     declaredSymbols: Set<string>,
-    scopeOwners: Set<string>,
   ) {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child && child.type === "variable_name" && child.text.trim() !== "") {
-        const key = `${owner}\u0000${child.text}`
+        const key = `${parentFn || "global"}\u0000${child.text}`
         if (declaredSymbols.has(key)) return // reassignment, not a declaration
         declaredSymbols.add(key)
-        // `arr=(a b c)` — the value is an `array` node; the flag used to be a
-        // parameter every caller passed `false`, so `isArray` was constant-false
-        // on every plain assignment. It is now read from the tree.
-        const isArray = this.valueIsArray(node)
         symbols.push({
           name: child.text,
           kind: ASTEngine.SymbolKind.Variable,
           range: this.nodeToRange(node),
-          scope: owner,
-          visibility: this.visibilityForOwner(owner, scopeOwners),
-          ownerName: owner || undefined,
-          metadata: { bashSpecific: true, isArray, isTopLevel: owner === "" },
+          scope: parentFn || undefined,
+          visibility: parentFn ? "private" : "public",
+          ownerName: parentFn || undefined,
+          metadata: { bashSpecific: true, isArray, isImplicitGlobal: !parentFn },
         })
         return
       }
     }
   }
 
-  private valueIsArray(node: Node): boolean {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (!child) continue
-      if (child.type === "array") return true
-      // The NAME is not the value. The first cut returned false on the first
-      // child that was not an `array`, and the first child IS the name — so
-      // `DECK2=(one two)` reported isArray=false while `declare -a DECK=(…)`
-      // reported true only because the declaration path sets the flag from a
-      // different source. Caught by the fixture, not by inspection.
-      if (child.type === "variable_name") continue
-      if (child.type === "word" || child.type === "string" || child.type === "concatenation") continue
-      return false
-    }
-    return false
-  }
-
-  /**
-   * A declaration inside a function is private to it; one at the script's top
-   * level is part of the script's surface.
-   *
-   * The lookup is a Set membership test, not a scan of the symbol list. The
-   * scan was the last O(n^2) on the hot path: this is called for EVERY
-   * assignment and EVERY `local`/`declare`, so a file with D declarations and S
-   * symbols spent O(D x S) deciding a field that answers to one question — "is
-   * this owner a function?". The answer is already known: the caller collected
-   * the file's function names in one linear pre-pass (BD10) precisely so that
-   * this kind of question is O(1). `alias` names join the same set, because an
-   * alias is callable and a `local` inside one is equally private.
-   */
-  private visibilityForOwner(owner: string, scopeOwners: Set<string>): string {
-    return scopeOwners.has(owner) ? "private" : "public"
-  }
-
   private extractDeclaration(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    owner: string,
+    parentFn: string,
     functionParams: Map<string, Set<string>>,
     declaredSymbols: Set<string>,
-    scopeOwners: Set<string>,
-    addRel: (
-      source: string,
-      target: string,
-      type: ASTEngine.RelationshipType,
-      confidence: number,
-      line: number,
-      metadata?: Record<string, unknown>,
-    ) => void,
   ) {
     const keyword = node.child(0)?.text ?? ""
     if (!DECLARATION_KEYWORDS.has(keyword)) return
@@ -999,70 +371,29 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const isArrayDecl = keyword === "declare" || keyword === "typeset"
     let sawArrayFlag = false
-    // `declare -x NAME` exports NAME — the `-x` flag is `declare`'s spelling of
-    // `export`, and a script that uses it is stating an interface just as
-    // plainly. Found by the differential on the pinned corpus.
-    let sawExportFlag = false
     if (isArrayDecl) {
       for (let i = 0; i < node.namedChildCount; i++) {
         const child = node.namedChild(i)
-        if (!child || child.type !== "word") continue
-        if (child.text === "-a") sawArrayFlag = true
-        if (child.text === "-x") sawExportFlag = true
+        if (child && child.type === "word" && child.text === "-a") sawArrayFlag = true
       }
     }
-    // `export` under either spelling, for the edge and the metadata alike.
-    const isExport = keyword === "export" || sawExportFlag
 
-    const emit = (name: string, range: ASTEngine.UniversalSymbol["range"], line: number) => {
+    const emit = (name: string, range: ASTEngine.UniversalSymbol["range"]) => {
       if (!name || name.trim() === "") return
-      // A DECLARED NAME is a shell identifier: `[A-Za-z_][A-Za-z0-9_]*`. The
-      // universe sweep over 2,747 admitted files across 51 repositories found the
-      // analyzer emitting `exports` and `contains` for `PWD/collection_root_sys` —
-      // a PATH FRAGMENT, and the real declaration missing with it. The cause is a
-      // grammar truncation, not a typo: `export A=$PWD/x_user:$PWD/x_sys` parses as
-      //   declaration_command
-      //     variable_assignment "A=$PWD/x_user:$"   <- grammar stops at the colon
-      //     word "PWD/x_sys"                        <- the tail, as a bare sibling
-      // and the export handler read that `word` as a second exported name. Two
-      // ansible test files, four fabricated edges, and the shape is common
-      // (`export VAR=$HOME/a:$HOME/b` is how PATH-like variables are written).
-      //
-      // This is scoped to DECLARATIONS on purpose. The same sweep found 157 module
-      // symbols containing spaces and many containing `$`, and those are
-      // CORRECT: nvm's test fixtures are files literally named
-      // `'nvm alias' should ignore leading blank lines in the file`, and BD2 makes
-      // the script's own name its module. A rule applied to every symbol name
-      // would delete those; applied here it cannot.
-      if (!isShellIdentifierName(name)) return
-      // The `exports` EDGE is a different fact from the SYMBOL, and the two have
-      // separate dedupe rules. The pre-fix shape returned early on an
-      // already-declared name, which silently swallowed the edge: `CFLAGS=…`
-      // followed later by `export CFLAGS` — the ordinary two-step idiom in
-      // every build script — produced the variable and no `exports` edge at all.
-      // Measured on the pinned corpus: 10 export rows the differential expected
-      // and the analyzer did not emit, every one of them a name first assigned
-      // and then exported.
-      if (isExport) {
-        addRel(owner, name, ASTEngine.RelationshipType.Exports, 1.0, line, {
-          bashSpecific: true,
-          exportForm: "variable",
-        })
-      }
-      const key = `${owner}\u0000${name}`
+      const key = `${parentFn || "global"}\u0000${name}`
       if (declaredSymbols.has(key)) return // reassignment, not a declaration
       declaredSymbols.add(key)
-      if (isExport || keyword === "readonly") {
+      if (keyword === "export" || keyword === "readonly") {
         symbols.push({
           name,
           kind: ASTEngine.SymbolKind.Constant,
           range,
-          scope: owner,
+          scope: parentFn || undefined,
           visibility: "public",
-          ownerName: owner || undefined,
+          ownerName: parentFn || undefined,
           metadata: {
             bashSpecific: true,
-            isExported: isExport,
+            isExported: keyword === "export",
             isReadonly: keyword === "readonly",
           },
         })
@@ -1071,9 +402,9 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           name,
           kind: ASTEngine.SymbolKind.Variable,
           range,
-          scope: owner,
-          visibility: this.visibilityForOwner(owner, scopeOwners),
-          ownerName: owner || undefined,
+          scope: parentFn || undefined,
+          visibility: "private",
+          ownerName: parentFn || undefined,
           metadata: {
             bashSpecific: true,
             isLocal: keyword === "local",
@@ -1087,35 +418,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (!child) continue
-      const childLine = child.startPosition.row + 1
-      if (child.type === "variable_name") {
-        // `export NAME`, `export -f fn`, `local NAME`, `declare -a NAME` with no
-        // value all reach the extractor as a BARE `variable_name` child, not as
-        // a `word` and not wrapped in a `variable_assignment`. The pre-wave
-        // extractor handled only the other two shapes, so `export NAME` — one of
-        // the most common statements in a shell script — emitted no symbol, no
-        // `exports` edge and nothing else. Found by fixture export-edges-bd7,
-        // not by inspection: the tree was read after the assertion failed.
-        if (hasFunctionFlag) {
-          this.markFunctionExported(symbols, child.text)
-          addRel(owner, child.text, ASTEngine.RelationshipType.Exports, 1.0, childLine, {
-            bashSpecific: true,
-            exportForm: "function",
-          })
-        } else {
-          emit(child.text, this.nodeToRange(child), childLine)
-        }
-      } else if (child.type === "variable_assignment") {
+      if (child.type === "variable_assignment") {
         if (hasFunctionFlag) {
           // export -f fn=... is unusual; treat the name as a function export
           for (let j = 0; j < child.namedChildCount; j++) {
             const vn = child.namedChild(j)
             if (vn && vn.type === "variable_name") {
               this.markFunctionExported(symbols, vn.text)
-              addRel(owner, vn.text, ASTEngine.RelationshipType.Exports, 1.0, childLine, {
-                bashSpecific: true,
-                exportForm: "function",
-              })
             }
           }
           continue
@@ -1123,24 +432,17 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         for (let j = 0; j < child.namedChildCount; j++) {
           const vn = child.namedChild(j)
           if (vn && vn.type === "variable_name") {
-            emit(vn.text, this.nodeToRange(child), childLine)
-            if (keyword === "local" && owner) {
+            emit(vn.text, this.nodeToRange(child))
+            if (keyword === "local" && parentFn) {
               // positional $1..$9 defaults (local x=$1) also record parameters
               const valueNode = child.namedChild(1)
-              this.collectPositionalFromValue(valueNode, functionParams, owner)
+              this.collectPositionalFromValue(valueNode, functionParams, parentFn)
             }
           }
         }
       } else if (child.type === "word" && !child.text.startsWith("-") && child.text !== keyword) {
-        if (hasFunctionFlag) {
-          this.markFunctionExported(symbols, child.text)
-          addRel(owner, child.text, ASTEngine.RelationshipType.Exports, 1.0, childLine, {
-            bashSpecific: true,
-            exportForm: "function",
-          })
-        } else {
-          emit(child.text, this.nodeToRange(child), childLine)
-        }
+        if (hasFunctionFlag) this.markFunctionExported(symbols, child.text)
+        else emit(child.text, this.nodeToRange(child))
       }
     }
   }
@@ -1179,60 +481,38 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  private expansionVariableName(node: Node): string {
+    // $VAR → variable_name child; ${VAR...} → variable_name or subscript base.
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const child = node.namedChild(i)
+      if (!child) continue
+      if (child.type === "variable_name") return child.text
+      if (child.type === "subscript") {
+        for (let j = 0; j < child.namedChildCount; j++) {
+          const base = child.namedChild(j)
+          if (base && base.type === "variable_name") return base.text
+        }
+      }
+      if (child.type === "special_variable_name") return child.text
+    }
+    return ""
+  }
+
   private extractCommand(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
     imports: ASTEngine.ImportInfo[],
     patterns: Set<string>,
     ctx: {
-      addRel: (
-        source: string,
-        target: string,
-        type: ASTEngine.RelationshipType,
-        confidence: number,
-        line: number,
-        metadata?: Record<string, unknown>,
-      ) => void
+      addRel: (source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, metadata?: Record<string, unknown>) => void
       relSource: () => string
-      scriptName: string
-      localFunctions: Set<string>
-      scopeOwners: Set<string>
-      flags: {
-        usesEval: () => boolean
-        usesSudo: () => boolean
-        hasChmod777: () => boolean
-        hasRmRoot: () => boolean
-        hasStrictError: () => boolean
-      }
-      setFlag: {
-        eval: (v: boolean) => void
-        sudo: (v: boolean) => void
-        chmod777: (v: boolean) => void
-        rmRoot: (v: boolean) => void
-        strictError: (v: boolean) => void
-      }
+      caseDepth: number
+      flags: { usesEval: () => boolean; usesSudo: () => boolean; hasChmod777: () => boolean; hasRmRoot: () => boolean; hasStrictError: () => boolean }
+      setFlag: { eval: (v: boolean) => void; sudo: (v: boolean) => void; chmod777: (v: boolean) => void; rmRoot: (v: boolean) => void; strictError: (v: boolean) => void }
     },
   ) {
-    const nameNode = this.commandNameNode(node)
-    if (!nameNode) return
     const cmdName = this.commandNameOf(node)
     if (!cmdName) return
-    // BD1: the edge's line is the line the command NAME is on.
-    const nameLine = nameNode.startPosition.row + 1
-
-    // BD5: nothing is emitted out of a damaged region.
-    if (this.isRecoveredCommandWord(node, nameNode)) {
-      patterns.add("Recovered Parse Region")
-      return
-    }
-
-    // BD4: a command word that is an unexpanded expression is not a call to a
-    // name. The variables inside it are still read, and the expansion walk
-    // already emits those Uses edges; there is no callee to point at.
-    if (this.containsExpansion(nameNode) || !isCommandNameText(cmdName)) {
-      patterns.add("Dynamic Command Name")
-      return
-    }
 
     // Dependency/pattern classification for well-known tooling.
     if (cmdName === "docker" || cmdName === "docker-compose" || cmdName === "kubectl" || cmdName === "helm") {
@@ -1255,55 +535,16 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (cmdName === "source" || cmdName === ".") {
       const arg = this.firstArgumentWord(node)
       if (arg) {
-        const line = this.firstArgumentLine(node) ?? nameLine
-        // A sourced path built from a variable cannot be resolved to a file, so
-        // it is labelled rather than presented as a resolved dependency: 16 of
-        // the lane's 23 import edges on the pinned corpus were
-        // `source $scriptroot/tools.sh`, a target no symbol can ever have.
-        // Dynamic iff the ARGUMENT NODE holds an unexpanded value — a
-        // structural test, so a path that merely contains a dot or a dash is
-        // not mistaken for one. The first cut asked whether the text looked
-        // like an identifier after the directory was stripped, which
-        // classified the plain literal `./sibling.sh` as dynamic and marked
-        // 2 of the fixture's 3 imports unresolved.
-        const argNode = this.firstArgumentNode(node)
-        const dynamic = argNode ? this.containsExpansion(argNode) : false
-        // The path is kept AS WRITTEN. An earlier version of this decision
-        // "improved" it by resolving a relative path against the sourcing file's
-        // own directory, and that was WRONG: bash resolves a relative `source`
-        // against `$PWD` at run time, not against the script's location, so the
-        // rewrite turned `source ./eng/common/tools.sh` inside `eng/common/`
-        // into the nonexistent `eng/common/eng/common/tools.sh`. The script's
-        // own directory is recorded as CONTEXT, where it is useful, and the
-        // path itself is reported as the shell will read it.
-        // De-quote the path EXPRESSION. `source "$(dirname "$0")"/lib.sh`
-        // concatenates a command substitution with literal path text, and the
-        // quotes wrap only the substitution — so the target as written begins
-        // with a stray `"` that no reader and no graph can use. A filesystem
-        // path cannot contain a quote character, so removing them is mechanical
-        // rather than interpretive. Measured: it was the last disagreement on the
-        // pinned corpus, one row seen from both sides because the two
-        // implementations de-quoted differently.
-        const normalized = this.dequotePath(arg)
         imports.push({
-          module: normalized,
+          module: arg,
           items: ["*"],
           isDefaultImport: true,
           isNamespaceImport: false,
           range: this.nodeToRange(node),
-          metadata: {
-            isSourceImport: true,
-            resolution: dynamic ? "dynamic" : "literal",
-          },
         })
-        ctx.addRel(ctx.relSource(), normalized, ASTEngine.RelationshipType.Imports, 1.0, line, {
-          isSourceImport: true,
-          resolution: dynamic ? "dynamic" : "literal",
-          bashSpecific: true,
-        })
-        ctx.addRel(ctx.relSource(), normalized, ASTEngine.RelationshipType.References, 1.0, line, {
+        ctx.addRel(ctx.relSource(), arg, ASTEngine.RelationshipType.Imports, 1.0, { isSourceImport: true })
+        ctx.addRel(ctx.relSource(), arg, ASTEngine.RelationshipType.References, 1.0, {
           isSourceDependency: true,
-          resolution: dynamic ? "dynamic" : "literal",
           bashSpecific: true,
         })
       }
@@ -1322,19 +563,17 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
           name: aliasName,
           kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
-          scope: ctx.scriptName,
+          scope: ctx.relSource() === "global" ? undefined : ctx.relSource(),
           visibility: "public",
-          ownerName: ctx.scriptName,
+          ownerName: ctx.relSource() === "global" ? undefined : ctx.relSource(),
           metadata: { isAlias: true, bashSpecific: true },
         })
-        ctx.localFunctions.add(aliasName)
-        ctx.scopeOwners.add(aliasName)
       }
       return
     }
 
     if (cmdName === "trap") {
-      this.handleTrap(node, ctx, patterns, nameLine)
+      this.handleTrap(node, ctx)
       return
     }
 
@@ -1346,54 +585,34 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // `chmod` and `rm` are external commands, so they are CALLS; the security
-    // classification is an ADDITIONAL fact about the call, not a replacement
-    // for it. Returning here — the pre-fix shape — withheld the edge and left
-    // the differential with 12 `calls` rows the analyzer could not produce.
-    if (cmdName === "chmod" && this.hasArgument(node, "777")) {
-      ctx.setFlag.chmod777(true)
-      patterns.add("Insecure Permissions")
+    if (cmdName === "chmod") {
+      if (this.hasArgument(node, "777")) {
+        ctx.setFlag.chmod777(true)
+        patterns.add("Insecure Permissions")
+      }
+      return
     }
 
-    if (cmdName === "rm" && this.isRmRoot(node)) {
-      ctx.setFlag.rmRoot(true)
-      patterns.add("Destructive File Operation")
+    if (cmdName === "rm") {
+      if (this.isRmRoot(node)) {
+        ctx.setFlag.rmRoot(true)
+        patterns.add("Destructive File Operation")
+      }
+      return
     }
 
-    if (SHELL_BUILTINS.has(cmdName) || INTERPRETED_COMMANDS.has(cmdName)) return
-    // A `case` arm's commands are ordinary calls — `case $1 in install)
-    // apt-get install foo ;; esac` installs something, and a reader asking "what
-    // does this script install?" must see it. The arm's PATTERN is a `word` or
-    // `string` node, never a `command`, so suppressing by depth threw away
-    // real calls and never suppressed a pattern. Measured on the pinned corpus:
-    // 33 command nodes suppressed, of which 14 were distinct (source,target)
-    // pairs that were otherwise never emitted.
-    const isLocal = ctx.localFunctions.has(cmdName)
-    ctx.addRel(ctx.relSource(), cmdName, ASTEngine.RelationshipType.Calls, 1.0, nameLine, {
-      // The previous emitter set BOTH flags to `true` on every call, so a call
-      // to a function defined three lines above claimed to be an external
-      // command. The two are now mutually exclusive facts.
-      isFunctionCall: isLocal,
-      isExternalCommand: !isLocal,
-      resolvedWithinFile: isLocal,
-      bashSpecific: true,
+    if (SHELL_BUILTINS.has(cmdName)) return
+    if (ctx.caseDepth > 0) return // case-branch commands excluded as dispatch noise
+    ctx.addRel(ctx.relSource(), cmdName, ASTEngine.RelationshipType.Calls, 1.0, {
+      isFunctionCall: true,
+      isExternalCommand: true,
     })
   }
 
   private handleExportCommand(
     node: Node,
     symbols: ASTEngine.UniversalSymbol[],
-    ctx: {
-      relSource: () => string
-      addRel: (
-        source: string,
-        target: string,
-        type: ASTEngine.RelationshipType,
-        confidence: number,
-        line: number,
-        metadata?: Record<string, unknown>,
-      ) => void
-    },
+    ctx: { relSource: () => string },
   ) {
     // `export -f fn` in command position — mark function exported.
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -1403,10 +622,6 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
         const word = node.namedChild(j)
         if (word && word.type === "word" && !word.text.startsWith("-") && word.text !== "export") {
           this.markFunctionExported(symbols, word.text)
-          ctx.addRel(ctx.relSource(), word.text, ASTEngine.RelationshipType.Exports, 1.0, child.startPosition.row + 1, {
-            bashSpecific: true,
-            exportForm: "function",
-          })
         }
       }
       return
@@ -1422,14 +637,10 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
               name: vn.text,
               kind: ASTEngine.SymbolKind.Constant,
               range: this.nodeToRange(child),
-              scope: ctx.relSource(),
+              scope: ctx.relSource() === "global" ? undefined : ctx.relSource(),
               visibility: "public",
-              ownerName: ctx.relSource(),
+              ownerName: ctx.relSource() === "global" ? undefined : ctx.relSource(),
               metadata: { isExported: true, bashSpecific: true },
-            })
-            ctx.addRel(ctx.relSource(), vn.text, ASTEngine.RelationshipType.Exports, 1.0, child.startPosition.row + 1, {
-              bashSpecific: true,
-              exportForm: "variable",
             })
           }
         }
@@ -1457,30 +668,13 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ""
   }
 
-  /**
-   * BD3: `trap 'handler' SIGNAL`. A signal is not code and was used as the
-   * edge SOURCE, which produced `calls: EXIT -> cleanup` — a caller that does
-   * not exist. The handler is a command string; the edge belongs to the scope
-   * that installs the trap, the target is the handler's command NAME, and the
-   * signal rides along in metadata.
-   */
   private handleTrap(
     node: Node,
-    ctx: {
-      addRel: (
-        source: string,
-        target: string,
-        type: ASTEngine.RelationshipType,
-        confidence: number,
-        line: number,
-        metadata?: Record<string, unknown>,
-      ) => void
-      relSource: () => string
-    },
-    patterns: Set<string>,
-    nameLine: number,
+    ctx: { addRel: (source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, metadata?: Record<string, unknown>) => void },
   ) {
-    let handlerText = ""
+    // trap 'handler' SIGNAL — the handler is the first argument; the signal
+    // list follows. Emits signal → handler Calls edges.
+    let handler = ""
     const signals: string[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
@@ -1488,64 +682,22 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = child.type
       if (type === "raw_string" || type === "string") {
         const inner = this.stripQuotes(child.text)
-        if (!handlerText) handlerText = inner
+        if (!handler) handler = inner
       } else if (type === "word") {
         if (child.text === "trap") continue
         if (child.text.startsWith("-")) continue
-        if (!handlerText) handlerText = child.text
+        if (!handler) handler = child.text
         else signals.push(child.text)
       }
     }
-    if (!handlerText) return
-
-    // A handler is one or more `;`-separated commands. Each named command is a
-    // real call site; a compound handler that is itself a definition or an
-    // anonymous block contributes no name and is skipped rather than emitted
-    // as a text blob.
-    const parts = handlerText.split(";")
-    let emittedAny = false
-    for (const rawPart of parts) {
-      const part = rawPart.trim()
-      if (part.length === 0) continue
-      const firstToken = this.firstTokenOf(part)
-      if (!firstToken || !isCommandNameText(firstToken)) continue
-      if (SHELL_BUILTINS.has(firstToken)) continue
-      ctx.addRel(ctx.relSource(), firstToken, ASTEngine.RelationshipType.Calls, 0.7, nameLine, {
-        isTrapHandler: true,
-        viaTrap: true,
-        signals: signals.length > 0 ? signals : ["EXIT"],
-        bashSpecific: true,
-      })
-      emittedAny = true
-    }
-    if (!emittedAny) {
-      // A handler with no resolvable command name (`trap ':' EXIT`, a compound
-      // block) is recorded as a pattern so the fact is not lost, but it
-      // produces no edge. The alternative considered and refused was a
-      // self-edge on the enclosing scope: a relationship whose source and
-      // target are the same symbol says nothing a pattern does not say better.
-      patterns.add("Signal Handler")
-    }
-  }
-
-  /** The first shell token of a handler string: leading `name`, `name=value` and
-   *  `name(args)` shapes all yield the command name. */
-  private firstTokenOf(part: string): string {
-    let i = 0
-    // skip leading env assignments: FOO=bar cmd …
-    while (i < part.length) {
-      const start = i
-      while (i < part.length && part.charCodeAt(i) !== 32 && part.charCodeAt(i) !== 61) i++
-      const token = part.slice(start, i)
-      if (i < part.length && part.charCodeAt(i) === 61) {
-        i++ // skip the value
-        while (i < part.length && part.charCodeAt(i) === 32) i++
-        continue
+    if (handler && signals.length > 0) {
+      for (const signal of signals) {
+        ctx.addRel(signal, handler, ASTEngine.RelationshipType.Calls, 0.7, {
+          isTrapHandler: true,
+          bashSpecific: true,
+        })
       }
-      if (i < part.length && part.charCodeAt(i) === 40) break // `name(…)` is a call, not a command
-      return token
     }
-    return ""
   }
 
   private hasErrexitFlags(node: Node): boolean {
@@ -1608,55 +760,11 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
     return ""
   }
 
-  private firstArgumentNode(node: Node): Node | null {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (!child || child.type === "command_name") continue
-      if (child.type === "word" || child.type === "raw_string" || child.type === "string" || child.type === "concatenation") {
-        return child
-      }
-    }
-    return null
-  }
-
-  private firstArgumentLine(node: Node): number | null {
-    for (let i = 0; i < node.namedChildCount; i++) {
-      const child = node.namedChild(i)
-      if (!child || child.type === "command_name") continue
-      if (child.type === "word" || child.type === "raw_string" || child.type === "string" || child.type === "concatenation") {
-        return child.startPosition.row + 1
-      }
-    }
-    return null
-  }
-
-  /** Resolve a literal relative `source` target against the sourcing file's own
-   *  directory, so `./env.sh` sourced from `eng/build.sh` is named
-   *  `eng/env.sh` rather than `./env.sh` — the form every other lane's imports
-   *  already take, and the form a reader can act on. */
-  private normalizeRelative(arg: string, sourceDir: string): string {
-    const cleaned = arg.startsWith("./") ? arg.slice(2) : arg
-    if (arg.startsWith("/")) return arg
-    if (cleaned.startsWith("../")) {
-      const segs = sourceDir.split("/").filter((s) => s.length > 0)
-      for (const part of cleaned.split("/")) {
-        if (part === "..") segs.pop()
-        else if (part.length > 0) segs.push(part)
-      }
-      return segs.join("/")
-    }
-    return sourceDir === "." ? cleaned : `${sourceDir}/${cleaned}`
-  }
-
   private detectFrameworks(patterns: string[]): string[] {
-    // The language itself is not a framework. Returning a bare ["Bash"] made
-    // `hasFrameworkIntelligence: true` true for every file in the corpus; the
-    // language is reported separately as `framework`, and this list carries only
-    // what was actually detected.
-    const frameworks: string[] = []
+    const frameworks = ["Bash"]
     for (let i = 0; i < patterns.length; i++) {
-      if (patterns[i] === "Container/Orchestration Script" && !frameworks.includes("Docker/Kubernetes")) frameworks.push("Docker/Kubernetes")
-      if (patterns[i] === "Cloud Infrastructure Script" && !frameworks.includes("Cloud Native")) frameworks.push("Cloud Native")
+      if (patterns[i] === "Container/Orchestration Script") frameworks.push("Docker/Kubernetes")
+      if (patterns[i] === "Cloud Infrastructure Script") frameworks.push("Cloud Native")
     }
     return frameworks
   }
@@ -1691,13 +799,4 @@ export class RealBashAnalyzer implements ASTEngine.LanguageAnalyzer {
       endIndex: node.endIndex,
     }
   }
-}
-
-function isAllDigits(text: string): boolean {
-  if (text.length === 0) return false
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i)
-    if (code < 48 || code > 57) return false
-  }
-  return true
 }

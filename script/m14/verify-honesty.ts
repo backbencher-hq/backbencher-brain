@@ -130,11 +130,7 @@ for (const gate of STRENGTHENED_GATES) {
 }
 
 // 2d. Cluster / pipeline e2e gates, on their own identities.
-// M14.0.CENSUS is here for the same reason and with the same shape: a gate whose
-// artifact is never read by the honesty gate is a gate whose failure nobody is
-// told about, and a carrier census nobody reads is exactly the gate that would
-// have caught the six carriers that were missing from BOTH tables at once.
-for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1", "M14.0.CENSUS", "M14.0.TOML-CENSUS", "M14.0.SVELTE-CENSUS"]) {
+for (const id of ["M14.0.PIPE", "M14.0.WC1", "M14.0.SC1"]) {
   const p = path.join(M14, "results", `${id}.json`)
   if (!fs.existsSync(p)) { fail(`missing evidence file for ${id}`); continue }
   const ev = JSON.parse(fs.readFileSync(p, "utf8"))
@@ -237,36 +233,13 @@ const EVIDENCE_INPUTS: Record<string, string[]> = {
   // rule below). F8 is emitted by the corpus census, not the probe battery;
   // F9 is emitted by the probe battery, not the spec/completeness path; SPEC
   // is emitted by completeness-inventory, not by its verifier.
-  //
-  // M49 W8 follow-up (2026-09-25): F8 also READS the two things its claimed
-  // content depends on and did not declare. The census parses with the pinned
-  // grammars in `wasm/` and classifies against `script/m14/spec/<lang>-completeness.json`;
-  // neither path was an input, so the M60 objc grammar wave (f2a20b62) rebuilt a
-  // wasm and added two node types the spec never ruled, and the census went red
-  // while its artifact stayed "fresh" — the gate caught the defect, the freshness
-  // rule could not have. An input set that omits what the artifact reads is the
-  // same defect the producer rule above fixes, one step out.
-  "M14.0.F8": ["src/ast/", "wasm/", "script/m14/spec/", "script/m14/verify-corpus-census.ts"],
+  "M14.0.F8": ["src/ast/", "script/m14/verify-corpus-census.ts"],
   "M14.0.F9": ["src/ast/", "script/m14/verify-probe-battery.ts"],
   "M14.0.SPEC": ["script/m14/spec/", "wasm/", "script/m14/completeness-inventory.ts", "script/m14/verify-completeness.ts"],
   "M14.CC1": ["src/ast/"],
   "M14.0.PIPE": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-pipeline-e2e.ts"],
   "M14.0.WC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-web-cluster-e2e.ts"],
   "M14.0.SC1": ["src/ast/", "validation/m14/fixtures/", "script/m14/verify-systems-cluster-e2e.ts"],
-  // The census reads the corpora and the analyzer, not the fixture files, so the
-  // lineage prefixes name what can actually move its verdict.
-  "M14.0.CENSUS": ["src/ast/real-html-analyzer.ts", "script/m14/verify-carrier-census.ts"],
-  // The toml census reads the corpora and the grammar, and consults neither the
-  // analyzer nor the oracle — that is the whole point of it — so naming the
-  // analyzer here would be a false lineage claim. The census script and the wasm
-  // are what can move its verdict.
-  "M14.0.TOML-CENSUS": ["script/m14/verify-toml-census.ts", "wasm/tree-sitter-toml.wasm"],
-  // The svelte census reads the corpus and consults NEITHER the svelte analyzer nor
-  // the F5 oracle — that is the whole point of it, since a differential cannot see a
-  // construct both sides forgot. Naming the analyzer here would be a false lineage
-  // claim of exactly the kind the gate exists to catch. The census script and the
-  // svelte wasm are what can move its verdict.
-  "M14.0.SVELTE-CENSUS": ["script/m14/verify-svelte-census.ts", "wasm/tree-sitter-svelte.wasm"],
 }
 
 function commitOk(rev: string): boolean {

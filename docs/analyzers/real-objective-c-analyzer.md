@@ -18,15 +18,6 @@
   `preproc_include` tree; `message_expression` → receiver + selector +
   arguments; `class_interface` → class name + superclass + protocol list +
   members)
-- **The M60 rule's own two node types are classified in the census spec.**
-  `macro_prefixed_objc_declaration` and its `macro_specifier` child are listed under
-  `internal_silent` in `script/m14/spec/objc-completeness.json`, because the corpus
-  census (60 sdwebimage files, repo pin `c3ad5e1a9bf5`) sees exactly one occurrence of
-  each and the wrapper is traversal-transparent — measured rather than assumed:
-  indexing the one file that carries them (`SDWebImage/include/SDWebImage/SDAnimatedImage.h`,
-  the macro on 71 above the `@interface` on 72) publishes `class SDAnimatedImage` at
-  72-136 with its members and publishes NO symbol for the macro name itself, so the
-  analyzer never has to name either node type and nothing is lost by it not doing so.
 - Language detection: `.m`/`.mm` → `objective-c`; `.h` headers disambiguated
   by content markers (`@interface`/`@protocol`/`@implementation` → ObjC,
   C++ markers → cpp, else C) in `language-detection.ts`

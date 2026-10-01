@@ -1,1237 +1,952 @@
 {
-  "schemaVersion": 1,
-  "truthSource": "manual_audit \u2014 symbols and the calls/contains/exports/imports/instantiates relationships were audited first, and the `uses` and `references` types were NOT, which is why this file measured precision 0.778 against a correct analyzer. Those 18 edges are now audited, each quoting the line it was read from. THE TEN REMAINING `unknown` EDGES, EXPLAINED CORRECTLY AFTER TWO WRONG EXPLANATIONS. FIRST WRONG: I claimed their targets were function locals, parameters or store sigils rather than component members. FALSE \u2014 `Card -> count` is a `variable` at L8, `UserList -> count` a `constant` at L7, and both edges are real. SECOND WRONG: having audited the targets, I added those three to this file as facts. That was also wrong, and M12 said so immediately by reporting them as false negatives. THE ACTUAL RULE IS THE CONFIDENCE TIER, and it is the analyzer's own. This lane emits 0.95 and nothing else \u2014 all three of its `confidence:` sites are its OWN emissions (`instantiates` at 411, template member-uses at 776, `this={X}` at 806). The 0.6 edges are the javascript sub-analyzer's script-side `uses`, merged unchanged across the delegation seam, and M12 buckets anything below 0.7 as `unknown`. So the split is TEMPLATE (0.95) versus SCRIPT (0.6), not member versus parameter: every 0.95 edge here is a template read (`Card -> header` L21, `Button -> label` L16, `App -> loading` L29) and every 0.6 edge is a script read (`Card -> count` L15, `handleInput -> *` L8-9, `UserList -> count` L8). WHY THAT IS THE HONEST STATE rather than a gap. S1's whole subject \u2014 the template-to-script data flow \u2014 is the 0.95 tier, and that tier is now fully audited at 1.000 precision. The 0.6 tier is script-internal flow inherited from the javascript lane, and labelling it below M12's resolution threshold is the correct call: a read inside a function says less about a COMPONENT's data flow than a read in its template. Adding those facts would have demanded the 0.6 tier be treated as resolved and would have made the gate red on a deliberate, documented confidence decision.",
-  "source": "Independent hand audit of validation/m12/fixtures/svelte/*.svelte against Svelte 5 semantics and the TS/JS family contract (M12.09/M12.10, mirrored by Vue M12.12): SFC component -> class (file-level, L1); script top-level const -> constant, let/var -> variable, function -> function via the real JavaScript analyzer (engine pre-parse via context.sfcScriptTrees \u2014 always JS-family extraction regardless of lang, mirrors Vue); Svelte props: `export let x` -> Property (JS analyzer reports Variable + export, reclassified + component-owned), `$props()` destructure names -> Property (owner = component); `$:` reactive declaration assignment targets -> Variable (owner = component); rune calls ($state/$derived/$effect/$props/$inspect/$bindable/$host/$render) are compiler macros \u2014 no calls, no symbols for the rune itself; template pass emits instantiates only for non-builtin element/self-closing tags (leaf tag names, HTML + Svelte builtins filtered); on: event directives -> calls (leaf handler from the raw_text_expr value \u2014 pure-String scan, the grammar exposes template expressions as opaque raw_text leaves: `on:click={inc}` -> inc, `on:click={() => bump()}` -> bump, `on:load={() => nextPage()}` -> nextPage; arrow-param/property expressions like `(e) => e.target.value` emit nothing); bind:/class:/style:/use:/transition:/animate: directives and template blocks (#if/#each/if-blocks) are NEVER symbols or calls; no locals/params as symbols (tmp, event not emitted); contains from ownerName (component-owned props/exports/reactive decls); imports from import directives (svelte/store:writable, ./Card.svelte:Card); console.* and Object-leaf methods filtered; the old analyzer's svelte_script/svelte_block_*/attribute/directive symbols are gone (SFC blocks and template attributes are never symbols).",
-  "facts": [
-    {
-      "id": "sym:App.svelte:1:class:App",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "App.svelte",
-      "line": 1,
-      "attributes": {
-        "name": "App",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "SFC component App"
-      }
-    },
-    {
-      "id": "sym:App.svelte:6:variable:page",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "App.svelte",
-      "line": 6,
-      "attributes": {
-        "name": "page",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let page = $state(1)"
-      }
-    },
-    {
-      "id": "sym:App.svelte:7:variable:loading",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "App.svelte",
-      "line": 7,
-      "attributes": {
-        "name": "loading",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let loading = $state(false)"
-      }
-    },
-    {
-      "id": "sym:App.svelte:9:function:nextPage",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "App.svelte",
-      "line": 9,
-      "attributes": {
-        "name": "nextPage",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "function nextPage()"
-      }
-    },
-    {
-      "id": "rel:App.svelte:instantiates:App:Card",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "Card",
-      "attributes": {
-        "type": "instantiates"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<Card title=... on:greet=... />"
-      }
-    },
-    {
-      "id": "rel:App.svelte:instantiates:App:UserList",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "UserList",
-      "attributes": {
-        "type": "instantiates"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<UserList items=... on:load=... />"
-      }
-    },
-    {
-      "id": "rel:App.svelte:instantiates:App:Button",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "Button",
-      "attributes": {
-        "type": "instantiates"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<Button disabled=...>Load</Button>"
-      }
-    },
-    {
-      "id": "rel:App.svelte:calls:App:nextPage",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "nextPage",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "on:greet={nextPage} and on:load={() => nextPage()} (dedup)"
-      }
-    },
-    {
-      "id": "rel:App.svelte:imports:App:./Button.svelte:Button",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "./Button.svelte:Button",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import Button from './Button.svelte'"
-      }
-    },
-    {
-      "id": "rel:App.svelte:imports:App:./Card.svelte:Card",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "./Card.svelte:Card",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import Card from './Card.svelte'"
-      }
-    },
-    {
-      "id": "rel:App.svelte:imports:App:./UserList.svelte:UserList",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "./UserList.svelte:UserList",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import UserList from './UserList.svelte'"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:1:class:Button",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 1,
-      "attributes": {
-        "name": "Button",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "SFC component Button"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:2:property:label",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 2,
-      "attributes": {
-        "name": "label",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$props() destructure label"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:2:property:disabled",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 2,
-      "attributes": {
-        "name": "disabled",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$props() destructure disabled"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:2:property:onSelect",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 2,
-      "attributes": {
-        "name": "onSelect",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$props() destructure onSelect"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:3:variable:count",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 3,
-      "attributes": {
-        "name": "count",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let count = $state(0)"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:4:variable:doubled",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 4,
-      "attributes": {
-        "name": "doubled",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let doubled = $derived(count * 2)"
-      }
-    },
-    {
-      "id": "sym:Button.svelte:10:function:bump",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Button.svelte",
-      "line": 10,
-      "attributes": {
-        "name": "bump",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "function bump()"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:calls:Button:bump",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "bump",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "on:click={() => bump()}"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:contains:Button:label",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "label",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "prop owned by component"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:contains:Button:disabled",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "disabled",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "prop owned by component"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:contains:Button:onSelect",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "onSelect",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "prop owned by component"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:1:class:Card",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 1,
-      "attributes": {
-        "name": "Card",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "SFC component Card"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:4:property:title",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 4,
-      "attributes": {
-        "name": "title",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let title = 'Card'"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:5:property:body",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 5,
-      "attributes": {
-        "name": "body",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let body = ''"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:7:constant:theme",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 7,
-      "attributes": {
-        "name": "theme",
-        "symbolKind": "constant"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "const theme = writable('light')"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:8:variable:count",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 8,
-      "attributes": {
-        "name": "count",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let count = 0"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:10:function:reset",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 10,
-      "attributes": {
-        "name": "reset",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export function reset()"
-      }
-    },
-    {
-      "id": "sym:Card.svelte:14:variable:header",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Card.svelte",
-      "line": 14,
-      "attributes": {
-        "name": "header",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$: header = title.toUpperCase()"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:imports:Card:svelte/store:writable",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "svelte/store:writable",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import { writable } from 'svelte/store'"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:calls:Card:writable",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "writable",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "theme = writable('light')"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:calls:Card:toUpperCase",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "toUpperCase",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$: header = title.toUpperCase()"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:calls:Card:reset",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "reset",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$: if (count > 10) { reset() }"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:exports:Card:title",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "title",
-      "attributes": {
-        "type": "exports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let title"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:exports:Card:body",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "body",
-      "attributes": {
-        "type": "exports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let body"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:exports:Card:reset",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "reset",
-      "attributes": {
-        "type": "exports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export function reset"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:contains:Card:title",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "title",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "exported prop owned by component"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:contains:Card:body",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "body",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "exported prop owned by component"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:contains:Card:reset",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "reset",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "exported function owned by component"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:contains:Card:header",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "header",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "reactive declaration owned by component"
-      }
-    },
-    {
-      "id": "sym:UserList.svelte:1:class:UserList",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "UserList.svelte",
-      "line": 1,
-      "attributes": {
-        "name": "UserList",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "SFC component UserList"
-      }
-    },
-    {
-      "id": "sym:UserList.svelte:5:property:items",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "UserList.svelte",
-      "line": 5,
-      "attributes": {
-        "name": "items",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let items = []"
-      }
-    },
-    {
-      "id": "sym:UserList.svelte:7:constant:count",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "UserList.svelte",
-      "line": 7,
-      "attributes": {
-        "name": "count",
-        "symbolKind": "constant"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "const count = readable(0)"
-      }
-    },
-    {
-      "id": "sym:UserList.svelte:8:constant:doubled",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "UserList.svelte",
-      "line": 8,
-      "attributes": {
-        "name": "doubled",
-        "symbolKind": "constant"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "const doubled = derived(count, ...)"
-      }
-    },
-    {
-      "id": "sym:UserList.svelte:10:function:select",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "UserList.svelte",
-      "line": 10,
-      "attributes": {
-        "name": "select",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "function select(item)"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:instantiates:UserList:Card",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "Card",
-      "attributes": {
-        "type": "instantiates"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<Card title=... on:greet=... /> in {#each}"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:calls:UserList:select",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "select",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "on:greet={() => select(item)}"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:imports:UserList:svelte/store:derived",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "svelte/store:derived",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import { derived, readable } from 'svelte/store'"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:imports:UserList:svelte/store:readable",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "svelte/store:readable",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import { derived, readable } from 'svelte/store'"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:imports:UserList:./Card.svelte:Card",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "./Card.svelte:Card",
-      "attributes": {
-        "type": "imports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "import Card from './Card.svelte'"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:calls:UserList:readable",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "readable",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "count = readable(0)"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:calls:UserList:derived",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "derived",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "doubled = derived(count, ...)"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:exports:UserList:items",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "items",
-      "attributes": {
-        "type": "exports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let items"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:contains:UserList:items",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "items",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "exported prop owned by component"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:1:class:Negative",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 1,
-      "attributes": {
-        "name": "Negative",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "SFC component Negative"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:2:property:query",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 2,
-      "attributes": {
-        "name": "query",
-        "symbolKind": "property"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let query = ''"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:4:variable:local",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 4,
-      "attributes": {
-        "name": "local",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let local = 5"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:5:variable:stateVal",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 5,
-      "attributes": {
-        "name": "stateVal",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "let stateVal = $state(0)"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:7:function:handleInput",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 7,
-      "attributes": {
-        "name": "handleInput",
-        "symbolKind": "function"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "function handleInput(event)"
-      }
-    },
-    {
-      "id": "sym:Negative.svelte:12:variable:filtered",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.svelte",
-      "line": 12,
-      "attributes": {
-        "name": "filtered",
-        "symbolKind": "variable"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "$: filtered = local > 10 ? 'big' : 'small'"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:exports:Negative:query",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "query",
-      "attributes": {
-        "type": "exports"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "export let query"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:contains:Negative:query",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "query",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "exported prop owned by component"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:contains:Negative:filtered",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "filtered",
-      "attributes": {
-        "type": "contains"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "reactive declaration owned by component"
-      }
-    },
-    {
-      "id": "rel:App.svelte:uses:App:loading",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "loading",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L29 `{#if loading}` (and L25 `disabled={loading}`) reads the `loading` state prop"
-      }
-    },
-    {
-      "id": "rel:App.svelte:uses:App:nextPage",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "nextPage",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L23 `<Card title=\"Welcome\" on:greet={nextPage} />` and L24 `on:load={() => nextPage()}` read the `nextPage` function"
-      }
-    },
-    {
-      "id": "rel:App.svelte:uses:App:page",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "App",
-      "targetId": "page",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L32 `<p>Page {page}</p>` reads the `page` state prop"
-      }
-    },
-    {
-      "id": "rel:App.svelte:references:nextPage:page",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "App.svelte",
-      "sourceId": "nextPage",
-      "targetId": "page",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L10 `page += 1`, inside `nextPage`, reads the enclosing `page`"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:uses:Button:bump",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "bump",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L15 `on:click={() => bump()}` calls the component's own `bump`"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:uses:Button:disabled",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "disabled",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L15 `disabled={disabled}` reads the prop"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:uses:Button:doubled",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "doubled",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L16 `({doubled})` reads the derived value"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:uses:Button:label",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "Button",
-      "targetId": "label",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L16 `{label}` reads the prop"
-      }
-    },
-    {
-      "id": "rel:Button.svelte:references:bump:count",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Button.svelte",
-      "sourceId": "bump",
-      "targetId": "count",
-      "attributes": {
-        "type": "references"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L11 `count += 1`, inside `bump`, reads the state binding"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:uses:Card:body",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "body",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L22 `<p>{body}</p>` reads the exported prop"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:uses:Card:header",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "header",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L21 `<h2>{header}</h2>` reads the reactive declaration at L14"
-      }
-    },
-    {
-      "id": "rel:Card.svelte:uses:Card:theme",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Card.svelte",
-      "sourceId": "Card",
-      "targetId": "theme",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L23 `<p>Theme: {$theme}</p>` reads the store; `$` auto-subscription resolves to the `theme` member"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:uses:Negative:filtered",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "filtered",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L17 `<span>{filtered}</span>` reads the reactive declaration at L12"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:uses:Negative:query",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "query",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L15 `bind:value={query}` binds the exported prop"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:uses:Negative:stateVal",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "stateVal",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L15 `class:active={stateVal > 0}` reads the state binding"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:uses:UserList:doubled",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "doubled",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L25 `<p>{$doubled} users</p>` reads the store; `$` auto-subscription resolves to the `doubled` member"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:uses:UserList:items",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "items",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L19 `{#each items as item (item.id)}` reads the exported prop as the collection"
-      }
-    },
-    {
-      "id": "rel:UserList.svelte:uses:UserList:select",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "UserList.svelte",
-      "sourceId": "UserList",
-      "targetId": "select",
-      "attributes": {
-        "type": "uses"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L20 `on:greet={() => select(item)}` calls the component's own `select`"
-      }
-    },
-    {
-      "id": "rel:Negative.svelte:calls:Negative:fade",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.svelte",
-      "sourceId": "Negative",
-      "targetId": "fade",
-      "attributes": {
-        "type": "calls"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "L16 `<button transition:fade>Go</button>` \u2014 Svelte INVOKES the `fade` transition on state change, the same mechanism that makes `on:click` a call under D8. This edge appeared when the carrier space was ruled (D12); M12 reported it as a false positive against a truth that predated the ruling, which is the gate working as intended."
-      }
-    }
-  ]
+ "schemaVersion": 1,
+ "truthSource": "manual_audit",
+ "source": "Independent hand audit of validation/m12/fixtures/svelte/*.svelte against Svelte 5 semantics and the TS/JS family contract (M12.09/M12.10, mirrored by Vue M12.12): SFC component -> class (file-level, L1); script top-level const -> constant, let/var -> variable, function -> function via the real JavaScript analyzer (engine pre-parse via context.sfcScriptTrees — always JS-family extraction regardless of lang, mirrors Vue); Svelte props: `export let x` -> Property (JS analyzer reports Variable + export, reclassified + component-owned), `$props()` destructure names -> Property (owner = component); `$:` reactive declaration assignment targets -> Variable (owner = component); rune calls ($state/$derived/$effect/$props/$inspect/$bindable/$host/$render) are compiler macros — no calls, no symbols for the rune itself; template pass emits instantiates only for non-builtin element/self-closing tags (leaf tag names, HTML + Svelte builtins filtered); on: event directives -> calls (leaf handler from the raw_text_expr value — pure-String scan, the grammar exposes template expressions as opaque raw_text leaves: `on:click={inc}` -> inc, `on:click={() => bump()}` -> bump, `on:load={() => nextPage()}` -> nextPage; arrow-param/property expressions like `(e) => e.target.value` emit nothing); bind:/class:/style:/use:/transition:/animate: directives and template blocks (#if/#each/if-blocks) are NEVER symbols or calls; no locals/params as symbols (tmp, event not emitted); contains from ownerName (component-owned props/exports/reactive decls); imports from import directives (svelte/store:writable, ./Card.svelte:Card); console.* and Object-leaf methods filtered; the old analyzer's svelte_script/svelte_block_*/attribute/directive symbols are gone (SFC blocks and template attributes are never symbols).",
+ "facts": [
+  {
+   "id": "sym:App.svelte:1:class:App",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "App.svelte",
+   "line": 1,
+   "attributes": {
+    "name": "App",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component App"
+   }
+  },
+  {
+   "id": "sym:App.svelte:6:variable:page",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "App.svelte",
+   "line": 6,
+   "attributes": {
+    "name": "page",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let page = $state(1)"
+   }
+  },
+  {
+   "id": "sym:App.svelte:7:variable:loading",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "App.svelte",
+   "line": 7,
+   "attributes": {
+    "name": "loading",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let loading = $state(false)"
+   }
+  },
+  {
+   "id": "sym:App.svelte:9:function:nextPage",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "App.svelte",
+   "line": 9,
+   "attributes": {
+    "name": "nextPage",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function nextPage()"
+   }
+  },
+  {
+   "id": "rel:App.svelte:instantiates:App:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "Card",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<Card title=... on:greet=... />"
+   }
+  },
+  {
+   "id": "rel:App.svelte:instantiates:App:UserList",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "UserList",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<UserList items=... on:load=... />"
+   }
+  },
+  {
+   "id": "rel:App.svelte:instantiates:App:Button",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "Button",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<Button disabled=...>Load</Button>"
+   }
+  },
+  {
+   "id": "rel:App.svelte:calls:App:nextPage",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "nextPage",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "on:greet={nextPage} and on:load={() => nextPage()} (dedup)"
+   }
+  },
+  {
+   "id": "rel:App.svelte:imports:App:./Button.svelte:Button",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "./Button.svelte:Button",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import Button from './Button.svelte'"
+   }
+  },
+  {
+   "id": "rel:App.svelte:imports:App:./Card.svelte:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "./Card.svelte:Card",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import Card from './Card.svelte'"
+   }
+  },
+  {
+   "id": "rel:App.svelte:imports:App:./UserList.svelte:UserList",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "App.svelte",
+   "sourceId": "App",
+   "targetId": "./UserList.svelte:UserList",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import UserList from './UserList.svelte'"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:1:class:Button",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 1,
+   "attributes": {
+    "name": "Button",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Button"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:2:property:label",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 2,
+   "attributes": {
+    "name": "label",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$props() destructure label"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:2:property:disabled",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 2,
+   "attributes": {
+    "name": "disabled",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$props() destructure disabled"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:2:property:onSelect",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 2,
+   "attributes": {
+    "name": "onSelect",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$props() destructure onSelect"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:3:variable:count",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 3,
+   "attributes": {
+    "name": "count",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let count = $state(0)"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:4:variable:doubled",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 4,
+   "attributes": {
+    "name": "doubled",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let doubled = $derived(count * 2)"
+   }
+  },
+  {
+   "id": "sym:Button.svelte:10:function:bump",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Button.svelte",
+   "line": 10,
+   "attributes": {
+    "name": "bump",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function bump()"
+   }
+  },
+  {
+   "id": "rel:Button.svelte:calls:Button:bump",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.svelte",
+   "sourceId": "Button",
+   "targetId": "bump",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "on:click={() => bump()}"
+   }
+  },
+  {
+   "id": "rel:Button.svelte:contains:Button:label",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.svelte",
+   "sourceId": "Button",
+   "targetId": "label",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Button.svelte:contains:Button:disabled",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.svelte",
+   "sourceId": "Button",
+   "targetId": "disabled",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Button.svelte:contains:Button:onSelect",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Button.svelte",
+   "sourceId": "Button",
+   "targetId": "onSelect",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "prop owned by component"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:1:class:Card",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 1,
+   "attributes": {
+    "name": "Card",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Card"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:4:property:title",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 4,
+   "attributes": {
+    "name": "title",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let title = 'Card'"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:5:property:body",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 5,
+   "attributes": {
+    "name": "body",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let body = ''"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:7:constant:theme",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 7,
+   "attributes": {
+    "name": "theme",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const theme = writable('light')"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:8:variable:count",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 8,
+   "attributes": {
+    "name": "count",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let count = 0"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:10:function:reset",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 10,
+   "attributes": {
+    "name": "reset",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export function reset()"
+   }
+  },
+  {
+   "id": "sym:Card.svelte:14:variable:header",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.svelte",
+   "line": 14,
+   "attributes": {
+    "name": "header",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$: header = title.toUpperCase()"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:imports:Card:svelte/store:writable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "svelte/store:writable",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { writable } from 'svelte/store'"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:calls:Card:writable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "writable",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "theme = writable('light')"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:calls:Card:toUpperCase",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "toUpperCase",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$: header = title.toUpperCase()"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:calls:Card:reset",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "reset",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$: if (count > 10) { reset() }"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:exports:Card:title",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "title",
+   "attributes": {
+    "type": "exports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let title"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:exports:Card:body",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "body",
+   "attributes": {
+    "type": "exports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let body"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:exports:Card:reset",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "reset",
+   "attributes": {
+    "type": "exports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export function reset"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:contains:Card:title",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "title",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "exported prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:contains:Card:body",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "body",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "exported prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:contains:Card:reset",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "reset",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "exported function owned by component"
+   }
+  },
+  {
+   "id": "rel:Card.svelte:contains:Card:header",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.svelte",
+   "sourceId": "Card",
+   "targetId": "header",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "reactive declaration owned by component"
+   }
+  },
+  {
+   "id": "sym:UserList.svelte:1:class:UserList",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.svelte",
+   "line": 1,
+   "attributes": {
+    "name": "UserList",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component UserList"
+   }
+  },
+  {
+   "id": "sym:UserList.svelte:5:property:items",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.svelte",
+   "line": 5,
+   "attributes": {
+    "name": "items",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let items = []"
+   }
+  },
+  {
+   "id": "sym:UserList.svelte:7:constant:count",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.svelte",
+   "line": 7,
+   "attributes": {
+    "name": "count",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const count = readable(0)"
+   }
+  },
+  {
+   "id": "sym:UserList.svelte:8:constant:doubled",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.svelte",
+   "line": 8,
+   "attributes": {
+    "name": "doubled",
+    "symbolKind": "constant"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "const doubled = derived(count, ...)"
+   }
+  },
+  {
+   "id": "sym:UserList.svelte:10:function:select",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "UserList.svelte",
+   "line": 10,
+   "attributes": {
+    "name": "select",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function select(item)"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:instantiates:UserList:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "Card",
+   "attributes": {
+    "type": "instantiates"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "<Card title=... on:greet=... /> in {#each}"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:calls:UserList:select",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "select",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "on:greet={() => select(item)}"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:imports:UserList:svelte/store:derived",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "svelte/store:derived",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { derived, readable } from 'svelte/store'"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:imports:UserList:svelte/store:readable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "svelte/store:readable",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import { derived, readable } from 'svelte/store'"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:imports:UserList:./Card.svelte:Card",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "./Card.svelte:Card",
+   "attributes": {
+    "type": "imports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "import Card from './Card.svelte'"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:calls:UserList:readable",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "readable",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "count = readable(0)"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:calls:UserList:derived",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "derived",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "doubled = derived(count, ...)"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:exports:UserList:items",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "items",
+   "attributes": {
+    "type": "exports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let items"
+   }
+  },
+  {
+   "id": "rel:UserList.svelte:contains:UserList:items",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "UserList.svelte",
+   "sourceId": "UserList",
+   "targetId": "items",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "exported prop owned by component"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:1:class:Negative",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 1,
+   "attributes": {
+    "name": "Negative",
+    "symbolKind": "class"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "SFC component Negative"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:2:property:query",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 2,
+   "attributes": {
+    "name": "query",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let query = ''"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:4:variable:local",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 4,
+   "attributes": {
+    "name": "local",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let local = 5"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:5:variable:stateVal",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 5,
+   "attributes": {
+    "name": "stateVal",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "let stateVal = $state(0)"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:7:function:handleInput",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 7,
+   "attributes": {
+    "name": "handleInput",
+    "symbolKind": "function"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "function handleInput(event)"
+   }
+  },
+  {
+   "id": "sym:Negative.svelte:12:variable:filtered",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Negative.svelte",
+   "line": 12,
+   "attributes": {
+    "name": "filtered",
+    "symbolKind": "variable"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "$: filtered = local > 10 ? 'big' : 'small'"
+   }
+  },
+  {
+   "id": "rel:Negative.svelte:exports:Negative:query",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.svelte",
+   "sourceId": "Negative",
+   "targetId": "query",
+   "attributes": {
+    "type": "exports"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "export let query"
+   }
+  },
+  {
+   "id": "rel:Negative.svelte:contains:Negative:query",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.svelte",
+   "sourceId": "Negative",
+   "targetId": "query",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "exported prop owned by component"
+   }
+  },
+  {
+   "id": "rel:Negative.svelte:contains:Negative:filtered",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.svelte",
+   "sourceId": "Negative",
+   "targetId": "filtered",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "reactive declaration owned by component"
+   }
+  }
+ ]
 }

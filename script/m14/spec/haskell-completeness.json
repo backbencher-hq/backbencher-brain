@@ -246,7 +246,7 @@
     "node_type": "local_binds,let_in,do,bind",
     "status": "RULED",
     "question": "where/let locals: symbol scope and call attribution.",
-    "resolution": "locals never become module symbols; a where-local function's internal calls attribute to the LOCAL function itself (go->local is a true edge); do-binds (`z <- fetch x`) are values, excluded from the callable prepass. SCOPED IDENTITY (2026-09-26, closes the bare-name caveat): a local's edge identity is its lexical owner chain (`owner.local`, nested `owner.inner.local`) and target resolution is lexical — a local is a candidate target only from inside its own scope, a shadowing binder wins for its whole RHS, and do-block `let` binders stay visible for the rest of the do block. Module-qualified targets are untouched."
+    "resolution": "locals never become module symbols; a where-local function's internal calls attribute to the LOCAL function itself (go->local is a true edge); do-binds (`z <- fetch x`) are values, excluded from the callable prepass."
    },
    {
     "id": "HS-D7",
