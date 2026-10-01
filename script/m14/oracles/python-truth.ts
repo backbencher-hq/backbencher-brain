@@ -361,8 +361,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const base = c.qualifiedBases.has(b)
           ? undefined
           : classes.findLast((x) => x.name === b && x.line < c.line && x.name !== c.name)
-        if (base && base.methods.has(m)) add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
-        else if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+        if (base && base.methods.has(m)) {
+          add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
+          // MRO-FIRST, and only the first. Python resolves an attribute to the FIRST base in
+          // MRO order that declares it, so that is the one override that exists; every further
+          // base that happens to declare the same name is SHADOWED, not overridden.
+          //
+          // This loop used to run to completion and emit an edge per declaring base, which is
+          // the pre-PY-8 behaviour the analyzer was fixed for: `class Requirement(Mixin,
+          // RequirementNamedTuple)` has `__new__` only on the NamedTuple, and a loop that emits
+          // for each match names the mixin too. `PosixRemoteConfig(RemoteConfig,
+          // ControllerHostConfig, PosixConfig)` declares `apply_defaults` in THREE of its bases
+          // and the correct answer is `RemoteConfig` alone.
+          break
+        }
+        if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
       }
     }
   }
