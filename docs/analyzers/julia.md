@@ -24,7 +24,7 @@
 `<:` is published as `extends` **only** for a real supertype. A type *parameter's* bound is
 not a supertype: `struct Circle{T<:Real} <: Shape` binds `T`, and `Circle <: Real` is false.
 
-Measured: 0 `overrides`, 0 `implements` over **160,558** relationships across 941 corpus files —
+Measured: 0 `overrides`, 0 `implements` over **160,777** relationships across 941 corpus files —
 and asserted by fixture forbids, so a change that starts emitting them fails a gate rather than
 quietly improving a count.
 
@@ -158,17 +158,17 @@ command literals, block comments, char literals, triple-quoted strings — and a
 
 | | |
 |---|---|
-| symbols / relationships | **27,560 / 160,558** |
+| symbols / relationships | **27,560 / 160,777** |
 | imports / exports | 1,047 / 1,785 |
 | crashes | 0 |
 | determinism | SHA-256 identical across a reused and a fresh analyzer instance |
 | fixtures / mutants | 3 (40 facts) / **16, all caught, 0 survivors** |
 | wall time | **168-208 s** for 941 files (4.5-5.6 file/s) — a range, and the reason is below |
-| largest single file | 1,818 symbols / 3,888 relationships |
+| largest single file | 1,818 symbols / 3,890 relationships |
 
 By kind: function 16,566 · property 4,232 · constant 2,632 · class 2,201 · module 749 ·
 macro 460 · variable 441 · interface 279.
-By relation: **calls 85,174** · references 34,898 · uses 25,766 · contains 10,215 ·
+By relation: **calls 85,393** · references 34,898 · uses 25,766 · contains 10,215 ·
 instantiates 2,720 · extends 1,785.
 
 The wall time is a RANGE because repeated runs of the same code read 167,613 ms and 207,989 ms. The
@@ -195,7 +195,7 @@ share a rule cannot disagree.
 Before them, the state was worse than "unbacked": `extends`, `instantiates` and `calls` were being
 **compared against zero truth rows** and the harness printed that the published coverage for those
 labels is not coverage, while `uses` and `references` (15k and 33k edges) were not compared at all.
-`calls` — 85,174 edges, the largest surface in the lane — was invisible rather than unverified.
+`calls` — 85,393 edges, the largest surface in the lane — was invisible rather than unverified.
 
 Opting `calls`, `uses` and `references` in took the compared surface from 811 to ~6,200 edges on the
 same 60-file sample and **halved** the unexplained rate, which is the opposite of what adding a strict

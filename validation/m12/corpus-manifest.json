@@ -1112,18 +1112,18 @@
         "mutantsCaught": 16,
         "mutantsSurvived": 0,
         "corpusSymbols": 27560,
-        "corpusRelationships": 160558,
+        "corpusRelationships": 160777,
         "grammarErrorFiles": 177,
         "grammarErrorNodes": 1947,
         "grammarErrorFileExclusions": "17 files are NOT Julia \u2014 IR test dumps carrying numbered steps in an s-expression notation \u2014 identified by CONTENT rather than by directory name, because a name-based exclusion is cherry-picking and would hide a real defect if the grammar broke on a file that happened to sit there. They hold 10,308 ERROR nodes between them and are stated, not dropped. Counting them, the analyzer sees ERROR nodes in 205 of 941 files.",
         "trackedFiles": 941,
         "unexpectedGrammarErrorFiles": 0,
         "crashFiles": 0,
-        "wallMs": 167613,
-        "filesPerSecond": 5.61,
-        "symbolsPerSecond": 164,
-        "relationshipsPerSecond": 958,
-        "determinism": "verified by SHA-256 over symbols and relationships for 120 files: identical across two runs with a REUSED analyzer instance and a third with a FRESH one. Checked because an analyzer whose output varies cannot support an edge-truth claim at all.",
+        "wallMs": 186018,
+        "filesPerSecond": 5.06,
+        "symbolsPerSecond": 148,
+        "relationshipsPerSecond": 864,
+        "determinism": "SHA-256 over symbols and relationships for 120 files: 810de5e3f763eda4 across two runs with a REUSED analyzer instance and a third with a FRESH one. Verified at master review, after every fix landed.",
         "measuredAt": "2026-10-01T00:00:00.000Z",
         "declinedRelationships": "`overrides` and `implements` are DECLINED, not unimplemented. Julia has multiple dispatch, not overriding: two same-named methods with different signatures are both live and neither replaces the other, so an `overrides` edge between them states a falsehood. `abstract type` sits in a type hierarchy (`<:`), not in a protocol-conformance relation, so `S implements I` is the managed-OO ontology applied to a language that does not have it. `<:` is published as `extends` ONLY for a real supertype. 0 `overrides` and 0 `implements` edges over 147,251 relationships, asserted by fixture forbids.",
         "note": "Julia shares no ancestry with the managed-OO family, and the lane was built in the opposite order from every other one here: the GRAMMAR WAS MEASURED FIRST. `script/m60/julia-census.ts` ran before an analyzer existed, because every lane in this repo was written first and measured afterwards and the measurement is what finds the defects \u2014 objective-c was closed over an instrument reading 7 of 329 files whose '0 grammar errors' was 49 crashes counted as clean parses. Four constructs were then patched in the grammar itself (185 -> 177 error files) and the analyzer written against the patched result.\n\nThe grammar is almost entirely POSITIONAL: 7 of 151 named node types carry field names, so everything else must be navigated by child ORDER. `scoped_identifier` does not exist in this grammar (0 occurrences in 400 files \u2014 qualified access is a nested `field_expression`); `binary_expression`'s operator is a NAMED child at index 1, so `pos(node,1)` is the operator and not the right operand; a `where` clause wraps the callable in a `where_expression`, whose BARE form puts the type variable there as a sibling identifier, so scanning for a name returns the parameter. Each of those produced a plausible wrong answer on files that parse with zero ERROR nodes.\n\nQualified names are kept WHOLE: measured over 400 files, 1,352 bare segments appear behind a qualified path and 72 are reachable by MORE THAN ONE distinct path (`parse` is `Meta.parse`/`Base.parse`/`TOML.parse`/`Dates.parse`), so collapsing to the last segment fuses unrelated functions into one node.\n\nThe lane's own fixture caught 3 defects AND 2 errors in the expectations, and the mutant set caught 3 mutants that were inert no-ops plus 2 genuine fixture gaps \u2014 the fixture was silent rather than correct. `expectSymbols` matches name AND kind, so an extra wrongly-kinded symbol beside a correct one passes unnoticed.\n\nPerformance was the first measurement nobody had taken, and it found a defect every correctness number walked past: `complexity()` is a full tree walk called ONCE PER SYMBOL, giving every symbol the FILE's complexity. `test/core.jl` took 228 s alone; the 941-file corpus took 969 s. Now 728 ms and 172 s. The residual is not the analyzer \u2014 the worst remaining file spends 16.7 s inside tree-sitter's own `parse()` and 124 ms here.\n\nWHAT THE ORACLES FOUND, since that is the argument for them rather than the row's arithmetic. Each was a defect the fixtures and the mutants both missed: a construction BEFORE its type declaration was a plain call (a comment claimed the opposite of what the code did); a field read published the RECEIVER instead of the member, inverting every `uses` row for every field access in the language; a qualified type annotation named the MODULE; a parameterised type in a namespace had no reference at all; a `where {T<:Real}` bound was invisible because the braced spelling hides it in a curly_expression; a macro's expansion-local binding was published as a member of the macro. Six independently derived implementations, six defects, none of which any count would have shown \u2014 each edge was present, plausible, and named a real identifier in the file.\n\nThe discipline that produced them: expectations authored from Julia semantics BEFORE the analyzer ran, and mutants written as faithful reverts of defects actually shipped. That pairing caught 2 errors in the fixtures themselves, 3 mutants that were inert no-ops returning the result unchanged, and 2 mutants that survived because the fixture and the analyzer were agreeing on NOTHING.",
@@ -1140,14 +1140,14 @@
           "interface": 279
         },
         "relationshipTypes": {
-          "calls": 85174,
+          "calls": 85393,
           "references": 34898,
           "uses": 25766,
           "contains": 10215,
           "instantiates": 2720,
           "extends": 1785
         },
-        "largestSingleFile": "1,818 symbols / 3,888 relationships",
+        "largestSingleFile": "1,818 symbols / 3,890 relationships",
         "f5": {
           "oracles": [
             "contains",
@@ -1168,7 +1168,7 @@
             "references": "97.3%"
           }
         },
-        "wallMsNote": "measured 167,613 ms over repeated runs; a second run on the same code read 207,989 ms. The variance is the shared machine, not the analyzer \u2014 other agents' sweeps run concurrently \u2014 so the range is reported rather than a single pinned number, which would be precision the measurement does not support.",
+        "wallMsNote": "four runs on a SHARED machine with other agents' sweeps concurrent: 167,613 / 186,018 / 195,049 / 207,989 ms, i.e. 4.5-5.6 file/s. A range is stated rather than a pinned number because the variance is load, not the analyzer.",
         "performanceNote": "The original implementation computed the FILE's complexity ONCE PER SYMBOL \u2014 a full tree walk per symbol \u2014 giving 969 s for 941 files at 1.0 file/s, with test/core.jl alone at 228 s. Complexity is now taken at each declaration from that symbol's own node: 168-208 s, 4.5-5.6 file/s. The gain is 5.6x rather than the 286x single-file figure because one pathological file dominated the original total. The residual is not this analyzer: the worst remaining file spends 16.7 s inside tree-sitter's own parse() and 124 ms here."
       }
     }

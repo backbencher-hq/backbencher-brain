@@ -7,13 +7,24 @@
     "note": "NOT the stock artifact. The prebuilt wasm from the npm tarball fails to parse real Julia: 185 of 966 corpus files carry ERROR nodes. Four constructs were patched into the vendored grammar and the wasm rebuilt \u2014 \u221e literal, `const global x = 1` as one node, `abstract type` with a body, operator function definitions \u2014 taking it to 177. A stock wasm cannot silently return: script/m11/verify-grammar-pins.ts checks source\u2194wasm parity and script/m60/julia-census.ts records the defect inventory. The pin matters more than usual because the lane is REGISTERED, so a stock wasm would parse badly rather than fail."
   },
   "corpus": {
-    "_note": "Every one of the grammar's 89 produced named types occurs in the measured corpus, so nothing here is classified from the grammar alone. `ERROR` and `MISSING` are tree-sitter's runtime nodes, absent from node-types.json by design; ERROR is observed on 205 of 941 files. The partition is exhaustive and disjoint: 33 handled + 57 silent = 90, which is the 89 declared-and-produced types plus the two built-ins.",
+    "_note": "RECONCILED at master review, because three instruments report three nearby numbers and the reader should not have to guess which is which. The grammar DECLARES 91 named types. 3 of those are SUPERTYPES \u2014 `_definition`, `_expression`, `_statement` \u2014 which name a category and are never produced by design, leaving 88. The census reports 89 produced rows because its count INCLUDES `ERROR`, tree-sitter's runtime node (12,255 occurrences across 194 files), which is absent from node-types.json by design. The pin's `namedUnique` is 88. The partition below is exhaustive and disjoint: 33 handled + 57 silent = 90, which is those 88 declared-and-produced types plus `ERROR` and `MISSING`. An earlier draft of this note said 89 and was off by one for exactly this reason \u2014 the census's 89 is not a count of declared types and reading it as one is the trap.",
     "files": 941,
-    "grammarTypesObserved": 89,
+    "grammarTypesObserved": 88,
     "grammarTypesNotObserved": [],
     "filesWithErrorNodes": 205,
     "errorNodes": 1947,
-    "filesConsidered": 949
+    "filesConsidered": 949,
+    "declaredNamedTypes": 91,
+    "declaredSupertypesNeverProduced": [
+      "_definition",
+      "_expression",
+      "_statement"
+    ],
+    "censusProducedRows": 89,
+    "censusRowsIncludeRuntimeNodes": [
+      "ERROR"
+    ],
+    "pinNamedUnique": 88
   },
   "handled_verified": {
     "_rule": "the analyzer reads this node to produce a symbol, a relationship, an import, an export, or a metadata value. Derived MECHANICALLY: the set of `case \"<type>\"` labels and `.type === \"<type>\"` comparisons in real-julia-analyzer.ts, intersected with the types the census observed \u2014 not hand-listed, because a hand-list drifts from the code silently.",
@@ -151,9 +162,9 @@
       },
       {
         "id": "JUL-D5",
-        "node_type": "FIVE `case` labels naming types the grammar does not have",
+        "node_type": "FOUR references to types the grammar does not have",
         "status": "RULED",
-        "resolution": "`list_litteral` (misspelled, and `list_literal` does not exist either), `ccall` (`ccall(...)` is a `call_expression`, so the label can never fire), `macrocall_expression_head`, `import_list`, and `value`/`name`/`right`/`mutable` are FIELD names not node types. Dead branches, not missing features \u2014 recorded because 'the analyzer handles X' is otherwise unfalsifiable for an X that does not exist."
+        "resolution": "CORRECTED after a master review, which is the point of keeping the record. The first draft called all five of these `case` labels; only ONE was. `macrocall_expression_head` was a dead `case` branch and is now removed. `list_litteral` (misspelled, and `list_literal` does not exist either) and `import_list` are string comparisons in helper predicates that can never match \u2014 dead branches of a different shape. `ccall` is NOT dead at all: it appears four times as the Julia FUNCTION name checked in the call case, and `ccall(...)` parses as a `call_expression`, which is why the analyzer handles it there. `value`, `name`, `right` and `mutable` are FIELD names, not node types, and were never in scope. Recorded because 'the analyzer handles X' is otherwise unfalsifiable for an X that does not exist, and because a review that trusted the earlier draft would have carried all five errors forward."
       },
       {
         "id": "JUL-D6",
