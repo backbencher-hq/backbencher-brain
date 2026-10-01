@@ -235,6 +235,9 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   // SOL-20: the field the TypeScript lane populates for "which qualified calls does this
   // symbol make". Allowlisted for cross-lane parity, on the same terms as `comments`.
   "qualified_calls", "qualifiedCalls",
+  // SOL-22: the file-level licence identifier (SPDX or otherwise), carried by the
+  // module symbol. Allowlisted for the same cross-lane-parity reason as the rest.
+  "license", "licenseId",
   // relationship rows
   "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
   "line_number", "confidence", "contains", "symbol", "isImport", "isContained",
@@ -442,9 +445,57 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
   // mode is six phantom "missing expectation file" rows that look like a lane problem
   // and are a runner problem.
   const sources = fs.readdirSync(dir).filter(f => exts.some(e => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
+
+  // SUB-DIRECTORY FIXTURES are a MULTI-FILE PROJECT. A lane whose analyzer reads
+  // `AnalyzeContext.projectIndex` cannot be tested by single-file fixtures at all: the
+  // cross-file questions it answers have no cross-file case. Two Solidity mutants
+  // (`project-index-ignored`, `project-index-candidate-as-resolution`) SURVIVED their
+  // first run for exactly that reason — the runner calls `analyze()` with no context,
+  // so both were no-ops against zero rows.
+  //
+  // Opt-in BY STRUCTURE rather than by a flag: a fixture that lives in a subdirectory
+  // is a project, and every `.sol` in that subdirectory is indexed into the context.
+  // Flat fixtures — every pre-existing one — are untouched and still get no context,
+  // which is the property that keeps this additive.
+  const subDirs = new Map<string, string[]>()
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const members = fs.readdirSync(path.join(dir, entry.name))
+      .filter((f) => exts.some((e) => f.endsWith("." + e)) && !f.endsWith(".expectation.json"))
+      .sort()
+    if (members.length > 0) subDirs.set(entry.name, members)
+  }
+  const indexCache = new Map<string, any>()
+  const projectIndexFor = async (sub: string): Promise<any> => {
+    const cached = indexCache.get(sub)
+    if (cached) return cached
+    try {
+      const mod: any = await import("../../src/ast/project-index")
+      const built = await mod.buildProjectIndexFromDisk(
+        path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
+        subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),
+      )
+      mod.buildResolutionTables(built)
+      indexCache.set(sub, built)
+      return built
+    } catch (e: any) {
+      // A lane with no project-index module, or no wasm under that name, simply gets no
+      // context — the pre-existing behaviour. Silent here on purpose: it is not a
+      // failure of the lane, and a hard error would break every language that has no
+      // sub-directory fixtures at all.
+      indexCache.set(sub, null)
+      return null
+    }
+  }
+  const allSources: { src: string; sub: string | null }[] = [
+    ...sources.map((f) => ({ src: f, sub: null as string | null })),
+    ...[...subDirs.entries()].flatMap(([sub, members]) =>
+      members.map((f) => ({ src: path.join(sub, f), sub }))),
+  ]
+
   let pass = 0, fail = 0
   const details: any[] = []
-  for (const src of sources.sort()) {
+  for (const { src, sub } of allSources.sort((a, b) => a.src < b.src ? -1 : 1)) {
     const base = src.slice(0, src.lastIndexOf("."))
     const expPath = path.join(dir, `${base}.expectation.json`)
     if (!fs.existsSync(expPath)) { fail++; details.push({ fixture: `${runLangLang}/${base}`, ok: false, reason: "missing expectation file" }); continue }
@@ -467,7 +518,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         result = (overrideAnalyzer as any).transform(result, content)
       }
     } else {
-      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
+      // A sub-directory fixture gets its project's index; a flat one gets nothing,
+      // which is the pre-SOL-21 contract and the reason every existing expectation
+      // still holds unchanged.
+      result = await analyzer.analyze(
+        tree.rootNode,
+        content,
+        `fixtures/${runLangLang}/${src}`,
+        sub ? { projectIndex: await projectIndexFor(sub) } : undefined,
+      )
     }
     const fixtureFilePath = `fixtures/${runLangLang}/${src}`
     const symbols: Entry[] = result.symbols ?? []

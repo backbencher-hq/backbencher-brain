@@ -1,10 +1,10 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-10-01T02:46:19.911Z",
-  "commit": "06bfd024ea60cde5c8ff1abea4132757dbdf1297",
+  "at": "2026-10-01T03:34:02.595Z",
+  "commit": "0d9d1fa73cd4da973ef55b67e9dcd013219e44b9",
   "loadContext": {
-    "loadAvg1": 22.32,
+    "loadAvg1": 20.03,
     "cores": 8,
     "memoryPsiFullAvg10": "0.00"
   },
@@ -150,6 +150,16 @@
         "mean": 1.214,
         "_note": "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live."
       },
+      "licences": {
+        "moduleSymbols": 389,
+        "licensed": 389,
+        "coveragePct": 100,
+        "distinct": [
+          "BSD-3-Clause",
+          "MIT"
+        ],
+        "_note": "SOL-22. The licence lives on the MODULE symbol, and the module symbol is the one symbol SOL-16 could not document: `// SPDX-License-Identifier: MIT` is followed by the `pragma_directive`, which is not a DECLARATION, so the attachment rule had nothing to land on. Before SOL-22, ZERO of 5,976 symbols carried a licence on a corpus where essentially every file states one. Read from the file's FIRST comment run only — a licence buried on line 400 is a remark that happens to contain the word — and a file whose first comment is an ordinary remark gets no key at all rather than a guess."
+      },
       "qualifiedCalls": {
         "symbolsWithAValue": 601,
         "distinctQualifiedNames": 407,
@@ -165,9 +175,9 @@
       "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 34181,
-      "perFileMs": 87.869,
-      "factsPerMs": 959.103
+      "wallMs": 19603,
+      "perFileMs": 50.394,
+      "factsPerMs": 1672.337
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",

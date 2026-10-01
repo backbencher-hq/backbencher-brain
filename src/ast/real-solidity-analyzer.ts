@@ -343,6 +343,36 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
 
     /**
+     * SOL-22 — read the licence identifier off the file's first comment run.
+     *
+     * Solidity's own convention is `SPDX-License-Identifier: <id>`, and the grammar's
+     * `comment` node holds the text verbatim, so the marker is found by scanning for the
+     * literal rather than by matching a shape — no regex, consistent with this lane.
+     * Only the FIRST run is considered, because a licence is a file-level statement and
+     * a licence buried on line 400 is a remark that happens to contain the word.
+     */
+    const readSolcLicence = (root: Node): string | null => {
+      const run: Node[] = []
+      for (let i = 0; i < root.namedChildCount; i++) {
+        const c = root.namedChild(i)
+        if (!c) continue
+        if (c.type === "comment") { run.push(c); continue }
+        break
+      }
+      for (const c of run) {
+        const text = readNatSpec(c.text).text
+        if (text === "") continue
+        for (const line of text.split("\n")) {
+          const t = line.trim()
+          if (!t.startsWith("SPDX-License-Identifier:")) continue
+          const id = t.slice("SPDX-License-Identifier:".length).trim()
+          if (id !== "") return id
+        }
+      }
+      return null
+    }
+
+    /**
      * SOL-16 — NATSPEC. The language's documentation system, and this lane read NONE
      * of it: 5,254 `comment` nodes over the 389-file corpus, zero reaching a symbol.
      * Solidity's `///` line form and its slash-star block form are exactly what the
@@ -516,12 +546,33 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     const fileName = this.basenameOf(filePath)
     const lines = content.split("\n")
 
+    // SOL-22 — LICENCE. The module symbol is pushed here, BEFORE the NatSpec pre-pass
+    // runs, so it was the one symbol that could never be documented — and the licence
+    // lives on exactly that symbol.
+    //
+    // `// SPDX-License-Identifier: MIT` is the first comment in virtually every
+    // Solidity file, and it reaches nothing for a structural reason: its next named
+    // sibling is the `pragma_directive`, which is not a DECLARATION, so SOL-16's
+    // attachment rule has no declaration to land on. The consequence was that ZERO of
+    // 5,976 symbols carried a licence, on a corpus where every file states one.
+    //
+    // So the licence is read here, from the FILE'S FIRST comment run, and only when it
+    // actually carries a licence identifier. A file whose first comment is an ordinary
+    // remark gets no `license` key at all rather than a guess: absence is the honest
+    // value, and `pool-worker` has no licence field, so this travels in metadata and as
+    // a top-level symbol field beside `docstring`.
+    const licence = readSolcLicence(rootNode)
     symbols.push({
       name: fileName,
       kind: ASTEngine.SymbolKind.Module,
       range: this.nodeToRange(rootNode),
       visibility: "public",
-      metadata: { soliditySpecific: true, isCompilationUnit: true },
+      ...(licence !== null ? { license: licence } : {}),
+      metadata: {
+        soliditySpecific: true,
+        isCompilationUnit: true,
+        ...(licence !== null ? { license: licence } : {}),
+      },
     })
 
     let cyclomaticComplexity = 1
