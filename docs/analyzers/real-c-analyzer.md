@@ -579,22 +579,69 @@ it was unbounded and crashed).
   thirteenth was a **real missing edge**: `rel:Negative.c:references:pick_color:Color`,
   a function's typedef-spelled return type, which CGD34's parent-only gate had
   been suppressing for every such function. Fixed (#935); the probe now reports 80.
-- **The artifact cannot be regenerated in this checkout, and the reason is NOT the
-  corpus path.** The F5 harness reads
-  `CORPUS_ROOT = $HOME/fixtures/repositories`, which does not exist here,
-  but that is overridable with `BB_CORPUS_ROOT` and pointing it at the real root
-  does not help. The C lane's registered corpora are **`sqlite` (primary) and `jq`
-  (second)** (`LANG_REPOS.c` / `LANG_REPOS_SECOND.c` in `differential.ts:368,512`)
-  and **neither exists in this corpus root**, which holds `curl`, `libgit2` and
-  `redis` instead. The run aborts on the first missing pin, and `--repo` cannot
-  help because there is no registered C corpus to point it at. So the C
-  differential has no runnable configuration here at all, which is consistent with
-  the artifact recording **39 of its 65 input hashes as stale** — including
-  `src/ast/real-c-analyzer.ts` itself (recorded `091f9498bd`, actual `6306c1afd2`)
-  and 30 other lanes' analyzers. It describes a tree that no longer exists.
-  No script in the tree writes `c-differential.json` by that name, so its producer
-  is absent too. Two owner decisions follow, and both are shared-harness changes:
-  repoint the C lane at a corpus that exists, or ship `sqlite`/`jq`. **The M12
+- **CORRECTED #964: the differential WAS runnable; the recorded reason was wrong.**
+  Three claims in the earlier version of this bullet were false, and running the
+  lane is what proved it:
+  - `CORPUS_ROOT` does default to another user's home
+    (`$HOME/fixtures/repositories`), and it is overridable with
+    `BB_CORPUS_ROOT`.
+  - The C lane's **primary** corpus is `sqlite` (`LANG_REPOS.c = "sqlite"`), which
+    is indeed absent here — but C is **absent from `LANG_REPOS_SECOND` entirely**.
+    There is no `jq` second corpus registered for C; that claim was invented.
+  - **`--repo` works.** `--repo zig` bypasses the registration check, and `zig` is
+    C's own pinned M12 target (`validation/m12/corpus-manifest.json`,
+    `analyzer: "c"` → `corpusTarget: "zig"`, 400 tracked `*.c` files over wasm2c,
+    musl libc, glibc compat, mingw and freebsd libc). There was a runnable
+    configuration the whole time.
+
+  Running it immediately exposed a **real defect, in the ORACLE**. Six of 408
+  truth rows were MISSING: `calls (expr) -> MAP_*` in zig's wasi libc `mman.c`.
+  These were oracle **fabrications**, not analyzer misses — recovery splices a
+  directive's identifier into a real `call_expression` and makes the next line's
+  parenthesized expression its argument list:
+
+  ```
+  #ifdef MAP_HUGETLB
+          (flags & MAP_HUGETLB) != 0 ||      <- no call exists here at all
+
+  call_expression
+    identifier    "MAP_HUGETLB"              <- the #ifdef's tested macro
+    argument_list "(flags & MAP_HUGETLB)"    <- the NEXT line
+  ```
+
+  `#ifdef X` **tests** a macro, it does not invoke one — the analyzer's #956
+  ruling, extended by #908/#912. The oracle's USES derivation already guarded
+  this with `isDirectiveConditionText`; the CALLS branch did not, so the
+  differential was convicting a correct analyzer for six rows. A superset oracle
+  trades a fabrication for an unexplained edge, the trade this file already
+  refuses in `deriveSvelteComponentUsages`. #964 mirrors the gate.
+
+  **How to run it:**
+
+```
+BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
+  bun run script/m14/differential.ts --lang c --repo zig
+```
+
+The harness writes no artifact for a scoped `--lang c` run on purpose: `M14.0.F5`
+belongs to the canonical 60-file, 40-language sweep, and a scoped run would
+replace that claim with a smaller one. `--update-baseline` would pin the drawn
+file set (`zig:c` is currently unpinned), but that is a shared-harness decision.
+
+Measured on `zig:c`, 60 files (the cold pool rotates the sample, so counts move
+between runs — the direction does not):
+
+  | | truth | covered | MISSING | unexplained |
+  | --- | --- | --- | --- | --- |
+  | before #964 | 408 | 402 (98.5%) | 6 | 34 (7.8%) |
+  | after #964 | 387 | **387 (100%)** | **0** | 8 (2%) |
+
+  What remains: the **stale artifact**. `c-differential.json` still records **39
+  of its 65 input hashes as stale** — including `src/ast/real-c-analyzer.ts`
+  itself (recorded `091f9498bd`) and 30 other lanes' analyzers — so it describes
+  a tree that no longer exists, and **no script in the tree writes it by that
+  name**, so its producer is absent. Writing a fresh one under that name is an
+  owner decision, not this lane's. **The M12
   differential is a FIXTURE differential, though** — `truthSource: manual_audit`
   over `validation/m12/fixtures/c/*.{c,h}` — which is why the drift above is
   measurable here at all, and that is the argument for keeping the fixture-based
