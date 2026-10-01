@@ -20220,6 +20220,31 @@ async function main() {
       } catch { return out }
       return out
     }
+    // The vendored Dart SDK's library tree, located from the running `dart` binary so
+    // it follows the environment rather than a hardcoded prefix. Returns null when
+    // there is no SDK on the machine, which is a legitimate state: the lane then
+    // keeps the first-parent fallback and says so.
+    const dartSdkLibDir = (): string | null => {
+      const candidates: string[] = []
+      try {
+        const dart = execSync("command -v dart || true", { encoding: "utf8" }).trim()
+        // `dart` is a WRAPPER at <flutter>/bin/dart; the SDK it runs is at
+      // <flutter>/bin/cache/dart-sdk. Resolving `dirname(dart)/../lib` lands on
+      // <flutter>/lib, which does not exist — measured, and it reported "sdk not
+      // found" while the libraries sat 439 files away.
+      if (dart) {
+        const bin = path.dirname(dart)
+        candidates.push(path.resolve(bin, "cache", "dart-sdk", "lib"))
+        candidates.push(path.resolve(bin, "..", "lib"))
+      }
+      } catch { /* no shell, no dart */ }
+      if (process.env.DART_SDK) candidates.push(path.join(process.env.DART_SDK, "lib"))
+      for (const c of candidates) {
+        try { if (fs.existsSync(path.join(c, "core")) && fs.existsSync(path.join(c, "async"))) return c } catch { /* try the next */ }
+      }
+      return null
+    }
+
     const walkDartFiles = (dir: string, out: string[] = []): string[] => {
       let es: fs.Dirent[]
       try { es = fs.readdirSync(dir, { withFileTypes: true }) } catch { return out }
@@ -20291,6 +20316,33 @@ async function main() {
             for (const f of walkDartFiles(root)) { indexFiles.push(f); depFiles++ }
           }
           console.log(`  [project-index] dart deps=${depsMode}: +${depFiles} dependency files`)
+
+          // THE SDK LIBRARIES, indexed too. `dart:io`, `dart:async` and `dart:core`
+          // are where a large part of every Flutter codebase's inheritance ends up —
+          // `WebSocket.connect`, `BaseClient.send`, `Exception.toString`,
+          // `StreamSink.add` — and they are not in the pub cache, not in the
+          // repository, and not in any package_config.json, so no dependency mode
+          // could ever reach them.
+          //
+          // I previously recorded these as "ships no source, unresolvable in
+          // principle". That was wrong, and worth recording as wrong: the Dart SDK
+          // vendored inside the Flutter SDK has its libraries on disk at
+          // `<flutter>/bin/cache/dart-sdk/lib`, 439 files. The declarations are not
+          // where a reader would guess either — `WebSocket` is not in `lib/io/io.dart`
+          // (9 KB of part directives) but in `lib/_http/websocket.dart`, an internal
+          // library — so indexing the `lib/` TREE rather than the `dart:io` library
+          // is what finds them.
+          //
+          // Resolved from the running `dart`, not hardcoded, so it follows whatever
+          // SDK the environment actually has.
+          const sdkLib = dartSdkLibDir()
+          if (sdkLib) {
+            const n = walkDartFiles(sdkLib)
+            for (const f of n) indexFiles.push(f)
+            console.log(`  [project-index] dart sdk: +${n.length} library files from ${sdkLib}`)
+          } else {
+            console.log("  [project-index] dart sdk: not found on this machine (no dart-sdk/lib) — dart:core/dart:async/dart:io bases stay unresolved")
+          }
         }
         // STREAMING, not the collecting form: this corpus is 4,378 files with
         // dependencies attached, and `buildProjectIndexFromDisk` retains every parse

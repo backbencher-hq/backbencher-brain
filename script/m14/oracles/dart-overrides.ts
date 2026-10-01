@@ -198,6 +198,56 @@ function declarationName(node: any): string | null {
 
 /** Every method name a declaration owns. Names only — see rule 1. */
 
+
+/** The member names ONE body child contributes.
+ *
+ *  `methodNames` and `overrideMembers` used to carry their own copies of this, and
+ *  the copies drifted: annotated FIELDS were taught to the first and not the second,
+ *  so `methodNames` reported a member the `@override` gate then refused. The visible
+ *  symptom was an oracle that derived nothing for a base in another file while the
+ *  analyzer published the same edge at 0.95 —
+ *
+ *    final class MusicControlError extends MusicControlState
+ *        implements ConnectionErrorState {
+ *      @override
+ *      final String message;
+ *
+ *  Two copies of one rule is one copy too many. There is now one. */
+function memberNamesOf(m: any): string[] {
+  const out: string[] = []
+  const add = (nm: string | null): void => { if (nm && IDENT.test(nm) && !out.includes(nm)) out.push(nm) }
+  if (m.type === "method_signature") {
+    for (const w of named(m)) {
+      if (!NAME_WRAPPERS.has(w.type)) continue
+      const nm = field(w, "name")
+      if (nm && nm !== "operator" && IDENT.test(nm)) add(nm)
+      else if (nm === "operator" || w.type === "operator_signature") {
+        for (let i = 0; i < w.childCount; i++) {
+          const g = w.child(i)
+          if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { add(nx.text); break } }
+        }
+      }
+    }
+    return out
+  }
+  if (m.type === "declaration") {
+    for (const c of named(m)) {
+      if (NAME_WRAPPERS.has(c.type)) { const nm = field(c, "name"); if (nm) add(nm); continue }
+      // an ANNOTATED FIELD overrides an inherited accessor — see methodNames for why
+      // the annotation is load-bearing rather than decorative
+      if (c.type === "initialized_identifier_list" || c.type === "static_final_declaration_list") {
+        if (!hasOverrideAnnotation(m)) continue
+        for (const id of named(c)) {
+          if (id.type === "initialized_identifier" || id.type === "static_final_declaration") {
+            add(field(id, "name") ?? firstIdentifierText(id))
+          }
+        }
+      }
+    }
+  }
+  return out
+}
+
 /** Does this member carry an `@override` annotation?
  *
  *  The annotation is a preceding SIBLING of the member it decorates — the same
@@ -226,72 +276,55 @@ function firstIdentifierText(n: any): string | null {
   return null
 }
 
-function methodNames(node: any, bodyType: string): string[] {
+
+/** The PLAIN field names a type declares.
+ *
+ *  A field is a valid override witness for an ACCESSOR and for nothing else, because
+ *  in Dart a field implicitly provides a getter and a setter — so a subclass that
+ *  declares `@override String get walletId` really is overriding the base's field —
+ *  while field-over-field is not legal Dart at all.
+ *
+ *  This is the other half of the rule `memberNames` applies, and the two are not in
+ *  conflict. Unannotated fields are excluded from the MEMBER set because a base's
+ *  field must not satisfy "this base declares an overriding method" (PYTHON's
+ *  class-variable defect), but they are exactly the right witness for a subclass
+ *  ACCESSOR:
+ *
+ *    class Wallet extends Equatable { final String walletId; }     // field
+ *    class _EmptyWallet implements Wallet {
+ *      @override
+ *      String get walletId => '';                                  // accessor
+ *    }
+ *
+ *  The analyzer published that edge at 0.95 and this oracle published nothing,
+ *  because the base's `walletId` was a field and the member set only held
+ *  signatures. Two rules, one behaviour, and the honest form of both is "a field is
+ *  a witness for an accessor" — so the walk accepts a field match only when the
+ *  overriding member is annotated, which is the only way a field can be overriding
+ *  anything. */
+function fieldNames(node: any, bodyType: string): string[] {
   const out: string[] = []
   const body = named(node).find((c: any) => c.type === bodyType)
   if (!body) return out
   for (const m of named(body)) {
-    const add = (nm: string | null): void => {
-      if (nm && !out.includes(nm)) out.push(nm)
-    }
-    if (m.type === "method_signature") {
-      for (const w of named(m)) {
-        if (!NAME_WRAPPERS.has(w.type)) continue
-        const nm = field(w, "name")
-        if (nm && nm !== "operator" && IDENT.test(nm)) add(nm)
-        else if (nm === "operator" || w.type === "operator_signature") {
-          for (let i = 0; i < w.childCount; i++) {
-            const g = w.child(i)
-            if (g && !g.isNamed && g.text === "operator") {
-              const nx = w.child(i + 1)
-              if (nx) { add(nx.text); break }
-            }
-          }
-        }
-      }
-    } else if (m.type === "declaration") {
-      // a method can be written as `declaration > function_signature`
-      for (const c of named(m)) {
-        if (NAME_WRAPPERS.has(c.type)) {
-          const nm = field(c, "name")
-          if (nm && IDENT.test(nm)) add(nm)
-        }
-        // AN ANNOTATED FIELD IS OVERRIDABLE. In Dart a field can override an
-        // inherited getter or setter, and `@override` is how that is marked:
-        //
-        //   final class VoteError extends VoteState implements ConnectionErrorState {
-        //     @override
-        //     final String message;
-        //     const VoteError(this.message);
-        //   }
-        //
-        // reads as `VoteError.message` overriding `ConnectionErrorState.message`,
-        // which is a getter in an interface. This function only collected NAME_WRAPPERS
-        // — signature nodes — so it saw no member called `message` and derived no
-        // edge, while the analyzer published one at 0.95 and the row read as a
-        // disagreement. The analyzer was right.
-        //
-        // GATED ON `@override`, which is the whole reason the analyzer is right to
-        // publish it: a Dart field cannot be overridden by another field, only by an
-        // accessor, and the annotation is what says this one is shadowing an
-        // inherited accessor rather than declaring a new one. An UNANNOTATED field
-        // is a declaration, not an override, and is excluded here for the reason
-        // PYTHON's spec excludes class variables — an ungated field would make a
-        // base's field satisfy "this base declares the name" and fabricate edges at
-        // full confidence.
-        if (c.type === "initialized_identifier_list" || c.type === "static_final_declaration_list") {
-          if (hasOverrideAnnotation(m)) {
-            for (const id of named(c)) {
-              if (id.type === "initialized_identifier" || id.type === "static_final_declaration") {
-                const nm = field(id, "name") ?? firstIdentifierText(id)
-                if (nm && IDENT.test(nm)) add(nm)
-              }
-            }
-          }
-        }
+    if (m.type !== "declaration") continue
+    for (const c of named(m)) {
+      if (c.type !== "initialized_identifier_list" && c.type !== "static_final_declaration_list") continue
+      for (const id of named(c)) {
+        if (id.type !== "initialized_identifier" && id.type !== "static_final_declaration") continue
+        const nm = field(id, "name") ?? firstIdentifierText(id)
+        if (nm && IDENT.test(nm) && !out.includes(nm)) out.push(nm)
       }
     }
   }
+  return out
+}
+
+function methodNames(node: any, bodyType: string): string[] {
+  const out: string[] = []
+  const body = named(node).find((c: any) => c.type === bodyType)
+  if (!body) return out
+  for (const m of named(body)) for (const nm of memberNamesOf(m)) if (!out.includes(nm)) out.push(nm)
   return out
 }
 
@@ -314,37 +347,9 @@ function overrideMembers(node: any, bodyType: string): Set<string> {
   const out = new Set<string>()
   const body = named(node).find((c: any) => c.type === bodyType)
   if (!body) return out
-  const annotated = (m: any): boolean => {
-    // the annotation is a preceding sibling; some shapes nest it one level up
-    for (let hop = 0, cur = m; hop < 3 && cur; hop++) {
-      const sib = cur.previousNamedSibling
-      if (sib) {
-        const txt = sib.text ?? ""
-        if (/@override\b/.test(txt)) return true
-        if (sib.type.includes("annotation") || sib.type.includes("metadata")) {
-          for (let i = 0; i < sib.namedChildCount; i++) {
-            const c = sib.namedChild(i)
-            if (c && /@?override\b/.test(c.text ?? "")) return true
-          }
-        }
-      }
-      cur = sib
-    }
-    return false
-  }
   for (const m of named(body)) {
-    if (!annotated(m)) continue
-    for (const w of named(m)) {
-      if (!NAME_WRAPPERS.has(w.type)) continue
-      const nm = field(w, "name")
-      if (nm && nm !== "operator" && IDENT.test(nm)) out.add(nm)
-      else if (w.type === "operator_signature") {
-        for (let i = 0; i < w.childCount; i++) {
-          const g = w.child(i)
-          if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { out.add(nx.text); break } }
-        }
-      }
-    }
+    if (!hasOverrideAnnotation(m)) continue
+    for (const nm of memberNamesOf(m)) out.add(nm)
   }
   return out
 }
@@ -445,6 +450,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
   const methodsOf = new Map<string, string[]>()
   const supertypesOf = new Map<string, string[]>()
   const overrideOf = new Map<string, Set<string>>()
+  const fieldsOf = new Map<string, string[]>()
   const collect = (node: any): void => {
     if (!node) return
     if (DECLS.has(node.type)) {
@@ -452,6 +458,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
       if (nm) {
         const bodyType = BODY_OF[node.type]
         methodsOf.set(nm, methodNames(node, bodyType))
+        fieldsOf.set(nm, fieldNames(node, bodyType))
         overrideOf.set(nm, overrideMembers(node, bodyType))
         supertypesOf.set(nm, directSupertypes(node))
       }
@@ -522,7 +529,13 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         const supMethods = methodsOf.get(sup)
         if (supMethods) {
           // declared IN THIS FILE — the higher-priority pass
-          if ((exposed.get(sup) ?? supMethods).has(m)) {
+          // A field in the base is a witness for an ACCESSOR override, not for a
+        // method. Gated on the annotation because that is the only evidence in the
+        // file that this member is overriding something rather than coincidentally
+        // sharing a name.
+        const fieldWitness =
+          (fieldsOf.get(sup) ?? []).includes(m) && (overrideOf.get(cls)?.has(m) ?? false)
+        if ((exposed.get(sup) ?? supMethods).has(m) || fieldWitness) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
             break

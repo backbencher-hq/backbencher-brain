@@ -319,8 +319,15 @@ Both differential lanes, `--dart-deps=direct`, freshly measured (each run report
 
 | lane | coverage | MISSING | unexplained |
 |---|---|---|---|
-| proxicall:dart | 100% | 0 | **0** |
+| proxicall:dart | 100% | 0 | **1** |
 | dart-http:dart | 100% | 0 | 4 |
+
+`--dart-deps=direct` plus the vendored Dart SDK library tree
+(`<flutter>/bin/cache/dart-sdk/lib`, 439 files, resolved from the running `dart`)
+gives 13,846 types on proxicall. Two earlier claims in this file were wrong and are
+corrected here: the SDK libraries ARE on disk, and `dart:io` is not unreachable —
+`WebSocket` simply lives in `lib/_http/websocket.dart`, an internal library, so
+indexing the `lib/` TREE rather than the `dart:io` library is what finds it.
 
 The 4 remaining on dart-http are `dart:io` SDK types (`WebSocket.connect`,
 `BaseClient.send`, `OutgoingConnectionWindowHandler.peerWindowSize`) at confidence
