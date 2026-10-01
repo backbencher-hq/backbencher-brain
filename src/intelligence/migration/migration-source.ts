@@ -46,6 +46,17 @@ export interface MigrationSymbol {
   type: string
   language: string
   file: string
+  /**
+   * The symbol's own line, as the index stored it.
+   *
+   * It was SELECTed by one query and then discarded, which made two components
+   * that share a name IN ONE FILE indistinguishable in every label the tool
+   * prints — `cappedNames` renders `name (file)`, and on cobra two
+   * `FParseErrWhitelist` symbols both live in `command.go` at lines 42 and 205, so
+   * the fallback disambiguated nothing. It is also what a plan should have said in
+   * the first place: `bb_search` renders `command.go:54` for the same symbol.
+   */
+  line: number | null
 }
 
 export interface MigrationRelationship {
@@ -163,7 +174,7 @@ export async function loadMigrationSymbolsByPath(
     }
     for (const r of rows) {
       matchedFiles.add(r.file)
-      symbols.push({ id: r.id, name: r.name, type: r.type, language: r.language, file: r.file })
+      symbols.push({ id: r.id, name: r.name, type: r.type, language: r.language, file: r.file, line: r.line === null || r.line === undefined ? null : Number(r.line) })
     }
   }
   // Overlapping paths (src/api and src/api/v1) can yield the same symbol twice.
@@ -203,7 +214,8 @@ async function loadMigrationSymbolsById(
       .prepare(
         `SELECT s.id AS id, s.name AS name, s.symbol_type AS type,
                 COALESCE(f.language, 'unknown') AS language,
-                COALESCE(f.relative_path, 'unknown') AS file
+                COALESCE(f.relative_path, 'unknown') AS file,
+                s.line_start AS line
          FROM brain_symbol s
          LEFT JOIN brain_file f ON f.id = s.file_id
          WHERE s.project_id = ? AND s.id IN (${placeholders(group.length)})
@@ -212,7 +224,7 @@ async function loadMigrationSymbolsById(
       .all(projectId, ...group) as any[]
     for (const row of rows) {
       found.add(row.id)
-      symbols.push({ id: row.id, name: row.name, type: row.type, language: row.language, file: row.file })
+      symbols.push({ id: row.id, name: row.name, type: row.type, language: row.language, file: row.file, line: row.line === null || row.line === undefined ? null : Number(row.line) })
     }
   }
   return { symbols, unmatched: ids.filter((id) => !found.has(id)) }
@@ -265,7 +277,8 @@ export async function resolveMigrationSymbols(
       .prepare(
         `SELECT s.id AS id, s.name AS name, s.symbol_type AS type,
                 COALESCE(f.language, 'unknown') AS language,
-                COALESCE(f.relative_path, 'unknown') AS file
+                COALESCE(f.relative_path, 'unknown') AS file,
+                s.line_start AS line
          FROM brain_symbol s
          LEFT JOIN brain_file f ON f.id = s.file_id
          WHERE s.project_id = ? AND lower(s.name) IN (${placeholders(group.length)})

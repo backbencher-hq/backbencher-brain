@@ -105,6 +105,12 @@ export interface MigrationPlanResult {
     }>
     byWave: Array<{ wave: number; symbols: number; perPlanSumHours: number }>
     /**
+     * The waves keyed by SYMBOL, where every plan appears exactly once. `waves`
+     * renders names and disambiguates a name two files share by appending the
+     * file; this is the same partition with the identity a caller can index.
+     */
+    wavePlan: Array<{ wave: number; symbols: Array<{ symbolId: string; name: string; file: string; line: number | null }> }>
+    /**
      * What the cohort actually CONTAINS, by indexed source language. A cohort
      * scoped to a project root is often mostly YAML and Markdown; without this,
      * "0 plans" and "100 YAML documents" are indistinguishable from the summary.
@@ -588,6 +594,47 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
   const cyclicPeers = plans.map((p) => String(p.componentName)).filter((name) => !waveOf.has(name))
   const waves = cyclicPeers.length ? [...baseWaves, cyclicPeers.slice().sort()] : baseWaves
   for (const name of cyclicPeers) waveOf.set(name, waves.length - 1)
+
+  // A WAVE is a list of names; a PLAN is a symbol. Since round 6 those are
+  // different things: two components in different files can share a name, and one
+  // wave entry then stands for two plans. Measured on a one-file cobra cohort:
+  // 100 plans, 99 distinct names, `FParseErrWhitelist` planned twice, one wave
+  // entry. `byWave` was never wrong — it iterates plans — but the LABEL was: a
+  // team reading `waves: 3[FParseErrWhitelist, …]` cannot tell which file to
+  // migrate, and the very same ambiguity in `cappedNames` is resolved by rendering
+  // `name (file)`.
+  //
+  // So `waves` renders the file whenever a name is ambiguous, and `cohort.wavePlan`
+  // is the machine-readable view keyed by symbol id, where every plan appears
+  // exactly once. A human gets an unambiguous label; a caller gets something it can
+  // index without parsing a string.
+  const renderName = (name: string): string[] => {
+    // One label per COMPONENT, not per name. A name two plans share must expand to
+    // as many labels as there are plans under it, or the wave holds 4 plans behind
+    // 3 labels and the reader cannot tell which is which.
+    const withName = plans.filter((plan) => String(plan.componentName) === name)
+    if (withName.length < 2) return [name]
+    const byFile = new Map<string, typeof withName>()
+    for (const plan of withName) {
+      const file = String(plan.sourceFile ?? "unknown")
+      byFile.set(file, [...(byFile.get(file) ?? []), plan])
+    }
+    // name + file is enough — one component per file.
+    if ([...byFile.values()].every((group) => group.length === 1)) {
+      return [...byFile.keys()].sort().map((file) => `${name} (${file})`)
+    }
+    // name AND file collide — measured on cobra, where two `FParseErrWhitelist`
+    // symbols both live in command.go. The line is what separates them, and it is
+    // what `bb_search` prints for the same symbol.
+    return withName.map((plan) => `${name} (${String(plan.sourceFile ?? "unknown")}:${plan.sourceLine ?? "?"})`).sort()
+  }
+  const waveLabels: string[][] = waves.map((wave) => wave.flatMap(renderName))
+  const wavePlan = waves.map((wave, index) => ({
+    wave: index,
+    symbols: plans
+      .filter((plan) => waveOf.get(String(plan.componentName)) === index)
+      .map((plan) => ({ symbolId: plan.symbolId, name: String(plan.componentName), file: String(plan.sourceFile ?? "unknown"), line: plan.sourceLine ?? null })),
+  }))
   const fileGroups = new Map<string, { file: string; symbols: number; perPlanSumHours: number; productionIntegrationPoints: number; testIntegrationPoints: number }>()
   for (const plan of plans) {
     const file = String(plan.sourceFile ?? "unknown")
@@ -670,6 +717,7 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     },
     byFile: [...fileGroups.values()].sort((a, b) => b.perPlanSumHours - a.perPlanSumHours || a.file.localeCompare(b.file)),
     byWave: [...waveGroups.values()].sort((a, b) => a.wave - b.wave),
+    wavePlan,
     byLanguage: [...languageBuckets.values()].sort((a, b) => b.symbols - a.symbols || a.language.localeCompare(b.language)),
     refusedByReason: [...refusedBuckets.values()].sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason)),
     statement:
@@ -707,7 +755,7 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
     evidenceTotals,
     cohort,
     dependencyOrder,
-    waves,
+    waves: waveLabels,
     scope: {
       integrationPoints: scopeIntegrationPoints,
       inScope: scopeInScope,
@@ -778,7 +826,16 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
       ? [`per file: ${result.cohort.byFile.slice(0, 10).map((f) => `${f.file} (${f.symbols} sym, ${f.perPlanSumHours}h)`).join("; ")}${result.cohort.byFile.length > 10 ? `; … and ${result.cohort.byFile.length - 10} more` : ""}`]
       : []),
     ...(result.cohort.byWave.length ? [`per wave: ${result.cohort.byWave.map((w) => `wave ${w.wave + 1} = ${w.symbols} sym, ${w.perPlanSumHours}h`).join("; ")}`] : []),
-    ...(result.waves.length ? [`waves: ${result.waves.map((wave, i) => `${i + 1}[${wave.join(", ")}]`).join(" -> ")}`] : []),
+    ...(result.waves.length
+      ? [
+          `waves: ${result.waves.map((wave, i) => `${i + 1}[${wave.join(", ")}]`).join(" -> ")}` +
+            // Say it once, where the numbers are, when a label carries a file —
+            // otherwise `3[Foo (a.ts), Foo (b.ts)]` is the reader's only clue.
+            (result.cohort.wavePlan.some((w) => w.symbols.length !== new Set(w.symbols.map((x) => x.name)).size)
+              ? `  (a name shared by two components is labelled once per component; ${result.plans.length} plans are in ${result.cohort.wavePlan.length} waves — index them by cohort.wavePlan, not by name)`
+              : ""),
+        ]
+      : []),
     ...(result.unsupported.length
       ? [
           `refused: ${result.unsupported.length} of ${result.truncation.returned} requested component(s) produced no plan — ${result.cohort.refusedByReason.map((r) => `${r.count} ${r.reason}`).join(", ")}; the reasons are listed under "unsupported" below` +

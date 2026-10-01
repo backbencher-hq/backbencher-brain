@@ -79,6 +79,12 @@ export namespace CrossLanguageMigrationAssistant {
     symbolId: string
     /** The file that symbol is defined in, taken from the plan's own symbol. */
     sourceFile: string
+    /**
+     * Where the component starts, as the index stored it; null when the index has
+     * no line for it. Never invented, and never parsed back out of `symbolId` —
+     * the id is an opaque key, not a tuple.
+     */
+    sourceLine: number | null
     sourceLanguage: string
     targetLanguage: string
     /** Libraries backed by an indexed import. The only kind that is evidence. */
@@ -1238,7 +1244,7 @@ export namespace CrossLanguageMigrationAssistant {
    * worked on the happy path would be a second implementation of the planner.
    */
   function buildPlan(
-    symbol: { id: string; name: string; type?: string; language: string; file: string; metadata?: any },
+    symbol: { id: string; name: string; type?: string; language: string; file: string; line?: number | null; metadata?: any },
     targetLanguage: string,
     source: MigrationSource,
   ): MigrationOutcome {
@@ -1454,6 +1460,12 @@ export namespace CrossLanguageMigrationAssistant {
         componentName: symbol.name,
         symbolId: symbol.id,
         sourceFile: symbol.file,
+        /**
+         * Where the component starts, as the index stored it. Null when the index
+         * has no line for it, which is stated rather than invented — and it is
+         * what tells two same-named components in ONE FILE apart.
+         */
+        sourceLine: symbol.line ?? null,
         sourceLanguage,
         targetLanguage: normalizedTargetLanguage,
         dependencies,
