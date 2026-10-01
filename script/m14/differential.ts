@@ -141,6 +141,27 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
   const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
   for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
   h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
+  // The ORACLES are truth, so an oracle edit invalidates a cached verdict for the
+  // same reason a parser edit does — and this file's own comment above records what
+  // happens when that reasoning is applied to the analyzer but not to the thing the
+  // analyzer is compared AGAINST. `script/m14/oracles/` was not hashed at all, so
+  // editing an oracle left the journal key byte-identical and the next run printed
+  // `RESUMED from journal` with the PREVIOUS truth function's numbers, undetectably.
+  //
+  // Found while repairing `script/m14/oracles/solidity.ts`, whose
+  // `revert_statement` derivation had never fired: the analyzer and the oracle were
+  // both wrong at once and F5 agreed at zero. Fixing only the analyzer made the pair
+  // disagree, and the disagreement was reported as 37 unexplained edges that no
+  // amount of re-running would clear, because the run never re-derived. Two
+  // instruments that are both dead look like corroboration; hashing the oracle is
+  // what stops that from reading as a pass.
+  const oracleDir = path.join(ROOT, "script", "m14", "oracles")
+  if (fs.existsSync(oracleDir)) {
+    for (const f of fs.readdirSync(oracleDir).filter((x: string) => x.endsWith(".ts")).sort()) {
+      h.update(f)
+      h.update(createHash("sha256").update(fs.readFileSync(path.join(oracleDir, f))).digest("hex"))
+    }
+  }
   // The PINNED GRAMMAR is part of the sweep state, and its absence is a defect that
   // nearly cost this lane a fabricated green.
   //
