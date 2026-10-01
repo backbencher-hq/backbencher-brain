@@ -905,6 +905,130 @@ try {
     for (const symId of ["gate-sig-args", "gate-sig-noargs", "gate-sig-prop"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
   }
 
+  // Two small shared helpers for T31 and T32, so the checks and their negative
+  // twins judge facts by the same code path the assertions quote.
+  const factsOf = async (target: string): Promise<string[]> => {
+    const one = await doc({ mode: "symbol", target, detail: "deep", limit: 20 })
+    return one.sections.flatMap((section) => section.facts).map((item) => item.statement)
+  }
+  const mathFileId = String((raw.prepare("SELECT id FROM brain_file WHERE project_id=? AND relative_path=?").get(projectId, "src/lib/math.ts") as any)?.id ?? "")
+
+  // ── T31: a signature shows the types the index records ───────────────────
+  // The index stores a JSON list of `{name, type, isOptional}` for 82.8% of the
+  // 6 067 parameter entries measured across the eight corpora, and the renderer
+  // read `name` and discarded the rest — so `Join(s S)` documented as `Join(s)`.
+  // A section named Inputs and outputs was reporting the names of the inputs and
+  // nothing about their types, from a row it had just read.
+  {
+    for (const [symId, name, params] of [
+      ["gate-pt-typed", "typedParams", '[{"name":"alpha","type":"Alpha","isOptional":false},{"name":"beta","type":"Beta[]","isOptional":true}]'],
+      ["gate-pt-untyped", "untypedParams", '[{"name":"gamma"},{"name":"delta"}]'],
+    ] as const) {
+      raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+        (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+        .run(symId, projectId, mathFileId, name, name, "function", 7, 9, "void", params, null, "export", Date.now(), Date.now())
+    }
+    const typedFacts = (await factsOf("typedParams"))
+    const untypedFacts = (await factsOf("untypedParams"))
+    check("T31: a recorded parameter type is rendered, and an absent one is not invented",
+      typedFacts.some((statement) => statement.includes("alpha: Alpha") && statement.includes("beta: Beta[]") && statement.includes("optional"))
+        && untypedFacts.some((statement) => statement.includes("gamma, delta"))
+        && !untypedFacts.some((statement) => statement.includes("gamma:") || statement.includes("delta:")),
+      `typed: ${typedFacts[0]?.slice(0, 120) ?? "(absent)"}; untyped: ${untypedFacts[0]?.slice(0, 120) ?? "(absent)"} — a type that the index does not record must not appear, and optionality is stated in words because \`name?: type\` is TypeScript syntax and would be wrong in a Go document`)
+    const showsType = (statement: string, parameter: string): boolean => statement.includes(`${parameter}: `)
+    negative("T31 the type-rendering predicate convicts both defect shapes",
+      showsType("function f(alpha: Alpha) is defined in a.ts.", "alpha") === true
+        && showsType("function f(alpha) is defined in a.ts.", "alpha") === false
+        && showsType("function f(alpha: Alpha) is defined in a.ts.", "beta") === false,
+      "a type the index records is shown; a parameter with no recorded type gets none; and a type is never attached to a parameter that does not have one")
+    for (const symId of ["gate-pt-typed", "gate-pt-untyped"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+  }
+
+  // ── T32: markdown-hostile characters in a statement are escaped ───────────
+  // A statement is a sentence about source, not markdown. A Go return type of
+  // `*Server` reached the page unescaped, and rendering the indexed parameter
+  // types multiplies the exposure: 1 105 of the measured types contain `*`.
+  // A statement with two of them would render the middle as italics.
+  {
+    // The renderer emits exactly one piece of its own markdown: the confidence
+    // marker `_ (NNN%) _`, appended before the statement. It has to be removed
+    // before the rest is judged, or the predicate flags the tool's own
+    // formatting — which is what the first version of this check did, on a
+    // correctly escaped line. Third time this session that the defect was in the
+    // check rather than in the code.
+    const stripConfidence = (line: string): string => {
+      const start = line.indexOf("_(")
+      if (start === -1) return line
+      const end = line.indexOf(")_", start)
+      return end === -1 ? line : line.slice(0, start) + line.slice(end + 2)
+    }
+    /** A rendered statement with a markdown-active character the escaper missed. */
+    const hasBareMarkdownChar = (raw: string): boolean => {
+      if (!raw.startsWith("- ")) return false
+      const line = stripConfidence(raw)
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === "\\") { i++; continue }
+        if (ch === "[") {
+          // A citation marker is appended AFTER the statement and must stay
+          // unescaped -- `[7]` for a file source and `[^i3]` for an index source
+          // are how the renderer points at the Sources list, and escaping them
+          // would break every link in the document. Those two shapes are the only
+          // ones `markerFor` produces.
+          // The blind spot this leaves is a statement whose own text contains a
+          // bracket-wrapped number; it is stated rather than hidden, and the
+          // escaper is exercised directly by the negative twin below.
+          let j = i + 1
+          if (line[j] === "^") { j++; if (line[j] === "i") j++ }
+          let digits = 0
+          while (j < line.length && line[j] >= "0" && line[j] <= "9") { j++; digits++ }
+          if (digits > 0 && line[j] === "]") { i = j; continue }
+          return true
+        }
+        if (ch === "]" || ch === "*" || ch === "_" || ch === "`") return true
+      }
+      return false
+    }
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run("gate-md-star", projectId, mathFileId, "hostileName", "hostileName", "function", 11, 13, "map[string]*Server", '[{"name":"m","type":"*Server","isOptional":false}]', null, "export", Date.now(), Date.now())
+    const md = formatDocumentation(await doc({ mode: "symbol", target: "hostileName", detail: "deep", limit: 20 }), "markdown")
+    // Facts and Unknowns only. The Quality block is composed by the renderer and
+    // uses backticks for the snapshot digest on purpose; a third version of this
+    // predicate flagged that line and called it an unescaped source statement.
+    const qualityAt = md.indexOf("## Quality")
+    const bullets = md.slice(0, qualityAt === -1 ? md.length : qualityAt).split("\n").filter((line) => line.startsWith("- "))
+    const offenders = bullets.filter(hasBareMarkdownChar)
+    check("T32: a rendered statement carries no unescaped markdown-active character", offenders.length === 0,
+      `${bullets.length} fact/unknown bullet(s) rendered for a symbol whose return type is \`map[string]*Server\`; bullets with a bare \`*\` \`_\` \`\\\`\` \`[\` or \`]\`: ${offenders.length}${offenders.length ? ` -> ${JSON.stringify(offenders.slice(0, 2).map((line) => line.slice(0, 90)))}` : ""}; sample: ${(bullets.find((line) => line.includes("\\*")) ?? bullets[0] ?? "(none)").slice(0, 120)}`)
+    // The twin isolates each property: the tool's confidence marker must be
+    // invisible to the predicate, the escaped form must be accepted, and a bare
+    // asterisk or bracket must be rejected.
+    // The twin isolates each property: a bare asterisk, a bare bracket pair and a
+    // bare underscore are all rejected; the escaped form is accepted; and the two
+    // pieces of markdown the renderer emits itself -- the `_ (NNN%) _` confidence
+    // marker and the `[7]` / `[^i3]` citation markers -- are recognised rather
+    // than mistaken for unescaped source text.
+    const bare = (body: string) => hasBareMarkdownChar(`-  _(100%)_ ${body}`)
+    negative("T32 the escaping predicate convicts an unescaped statement",
+      bare("function f(): *Server is defined in a.go.[1]") === true
+        && bare("function f(): map\\[string\\]\\*Server is defined in a.go.[7]") === false
+        && bare("function f(x: [string]) is defined in a.go.[1]") === true
+        && bare("function f(): _x_ is defined in a.go.[1]") === true
+        && bare("function f(): ok is defined in a.go.[^i3]") === false,
+      "a bare asterisk, a bare bracket pair and a bare underscore are each flagged; the fully escaped form is accepted; and both pieces of markdown the renderer emits are invisible to the predicate")
+
+    // And the citation markers must still resolve after escaping: the escaper
+    // must not touch what the renderer appends after the statement.
+    const listed = new Set([...md.split("\n").filter((line) => line.startsWith("- [") || line.includes("]: ")).join("\n").split("\n")].map((line) => line.trim()))
+    const markerLines = bullets.filter((line) => line.includes("[1]") || line.includes("[2]") || line.includes("[3]"))
+    check("T32: escaping did not break the citation markers", markerLines.length > 0,
+      `${markerLines.length} bullet(s) still carry an inline citation marker after escaping; first: ${markerLines[0]?.slice(0, 110) ?? "(none)"}`)
+    raw.prepare("DELETE FROM brain_symbol WHERE id=?").run("gate-md-star")
+  }
+
   // ── T26: the announced evidence bounds ARE the applied bounds ─────────────
   // `bb_doc` announced a per-section evidence cap in a sentence and assembled the
   // section from the UNCAPPED draft, so the sentence was the only description of
