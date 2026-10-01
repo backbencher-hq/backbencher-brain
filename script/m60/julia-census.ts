@@ -60,13 +60,70 @@ const argPerRepo = argNum("per-repo", 0)
 const argMaxBytes = argNum("max-bytes", 0)
 
 /** The external scanner's token names, read from the vendored scanner.c. */
-function scannerExternals(): string[] {
-  const p = path.join(GRAMMAR_DIR, "scanner.c")
-  if (!fs.existsSync(p)) return []
+function scannerExternals(): { tokens: string[]; source: string | null } {
+  // The scanner lives at `src/scanner.c`, NOT at the grammar root. This read `scanner.c` at the
+  // root, found nothing, and returned [] — which the artifact then published as
+  // `declaredExternals: []`, i.e. "Julia has NO external scanner". That is a false negative in the
+  // exact place the check exists to be reliable: a scanner whose tokens are silently not produced
+  // surfaces as ERROR nodes far from its cause, so an instrument that cannot see the scanner
+  // cannot see that failure. Julia declares them in an `enum TokenType`, not as `[sym_x]`
+  // array slots, so the regex would have found nothing even at the right path.
+  //
+  // A missing scanner file now THROWS instead of returning empty, because "no scanner" and
+  // "could not find the scanner" are different claims and only one of them is evidence.
+  const candidates = [
+    path.join(GRAMMAR_DIR, "src", "scanner.c"),
+    path.join(GRAMMAR_DIR, "scanner.c"),
+  ]
+  const p = candidates.find((c) => fs.existsSync(c))
+  if (!p) throw new Error(`scanner.c not found at any of: ${candidates.join(", ")}`)
   const src = readFileSync(p, "utf8")
   const out = new Set<string>()
-  for (const m of src.matchAll(/\[\s*sym_([A-Za-z0-9_]+)\s*\]/g)) out.add(m[1]!)
-  return [...out].sort()
+  const enumMatch = src.match(/enum\s+TokenType\s*\{([\s\S]*?)\}/)
+  if (!enumMatch) throw new Error(`no 'enum TokenType' block in ${p} — the extractor's shape assumption changed`)
+  for (const m of enumMatch[1]!.matchAll(/^\s*([A-Z][A-Z0-9_]*)\s*,/gm)) out.add(m[1]!)
+  return { tokens: [...out].sort(), source: path.relative(ROOT, p) }
+}
+
+/**
+ * Does the scanner do the job it exists for? String interpolation, nested quotes, command literals
+ * and block comments cannot be lexed by a context-free grammar, so if these parse cleanly the
+ * scanner is running. Returns a verdict per construct rather than one boolean, so a partial
+ * failure says WHICH construct broke instead of only that something did.
+ */
+async function scannerFunctionalProbe(): Promise<{ constructs: Array<Record<string, unknown>>; allClean: boolean }> {
+  const probes: Array<[string, string]> = [
+    ["string interpolation", 'module M\nv = "a $(x + 1) b"\nend\n'],
+    ["nested quotes in interpolation", 'module M\nv = "a $(f("inner")) b"\nend\n'],
+    ["command literal", "module M\nv = `echo hi`\nend\n"],
+    ["block comment", "module M\n#= block\ncomment =#\nv = 1\nend\n"],
+    ["char literal", "module M\nv = 'x'\nend\n"],
+    ["triple-quoted string", 'module M\nv = """raw $(not) interp"""\nend\n'],
+  ]
+  // `new Language(...)` is not the API: a grammar is LOADED and handed to a Parser. Getting this
+  // wrong threw `_Language is not a constructor`, which is at least loud — unlike the two silent
+  // blindnesses above, it could not have been mistaken for a finding.
+  const mod = await loadWebTreeSitter()
+  const lang = await mod.Language.load(WASM)
+  const parser = new mod.Parser()
+  parser.setLanguage(lang)
+  const constructs = probes.map(([name, src]) => {
+    const tree = parser.parse(src)
+    const root = tree.rootNode
+    return { construct: name, clean: !root.hasError, errorNodes: countErrors(root) }
+  })
+  return { constructs, allClean: constructs.every((c) => c.clean === true) }
+}
+
+function countErrors(node: any): number {
+  let n = 0
+  const stack: any[] = [node]
+  while (stack.length) {
+    const x = stack.pop()
+    if (x.type === "ERROR" || x.type === "MISSING") n++
+    for (let i = 0; i < x.childCount; i++) { const c = x.child(i); if (c) stack.push(c) }
+  }
+  return n
 }
 
 async function main() {
@@ -89,7 +146,8 @@ async function main() {
   const producedNames = new Set<string>()
   const scannerSeen = new Set<string>()
   const scannerTotal = new Map<string, number>()
-  const externals = scannerExternals()
+  const scannerInfo = scannerExternals()
+  const externals = scannerInfo.tokens
   for (const e of externals) scannerTotal.set(e, 0)
 
   let scanned = 0, skippedBig = 0, parseFailed = 0
@@ -131,6 +189,17 @@ async function main() {
           typeOccurrences.set(n.type, (typeOccurrences.get(n.type) ?? 0) + 1)
           if (!filesByType.has(n.type)) filesByType.set(n.type, new Set())
           filesByType.get(n.type)!.add(f)
+        }
+        // An EXTERNAL TOKEN IS AN ANONYMOUS NODE. Counting them inside `if (n.isNamed)` — where
+        // this sat — meant the check could never observe one, so all 16 declared externals were
+        // reported `neverObserved` and the artifact asserted that Julia's scanner produces nothing.
+        // The grammar ships a scanner because string interpolation and lexical states cannot be
+        // decided by a context-free grammar; it is demonstrably running. So this is the mirror
+        // image of the path bug above — that one reported "no scanner" when it could not find one,
+        // this one reported "a scanner that never fires" when it could not SEE one. Both are the
+        // instrument mistaking its own blindness for a fact about the grammar, which is why the
+        // count is taken over every node and the named/anonymous split is not applied to it.
+        {
           const base = n.type.replace(/_\d+$/, "")
           if (scannerTotal.has(base)) { scannerTotal.set(base, (scannerTotal.get(base) ?? 0) + 1); scannerSeen.add(base) }
         }
@@ -246,11 +315,21 @@ async function main() {
       rows,
     },
     externalScanner: {
-      scannerSource: path.relative(ROOT, path.join(GRAMMAR_DIR, "scanner.c")),
+      scannerSource: scannerInfo.source,
       declaredExternals: externals,
       observed: [...scannerSeen].sort(),
       neverObserved: externals.filter((e) => (scannerTotal.get(e) ?? 0) === 0),
-      note: "Julia's grammar has an external scanner (string interpolation and lexical states a context-free grammar cannot decide). A scanner whose tokens are silently not produced shows up as ERROR nodes far from their cause, so its token names are compared against what the tree actually contains.",
+      // Token NAMES are not observable, so the tree census cannot answer whether the scanner
+      // works — and reporting "16 of 16 never observed" reads as "the scanner is dead" when the
+      // truth is that Julia's externals are consumed INTERNALLY and never become tree nodes.
+      // Verified by walking a parse of `\"a $(x) b\"` and `` `cmd` `` : the tree contains
+      // `string_interpolation` and `content` and NONE of the 16 declared names.
+      //
+      // So the question is asked of the scanner's PURPOSE instead: do the constructs that exist
+      // only because there is a scanner parse cleanly? That is measurable, and a failing probe
+      // would still be evidence. A census that can only report its own blindness is not a census.
+      functionalProbe: await scannerFunctionalProbe(),
+      note: "Julia's grammar has an external scanner (string interpolation and lexical states a context-free grammar cannot decide). Its 16 declared tokens are INTERNAL and never appear as tree nodes, so the tree census cannot see them and `neverObserved` is expected rather than alarming; `functionalProbe` is the check that actually bears on the scanner, asking whether the constructs that require a scanner parse cleanly. Two earlier versions of this instrument were wrong in OPPOSITE directions — one reported `declaredExternals: []` (wrong path, so 'Julia has no scanner') and one reported all 16 `neverObserved` (wrong node scope, so 'the scanner never fires'). Both mistook the instrument's blindness for a fact about the grammar.",
     },
     errorFileRows: errorFileRows.sort((a, b) => b.errorNodes - a.errorNodes).slice(0, 60),
     verdict:
