@@ -127,6 +127,35 @@ export class RealJuliaAnalyzer {
     // the file still counts.
     const declaredTypes = new Set<string>()
 
+    // COLLECTED IN A PRE-PASS, not during the walk. The call case asks `declaredTypes.has(callee)`
+    // to decide `instantiates` vs `calls`, and during a single walk that question is answered with
+    // whatever has been seen SO FAR — so a construction that appears BEFORE its type declaration was
+    // classified as a plain call.
+    //
+    // Found by the F5 `instantiates` oracle, which derives the truth from Julia's own construction
+    // rule and shares nothing with this analyzer: `Compiler/test/EAUtils.jl` calls
+    // `GetEscapeCache()` on line 52 and declares `struct GetEscapeCache end` on line 90, so the
+    // oracle knew `GetEscapeCache` was a type and the analyzer did not. Same shape in
+    // `stdlib/REPL/test/replcompletions.jl`, where the declaration is inside a `quote` and the call
+    // is 59 lines earlier.
+    //
+    // The comment on `declaredTypes` already claimed the opposite — "consulted afterwards, so a type
+    // declared later in the file still counts" — which is exactly why this survived review: the code
+    // said one thing and the comment said another, and the comment was believed. A comment
+    // describing a property the code does not have is worse than no comment, because it is an
+    // answer to a question nobody thought to ask again.
+    {
+      const collect = (n: Node) => {
+        if (TYPE_DECLARATIONS.has(n.type)) {
+          const head = this.firstNamedChildOfType(n, "type_head")
+          const name = head ? this.typeHeadName(head) : ""
+          if (name) declaredTypes.add(name)
+        }
+        for (const c of this.namedChildren(n)) collect(c)
+      }
+      collect(rootNode)
+    }
+
     let activeScope = ""
     let depth = 0
 
@@ -521,7 +550,7 @@ export class RealJuliaAnalyzer {
           // already published as a field above and must not also become a read here.
           const typeNode = this.pos(node, 1)
           const typeName = typeNode ? this.typeHeadName(typeNode) : ""
-          if (typeName && scope) relationships.push(this.rel(scope, "references", typeName, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
+          if (typeName) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", typeName, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
 
@@ -529,7 +558,9 @@ export class RealJuliaAnalyzer {
           // `Vector{T}` — the base type is a reference and T is a parameter, not a read.
           if (this.withinTypeHead(node)) break
           const base = this.firstNamedChildOfType(node, "identifier")
-          if (base && scope) relationships.push(this.rel(scope, "references", base.text.trim(), node, 1.0, { juliaSpecific: true, isTypeReference: true }))
+          // `scope` IS this edge's source, so unlike the `where`-bound case it belongs in the guard —
+          // with the file-scope fallback, or the reference vanishes in a module-less file.
+          if (base) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", base.text.trim(), node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
 
@@ -539,9 +570,18 @@ export class RealJuliaAnalyzer {
           for (const child of this.namedChildren(node)) {
             if (child.type !== "binary_expression") continue
             const { op, left, right } = this.binOperands(child)
-            if (op !== "<:" && op !== ">") continue
+            // `>` is not a bound operator; `>:` is. The test said `">"`, so an UPPER bound written
+            // `T>:Int` was skipped — a real Julia form, and the oracle derives it.
+            if (op !== "<:" && op !== ">:") continue
             const sub = right ? this.typeHeadName(right) : ""
-            if (sub && left && scope) {
+            // NO `scope` guard here, and its absence was a defect: this edge's SOURCE is `left` —
+            // the type parameter — not the enclosing scope. The guard was copy-pasted from the
+            // `contains` cases, where the scope IS the source and the check is the point. So it
+            // suppressed a valid edge whenever the bound appeared at FILE SCOPE, which is 71.9% of
+            // Julia files. Found by the F5 `extends` oracle: `base/rational.jl` publishes
+            // `T extends AbstractFloat` and `base/hashing.jl` `UTF8Units extends AbstractString`,
+            // both at file scope, and the analyzer had neither.
+            if (sub && left) {
               relationships.push(this.rel(left.text.trim(), "extends", sub, child, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
             }
           }
