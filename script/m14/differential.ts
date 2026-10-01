@@ -36,10 +36,17 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // M60 label-coverage sweep: dart published the largest single-label blob of any
 // unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
+import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
 import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStaticUsesTruth } from "./clojure-truth"
+// M60: zig-truth.ts carries FOUR finished oracles — containment, imports, exports
+// and instantiation — and every one of them was consumed only by a script/m14/tmp
+// probe. So zig published `contains`, `imports` and `exports` that no comparison
+// saw, while the lane printed a percentage. Same finished-but-unconnected shape as
+// typescript's 846 lines and clojure's three.
+import { deriveZigContainment, deriveZigImports, deriveZigExports, deriveZigInstantiation } from "./zig-truth"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -513,6 +520,13 @@ export const LANG_REPOS: Record<string, string> = {
   // heavy link graphs into other spec pages — which is a real dialect and not a
   // set of READMEs.
   markdown: "scala3",
+  // Julia's corpus is Julia itself: `fixtures/repositories/julia` is a clone of JuliaLang/julia at
+  // 6391263 (sparse checkout, 941 tracked .jl files present), so the differential measures the
+  // language's own implementation and standard library — the code that DEFINES the constructs this
+  // lane has to model. The 177 ERROR-node files are part of that claim rather than a reason to pick
+  // a friendlier repo: they are the grammar's residual, already inventoried, and a lane measured on
+  // a dialect-free subset would not be measuring Julia.
+  julia: "julia",
 }
 // M37.16 two-corpus gate (second-opinion hardening): every gated language runs
 // the SAME analyzer-vs-oracle differential on a SECOND, independent real corpus
@@ -20653,6 +20667,27 @@ async function main() {
         for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // M60 label-coverage sweep: three more labels this lane publishes and the
+        // allowlist dropped, whose oracles were ALREADY written and unwired. Wired
+        // with their allowlist entries in the same commit (full mirror).
+        for (const e of deriveZigContainment(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveZigImports(root)) {
+          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.target })
+        }
+        for (const e of deriveZigExports(root)) {
+          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.target })
+        }
+        // The harness reported `COMPARED WITH NO TRUTH: instantiates` for this lane:
+        // `instantiates` is in the default admitted prefix, so the analyzer's rows were
+        // being compared against nothing and every one of them read as a fabrication.
+        // The oracle was already written. This is the MIRROR of the gap the sweep
+        // started from — not an unadmitted label with no oracle, but an ADMITTED label
+        // with no oracle — and it is just as silent, because the count is small.
+        for (const e of deriveZigInstantiation(root)) {
+          ;(truth as any[]).push({ label: "instantiates", from: e.from, target: e.target })
+        }
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
@@ -20716,6 +20751,24 @@ async function main() {
         // containment rule; see script/m14/oracles/dart-contains.ts for the rule and
         // for the one analyzer convention it mirrors (a constructor's name).
         for (const e of deriveDartContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
+      if (lang === "julia") {
+        // M60 julia `contains` truth, derived from JULIA'S OWN containment rule in a lane-owned
+        // oracle that shares no rule table, key set or resolver with RealJuliaAnalyzer — the only
+        // property that makes a MATCH mean something. `contains` is the right first surface for a
+        // new lane: both ends of the edge are names written in the file, so the rule needs no name
+        // resolution and a disagreement is a real disagreement rather than two opinions.
+        //
+        // It earned its place immediately. On the fixtures it agreed 8 of 8, 1 of 1 and 5 of 5 —
+        // and its ONE disagreement, `macro cached(expr) quote local v = … end` publishing
+        // `cached contains v`, was an analyzer FALSE POSITIVE: a binding inside a macro's quoted
+        // body expands at the CALL SITE and is not a declaration of the macro. The fixtures asserted
+        // `cached` as a macro and never asked what it appeared to contain. That is precisely the
+        // failure a lane-owned oracle exists to catch, and 10,365 `contains` edges over 941 files
+        // were otherwise uncorroborated.
+        for (const e of deriveJuliaContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -21030,6 +21083,19 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          // M60 julia joins the contains-audited set. `contains` is the backbone the graph is
+          // navigated by, and the lane published 10,365 such edges over 941 corpus files with NO
+          // independent truth at any scale — the committed evidence was fixtures asserting a handful
+          // BY NAME, which is a regression test, not a measurement: it says an edge is still there,
+          // not that no edge is missing. `script/m14/oracles/julia-contains.ts` derives the truth from
+          // Julia's own containment rule and shares nothing with the analyzer.
+          //
+          // It was not decoration. Its one disagreement with the analyzer was `macro cached(expr)
+          // quote local v = … end` publishing `cached contains v` — a binding inside a macro's
+          // QUOTED body expands at the CALL SITE and is not a declaration of the macro. Fixed in the
+          // analyzer. A fixture asserting `cached` is a macro would never have asked what the macro
+          // appeared to contain, which is the whole reason an independent oracle exists.
+          ...(lang === "julia" ? ["contains"] : []),
           // M60: dart joins the contains-audited set. Its containment surface — the
           // backbone the graph is navigated by, and the largest unadmitted blob the
           // label-coverage sweep found — had no independent truth at any scale, and
@@ -21041,6 +21107,9 @@ async function main() {
           // M60: clojure joins too — its contains oracle already existed and had no
           // consumer in this file, so the label was unadmitted AND unmeasured.
           ...(lang === "clojure" ? ["contains"] : []),
+          // M60: zig joins contains, imports and exports — all three oracles already
+          // existed in zig-truth.ts, wired only to tmp probes.
+          ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           // M60: clojure's `uses` oracle existed in clojure-truth.ts with no consumer
           // in this file, so the label was unadmitted AND unmeasured — the same
           // finished-but-unconnected shape as typescript and contains.
@@ -22860,6 +22929,14 @@ export function deriveBashEdges(root: any, scriptName: string): { label: string;
   // language-detection.ts routes .tf/.tfvars/.tofu/.hcl, and the corpora hold
   // .pkr.hcl (packer) and .boilerplate terragrunt templates besides.
   hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,hcl,tofu" },
+
+  // M60 Julia wave. The wasm is a REBUILT tree-sitter-julia 0.23.1: the prebuilt artifact
+  // fails to parse real Julia (185 of 966 corpus files carry ERROR nodes), so four constructs
+  // were patched into the vendored grammar and the wasm rebuilt. The pin is verified by
+  // script/m11/verify-grammar-pins.ts and the defect inventory by script/m60/julia-census.ts,
+  // so a stock wasm cannot silently return here — which matters because the lane is now
+  // REGISTERED, and a registered language with the stock wasm would parse badly rather than fail.
+  julia: { wasm: "tree-sitter-julia.wasm", analyzerFile: "real-julia-analyzer", className: "RealJuliaAnalyzer", ext: "jl" },
 
   // `make` is NOT restored here: the merge truncated its entry mid-declaration, so `make: {`
   // survives and its body does not. Writing one would mean inventing a wasm, analyzerFile,
