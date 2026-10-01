@@ -76,6 +76,17 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         annotations TEXT,
         generic_parameters TEXT,
         qualified_calls TEXT,
+        -- M60/SDJ-8: the type hierarchy each symbol extends/implements, as a JSON
+        -- array of names (["Base","Mixin"]). Present because the overrides label
+        -- could not be resolved cross-file at all without it: brain_symbol held no
+        -- heritage data, so the post-index pass could only resolve targets BY NAME
+        -- which resolves the wrong parent perfectly happily. Measured on scala3:
+        -- 45.5% of low-confidence override rows pointed at a supertype that does
+        -- NOT declare the overridden method, and 0 of 677 were fixable from one
+        -- file. NULL = "this symbol declares no supertypes", which is also what
+        -- every pre-SDJ-8 row means, so an un-migrated database degrades to the
+        -- previous behaviour rather than mis-resolving.
+        super_types TEXT,
         api_contract_path TEXT,
         gravity_score REAL DEFAULT 0,
         layer TEXT DEFAULT "core",
@@ -403,6 +414,27 @@ export function ensureSymbolDeclarationColumn(raw: any): void {
 }
 
 /**
+ * M60/SDJ-8: additive migration for the type-hierarchy column.
+ *
+ * Same additive-only, idempotent contract as ensureSymbolDeclarationColumn:
+ * legacy databases gain a NULL column (NULL = "declares no supertypes", which is
+ * also the honest reading of every pre-SDJ-8 row), fresh databases already have it
+ * from the DDL. Wrapped in try/catch so a read-only or busy open cannot fail.
+ *
+ * Without this the cross-file `overrides` retarget cannot run at all: the walk needs
+ * to know each type's ancestors project-wide, and before this column the hierarchy
+ * existed only inside the analyzer's per-file run and was discarded at the insert.
+ */
+export function ensureSymbolSupertypesColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return // table absent (fresh DB handled by DDL)
+    if (cols.includes("super_types")) return
+    raw.exec("ALTER TABLE brain_symbol ADD COLUMN super_types TEXT")
+  } catch {}
+}
+
+/**
  * M14 #277 follow-on: `brain_file.metadata`.
  *
  * Found from the bash lane, but it is not a bash problem: EVERY analyzer returns
@@ -588,6 +620,10 @@ export function ensureSchema(raw: any): void {
   // #612: additive symbol column (idempotent; the DDL above carries it for
   // fresh DBs, this covers DBs created by an older DDL).
   ensureSymbolDeclarationColumn(raw)
+  // M60/SDJ-8: additive type-hierarchy column, required by the cross-file
+  // `overrides` retarget (idempotent; NULL on legacy rows degrades to the
+  // previous name-only resolution rather than mis-resolving).
+  ensureSymbolSupertypesColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
