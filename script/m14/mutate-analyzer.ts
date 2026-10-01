@@ -12242,7 +12242,6 @@ export const MUTANTS: Mutant[] = [
       }),
     }),
   },
-  {
     // NO MUTANT for the declaration-keyed override lookup, and that is a decision rather
     // than an omission.
     //
@@ -12262,7 +12261,6 @@ export const MUTANTS: Mutant[] = [
     //
     // The same limit applies to the lambda/comprehension scope guard: both are questions
     // about the TREE, asked inside `analyze()`, and a ParseResult cannot answer them.
-  },
   {
     id: "python/class-variable-binding-suppressed",
     language: "python",
