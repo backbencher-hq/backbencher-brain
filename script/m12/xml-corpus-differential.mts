@@ -44,10 +44,10 @@
  */
 import { execFileSync } from "node:child_process"
 import { readFileSync, writeFileSync, statSync } from "node:fs"
-import { join, resolve as pathResolve } from "node:path"
+import { dirname, join, resolve as pathResolve } from "node:path"
 import { fileURLToPath } from "url"
 
-const ROOT_HERE = pathResolve(fileURLToPath(import.meta.url), "..")
+const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..")
 import { Parser, Language } from "web-tree-sitter"
 import { ASTEngine } from "../../src/ast/engine"
 
