@@ -702,6 +702,57 @@ of regex syntax are in comments recording earlier replacements.
 M12 truth drift 92 facts, 85 still-produced, 7 produced-under-another-type,
 **0 not-produced**.
 
+### #981: `contains` independent reach reaches curl — and immediately finds two real defects
+
+The clang contains oracle could not read curl or libgit2, so 852/852 was a
+redis-only result and two thirds of the corpus had no independent `contains`
+evidence. #981 fixed the reach (repeatable `--extra-include` / `--define`, fed by a
+real `cmake` configure) and the first honest curl measurement is **not clean**.
+
+At 120 offered files, 22 judged:
+
+    MISSED members 30   PHANTOM members 16
+
+An unstable verdict is not a verdict, so before attributing anything I read the
+rows. Both directions turned out to be REAL and to share one root cause, in
+`curl/lib/cf-h1-proxy.c`:
+
+```c
+struct h1_tunnel_state {
+  ...
+  enum keeponval {              /* an enum DEFINED INLINE, as a field's type */
+    KEEPON_DONE,
+    KEEPON_CONNECT,
+    KEEPON_IGNORE
+  } keepon;
+  ...
+  BIT(chunked_encoding);        /* a MACRO-WRAPPED field */
+  BIT(close_connection);
+```
+
+**Under-emission (the 30 misses).** `chunked_encoding`, `close_connection`,
+`maybe_folded`, `leading_unfold`, `udp_tunnel` and the rest are `BIT(...)` fields.
+`BIT` is a curl macro that expands to a bitfield declaration, so the field name sits
+inside a macro argument and the analyzer publishes no `contains` member for it.
+clang sees the expanded struct and does. Every macro-wrapped struct field is
+invisible to the payload.
+
+**Over-emission (the 16 phantoms).** `H1_TUNNEL_INIT`, `H1_TUNNEL_CONNECT`,
+`H1_TUNNEL_RECEIVE` are ENUMERATORS, published as members of the enclosing
+STRUCT. They belong to their own enum, and the enum belongs to the field that uses
+it. An inline `enum { ... } field;` inside a struct is being flattened onto the
+struct's owner, which is the same defect #961 fixed for function-local enums,
+reached from the other direction.
+
+So the oracle is SOUND on curl — it found two genuine defect classes that no other
+instrument could see, precisely because it is a different implementation reading
+one tree. Both are recorded here rather than fixed in this pass, because each needs
+its own fixture, mutant and ruling, and a macro-expansion rule (# `BIT(...)`) is a
+semantic decision rather than a patch.
+
+**libgit2 remains blocked**: `src/git2_util.h` is generated at BUILD time, so it
+needs `make`, not only `cmake`.
+
 ### #965–#970: the C `uses`/`references` oracle, and what remains in it
 
 Six rounds, each one a case where the ORACLE was the stale side. Every fix was
