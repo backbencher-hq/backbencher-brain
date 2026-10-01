@@ -62,6 +62,7 @@
  *   and the qualification is what makes the edge answerable.
  */
 
+/**
  * ## Measured state, and the structural finding that matters more than the number
  *
  * Over 1,294 ProxiCall/lib files the oracle agrees on **610** rows, misses **0**,
@@ -145,6 +146,8 @@
  *     probe process rather than returning a wrong answer, which is the only reason
  *     it was found. It is now index-drained and iteration-capped.
  *
+ */
+
 export interface TruthEdge {
   label: string
   from: string
