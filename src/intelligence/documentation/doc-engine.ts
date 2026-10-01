@@ -1451,15 +1451,70 @@ function apiSurfaceIndex(raw: any, projectId: string): { files: number; placehol
   }
 }
 
-function buildProse(draft: SectionDraft, citationCount: number): string {
-  if (draft.facts.length === 0) return `No indexed evidence was found for ${draft.heading.toLowerCase()}.`
-  const noun = draft.facts.length === 1 ? "item" : "items"
-  return `${draft.facts.length} cited ${noun} from ${citationCount} source${citationCount === 1 ? "" : "s"}${draft.lead ? `. ${draft.lead}` : "."}`
+/** How a count reads in a sentence: 1 item, 2 items. */
+function counted(n: number, singular: string, plural = `${singular}s`): string {
+  return `${n} ${n === 1 ? singular : plural}`
 }
 
-function assembleSection(draft: SectionDraft, citations: DocCitation[]): DocSection {
+/** The citation kinds a section's facts actually rest on, in that order. */
+function kindsNamed(citations: DocCitation[], ids: string[]): string {
+  const order: DocCitation["kind"][] = ["symbol", "file", "relationship", "import", "test", "finding", "embedding", "health"]
+  const present = order.filter((kind) => ids.some((id) => citations.find((c) => c.id === id)?.kind === kind))
+  if (present.length === 0) return "no source"
+  if (present.length === 1) return `1 ${present[0] === "symbol" ? "symbol" : present[0]}`
+  const head = present.slice(0, -1).map((k) => (k === "symbol" ? "symbol" : k)).join(", ")
+  return `${head} and ${present[present.length - 1]}`
+}
+
+/**
+ * What a section says about itself.
+ *
+ * It used to be `N cited items from M sources.` for a section with facts, and
+ * `No indexed evidence was found for X.` for one without. Both are the least
+ * useful sentences in the document: a count of sources says nothing about WHAT
+ * was found, and a section that carries an exact explanation for its own
+ * emptiness said only that it was empty while the reason sat in the footer,
+ * where a reader looking at that section will not look.
+ *
+ * So the prose is built from the evidence's own shape, all of it measured:
+ *
+ *  - how the claims were obtained — read directly from the index, inferred
+ *    because the index did not resolve something, or recorded as unknown. A
+ *    reader deciding whether to trust a section needs this and had no way to get
+ *    it: the classification is in every fact but was never surfaced anywhere.
+ *  - what the claims rest on — the citation kinds, named.
+ *  - when the section is empty and something explains why, that explanation,
+ *    which is already written per section and is cited.
+ *
+ * It never restates the facts. The spec requires prose to add orientation only,
+ * and a gate checks it: `no section prose is its facts joined by spaces`.
+ */
+export function buildProse(draft: SectionDraft, citations: DocCitation[], unknowns: DocUnknown[]): string {
+  if (draft.facts.length === 0) {
+    // The section's own explanation, in preference order: something written for
+    // this section, then the most specific note that names it. A section with
+    // neither keeps the honest absence, which the sweep guarantees means the
+    // absence is the expected shape rather than a hole.
+    const forSection = unknowns.find((unknown) => unknown.affectedSection === draft.id && unknown.reason !== "output-budget")
+    if (forSection) return `${forSection.statement}${draft.lead ? ` ${draft.lead}` : ""}`
+    return `No indexed evidence was found for ${draft.heading.toLowerCase()}.`
+  }
   const citationIds = [...new Set(draft.facts.flatMap((f) => f.citationIds))]
-  return { id: draft.id, heading: draft.heading, prose: buildProse(draft, citationIds.length), facts: draft.facts, citations: citationIds }
+  const how: string[] = []
+  const extracted = draft.facts.filter((f) => f.classification === "extracted").length
+  const inferred = draft.facts.filter((f) => f.classification === "inferred").length
+  const unknownClass = draft.facts.filter((f) => f.classification === "unknown").length
+  if (extracted > 0) how.push(`${extracted} read directly from the index`)
+  if (inferred > 0) how.push(`${inferred} inferred because the index did not resolve the target`)
+  if (unknownClass > 0) how.push(`${unknownClass} recorded as unknown rather than established`)
+  const obtained = how.length > 0 ? how.join("; ") : `${draft.facts.length} recorded`
+  const rests = `resting on ${counted(citationIds.length, "source")} (${kindsNamed(citations, citationIds)})`
+  return `${counted(draft.facts.length, "claim")}, ${obtained}, ${rests}.${draft.lead ? ` ${draft.lead}` : ""}`
+}
+
+function assembleSection(draft: SectionDraft, citations: DocCitation[], unknowns: DocUnknown[]): DocSection {
+  const citationIds = [...new Set(draft.facts.flatMap((f) => f.citationIds))]
+  return { id: draft.id, heading: draft.heading, prose: buildProse(draft, citations, unknowns), facts: draft.facts, citations: citationIds }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1662,7 +1717,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     // a number that came from the token budget's halving, not from this cap. The
     // note was a fabricated bound, and it was the only description of the cap the
     // reader got.
-    sections.push(assembleSection({ ...draft, facts: capped }, citations))
+    sections.push(assembleSection({ ...draft, facts: capped }, citations, unknowns))
   }
 
   if (!files.length && !symbols.length) {
@@ -1688,6 +1743,16 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   // ship as a placeholder, and it either declares what would have filled it or
   // the generation throws.
   explainEmptyRequiredSections(sections, selectedDrafts, unknowns, explaining)
+  // The sweep runs after assembly because it judges the RENDERED section, so the
+  // prose built a moment ago predates the very explanation it should have used:
+  // a section with a precise reason for being empty still said only that it was
+  // empty. Only sections with no facts can have changed, so only they are redone.
+  for (const section of sections) {
+    if (section.facts.length > 0) continue
+    const draft = selectedDrafts.find((item) => item.id === section.id)
+    if (!draft) continue
+    section.prose = buildProse({ ...draft, facts: [] }, citations, unknowns)
+  }
   const distinctUnknowns: DocUnknown[] = []
   const seenUnknown = new Set<string>()
   for (const unknown of unknowns) {
@@ -2004,7 +2069,9 @@ function makeResult(args: MakeResultArgs): DocResult {
     droppedPerSection.set(victim.id, record)
     victim.facts = victim.facts.slice(0, keep)
     victim.citations = [...new Set(victim.facts.flatMap((item) => item.citationIds))]
-    victim.prose = buildProse({ id: victim.id, heading: victim.heading, required: true, audience: "all", facts: victim.facts }, victim.citations.length)
+    // The trim removes facts, so the prose has to be rebuilt from what is left --
+    // otherwise the section describes a shape it no longer has.
+    victim.prose = buildProse({ id: victim.id, heading: victim.heading, required: true, audience: "all", facts: victim.facts, lead: victim.prose.includes("Read from the index") ? "Read from the index and, where the index has none, from the comment block above the definition on disk." : undefined }, citations, result.unknowns)
     trimmedSections++
   }
   for (const [id, record] of droppedPerSection) {
