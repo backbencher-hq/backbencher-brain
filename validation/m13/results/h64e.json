@@ -220,7 +220,7 @@
     {
       "name": "the call reports its own cost",
       "pass": true,
-      "detail": "this call: total=3ms (freshness=1ms)"
+      "detail": "this call: total=5ms (freshness=1ms aggregates=1ms)"
     },
     {
       "name": "the freshness reasons reach the wire",
@@ -244,10 +244,10 @@
     "This gate needs a spawned stdio server, so it is slower and heavier than the other eight. It is a wire gate by construction and cannot be made into a unit test without ceasing to test the wire.",
     "It exercises the SOURCE tree (bun src/mcp/server.ts), not the compiled dist bundle. A stale dist would therefore not be caught here; the bundle is a separate build artifact and is verified by its own build step."
   ],
-  "generatedAt": "2026-10-01T05:28:34.058Z",
+  "generatedAt": "2026-10-01T08:17:35.593Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T05:29:32.343Z",
-    "contentSha256": "669c0967f9db50783c4ab4e079ed627123df5d0a86cfe3ae0a484fa18f272926"
+    "sealedAt": "2026-10-01T08:17:39.792Z",
+    "contentSha256": "ab9afaad8a53e157d12f1026cdefac0d9e057b75231ae5fa7eaca55c84601165"
   }
 }

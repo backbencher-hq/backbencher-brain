@@ -199,13 +199,61 @@ function parseArray(value: unknown): unknown[] {
  * Bounded: one grouped query over brain_symbol.symbol_type, so the result is as
  * long as the vocabulary of kinds (tens), never the corpus size.
  */
+/*
+ * M64.F — the per-symbol EXISTS, and the comment that was wrong about it.
+ *
+ * These two queries (the embedded-kind census and the per-language
+ * searchability join) both ask, per symbol, "does this entity have a vector?"
+ * via `EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.project_id = ?
+ * AND e.entity_id = s.id)`.
+ *
+ * The comment above this code used to assert: "The EXISTS probes
+ * brain_embed_entity_idx, so this is one index lookup per symbol rather than a
+ * scan." MEASURED ON A REAL INDEX, THAT IS FALSE.
+ *
+ * brain_semantic_embedding carries brain_embed_entity_idx on (entity_id) AND
+ * brain_embed_health_idx on (project_id, embedding_model, entity_id,
+ * vector_dimension). Adding `project_id = ?` to the EXISTS makes SQLite prefer
+ * the covering health index and FILTER on entity_id, so the correlated subquery
+ * walks every embedding of the project once per symbol. On this repo's real
+ * index (6,507 files, 304,926 symbols, 60,388 embeddings):
+ *
+ *   plan:  SEARCH e USING COVERING INDEX brain_embed_health_idx (project_id=?)
+ *   cost:  10.2ms PER SYMBOL, measured over slices of 200/1,000/5,000
+ *          -> ~2,770 SECONDS for one call at that size
+ *
+ * A single default bb_health call on that index therefore did not finish in 15
+ * minutes. It never threw — the surrounding try/catch returns [] — so it did not
+ * report a failure either. It simply hung, and no gate in this lane noticed,
+ * because every fixture has a handful of symbols and a handful of embeddings,
+ * where a 60,388-row scan is indistinguishable from an index lookup.
+ *
+ * THE FIX: drop the redundant `project_id = ?` from the EXISTS. Then SQLite
+ * probes brain_embed_entity_idx (entity_id=?) and the same query over 3,000
+ * symbols costs 53ms instead of 27,250ms — 513x — extrapolating to ~5 seconds
+ * for the whole index.
+ *
+ * WHY DROPPING IT IS PROVABLY SAFE, not merely safe on the data seen: the
+ * codebase mints ids as `${projectId}:${rest}` for BOTH brain_symbol.id and
+ * brain_semantic_embedding.entity_id. Verified on the real index: 60,388 of
+ * 60,388 entity_ids begin with the projectId, and 0 of 304,926 symbol ids do
+ * not. An entity_id match can therefore only ever be an entity of the SAME
+ * project — the predicate is redundant, not load-bearing.
+ *
+ * RESIDUAL RISK, and the remedy: this equivalence depends on that id
+ * convention. If a future change mints ids without the projectId prefix, the
+ * predicate must come back AND a composite (project_id, entity_id) index must be
+ * added — the per-project index alone will not serve a per-entity probe. The
+ * gate in script/m64/verify-embed-scan.ts fails if the predicate reappears.
+ */
 function kindsWithNoEmbeddings(raw: any, projectId: string): Array<{ kind: string; count: number }> {
   try {
     const rows = raw.prepare(
       "SELECT s.symbol_type AS kind, COUNT(*) AS c FROM brain_symbol s " +
-      "WHERE s.project_id = ? AND NOT EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.project_id = ? AND e.entity_id = s.id) " +
+      // M64.F: no `e.project_id` here — see the banner above. One parameter.
+      "WHERE s.project_id = ? AND NOT EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.entity_id = s.id) " +
       "GROUP BY s.symbol_type ORDER BY c DESC",
-    ).all(projectId, projectId) as any[]
+    ).all(projectId) as any[]
     return rows.map((row) => ({ kind: String(row.kind), count: Number(row.c) }))
   } catch {
     return []
@@ -548,18 +596,20 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // anything about the Rust in this repo?"
   //
   // Per language, the share of that language's symbols that carry a vector.
-  // The EXISTS probes brain_embed_entity_idx, so this is one index lookup per
-  // symbol rather than a scan, and it is the same query shape the semantic
-  // reader itself uses to find candidates — so "searchable here" means
-  // searchable by the thing that will search.
+  // M64.F: the "one index lookup per symbol" claim that used to sit here was
+  // FALSE, and the real-index measurement is in the banner at the top of this
+  // file. What remains true is the intent: this is the same entity shape the
+  // semantic reader looks for, so "searchable here" means searchable by the thing
+  // that will search.
   const embeddedByLanguage = (() => {
     try {
       const rows = raw.prepare(
         "SELECT f.language AS language, COUNT(DISTINCT s.id) AS embedded " +
         "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id AND f.project_id = ? " +
-        "WHERE s.project_id = ? AND EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.project_id = ? AND e.entity_id = s.id) " +
+        // M64.F: no `e.project_id` here — see the banner above. Two parameters.
+        "WHERE s.project_id = ? AND EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.entity_id = s.id) " +
         "GROUP BY f.language",
-      ).all(projectId, projectId, projectId) as any[]
+      ).all(projectId, projectId) as any[]
       const have = new Map(rows.map((r) => [String(r.language), Number(r.embedded)]))
       return languageRows.map((l) => ({
         language: l.language,
