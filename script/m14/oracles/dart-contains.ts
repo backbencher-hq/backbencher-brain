@@ -130,7 +130,7 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
             if (w.type === "operator_signature") {
               for (let i = 0; i < w.childCount; i++) {
                 const g = w.child(i)
-                if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { pushName(nx.text); break } }
+                if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { pushName(`operator ${nx.text}`); break } }
               }
               break
             }
@@ -178,10 +178,19 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
           // an identifier lookup finds nothing and a named-children walk cannot see
           // it. The 60 rows left after the `declaration` path was fixed were exactly
           // this, on the `method_signature` path.
+          // NOTE THE SPELLING: an operator member is published as
+          // `operator <token>`, never as the bare token. That is a deliberate
+          // cross-language lane contract (the same shape kotlin's phantom members
+          // use), not a quirk: the raw token `==` is indistinguishable from the
+          // `==` of an `if` statement or a map key, and a synthesized spelling
+          // that can never collide with a real Dart identifier is what makes the
+          // member nameable at all -- `operator_signature` has no name field and
+          // no named children. The analyzer implements this contract; the oracle
+          // implements it independently, from the contract, not from the table.
           if (inner.type === "operator_signature") {
             for (let i = 0; i < inner.childCount; i++) {
               const g = inner.child(i)
-              if (g && !g.isNamed && g.text === "operator") { const nx = inner.child(i + 1); if (nx) { pushName(nx.text); break } }
+              if (g && !g.isNamed && g.text === "operator") { const nx = inner.child(i + 1); if (nx) { pushName(`operator ${nx.text}`); break } }
             }
             break
           }
