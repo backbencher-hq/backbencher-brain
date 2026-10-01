@@ -38,6 +38,7 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
+import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
@@ -20791,6 +20792,14 @@ async function main() {
         for (const e of deriveJuliaInstantiatesTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // `calls` is the LARGEST surface this lane publishes — 85,921 edges over 941 corpus files —
+        // and it was the largest UNCORROBORATED one, because the allowlist below did not admit it
+        // for julia at all. Those edges were not merely unexplained; they were not being compared,
+        // and an edge that is never compared is not a claim, a gap, or a number. It is invisible,
+        // which is the one state a differential exists to end.
+        for (const e of deriveJuliaCallsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
@@ -21116,6 +21125,13 @@ async function main() {
           // analyzer. A fixture asserting `cached` is a macro would never have asked what the macro
           // appeared to contain, which is the whole reason an independent oracle exists.
           ...(lang === "julia" ? ["contains"] : []),
+          // …and `calls`, the biggest label in the lane. A `calls` edge says an EXPRESSION was
+          // invoked, which IS derivable from one tree: the syntax of an invocation is in the file
+          // regardless of where the callee is defined. The oracle does not resolve the callee, so it
+          // claims less than the analyzer does — that a name is invoked, not that it is a function —
+          // and the gap is where the remaining `unexplained` rows live, which is the correct place
+          // for them rather than a place to invent a row.
+          ...(lang === "julia" ? ["calls"] : []),
           // M60: dart joins the contains-audited set. Its containment surface — the
           // backbone the graph is navigated by, and the largest unadmitted blob the
           // label-coverage sweep found — had no independent truth at any scale, and

@@ -555,6 +555,25 @@ export class RealJuliaAnalyzer {
         }
 
         case "parametrized_type_expression": {
+          // A type parameter's BOUND is a subtype edge from the parameter, and the two ways of
+          // writing one hide in different places. `f(x) where {T<:Real}` puts it in a curly inside a
+          // `where_expression`; `f{T<:Real}(x)` puts it in a curly here, with NO where_expression at
+          // all — so the where_expression case never saw it and the common spelling of a bounded
+          // generic published no bound. Found by a mutant that survived because the fixture's own
+          // bound was invisible to both the analyzer and the assertion.
+          for (const inner of this.namedChildren(node)) {
+            if (inner.type !== "curly_expression") continue
+            for (const b of this.namedChildren(inner)) {
+              if (b.type !== "binary_expression") continue
+              const bo = this.binOperands(b)
+              if (bo.op !== "<:" && bo.op !== ">:") continue
+              const bound = bo.right ? this.typeHeadName(bo.right) : ""
+              if (bound && bo.left) {
+                relationships.push(this.rel(bo.left.text.trim(), "extends", bound, b, 1.0,
+                  { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+              }
+            }
+          }
           // `Vector{T}` — the base type is a reference and T is a parameter, not a read.
           if (this.withinTypeHead(node)) break
           const base = this.firstNamedChildOfType(node, "identifier")
@@ -567,7 +586,28 @@ export class RealJuliaAnalyzer {
         case "where_expression": {
           // `f(x::T) where {T<:Real}` — an upper bound inside is a subtype fact, and a
           // constraint name is a binding rather than a read.
+          //
+          // DESCEND, because the two spellings differ in shape: bare `where T<:Real` puts the
+          // binary_expression directly among this node's children, while braced `where {T<:Real}`
+          // puts it inside a `curly_expression`. Looking only at direct children found the unbraced
+          // form and silently missed the braced one, which is the form people actually write — so
+          // `function scaled{T<:Real}(s::Shape, k::T)::Float64` published no `T extends Real` at
+          // all. Found by the mutant `julia/where-bound-extends-scope-guarded`, which survived
+          // because the fixture's own `where` bound was invisible to BOTH sides: a fixture and an
+          // analyzer can agree on nothing and still both be wrong.
           for (const child of this.namedChildren(node)) {
+            if (child.type === "curly_expression") {
+              for (const inner of this.namedChildren(child)) {
+                if (inner.type !== "binary_expression") continue
+                const r2 = this.binOperands(inner)
+                if (r2.op !== "<:" && r2.op !== ">:") continue
+                const b = r2.right ? this.typeHeadName(r2.right) : ""
+                if (b && r2.left) {
+                  relationships.push(this.rel(r2.left.text.trim(), "extends", b, inner, 1.0, { juliaSpecific: true, isSubtype: true, isWhereBound: true }))
+                }
+              }
+              continue
+            }
             if (child.type !== "binary_expression") continue
             const { op, left, right } = this.binOperands(child)
             // `>` is not a bound operator; `>:` is. The test said `">"`, so an UPPER bound written
@@ -868,8 +908,15 @@ export class RealJuliaAnalyzer {
    * not a workaround for this grammar; it is the only correct navigation.
    */
   private unwrapWhere(node: Node): Node {
+    // Descend to the CALLABLE, through every wrapper that can sit between an assignment's
+    // left-hand side and the call. The wrappers are not interchangeable: `where T<:Real` puts the
+    // bound among the where_expression's DIRECT children, while `where {T<:Real}` puts it inside a
+    // `curly_expression` — and a first version that stopped at the curly returned IT rather than the
+    // call, so `bounded{T<:Real}(x::T) = x` was not recognised as a declaration at all. Same for the
+    // return-type wrapper that made `f(x)::T = …` invisible.
+    const WRAPPERS = new Set(["where_expression", "curly_expression", "typed_expression", "parenthesized_expression"])
     let cur = node
-    for (let guard = 0; guard < 8 && cur.type === "where_expression"; guard++) {
+    for (let guard = 0; guard < 8 && WRAPPERS.has(cur.type); guard++) {
       const first = this.pos(cur, 0)
       if (!first) break
       cur = first
