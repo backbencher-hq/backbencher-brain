@@ -3,15 +3,15 @@
   "code": "W5",
   "milestone": "M26",
   "status": "verified",
-  "checks": 15,
-  "passed": 15,
+  "checks": 20,
+  "passed": 20,
   "failed": 0,
-  "mutantsCaught": 6,
-  "mutantsTotal": 6,
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "mutantsCaught": 13,
+  "mutantsTotal": 13,
+  "currentCommit": "d1ad94bb83a1eba9ee067ae49575843bb983537e",
   "verifierCommand": "npx tsx script/m26/verify-impact-mode.ts",
   "evidenceFile": "W5.json",
-  "generatedAt": "2026-09-20T02:23:17.774Z",
+  "generatedAt": "2026-09-30T03:44:10.349Z",
   "differential": {
     "sampling": "all reverse-dependency edges of the fixture root (the fixture IS the sample, none skipped); L3 answers usage sites since M55.T3 (incoming, non-declaration) — no direction correction needed; containment delta verified separately",
     "l3TotalCount": 4,
@@ -26,7 +26,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:23:17.775Z",
-    "contentSha256": "f00d2965cbccf5b740a8158248739304afc6221d36a1fb4d45d35b0bbb8b829b"
+    "sealedAt": "2026-09-30T03:44:10.351Z",
+    "contentSha256": "798e3a583c009c06953dfe6cf84332fd166769ea987d5fed6677b116c87e8f17"
   }
 }

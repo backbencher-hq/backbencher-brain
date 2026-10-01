@@ -26,56 +26,13 @@ parser.setLanguage(lang)
 
 const { deriveLuaTruth } = await import(REPO + "/script/m60/lua-truth-oracle")
 
-// ---- the census side, reproduced from lua-export-census.ts so the two walkers
-// are compared as written rather than through a shared helper that could hide
-// the very disagreement being investigated.
-const NOT_A_SCOPE = new Set(["function_definition", "function_declaration"])
-const fileScopeReturns = (node: any, out: any[] = []): any[] => {
-  for (let i = 0; i < node.namedChildCount; i++) {
-    const c = node.namedChild(i)
-    if (!c) continue
-    if (NOT_A_SCOPE.has(c.type)) continue
-    if (c.type === "return_statement") { out.push(c); continue }
-    fileScopeReturns(c, out)
-  }
-  return out
-}
-const fieldName = (f: any): any => {
-  for (let i = 0; i < f.childCount; i++) {
-    const fn = typeof f.fieldNameForChild === "function" ? f.fieldNameForChild(i) : null
-    if (fn === "name") return f.child(i)
-  }
-  return null
-}
-const stringContent = (s: any): string | null => {
-  for (let i = 0; i < s.namedChildCount; i++) {
-    const c = s.namedChild(i)
-    if (c && c.type === "string_content") return c.text
-  }
-  return null
-}
-const censusNames = (root: any): Set<string> => {
-  const names = new Set<string>()
-  for (const ret of fileScopeReturns(root)) {
-    let e: any = null
-    for (let i = 0; i < ret.namedChildCount; i++) {
-      const c = ret.namedChild(i)
-      if (c && c.type === "expression_list") { e = c.namedChild(0); break }
-    }
-    if (!e) continue
-    if (e.type === "identifier") { names.add(e.text); continue }
-    if (e.type !== "table_constructor") continue
-    for (let i = 0; i < e.namedChildCount; i++) {
-      const f = e.namedChild(i)
-      if (!f || f.type !== "field") continue
-      const nm = fieldName(f)
-      if (!nm) continue
-      if (nm.type === "identifier") names.add(nm.text)
-      else if (nm.type === "string") { const s = stringContent(nm); if (s) names.add(s) }
-    }
-  }
-  return names
-}
+// The census side is IMPORTED, not reproduced. It was reproduced here, and when
+// LUA-35 added the setmetatable rule to the real census this copy did not get it,
+// so the gate reported 3 phantom disagreements on files the analyzer and the real
+// census agreed about. Third time in this lane that one piece of logic existing in
+// two files has cost a day — LUA-24 was the first. Reimplementation is deleted, not
+// patched.
+const { expectedExportNames } = await import("./lua-export-census")
 
 const walk = (dir: string, out: string[] = []): string[] => {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -101,7 +58,7 @@ for (const f of files) {
   try { tree = parser.parse(src) } catch { continue }
   if (tree.rootNode.hasError) continue
 
-  const cen = censusNames(tree.rootNode)
+  const cen = new Set(expectedExportNames(tree.rootNode))
   const truth = deriveLuaTruth(tree.rootNode, f)
   const ora = new Set<string>()
   for (const e of truth) {
@@ -166,7 +123,7 @@ if (onlyOracle.length) {
     let tree: any
     try { tree = parser.parse(readFileSync(f, "utf8")) } catch { continue }
     if (tree.rootNode.hasError) continue
-    const cen = censusNames(tree.rootNode)
+    const cen = new Set(expectedExportNames(tree.rootNode))
     // The pre-fix rule: scope name alone, no depth. An anonymous function
     // contributes no name, so its body inherits `global`.
     const stack: any[] = [tree.rootNode]

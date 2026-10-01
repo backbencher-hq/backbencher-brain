@@ -87,14 +87,39 @@ Every `contains` target is a symbol published by this analyzer — that is a har
 invariant, checked by a gate, because a `contains` edge pointing at a name that
 is not a symbol is a graph that cannot be walked.
 
-`references` targets are local names on the same document, **or** built-in XSD
-types, and the two are told apart in metadata rather than left to the reader. A
-local target is a symbol this analyzer published; a built-in target carries
-`metadata.resolvable: "builtin"` together with the full `qname`, `prefix` and
-`namespaceUri`, so `type="xs:string"` is recorded as a reference to the built-in
-`string` and never as a local symbol named `string`. On the corpus this is 367
-edges, and the distinction is the reason a `references` edge to `xs:string` is not
-a dangling name.
+A `references` target is a local name, a built-in, a name in another file, or a
+name this file does not satisfy — and the four are told apart in
+`metadata.resolvable` rather than left to the reader. Measured over the corpus
+(31,770 reference edges):
+
+| `resolvable` | meaning | edges | share |
+| --- | --- | ---: | ---: |
+| `in-document` | declared in this file; the target is a symbol this analyzer published | 21,474 | 67.6 % |
+| `builtin` | an XML/XSD built-in type | 7,520 | 23.7 % |
+| `external` | declared in a file this document imports; the edge records WHICH file in `importedFrom` | 2,363 | 7.4 % |
+| `unresolved` | a **real** reference this file does not satisfy — satisfied only by an `xs:include`, which a per-file analyzer cannot see | 413 | 1.3 % |
+
+Only `in-document` publishes a target symbol. The other three deliberately do not:
+a phantom local symbol is the M60.R10 lie, and a consumer that resolves a
+built-in, an external or an unresolved reference to a symbol with no declaration
+behind it is worse off than one that is told where to look.
+
+`builtin` carries the full `qname`, `prefix` and `namespaceUri`, so
+`type="xs:string"` is recorded as a reference to the built-in `string` and never as
+a local symbol named `string`.
+
+`unresolved` carries `ambiguousWithBuiltin` — 103 of the 413 — when the name is
+*also* a built-in. That is the one case where a consumer must not guess either way:
+`<!ENTITY>`-style shadowing aside, a bare `type="date"` may mean XSD's built-in
+`date` or a same-named type an `xs:include` brought in, and **from inside this one
+file the two are indistinguishable**. The analyzer records the claim and the
+ambiguity rather than dropping the claim (as it did before) or resolving it to a
+built-in (as the corpus oracle did, which is a confidently wrong answer —
+`libxml2/test/schemas/vdv-simpleTypes.xsd` declares its own `date` at line 32).
+
+Resolving includes for real needs the include **graph**, which a per-file analyzer
+cannot see and which belongs to a project-level pass. That is a feature, not a gap
+in this function, and naming it as one would be a way of not doing it.
 
 Each relationship carries `metadata.evidenceClass`, assigned where the edge is
 written so a tier cannot drift from the rule that produced it:
@@ -104,10 +129,27 @@ written so a tier cannot drift from the rule that produced it:
 | `structural` | containment read off the tree, DTD→declaration, declaration→notation, PI→target | the large majority |
 | `import_based` | the target is a FILE: `ExternalID`, stylesheet `href`, `schemaLocation` | 964 |
 | `reference_qualified` | the target is a NAME reached through a declared prefix, or a named XSLT template | 11,145 |
-| `usage_contextual` | the document stating what an element MAY contain through an attribute, e.g. `<!ELEMENT catalog (entry+)>` | 821 |
+| `usage_contextual` | the document stating what an element MAY contain through an attribute, e.g. `<!ELEMENT catalog (entry+)>` | 665 |
 | `inferred` | the honest default for a role the table does not name | 0 |
 
-`usage_contextual` is deliberately not folded into `structural`.
+`evidenceClass` is the tier of the edge's **primary** role. A merged edge carries
+its other roles in `meta.alsoRoles`, and their tiers are not separately recorded —
+so a consumer asking "is this edge *also* a usage claim?" has to read
+`alsoRoles`, not `evidenceClass`.
+
+That is not a hypothetical: `<!ELEMENT catalog (entry+)>` inside a document that
+also contains a real `<entry/>` produces `contains catalog -> entry` twice — once
+read off the tree, once from the DTD — and the two collapse onto one edge because
+edge identity is `source|type|target`. Whichever rule wrote first becomes the
+primary role. Measured over 2,500 corpus files: **665** content-model edges carry
+`tier: usage_contextual`, and a further **148** carry `tier: structural` with
+`alsoRoles: ["dtd_content_model"]`. So the content-model claim is never *lost* —
+it is counted and preserved — but on 148 of 813 sites the edge's own tier
+describes the tree reading rather than the usage one.
+
+`dtd_notation_reference` also maps to `usage_contextual` and is exercised by
+`xml/dtd-declarations`, but it occurs **zero** times across the 8,889-file corpus.
+The tier is reachable; it is not common.
 `<!ELEMENT catalog (entry+)>` says catalog MAY admit entry; `contains
 catalog -> entry` read off an actual `<entry/>` child is nesting. They are
 different claims, and because edge identity is `source|type|target` they collapse

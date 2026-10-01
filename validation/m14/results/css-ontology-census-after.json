@@ -1,0 +1,163 @@
+{
+  "instrument": "css-ontology-census",
+  "purpose": "Per-CLASS resolvability for every relationship the CSS analyzer emits, measured on both entry points. An aggregate rate mixes classes with opposite characters and cannot decide a ruling: the selector→property `uses` edge is unresolvable because a CSS property name is not a graph node, while the var() edge is resolvable because the custom property IS one.",
+  "resolutionRules": "parallel-indexer's own insert-time binding rules (exact name, leaf, endsWith(:name), endsWith(.name), qualifiedName).",
+  "productionFilter": "pool-worker.ts filterNoiseRelationships, css branch: keeps `contains` only.",
+  "corpora": [
+    "svelte",
+    "grails-core",
+    "scala3",
+    "cython",
+    "go-tools",
+    "mojo",
+    "zig",
+    "cloogle.org",
+    "element-plus",
+    "vue-core",
+    "cargo",
+    "fsharp",
+    "graphql-js"
+  ],
+  "filesMeasured": 457,
+  "enginePath": {
+    "total": 7743,
+    "resolvesBothEnds": 7010,
+    "pct": 90.5,
+    "byClass": [
+      {
+        "type": "contains",
+        "total": 5547,
+        "resolvesBothEnds": 5547,
+        "pctBothEnds": 100,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          "@media (max-width: 800px) -> body",
+          "@media (max-width: 800px) -> body.framelike",
+          "@media (max-width: 800px) -> #sidebar",
+          "@media (max-width: 800px) -> #viewer",
+          "@media (max-width: 600px) -> #header.result-view #logo",
+          "@media (max-width: 600px) -> #advanced #libraries .libraries-list"
+        ]
+      },
+      {
+        "type": "references",
+        "total": 2151,
+        "resolvesBothEnds": 1437,
+        "pctBothEnds": 66.8,
+        "sourceOnly": 714,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          ":root, [data-bs-theme=light] -> --bs-font-sans-serif",
+          ":root, [data-bs-theme=light] -> --bs-border-radius-xxl",
+          "body -> --bs-body-font-family",
+          "body -> --bs-body-font-size",
+          "body -> --bs-body-font-weight",
+          "body -> --bs-body-line-height"
+        ]
+      },
+      {
+        "type": "uses",
+        "total": 26,
+        "resolvesBothEnds": 26,
+        "pctBothEnds": 100,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          "#nprogress .spinner-icon -> nprogress-spinner",
+          ".fa-spin -> spin",
+          ".reload-dot.ping::before -> reload-ping",
+          ".welcome-hero-cups -> welcome-cups-in",
+          ".welcome-hero-body -> welcome-body-in",
+          ".progress-bar-animated -> progress-bar-stripes"
+        ]
+      },
+      {
+        "type": "imports",
+        "total": 19,
+        "resolvesBothEnds": 0,
+        "pctBothEnds": 0,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 19,
+        "sampleResolvable": []
+      }
+    ]
+  },
+  "productionPath": {
+    "total": 7645,
+    "resolvesBothEnds": 6912,
+    "pct": 90.4,
+    "byClass": [
+      {
+        "type": "contains",
+        "total": 5449,
+        "resolvesBothEnds": 5449,
+        "pctBothEnds": 100,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          "@media (max-width: 800px) -> body",
+          "@media (max-width: 800px) -> body.framelike",
+          "@media (max-width: 800px) -> #sidebar",
+          "@media (max-width: 800px) -> #viewer",
+          "@media (max-width: 600px) -> #header.result-view #logo",
+          "@media (max-width: 600px) -> #advanced #libraries .libraries-list"
+        ]
+      },
+      {
+        "type": "references",
+        "total": 2151,
+        "resolvesBothEnds": 1437,
+        "pctBothEnds": 66.8,
+        "sourceOnly": 714,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          ":root, [data-bs-theme=light] -> --bs-font-sans-serif",
+          ":root, [data-bs-theme=light] -> --bs-border-radius-xxl",
+          "body -> --bs-body-font-family",
+          "body -> --bs-body-font-size",
+          "body -> --bs-body-font-weight",
+          "body -> --bs-body-line-height"
+        ]
+      },
+      {
+        "type": "uses",
+        "total": 26,
+        "resolvesBothEnds": 26,
+        "pctBothEnds": 100,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 0,
+        "sampleResolvable": [
+          "#nprogress .spinner-icon -> nprogress-spinner",
+          ".fa-spin -> spin",
+          ".reload-dot.ping::before -> reload-ping",
+          ".welcome-hero-cups -> welcome-cups-in",
+          ".welcome-hero-body -> welcome-body-in",
+          ".progress-bar-animated -> progress-bar-stripes"
+        ]
+      },
+      {
+        "type": "imports",
+        "total": 19,
+        "resolvesBothEnds": 0,
+        "pctBothEnds": 0,
+        "sourceOnly": 0,
+        "targetOnly": 0,
+        "neitherEnd": 19,
+        "sampleResolvable": []
+      }
+    ]
+  },
+  "droppedByProductionFilter": {
+    "references": 2151,
+    "imports": 19,
+    "uses": 26
+  }
+}

@@ -74,6 +74,61 @@ export type SearchResults = SearchResult[] & {
   freshCount?: number
   searchMode?: string
   truncated?: boolean
+  /**
+   * Size of the ranked MATCH SET the page was cut from — not the size of the
+   * returned page. `results.length` is the page; a caller that used it as the
+   * total could not tell one match from fifteen, and a truncated page read as a
+   * complete one. 0 when not computed.
+   */
+  totalMatches?: number
+  /**
+   * How many of the matched rows were actually RANKED and can therefore be
+   * paged through. Equal to `totalMatches` in the normal case; smaller when a
+   * cap stopped the ranking. A caller paging to the end needs both numbers: the
+   * first says how much matched, the second says how much of it is reachable.
+   */
+  rankedMatches?: number
+  /**
+   * How much of the searchable corpus has a symbol BODY to search.
+   *
+   * Content search matches name, qualified_name, docstring and body. The body
+   * column arrived after databases were indexed, so a project indexed before it
+   * has none — and a search over such a project silently misses every word
+   * that appears only inside a function. This ratio is what lets a caller tell
+   * "nothing matched" from "nothing could match", which are opposite facts.
+   */
+  bodyCoverage?: { withBody: number; symbols: number; ratio: number }
+  /**
+   * Which route produced this result set.
+   *
+   * `phrase` means the query appeared verbatim in the name, qualified name,
+   * docstring or body. `terms` means nothing matched verbatim and the query's
+   * individual content words were matched instead. These are different claims:
+   * a phrase hit says the code contains this text, a terms hit says it
+   * discusses these words. Reported so a caller can weaken its confidence
+   * accordingly instead of presenting a keyword coincidence as a quotation.
+   */
+  matchMode?: "phrase" | "terms"
+  /**
+   * How many candidate rows the scan actually looked at. Present so a bounded
+   * answer can say "stopped after N of M" rather than only "stopped", and
+   * absent when the scan completed.
+   */
+  scannedRows?: number
+  /**
+   * Why the candidate set is smaller than the raw match set, when it is: a
+   * per-phase candidate cap was reached, the noise filter removed rows after
+   * the cap, or (regex mode) the row cap or the time budget stopped the scan.
+   * Absent means the candidate set is believed complete.
+   */
+  truncationReason?: string
+  /**
+   * Freshness could not be resolved (the resolver threw). The answer is still
+   * returned and the counts keep their conservative default, but this flag
+   * exists so `staleCount: 0` is never read as "everything is fresh" when the
+   * check did not run.
+   */
+  freshnessError?: boolean
 }
 
 export interface CallGraphEntry {
@@ -107,11 +162,30 @@ export interface TraceResult {
 
 export interface ProjectStats {
   files: number
+  /** Sums brain_file.line_count — NON-BLANK lines, not physical lines. */
   linesOfCode: number
   avgFileSize: number
+  /** The unit `avgFileSize` is measured in. */
+  avgFileSizeUnit: string
   symbols: number
+  /** How many of `symbols` carry a complexity measurement. `avgComplexity` is
+   *  a SQL AVG, which skips nulls, so its denominator is exactly this number. */
+  symbolsWithComplexity: number
   avgComplexity: number
+  /** Every stored relationship row, whatever its type. */
   relationships: number
+  /** The subset of `relationships` that is an actual dependency edge. */
+  callEdges: number
+  /** Which relationship types `callEdges` counted — `exports` and `contains`
+   *  are index bookkeeping and are excluded. */
+  couplingRelationshipTypes: string[]
+  /** brain_file.is_test_file=1. Depends on the indexer's classifier, so a
+   *  project whose tests are not recognisable counts as having none. */
+  testFiles: number
+  productionFiles: number
+  /** Per-language file/line/symbol counts, largest first. A file with no
+   *  recorded language is reported as "unknown" rather than dropped. */
+  languages: Array<{ language: string; files: number; linesOfCode: number; symbols: number }>
   projectId: string
   provenance: EvidenceProvenance
 }
@@ -133,7 +207,13 @@ export interface SemanticResult {
   file: string
   line: number
   snippet: string
-  similarity: number
+  /**
+   * Cosine similarity, or null when none was computed. Null is meaningful and
+   * is NOT the same as 0: the keyword-fallback path produces lexical matches
+   * with no score at all, and reporting 0 made callers print and average a
+   * number the engine had explicitly labelled meaningless.
+   */
+  similarity: number | null
   language: string
   /** True when the source file changed on disk since indexing — must never be presented as current. */
   stale?: boolean
@@ -149,7 +229,31 @@ export interface SemanticSearchResults {
     dimension: number
     scannedRows: number
     filteredRows: number
+    /**
+     * Why the dense path was abandoned. `degenerate-query-vector` is distinct
+     * from `no-vector-above-threshold` on purpose: the first means nothing was
+     * compared at all because the query could not be embedded, the second means
+     * vectors were compared and none cleared the threshold. Collapsing them
+     * sends the reader to re-embed a corpus that was embedded correctly.
+     */
     fallbackReason?: string
+    /** Indexable symbols vs symbols that actually have a stored embedding. */
+    indexSymbolCount: number
+    embeddedSymbolCount: number
+    /** 0..1, embeddedSymbolCount / indexSymbolCount. 1 when nothing is indexed. */
+    embeddingCoverage: number
+    /**
+     * Whether the ranking can tell its top results from one another. False when
+     * several stored vectors score within the engine's discrimination margin of
+     * the best one, which in a 50-dimensional hashed bag-of-words happens often:
+     * the score then orders by an accident of body length rather than by
+     * anything about the query, and printing it as a similarity makes noise look
+     * measured. Optional — a producer that does not compute it omits the field
+     * rather than reporting a guess.
+     */
+    discriminative?: boolean
+    /** How many other candidates scored within the margin of the best. */
+    nonDiscriminativeCompetitors?: number
   }
 }
 
@@ -203,6 +307,18 @@ export interface GraphEdge {
    *  (M26.W2 evidence requirement); an edge without one must never be
    *  emitted, never rendered. */
   rowId: string
+  /** Callers: whether the stored row names the TRACED symbol ("exact") or one
+   *  of its members, folded onto it by the owner cascade ("owner-cascade").
+   *  Absent means the engine could not resolve the match, which is NOT the
+   *  same as "exact" — consumers must read this rather than infer it. */
+  targetMatch?: "exact" | "owner-cascade"
+  /** Callees: the same question from the other end — whether the stored row's
+   *  SOURCE is the traced symbol or one of its members. */
+  sourceMatch?: "exact" | "owner-cascade"
+  /** Set only when the match was cascade-derived: the member the stored row
+   *  actually named, so the owner-family superset can be reduced to the exact
+   *  set without a second query. */
+  matchedMember?: { name: string; file: string }
   /** Stored edge metadata (parsed from brain_relationship.metadata).
    *  Only declared fields pass through; the graph renderer derives the
    *  evidence tier from evidenceClass when present. Enrichment fields
@@ -237,10 +353,38 @@ export interface GraphTraversalOptions {
    *  5000). Reaching it is DECLARED as truncation, with the root's true site
    *  count reported when computable — it is never a silent cap. */
   edgeLimit?: number
+  /** Bound on the SIZE OF THE ANSWER, not of one query (default 1000, max
+   *  5000). Reaching it is declared as `total-edge-limit`. */
+  maxEdges?: number
+  /** Wall-clock budget for the whole walk, in milliseconds (default 2,000;
+   *  0 disables it). A node is not a unit of work: the per-node caller query
+   *  is priced by the reproducible ORDER BY, which SQLite applies BEFORE the
+   *  LIMIT, so `edgeLimit` does not bound it. When this fires the walk stops
+   *  and `summary.truncated` is true with reason
+   *  "walk-time-budget-exhausted". */
+  timeBudgetMs?: number
 }
 
 export interface GraphTraversalResult {
   root: GraphNode
+  /** How many stored symbols the name resolved among. 1 means the name was
+   *  unique; more means the caller should confirm `root` is the one they meant
+   *  (measured: lodash holds eight symbols named `build`, cobra holds fifty
+   *  structural symbols named `code_block.go`). */
+  rootCandidates: number
+  /** How the root was found: `exact` (a structural symbol of that name),
+   *  `exact-any-kind` (a symbol of that name the graph cannot traverse — a
+   *  constant, a type alias — which still has callers), or `containment` (the
+   *  documented near-miss fallback, or a case difference, because SQLite's LIKE
+   *  is case-insensitive for ASCII).
+   *
+   *  `containment` means the answer is about a symbol whose name CONTAINS the
+   *  one asked for. Measured on the atlas corpus: `target: "ub"` answered
+   *  `found: true` rooted at `hub`, and `target: "_"` answered `found: true`
+   *  rooted at `build_registry`, with nothing in the payload saying the name
+   *  was not found at all. `found: true` alone means "a root was found", which
+   *  is a weaker claim than the one a reader assumes. */
+  rootMatch: "exact" | "exact-any-kind" | "containment"
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
@@ -253,12 +397,38 @@ export interface GraphTraversalResult {
     /** Edges RETURNED for callees; see `totalCallers`. */
     totalCallees: number
     maxDepthReached: number
+    /** The depth cap in force for this traversal. Paired with
+     *  `maxDepthReached` it is what a UI renders, and `truncated: true` with a
+     *  depth reason is what tells a reader the answer is a prefix. */
+    maxDepth: number
+    /** The wall-clock budget this walk ran under, and whether it stopped on
+     *  it. A node is not a unit of work: the per-node caller query is priced by
+     *  the reproducible ORDER BY, which sorts before the LIMIT, so a symbol
+     *  with thousands of call sites can cost seconds per node. The time bound
+     *  is what bounds it, and `truncated` is true when it fires. */
+    timeBudgetMs: number
+    timeBudgetExhausted: boolean
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
     /** M59.A12 (#888): the declared per-query site limit that was in force. */
     edgeLimit: number
+    /** The bound on the WHOLE answer. `edgeLimit` and the fan-out budgets bound
+     *  a query and a fan-out; their product was otherwise unbounded, and a hub
+     *  symbol at the default depth returned 454 edges and half a megabyte
+     *  (ripgrep's `unwrap`). Declared so the size of an answer is something a
+     *  caller can predict, and raise if it is too large. */
+    maxEdges: number
+    totalEdgeLimitReached: boolean
     /** How many edge queries hit that limit (any depth). */
+    /** How many edge queries hit the per-symbol SITE limit specifically. Not a
+     *  count of all bounds: `truncationReason` can name the fan-out budget and
+     *  the depth cap as well, and this figure says which of them bit how often. */
+    /** How many edge queries hit the per-symbol SITE limit specifically — NOT a
+     *  count of every bound. `truncationReason` can also name the fan-out budget
+     *  and the depth cap, and those carry their own flags (`callerBudgetExhausted`,
+     *  `calleeBudgetExhausted`) and their own reasons, so this figure says which
+     *  bound bit how often. */
     cappedQueries: number
     /** The root's true site count, counted with the same query and the same
      *  noise filters. `null` = not counted (no cap reached, or not computable),
@@ -266,6 +436,42 @@ export interface GraphTraversalResult {
     callersIfUncapped: number | null
     calleesIfUncapped: number | null
     totalsAreLowerBounds: boolean
+    /** DEPTH 0 ONLY — these four describe the ROOT. `exactCallers` names the
+     *  root itself; `cascadedCallers` names one of its members, folded on by
+     *  the owner cascade. The cascade is a declared superset; these make it a
+     *  REDUCIBLE one. An edge at depth >= 1 is about another symbol entirely
+     *  and is counted as `deeperCallers`; folding those in here would make
+     *  this number describe something other than the root. */
+    exactCallers: number
+    cascadedCallers: number
+    exactCallees: number
+    cascadedCallees: number
+    /** Edges at depth >= 1, about symbols the traversal discovered.
+     *  exactCallers + cascadedCallers + deeperCallers === totalCallers. */
+    deeperCallers: number
+    deeperCallees: number
+    /** The fan-out bound in force (symbols expanded per direction) and whether
+     *  it was exhausted. `truncationReason` names the bound when it fires; this
+     *  says what the bound was, which it previously did not. */
+    callerBudget: number
+    calleeBudget: number
+    callerBudgetExhausted: boolean
+    calleeBudgetExhausted: boolean
+    /** Rows present in both the caller and the callee list — one relationship
+     *  seen from two ends. `totalCallers + totalCallees` double-counts these. */
+    edgesInBothDirections: number
+    /** Composition of the RETURNED edges by stored relationship kind, counted
+     *  from the emitted edges. With every stored kind in the default filter
+     *  this is how a reader learns how many of the edges are calls without
+     *  walking all of them. */
+    edgesByType: Record<string, number>
+    /** The cap's kind ordering, in survival order. A cap that keeps `calls`
+     *  and drops `contains` is a decision; this publishes it. */
+    edgeKindPriority: string[]
+    /** The relationship kinds this run actually searched, resolved. NOT a
+     *  restatement of the default: a scope field that disagrees with the
+     *  answer is worse than no scope field. */
+    relationshipTypesUsed: string[]
     /** M59 (#895, #854): stored rows collapsed at the tool layer before
      *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
      *  a deeper cascade; spellingVariantsCollapsed: same call site + same
@@ -306,10 +512,36 @@ export interface CouplingEntry {
 export interface FileDependency {
   file: string           // relative path
   fileId: string
-  dependencies: Array<{ path: string; fileId?: string; external: boolean }>
-  dependents: Array<{ path: string; fileId: string }>
+  /** The project-relative path of the target (`external: false` and resolved),
+   *  or the specifier as written when it is external or unresolved. No
+   *  `fileId`: one embeds the project id AND the relative path, so it repeated
+   *  the path beside it. The path is the locator. */
+  dependencies: Array<{
+    path: string
+    external: boolean
+    /** How this target was reached: an exact path match, a segment-anchored
+     *  suffix match, or nothing (the specifier the caller wrote, unresolved).
+     *  This is the part a path cannot tell you. */
+    resolution?: "resolved" | "suffix-match" | "unresolved"
+  }>
+  /** The project-relative path only. A file id embeds the project id AND the
+   *  relative path, so carrying both repeated the path for every edge; the path
+   *  is the locator. */
+  dependents: Array<{ path: string }>
+  /** The TRUE sizes of the two lists above. They are capped so one widely
+   *  imported file cannot dominate a page; these are the real counts. */
+  dependenciesTotal: number
+  dependentsTotal: number
+  dependenciesTruncated: boolean
+  dependentsTruncated: boolean
+  /** Internal specifiers this file wrote that resolve to no indexed file.
+   *  Declared so an incomplete graph reads as incomplete rather than small. */
+  unresolvedSpecifiers?: number
   score: number
-  provenance: EvidenceProvenance
+  /** CONTRACT CHANGE: provenance moved to the report, not repeated per row. It
+   *  was the same object on every row and roughly a third of the payload. A
+   *  dependency page's evidence identity is on the page, not on each file. */
+  provenance?: EvidenceProvenance
 }
 
 export interface ComplexityMetric {
@@ -330,6 +562,22 @@ export interface ComplexityReport {
   }
   breakdown: Array<{ name: string; type: string; complexity: number; file: string; line: number }>
   symbolCount: number
+  /** How many FILES the scope covered. A file scope can match many
+   *  (`target: "src"`), and without this a one-file answer and an eighty-file
+   *  answer are the same shape — measured 163 symbols with `linesOfCode: 2`. */
+  filesInScope: number
+  /** For a file-shaped scope, WHICH of the two shapes it was:
+   *  `exact-file` (one `brain_file.relative_path`) or `directory-prefix` (every
+   *  file under a path prefix, on a segment boundary). Absent for a symbol or
+   *  project scope, where the question does not arise.
+   *
+   *  `scope` reads `"file"` for both, which reads as ONE file: measured,
+   *  `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. */
+  scopeMatch?: "exact-file" | "directory-prefix"
+  /** Which relationship types `metrics.couplingEdges` counted. `exports` and
+   *  `contains` are index bookkeeping; counting them inflated the number by
+   *  1.20x on bb's own src and 2.24x on a small corpus. */
+  couplingRelationshipTypes: string[]
   provenance: EvidenceProvenance
 }
 
@@ -389,6 +637,15 @@ export interface PatternReport {
     candidatesTotal: number
     candidatesByRule: Record<string, number>
     candidatesAverageConfidence: number
+    /**
+     * Why the candidate set is the size it is. Every candidate the scan
+     * discarded, by reason. A report that says "0 findings" is only honest if
+     * the reader can see whether that is because nothing was dead or because
+     * everything was suppressed; this makes the second case distinguishable
+     * from the first. Optional: a producer that does not account for its own
+     * suppressions omits it rather than reporting zeros it did not measure.
+     */
+    suppressedByReason?: Record<string, number>
   }
 }
 
@@ -454,6 +711,13 @@ export interface SecuritySummaryV2 {
   crossLanguage: number
   scannedFlows: number
   deduplicatedFlows: number
+  /**
+   * Deduplicated findings omitted by the `maxResults` cap. `0` means the report
+   * is complete. `deduplicatedFlows` is the pre-cap census and `total` is what
+   * was returned, so a caller that reads only `total` cannot tell a capped scan
+   * from a small one — this is the field that tells them.
+   */
+  truncatedFindings: number
 }
 
 export interface SecurityReport {
@@ -494,7 +758,11 @@ export interface TestMappingEntry {
   line: number
   complexity: number
   gravity: number
+  /** At most DEFAULT_MAX_LINKS rows. `strongestEvidence` and every summary
+   *  count are computed from the COMPLETE set, so a trimmed entry still says
+   *  how strongly this symbol is tested. Absent when nothing was trimmed. */
   links: TestLink[]
+  linksTruncated?: boolean
   strongestEvidence: TestEvidenceKind | "none"
 }
 
@@ -503,10 +771,19 @@ export interface TestMappingReport {
   provenance: EvidenceProvenance
   summary: {
     productionSymbols: number
+    /** Symbols the documented population filter removed — noise paths and noise
+     *  symbol names. So `productionSymbols + excludedAsNoise` is the store's
+     *  population under this mode's own filter, and a reader can check it
+     *  instead of taking it on trust. */
+    excludedAsNoise: number
+    /** How many entries this answer returned, against the population above. */
+    returned: number
+    truncated: boolean
     testedSymbols: number
     untestedSymbols: number
     testFiles: number
     scannedTestSymbols: number
+    evidenceLinks: number
   }
 }
 
@@ -532,7 +809,24 @@ export interface TestGapReport {
   gaps: TestGap[]
   provenance: EvidenceProvenance
   summary: {
+    /** The production-symbol population this mode scanned — the SAME number
+     *  `test_mapping` reports as `productionSymbols`, so the two modes can be
+     *  compared. */
+    productionSymbols: number
+    /** How many GAP rows exist: `productionSymbols - directlyTested`. Named
+     *  `total` for compatibility, but it is a count of gaps, NOT of production
+     *  symbols. The two used to be indistinguishable: on the atlas corpus the
+     *  modes answered 169 and 163 under names that read as one question, and
+     *  nothing in either payload said how they relate. */
     total: number
+    /** Production symbols excluded because a test calls them directly — the
+     *  difference between the population and the gap count. */
+    directlyTested: number
+    /** Symbols the population filter dropped as noise. */
+    excludedAsNoise: number
+    /** How many gap rows this answer returned, against `total`. */
+    returned: number
+    truncated: boolean
     byCategory: Record<string, number>
     highRisk: number
   }

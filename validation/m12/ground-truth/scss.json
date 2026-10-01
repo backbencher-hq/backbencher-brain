@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "Independent hand audit of validation/m12/fixtures/scss/Theme.scss against Sass semantics, written from the fixture source and NOT from analyzer output. The CSS entry (validation/m12/ground-truth/css.json) audits the shared CSS subset; this entry audits only the constructs that are Sass-SPECIFIC, because auditing the CSS forms twice would test the same code path under two names and tell us nothing the CSS entry has not already said. Kinds follow the lane's published contract, which the CSS entry fixes: a rule selector becomes class/type/interface by specificity composition, a `$variable` becomes a variable, and `@mixin`/`@function` keep their keyword in the published name (as `@font-face Inter` keeps its keyword in the CSS lane) because the keyword is part of what the source writes. Four judgment calls, each recorded because the differential adjudicates them rather than me: (1) `@use 'tokens' as t` publishes the ALIAS and not the module path — `@use 'x' as a` and `@use 'x' as b` are one import and two graphs, so the alias is the only name a consumer cannot recover, and the import itself is carried as an import rather than as an edge; (2) `t.$brand` is a read of a variable NOT declared in this file, and the lane's no-phantom rule (the same rule that made `@include not-declared-here(1)` edge-free in the M14 lane fixture) says no edge is emitted, so none is asserted; (3) `double(4px)` IS a call to a function declared here, so a `uses` edge is asserted — Sass resolves it at call time and the graph cannot answer 'who calls double' without it; (4) `!default` and the `!default`/`!global` flags are metadata on the `$radius` symbol rather than separate facts, because they are attributes of the declaration and not nodes of the graph.",
+  "facts": [
+    {
+      "id": "sym:Theme.scss:1:namespace::t",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 1,
+      "attributes": { "name": "t", "symbolKind": "namespace" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@use 'tokens' as t; (the alias is the published name; the module path is the import)"
+      }
+    },
+    {
+      "id": "sym:Theme.scss:3:variable::$radius",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 3,
+      "attributes": { "name": "$radius", "symbolKind": "variable" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "$radius: 4px !default; (a SassScript variable declaration)"
+      }
+    },
+    {
+      "id": "sym:Theme.scss:5:function::@mixin card",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 5,
+      "attributes": { "name": "@mixin card", "symbolKind": "function" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@mixin card($pad: 8px) { ... } (a mixin is a named, parameterised block; keyword retained in the name)"
+      }
+    },
+    {
+      "id": "sym:Theme.scss:9:function::@function double",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 9,
+      "attributes": { "name": "@function double", "symbolKind": "function" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@function double($n) { @return $n * 2; } (a user function is a named, parameterised block)"
+      }
+    },
+    {
+      "id": "sym:Theme.scss:13:class::.panel",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 13,
+      "attributes": { "name": ".panel", "symbolKind": "class" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".panel { ... } (a single-class selector is a class symbol)"
+      }
+    },
+    {
+      "id": "sym:Theme.scss:20:class::.panel:hover",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Theme.scss",
+      "line": 20,
+      "attributes": { "name": ".panel:hover", "symbolKind": "class" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": ".panel:hover { ... } (pseudo-class selector -> class symbol, the same composition the CSS entry fixes)"
+      }
+    },
+    {
+      "id": "rel:Theme.scss:uses:.panel:@mixin card",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.scss",
+      "sourceId": ".panel",
+      "targetId": "@mixin card",
+      "attributes": { "type": "uses" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "@include card(12px) inside .panel — both ends declared in this file, so both resolve"
+      }
+    },
+    {
+      "id": "rel:Theme.scss:uses:.panel:@function double",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.scss",
+      "sourceId": ".panel",
+      "targetId": "@function double",
+      "attributes": { "type": "uses" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "width: double(4px) inside .panel — a call to a function declared in this file"
+      }
+    },
+    {
+      "id": "rel:Theme.scss:references:.panel:$radius",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Theme.scss",
+      "sourceId": ".panel",
+      "targetId": "$radius",
+      "attributes": { "type": "references" },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "border-radius: $radius inside .panel — a read of a variable declared in this file"
+      }
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
+import { findDeclaringParent } from "./override-context"
 
 /**
  * REAL NIM ANALYZER v1.0 — declaration-site extraction over the pinned
@@ -70,7 +71,7 @@ import { ASTEngine } from "./engine"
  * `classifyEvidenceTier`; they are genuinely facts about the file.
  */
 export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
-  public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  public analyze(rootNode: Node, content: string, filePath: string, context?: ASTEngine.AnalyzeContext): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -88,7 +89,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declaredSubtypes = new Map<string, Set<string>>() // base type → declared subtypes
     const docCommentByStartLine = new Map<number, string>() // decl start line → ## text
 
-    this.collectDocComments(rootNode, docCommentByStartLine)
+    // ONE traversal for doc comments + the module surface + the file's own
+    // complexity, replacing three separate full-tree walks. See
+    // collectDocModulesAndComplexity for why, and for why it must not allocate
+    // per node.
+    const fileComplexity = this.collectDocModulesAndComplexity(
+      rootNode, docCommentByStartLine, imports, exports, importQualifiers, relationships,
+    )
     this.collectDeclarations(rootNode, {
       symbols,
       errors,
@@ -101,10 +108,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       declaredSubtypes,
     })
-    this.collectModules(rootNode, imports, exports, importQualifiers, relationships, errors)
     this.collectContainment(symbols, relationships)
     this.collectInheritance(symbols, relationships, fileTypes)
-    this.collectOverrides(symbols, relationships, declaredSubtypes)
+    this.collectOverrides(symbols, relationships, declaredSubtypes, context?.overrideCompanion)
     this.collectCallsAndUses(rootNode, relationships, {
       fileValues,
       fileTypes,
@@ -114,11 +120,8 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParamNames,
       importQualifiers,
     })
-    this.collectInstantiations(rootNode, relationships, fileTypes, fileCallables)
-    this.collectDeclaredTypeRefs(rootNode, relationships, fileTypes, genericParamNames)
     this.classifyEvidenceTier(relationships)
 
-    const fileComplexity = this.nimCyclomaticComplexity(rootNode)
     return {
       language: "nim",
       symbols,
@@ -165,13 +168,51 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * grammar-structure facts, and both are indexed by the anchor node's start line
    * so attachment stays O(1) with no nearest-previous scan.
    */
-  private collectDocComments(rootNode: Node, out: Map<number, string>): void {
+  /**
+   * ONE traversal that does the work of three: file doc comments, the module
+   * surface (import / from-import / include / export), and the file's own
+   * cyclomatic complexity.
+   *
+   * These were three independent full-tree walks. They are three because they
+   * were written at three different times, not because they need three visits:
+   * all three are pure visitors over the same nodes with no shared state and no
+   * order dependency between them. Measured on a 200-file sample they were 5-9%,
+   * 8-19% and 4-19% of analyzer time, so the redundant traversal was a third of
+   * the budget spent re-reading the same tree.
+   *
+   * The fused walk keeps ONE plain local counter and pushes onto ONE stack. That
+   * is deliberate and it is the lesson from the rejected memoization: the win
+   * here is fewer node VISITS (a WASM boundary crossing each), and the moment a
+   * fused walk allocates per-node state — a Map keyed by node id, say — it costs
+   * more than the walks it replaced. Nothing here allocates per node.
+   *
+   * Named children only, for the reason the complexity counter needs it: an
+   * anonymous keyword token carries the same type string as the statement that
+   * owns it, so descending into anonymous children double-counts every branch.
+   */
+  private collectDocModulesAndComplexity(
+    rootNode: Node,
+    out: Map<number, string>,
+    imports: ASTEngine.ImportInfo[],
+    exports: ASTEngine.ExportInfo[],
+    qualifiers: Set<string>,
+    relationships: ASTEngine.UniversalRelationship[],
+  ): number {
     const isDeclarationContainer = (n: Node): boolean =>
       !!this.callableNodes[n.type] || n.type === "type_declaration" || n.type === "variable_declaration" || n.type === "enum_field_declaration" || n.type === "field_declaration"
+    let complexity = 1
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "documentation_comment" || n.type === "block_documentation_comment") {
+      const t = n.type
+      // ── complexity ──
+      if (BRANCH_NODES.indexOf(t) !== -1) complexity++
+      else if (t === "infix_expression") {
+        const op = n.childForFieldName("operator")
+        if (op && !op.isNamed && (op.type === "and" || op.type === "or" || op.type === "xor")) complexity++
+      }
+      // ── doc comments ──
+      if (t === "documentation_comment" || t === "block_documentation_comment") {
         const text = this.docCommentText(n)
         if (text) {
           const parent = n.parent
@@ -180,11 +221,24 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         continue
       }
+      // ── the module surface ──
+      if (t === "import_statement") {
+        this.readImportStatement(n, imports, qualifiers, relationships)
+        // Still descend: an `import` has no nested declarations, but a malformed
+        // one can error-recover around them.
+      } else if (t === "import_from_statement") {
+        this.readImportFromStatement(n, imports, qualifiers, relationships)
+      } else if (t === "include_statement") {
+        this.readIncludeStatement(n, imports, relationships)
+      } else if (t === "export_statement") {
+        this.readExportStatement(n, exports)
+      }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
       }
     }
+    return complexity
   }
 
   /**
@@ -377,6 +431,20 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       genericParameters: genericParameters.length > 0 ? genericParameters : undefined,
       decorators: pragmas.length > 0 ? pragmas : undefined,
       comments: doc ? [doc] : undefined,
+      // A METHOD's owner is its receiver TYPE, and `ownerName` is the
+      // family-standard field for that — the one the store binds for ownership
+      // and the one `buildOverrideCompanion` keys on to index
+      // (owner -> declared method names) from previously parsed files.
+      //
+      // Leaving it unset made NIM methods invisible to every owner-based
+      // mechanism in the codebase, not just this one: the companion index came
+      // back EMPTY for a file whose base class declared a method, so
+      // cross-file override resolution could not work no matter what the
+      // override pass did. The receiver was already known, just parked in
+      // `metadata.nimReceiverType` where nothing generic reads it. The metadata
+      // copy stays — the override labels are built from it, and it is the
+      // documented place the receiver is recorded.
+      ...(receiverType ? { ownerName: receiverType, ownerKind: ASTEngine.SymbolKind.Class } : {}),
       // The store binds `brain_symbol.docstring` from this field (see
       // parallel-indexer's insertSymbol binding). Emitting only `comments`
       // produced docs=0 for every nim symbol through the real CLI, so the `##`
@@ -964,87 +1032,84 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * ALIAS, not a module. `import ./rel` and `import ../parent` are relative
    * paths in the same infix shape. `import "file.nim"` is a string literal.
    */
-  private collectModules(
-    rootNode: Node,
+  /**
+   * `from M import a, b` — the from-form. Extracted from the old collectModules
+   * walk so the fused walk can call it as a handler; the body is unchanged, and
+   * the path reader is the SAME one `import` uses, so a module spelled `./x` in
+   * one statement and `x` in another is still one target.
+   */
+  private readImportFromStatement(
+    n: Node,
     imports: ASTEngine.ImportInfo[],
-    exports: ASTEngine.ExportInfo[],
     qualifiers: Set<string>,
     relationships: ASTEngine.UniversalRelationship[],
-    _errors: ASTEngine.ParseError[],
   ): void {
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "import_statement") {
-        this.readImportStatement(n, imports, qualifiers, relationships)
-        // Still descend: an `import` has no nested declarations, but a
-        // malformed one can error-recover around them.
-      } else if (n.type === "import_from_statement") {
-        const moduleNode = n.childForFieldName("module")
-        // The SAME reader as `import`, so a module spelled `./x` in one
-        // statement and `x` in another is still one target: the old helper
-        // recursed to identifier leaves and published `nativesettings` where
-        // `import ./configure` published `./configure`.
-        const modulePathsParsed = moduleNode ? this.parseModuleExpression(moduleNode) : null
-        const module = modulePathsParsed?.paths[0]?.path ?? ""
-        const list = this.firstChildOfType(n, "expression_list")
-        const items = this.identifierTextsIn(list)
-        if (module) {
-          imports.push({
-            module,
-            items,
-            isDefaultImport: false,
-            range: this.nodeRange(n),
-            metadata: { nimImport: true, nimFromImport: true },
-          })
-          for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
-          relationships.push({
-            source: "(global)",
-            target: module,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1,
-            line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
-            metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
-          })
-        }
-      } else if (n.type === "include_statement") {
-        const list = this.firstChildOfType(n, "expression_list")
-        const includePaths: string[] = []
-        if (list) {
-          for (let i = 0; i < list.namedChildCount; i++) {
-            const c = list.namedChild(i)
-            if (!c) continue
-            const parsedInc = this.parseModuleExpression(c)
-            if (parsedInc) for (const pth of parsedInc.paths) includePaths.push(pth.path)
-          }
-        }
-        for (const text of includePaths) {
-          imports.push({
-            module: text,
-            isDefaultImport: false,
-            range: this.nodeRange(n),
-            metadata: { nimInclude: true },
-          })
-          relationships.push({
-            source: "(global)",
-            target: text,
-            type: ASTEngine.RelationshipType.Imports,
-            confidence: 1,
-            line_number: n.startPosition.row + 1,
-            metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
-          })
-        }
-      } else if (n.type === "export_statement") {
-        const list = this.firstChildOfType(n, "expression_list")
-        for (const text of this.identifierTextsIn(list)) {
-          if (!text) continue
-          exports.push({ name: text, metadata: { nimExport: true } })
-        }
+    const moduleNode = n.childForFieldName("module")
+    const modulePathsParsed = moduleNode ? this.parseModuleExpression(moduleNode) : null
+    const module = modulePathsParsed?.paths[0]?.path ?? ""
+    const list = this.firstChildOfType(n, "expression_list")
+    const items = this.identifierTextsIn(list)
+    if (module) {
+      imports.push({
+        module,
+        items,
+        isDefaultImport: false,
+        range: this.nodeRange(n),
+        metadata: { nimImport: true, nimFromImport: true },
+      })
+      for (const seg of this.moduleSegments(module)) qualifiers.add(seg)
+      relationships.push({
+        source: "(global)",
+        target: module,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1,
+        line_number: moduleNode ? moduleNode.startPosition.row + 1 : n.startPosition.row + 1,
+        metadata: { relationshipType: "nim_import", isImport: true, fileLevel: true },
+      })
+    }
+  }
+
+  /** `include a, b, c` — one edge per operand, through the same path reader. */
+  private readIncludeStatement(
+    n: Node,
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const list = this.firstChildOfType(n, "expression_list")
+    const includePaths: string[] = []
+    if (list) {
+      for (let i = 0; i < list.namedChildCount; i++) {
+        const c = list.namedChild(i)
+        if (!c) continue
+        const parsedInc = this.parseModuleExpression(c)
+        if (parsedInc) for (const pth of parsedInc.paths) includePaths.push(pth.path)
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
+    }
+    for (const text of includePaths) {
+      imports.push({
+        module: text,
+        isDefaultImport: false,
+        range: this.nodeRange(n),
+        metadata: { nimInclude: true },
+      })
+      relationships.push({
+        source: "(global)",
+        target: text,
+        type: ASTEngine.RelationshipType.Imports,
+        confidence: 1,
+        line_number: n.startPosition.row + 1,
+        metadata: { relationshipType: "nim_include", isImport: true, fileLevel: true },
+      })
+    }
+  }
+
+  /** `export a, b` — a re-export of imported names, so no relationship of its
+   *  own; the names land in the export list and nothing else. */
+  private readExportStatement(n: Node, exports: ASTEngine.ExportInfo[]): void {
+    const list = this.firstChildOfType(n, "expression_list")
+    for (const text of this.identifierTextsIn(list)) {
+      if (!text) continue
+      exports.push({ name: text, metadata: { nimExport: true } })
     }
   }
 
@@ -1069,7 +1134,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const mod of moduleNodes) {
       const parsed = this.parseModuleExpression(mod)
       if (!parsed) continue
-      for (const { path, alias, site } of parsed.paths) {
+      for (const { path, alias, qualifier, site } of parsed.paths) {
         imports.push({
           module: path,
           isDefaultImport: false,
@@ -1091,6 +1156,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
             fileLevel: true,
             ...(parsed.isPathList ? { nimModuleList: true } : {}),
             ...(alias ? { nimAlias: alias } : {}),
+            ...(qualifier ? { nimQualifier: qualifier } : {}),
           },
         })
       }
@@ -1106,7 +1172,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    *   `./rel`, `../parent`           → the relative path, verbatim
    *   `"file.nim"`                   → the string literal, verbatim
    */
-  private parseModuleExpression(node: Node): { paths: { path: string; alias?: string; site: Node }[]; isPathList: boolean } | null {
+  private parseModuleExpression(node: Node): { paths: { path: string; alias?: string; qualifier?: string; site: Node }[]; isPathList: boolean } | null {
     if (node.type === "identifier" || node.type === "accent_quoted") {
       return { paths: [{ path: node.text, site: node }], isPathList: false }
     }
@@ -1115,7 +1181,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     if (node.type === "array_construction") {
       // `import a/[b, c]` — a bare list with no prefix.
-      const out: { path: string; alias?: string; site: Node }[] = []
+      const out: { path: string; alias?: string; qualifier?: string; site: Node }[] = []
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
@@ -1157,8 +1223,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // a path, and it still has to yield one edge per element.
       const opText = op.text
       if (opText.indexOf("/") === -1) return null
+      // A QUALIFIER SET on a from-import. `from std/uri {.all.} as uri2 import
+      // removeDotSegments` parses as
+      //   infix(std/uri, "/", pragma_expression(identifier(uri), pragma_list({.all.})))
+      //   infix(  that,  "as",  identifier(uri2))
+      // so the node's own text is "std/uri {.all.}" and the OLD rule published
+      // that whole string as the module — a dependency edge on a name no file
+      // has, and the real module missing from the graph. The `{.all.}` is a
+      // request to import EVERY symbol; it is not part of the path.
+      //
+      // Found by the full 3,914-file oracle comparison, not by the 60-file
+      // rotation: the differential reported 0 unexplained on every sample that
+      // did not happen to draw one of the five affected files, so this class was
+      // invisible until the oracle was run over the whole corpus.
+      if (right.type === "pragma_expression") {
+        const inner = right.childForFieldName("left")
+        if (!inner || (inner.type !== "identifier" && inner.type !== "accent_quoted")) return null
+        const qualifierList = right.childForFieldName("right")
+        return {
+          paths: [{
+            path: `${this.nodeText(left)}/${inner.text}`,
+            site: right,
+            ...(qualifierList ? { qualifier: this.nodeText(qualifierList) } : {}),
+          }],
+          isPathList: false,
+        }
+      }
       if (right.type === "array_construction") {
-        const out: { path: string; alias?: string; site: Node }[] = []
+        const out: { path: string; alias?: string; qualifier?: string; site: Node }[] = []
         const prefix = this.nodeText(left)
         for (let i = 0; i < right.namedChildCount; i++) {
           const c = right.namedChild(i)
@@ -1185,6 +1277,42 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       // and the operand is a path expression rather than a bare identifier.
       // Reading only the operand was what dropped 434 multi-segment relative
       // imports across the corpus.
+      // The relative form can also carry a QUALIFIER SET, and then the node's
+      // own text is the whole `import ./m1 {.all.}` operand:
+      //   prefix_expression(operator("./"), pragma_expression(identifier(m1), pragma_list))
+      // so the same rule as the `/` branch applies — the module is the prefix
+      // token plus the pragma's left leaf, and `{.all.}` is a request for every
+      // symbol, not a path segment.
+      const qualOp = node.childForFieldName("operator")
+      if (qualOp) {
+        // Skip the operator node BY IDENTITY. It is a NAMED node of type
+        // `operator` and it is the first named child, so "the first named child"
+        // returns the `./` token and never reaches the operand — which is why
+        // the first version of this fix silently did nothing and both the
+        // analyzer and the oracle kept publishing `./m1 {.all.}`.
+        let operand: Node | null = null
+        for (let i = 0; i < node.namedChildCount; i++) {
+          const c = node.namedChild(i)
+          if (c && c.id !== qualOp.id) {
+            operand = c
+            break
+          }
+        }
+        if (operand && operand.type === "pragma_expression") {
+          const inner = operand.childForFieldName("left")
+          if (inner && (inner.type === "identifier" || inner.type === "accent_quoted")) {
+            const qualifierList = operand.childForFieldName("right")
+            return {
+              paths: [{
+                path: `${qualOp.text}${inner.text}`,
+                site: operand,
+                ...(qualifierList ? { qualifier: this.nodeText(qualifierList) } : {}),
+              }],
+              isPathList: false,
+            }
+          }
+        }
+      }
       return { paths: [{ path: this.nodeText(node), site: node }], isPathList: false }
     }
     if (node.type === "dot_expression") {
@@ -1278,8 +1406,9 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
     declaredSubtypes: Map<string, Set<string>>,
+    companion?: Map<string, Set<string>>,
   ): void {
-    if (declaredSubtypes.size === 0) return
+    if (declaredSubtypes.size === 0 && !companion) return
     // Group every method in this file by (receiver type, name). A Nim method
     // override keeps the SAME name and differs only in its receiver type, so
     // the name alone cannot address either end of the edge — the family's
@@ -1326,6 +1455,70 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       }
+    }
+    if (!companion || byKey.size === 0) return
+    // ── CROSS-FILE overrides ──────────────────────────────────────────────
+    // A Nim method's DIRECT base is already named in the source and already in
+    // this file's symbols, even when the base TYPE lives in another module: the
+    // receiver's `nimInherits` is the written base name. What a per-file
+    // analyzer cannot know is whether that other module DECLARES a method of
+    // the same name — which is exactly what the project's override companion
+    // index answers.
+    //
+    // This adopts the same shared resolver six other analyzers use
+    // (`findDeclaringParent`, src/ast/override-context.ts) rather than a Nim-
+    // specific reimplementation, so the semantics are identical across
+    // languages: the first ancestor in declaration order that actually declares
+    // the method, falling back to the first parent only when no ancestor does.
+    //
+    // The honest depth limit, and it is a real one: the companion carries
+    // (owner -> method names) and NOT each type's own base list, so the walk can
+    // descend only as far as bases visible in THIS file. A hierarchy three
+    // modules deep, where the middle module's base is in a third, stops at the
+    // visible link. That is recorded on the edge as `nimCrossFileBase` so a
+    // reader can tell a companion-resolved edge from a same-file one, and it is
+    // the same limit the java/kotlin lanes document.
+    const parentsOf = new Map<string, string[]>()
+    for (const [base, subs] of declaredSubtypes) {
+      for (const sub of subs) {
+        const arr = parentsOf.get(sub) ?? []
+        if (arr.indexOf(base) === -1) arr.push(base)
+        parentsOf.set(sub, arr)
+      }
+    }
+    const getParents = (typeName: string): readonly string[] => parentsOf.get(typeName) ?? []
+    for (const [key, group] of byKey) {
+      const sep = key.indexOf(" ")
+      const receiver = key.slice(0, sep)
+      const name = key.slice(sep + 1)
+      const startParents = parentsOf.get(receiver) ?? []
+      if (startParents.length === 0) continue
+      const declaring = findDeclaringParent(name, startParents, companion, getParents)
+      if (!declaring || declaring === receiver) continue
+      const sourceLabel = `${receiver}.${name}`
+      const targetLabel = `${declaring}.${name}`
+      const k = `${sourceLabel} ${targetLabel}`
+      if (emitted.has(k)) continue
+      emitted.add(k)
+      relationships.push({
+        source: sourceLabel,
+        target: targetLabel,
+        type: ASTEngine.RelationshipType.Overrides,
+        // 0.9, not 1: the companion asserts that the other module DECLARES the
+        // method, which is the substance of the edge, but the walk could not
+        // descend past a base that is itself in a third module. The
+        // differential's 0.7 claim threshold keeps this a claim rather than an
+        // assertion, which is the honest reading of a partly-visible hierarchy.
+        confidence: 0.9,
+        ...(group[0]?.range?.startLine ? { line_number: group[0].range.startLine } : {}),
+        metadata: {
+          relationshipType: "nim_method_override",
+          receiverType: receiver,
+          baseReceiverType: declaring,
+          nimCrossFileBase: true,
+          nimResolution: "companion-index",
+        },
+      })
     }
   }
 
@@ -1383,6 +1576,24 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     },
   ): void {
     const emitted = new Set<string>()
+    // ── the two families that used to own their own full-tree walks ────────
+    // `instantiates` and the declared-type `references` are per-node families
+    // that were each written as a separate traversal of the same tree. They ride
+    // this walk now, which already tracks the enclosing callable — the thing both
+    // of them were maintaining a second copy of.
+    //
+    // Each keeps its OWN dedupe set, because each asks a different question and
+    // the keys are not comparable: `instantiates` dedupes per FILE on the bare
+    // type name (a type constructed in three places is ONE edge, at the first
+    // site), the declared-type family on `owner target` (does this routine
+    // depend on this type at all, not what is written at each site), and
+    // calls/uses on `source type target`. Sharing one set would silently drop
+    // edges, which is why the A/B output diff is the gate on this change.
+    const instantiated = new Set<string>()
+    const typeRefEmitted = new Set<string>()
+    const typeRefHelpers = this.makeDeclaredTypeRefHelpers(
+      relationships, ctx.fileTypes, ctx.genericParamNames, ctx.fileValues, ctx.fileCallables, typeRefEmitted,
+    )
     const push = (source: string, target: string, type: ASTEngine.RelationshipType, confidence: number, line: number, extra: Record<string, unknown>): void => {
       const key = `${source} ${type} ${target}`
       if (emitted.has(key)) return
@@ -1434,6 +1645,13 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       const type = node.type
       let pushedScope = false
 
+      // ── the two fused families, before the scope frame is pushed ─────────
+      // currentFn() is read BEFORE this node's own scope exists, which is what
+      // the old separate walks did: they attributed an edge to the callable
+      // ENCLOSING the construct, never to the callable the construct declares.
+      this.collectInstantiationAt(node, relationships, ctx.fileTypes, ctx.fileCallables, instantiated, currentFn())
+      this.collectDeclaredTypeRefAt(node, typeRefHelpers)
+
       // ── scope frames ───────────────────────────────────────────────────
       const callable = this.callableNodes[type]
       if (callable) {
@@ -1443,6 +1661,34 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         frame.fnName = info?.name ?? null
         for (const p of this.readParameters(node)) if (p.name && p.name !== "_") frame.names.add(p.name)
         for (const g of this.readGenericParameterNames(node)) frame.names.add(g)
+        scopeStack.push(frame)
+        pushedScope = true
+      } else if (type === "concept_declaration") {
+        // A CONCEPT is a scope frame like a callable: its formal parameters are
+        // bindings, and its body belongs to the concept rather than to the file.
+        //
+        // Without this frame, `type Addable = concept x` / `(x + x) is
+        // SomeNumber` published `uses (global) -> x` — the parameter was unbound,
+        // so the read fell through to the same-name rule and then attributed
+        // itself to file scope. Found by the M12 ground truth; the differential's
+        // oracle made the same omission, so the lane reported 0% unexplained with
+        // both implementations agreeing on an edge neither should have published.
+        const frame: Scope = { names: new Set<string>(), fnName: null }
+        // The concept's name lives on the enclosing type_declaration, not on the
+        // concept_declaration node.
+        const ownerDecl = node.parent && node.parent.type === "type_declaration" ? node.parent.namedChild(0) : null
+        if (ownerDecl) {
+          const n = ownerDecl.childForFieldName("name")
+          const info = n ? this.readNameNode(n) : null
+          frame.fnName = info?.name ?? null
+        }
+        const params = this.firstChildOfType(node, "parameter_list")
+        if (params) {
+          for (let i = 0; i < params.namedChildCount; i++) {
+            const c = params.namedChild(i)
+            if (c && (c.type === "identifier" || c.type === "accent_quoted") && c.text !== "_") frame.names.add(c.text)
+          }
+        }
         scopeStack.push(frame)
         pushedScope = true
       } else if (type === "statement_list" || type === "block" || type === "do_block" || type === "term_rewriting_pattern") {
@@ -1535,7 +1781,24 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
         const leafText = leaf?.text
         const left = node.childForFieldName("left")
         const inCallCallee = this.isCallCallee(node)
-        if (leafText && leafText !== "_" && !inCallCallee && resolvable(leafText) && !isKeywordLike(leafText)) {
+        // A member leaf that names a CALLABLE this file declares is a PARENLESS
+        // UFCS CALL, not a field read: `r.describe` invokes `describe(r)`, and
+        // Nim writes it with no parentheses and no call node. The `calls` rule
+        // already admits "UFCS member calls"; this is the one call form it was
+        // not emitting, because the member-leaf pass had no callee branch at all
+        // — the whole shape fell through to `uses` or to nothing.
+        //
+        // Found by the M12 ground truth (a false negative: `calls
+        // exercise -> describe` for `r.describe` inside `echo s, …, r.describe`).
+        // Both the analyzer AND the differential oracle omitted it, so the lane
+        // reported 0% unexplained — the shape was invisible to every gate.
+        const callableName = leafText && (ctx.fileCallables.has(leafText)) ? leafText : null
+        if (callableName && !inCallCallee) {
+          push(currentFn(), callableName, ASTEngine.RelationshipType.Calls, 0.9, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
+            relationshipType: "nim_ufcs_member_call",
+            callExpression: this.nodeText(node).slice(0, 60),
+          })
+        } else if (leafText && leafText !== "_" && !inCallCallee && resolvable(leafText) && !isKeywordLike(leafText)) {
           const importBased = left ? this.isImportQualified(left, ctx.importQualifiers) : false
           push(currentFn(), leafText, ASTEngine.RelationshipType.Uses, 0.75, leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1, {
             relationshipType: "nim_member_access",
@@ -1554,6 +1817,7 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
           resolvable(name) &&
           !isKeywordLike(name) &&
           !this.isDeclarationName(node) &&
+          !this.isConceptParameterPosition(node) &&
           !this.isCallCalleeSubtree(node) &&
           !this.isDotLeaf(node) &&
           !this.isInTypePosition(node) &&
@@ -1675,13 +1939,96 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Builtin type names, this file's own generic parameters, and the alias's own
    * name are excluded, so no edge can point at a name that is not a type.
    */
-  private collectDeclaredTypeRefs(
-    rootNode: Node,
+  /**
+   * The `instantiates` half of the fused edge walk, as a per-node handler.
+   *
+   * It used to own a full-tree walk with its own `{node, fn}` stack purely to
+   * learn the enclosing callable — which the fused walk already tracks for the
+   * shadow rules, so the second copy of that state was pure cost.
+   *
+   * `enclosing` arrives as the fused walk's `currentFn()`, which returns the
+   * sentinel "(global)" when no callable is in scope. The original produced
+   * `null` there and wrote `nextEnclosing ?? "(file)"`, so the sentinel is
+   * translated back rather than emitted: an instantiation at file scope has no
+   * callable to name, and the store resolves a relationship's source_symbol_id by
+   * matching the source name against a symbol, so "(global)" would resolve to
+   * nothing while "(file)" is the established spelling for this family.
+   */
+  private collectInstantiationAt(
+    node: Node,
+    relationships: ASTEngine.UniversalRelationship[],
+    fileTypes: Set<string>,
+    fileCallables: Set<string>,
+    emitted: Set<string>,
+    enclosing: string,
+  ): void {
+    if (node.type !== "call") return
+    const source = enclosing === "(global)" ? "(file)" : enclosing
+    const fn = node.childForFieldName("function")
+    const leaf = fn ? this.calleeLeafNode(fn) : null
+    const leafText = leaf?.text
+    if (leafText && fileTypes.has(leafText) && !fileCallables.has(leafText)) {
+      const key = leafText
+      if (!emitted.has(key)) {
+        emitted.add(key)
+        relationships.push({
+          source,
+          target: leafText,
+          type: ASTEngine.RelationshipType.Instantiates,
+          confidence: 0.9,
+          line_number: leaf ? leaf.startPosition.row + 1 : node.startPosition.row + 1,
+          metadata: { relationshipType: "nim_object_construction", callExpression: this.nodeText(node).slice(0, 60), isConstructor: true },
+        })
+      }
+    }
+    // `new(T)` / `new(result, T)` — the canonical allocation form, whose type
+    // argument is a bare identifier rather than a callee.
+    if (leafText === "new") {
+      const args = this.firstChildOfType(node, "argument_list")
+      if (args) {
+        for (let i = 0; i < args.namedChildCount; i++) {
+          const a = args.namedChild(i)
+          if (!a) continue
+          const t = a.type === "identifier" ? a.text : null
+          if (t && fileTypes.has(t) && !fileCallables.has(t) && !emitted.has(`new:${t}`)) {
+            emitted.add(`new:${t}`)
+            relationships.push({
+              source,
+              target: t,
+              type: ASTEngine.RelationshipType.Instantiates,
+              confidence: 0.9,
+              line_number: a.startPosition.row + 1,
+              metadata: { relationshipType: "nim_new_allocation", isConstructor: true },
+            })
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * The declared-type half's closures, built ONCE PER FILE.
+   *
+   * Hoisting these is the whole point of the factory. The first attempt at
+   * fusing this family kept the logic inline in the per-node handler, which meant
+   * `ownerOf` and the recursive `collectFromTypeExpression` were REBUILT ON EVERY
+   * NODE VISIT — they had been built once per file before that. The output was
+   * byte-identical and the change measured 5.5% SLOWER, in a walk that visits
+   * thousands of nodes per file.
+   *
+   * Same lesson as the rejected per-node `Map` memoization, arriving from the
+   * other direction: in a hot walk, allocating anything per node costs more than
+   * the traversal it rides on. So the rule for this walk is one stack, one local
+   * counter, and closures built once.
+   */
+  private makeDeclaredTypeRefHelpers(
     relationships: ASTEngine.UniversalRelationship[],
     fileTypes: Set<string>,
     genericParamNames: Set<string>,
-  ): void {
-    const emitted = new Set<string>()
+    fileValues: Set<string>,
+    fileCallables: Set<string>,
+    emitted: Set<string>,
+  ): DeclaredTypeRefHelpers {
 
     /**
      * The DECLARATION a type reference belongs to — the same anchoring the go
@@ -1746,12 +2093,31 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       return owner
     }
 
+    // A name that this file declares as a VALUE or as a CALLABLE is not a type,
+    // wherever it is written. The declared-type pass used to accept any
+    // identifier it found in a type position, which produced two fabrications
+    // the full-corpus oracle names exactly:
+    //
+    //   references -> fail   (tests/statictypes/tgenericcompiletimeproc.nim:29)
+    //       `type Foo = typeof(p(fail(123)))` — `fail` is `proc fail[T](x: T)`,
+    //       a callable used as a call, and `typeof(...)` of a call is not a
+    //       named type reference to the callee.
+    //   references -> false  (tests/objects/tinvalid_construction.nim:267)
+    //       `TNestedChoices(outerChoice: false, …)` — `false` is a literal VALUE
+    //       of a field named `outerChoice`, and it is not a type at all.
+    //
+    // Both resolved to real identifiers, so no dangling check could fire, and
+    // both are the kind of edge that survives every count-based gate.
+    const isValueNotType = (leaf: string): boolean =>
+      fileValues.has(leaf) || fileCallables.has(leaf) || NIM_LITERAL_KEYWORDS.indexOf(leaf) !== -1
+
     const push = (site: Node, relation: string, owner: { name: string; kind: string } | null): void => {
       if (site.type !== "identifier") return
       const leaf = site.text
       if (!leaf) return
       if (NIM_BUILTIN_TYPES.indexOf(leaf) !== -1) return
       if (genericParamNames.has(leaf)) return
+      if (isValueNotType(leaf)) return
       if (!owner) return
       // One edge per (owner, target) pair: the same type referenced by three
       // parameters of one proc is one dependency, and the line recorded is the
@@ -1782,76 +2148,74 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      switch (n.type) {
-        case "parameter_declaration":
-        case "field_declaration":
-        case "variant_discriminator_declaration":
-        case "variable_declaration":
-        case "cast":
-        case "do_block": {
-          const t = n.childForFieldName("type")
-          if (t) collectFromTypeExpression(t, "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "proc_declaration":
-        case "func_declaration":
-        case "method_declaration":
-        case "iterator_declaration":
-        case "template_declaration":
-        case "macro_declaration":
-        case "converter_declaration": {
-          // A routine's own return type hangs off the declaration node's
-          // `return_type` field, not off a child's `type` field, so it needs
-          // its own arm — without it `proc f(): MyType` declared no dependency.
-          const ret = n.childForFieldName("return_type")
-          if (ret) collectFromTypeExpression(ret, "nim_return_type", ownerOf(n))
-          break
-        }
-        case "object_declaration": {
-          const inh = n.childForFieldName("inherits")
-          if (inh) collectFromTypeExpression(inh, "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "concept_declaration": {
-          const ref = n.childForFieldName("refines")
-          const list = ref ? this.firstChildOfType(ref, "refinement_list") : null
-          if (ref && list) for (let i = 0; i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
-          break
-        }
-        case "type_declaration": {
-          const symDecl = n.namedChildCount > 0 ? n.namedChild(0) : null
-          if (symDecl && symDecl.type === "type_symbol_declaration") {
-            const selfName = symDecl.childForFieldName("name")
-            const selfText = selfName ? this.readNameNode(selfName).name : ""
-            const owner = selfText ? { name: selfText, kind: "type" } : null
-            const rhs = this.typeDefinitionRhs(n)
-            if (rhs) {
-              // Skip the alias's own name in `type A = A`-shaped chains only;
-              // every other occurrence is a real dependency.
-              const ctor = this.typeConstructorLeaf(rhs)
-              if (ctor && ctor.text !== selfText) push(ctor, "nim_type_alias", owner)
-              for (const arg of this.typeArgumentNodes(rhs)) {
-                if (arg.type === "identifier") {
-                  if (arg.text !== selfText) push(arg, "nim_type_argument", owner)
-                } else {
-                  collectFromTypeExpression(arg, "nim_type_argument", owner)
-                }
-              }
+    return { relationships, fileTypes, genericParamNames, emitted, ownerOf, collectFromTypeExpression, push }
+  }
+
+  /** The per-node arm of the declared-type family, riding the fused edge walk. */
+  private collectDeclaredTypeRefAt(n: Node, helpers: DeclaredTypeRefHelpers): void {
+    const { fileTypes, genericParamNames, emitted, ownerOf, collectFromTypeExpression, push } = helpers
+  switch (n.type) {
+    case "parameter_declaration":
+    case "field_declaration":
+    case "variant_discriminator_declaration":
+    case "variable_declaration":
+    case "cast":
+    case "do_block": {
+      const t = n.childForFieldName("type")
+      if (t) collectFromTypeExpression(t, "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "proc_declaration":
+    case "func_declaration":
+    case "method_declaration":
+    case "iterator_declaration":
+    case "template_declaration":
+    case "macro_declaration":
+    case "converter_declaration": {
+      // A routine's own return type hangs off the declaration node's
+      // `return_type` field, not off a child's `type` field, so it needs
+      // its own arm — without it `proc f(): MyType` declared no dependency.
+      const ret = n.childForFieldName("return_type")
+      if (ret) collectFromTypeExpression(ret, "nim_return_type", ownerOf(n))
+      break
+    }
+    case "object_declaration": {
+      const inh = n.childForFieldName("inherits")
+      if (inh) collectFromTypeExpression(inh, "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "concept_declaration": {
+      const ref = n.childForFieldName("refines")
+      const list = ref ? this.firstChildOfType(ref, "refinement_list") : null
+      if (ref && list) for (let i = 0; i < list.namedChildCount; i++) collectFromTypeExpression(list.namedChild(i), "nim_declared_type", ownerOf(n))
+      break
+    }
+    case "type_declaration": {
+      const symDecl = n.namedChildCount > 0 ? n.namedChild(0) : null
+      if (symDecl && symDecl.type === "type_symbol_declaration") {
+        const selfName = symDecl.childForFieldName("name")
+        const selfText = selfName ? this.readNameNode(selfName).name : ""
+        const owner = selfText ? { name: selfText, kind: "type" } : null
+        const rhs = this.typeDefinitionRhs(n)
+        if (rhs) {
+          // Skip the alias's own name in `type A = A`-shaped chains only;
+          // every other occurrence is a real dependency.
+          const ctor = this.typeConstructorLeaf(rhs)
+          if (ctor && ctor.text !== selfText) push(ctor, "nim_type_alias", owner)
+          for (const arg of this.typeArgumentNodes(rhs)) {
+            if (arg.type === "identifier") {
+              if (arg.text !== selfText) push(arg, "nim_type_argument", owner)
+            } else {
+              collectFromTypeExpression(arg, "nim_type_argument", owner)
             }
           }
-          break
         }
-        default:
-          break
       }
-      for (let i = n.namedChildCount - 1; i >= 0; i--) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
+      break
     }
+    default:
+      break
+  }
   }
 
   /** #419-D evidence-tier classification (family standard: rust/c/cpp/go/zig
@@ -1983,6 +2347,27 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
    * (types), `enum_field_declaration`, `variant_discriminator_declaration`,
    * and a `for` loop's `left` list.
    */
+  /**
+   * True for a CONCEPT's formal parameter: the `x` of `type Addable = concept x`.
+   *
+   * It is a binding, not a read, and it is the one formal parameter in Nim
+   * written without any of the syntax the other binders use — no
+   * `symbol_declaration` wrapper, no type annotation, nothing for
+   * `isDeclarationName` to match. The read pass therefore published
+   * `uses (global) -> x` at file scope.
+   *
+   * Found by the M12 ground truth, where it was the single false positive out of
+   * 105 observed facts (precision 0.990). Only an independent audit could catch
+   * it: the differential's oracle did not emit the edge either, so the lane
+   * reported 0% unexplained with two implementations agreeing on something
+   * neither should have published.
+   */
+  private isConceptParameterPosition(node: Node): boolean {
+    const parent = node.parent
+    if (!parent || parent.type !== "parameter_list") return false
+    return this.hasAncestorOfType(parent, "concept_declaration")
+  }
+
   private isDeclarationName(node: Node): boolean {
     const p = node.parent
     if (!p) return false
@@ -2459,6 +2844,23 @@ export class RealNimAnalyzer implements ASTEngine.LanguageAnalyzer {
     return c
   }
 }
+
+/** The per-file closure bundle the declared-type family needs. Built once per
+ *  file and shared by every node visit — see makeDeclaredTypeRefHelpers for why
+ *  building it per node cost 5.5%. */
+interface DeclaredTypeRefHelpers {
+  relationships: ASTEngine.UniversalRelationship[]
+  fileTypes: Set<string>
+  genericParamNames: Set<string>
+  emitted: Set<string>
+  ownerOf: (start: Node) => { name: string; kind: string } | null
+  collectFromTypeExpression: (te: Node | null, relation: string, owner: { name: string; kind: string } | null) => void
+  push: (site: Node, relation: string, owner: { name: string; kind: string } | null) => void
+}
+
+/** Literal keywords that are values, never type names. `false` reached the
+ *  declared-type pass as a field's value in an object construction. */
+const NIM_LITERAL_KEYWORDS = ["true", "false", "nil", "void", "auto"]
 
 /** Grammar fields whose span is a TYPE position. */
 const TYPE_POSITION_FIELDS = ["type", "return_type", "inherits", "refines", "generic_parameters"]

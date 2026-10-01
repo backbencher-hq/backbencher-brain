@@ -19,8 +19,30 @@ import { scanAnalyzers, analyzerFiles } from "./regex-census-core"
 
 const OUT = "validation/m12/results/regex-census.json"
 
+/**
+ * `--head` (2026-09-28, the zig lane's zero-regex paydown): scan the COMMITTED
+ * analyzer blobs instead of the working tree, and record which of the two the
+ * artifact describes.
+ *
+ * reviews/regex-policy.md's 2026-09-12 addendum already stated this rule ("the
+ * artifact must describe a commit, so it is produced from that commit's blobs,
+ * never from whatever the working tree happens to carry") and named a `--head`
+ * mode as the way to do it — but the generator had no such mode, so the only
+ * writer produced a working-tree artifact and the rule was prose. The scanner
+ * already took a directory (`scanAnalyzers(dir)`) and `census-truth.ts` already
+ * materialised the HEAD blobs into one, so this is the two lines that make the
+ * documented mode real rather than a new mechanism.
+ *
+ * It matters in a shared working tree: a lane that removes a regex while other
+ * lanes are mid-edit must not publish an artifact describing the whole working
+ * tree, and a lane that ADDS one must not be able to hide it behind a dirty
+ * census either.
+ */
 async function main() {
-  const usages = await scanAnalyzers()
+  const fromHead = process.argv.includes("--head")
+  const usages = fromHead
+    ? ((await import("./census-truth")).scanHeadAnalyzers() as Promise<typeof usages>)
+    : await scanAnalyzers()
   const perFileMap = new Map<string, typeof usages>()
   for (const u of usages) {
     if (!perFileMap.has(u.file)) perFileMap.set(u.file, [])
@@ -42,6 +64,9 @@ async function main() {
     milestone: "M12",
     purpose: "ast_driven_regex_census_across_wired_analyzers",
     generatedAt: new Date().toISOString(),
+    // Which tree the artifact describes, recorded IN the artifact: a census
+    // whose provenance is invisible is how a stale one read like a current one.
+    describes: fromHead ? `HEAD blobs (git show HEAD:src/ast/...)` : "the working tree (a preview; run with --head to anchor it to a commit)",
     parser: "tree-sitter-typescript (project WASM pipeline)",
     methodology: "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
     totalRegexUsages: usages.length,

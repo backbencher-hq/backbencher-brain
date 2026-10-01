@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 42.05,
-    "loadAvgEnd": 44.07,
+    "loadAvgStart": 41.85,
+    "loadAvgEnd": 39.16,
     "sliceCount": 1
   },
   "counts": {
@@ -1449,31 +1449,128 @@
       },
       "sampleSetHash": "93bd5239a044ad6d"
     },
-    "terraform:hcl": {
+    "svelte:css": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
+      "truthRows": 68,
+      "covered": 68,
+      "coveragePct": 100,
+      "filesSampled": 60,
       "perf": {
-        "avgMsPerFile": 2.1,
-        "maxMsPerFile": 26.8,
-        "samplesTimed": 60,
-        "loadAvgRetried": true,
-        "loadAvg1": 42.51
+        "avgMsPerFile": 1.408,
+        "filesMeasured": 185,
+        "loadAvg1AtMeasure": 30.85,
+        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
       },
-      "sampleSetHash": "f31a3e00122c4639"
+      "sampleSetHash": "def94838c364b04e"
     },
-    "tf-aws-components:hcl": {
+    "grails-core:css": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "truthRows": 475,
+      "covered": 475,
+      "coveragePct": 100,
+      "filesSampled": 60,
+      "perf": {
+        "avgMsPerFile": 13.964,
+        "filesMeasured": 191,
+        "loadAvg1AtMeasure": 29.77,
+        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
+      },
+      "sampleSetHash": "13f8825d05114cf8"
+    },
+    "kubernetes:yaml": {
       "missing": 0,
       "unexplained": 0,
       "heuristic": 0,
       "perf": {
-        "avgMsPerFile": 6.2,
-        "maxMsPerFile": 182.8,
-        "samplesTimed": 60,
-        "loadAvgRetried": true,
-        "loadAvg1": 44.07
+        "avgMsPerFile": 31.459,
+        "unit": "ms per file, PRODUCTION entry (pool-worker parseFile), draw = 60 files",
+        "draw": {
+          "corpus": "kubernetes",
+          "available": 6608,
+          "files": 60,
+          "stride": 110.1,
+          "rule": "the baseline's declared samplePerLang=60 with a deterministic stride over the sorted file list"
+        },
+        "method": "5 timed repetitions of the same 60-file draw after one warm-up parse; the MEDIAN is recorded",
+        "spread": {
+          "min": 24.591,
+          "max": 65.509,
+          "all": [
+            33.136,
+            65.509,
+            24.591,
+            30.707,
+            31.459
+          ]
+        },
+        "loadContext": {
+          "loadAvgAtMeasurement": [
+            28.93,
+            31.1,
+            32.17
+          ],
+          "baselineRecordedLoadAvg": [
+            4.85,
+            5.19
+          ],
+          "caveat": "This number was measured at a load average of ~29 against the ~5 recorded in this file's own loadContext, and the 24.6-65.5 ms spread is that contention, not analyzer variance. It is recorded with the load and the spread rather than as a bare figure because a perf claim whose measurement environment is not stated cannot be compared against a later run, and a 6x-loaded box makes any single number a claim about the box. Re-measure on an idle machine before treating it as a regression threshold."
+        }
       },
-      "sampleSetHash": "7c80eed7b9f98324"
+      "differentialDraw": {
+        "corpora": 8,
+        "filesPerCorpus": 200,
+        "comparedFiles": 1004,
+        "truthPaths": 357304,
+        "oracle": "PyYAML 6.0.1 compose_all",
+        "note": "the floor counts are the 8-corpus deep draw, which is WIDER than this file's declared 60-per-lane draw; a wider draw can only make the floor harder to hold, so the 0/0 is a stronger claim than the canonical draw would give"
+      },
+      "grammarResidual": {
+        "files": 15,
+        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment — the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
+        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained — a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
+      },
+      "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
+    },
+    "scala3:markdown": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 2.2
+      },
+      "sampleSetHash": "8127d7c0de552761"
+    },
+    "kubernetes:markdown": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 1.9
+      },
+      "sampleSetHash": "850beced0f7f393d"
+    },
+    "element-plus:scss": {
+      "missing": 58,
+      "unexplained": 4,
+      "heuristic": 0,
+      "truthRows": 1612,
+      "covered": 1554,
+      "coveragePct": 96.4,
+      "filesSampled": 149,
+      "perf": {
+        "avgMsPerFile": 16.259,
+        "filesMeasured": 160,
+        "loadAvg1AtMeasure": 21.9,
+        "method": "analyze() only, min of 5 runs after 2 warmups — the differential's own grain and a stricter run selection",
+        "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
+      },
+      "sampleSetHash": "dd6619b1d6986840"
     }
   },
   "hashes": {
@@ -1525,10 +1622,10 @@
     "svelte:svelte": "05b3e3087abed566",
     "shadcn-svelte:svelte": "2f6fd79cf720707d",
     "jq:c": "2b743b65d0eac283",
-    "terraform:hcl": "f31a3e00122c4639",
-    "tf-aws-components:hcl": "7c80eed7b9f98324"
-  },
-  "pinProvenance": {
-    "scoped run (--pin-baseline)": "2026-09-27T23:56:32.010Z"
+    "svelte:css": "def94838c364b04e",
+    "grails-core:css": "13f8825d05114cf8",
+    "scala3:markdown": "8127d7c0de552761",
+    "kubernetes:markdown": "850beced0f7f393d",
+    "element-plus:scss": "dd6619b1d6986840"
   }
 }

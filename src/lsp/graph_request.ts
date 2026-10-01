@@ -235,8 +235,25 @@ export async function handleGraphRequest(
   // M28.A2 (D-6): the root's annotations ride along, author-labeled — the
   // human sees the agent's notes where the graph renders. Read from the same
   // store bb_annotations serves; empty array = no badge rendered.
+  //
+  // Scoped to the ROOT SYMBOL's own file plus name-level notes, the same rule
+  // the hover applies: the index holds one symbol per (file, name, line), so
+  // selecting on the name alone attached one file's note to every same-named
+  // node in the graph. Both path spellings match, because the index stores the
+  // relative path while an agent may have annotated with an absolute one.
   try {
-    const annRows = db.prepare("SELECT author_class, tool_identity, body, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC").all(projectId, (result.root as { name?: string }).name ?? "") as Array<{ author_class: string; tool_identity: string; body: string; time_updated: number }>
+    const root = result.root as { id?: string; name?: string; file?: string; filePath?: string } | null | undefined
+    // The name predicate matches name OR qualified name — the same predicate the
+    // hover uses and annotationReachability() measures, so a note written under a
+    // qualified name is not stored-and-invisible here either. The graph node
+    // carries `name` but not the qualified name, so it is read from the indexed
+    // symbol row by the node's id — the same value the hover already holds.
+    const rootQualified = (root?.id
+      ? (db.prepare("SELECT qualified_name FROM brain_symbol WHERE id = ?").get(root.id) as { qualified_name: string | null } | undefined)?.qualified_name ?? null
+      : null)
+    const annRows = db.prepare(
+      "SELECT author_class, tool_identity, body, time_updated FROM brain_annotation WHERE project_id = ? AND (symbol_name = ? OR symbol_name = ?) AND (symbol_path IS NULL OR symbol_path = ? OR symbol_path = ?) ORDER BY time_updated DESC, id",
+    ).all(projectId, root?.name ?? "", rootQualified, root?.file ?? "", root?.filePath ?? "") as Array<{ author_class: string; tool_identity: string; body: string; time_updated: number }>
     ;(result as { annotations?: typeof annRows }).annotations = annRows
   } catch {
     ;(result as { annotations?: never[] }).annotations = []
