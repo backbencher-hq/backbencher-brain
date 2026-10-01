@@ -5475,7 +5475,31 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         const leaf = fn.namedChildren.find((c: any) => c.type === "field_identifier")
         name = leaf?.text
       } else name = fn?.text
-      if (name && !seen.has(name)) {
+      // #964 (C oracle mirror of the analyzer's #956 gate): a callee identifier
+      // inside PREPROCESSOR DIRECTIVE TEXT is not a call. Recovery splices these
+      // into real `call_expression` nodes -- zig's wasi libc mman.c:
+      //
+      //   #ifdef MAP_HUGETLB
+      //           (flags & MAP_HUGETLB) != 0 ||
+      //
+      // parses as
+      //
+      //   call_expression
+      //     identifier      "MAP_HUGETLB"        <- the #ifdef's tested macro
+      //     argument_list   "(flags & MAP_HUGETLB)"  <- the NEXT line
+      //
+      // because the directive's identifier is spliced into code and the following
+      // parenthesized expression becomes its argument list. The source contains no
+      // call; `#ifdef X` TESTS a macro, it does not invoke one -- which is the
+      // analyzer's #956 ruling, and #908/#912 beyond it.
+      //
+      // The oracle's USES derivation already guarded this with
+      // isDirectiveConditionText; the CALLS branch did not, so it published six
+      // fabricated `calls -> MAP_*` rows and the differential reported them as six
+      // MISSING -- convicting a correct analyzer. A superset oracle would have
+      // traded a fabrication for an unexplained edge, the same trade this file
+      // refuses for svelte (see deriveSvelteComponentUsages).
+      if (name && !seen.has(name) && !isDirectiveConditionText(fn)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
       }
@@ -6454,6 +6478,14 @@ export function deriveCSharpBareUses(
         }
         return false
       }
+      // CS-D11: an ATTRIBUTE is a VALUE context wherever it appears, including on a declaration
+      // whose every other part is a type position. `[Parameter(ParameterSetName = DateAndUFormat)]`
+      // reads a const, and that read is a `uses` -- but the `property_declaration` case below
+      // blanket-returns true for the whole subtree, so the attribute's arguments were gated as
+      // type positions and the read vanished. Only a property's TYPE is a type position; its
+      // attribute list is not. Scoped to the nearest enclosing attribute so the existing
+      // type-position behaviour for the declared type itself is untouched.
+      if (t === "attribute_list" || t === "attribute") return false
       // CS-D12. `property_declaration` was in the blanket-true list below, which is right for the
       // property's TYPE and wrong for everything else hanging off it. A property's initializer and
       // its attribute lists are VALUE contexts:
@@ -6462,8 +6494,8 @@ export function deriveCSharpBareUses(
       //                                ^^^^^^^ a type      ^^^^^^^^^^^^^^^^^^^^^ reads
       //
       // so both were gated as type positions and dropped. This is the same root cause as the
-      // attribute case, which is why a narrower fix for one symptom did not move the other: two
-      // independent corpus residuals (fsharp 8 edges, powershell) share this one cause.
+      // attribute case, which is why a narrower fix for one symptom did not move the other -- two
+      // independent corpus residuals (fsharp 8 edges, powershell) have this one cause.
       //
       // The test is the same range check `variable_declarator` uses a few lines above: true only for
       // the declared type's own extent. That makes the property's INITIALIZER, its ATTRIBUTES and
@@ -6612,26 +6644,22 @@ export function deriveCSharpBareUses(
     // dead branch too. An unchanged count after a fix is information: it means the fix was never
     // executed, which is worth more than the fix was.
     // CS-D11. `declaratorRole` answers "is this identifier in MEMBER SCOPE" -- it climbs and
-    // returns "member" on reaching a class/struct/interface/record/enum. That is the right question
-    // for deciding whether a declarator publishes itself, and it is what the 742-row fix above
-    // needed. It is NOT the question `isEntityName` is asking, which is "is this identifier the
-    // declarator's own NAME".
+    // returns "member" on reaching a class/struct/interface/record/enum. That is the right
+    // question for deciding whether a declarator publishes itself, and it is the question the
+    // 742-row fix above needed. It is NOT the question `isEntityName` is asking, which is "is
+    // this identifier the declarator's own NAME".
     //
-    // Using it as a proxy conflates the declarator's name with its INITIALIZER, so for
+    // Using it as a proxy conflates the declarator's name with its INITIALISER, so for
     //     internal int maxDepth = maxDepthAllowable;
     //     ^^^^^^^^ declarator's name      ^^^^^^^^^^^^^^^^^^^ a READ of a declared const
-    // the initializer was classified as the declaration publishing itself and dropped. Every const
-    // or field read from a class-level field initializer was lost, on the `uses` label, in all four
-    // C# corpora -- invisible to F3 and F4, since no fixture places a read in a field initializer.
+    // the initializer was classified as the declaration publishing itself and dropped. Measured
+    // cost: every const or field read from a class-level field initializer, in all four C#
+    // corpora, on the `uses` label -- which is why powershell reported unexplained edges that
+    // F3 and F4 could not see, since neither fixture places a read in a field initializer.
     //
     // The sibling branch below already answers the name question correctly with
-    // `same(firstIdent(p), n)`; this branch now asks the same thing. `declaratorRole` keeps doing
-    // its own job, because a MEMBER declarator's own name still must not read itself.
-    //
-    // The added rows cannot be phantoms: `resolvable(name)` gates the push, and it consults the
-    // members map built from the analyzer's own symbols, so every row this adds resolves to a real
-    // declaration. That is what makes it safe -- the D10b failure mode (a target that declares
-    // nothing) is structurally unreachable from here.
+    // `same(firstIdent(p), n)`; this branch now asks the same thing. `declaratorRole` stays
+    // doing its own job, because for a MEMBER declarator the name still must not read itself.
     if (p.type === "variable_declarator") return declaratorRole(n) === "member" && same(firstIdent(p), n)
     const entities = /_(declaration|declarations)$/
     if (!entities.test(p.type) && p.type !== "constructor_initializer") return false
@@ -10356,6 +10384,11 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
   // (FOOFILE)` is a real Kernel method call (rake test_rake_rules.rb L86),
   // and the analyzer emits calls:Pathname. Filtering uppercase names here
   // wrongly dropped every capitalized Kernel call from the oracle.
+  /** Rails association macros: the name is a member the class will have, and only
+   *  a LITERAL argument names one. See the branch below, and FIX-13. */
+  const RUBY_ASSOCIATION_MACROS = new Set([
+    "belongs_to", "has_many", "has_one", "has_and_belongs_to_many",
+  ])
   const isRubyCallBuiltin = (name: string): boolean => {
     if (RUBY_BUILTINS.has(name)) return true
     if (RAILS_MACRO_METHODS.has(name)) return true
@@ -10618,6 +10651,55 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
         }
       }
     }
+    // Rails ASSOCIATION MACROS — the family this oracle did not model at all.
+    //
+    // `belongs_to :account` publishes, on the analyzer side, a `Property` SYMBOL
+    // named `account` owned by the class, a `contains` edge to it, and a `uses`
+    // edge naming it. The oracle derived NONE of that, so every association `uses`
+    // edge in the corpus read as UNEXPLAINED — 1,759 of the lane's 1,797, 40
+    // sampled across 12 files, which is the whole of SIG-B.
+    //
+    // That was not a disagreement about a fact. It was one side of the comparison
+    // never having implemented the family, which is worse than a shared blind
+    // spot: the differential reported the analyzer's output as unverified while
+    // appearing to check it. (The csharp lane reached the same shape
+    // independently at CS-D11.)
+    //
+    // Only a LITERAL argument names a member:
+    //
+    //   belongs_to :account     -> uses:account   (symbol)
+    //   belongs_to "author"     -> uses:author    (string — equally valid)
+    //   belongs_to role         -> (nothing)      (role is a PARAMETER)
+    //   has_many name, scope    -> (nothing)      (both are parameters)
+    //
+    // The last two are FIX-13, which the analyzer already declines. This side must
+    // decline them for the same reason or the pair desyncs silently — C923 is the
+    // standing rule for exactly that, an exclusion removed on one side only.
+    //
+    // The node type is `simple_symbol`; matching `"symbol"` finds nothing.
+    //
+    // The comparison is site-agnostic (label + target, never the source), so the
+    // owner does not enter here — including SIG-B's anonymous-class owner, which
+    // the analyzer records via `anonymousScopeBinding`. That is a separate
+    // question from whether the `uses` fact is real, and it is adjudicated on the
+    // containment side, not this one.
+    if (t === "call" || t === "command" || t === "command_call") {
+      const mNode = n.childForFieldName?.("method")
+      const mName = mNode?.text
+      if (mName && RUBY_ASSOCIATION_MACROS.has(mName)) {
+        const a = n.namedChildren.find((c: any) => c.type === "argument_list")
+        if (a) {
+          for (let i = 0; i < a.namedChildCount; i++) {
+            const arg = a.namedChild(i)
+            if (!arg) continue
+            let name = ""
+            if (arg.type === "simple_symbol" || arg.type === "symbol") name = arg.text.replace(/^:/, "")
+            else if (arg.type === "string") name = arg.text.replace(/^['"]|['"]$/g, "")
+            if (name) push("uses", name)
+          }
+        }
+      }
+    }
     if (t === "call" || t === "command" || t === "command_call") {
       const methodNode = n.childForFieldName?.("method")
       if (methodNode) {
@@ -10658,22 +10740,83 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
           let receiver: string | undefined
           let receiverIsConst = false
           let receiverIsVariable = false
+          // A RECEIVER THAT IS NOT A SIMPLE NAME IS STILL A RECEIVER.
+          //
+          // The scan below recognises only `constant`, `scope_resolution`,
+          // `identifier` and runtime-variable nodes. Every other receiver
+          // EXPRESSION therefore leaves `receiver` undefined and falls into the
+          // `!receiver` branch, which is the receiverless case and emits
+          // `instantiates <enclosing class>`. Those are different things.
+          //
+          // Measured over 1,500 corpus files, 38 of the 38 MISSING `instantiates`
+          // edges are this, i.e. all 207 over the full 8,528-file corpus:
+          //
+          //   current_account.account_moderation_notes.new(x)  receiver=call
+          //   klass_for(json).new(x)                            receiver=call
+          //   @account.polls.new(x)                             receiver=call
+          //   (work_stealing ? A : B).new(x)                   receiver=parenthesized_statements
+          //
+          // Each fabricated `instantiates` against the file's OWN enclosing class
+          // — `AccountModerationNotesController` instantiating itself — from a
+          // receiver that names a Rails association, a method's return value, or
+          // an ivar. The analyzer is right to stay silent: `account_moderation_
+          // notes.new` builds an `AccountModerationNote`, not the controller.
+          // Closing these 207 by teaching the ANALYZER to emit them would
+          // manufacture 207 edges, which is the defect this differential exists
+          // to detect.
+          //
+          // The fix belongs here, on the truth side: an unrecognised receiver is
+          // a receiver whose class is unknowable, which is exactly the
+          // lowercase-identifier case one branch below.
+          let receiverIsComplex = false
           for (let i = 0; i < n.namedChildCount; i++) {
             const child = n.namedChild(i)
             if (child && child.id === methodNode.id) break
-            if (child && (child.type === "constant" || child.type === "scope_resolution")) {
+            if (!child) continue
+            if (child.type === "constant" || child.type === "scope_resolution") {
               receiver = child.text
               receiverIsConst = true
-            } else if (child && child.type === "identifier") {
+            } else if (child.type === "identifier") {
               receiver = child.text
-            } else if (child && RUNTIME_VARIABLE_RECEIVERS.has(child.type)) {
+            } else if (RUNTIME_VARIABLE_RECEIVERS.has(child.type)) {
               receiver = child.text
               receiverIsVariable = true
+            } else if (child.type !== "argument_list" && child.type !== "block" && child.type !== "block_argument" && child.type !== "comment") {
+              // Anything else sitting where a receiver belongs is a receiver we
+              // cannot name statically.
+              receiverIsComplex = true
             }
           }
           if (receiverIsVariable) {
             // variable receiver — analyzer emits calls:new
             push("calls", "new")
+          } else if (receiverIsComplex) {
+            // Receiver EXPRESSION of unknown type. Emit NOTHING — and that is a
+            // contract, not a shrug. Verified against the analyzer on five
+            // shapes:
+            //
+            //   current_account.notes.new(x)   -> (nothing)
+            //   (c ? P : Q).new(x)             -> (nothing)
+            //   task_class.new(n)              -> calls:new
+            //   Form::Batch.new(n)             -> instantiates:Batch
+            //   new(n)   (bare)                -> (nothing)
+            //
+            // A lowercase IDENTIFIER receiver is a name, so `calls:new` is a real
+            // and useful fact on both sides. A receiver EXPRESSION names no
+            // class at all, so neither side can support an edge, and the
+            // analyzer's silence is correct. Emitting `calls:new` here instead
+            // simply moves the disagreement: it converts 207 fabricated
+            // `instantiates` into 157 `calls:new` MISSING, measured on the full
+            // 8,528-file corpus. Both sides declining is the honest outcome.
+            //
+            // The empty block is the POINT, and an earlier version of this patch
+            // got it exactly backwards: it dropped the `} else if (!receiver) {`
+            // arm and left `push("instantiates", enclosingClass)` sitting inside
+            // the complex branch, so a complex receiver fabricated the very edge
+            // the branch exists to suppress. The symptom was legible — MISSING
+            // stalled at 307 instead of falling to 2 — and the patch had been
+            // "verified" by checking that it reproduced a reconstruction of
+            // itself, which is a check that cannot fail for this reason.
           } else if (!receiver) {
             if (enclosingClass) push("instantiates", leafName(enclosingClass))
           } else if (receiverIsConst) {
@@ -10759,10 +10902,32 @@ export function deriveRubyEdges(root: any): { label: string; from: string; targe
       // the refund `@balance += amount` pin accordingly. The old "RMW emits a
       // use" behavior predated that sweep (its rake `@options ||=` witness
       // then matched an analyzer that leaked the same write) — stale, removed.
+      // The write gate must name `left_assignment_list`, not only `assignment`.
+      //
+      // A multiple assignment is not an `assignment` node with several lefts — it
+      // is an `assignment` whose LEFT is a `left_assignment_list` CONTAINER, so
+      // the ivar targets' parent is `left_assignment_list` and
+      // `childForFieldName("left")` on it is undefined. Verified against the
+      // grammar:
+      //
+      //   @single = value            parent=assignment           left=@single  isWrite=true
+      //   @a += 1                    parent=operator_assignment  left=@a       isWrite=true
+      //   @street, @city = a, b      parent=left_assignment_list left=(none)   isWrite=FALSE
+      //
+      // So every ivar in a multiple assignment was reported as a READ. This is
+      // 106 of the 108 remaining MISSING edges over the full corpus, and it is
+      // the SAME defect the ANALYZER had (FIX-6, "a write target is not a read")
+      // — fixed on the analyzer side in this round while the truth side kept it.
+      // Two sides, one bug, and the differential could not see it: both were
+      // wrong in the same direction, which is the one direction a differential
+      // is blind to by construction.
       const lhs = parent ? parent.childForFieldName?.("left") : null
-      const isWrite = parent && (parent.type === "assignment" || parent.type === "operator_assignment") &&
+      const isPlainWrite = parent && (parent.type === "assignment" || parent.type === "operator_assignment") &&
         lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-      if (!isWrite) push("uses", n.text)
+      // A member of a left_assignment_list is a write target by construction —
+      // there is no other reason for an ivar to appear on the left of `=`.
+      const isMultiWrite = parent?.type === "left_assignment_list"
+      if (!isPlainWrite && !isMultiWrite) push("uses", n.text)
     }
     // Track nearest enclosing class/module for receiverless-new resolution.
     let nextCls = enclosingClass
@@ -19485,16 +19650,6 @@ async function main() {
     }
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
-    // Per-LABEL breakdown of `unexplained`. The single total cannot distinguish one rule
-    // firing many times from many rules firing once, and those need opposite responses: the
-    // first is one bug, the second is a design question. csharp powershell sat at unexplained=3
-    // inside a lane reporting MISSING=0 and 100% covered, with nothing saying which rule.
-    // REPORT-ONLY and additive: it is in no artifact, changes no published figure, and no gate
-    // reads it. Two attempts to obtain this from OUTSIDE the harness both failed --
-    // CSHARP_INTERFACES is module-local, so an external deriveCSharpEdges(root, undefined)
-    // under-derives truth and reported 935 phantom fabrications against the real 3. The
-    // information exists only here, where `truth` and `rels` are both in scope.
-    const unexplainedByLabel = new Map<string, number>()
     let heuristicUnexplained = 0
     // Sharpness counters (BB_F5_STRICT only). strictMissing counts truth rows the
     // written-target rule cannot match; strictMasks counts the subset the
@@ -20376,7 +20531,6 @@ async function main() {
         for (const e of deriveFsharpEdgesLane(root, (result as any)?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
-
       }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
@@ -20649,6 +20803,18 @@ async function main() {
    // implements, instantiates, calls), plus these four, and NOT `overrides` (GO41: the go
    // analyzer emits zero of them, and a compared label with no rows reads like a contract
    // rather than a hole). The base `overrides` disjunct above now excludes go for that reason. The five-label set is why 349,468 rows went unmeasured across five review rounds. `overrides` is deliberately NOT here (GO41: the go analyzer emits none, and a compared label with no rows reads like a contract). Each label is on its OWN physical line: a `//` comment on this expression runs to end of line and has now silently deleted a live entry from it three times.
+// 2026-09-29: the compared set was FOUR labels while the oracle derived EIGHT. `extends`,
+// `implements` and `instantiates` were pushed into truth and then dropped here by the
+// allowlist, so they were derived at real cost and compared by nothing — and a lane
+// reporting "100% covered, MISSING=0" was silent about half its own labels.
+//
+// `overrides` is NOT added here, and the reason is asymmetric on purpose: it is excluded on
+// BOTH sides (the truth skip above, and the analyzer-side allowlist below) under C923,
+// with independent evidence in script/m60/verify-c923-interface-members.ts. Adding it to
+// this side alone would read every true edge as MISSING — the same desync the truth-side
+// comment warns about. The three labels added here measured 100% under the HARNESS's own
+// matcher before being added, so this widens what is CHECKED without changing any verdict:
+// script/m14/tmp/cs-deep-60-undercompared-labels.ts is the measurement.
    // F#'s `contains` — the last of the four labels this lane adjudicates, and its LARGEST:
    // 34,838 of the 36,952 symbols in the compiler corpus are reached this way.
    //
@@ -20670,19 +20836,6 @@ async function main() {
    // is deliberately absent: the lane does not derive it, and admitting it would charge every
    // real call edge as unexplained.
 ...(lang === "fsharp" ? ["contains"] : []),
-// 2026-09-29: the compared set was FOUR labels while the oracle derived EIGHT. `extends`,
-// `implements` and `instantiates` were pushed into truth and then dropped here by the
-// allowlist, so they were derived at real cost and compared by nothing — and a lane
-// reporting "100% covered, MISSING=0" was silent about half its own labels.
-//
-// `overrides` is NOT added here, and the asymmetry is deliberate: it is excluded on BOTH
-// sides (the truth-side skip in deriveCSharpEdges, and the analyzer-side allowlist below)
-// under C923, with independent evidence in script/m60/verify-c923-interface-members.ts.
-// Adding it to this side alone would read every true edge as MISSING — the same desync the
-// truth-side comment warns about. The three labels added here measured 100% under the
-// HARNESS's own matcher before being added, so this widens what is CHECKED without
-// changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
-// measurement, and it is what found the gap in the first place.
 ...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
@@ -20717,7 +20870,6 @@ async function main() {
           if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
         } else {
           unexplainedInAnalyzer++
-          unexplainedByLabel.set(String(r.label), (unexplainedByLabel.get(String(r.label)) ?? 0) + 1)
           if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
@@ -20864,14 +21016,7 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}${
-      // Appended ONLY when there is something to attribute, so a clean lane's line is byte-identical
-      // to what it was before this existed. A breakdown that always prints is a breakdown nobody
-      // reads, and an always-changing log line breaks every parser reading these artifacts.
-      unexplainedInAnalyzer > 0
-        ? ` | unexplained-by-label: ${[...unexplainedByLabel.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join(",")}`
-        : ""
-    }`)
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
     // were captured for exactly this purpose and then had no output path —
     // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by
