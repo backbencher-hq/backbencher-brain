@@ -2889,7 +2889,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           importSpans.push([n.startIndex, n.endIndex])
           continue // nothing inside a using directive is itself one
         }
-        for (let k = 0; k < n.childCount; k++) importStack.push(n.child(k))
+        for (let k = 0; k < n.childCount; k++) {
+          const kid = n.child(k)
+          if (kid) importStack.push(kid)
+        }
       }
     }
     const leafOf = (s: string): string => {
@@ -3423,6 +3426,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Using directives and extern aliases are imports (handled by the
         // import logic) — their names never read as values.
         const isImportName = (() => {
+          if (!p) return false
           for (let i = 0; i < importSpans.length; i++) {
             const sp = importSpans[i]
             if (p.startIndex >= sp[0] && p.endIndex <= sp[1]) return true
