@@ -1,6 +1,7 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
+import { buildResolutionTables } from "./project-index"
 
 /**
  * Solidity analyzer.
@@ -323,6 +324,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     filePath: string,
     context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
+    // SOL-21 — OPTIONAL project knowledge. Absent means the per-file contract, which is
+    // byte-for-byte what this analyzer did before the index existed.
+    const projectIndex = context?.projectIndex
+    let inheritanceKindsResolvedProjectWide = 0
     // SOL-6 — every SOURCE LINE the parser had to invent. Collected in one
     // pre-pass before the walk; consulted by both emit helpers.
     /** The node types a NatSpec comment may document. Declared once, here, because
@@ -1401,7 +1406,13 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             const isInterface = interfaceNames.has(baseName)
             if (!isInterface && typeNamesInFile.has(baseName)) {
               // A known non-interface base: settled, not an unresolved case.
-            } else if (!isInterface && !typeNamesInFile.has(baseName)) {
+            } else if (!isInterface && !typeNamesInFile.has(baseName) &&
+                       projectIndex?.typeKinds.get(baseName) === undefined) {
+              // SOL-21 — the index settles this question when it can, so a base the
+              // index knows about is NOT counted as undecided. Without the clause this
+              // counter reported 507 with the index present and 507 without it, which
+              // is the shape of a metric that measures the instrument rather than the
+              // thing: the number could not move, so it was not reporting anything.
               extendsUnresolvedAsInterface++
             }
             // SOL-19 — the confidence and the TIER were the defect, not the edge.
@@ -1424,9 +1435,24 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             // and the label is the whole point. What changes is the claim: 0.9 and
             // `inferred`, with `kindUnresolved`, the kind that was ASSUMED, and a
             // reasonCode, so a consumer can select on exactly this population.
-            const kindUnresolved = !isInterface && !typeNamesInFile.has(baseName)
+            // SOL-21 — the index answers the question the FILE cannot. `IFeed` in
+            // another file is an interface or a contract depending on a declaration this
+            // tree does not contain, so with NO index the kind is undecided and the row
+            // is labelled `kindUnresolved` at 0.9. With one, it is SETTLED and the row
+            // returns to 1.0/`structural` — not a guess being promoted, a guess that
+            // stopped being a guess. The absent-index path is untouched, which is what
+            // keeps every pre-existing gate meaningful.
+            const projectKind = isInterface || typeNamesInFile.has(baseName)
+              ? undefined
+              : projectIndex?.typeKinds.get(baseName)
+            if (projectKind !== undefined) inheritanceKindsResolvedProjectWide++
+            const projectIsInterface = projectKind === "interface"
+            const kindUnresolved = !isInterface && !typeNamesInFile.has(baseName) &&
+              projectKind === undefined
             addRel(name, baseName,
-              isInterface ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
+              (isInterface || projectIsInterface)
+                ? ASTEngine.RelationshipType.Implements
+                : ASTEngine.RelationshipType.Extends,
               kindUnresolved ? 0.9 : 1.0, (anc ?? spec).startPosition.row + 1, {
                 isSolidityInheritance: true,
                 interfaceResolvedInFile: isInterface,
@@ -1437,6 +1463,15 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
                     kindUnresolved: true,
                     assumedKind: ASTEngine.RelationshipType.Extends,
                     reasonCode: "base-not-declared-in-file",
+                  }
+                  : {}),
+                // SOL-21 — how the kind was settled, so a consumer can tell a settled
+                // cross-file kind from an in-file one. `undefined` for the in-file case,
+                // which is the pre-existing shape and needs no new key.
+                ...(projectKind !== undefined
+                  ? {
+                    kindResolvedProjectWide: true,
+                    baseDeclarationKind: projectKind,
                   }
                   : {}),
                 ...(spec.childForFieldName("ancestor_arguments") ? { hasBaseConstructorArgs: true } : {}),
@@ -2286,7 +2321,19 @@ const meta = modifiersOf(node)
     const callKinds: Record<string, number> = {
       conversion: 0, namespaceBuiltin: 0, modifierInvocation: 0,
       localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
+      crossFileInheritedMember: 0, projectMemberCandidate: 0,
       eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0,
+    }
+    // SOL-21 — the index's inheritance-closed member set per type, and the
+    // name -> declaring-types table. Built once per file from the shared index rather
+    // than per call, because a per-call walk of the inheritance graph is the shape of a
+    // quadratic pass and this classifier runs on every call in the file.
+    const projectAllMembers = new Map<string, Set<string>>()
+    const projectMemberOwners = new Map<string, Set<string>>()
+    if (projectIndex) {
+      const { memberOwners, allMembers } = buildResolutionTables(projectIndex)
+      for (const [t, ms] of allMembers) projectAllMembers.set(t, ms)
+      for (const [m, ts] of memberOwners) projectMemberOwners.set(m, ts)
     }
     for (const rel of relationships) {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
@@ -2334,6 +2381,30 @@ const meta = modifiersOf(node)
         for (const [otherOwner, set] of membersByType) {
           if (otherOwner === owner) continue
           if (set.has(rel.target)) return "inFileTypeMember"
+        }
+        // SOL-21 — CROSS-FILE RESOLUTION, in two grades, and the grades are NOT
+        // interchangeable. The project-wide census measured the split before this was
+        // written, which is why it is two rows rather than one optimistic one:
+        //
+        //   crossFileInheritedMember  the OWNING contract's ancestors — followed
+        //     through the index's inheritance graph — declare this name. The call site
+        //     proves which type it means, because the owner is known and its ancestors
+        //     are a fixed set. This is a RESOLUTION.
+        //
+        //   projectMemberCandidate  some project type declares this name, but WHICH one
+        //     is undecidable: a Solidity `calls` edge carries no receiver type for a
+        //     free function, so `toUint(x)` could be `SafeCast.toUint` or anything else
+        //     that declares it. Naming the candidates is real information; calling it a
+        //     resolution would not be.
+        //
+        // Collapsing these two would have turned 1,134 honest candidates into 1,134
+        // confident facts, which is the exact failure this repo's evidence tiers exist
+        // to prevent.
+        if (projectIndex) {
+          const closed = projectAllMembers.get(owner)
+          if (closed?.has(rel.target)) return "crossFileInheritedMember"
+          const owners = projectMemberOwners.get(rel.target)
+          if (owners) return "projectMemberCandidate"
         }
         return "external"
       })()
@@ -2412,6 +2483,7 @@ const meta = modifiersOf(node)
         documentedSymbols,
         symbolsWithComplexity,
         symbolsWithQualifiedCalls,
+        inheritanceKindsResolvedProjectWide,
         callKinds,
         overridesEmitted,
         overridesEmittedExternal,

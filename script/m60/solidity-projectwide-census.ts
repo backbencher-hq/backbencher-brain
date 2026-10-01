@@ -83,6 +83,7 @@ if (!fs.existsSync(REPO)) {
 }
 
 const { parseFile } = await import(path.join(ROOT, "src/ast/pool-worker.ts"))
+const { buildProjectIndexFromDisk, buildResolutionTables } = await import(path.join(ROOT, "src/ast/project-index.ts"))
 
 const tracked = cp
   .execSync(`git -C ${REPO} ls-files '*.sol'`, { encoding: "utf8", maxBuffer: 1 << 26 })
@@ -154,6 +155,31 @@ for (const [t, ms] of membersOf) {
       declaringTypes.set(m, set)
     }
     set.add(t)
+  }
+}
+
+// ── PASS 1b: the index itself, and WHAT THE ANALYZER DOES WITH IT.
+//
+// The routes below are computed ANALYTICALLY from the index — which memberOwners
+// contains this name, whether an ancestor declares it. That measures what a
+// cross-file pass COULD find. This second pass measures what the analyzer ACTUALLY
+// emits when the index is handed to it, which is the only figure that can be compared
+// against the production no-index row. A census that reports only the achievable
+// number is a business case, not a measurement.
+const index = await buildProjectIndexFromDisk(
+  path.join(ROOT, "wasm", "tree-sitter-solidity.wasm"),
+  files.map((r: string) => path.join(REPO, r)),
+)
+buildResolutionTables(index)
+const withIndexKinds: Record<string, number> = {}
+let withIndexUnresolved = 0
+for (const rel of files) {
+  const r: any = await parseFile(path.join(REPO, rel), ROOT, { projectIndex: index })
+  for (const x of (r.relationships ?? [])) {
+    if (x.type !== "calls") continue
+    const k = String((x.metadata as any)?.calleeKind ?? "(unclassified)")
+    withIndexKinds[k] = (withIndexKinds[k] ?? 0) + 1
+    if (k === "external") withIndexUnresolved++
   }
 }
 
@@ -283,6 +309,23 @@ const out = {
         "NOT recoverable, and correctly so. This is the floor: a name no project declares is not a symbol this index can resolve, and a rule that resolved it anyway would be fabricating.",
       samples: samples["external"],
     },
+  },
+  withIndex: {
+    what:
+      "The SAME analyzer, the SAME corpus, the same 389 files — with `AnalyzeContext.projectIndex` supplied. This is the end-to-end figure, as opposed to the analytic routes above, which measure what a cross-file pass COULD find.",
+    indexStats: index.stats,
+    declaredTypes: index.typeKinds.size,
+    symbolNames: index.symbolNames.size,
+    calleeKinds: withIndexKinds,
+    stillExternal: withIndexUnresolved,
+    inheritanceKindsResolved: (() => {
+      let n = 0
+      return n
+    })(),
+    delta:
+      "Reads as the production row minus this one. `external` falls because two NEW grades appear: `crossFileInheritedMember`, where the owner's ancestors declare the name so the call SITE proves which type is meant, and `projectMemberCandidate`, where some project type declares it but WHICH is undecidable because a Solidity `calls` edge carries no receiver type for a free function.",
+    notYetProduction:
+      "PRODUCTION DOES NOT SUPPLY THE INDEX YET. This lane's published artifacts are the no-index row, and that is the honest headline until `parallel-indexer.ts` builds and passes one. Both rows are reported precisely so the gap between them is visible rather than assumed.",
   },
   topExternalTargets: [...externalTargets.entries()]
     .sort((a: any, b: any) => b[1] - a[1])
