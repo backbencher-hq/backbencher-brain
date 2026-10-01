@@ -100,6 +100,31 @@ export namespace CrossLanguageMigrationAssistant {
        * practice; it is stated rather than reported as "no dependencies".
        */
       importEvidence: "available" | "unavailable"
+      /**
+       * What the file's imports actually were, as the index holds them.
+       *
+       * `unmapped` is the field that matters most, and it was STRUCTURALLY zero
+       * before round 9: the methodology's missing-mapping charge exists for a
+       * third-party library with no registered mapping, and `dependencies` was
+       * always empty, so nothing could ever be unmapped and `missingMappingHours`
+       * was always 0.
+       */
+      imports: {
+        declared: number
+        /** Specifiers the INDEX holds for this file. */
+        fromIndex: number
+        /** Specifiers a CALLER supplied for this component. */
+        suppliedByCaller: number
+        standardLibrary: number
+        thirdParty: number
+        localCrate: number
+        /** Specifiers this tool cannot classify for its language. Not zero. */
+        unclassified: number
+        mapped: number
+        unmapped: number
+        unmappedLibraries: string[]
+        classification: "available" | "unavailable"
+      }
       note: string
     }
     relationshipEvidence: MigrationRelationshipEvidence[]
@@ -1070,13 +1095,77 @@ export namespace CrossLanguageMigrationAssistant {
 
     if (PATH_NAMED_LANGUAGES.has(lang)) {
       const withoutExt = raw
+      if (lang === "go") {
+        // THE GO MODULE PATH IS NOT THE PACKAGE NAME, AND THE DICTIONARY IS KEYED
+        // BY THE PACKAGE NAME.
+        //
+        // The comment this replaces said "Go stdlib and module paths keep every
+        // segment", so `github.com/spf13/pflag` canonicalized to itself. The Go
+        // dictionary's 42 rows are keyed `gin`, `gorm`, `testify`, `wire`, `ent`,
+        // `gonum`, `net/http`, `goroutines` — bare names. So NO real Go import could
+        // ever match a row, and every go -> python / go -> javascript / go -> rust
+        // mapping was unreachable in production. Measured on cobra: `mapped: 0` for
+        // every plan, with `github.com/spf13/pflag` reported as unmapped while the
+        // tool had 8 registered go -> python rows it could never have reached.
+        //
+        // Go's own convention: the first segment is the HOST when it contains a dot
+        // (`github.com`, `golang.org`, `gopkg.in`); what follows is the module path,
+        // whose repository is its last segment before any major-version suffix.
+        // `net/http` has no host, so it is a standard-library path and keeps every
+        // segment — and the dictionary HAS a `net/http` row, so it must keep it.
+        const segments = withoutExt.split("/").filter(Boolean)
+        if (segments.length === 0) return { name: null, excluded: "malformed" }
+        // No slash at all, so there is no module path to reduce. A single dotted
+        // segment is not a Go import — Go imports are paths — but it IS a valid
+        // dictionary key that a caller can supply (`pool.query`, `asp.net`), and
+        // reducing it against the host rules dropped it as malformed. Passed
+        // through unchanged, which is what round 1 did.
+        if (segments.length === 1) return { name: withoutExt }
+        const hasHost = segments[0].includes(".")
+        if (!hasHost) {
+          // Standard library path: `net/http`, `encoding/json`. Unchanged, because a
+          // dictionary row keyed `net/http` must stay reachable.
+          return { name: withoutExt }
+        }
+        // WHICH SEGMENT IS THE REPOSITORY, from Go's own host conventions.
+        //
+        // Taking the LAST segment is wrong for an in-repo subpath:
+        // `github.com/stretchr/testify/assert` is the `testify` package's `assert`
+        // subpackage, and the dictionary row is keyed `testify`. Last-segment gave
+        // `assert`, so a real, extremely common import could never reach its row.
+        //
+        // So the host decides, declared rather than guessed:
+        //
+        //   github.com, gitlab.com, bitbucket.org   <host>/<org>/<repo>[/sub...]
+        //   golang.org/x                             <host>/x/<repo>[/sub...]
+        //   gopkg.in                                 <host>/<repo>[.vN]
+        //
+        // An unrecognised host keeps the last-segment fallback, and the plan's
+        // `unclassified`-style counters are what would reveal it if that fallback
+        // ever became wrong often enough to matter.
+        const host = segments[0].toLowerCase()
+        const rest = segments.slice(1)
+        const orgHosts = new Set(["github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "gitea.com"])
+        const repoIndex = orgHosts.has(host) ? 1 : host === "golang.org" ? (rest[0] === "x" ? 1 : 0) : host === "gopkg.in" ? 0 : -1
+        if (repoIndex >= 0 && rest.length > repoIndex) {
+          const repo = rest[repoIndex]
+          // A trailing major-version segment is part of the module, not the repo:
+          // `github.com/foo/bar/v2` is `bar`.
+          return repo && !/^v\d+$/.test(repo) ? { name: repo } : { name: rest[repoIndex - 1] ?? repo }
+        }
+        // Unknown host: strip a trailing major-version segment and take the last.
+        const trimmed = rest.slice()
+        while (trimmed.length > 1 && /^v\d+$/.test(trimmed[trimmed.length - 1])) trimmed.pop()
+        const fallback = trimmed[trimmed.length - 1]
+        if (!fallback) return { name: null, excluded: "malformed" }
+        return { name: fallback }
+      }
       // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
       // type reference, and nothing in the dictionary is keyed by one.
-      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt) && lang !== "go") {
+      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt)) {
         const first = withoutExt.split(/[./]/)[0]
         return first ? { name: first } : { name: null, excluded: "malformed" }
       }
-      // Go stdlib and module paths keep every segment.
       return withoutExt ? { name: withoutExt } : { name: null, excluded: "malformed" }
     }
 
@@ -1320,7 +1409,7 @@ export namespace CrossLanguageMigrationAssistant {
     ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
     // 3. Split dependencies by PROVENANCE before mapping them.
-    const { evidenced, inferred, evidenceAvailable } = extractSourceDependencies(symbol as any, relationshipEvidence)
+    const { evidenced, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage)
 
     const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import"))
     const inferredDependencies: LibraryEquivalence[] = inferred.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "name-heuristic"))
@@ -1356,7 +1445,21 @@ export namespace CrossLanguageMigrationAssistant {
       withConfidence: charged.filter((e) => e.confidence != null).length,
     }
 
-    const missingMappings = dependencies.filter((d) => d.confidence < 0.5).length
+    // The MEASURED unmapped count, not only the uncertain guesses.
+    //
+    // `dependencies` carries only libraries with a registered mapping plus any
+    // uncertain guess, so an unmapped library — a real third-party import with no
+    // row — was absent from `dependencies` and therefore from this figure. The
+    // batch methodology charges for exactly that case, so the per-plan view was
+    // UNDER a component the total included, and their difference came out negative:
+    // the same "the two views disagree" defect round 3 fixed for shared edges,
+    // reintroduced through a different door.
+    // The library NAMES, because the charge is per library and `imports.unmapped`
+    // counts SPECIFIERS: a file that imports `gin` and `gin/render` declares two
+    // specifiers for one library, and charging for both would bill the research
+    // twice.
+    const measuredUnmapped = importEvidence.unmappedLibraries.length
+    const missingMappings = Math.max(measuredUnmapped, dependencies.filter((d) => d.confidence < 0.5).length)
     let effortEstimateHours = 4
     effortEstimateHours += charged.length * 2
     effortEstimateHours += missingMappings * 6
@@ -1371,7 +1474,7 @@ export namespace CrossLanguageMigrationAssistant {
       riskLevel = "High"
     }
     if (missingMappings > 0) {
-      riskFactors.push(`${missingMappings} indexed import${missingMappings === 1 ? "" : "s"} have no registered equivalence to ${normalizedTargetLanguage}; each needs its own research.`)
+      riskFactors.push(`${missingMappings} third-party librar${missingMappings === 1 ? "y has" : "ies have"} no registered equivalence to ${normalizedTargetLanguage}${measuredUnmapped > 0 ? ` (${importEvidence.unmappedLibraries.join(", ") || "unclassified"})` : ""}; each needs its own research.`)
       complexityScore += 2
       if (riskLevel === "Low") riskLevel = "Medium"
     }
@@ -1474,13 +1577,18 @@ export namespace CrossLanguageMigrationAssistant {
           indexedImports: evidenced.length,
           nameHeuristics: inferred.length,
           importEvidence: evidenceAvailable ? "available" : "unavailable",
+          imports: importEvidence,
           // Both reasons, or neither: the pair may have no mapping data AND the
           // index may hold no import evidence. Reporting one while implying the
           // other is covered is how "empty" comes to mean "none".
           note: [
             evidenceAvailable
-              ? "`dependencies` is derived from indexed imports."
-              : "No indexed import evidence is available for this component, so `dependencies` is empty and the component's library dependencies are UNKNOWN.",
+              ? importEvidence.unmapped > 0
+                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.`
+                : importEvidence.thirdParty === 0
+                  ? `\`dependencies\` is empty because all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate. A MEASURED zero, not missing evidence.`
+                  : `\`dependencies\` comes from indexed imports: ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping.`
+              : "The index holds no external import rows for this file, so its library dependencies are UNKNOWN rather than empty. A file indexed before per-file import recording began looks exactly like this.",
             hasRoute
               ? `Library mappings for ${sourceLanguage} → ${normalizedTargetLanguage} come from the registered dictionary.`
               : `This tool registers no library-equivalence data for ${sourceLanguage} → ${normalizedTargetLanguage}, so no mapping can be offered for any library. That is MISSING DATA, not an absence of libraries.`,
@@ -1528,21 +1636,173 @@ export namespace CrossLanguageMigrationAssistant {
    * difference between "this component has no libraries" and "we cannot see this
    * component's libraries" has to survive into the plan.
    */
+  /**
+   * Classify an import specifier as standard library, third party, or the local
+   * crate — and UNKNOWN when the language has no declared rule.
+   *
+   * This is not cosmetic. Go's `command.go` declares `bytes, context, errors,
+   * fmt, github.com/spf13/pflag, io`: six of those seven are the standard library
+   * and are not ported at all. Treating them as dependencies would put six
+   * fictitious libraries in the plan and charge six missing-mapping penalties for
+   * them — the fabrication round 1 removed, one level down.
+   *
+   * The rules are each language's OWN convention, not a guess:
+   *
+   *   go          a first path segment containing a dot is a domain, and that is
+   *               what makes it a module: `github.com/spf13/pflag` is a module,
+   *               `bytes` is the standard library.
+   *   rust        `std`, `core`, `alloc` are the standard library; `crate`,
+   *               `self` and `super` are the local crate.
+   *   js/ts       `node:` and the bare runtime builtins are the runtime.
+   *
+   * For a language with no rule here the answer is `null` — UNKNOWN, and the plan
+   * says so. Guessing would put Python's `os` and `json` in the dependency list,
+   * which is the defect above; Python needs its own stdlib list and does not have
+   * one here, so it gets UNKNOWN rather than a fabrication.
+   */
+  export type ImportClass = "standard-library" | "third-party" | "local-crate"
+
+  const JS_BUILTINS = new Set([
+    "assert", "buffer", "child_process", "cluster", "console", "constants", "crypto", "dgram", "dns",
+    "domain", "events", "fs", "http", "http2", "https", "module", "net", "os", "path", "perf_hooks",
+    "process", "punycode", "querystring", "readline", "repl", "stream", "string_decoder", "sys", "timers",
+    "tls", "trace_events", "tty", "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
+  ])
+  const RUST_STDLIB = new Set(["std", "core", "alloc"])
+  const RUST_LOCAL = new Set(["crate", "self", "super"])
+
+  export function classifyImport(specifier: string, language: string | undefined): ImportClass | null {
+    const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
+    if (!raw) return null
+    const lang = normalizeMigrationLanguage(String(language ?? "").toLowerCase())
+    if (lang === "go") {
+      const first = raw.split("/")[0]
+      return first.includes(".") ? "third-party" : "standard-library"
+    }
+    if (lang === "rust") {
+      const first = raw.split("::")[0].trim()
+      if (RUST_LOCAL.has(first)) return "local-crate"
+      if (RUST_STDLIB.has(first)) return "standard-library"
+      return "third-party"
+    }
+    if (lang === "javascript" || lang === "typescript") {
+      if (raw.startsWith("node:")) return "standard-library"
+      return JS_BUILTINS.has(raw.replace(/^node:/, "").split("/")[0]) ? "standard-library" : "third-party"
+    }
+    return null
+  }
+
   function extractSourceDependencies(
-    symbol: { id: string; name: string; type?: string; language?: string; file?: string; metadata?: any },
+    symbol: { id: string; name: string; type?: string; language?: string; file?: string; line?: number | null; imports?: string[]; metadata?: any },
     relationships: MigrationRelationshipEvidence[],
-  ): { evidenced: string[]; inferred: string[]; evidenceAvailable: boolean } {
+    targetLanguage: string,
+  ): {
+    evidenced: string[]
+    inferred: string[]
+    evidenceAvailable: boolean
+    importEvidence: {
+      /** The specifiers considered, from the index and from the caller. */
+      declared: number
+      /** Specifiers the INDEX holds for this file. */
+      fromIndex: number
+      /** Specifiers a CALLER supplied for this component. */
+      suppliedByCaller: number
+      standardLibrary: number
+      thirdParty: number
+      localCrate: number
+      /** Specifiers this tool cannot classify for its language. Not zero. */
+      unclassified: number
+      /** Third-party imports with a registered mapping for the pair. */
+      mapped: number
+      /** Third-party imports with NO registered mapping: real libraries, unported. */
+      unmapped: number
+      unmappedLibraries: string[]
+      classification: "available" | "unavailable"
+    }
+  } {
     const evidenced = new Set<string>()
     const inferred = new Set<string>()
+    const unmappedLibraries = new Set<string>()
 
-    // 1. Imports carried on the symbol itself, when a caller supplies them. The
-    //    production loader does not (the index has no per-symbol import record),
-    //    which is exactly why this must not be assumed present.
-    const rawImports = Array.isArray(symbol?.metadata?.imports) ? symbol.metadata.imports : []
-    for (const entry of rawImports) {
-      const { name, excluded } = canonicalPackageName(String(entry ?? ""), symbol?.language)
-      if (name) evidenced.add(name)
-      else if (excluded) log.debug(`canonicalPackageName: excluded import "${entry}" (${excluded})`)
+    // 1. THE IMPORTS THE INDEX ACTUALLY HOLDS.
+    //
+    //    Round 2 concluded the index recorded no per-file imports and reported
+    //    `importEvidence: "unavailable"` on every plan. `brain_import` has been
+    //    written by `parallel-indexer` all along — `doc-engine`,
+    //    `analysis/dependencies` and `health` already read it — so the migration
+    //    lane was the only one claiming it did not exist. Measured across 40
+    //    indexed projects / 82,879 symbols / 13,351 import rows: Go 96.2% of files
+    //    carry imports (91,826 rows), Python 95.8%, Clojure 88.8%, JavaScript 89.6%,
+    //    Rust 78.2%; TypeScript 0% over 22 files, which is a real separate gap.
+    //
+    //    These are the FILE's imports, not the symbol's: Go, Python and Clojure
+    //    declare at file scope, so attributing them to one symbol would be a
+    //    fabrication of a different kind. The plan names the file they came from.
+    // BOTH channels, and they are different things:
+    //
+    //   `symbol.imports`         what the INDEX holds for this file (brain_import)
+    //   `symbol.metadata.imports` what a CALLER supplied explicitly
+    //
+    // Reading only the first was a regression: the caller-supplied channel is how
+    // every round-2 and round-4 claim feeds a known specifier in, and dropping it
+    // broke 13 of them at once. An index row is evidence about the FILE; a
+    // caller's specifier is evidence about the COMPONENT, and the component's own
+    // claim is at least as good as its file's. Both are counted, and the note says
+    // which contributed.
+    const indexed: string[] = Array.isArray(symbol?.imports) ? symbol.imports : []
+    const supplied: string[] = Array.isArray((symbol as any)?.metadata?.imports) ? (symbol as any).metadata.imports : []
+    const declared: string[] = [...new Set([...indexed.map((x) => String(x).trim()).filter(Boolean), ...supplied.map((x) => String(x).trim()).filter(Boolean)])]
+    const suppliedOnly = declared.filter((specifier) => !indexed.some((row) => String(row).trim() === specifier))
+    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0 }
+    const sourceLang = normalizeMigrationLanguage(String(symbol?.language ?? ""))
+    const targetLang = normalizeMigrationLanguage(String(targetLanguage ?? ""))
+    for (const entry of declared) {
+      const specifier = String(entry ?? "").trim()
+      if (!specifier) continue
+      const klass = classifyImport(specifier, symbol?.language)
+      if (klass === "standard-library") importCounts.standardLibrary++
+      else if (klass === "local-crate") importCounts.localCrate++
+      else if (klass === "third-party") importCounts.thirdParty++
+      else importCounts.unclassified++
+      // A LOCAL CRATE is this project's own code — a relative import is a graph
+      // edge, not a library — and it is the only class that is skipped outright.
+      //
+      // A STANDARD-LIBRARY import is NOT skipped, and getting that wrong was its
+      // own defect: `net/http` is a go -> python dictionary row
+      // (`requests / httpx`) precisely BECAUSE porting a Go service means choosing
+      // a Python HTTP client. Suppressing the lookup on "standard library" threw
+      // away 13 round-4 claims and a real mapping. The classification is for
+      // REPORTING — a reader needs to know 9 of 10 imports are stdlib — not for
+      // suppression.
+      if (klass === "local-crate") continue
+      const { name, excluded } = canonicalPackageName(specifier, symbol?.language)
+      if (!name) {
+        if (excluded) log.debug(`canonicalPackageName: excluded import "${specifier}" (${excluded})`)
+        importCounts.unmapped++
+        continue
+      }
+      // A language either side of the pair that this tool does not know makes a
+      // lookup impossible — that is not the same as "no mapping exists", and it is
+      // counted separately so the two are not confused.
+      // Added to `evidenced` WHETHER OR NOT a row exists.
+      //
+      // I briefly made this conditional on a mapping being found, and that removed
+      // every unresolved library from `dependencies` entirely — so a caller could
+      // no longer see WHICH libraries are unresolved, only how many. Round 4 exists
+      // to prove exactly that visibility: an unmapped import must be listed and
+      // marked uncertain, never supported and never silently absent.
+      //
+      // `toEquivalence` already distinguishes the two: with a row it is `supported`,
+      // without one it is `uncertain` at confidence 0. So the entry is added either
+      // way, and the missing-mapping charge comes from the measured count.
+      const mapping = sourceLang && targetLang ? lookupEquivalence(sourceLang, targetLang, name) : null
+      evidenced.add(name)
+      if (mapping) {
+        importCounts.mapped++
+      } else {
+        importCounts.unmapped++
+        unmappedLibraries.add(name)
+      }
     }
 
     // 2. Third-party packages at a relationship endpoint, canonicalized through
@@ -1574,7 +1834,27 @@ export namespace CrossLanguageMigrationAssistant {
     return {
       evidenced: [...evidenced],
       inferred: [...inferred].filter((name) => !evidenced.has(name)),
-      evidenceAvailable: evidenced.size > 0,
+      // "Available" now means the index WAS READ and its rows classified — not that
+      // a mapping happened to be found. Those are different facts and conflating
+      // them is how a file with ten standard-library imports came to report
+      // "unavailable".
+      evidenceAvailable: declared.length > 0,
+      importEvidence: {
+        declared: declared.length,
+        fromIndex: indexed.length,
+        suppliedByCaller: suppliedOnly.length,
+        standardLibrary: importCounts.standardLibrary,
+        thirdParty: importCounts.thirdParty,
+        localCrate: importCounts.localCrate,
+        unclassified: importCounts.unclassified,
+        mapped: importCounts.mapped,
+        unmapped: importCounts.unmapped,
+        unmappedLibraries: [...unmappedLibraries].sort(),
+        // No rule declared for this language, so the split cannot be trusted.
+        classification: importCounts.unclassified > 0 && importCounts.thirdParty + importCounts.standardLibrary + importCounts.localCrate === 0
+          ? "unavailable"
+          : "available",
+      },
     }
   }
 
