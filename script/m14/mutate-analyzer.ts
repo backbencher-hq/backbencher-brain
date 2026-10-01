@@ -23,6 +23,7 @@ import { FSHARP_MUTANTS } from "./fsharp-mutants"
 import { CSS_MUTANTS } from "../m60/css-mutants"
 import { SCSS_MUTANTS } from "../m60/scss-mutants"
 import { SOLIDITY_MUTANTS } from "../m60/solidity-mutants"
+import { JULIA_MUTANTS } from "../m60/julia-mutants"
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 
@@ -2415,6 +2416,14 @@ export const MUTANTS: Mutant[] = [
   // one first draft read a set off `globalThis`, was always undefined, and would
   // have been a no-op mutant reported as passing.
   ...SOLIDITY_MUTANTS,
+  // M60 Julia wave. 13 mutants, every one a faithful revert of a shape THIS lane
+  // was measured to emit while being built. Julia's are worth reading for what they
+  // say about a language that shares no ancestry with the managed-OO family: there
+  // is NO `overrides` and NO `implements` to test, because the analyzer declines
+  // both (Julia has multiple dispatch, not overriding) — so the set is spent instead
+  // on qualified-name identity, file-scope attribution, and the grammar's positional
+  // node shapes, which is where this lane's defects actually were.
+  ...JULIA_MUTANTS,
   // ---------------------------------------------------------------- VB wave
   // 2026-09-27. The vb lane reported a 1.000 F5 differential and a healthy-looking
   // corpus profile while THREE whole classes of output were missing or wrong. Each
