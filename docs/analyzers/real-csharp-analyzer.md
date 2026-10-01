@@ -228,6 +228,34 @@ So the honest position is narrow, and it is all that survives:
 - **A published envelope needs a quiet host and a larger min-N than 5.** Until then the honest
   budget is the structural argument, labelled as an argument.
 
+## Exhaustive verification — the whole corpus, not one rotation
+
+The table above is `--sample 120`, and the sample ROTATES by design. That is correct for a coverage
+number and it is why this session twice drew a conclusion that could not be supported: powershell
+reported `unexplained` of 3, then 4, then 7, then 17 across single draws of the same code. A single
+draw cannot tell a fixed residual from a shape that happens to be present in some samples.
+
+`--sample 100000` measures every file in the lane's corpus, which makes the residual a census
+instead of a sample. The first lane through it:
+
+| corpus | files | tree-truth | covered | | MISSING | unexplained |
+| --- | --- | --- | --- | --- | --- | --- |
+| fsharp | **245 (whole corpus)** | 30,021 | 30,021 | 100% | 0 | **0** |
+
+**fsharp is exhaustively clean.** Not "clean on the 120 files this draw happened to pick" — every
+`.cs` file the lane knows about, with zero unexplained edges. It held a constant `unexplained=8`
+across three consecutive 120-file draws before CS-D12 and a constant 0 after, so the 8 was a real
+shape rather than a sampling artifact, and the fix removed it rather than moving it.
+
+That distinction is the whole reason the exhaustive pass exists, and it is also why a stable lane and
+an unstable one are different problems: a constant residual across draws is a defect that reproduces,
+and a swinging one is a set of shapes of differing frequency. fsharp was the first kind. powershell
+was the second, and it is the one still to census.
+
+The other three are queued. aspnetcore and roslyn are ~4,000 files each and cost the most, so they
+run last — and they are also the ones most likely to still hold residual, because they are where
+every previously-found class was found.
+
 ## Differential ground truth
 
 - Ground truth: `validation/m12/ground-truth/csharp.json`

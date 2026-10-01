@@ -45,7 +45,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { attributeDisplacedEnumName, extendsTargetName, isCppSpelledName, macroDeclaredBody, qualifiedDeclaratorLeaf, recoveredDeclaredName, specifierDeclaredName, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
+import { extendsTargetName, isCppSpelledName, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -5453,28 +5453,10 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol. Rule: the exemption applies ONLY when the enumerator is
           // a DIRECT child of its enumerator_list (no preproc wrapper
           // between) — exactly the shapes extractEnum can see.
-          // #966: the `!isFunctionLocal(n)` clause made this a FILE-SCOPE-ONLY test,
-          // which stopped being true when #961 landed. #961 ruled that a
-          // function-local TYPE is a compile-time type and IS published, and the
-          // analyzer publishes a local enum's MEMBERS too -- owned by the type, not
-          // by the function:
-          //
-          //   curl/src/tool_paramhlp.c:418  enum e_action { allow, deny, set } ...
-          //     (inside a function -- fnLocal=true for that enum_specifier)
-          //   analyzer: name="allow" kind=enum_member owner=e_action scope=e_action
-          //
-          // The members are unqualified precisely because they belong to the TYPE,
-          // and the type carries the scope -- #961's qualification exists to
-          // disambiguate colliding type NAMES (lpRandomEntries.pick), not to
-          // re-qualify members that cannot collide inside their own enum.
-          //
-          // Measured cost of the stale clause: 97 unexplained `uses` edges
-          // corpus-wide (curl's tool_paramhlp.c alone contributes allow/deny/set).
-          // Shadowing stays handled by the fnLocals gate at the read site.
-          const isEnumeratorMember = n.parent?.type === "enumerator"
+          const isFileScopeEnumerator = n.parent?.type === "enumerator"
             && n.parent?.parent?.type === "enumerator_list"
             && n.parent?.parent?.parent?.type === "enum_specifier"
-          const isFileScopeEnumerator = isEnumeratorMember
+            && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
           // #907 round 2: a glued definition the ANALYZER emits at file scope is
           // admitted here on its own arm, because the analyzer's own rule is
@@ -5482,7 +5464,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
-          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || isEnumeratorMember || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
+          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
             // is the preproc_function_def) is what makes the name unmaskable-as-
@@ -16571,45 +16553,7 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
-      // D4/D7 MIRRORS, via the analyzer's own rules rather than a re-derivation.
-      // These three were declared in the analyzer's CPP_ORACLE_CONTRACT with doc
-      // comments naming the F5 oracle as their reason for existing, and none of
-      // them was wired here — the same dead-contract shape that cost 387 MISSING
-      // rows for D1 and D2. `script/m14/cpp-oracle-contract.ts` is what noticed.
-      //
-      // Each fixes a way the naive `nameNode?.text` below disagrees with the
-      // analyzer, and all three are about the NAME, which is the whole content of
-      // an `extends` edge:
-      //
-      //   specifierDeclaredName   a class/struct may have a QUALIFIED name (an
-      //                            explicit specialization, `template <> struct
-      //                            fmt::formatter<T> : formatter<U> {…}`), whose
-      //                            `.text` is `fmt::formatter` while the analyzer
-      //                            publishes the LEAF `formatter` — D7's whole
-      //                            ruling, and the reason a qualified declaration
-      //                            used to publish as `anonymous`.
-      //   recoveredDeclaredName   the grammar's ERROR recovery displaces the
-      //                            `declarator` field, so the name must be read
-      //                            from beside it — D4. Without this the edge says
-      //                            `? extends X` and matches nothing.
-      //   attributeDisplacedEnumName  a C++23 `[[=attr]]` in the qualified-name
-      //                            slot is not the name; the real one sits beside
-      //                            it — D7's second arm.
-      //
-      // ORDER IS THE ANALYZER'S, and it is not incidental: it reads
-      // `recoveredDeclaredName(d) ?? (chain read)` because "the chain read is not
-      // null here (a type name is a legal identifier spelling), so the recovery
-      // has to be consulted FIRST, not as a fallback." Reading the chain first
-      // would let a displaced name win over the recovery. Scoped to cpp, since
-      // these are cpp rules and this branch is shared by every language that
-      // spells a class.
-      let clsName: string | null = null
-      if (lang === "cpp") {
-        if (n.hasError) clsName = recoveredDeclaredName(n)?.text ?? null
-        if (clsName === null && t === "enum_specifier") clsName = attributeDisplacedEnumName(n)
-        if (clsName === null) clsName = specifierDeclaredName(n)
-      }
-      if (clsName === null) clsName = nameNode?.text ?? "?"
+      const clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes), extends_interfaces+type_list
       // (java-style interfaces), extends_type_clause (typescript interfaces),
       // base_class_clause (cpp - flat children, access specifiers skipped)

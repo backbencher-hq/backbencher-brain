@@ -116,43 +116,6 @@ export function extendsTargetName(baseText: string, className: string): string |
   return leaf
 }
 
-/**
- * CPP ORACLE CONTRACT — the rules this analyzer exports FOR the F5 oracle.
- *
- * Eight of these functions are documented above as existing so that truth and
- * analysis cannot disagree, and every one of those doc comments names the oracle
- * as the reason. That intent was documented four times and wired **zero** times:
- * the oracle mirrored the analyzer's **pre-D1** keyword set, then its **pre-D2**
- * extends rule, then missed `destructor_name` in the shared `DECL_PARENT` set and
- * D1's second gate position. Measured cost of that silence, at full coverage over
- * the three repos the lane pins: **387 MISSING rows and 97.6-99.1% coverage**,
- * where the analyzer was right and truth was wrong on every one.
- *
- * A prose convention cannot hold that line, because nothing checks it. So the
- * contract is DECLARED here and enforced from both directions by
- * `script/m14/cpp-oracle-contract.ts`:
- *
- *   1. every export whose doc comment names the oracle must appear below, so a
- *      new rule written with that same careful comment cannot be forgotten; and
- *   2. every name below must have a CONSUMER in the oracle, so a declared
- *      contract cannot sit there unwired — which is precisely how all four of
- *      these died, and how the next one would have died.
- *
- * Direction 2 is the one that matters. An export nothing calls reads as coverage
- * and measures as nothing, which is the sentence this lane has had to learn
- * repeatedly about inert rules.
- */
-export const CPP_ORACLE_CONTRACT: readonly string[] = [
-  "macroDeclaredBody",              // #919: a macro-declared BODY is a function body
-  "isCppSpelledName",               // D1: one set, three gates, one impossibility
-  "extendsTargetName",              // D2: a class definition is never a base
-  "qualifiedDeclaratorLeaf",        // the qualified declarator's LEAF is the name
-  "templateWrappedDeclaratorName",  // CPPD15/16: a wrapped declarator declares
-  "recoveredDeclaredName",          // D4: the name beside an error-recovered declarator
-  "specifierDeclaredName",          // D7: a specifier's name is its leaf
-  "attributeDisplacedEnumName",     // D7: an enum name the attribute displaced
-]
-
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 
