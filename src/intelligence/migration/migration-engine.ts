@@ -229,6 +229,8 @@ export interface MigrationPlanResult {
  * components.
  */
 export function calculateMigrationMethodology(plans: Array<{
+  /** The file this plan's symbols came from — the key for import deduplication. */
+  sourceFile?: string
   relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean; isIntegrationPoint?: boolean }>
   dependencies?: Array<{ confidence?: number }>
   /**
@@ -241,6 +243,7 @@ export function calculateMigrationMethodology(plans: Array<{
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
   const chargedByKind = new Map<string, Set<string>>()
+  const missingMappingKeys = new Set<string>()
   let missingMappingCount = 0
   for (const plan of plans) {
     for (const relationship of plan.relationshipEvidence ?? []) {
@@ -276,7 +279,31 @@ export function calculateMigrationMethodology(plans: Array<{
     // twice.
     const measuredUnmapped = plan.dependencyProvenance?.imports?.unmappedLibraries
     if (Array.isArray(measuredUnmapped)) {
-      missingMappingCount += measuredUnmapped.length
+      // DEDUPLICATED BY (file, library), for the same reason relationships are.
+      //
+      // Imports are the FILE's, so every plan planned from one file reports the same
+      // set. Charging per plan multiplied it: a 7-import Python file with two planned
+      // components reported `missingMappingCount: 12` for SIX distinct libraries, and
+      // a `paths` cohort over one directory would scale the bill with the number of
+      // components rather than with the work. The research is to choose a target
+      // equivalent for a library, once, wherever it is imported from.
+      //
+      // Without a file to key on, fall back to the library name alone — two plans with
+      // no source file are not known to share imports, so charging both is the
+      // conservative direction.
+      const file = String(plan.sourceFile ?? "")
+      for (const library of measuredUnmapped) {
+        // With no file there is no evidence the two plans share imports, so the key is
+        // per-PLAN and both are charged. Keying on the library alone would merge them,
+        // which under-counts — and under-counting is the direction that hides a real
+        // dependency. Every real plan carries a `sourceFile`, so this branch exists for
+        // synthetic callers only, and it errs towards over-reporting.
+        const key = file ? `${file}::${library}` : `@${plans.indexOf(plan)}::${library}`
+        if (!missingMappingKeys.has(key)) {
+          missingMappingKeys.add(key)
+          missingMappingCount++
+        }
+      }
     } else {
       // A caller with no measured split (an older caller, or a synthetic plan) still
       // gets the uncertain-guess count it used to get.

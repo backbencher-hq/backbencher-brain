@@ -1671,9 +1671,9 @@ export namespace CrossLanguageMigrationAssistant {
           note: [
             evidenceAvailable
               ? importEvidence.unmapped > 0
-                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.${importEvidence.stdlibWithoutRow > 0 ? ` ${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} also ${importEvidence.stdlibWithoutRow === 1 ? "has" : "have"} no row (${importEvidence.stdlibWithoutRowLibraries.join(", ")}); those are not libraries to research and are not charged.` : ""}`
+                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.${importEvidence.stdlibWithoutRow > 0 ? ` ${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} also ${importEvidence.stdlibWithoutRow === 1 ? "has" : "have"} no row (${importEvidence.stdlibWithoutRowLibraries.join(", ")}); those are not libraries to research and are not charged.` : ""}${importEvidence.unclassifiedWithoutRow > 0 ? ` ${importEvidence.unclassifiedWithoutRow} further name${importEvidence.unclassifiedWithoutRow === 1 ? "" : "s"} cannot be classified for ${sourceLanguage} at all (${importEvidence.unclassifiedWithoutRowLibraries.join(", ")}); they have no row and are NOT charged, because a name this tool cannot place may be a real dependency or may be standard library, and charging it would assert the second.` : ""}`
                 : importEvidence.thirdParty === 0
-                  ? `\`dependencies\` holds no LIBRARY: all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate${importEvidence.stdlibWithoutRow > 0 ? ` (${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} such as ${importEvidence.stdlibWithoutRowLibraries.join(", ")} have no registered row, and a standard-library name is not a library to research)` : ""}. A MEASURED zero, not missing evidence.`
+                  ? `\`dependencies\` holds no LIBRARY: all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate${importEvidence.stdlibWithoutRow > 0 ? ` (${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} such as ${importEvidence.stdlibWithoutRowLibraries.join(", ")} have no registered row, and a standard-library name is not a library to research)` : ""}${importEvidence.unclassifiedWithoutRow > 0 ? ` and ${importEvidence.unclassifiedWithoutRow} more (${importEvidence.unclassifiedWithoutRowLibraries.join(", ")}) could not be classified for ${sourceLanguage}, so they are neither charged nor claimed to be standard library` : ""}. A MEASURED zero, not missing evidence.`
                   : `\`dependencies\` comes from indexed imports: ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping.`
               : "The index holds no external import rows for this file, so its library dependencies are UNKNOWN rather than empty. A file indexed before per-file import recording began looks exactly like this.",
             hasRoute
@@ -1799,6 +1799,19 @@ export namespace CrossLanguageMigrationAssistant {
       localCrate: number
       /** Specifiers this tool cannot classify for its language. Not zero. */
       unclassified: number
+      /**
+       * Those specifiers, by name. Not charged: an unclassifiable import is not a
+       * proven third-party library, and `requests` cannot be told from `os` without a
+       * rule this analyzer set does not carry.
+       */
+      unclassifiedLibraries: string[]
+      /**
+       * Unclassifiable imports with no row. NOT counted as standard library: the
+       * reason they are uncharged is that their class is unknown, and reporting them
+       * as stdlib asserts the very thing that could not be established.
+       */
+      unclassifiedWithoutRow: number
+      unclassifiedWithoutRowLibraries: string[]
       /** Third-party imports with a registered mapping for the pair. */
       mapped: number
       /** Third-party imports with NO registered mapping: real libraries, unported. */
@@ -1823,6 +1836,8 @@ export namespace CrossLanguageMigrationAssistant {
     const unmappedLibraries = new Set<string>()
     const stdlibWithoutRowLibraries = new Set<string>()
     const fallbackHostLibraries = new Set<string>()
+    const unclassifiedLibraries = new Set<string>()
+    const unclassifiedWithoutRowLibraries = new Set<string>()
 
     // 1. THE IMPORTS THE INDEX ACTUALLY HOLDS.
     //
@@ -1853,7 +1868,7 @@ export namespace CrossLanguageMigrationAssistant {
     const supplied: string[] = Array.isArray((symbol as any)?.metadata?.imports) ? (symbol as any).metadata.imports : []
     const declared: string[] = [...new Set([...indexed.map((x) => String(x).trim()).filter(Boolean), ...supplied.map((x) => String(x).trim()).filter(Boolean)])]
     const suppliedOnly = declared.filter((specifier) => !indexed.some((row) => String(row).trim() === specifier))
-    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, fallbackHostNames: 0 }
+    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, unclassifiedWithoutRow: 0, fallbackHostNames: 0 }
     const sourceLang = normalizeMigrationLanguage(String(symbol?.language ?? ""))
     const targetLang = normalizeMigrationLanguage(String(targetLanguage ?? ""))
     for (const entry of declared) {
@@ -1864,7 +1879,30 @@ export namespace CrossLanguageMigrationAssistant {
       else if (klass === "local-crate") importCounts.localCrate++
       else if (klass === "third-party") importCounts.thirdParty++
       else importCounts.unclassified++
-      const isLibrary = klass === "third-party" || klass === null
+      // ONLY a proven third-party import is a library needing research.
+      //
+      // This used to be `klass === "third-party" || klass === null`, so for a language
+      // with no classification rule — Python — every import counted. Measured on a
+      // 7-import Python file: `os, sys, json, re, typing, pathlib` were charged 6h
+      // each and reported as "6 third-party libraries have no registered equivalence"
+      // — five standard-library modules described as third-party libraries, 72h of
+      // fictitious research on a file whose only real dependency (`requests`) already
+      // had a registered row.
+      //
+      // `null` means UNKNOWN, and unknown is not third-party. An unclassified import
+      // is still LISTED in `dependencies` — the observation is real, and hiding it
+      // would be a fabrication of absence — and still named in
+      // `unclassifiedLibraries`, but it is not charged and not called a library.
+      //
+      // The asymmetry is deliberate. Over-reporting an unclassifiable import as needing
+      // research is the direction that HIDES a real dependency behind a discount a
+      // reader will apply; under-reporting is the direction that INVENTS one. This
+      // takes the first and states it, which is the only way the reader can apply the
+      // discount knowingly.
+      const isLibrary = klass === "third-party"
+      // An UNKNOWN class is named, so "these N imports could not be classified"
+      // is answerable with WHICH ones rather than only how many.
+      if (klass === null) unclassifiedLibraries.add(specifier)
       // A LOCAL CRATE is this project's own code — a relative import is a graph
       // edge, not a library — and it is the only class that is skipped outright.
       //
@@ -1914,7 +1952,7 @@ export namespace CrossLanguageMigrationAssistant {
         // named and charged once per library.
         importCounts.unmapped++
         unmappedLibraries.add(name)
-      } else {
+      } else if (klass === "standard-library") {
         // A STANDARD-LIBRARY import with no row — `fmt`, `bytes`, `errors`. It is
         // still listed in `dependencies` (visibility) and still visible here, but it
         // is NOT a "third-party library needing research", and charging 6h per
@@ -1923,6 +1961,16 @@ export namespace CrossLanguageMigrationAssistant {
         // measured zero.
         importCounts.stdlibWithoutRow++
         stdlibWithoutRowLibraries.add(name)
+      } else {
+        // UNCLASSIFIABLE — no rule for this language — and with no row. Kept SEPARATE
+        // from the block above, because "standard library with no row" and "we cannot
+        // tell whether it is standard library" are different claims and this output
+        // previously made the second one in the first one's voice: a Python plan named
+        // `os` and `json` under `stdlibWithoutRowLibraries`, asserting they are stdlib
+        // when the very reason they were not charged is that this analyzer set cannot
+        // say.
+        importCounts.unclassifiedWithoutRow++
+        unclassifiedWithoutRowLibraries.add(name)
       }
     }
 
@@ -1968,11 +2016,21 @@ export namespace CrossLanguageMigrationAssistant {
         thirdParty: importCounts.thirdParty,
         localCrate: importCounts.localCrate,
         unclassified: importCounts.unclassified,
+        /**
+         * Imports whose class could not be determined because no rule is declared for
+         * the language. Named, LISTED in `dependencies`, and deliberately NOT charged:
+         * a Python `os` is not a third-party library needing 6h of research, and a
+         * rule that cannot tell `os` from `requests` must not guess in the direction
+         * that invents work.
+         */
+        unclassifiedLibraries: [...unclassifiedLibraries].sort(),
         mapped: importCounts.mapped,
         unmapped: importCounts.unmapped,
         unmappedLibraries: [...unmappedLibraries].sort(),
         stdlibWithoutRow: importCounts.stdlibWithoutRow,
         stdlibWithoutRowLibraries: [...stdlibWithoutRowLibraries].sort(),
+        unclassifiedWithoutRow: importCounts.unclassifiedWithoutRow,
+        unclassifiedWithoutRowLibraries: [...unclassifiedWithoutRowLibraries].sort(),
         fallbackHostNames: importCounts.fallbackHostNames,
         fallbackHostLibraries: [...fallbackHostLibraries].sort(),
         // No rule declared for this language, so the split cannot be trusted.
