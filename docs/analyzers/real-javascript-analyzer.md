@@ -28,79 +28,16 @@
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| calls | ✅ | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; `console.*` leaf methods filtered; `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered | 0.9 |
+| calls | ✅ | `call_expression` → callee leaf (member expressions reduce to leaf: `obj.method()` → `method`); source = enclosing function/method leaf name; builtins filtered (console.*, Object leaf methods); `super()` filtered (language keyword); `require()` handled as import; computed/dynamic calls (`o[key]()`) filtered | 0.9 |
 | extends | ✅ | `class_heritage` → base class leaf name | 1.0 |
 | instantiates | ✅ | `new_expression` → constructor leaf name | 0.95 |
 | imports | ✅ | ESM `import_statement` → module leaf → `${modulePath}:${item}` per item (named/default/namespace); CJS `require()` → module leaf → `${modulePath}:*` | 1.0 |
 | exports | ✅ | ESM `export` statements (declaration, export_clause, default); CJS `module.exports = { ... }` (object keys), `exports.x = ...` → module leaf → exported name | 1.0 |
 | overrides | ✅ | derived method matching base-class method name; base resolved via extends + cross-file harness companion (`User.format → BaseService.format`) | 0.95 |
 | contains | ✅ | computed from `ownerName` on symbols (single pass) — class members, prototype methods | 1.0 |
-| uses | ✅ | **This row was wrong until 2026-09-27 and said "not emitted" while the lane emitted 5,837 per 40-file corpus.** Four emission sites: bare identifier reads at 0.9 (`return config`, `if (flag)`); member-chain segments at 0.85 (`title.length` → `title`); template-substitution reads at 0.85; and the chain ROOT of a call's callee at 0.6 with `metadata.callReceiver` (`title.toUpperCase()` → `title`). The 0.6 tier exists because `calls` names only the leaf, so the receiver is named by nothing else — see X1 in `script/m14/spec/svelte-completeness.json`. `this`/`super` are excluded as keywords, so `this.x.push(y)` correctly publishes no `uses this`. | 0.6 / 0.85 / 0.9 |
-| references | ✅ | Also wrong until 2026-09-27. Carries both ways JavaScript names a type it does not own: decorator metadata (1.0) and `instanceof` (0.95). The oracle derives these in `deriveJavaScriptEdges` in a pre-pass OUTSIDE the decorator-skipping walk, so it audits those nodes rather than stepping around them; before that, neither was reachable from the differential at all. | 0.95 / 1.0 |
+| uses | — | not emitted for `this.x` property access (family contract: no field-access uses, verified against C#/Java ground truth) | — |
+| references | — | covered by imports/exports/calls leaf identities | — |
 | depends | — | not emitted (covered by imports) | — |
-
-### Ontology audit (2026-09-27)
-
-The analyzer emits **9** relationship types. Measured against the differential's
-own comparison allowlist, **8 are compared and 1 is not**:
-
-| Type | Compared by F5? | Note |
-| --- | --- | --- |
-| calls, uses, contains, exports, references, instantiates, extends, overrides | ✅ | compared; truth and analyzer agreed exactly per label on a 40-file-per-corpus run |
-| `brain_import` | ❌ | the JS oracle derives no import truth, so by the harness's own rule ("a label is comparable exactly when the lane's oracle derives it") the label is out of scope — but the consequence is that **every JavaScript import edge is unverified by the differential** and rests on fixtures and the PIPE seam alone |
-
-`implements` is in the compared set and is never emitted by this analyzer, which
-is correct: JavaScript has no `implements` clause.
-
-**A CORRECTION TO THE PREVIOUS REVISION OF THIS SECTION, which was wrong.** It
-claimed that `imports` in the enum carries the wire value `brain_import`, that the
-differential's allowlist therefore spells the label differently, and that an
-`imports` allowlist entry consequently matches no analyzer edge on any lane. All
-three claims were false, and the "cross-lane defect" was invented. There are two
-enums: `src/ast/types.ts` declares `Imports = "brain_import"`, and that string is
-the **SQLite table name** for persisted import rows; `src/ast/engine.ts` declares
-`Imports = "imports"`, and that is the **relationship wire value** the analyzer
-actually emits. Measured: `import { a as b } from "./m.js"` yields
-`imports->./m.js:b`. The allowlist spells it `imports`, which is correct, and
-every `imports` allowlist entry in the file matches. The error came from reading
-one enum and assuming it was the only one.
-
-**Two documentation defects this census found, both now corrected above.** (1) The
-`calls` row claimed "builtins filtered (console.*, **Object leaf methods**)". Only
-the first half is true: `console.log(x)` publishes `uses console` and no
-`calls log`, while `Object.keys({})` publishes `calls keys` **and** `uses Object`,
-and `Math.floor(1.5)` publishes `calls floor` and `uses Math`. Measured across 27
-global-base leaves by `census-js-doc-builtin-claim`; all 27 are named. The
-suppression is real and confined to `console`. (2) The symbol table claims a
-private field `#x` collapses to `x`. It does not: `legacy-client.js` publishes the
-symbol `#events` and the containment edge `Svelte4Component->#events`, `#` and
-all. This one had teeth — a census that stripped the `#` while matching
-containment targets reported 92 of 96 class members as unplaced, a wholly
-invented defect.
-
-**Containment, measured on the population the contract covers.** The
-`contains` row says "class members, prototype methods", so that is the population
-measured: of 103 class-member and object-literal-method symbols in the sample,
-class members are **0/11 unplaced** and object-literal methods are **92/92
-unplaced**. M49 JD3 predicted exactly this split — `ownerName` is set only for
-class scopes — and its class-member half no longer holds on this corpus, so JD3
-should be read as an object-literal finding now, not a class-member one.
-
-**Regex, re-measured independently.** Stripping comments and string literals and
-then scanning finds **0 regex literals and 0 `RegExp`** in
-`real-javascript-analyzer.ts` and the same in `real-typescript-analyzer.ts`. The
-only string methods used are `split`/`replace` on literal separators (3 in
-JavaScript, 10 in TypeScript). The zero is now measured rather than inherited
-from `regex-census.json`, and the absence of this lane from
-`validation/m49/regex-debt-register.json` is consistent with it rather than the
-evidence for it.
-
-**Symbol kinds.** The analyzer emits 7: `Class`, `Function`, `Method`,
-`Constructor`, `Property`, `Constant`, `Variable`. It emits **no `Module` symbol
-for the file itself** and **no `Object` symbol for object literals** — the latter
-is the known JD3 containment gap (10.9% of real symbols carry no containment
-edge, because `ownerName` is set only for class scopes, orphaning every
-object-literal method and class-expression member).
 
 ## Supported constructs
 

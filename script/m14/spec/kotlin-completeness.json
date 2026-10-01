@@ -69,8 +69,7 @@
       "when_expression",
       "when_subject",
       "while_statement",
-      "wildcard_import",
-      "ERROR"
+      "wildcard_import"
     ]
   },
   "internal_silent": {
@@ -118,8 +117,7 @@
       "type_projection_modifiers",
       "type_test",
       "unsigned_literal",
-      "value_argument",
-      "MISSING"
+      "value_argument"
     ]
   },
   "gap": {
@@ -130,7 +128,7 @@
         "severity": "high",
         "missing": "Uses relationship on the indexed expression (xs[i] reads/writes emit no Uses on xs)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/indexing-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). xs[i] reads/writes now emit Uses on the indexed expression."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/indexing-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). xs[i] reads/writes now emit Uses on the indexed expression."
       },
       {
         "id": "K2",
@@ -138,7 +136,7 @@
         "severity": "high",
         "missing": "Calls relationship for constructor delegation (constructor(x) : super(x) / this(1) emit no Calls)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/ctor-delegation) + mutant kotlin/drop-ctor-delegation CAUGHT (2026-08-27). super(...)/this(...) emit Calls (literal keyword target, never guessed — java G2 ruling)."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/ctor-delegation) + mutant kotlin/drop-ctor-delegation CAUGHT (2026-08-27). super(...)/this(...) emit Calls (literal keyword target, never guessed \u2014 java G2 ruling)."
       },
       {
         "id": "K3",
@@ -146,7 +144,7 @@
         "severity": "medium",
         "missing": "Type reference for Foo::bar callable references (no reference to Foo emitted)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/callable-refs) + mutant kotlin/drop-callable-refs CAUGHT (2026-08-27). Foo::bar references Foo."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/callable-refs) + mutant kotlin/drop-callable-refs CAUGHT (2026-08-27). Foo::bar references Foo."
       },
       {
         "id": "K4",
@@ -154,7 +152,7 @@
         "severity": "medium",
         "missing": "Uses relationship for string-template identifiers (\"hi $name\" emits no Uses on name)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/template-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). \"hi $name\" emits Uses on name (Kotlin has real template nodes — groovy S1 ruling does not apply)."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/template-uses) + mutant kotlin/drop-expression-uses CAUGHT (2026-08-27). \"hi $name\" emits Uses on name (Kotlin has real template nodes \u2014 groovy S1 ruling does not apply)."
       },
       {
         "id": "K5",
@@ -162,7 +160,7 @@
         "severity": "medium",
         "missing": "typealias Fn = (Int) -> String emits no symbol",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/type-alias) + mutants kotlin/drop-type-alias-symbols + kotlin/drop-type-alias-refs CAUGHT (2026-08-27). typealias emits a 'type' symbol and references its RHS types."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/type-alias) + mutants kotlin/drop-type-alias-symbols + kotlin/drop-type-alias-refs CAUGHT (2026-08-27). typealias emits a 'type' symbol and references its RHS types."
       },
       {
         "id": "K6",
@@ -170,7 +168,7 @@
         "severity": "medium",
         "missing": "object : Runnable2 { ... } emits no reference to the implemented type and misattributes inner methods to the enclosing class",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/object-literal) + mutants kotlin/drop-anonymous-objects + kotlin/drop-object-literal-refs CAUGHT (2026-08-27). Anonymous objects get an anonymous_<Supertype> symbol, own their members (no more misattribution to the enclosing class), and reference their implemented type."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/object-literal) + mutants kotlin/drop-anonymous-objects + kotlin/drop-object-literal-refs CAUGHT (2026-08-27). Anonymous objects get an anonymous_<Supertype> symbol, own their members (no more misattribution to the enclosing class), and reference their implemented type."
       },
       {
         "id": "K7",
@@ -178,7 +176,7 @@
         "severity": "medium",
         "missing": "init { } / by lazy { } / field-initializer calls emit with source \"Global\" instead of the enclosing type (call exists, attribution wrong)",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/init-attribution) + mutant kotlin/global-attribution CAUGHT (2026-08-27). init blocks and property initializers attribute calls to the enclosing type, not Global."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/init-attribution) + mutant kotlin/global-attribution CAUGHT (2026-08-27). init blocks and property initializers attribute calls to the enclosing type, not Global."
       },
       {
         "id": "K8",
@@ -186,15 +184,7 @@
         "severity": "high",
         "missing": "import edges mislabeled: isImportDep flag not recognized by the tier classifier -> import_based never applied (reference_qualified instead); kotlin/scala confirmed finding from the java pass",
         "status": "CLOSED",
-        "closure": "CLOSED — fixture-gated fix (kotlin/import-edges) + mutant kotlin/reclassify-import-tier CAUGHT (2026-08-27). isImportDep now recognized by the tier classifier -> import_based."
-      },
-      {
-        "id": "K9",
-        "node_type": "parameter signature (override verification / declSigs)",
-        "severity": "high",
-        "missing": "the generic-substitution mirror diverged from the judge on the NULLABLE spelling of a type variable: hasTypeVar split the signature on `,` and required the whole token to be one capital letter, so `(T?)` — how Kotlin writes every generic parameter — read as a CONCRETE type. The exact-signature test then failed AND the documented name-only fallback never fired, so an override whose DECLARING ancestor is a GRANDPARENT interface fell through to the first-supertype guess. Measured on exposed-core ColumnType.kt (`ColumnWithTransform : ColumnType`, `ColumnType : IColumnType`, `IColumnType.valueToDB sig=(T?)`): the analyzer published `ColumnType.valueToDB` at 0.5 — a type that declares no such member — where the truth says `IColumnType.valueToDB`. Four such rows, and they were the oracle-sharpness sweep's first HARD masks on a lane other than groovy (#949).",
-        "status": "CLOSED",
-        "closure": "CLOSED — the mirror is now boundary-for-boundary the judge's `hasTypeVar` (kotlinSigHasTypeVar, char-scan), so `(T?)` is a type variable while `(Byte?)`/`(Wrapped?)` stay concrete and the exact-signature overload guard is intact. Evidence: (1) fixture kotlin/override-declaring-ancestor-949, whose in-place revert of the mirror fails exactly 4 of its assertions (2 expects at 0.9 naming IRenderer + 2 forbid entries naming the dangling `Base.render`@0.5) while the boundary row still passes — the fixture is falsified in the pre-fix state, not merely green in the fixed one; (2) mutant kotlin/override-grandparent-ancestor-revert CAUGHT by that fixture ALONE, derived from the result (the source owner's own first extends/implements target) rather than a hardcoded string; (3) the full-extent lane re-measured (Exposed 19,958 truth rows, kotlinx-coroutines 18,327 truth rows): strict-missing 0, hidden 0, hard 0, soft 0 — the four masks gone at the same 38,285 truth rows the pre-fix run reported, so the truth set did not move."
+        "closure": "CLOSED \u2014 fixture-gated fix (kotlin/import-edges) + mutant kotlin/reclassify-import-tier CAUGHT (2026-08-27). isImportDep now recognized by the tier classifier -> import_based."
       }
     ]
   },
@@ -204,7 +194,7 @@
         "id": "S1",
         "node_type": "companion_object",
         "status": "RULED",
-        "question": "companion object {} is anonymous (no name); contents emit with owner = enclosing class (probe-verified). Recommend: declared limitation — no symbol for the anonymous companion itself.",
+        "question": "companion object {} is anonymous (no name); contents emit with owner = enclosing class (probe-verified). Recommend: declared limitation \u2014 no symbol for the anonymous companion itself.",
         "resolution": "DECLARED LIMITATION: companion object {} is anonymous (no name); contents emit with owner = the enclosing class (probe-verified, 2026-08-27). Companion members are the class's static surface, so the attribution is semantically correct; no symbol for the anonymous companion itself."
       },
       {
@@ -225,8 +215,8 @@
         "id": "S4",
         "node_type": "anonymous_function,annotated_lambda,lambda_parameters",
         "status": "RULED",
-        "question": "Anonymous functions / lambdas are expressions, not declarations. Recommend: internal_silent (calls inside ARE captured — probe-verified).",
-        "resolution": "INTERNAL_SILENT: anonymous functions/lambdas are expressions; calls inside ARE captured (probe-verified, 2026-08-27) — the object_literal case (K6) now attributes their members correctly when the lambda is an anonymous-object body."
+        "question": "Anonymous functions / lambdas are expressions, not declarations. Recommend: internal_silent (calls inside ARE captured \u2014 probe-verified).",
+        "resolution": "INTERNAL_SILENT: anonymous functions/lambdas are expressions; calls inside ARE captured (probe-verified, 2026-08-27) \u2014 the object_literal case (K6) now attributes their members correctly when the lambda is an anonymous-object body."
       },
       {
         "id": "S5",
@@ -239,7 +229,7 @@
         "id": "S6",
         "node_type": "visibility_modifier,function_modifier,class_modifier,member_modifier,parameter_modifier,parameter_modifiers,property_modifier,type_modifiers,type_parameter_modifiers,variance_modifier,reification_modifier,platform_modifier,inheritance_modifier",
         "status": "RULED",
-        "question": "Modifier node types are consumed by extractModifiers/extractVisibility. Recommend: internal_silent (modifiers are payloads, not emissions) — visibility flows probe-verified.",
+        "question": "Modifier node types are consumed by extractModifiers/extractVisibility. Recommend: internal_silent (modifiers are payloads, not emissions) \u2014 visibility flows probe-verified.",
         "resolution": "INTERNAL_SILENT: modifier node types are consumed by extractModifiers/extractVisibility as payloads, not emissions; visibility payload is now fixture-pinned (kotlin/visibility-payload)."
       },
       {
@@ -253,8 +243,8 @@
         "id": "KD20",
         "node_type": "dedicated kotlin calls oracle (deriveKotlinEdges)",
         "status": "FIXED",
-        "question": "M37.21 #610 master-review finding: kotlin (like all JVM languages) had NO dedicated calls oracle — the generic deriveTreeEdges audited heritage/instantiates/overrides only, so the entire call surface was never compared (truth 218 -> 5078 edges on Exposed at 200 files).",
-        "resolution": "deriveKotlinEdges mirrors RealKotlinAnalyzer's call contract exactly: buildKotlinCallExpression receiver.selector chains (direct navigation_expression child only — ERROR-recovered comment-wrapped chains must never recurse, the analyzer reads the direct callee path), leaf extraction, stdlib exclusion (prefixes + exact sets), the MEASURED PascalCase construction rule (bare PascalCase = instantiates, qualified = calls), and constructor_delegation_call super/this. Exposed + kotlinx-coroutines 100%/0/0 at 200 files."
+        "question": "M37.21 #610 master-review finding: kotlin (like all JVM languages) had NO dedicated calls oracle \u2014 the generic deriveTreeEdges audited heritage/instantiates/overrides only, so the entire call surface was never compared (truth 218 -> 5078 edges on Exposed at 200 files).",
+        "resolution": "deriveKotlinEdges mirrors RealKotlinAnalyzer's call contract exactly: buildKotlinCallExpression receiver.selector chains (direct navigation_expression child only \u2014 ERROR-recovered comment-wrapped chains must never recurse, the analyzer reads the direct callee path), leaf extraction, stdlib exclusion (prefixes + exact sets), the MEASURED PascalCase construction rule (bare PascalCase = instantiates, qualified = calls), and constructor_delegation_call super/this. Exposed + kotlinx-coroutines 100%/0/0 at 200 files."
       },
       {
         "id": "KD21",
@@ -311,34 +301,6 @@
         "status": "FIXED",
         "question": "Review K15: the typeIndex loop declared `let i` but never used it, and the override loop re-scanned symbols per iteration.",
         "decision": "Cleanup: dead loop variable removed; declSigs hoisted (KD21) so the override pass is O(M) after O(M) index build. Verified: typecheck clean, corpus perf unchanged (3285 edges @200 files, comparable runtimes)."
-      },
-      {
-        "id": "KD29",
-        "node_type": "override member signature (K9 / #949)",
-        "status": "FIXED",
-        "question": "Which spellings of a parameter type count as a TYPE VARIABLE for the generic-substitution fallback, given that the judge's rule (differential hasTypeVar, sigCompatible) and the analyzer's mirror must agree or the differential stops measuring one question?",
-        "decision": "MIRROR THE JUDGE, BOUNDARY FOR BOUNDARY (the java #904 and scala S1.17 convention): a type variable is a SINGLE capital at `(`, `,`, `:`, `|`, `[`, `<`, `&` or string start — so `(T?)` is generic, and `(Byte?)`/`(Wrapped?)` are concrete. The nullable marker is stripped by the SCAN (the identifier ends at `?`), never by a per-token rule that would also make a nullable concrete type generic; the judge cannot derive an edge it reads as concrete, so widening past it fabricates UNEXPLAINED rows instead of fixing them. `kotlinSigHasTypeVar` is the third module-local copy of this scan (java javaSigHasTypeVar, scala sigHasTypeVar); consolidation into one shared mirror is a candidate, deliberately NOT taken in this round because two of the three lanes' rows are certified against their current bytes."
-      },
-      {
-        "id": "KDJ-2",
-        "node_type": "ERROR, MISSING",
-        "status": "RULED",
-        "question": "The F8 census injects ERROR and MISSING into every language's node-type set by hand (they are not in the wasm symbol table), yet no kotlin spec row claimed them, so section-a failed for kotlin on the same pair that fails lanes everywhere. Gap, silent omission, or handled?",
-        "decision": "RULED — HANDLED, following the precedent the gate itself names and the java lane's own ruling (JDJ-2). The analyzer holds an EXPLICIT guard at real-kotlin-analyzer.ts:153 — `if (node.type === \"ERROR\" || node.type === \"MISSING\")` — which records a diagnostic and bypasses the damaged subtree. So ERROR is handled_verified and MISSING is internal_silent, the same split java, bash and javascript use. The guard being present is what makes the row CORRECT rather than grammar drift: a spec that classifies a node the analyzer consults was being told its own row was wrong, and the fix is never to delete the correct row.",
-        "evidence": "Probed on the pinned grammar, 7 malformed inputs: `class E { class Inner { val w = 1 }` (unterminated class), `class F { val a = 1` (unterminated brace), `class H { val a = 1 } }` (stray close brace), `fun f(` (truncated parameter list), `val x =` (lone operator), `class I<T extends> { val a: List<,> }` (malformed generics), and a well-typed class with one bad method. Result in EVERY case: exactly 1 ERROR node, 0 MISSING nodes, hasError=true, and exactly 1 diagnostic (\"Syntax ERROR detected. The Brain Engine is bypassing this broken node.\"). Partial extraction is preserved where the grammar recovered it — symbols were [w], [a], [H,a], [], [], [I,a], [ok] — so the guard bypasses the damaged node and not the file.",
-        "misssing_note": "MISSING is internal_silent on a stronger ground than java's: the pinned kotlin grammar did not produce a single MISSING node across all 7 probes — it recovers to an ERROR node in every case — so the MISSING branch of the guard is unexercisable on this grammar rather than merely unexercised. The row is kept because the guard tests for it, and a guard branch that cannot currently be reached is still a statement about the analyzer's contract."
-      },
-      {
-        "id": "KDJ-1",
-        "node_type": "method_declaration (override resolution, third tier)",
-        "status": "RULED",
-        "question": "The override resolver has three passes: an in-file BFS that verifies the declarer by signature (0.9, in-file-verified), a companion-index variant of the same BFS (0.9, companion-index), and a fallback that names the FIRST SUPERTYPE at confidence 0.5 with reasonCode first-supertype-guess and evidenceClass inferred. Pass 3 fires when the declaring ancestor lives in another compilation unit and is therefore unknowable from this file alone. The justification in the code is that 0.5 sits BELOW THE CONSUMER THRESHOLD, so those rows read as declared suspicion rather than counted relationships. Is that justification sufficient, and what is the tier's actual error rate?",
-        "decision": "RULED — the tier STAYS, and its justification is REPLACED by a measurement. Same ruling and same shape as java's JDJ-1, reached the same way: the reasoning was true but unquantified, which is not the same as verified. Measured on Exposed (250-file draw, every edge checked against a repo-wide index of types and their declared members built from all 791 .kt files): guess tier 302 edges — 105 correct, 197 WRONG = 65.2%; verified tier 103 edges — 103 correct, 0 wrong = 0.0%. Kotlin's guess tier is more than twice java's measured 30.6%.",
-        "why_it_stays": "It is right about a third of the time, so suppressing it would delete 105 correct edges. Deleting a correct edge to avoid 197 wrong ones, at a confidence the code already labels `inferred` and carries a `reasonCode` for, is a worse trade than publishing both honestly — the consumer's decision to filter is better made by the consumer than made silently here.",
-        "what_the_measurement_changes": "The JUSTIFICATION, which does not hold as written. The 0.7 `confidenceThreshold` in src/ast/patterns.ts is the default for ORPHANED-PATTERN DETECTION, not a filter on the relationship ingest path, and no confidence predicate was found on that path. So the tier's defensibility does not rest on a filter that might not exist; it rests on `reasonCode: first-supertype-guess` and `evidenceClass: inferred` being present on every row. That is why kotlin/override-guess-tier pins both rather than leaving them implied — a consumer must be able to distinguish a guess from a verified edge without hard-coding 0.5 as a magic number. Stated as unverified rather than refuted: the insert path was not located, so the claim that no filter exists is the absence of evidence found, not proof of absence.",
-        "comparability": "Kotlin's 65.2% and java's 30.6% are NOT the same measurement. Java's denominator excluded 33 unverifiable guesses whose claimed owner was itself outside the repo, and reported 30.6% of the VERIFIABLE subset. This measurement has no unverifiable bucket: every claimed parent resolved to a type in the repo, and 0 were 'not a type at all'. So the two figures answer different questions and the difference is not only that kotlin is worse.",
-        "measurement_instrument": "Three instrument versions, each of which produced a confidently wrong rate, and the sequence is the finding as much as the number: 79.1% when the index missed constructor-invocation supertypes (the dominant kotlin form, `class Column<T>(...) : ExpressionWithColumnType<T>()` — it found 2 of Column's 3); 66.2% when it also missed anonymous objects as types, so every anonymous_LazySizedIterable.* edge resolved to no hierarchy and scored wrong; 65.2% with the instrument validated. A rate is only as good as what the instrument can see, and an unvalidated instrument does not report uncertainty — it reports a number.",
-        "fixture": "kotlin/override-guess-tier — 2 expects, 2 forbids. Disabling pass 3 fails the guess row. Disabling pass 1 does NOT remove the verified row: it SILENTLY DEMOTES it from 0.9/in-file-verified/structural to 0.5/first-supertype-guess/inferred, and the edge's presence is unchanged. That is the most dangerous available failure mode for this rule — a count-based check, a coverage number, and an existence assertion all pass — and it is why the fixture pins confidence, reasonCode and evidenceClass together. The forbids are the second load-bearing half: without the `override` modifier neither tier may fire, because guessing there fabricates an override that is really an overload."
       }
     ]
   }

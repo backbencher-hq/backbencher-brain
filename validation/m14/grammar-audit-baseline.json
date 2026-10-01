@@ -1,19 +1,19 @@
 {
   "schemaVersion": 2,
   "rule": "A dead node-type/field literal is registered BY NAME with an owner and a reason. A literal the record does not name fails. A recorded entry with no reason fails. A recorded literal that disappears fails too: the record is a decision, so a repayment is written down here in the same round that removes it.",
-  "_history": "v1 of this file was a per-language COUNT (2026-08-23) and its gate failed only on an increase. That shape hid a real defect: csharp's declared-type round added record_struct_declaration and constraint_clause on 2026-09-22 while an older finding elsewhere was fixed, so the count went 3 -> 2 and the gate read an improvement. v2 (2026-09-23) records each tolerated literal by name, with owner and reason. Counts are kept as a ceiling only. The gate is negative-tested in script/m14/audit-analyzer-grammar.ts (--self-test-gate, 9 assertions), including the exact case that hid the defect: a NEW literal under an improved count.\n\nREPAYMENT RECORDED 2026-09-23 (csharp, C1 of reviews/csharp/m60-completion-plan.md): csharp's two entries were removed from this register in the same commit that removed the literals from src/ast/real-csharp-analyzer.ts — record_struct_declaration and constraint_clause are gone, the kind rule now reads the grammar's UNNAMED struct/class token (measured: `record struct` publishes Struct, was Class), and the constraint-clause arm names the grammar's real `type_parameter_constraints_clause`. csharp's count moved 2 -> 0. Re-introducing either spelling now fails this gate as UNREGISTERED, which is the proof that the repayment is enforced rather than merely written down.\n\nREPAYMENT RECORDED 2026-09-24 (dart, M60 dart lane): dart's two entries are removed in the same round that removed the literals from src/ast/real-dart-analyzer.ts, and each was repaid by MEASUREMENT rather than by renaming. (1) `return_type` was a dead read — the pinned grammar's field set has no such field and a probe over both pinned corpora resolved it on 0 of 117,200 nodes, so the read was deleted and the fallback that always ran is now the only path. (2) `dynamic` was NOT a dead node-type branch at all: it reads a PARAMETER DESCRIPTOR's `.type`, which is a Dart TYPE NAME, and it was the audit's `X.type === \"lit\"` heuristic that made it look like a node-type reference. It is now the documented constant IMPLICIT_DYNAMIC_TYPE (which is also what an untyped parameter is published as at real-dart-analyzer.ts), so the reference says what it is and the audit is not being taught to skip anything. dart's count moved 2 -> 0. Re-introducing either spelling fails this gate as UNREGISTERED.\n\nREPAYMENT RECORDED 2026-09-25 (erlang, ER1/ER2 restoration, reviews/erlang/m60-er12-restoration.md): both erlang entries are removed in the round that removed the literals from src/ast/real-erlang-analyzer.ts, and each was repaid by READING the pinned grammar rather than by renaming. (1) `string_literal` was a dead read kept alive only by this register: the pinned tree-sitter-erlang wasm enumerates no `string_literal` node type, and the include branch's real shape is `pp_include` / `pp_include_lib` carrying a `string` child (probe: script/m14/tmp/erlang-er2-literal-audit.ts — every node-type literal in the analyzer checked against the grammar's own type table), so the fallback was deleted and the `string` read is the only path. (2) `macro_name` is the same case: a -define's name lives in `macro_lhs` (`var`, plus `var_args` when the macro takes parameters) and no `macro_name` type exists, so the branch reads `macro_lhs` and the fallback is gone. erlang's count moved 2 -> 0. Re-introducing either spelling fails this gate as UNREGISTERED.\n\n2026-09-26 — bash fully repaid (1 -> 0). The single registered dead literal `identifier` (real-bash-analyzer.ts:299, a `.type === \"identifier\"` alternative in the function-name reader) is DELETED, not retyped: the pinned grammar has no `identifier` node, and the surviving `word` branch already covers the position, so there was nothing to add. The same rewrite ADDED six node types to the analyzer (arithmetic_expansion, postfix_expression, c_style_for_statement, ERROR, plus the three the traversal now consults), so refs 26 -> 32. One of the six — `arithmetic_expression` — was a plausible guess at a fourth arithmetic node shape; this same gate reported it as a dead branch on the day it was written, and it was removed in the same round rather than registered as tolerated debt. That is the gate refusing a guess, which is the only reason the guess did not become a permanent record. bash F1: PASS, refs=32, unknown=0, unknownFields=0. Re-introducing `identifier` fails this gate as UNREGISTERED.\n\ncss: 4 -> 0, all four repaid 2026-09-26 against the PINNED wasm's own 151-type enumeration (script/m14/tmp/css-grammar-repayment.ts), not by reading the analyzer. `mixin_statement` and `include_statement` were REDUNDANT, not load-bearing: the CSS grammar has no SCSS productions, so `@mixin card {}` and `.a { @include card; }` arrive as `at_rule` with an `at_keyword` child, and the `at_rule` case already handled both (verified live: the mixin symbol, the @include symbol and the `uses .a -> \"@mixin card\"` edge all resolve). `variable_name` does not exist and never did. `media_query_list` did not exist either, and removing it REVEALED a defect rather than causing one: the union was missing `unary_query` and `selector_query`, so `@media not print` and `@media selector(.a)` lost their scope entirely — no contains edge, and the Responsive-Design pattern unset. Both are now in the union. Two further DEAD VALUE-POSITION branches were removed in the same round, a class the type-literal audit cannot see: `propName.startsWith(\"$\")` (SCSS) and `startsWith(\"@\")` (LESS). Measured, `$x: 1` and `@x: 1` each yield ERROR nodes and ZERO property_name nodes at top level and inside a rule, so no such text can reach the predicate — meaning the LESS framework signal was never emitted by anything, and SCSS/SASS is in fact detected from the at_rule path instead. WAVE 1a (the three redundant/dead removals) is PROVEN BEHAVIOUR-PRESERVING: the corpus output over 457 files across 13 corpora is byte-identical, digest a537541b0136297960deb31e4f16d908a729139b93ac2704bb24da16b0446030 before and after (script/m14/tmp/css-edge-digest.ts). WAVE 1b (media_query_list) is NOT behaviour-preserving and is justified by PROBE + FIXTURE, not by a corpus delta: the corpus digest is UNCHANGED by it, which means no file in the 457-file corpus contains `@media not` or `@media selector(…)` at all. Stated plainly rather than dressed as a corpus win.\n\nREPAYMENT RECORDED 2026-09-27 (markdown, M14 #290 — the lane's F1 cell was red for the whole life of this record). markdown's two entries are removed, and the repayment is the OPPOSITE of every repayment above: the literals stayed and the ORACLE was fixed.\n\nBoth entries were `uri_autolink` and `email_autolink` at real-markdown-analyzer.ts:253, and the record's own reason named the two possible repayments: \"either load tree-sitter-markdown_inline into the oracle for this lane (EXTRA_GRAMMARS) or delete the branch.\" The second was the dangerous one. tree-sitter-markdown ships as a BLOCK grammar plus a COMPANION INLINE grammar, and the engine pre-parses every `inline` node with the companion before handing the trees to the analyzer (the vue/svelte SFC pattern), so the analyzer was reading node types the single-grammar oracle could not see. Both are live NAMED types of the pinned inline grammar — ids 37 and 38, measured against the shipped bytes, not inferred. So the entries were not dead branches; they were a live branch reported dead by a gate that was only half the oracle.\n\nA gate that reports a live branch as dead is worse than a gate that reports nothing, because the natural response to its output is to DELETE the branch — and deleting it would have silently removed every autolink edge markdown emits, turning a measurable gap into an unmeasurable one. The lane had been carrying a `markdown FAIL unknown=2` row in M14.0.F1 for 35 days, and the standing instruction in this repo is that a red grammar cell must be closed, not baselined deeper. The correct move was to make the cell mean what it says.\n\nThe fix is one line: `markdown: [\"tree-sitter-markdown_inline.wasm\"]` in EXTRA_GRAMMARS at script/m14/audit-analyzer-grammar.ts, alongside the vue/svelte/typescript/html entries that already did exactly this for their own companion grammars. markdown now audits refs=4 unknown=0 unknownFields=0, and the `lang-completion-matrix` grammar column reads PASS. Re-introducing either spelling as an UNKNOWN would require DELETING the line above, which is now the thing that would need its own written-down decision.\n\nWhat this did NOT buy, and is not claimed: the entries were the cheapest defect in the lane. The two UNPINNED grammars behind this one (the inline wasm carried no sha256 in validation/m14/grammar-pins.json, which covers ten lanes and not this one) are a larger hole, and the inline grammar being absent from the oracle is the same fact seen from the other side: this lane's grammar was only ever half-pinned, and half-oracled.",
-  "_preExistingStatus": "For every language below except csharp, dart, bash and markdown, today's count EQUALS the v1 baseline recorded 2026-08-23 (css 4, erlang 2, lua 5, makefile 1, perl 1, r 1, sql 13) — so the entries are pre-existing debt, measured, not a regression introduced by a recent round. csharp (3 -> 2 -> 0 on 2026-09-23), dart (28 -> 2 -> 0 on 2026-09-24), bash (1 -> 0 on 2026-09-26) and markdown (2 -> 0 on 2026-09-27) have since been fully repaid; all three repayments are recorded in _history, and none of the three has any entry left below. The bash repayment is the `identifier` literal at real-bash-analyzer.ts:299 — a `.type === \"identifier\"` guard in the function-name reader for a node type the pinned tree-sitter-bash wasm does not have, so the branch could never fire. It was DELETED rather than retyped, on the erlang precedent: the grammar's own name for the position is `word`, which the surviving branch already reads, so there was nothing to add. bash now audits refs=32 unknown=0 unknownFields=0. markdown's repayment is recorded in _history and is the only one where the literals SURVIVED: the branch was live and the oracle was half a grammar.",
+  "_history": "v1 of this file was a per-language COUNT (2026-08-23) and its gate failed only on an increase. That shape hid a real defect: csharp's declared-type round added record_struct_declaration and constraint_clause on 2026-09-22 while an older finding elsewhere was fixed, so the count went 3 -> 2 and the gate read an improvement. v2 (2026-09-23) records each tolerated literal by name, with owner and reason. Counts are kept as a ceiling only. The gate is negative-tested in script/m14/audit-analyzer-grammar.ts (--self-test-gate, 9 assertions), including the exact case that hid the defect: a NEW literal under an improved count.\n\nREPAYMENT RECORDED 2026-09-23 (csharp, C1 of reviews/csharp/m60-completion-plan.md): csharp's two entries were removed from this register in the same commit that removed the literals from src/ast/real-csharp-analyzer.ts — record_struct_declaration and constraint_clause are gone, the kind rule now reads the grammar's UNNAMED struct/class token (measured: `record struct` publishes Struct, was Class), and the constraint-clause arm names the grammar's real `type_parameter_constraints_clause`. csharp's count moved 2 -> 0. Re-introducing either spelling now fails this gate as UNREGISTERED, which is the proof that the repayment is enforced rather than merely written down.\n\nREPAYMENT RECORDED 2026-09-24 (dart, M60 dart lane): dart's two entries are removed in the same round that removed the literals from src/ast/real-dart-analyzer.ts, and each was repaid by MEASUREMENT rather than by renaming. (1) `return_type` was a dead read — the pinned grammar's field set has no such field and a probe over both pinned corpora resolved it on 0 of 117,200 nodes, so the read was deleted and the fallback that always ran is now the only path. (2) `dynamic` was NOT a dead node-type branch at all: it reads a PARAMETER DESCRIPTOR's `.type`, which is a Dart TYPE NAME, and it was the audit's `X.type === \"lit\"` heuristic that made it look like a node-type reference. It is now the documented constant IMPLICIT_DYNAMIC_TYPE (which is also what an untyped parameter is published as at real-dart-analyzer.ts), so the reference says what it is and the audit is not being taught to skip anything. dart's count moved 2 -> 0. Re-introducing either spelling fails this gate as UNREGISTERED.\n\nREPAYMENT RECORDED 2026-09-26 (r lane, M12/M14 deep review): the single registered R dead literal, the FIELD `default_value`, is GONE. tree-sitter-r names a parameter's default in the `default` FIELD, so `childForFieldName(\"default_value\")` could never return a node; the analyzer fell back to scanning the parameter's raw text for `=`. It now reads `default`, which removes the dead branch AND the text scan AND recovers the default EXPRESSION, which was computed and then discarded (Parameter.defaultValue was never populated). count 1 -> 0, literals.r removed. Evidence: validation/m12/results/r-grammar-conformance.json and the mutation `parameter-default-value-dead-field`.",
+  "_preExistingStatus": "For every language below except csharp and dart, today's count EQUALS the v1 baseline recorded 2026-08-23 (bash 1, css 4, erlang 2, lua 5, makefile 1, markdown 2, perl 1, r 1, sql 13) — so the entries are pre-existing debt, measured, not a regression introduced by a recent round. csharp (3 -> 2 -> 0 on 2026-09-23) and dart (28 -> 2 -> 0 on 2026-09-24) have since been fully repaid; both repayments are recorded in _history, and neither language has any entry left below.",
   "counts": {
-    "bash": 0,
+    "bash": 1,
     "c": 0,
     "clean": 0,
     "clojure": 0,
     "cpp": 0,
     "csharp": 0,
-    "css": 0,
+    "css": 4,
     "dart": 0,
     "elixir": 0,
-    "erlang": 0,
+    "erlang": 2,
     "fsharp": 0,
     "go": 0,
     "graphql": 0,
@@ -27,13 +27,13 @@
     "kotlin": 0,
     "lua": 5,
     "makefile": 1,
-    "markdown": 0,
+    "markdown": 2,
     "objective-c": 0,
     "perl": 1,
     "php": 0,
     "powershell": 0,
     "python": 0,
-    "r": 1,
+    "r": 0,
     "ruby": 0,
     "rust": 0,
     "scala": 0,
@@ -47,8 +47,54 @@
     "zig": 0
   },
   "literals": {
-    "css": [],
-    "erlang": [],
+    "bash": [
+      {
+        "literal": "identifier",
+        "kind": "type",
+        "owner": "bash lane",
+        "reason": "real-bash-analyzer.ts:299, a `.type ===` guard. The pinned tree-sitter-bash wasm does not enumerate this literal, so the branch cannot fire. Count unchanged from the v1 baseline of 2026-08-23 (1), i.e. pre-existing debt rather than a regression. Repayment: read the pinned grammar's real name for this position, then fix or delete the branch — not guessed here."
+      }
+    ],
+    "css": [
+      {
+        "literal": "media_query_list",
+        "kind": "type",
+        "owner": "css lane",
+        "reason": "real-css-analyzer.ts:590. Not enumerated by the pinned tree-sitter-css wasm, so the branch cannot fire. Count unchanged from the v1 baseline of 2026-08-23 (4). Repayment: read the pinned grammar's real shape for this position."
+      },
+      {
+        "literal": "mixin_statement",
+        "kind": "type",
+        "owner": "css lane",
+        "reason": "real-css-analyzer.ts:646. A SCSS construct in a CSS-grammar analyzer; not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (4). Repayment: decide whether the CSS lane claims SCSS at all, and if not delete the branch."
+      },
+      {
+        "literal": "include_statement",
+        "kind": "type",
+        "owner": "css lane",
+        "reason": "real-css-analyzer.ts:647. Same SCSS shape as mixin_statement; not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (4)."
+      },
+      {
+        "literal": "variable_name",
+        "kind": "type",
+        "owner": "css lane",
+        "reason": "real-css-analyzer.ts:756. Not enumerated by the pinned tree-sitter-css wasm (the grammar has no `variable_name` node type). Count unchanged from the v1 baseline of 2026-08-23 (4). Repayment: read the grammar's real node for a custom property, then fix or delete."
+      }
+    ],
+    "erlang": [
+      {
+        "literal": "string_literal",
+        "kind": "type",
+        "owner": "erlang lane",
+        "reason": "real-erlang-analyzer.ts:60 (getChildByType). Not enumerated by the pinned tree-sitter-erlang wasm. Count unchanged from the v1 baseline of 2026-08-23 (2). Repayment: read the grammar's real string node type, then fix or delete."
+      },
+      {
+        "literal": "macro_name",
+        "kind": "type",
+        "owner": "erlang lane",
+        "reason": "real-erlang-analyzer.ts:203 (getChildByType). Not enumerated by the pinned tree-sitter-erlang wasm. Count unchanged from the v1 baseline of 2026-08-23 (2)."
+      }
+    ],
     "lua": [
       {
         "literal": "name_list",
@@ -89,21 +135,26 @@
         "reason": "real-makefile-analyzer.ts:276, inside the BOUNDARY_TYPES const array. The pinned tree-sitter-make wasm does not enumerate it, so the entry is inert. Count unchanged from the v1 baseline of 2026-08-23 (1). Repayment: read the grammar's real conditional-directive nodes, then fix or delete."
       }
     ],
-    "markdown": [],
+    "markdown": [
+      {
+        "literal": "uri_autolink",
+        "kind": "type",
+        "owner": "markdown lane",
+        "reason": "real-markdown-analyzer.ts:253. Not enumerated by the pinned tree-sitter-markdown wasm (the autolinks live on the inline grammar, which the lane does not load as an oracle). Count unchanged from the v1 baseline of 2026-08-23 (2). Repayment: either load tree-sitter-markdown_inline into the oracle for this lane (EXTRA_GRAMMARS) or delete the branch."
+      },
+      {
+        "literal": "email_autolink",
+        "kind": "type",
+        "owner": "markdown lane",
+        "reason": "real-markdown-analyzer.ts:253, same line and same root cause as uri_autolink. Count unchanged from the v1 baseline of 2026-08-23 (2)."
+      }
+    ],
     "perl": [
       {
         "literal": "parameters",
         "kind": "field",
         "owner": "perl lane",
         "reason": "real-perl-analyzer.ts:487. REGISTERED RESIDUAL #863 (2026-09-16), with no fallback at the site. Count unchanged from the v1 baseline of 2026-08-23 (1)."
-      }
-    ],
-    "r": [
-      {
-        "literal": "default_value",
-        "kind": "field",
-        "owner": "r lane",
-        "reason": "real-r-analyzer.ts:558. REGISTERED RESIDUAL #863 (2026-09-16). Count unchanged from the v1 baseline of 2026-08-23 (1)."
       }
     ],
     "sql": [

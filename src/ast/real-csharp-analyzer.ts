@@ -400,7 +400,7 @@ const CSHARP_BUILTINS = new Set([
  */
 export function csharpUsingDirectiveTarget(
   node: any,
-): { module: string; typeArguments: string[]; targetNode: any; alias: string | null } | null {
+): { module: string; targetNode: any; alias: string | null } | null {
   if (!node) return null
   const firstNamed = (pred: (n: any) => boolean): any => {
     for (let i = 0; i < node.namedChildCount; i++) {
@@ -438,139 +438,13 @@ export function csharpUsingDirectiveTarget(
   // `script/m14/tmp/cs-alias-position-battery.ts`), so the qualifier is removed here — the one
   // point where a using directive's text becomes a module name. Shared with the oracle by
   // construction: the differential's csharp truth calls THIS function.
-  const spelled = csharpTypeNameText(csharpTypeSpelling(String(targetNode?.text ?? "")))
-  // D3 (2026-09-28, this round): a using ALIAS may name a TYPE, and a type is not always a
-  // name. `using M = Dictionary<string, Widget>;` published `Dictionary<string,Widget>` — a
-  // type EXPRESSION, with its type arguments welded on — as both the module and the
-  // `references` target, and with a TUPLE argument it published the element NAMES too:
-  //
-  //   using PropertiesMap = ImmutableDictionary<(UnusedValuePreference preference,
-  //                                               bool isUnusedLocalAssignment,
-  //                                               bool isRemovableAssignment), …>;
-  //   -> "ImmutableDictionary<(UnusedValuePreference preference,bool isUnusedLocalAssignment,
-  //       bool isRemovableAssignment),…>"
-  //
-  // which is a target no source can ever name, in the one position where the file declares
-  // what it imports. Every OTHER name position in this analyzer already strips the type
-  // arguments through `csharpCleanTypeLeaf` (heritage, creation, target-typed `new()`, and
-  // from this round the attribute payload), so this was the single place that did not.
-  //
-  // Stripping them is only half the fix: R9's own contract says "the argument is the real
-  // dependency", so the arguments are NOT dropped — they are returned here, from the same
-  // walk, and the caller publishes one `references` edge per argument beside the module
-  // edge. Measured frequency (script/m14/tmp/cs-deep-12-frequencies.ts): 132 occurrences in
-  // 116 of 1,500 roslyn files, 1 in 1,500 aspnetcore files.
-  const module = csharpCleanTypeLeaf(spelled)
+  const module = csharpTypeNameText(csharpTypeSpelling(String(targetNode?.text ?? "")))
   if (!module) return null
   return {
     module,
-    typeArguments: csharpTypeExpressionArguments(targetNode),
     targetNode,
     alias: aliasNode ? csharpTypeNameText(String(aliasNode.text ?? "")) : null,
   }
-}
-
-/**
- * D3: the TYPE NAMES a using directive's target expression carries beyond its base.
- *
- * Read from the tree, never from text: only a `generic_name` introduces arguments, the
- * wrappers that can wrap one are descended, a `tuple_type` yields each element's TYPE and
- * never its NAME, and every argument that is itself a type expression contributes its base
- * AND its own arguments (R9's rule, applied at argument depth). Each name is taken through
- * the same canonical-name rule the module uses, so `System.Text.StringBuilder` and
- * `StringBuilder` agree the way every other position in this analyzer agrees, and
- * predefined types (`string`, `int`) are silent — the grammar's own tag.
- *
- * Deduplicated: two arguments naming the same type are one dependency.
- */
-function csharpTypeExpressionArguments(targetNode: any): string[] {
-  if (!targetNode) return []
-  const out: string[] = []
-  const seen = new Set<string>()
-  const add = (raw: string): void => {
-    const name = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(raw)))
-    if (!name || name === "var" || name === "dynamic" || name === "nint" || name === "nuint") return
-    if (seen.has(name)) return
-    seen.add(name)
-    out.push(name)
-  }
-  /**
-   * One type ARGUMENT, as a list of names. An argument is itself a type expression, so
-   * `List<Widget>` as an argument contributes BOTH `List` and `Widget` — the same
-   * base-plus-arguments rule the declared-type graph uses (R9), which is why this
-   * function is a walk and not a lookup. A tuple argument contributes each element's
-   * TYPE and never its NAME; a predefined type contributes nothing (the grammar's own
-   * tag, the documented silence).
-   */
-  const walkArgument = (n: any): void => {
-    if (!n) return
-    const t = n.type
-    if (t === "predefined_type" || t === "implicit_type" || t === "void_keyword") return
-    if (t === "identifier") { add(String(n.text ?? "")); return }
-    if (t === "tuple_type") {
-      for (const el of n.namedChildren ?? []) {
-        if (el.type !== "tuple_element") continue
-        walkArgument(el.childForFieldName?.("type") ?? el.namedChild(0))
-      }
-      return
-    }
-    if (t === "generic_name") {
-      const base = n.namedChild(0)
-      if (base) walkArgument(base)
-      const args = (n.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
-      if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
-      return
-    }
-    if (t === "qualified_name" || t === "alias_qualified_name") {
-      // A qualified name is ONE name: publish its leaf and nothing else. If the leaf is
-      // itself a `generic_name` its own arguments are this name's arguments, walked below.
-      const leaf = csharpTypeLeafNode(n)
-      if (leaf) {
-        add(String(leaf.text ?? ""))
-        const owner = n.namedChild(n.namedChildCount - 1)
-        if (owner && owner.type === "generic_name") {
-          const args = (owner.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
-          if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
-        }
-      }
-      return
-    }
-    for (const c of n.namedChildren ?? []) walkArgument(c)
-  }
-  /**
-   * The arguments the TARGET itself carries. Only a `generic_name` introduces
-   * arguments; the wrappers that can wrap one (`array_type`, `pointer_type`,
-   * `nullable_type`, `ref_type`, and the `qualified_name` whose last segment is the
-   * `generic_name`) are descended, and a plain namespace path contributes none —
-   * `using System.Text;` is a path, and its segments are not type arguments.
-   */
-  const collectFromTarget = (n: any): void => {
-    if (!n) return
-    const t = n.type
-    if (t === "generic_name") {
-      const args = (n.namedChildren ?? []).find((c: any) => c.type === "type_argument_list")
-      if (args) for (const a of args.namedChildren ?? []) walkArgument(a)
-      return
-    }
-    if (t === "qualified_name" || t === "alias_qualified_name") {
-      const last = n.namedChild(n.namedChildCount - 1)
-      if (last && last.type === "generic_name") collectFromTarget(last)
-      return
-    }
-    if (t === "array_type" || t === "pointer_type" || t === "nullable_type" || t === "ref_type") {
-      const inner = n.namedChild(0)
-      if (inner) collectFromTarget(inner)
-      return
-    }
-    if (t === "tuple_type") {
-      for (const el of n.namedChildren ?? []) {
-        if (el.type !== "tuple_element") continue
-        collectFromTarget(el.childForFieldName?.("type") ?? el.namedChild(0))
-      }
-    }
-  }
-  collectFromTarget(targetNode)
-  return out
 }
 
 /**
@@ -751,30 +625,6 @@ function csharpTypeLeafNode(n: Node | null | undefined): Node | undefined {
  * Wrappers are descended (`array_type`, `nullable_type`, `pointer_type`, `ref_type`,
  * `tuple_type`/`tuple_element`, `scoped_type`, function pointers); a `generic_name`
  * yields its base AND each type argument; a `qualified_name` yields one leaf name.
- *
- * D1 (2026-09-28, this round): a QUALIFIED name whose LAST SEGMENT is generic carries
- * its `type_argument_list` on that segment, and the leaf-only rule above walked straight
- * past it. tree-sitter-c-sharp spells
- *
- *     System.Collections.Generic.Dictionary<string, Widget>
- *     -> qualified_name [ qualified_name, ".", generic_name [ identifier, type_argument_list ] ]
- *
- * so the leaf descent reached the `identifier` inside the `generic_name`, published
- * `Dictionary`, and returned — while the PLAIN twin
- *
- *     Dictionary<string, Widget>
- *     -> generic_name [ identifier, type_argument_list ]
- *
- * took the branch below and published `Widget` as well. One type, two spellings, TWO
- * DIFFERENT DEPENDENCY SETS: the qualified spelling silently dropped every type
- * argument, which is the dependency R9's own contract calls "the real dependency" (see
- * this round's header). Measured with script/m14/tmp/cs-deep-8-declared-type-rootcause.ts
- * (the trees) and script/m14/tmp/cs-deep-11-qualified-generic-probe.ts (all ten
- * spellings side by side); frequency over 1,500 roslyn files: 39 occurrences in 12
- * files, against 3,033 plain occurrences in 725 — the shape is REAL and RARE, which is
- * exactly the combination that survives five depth draws (the trap #804's record names
- * for `record struct`). So the arguments are walked here, on the qualified path, by the
- * SAME `type_argument_list` lookup the working branch uses — one rule, not two.
  */
 function csharpDeclaredTypeLeaves(
   typeRoot: Node | null | undefined,
@@ -798,14 +648,6 @@ function csharpDeclaredTypeLeaves(
     if (t === "qualified_name" || t === "alias_qualified_name") {
       const leaf = csharpTypeLeafNode(n)
       if (leaf) accept(leaf, String(leaf.text ?? ""))
-      // D1: the path's LAST SEGMENT may be the `generic_name` that owns the type
-      // arguments. Walking them is the same rule the `generic_name` branch applies, and
-      // it is the only difference between the two spellings of one type.
-      const lastSegment = n.namedChild(n.namedChildCount - 1)
-      if (lastSegment && lastSegment.type === "generic_name") {
-        const args = (lastSegment.namedChildren as Node[]).find((c) => c.type === "type_argument_list")
-        if (args) for (const a of args.namedChildren as Node[]) walk(a)
-      }
       return
     }
     if (t === "generic_name" || t === "primary_constructor_base_type") {
@@ -1134,7 +976,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // confirmable) — a second reading here would be free to drift from it.
           const usingTarget = csharpUsingDirectiveTarget(node)
           if (!usingTarget) continue
-          const { module: text, typeArguments, targetNode: nameNode2, alias: usingAlias } = usingTarget
+          const { module: text, targetNode: nameNode2, alias: usingAlias } = usingTarget
           imports.push({
             module: text,
             source: text,
@@ -1163,31 +1005,6 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               ...(usingAlias ? { isUsingAlias: true, usingAlias } : {}),
             },
           })
-          // D3 (2026-09-28, this round): a using ALIAS may name a generic TYPE, and the type
-          // ARGUMENTS are the dependencies the import itself no longer carries (the module
-          // edge publishes the base name, because a module must be a name — see
-          // csharpUsingDirectiveTarget). So each argument gets its own `references` edge from
-          // the same source, marked `using_type_argument` so the two roles stay
-          // distinguishable in the payload.
-          //
-          // The metadata deliberately carries NEITHER `isImport` NOR `isUsingDirective`, and
-          // that is load-bearing rather than an omission: `classifyEvidenceTier` keys
-          // `reference_qualified` on exactly `!(isUsingDirective || isImport)`, so copying
-          // the module edge's flags would stamp an argument — which is a TYPE reference, not
-          // a namespace import — with the import evidence class. The oracle derives these
-          // from the same function, so the differential compares them rather than reporting
-          // them as fabrication.
-          for (const arg of typeArguments) {
-            if (arg === text) continue
-            relationships.push({
-              source: "root",
-              target: arg,
-              type: ASTEngine.RelationshipType.References,
-              confidence: 0.9,
-              line_number: this.nodeLine(this.nodeNamingToken(nameNode2, arg) ?? nameNode2),
-              metadata: { relationshipType: "using_type_argument" },
-            })
-          }
         }
       }
 
@@ -2759,29 +2576,13 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    // CS-D6 (2026-09-28, the `uses`-oracle round): a "dedup against calls" guard used to live
-    // here, keyed on `${source}->${target}` with NO SITE:
-    //
-    //     if (!seen.has(key) && !emittedCalls.has(`${src}->${tgt}`)) { … }
-    //
-    // Its stated purpose was to avoid duplicating a `calls` edge for a member access in
-    // call-callee position — but `isCallee` above already does that, STRUCTURALLY, by
-    // comparing node spans against the invocation's `function` field. The name-keyed guard was
-    // therefore a coarser duplicate of a precise rule, and it dropped real reads: in C# a static
-    // member and a method call can share a name, so ANY read of one is lost as soon as
-    // something else in the same function is CALLED by that name. Four occurrences over 150 real
-    // roslyn files, all the same class, all measured against a NEW independent truth:
-    //
-    //   * `_options.X.Severity == ReportDiagnostic.Suppress`  (a READ, line 164) dropped because
-    //     `context.ReportDiagnostic(diagnostic)` is CALLED in the same function (line 229);
-    //   * `properties.ContainsKey(RedundantEqualityConstants.Negate)` (a READ, line 56) dropped
-    //     because `generator.Negate(…)` is CALLED in the same function (line 57);
-    //   * `declarationDeclarators.Count` (a READ, line 65) dropped because
-    //     `fieldDeclarators.Count()` is CALLED on the same line's other side.
-    //
-    // So the suppression is now SITE-AWARE, which is what `isCallee` already was: the caller's
-    // own gate decides, and the name is never a reason to drop a read. `seen` stays, because
-    // that one is genuine dedup — the same (source, member) read twice is one dependency.
+    // Dedup against calls edges (member_access in call-callee position).
+    const emittedCalls = new Set<string>()
+    for (const r of relationships) {
+      if ((r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Calls) {
+        emittedCalls.add(`${r.source}->${r.target}`)
+      }
+    }
     const stack: Node[] = [rootNode]
     const seen = new Set<string>()
     while (stack.length > 0) {
@@ -2833,7 +2634,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             const src = containing || "global"
             const tgt = field.text
             const key = `${src}.${tgt}`
-            if (!seen.has(key)) {
+            if (!seen.has(key) && !emittedCalls.has(`${src}->${tgt}`)) {
               seen.add(key)
               relationships.push({
                 source: src,
@@ -3621,105 +3422,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     )
   }
 
-  /** True when `node` is the defining NAME of its entity parent, or a TYPE it declares. */
-  /**
-   * CS-D8 helper: is this identifier inside a declared TYPE, judged by which declaration owns a
-   * `type` field that CONTAINS it? See the CS-D8 note in `isCSharpEntityName` for why the walk
-   * ascends through name-shaped wrappers and why it is bounded.
-   */
-  private isDeclaredTypeSite(node: Node): boolean {
-    const DECL = "declaration"
-    let cur: Node | null = node.parent
-    for (let hops = 0; cur && hops < 12; hops++) {
-      const t: string = cur.type
-      if (
-        t === "variable_declaration" || t === "parameter" ||
-        t === "property_declaration" || t === "indexer_declaration" ||
-        t === "event_declaration" || t === "event_field_declaration" ||
-        t === "variable_declarator" || t === "base_list" ||
-        t === "type_parameter_list" || t === "type_parameter_constraints_clause" ||
-        t === "delegate_declaration"
-      ) {
-        const tf = cur.childForFieldName("type")
-        if (tf && node.startIndex >= tf.startIndex && node.endIndex <= tf.endIndex) return true
-        // A `variable_declarator` is the boundary between the declaration's TYPE and its
-        // INITIALIZER, so a read inside `var f = Some.Field;` must stop the walk here rather
-        // than inherit the `var`'s type position. Without this, every initializer read in the
-        // language is gated by the keyword that introduces it.
-        if (t === "variable_declarator") return false
-      }
-      if (t.includes(DECL) || t === "class_body" || t === "block" || t.includes("statement")) return false
-      cur = cur.parent
-    }
-    return false
-  }
-
+  /** True when `node` is the defining NAME of its entity parent. */
   private isCSharpEntityName(node: Node): boolean {
     const p = node.parent
     if (!p) return false
-    // CS-D7 (2026-09-28, the `uses`-oracle round): a declared TYPE is never a value read, and
-    // the grammar does not put a field's type directly under `field_declaration` — it nests it:
-    //
-    //     field_declaration > variable_declaration [ type = identifier, variable_declarator [ … ] ]
-    //
-    // so the "first direct identifier child" rule below never saw it, and a field whose TYPE
-    // name collides with a MEMBER of the same class published a read of itself:
-    // `public Widget Widget;` -> `uses Holder -> Widget`, stamped on the field's own line. The
-    // read resolves because the class-chain inventory holds a Property-kind member of exactly
-    // that name, and the shadowing frame cannot help: the shadow and the read are the same
-    // identifier. Probe: script/m14/tmp/cs-deep-22-type-as-value.ts, cases T1/T3.
-    //
-    // The `type` FIELD is the grammar's own statement of "this is a type", so the gate reads the
-    // field rather than counting children. Nothing is lost: the declared-type reference graph
-    // already publishes this name, and it is the position that owns it (R9).
-    // SPAN containment, not equality — and the reason is CS-D8's third shape. For
-    // `Func<Gadget, Gadget> f = …` the `type` field is a `generic_name` and the name is NESTED
-    // inside it, so an equality test against the field's own offsets misses the very case it was
-    // written for. The fixture case that found it is a lambda whose types come from the delegate
-    // type rather than from a lambda parameter list, so there is no `parameter` node to gate:
-    //
-    //     public void TakesDoodadInLambda() { Func<Doodad, Doodad> f = doodad => doodad; }
-    //                                               ^^^^^^ a TYPE ARGUMENT, pre-fix published
-    //                                               as `uses TakesDoodadInLambda -> Doodad`
-    //
-    // This is the same rule, the same reason, and the same round as the `parameter` gate below;
-    // the two differ only in which node carries the `type` field. Measured, not assumed: 6 rows
-    // over 200 roslyn files from the corpus sweep (script/m14/tmp/cs-deep-33-param-type-scope.ts).
-    // CS-D8 (2026-09-28, the bare-`uses`-oracle round): a declared TYPE is never a value read, in
-    // any position, and the position is found by asking which DECLARATION owns a `type` field that
-    // CONTAINS this identifier. The walk goes UP through the name-shaped type wrappers, because
-    // the identifier's own parent is not the declaration: for `Func<Gadget, Gadget> f = …` the
-    // immediate parent is the `generic_name`, and the node that owns the type is the
-    // `variable_declaration` two levels above it.
-    //
-    // Why containment and not equality: an equality test against the `type` field's own offsets
-    // passes for `Gadget gadget` and fails for `Func<Gadget, Gadget>`, which is the case that
-    // matters. And why the walk CONTINUES past a `generic_name` rather than stopping at it: the
-    // same node type spells a TYPE in a declaration and a METHOD in an expression, and the
-    // distinguishing fact is which declaration's `type` field encloses it. Stopping at the first
-    // `generic_name` ancestor gated every read that reaches a generic method — the most common
-    // shape in modern C# — and cost one real row in 200 files
-    // (`Document.GetRequiredLanguageService<ISyntaxFactsService>()`, cs-deep-26).
-    //
-    // Bounded at 12 ancestors: a type expression is never deeper than that from the declaration
-    // that owns it (argument > type_argument > generic_name > variable_declaration), and the
-    // bound keeps this off the per-identifier cost path.
-    if (this.isDeclaredTypeSite(node)) return true
-    {
-      const nf0 = p?.childForFieldName?.("name")
-      if (nf0 && nf0.startIndex === node.startIndex && nf0.endIndex === node.endIndex) return true
-    }
-    // The same round, second half: for a PROPERTY the first direct identifier is the TYPE, so
-    // the rule below gated the type and let the property's own NAME through — and a property
-    // whose name collides with a member published a read of ITSELF (`public Widget Widget
-    // { get; set; }` -> `uses Widget -> Widget`, case T4). The `name` FIELD is the grammar's own
-    // statement of "this is the declared name", so it is read the same way. This is the rule the
-    // function was named for, applied to the field that actually carries the name instead of to
-    // a child-count proxy for it.
-    {
-      const nf = p.childForFieldName("name")
-      if (nf && nf.startIndex === node.startIndex && nf.endIndex === node.endIndex) return true
-    }
     switch (p.type) {
       case "class_declaration":
       case "struct_declaration":
@@ -3939,31 +3645,9 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // `[global::Root]` from the decorator list entirely: measured, the qualified class
           // published `decorators: []` while its plain twin published `["Root"]`), and the
           // qualifier is not part of the name it publishes.
-          //
-          // D2 (2026-09-28, this round): the same omission, one node type further on. A
-          // GENERIC attribute's name child is a `generic_name` — a fourth shape this
-          // predicate never named — so `[Marker<int>]` published `decorators: []` while its
-          // plain twin `[Marker]` published `["Marker"]`. And the twin that DOES get named,
-          // `[System.Marker<int>]`, published `"System.Marker<int>"`: a type EXPRESSION where
-          // the position publishes a NAME, which is the defect class R10 exists to catch (its
-          // DELIMITER set `;(){},` would have convicted the `,` on any corpus holding the
-          // shape; over 1,500 roslyn files the shape occurs once, and 13 times in 1,500
-          // aspnetcore files — `[JSMarshalAs<JSType.Number>]`, `[TestRenderMode<…>]`,
-          // production code, measured by script/m14/tmp/cs-deep-12-frequencies.ts).
-          //
-          // So this position now goes through the lane's ONE canonical-name rule, the same
-          // `csharpCleanTypeLeaf` that strips generic arguments and nullability in heritage,
-          // creation and target-typed `new()`: an attribute publishes the type's NAME with its
-          // full dotted path intact (`System.Marker`) and its type arguments dropped
-          // (`Marker`). Two wrongs, one cause, one rule — and the `generic_name` shape is now
-          // in the predicate so it is not silently absent.
           const nameNode = this.findChild(attr, (n) =>
-            n.type === "identifier" || n.type === "generic_name" ||
-            n.type === "qualified_name" || n.type === "alias_qualified_name")
-          if (nameNode) {
-            const name = csharpCleanTypeLeaf(csharpTypeNameText(csharpTypeSpelling(nameNode.text)))
-            if (name) attrs.push(name)
-          }
+            n.type === "identifier" || n.type === "qualified_name" || n.type === "alias_qualified_name")
+          if (nameNode) attrs.push(csharpTypeSpelling(nameNode.text))
         }
       }
     }

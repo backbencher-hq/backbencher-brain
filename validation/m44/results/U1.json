@@ -6,15 +6,14 @@
   "checks": 20,
   "passed": 20,
   "failed": 0,
-  "failures": [],
   "realFailed": 0,
   "negativeCases": 6,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
   "verifierCommand": "npx tsx script/m44/verify-usages-groups.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-26T23:16:13.345Z",
+  "generatedAt": "2026-09-20T02:50:34.502Z",
   "schemaVersion": 2,
   "laws": [
     "L1 one-group-per-symbol",
@@ -46,12 +45,11 @@
   },
   "limitations": [
     "Fixture rows are seeded with the analyzer storage vocabulary; the real indexer's full row production is exercised by the standing H5/wave fixtures.",
-    "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws.",
-    "L5's 'sort removed' probe is vacuous on this fixture: the engine's row order is already (file,name) ascending, so the mutant is probed by a reversed comparator instead. Named, not hidden — making the fixture's natural order adversarial is the fix for the residual."
+    "DOM/presentation is U2+ scope; this gate pins the grouped DATA shape and its render-target laws."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:16:13.346Z",
-    "contentSha256": "b50c9c514285e478023aee04b334c6ff8221716365141b4c1ff43cb1d3cd660c"
+    "sealedAt": "2026-09-20T02:50:34.503Z",
+    "contentSha256": "4124e631f5a79558a524c7165020e5e43da58953ad09730bd6b8739dcbea6fcf"
   }
 }

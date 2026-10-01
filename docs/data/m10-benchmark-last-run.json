@@ -1,120 +1,114 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-27T04:07:32.759Z",
+  "generatedAt": "2026-08-22T22:34:52.398Z",
   "fixture": "contract-fixture",
   "measurements": [
     {
       "name": "bb_search_symbol",
-      "ms": 10.06,
+      "ms": 5.85,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_search_content",
-      "ms": 33.74,
+      "ms": 113.44,
       "budget": 500,
       "pass": true
     },
     {
       "name": "bb_ask_stat",
-      "ms": 17.97,
+      "ms": 6,
       "budget": 300,
       "pass": true
     },
     {
       "name": "bb_ask_semantic",
-      "ms": 37.22,
+      "ms": 2197.43,
       "budget": 2500,
       "pass": true
     },
     {
       "name": "bb_analyze_graph",
-      "ms": 24.07,
+      "ms": 5.33,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_impact",
-      "ms": 17.57,
+      "ms": 5.1,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_stats",
-      "ms": 4.25,
+      "ms": 0.95,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_complexity",
-      "ms": 10.41,
+      "ms": 2.46,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_dependencies",
-      "ms": 23.14,
+      "ms": 4.64,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_patterns_orphaned",
-      "ms": 27.62,
+      "ms": 3.75,
       "budget": 600,
       "pass": true
     },
     {
       "name": "bb_security_taint",
-      "ms": 35.95,
+      "ms": 5.83,
       "budget": 1200,
       "pass": true
     },
     {
       "name": "bb_analyze_testMapping",
-      "ms": 9.64,
+      "ms": 2.55,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_testGaps",
-      "ms": 11.71,
+      "ms": 1.84,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_testImpact",
-      "ms": 25.79,
+      "ms": 3.45,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_analyze_testQuality",
-      "ms": 41.74,
+      "ms": 20.41,
       "budget": 400,
       "pass": true
     },
     {
       "name": "bb_history_lookup",
-      "ms": 8.07,
+      "ms": 2.39,
       "budget": 300,
       "pass": true
     }
   ],
   "budgetViolations": [],
   "summary": {
-    "toolCount": 16,
+    "toolCount": 10,
     "toolNames": [
       "bb_analyze",
-      "bb_annotate",
-      "bb_annotations",
       "bb_ask",
-      "bb_cross_language",
       "bb_doc",
       "bb_edit",
-      "bb_graph",
       "bb_health",
-      "bb_impact",
-      "bb_index",
       "bb_migrate",
       "bb_patterns",
       "bb_search",

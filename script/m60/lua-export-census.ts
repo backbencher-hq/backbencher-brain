@@ -58,17 +58,9 @@ parser.setLanguage(lang)
 // the two came apart here: the analyzer published the loop return, the census
 // did not expect it, and the census called a defensible analyzer export spurious
 // for the second time. The walker and the gate now state the same rule.
-// EXPORTED so the two-walker gate cannot reimplement it. This walk was copied
-// into script/m60/lua-export-truth-diff.ts to compare the census against the
-// oracle, and the copy was updated when LUA-35 added the setmetatable rule while
-// the original was not — the THIRD time the same code existing in two places has
-// produced a phantom disagreement in this lane (LUA-24 was the first, 218 edges).
-// A differential that re-implements one of its own participants is not a
-// differential; it is two implementations and a diff, and the diff cannot say
-// which one is wrong. One walk, imported by both.
-export const NOT_A_SCOPE = new Set(["function_definition", "function_declaration"])
+const NOT_A_SCOPE = new Set(["function_definition", "function_declaration"])
 
-export const fileScopeReturns = (node: any, out: any[] = []): any[] => {
+const fileScopeReturns = (node: any, out: any[] = []): any[] => {
   for (let i = 0; i < node.namedChildCount; i++) {
     const c = node.namedChild(i)
     if (!c) continue
@@ -93,32 +85,6 @@ const firstExpr = (ret: any): any => {
     if (c && c.type === "expression_list") return c.namedChild(0)
   }
   return null
-}
-
-// The nth named child of a call's `arguments` field, reached by FIELD because
-// this grammar has no positional access — the LUA-00 lesson. Not regex, not a
-// child index: `dao[method or context](dao, args)` and `f()()` both exist.
-const argAt = (fc: any, index: number): any => {
-  for (let i = 0; i < fc.childCount; i++) {
-    const fn = typeof fc.fieldNameForChild === "function" ? fc.fieldNameForChild(i) : null
-    if (fn !== "arguments") continue
-    const args = fc.child(i)
-    let k = 0
-    for (let a = 0; a < args.namedChildCount; a++) {
-      const c = args.namedChild(a)
-      if (!c) continue
-      if (k === index) return c
-      k++
-    }
-  }
-  return null
-}
-
-const nameBearing = (n: any): string | undefined => {
-  if (!n) return undefined
-  if (n.type === "identifier") return n.text
-  if (n.type === "dot_index_expression" || n.type === "method_index_expression") return n.text
-  return undefined
 }
 
 const fieldName = (f: any): any => {
@@ -157,25 +123,10 @@ const census = (root: any): { shape: string; names: string[] } => {
   return { shape: rets.length > 1 ? `multi-return(${shapes.join("|")})` : shapes[0], names: [...names] }
 }
 
-export const classifyReturn = (ret: any): { shape: string; names: string[] } => {
+const classifyReturn = (ret: any): { shape: string; names: string[] } => {
   const e = firstExpr(ret)
   if (!e) return { shape: "bare-return", names: [] }
   if (e.type === "identifier") return { shape: "identifier", names: [e.text] }
-  // M60 LUA-35, kept in step with the analyzer and with the oracle's truth side: a
-  // `return setmetatable(<name>, mt)` publishes the name. All three must say the
-  // same thing — that they are three separate derivations of one question is
-  // exactly what let LUA-24's 218-edge phantom disagreement happen.
-  if (e.type === "function_call") {
-    let cn: string | null = null
-    for (let i = 0; i < e.childCount; i++) {
-      const fn = typeof e.fieldNameForChild === "function" ? e.fieldNameForChild(i) : null
-      if (fn === "name") cn = e.child(i).text
-    }
-    if (cn !== "setmetatable") return { shape: `call:${cn ?? "anon"}`, names: [] }
-    const a0 = argAt(e, 0)
-    const nm = nameBearing(a0)
-    return { shape: "call:setmetatable", names: nm ? [nm] : [] }
-  }
   if (e.type === "table_constructor") {
     const names: string[] = []
     let anyUnnamed = false
@@ -217,11 +168,6 @@ const walk = (dir: string, out: string[] = []): string[] => {
     else if (ent.name.endsWith(".lua")) out.push(p)
   }
   return out
-}
-
-/** The expected name set for ONE file: the union of what every file-scope return can name. */
-export function expectedExportNames(root: any): string[] {
-  return census(root).names
 }
 
 for (const corpus of ["luvit", "kong"]) {

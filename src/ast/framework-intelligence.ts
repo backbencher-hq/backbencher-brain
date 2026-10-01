@@ -1093,34 +1093,6 @@ export namespace FrameworkIntelligence {
     }
 
 
-    // M14 (#888): an analyzer's OWN insights and score must not be erased by a
-    // framework pass that found nothing of its own.
-    //
-    // The three keys below were assigned UNCONDITIONALLY, so for a language whose
-    // analyzers publish them and whose `detectFrameworks` finds no framework
-    // pattern, they were replaced by this module's own — which for html is an
-    // EMPTY `insights` array, because the four insight passes here look for
-    // function/method symbols and literal `eval(`/`Function(`/`innerHTML`, and the
-    // html analyzer publishes only element and module nodes. Measured on a page
-    // with a skipped heading level, an image with no `alt` and two unlabelled
-    // inputs: the analyzer published 7 insights, a score of 79 and "Good"; the
-    // product received `[]`, **100** and "excellent" — because this module's score
-    // starts at full marks and only deducts, so a page it cannot reason about at
-    // all scored PERFECT rather than unscored.
-    //
-    // The guard is deliberately narrow, because this is shared code for 41
-    // languages: it fires only when this module derived NOTHING (no insights and
-    // no patterns) AND the analyzer published something. Every other language
-    // either supplies neither key (no change) or is scored here on real evidence
-    // (no change). Nothing is merged — a framework insight and a document
-    // structural insight are different vocabularies, and concatenating them would
-    // publish a list neither producer wrote.
-    const analyzerInsights = (prev as any).architecturalInsights
-    const analyzerScore = (prev as any).architecturalScore
-    const fiFoundNothing = analysis.insights.length === 0 && (pats?.length ?? 0) === 0
-    const keepAnalyzerInsights = fiFoundNothing && Array.isArray(analyzerInsights) && analyzerInsights.length > 0
-    const keepAnalyzerScore = fiFoundNothing && typeof analyzerScore === "number" && analysis.architecturalScore >= 100
-
     // Enhance metadata with framework intelligence
     result.metadata = {
       ...prev,
@@ -1128,14 +1100,11 @@ export namespace FrameworkIntelligence {
       detectedFrameworks: mergedDetections,
       // Aligned with the list this same object publishes, so the three keys are one claim.
       frameworkPatterns: alignFrameworkPatterns(pats, mergedDetections),
-      architecturalInsights: keepAnalyzerInsights ? analyzerInsights : analysis.insights,
-      architecturalScore: keepAnalyzerScore ? analyzerScore : analysis.architecturalScore,
-      // The case follows the score that was actually kept, so the two can never
-      // disagree (`"Excellent"` from the analyzer against `"excellent"` from here
-      // was the pre-fix state for html).
-      codeQuality: (keepAnalyzerScore ? analyzerScore : analysis.architecturalScore) >= 80 ? "excellent" :
-                   (keepAnalyzerScore ? analyzerScore : analysis.architecturalScore) >= 60 ? "good" :
-                   (keepAnalyzerScore ? analyzerScore : analysis.architecturalScore) >= 40 ? "fair" : "poor"
+      architecturalInsights: analysis.insights,
+      architecturalScore: analysis.architecturalScore,
+      codeQuality: analysis.architecturalScore >= 80 ? "excellent" :
+                   analysis.architecturalScore >= 60 ? "good" :
+                   analysis.architecturalScore >= 40 ? "fair" : "poor"
     }
 
     return result

@@ -89,38 +89,9 @@ export function validateToolArguments(descriptor: ToolDescriptor, args: unknown)
   return object
 }
 
-/**
- * Options each bb_search mode can actually honor.
- *
- * `bb_search` is the only mode-discriminated tool in the registry that accepted
- * an option it never read: 33 of 48 mode×option cells validated cleanly and
- * then did nothing. `mode:"symbols"` with `filePath` returned matches from the
- * whole project; `mode:"content"` with `regex:true` ran a literal substring
- * search for the pattern TEXT; `mode:"symbol"` ignored `limit` entirely. A
- * filter the caller believes is scoping results, and which does not, is worse
- * than a rejection — the caller has evidence the option was accepted.
- *
- * So an option that is known to the schema but irrelevant to the chosen mode is
- * rejected here, by the same rule bb_edit already uses, with the accepted set
- * named so the rejection teaches the next correct call.
- */
-const SEARCH_OPTIONS_BY_MODE: Record<string, readonly string[]> = {
-  symbols: ["mode", "query", "limit", "offset", "language", "symbolKind", "includeContent", "exact", "caseSensitive", "regex", "refresh"],
-  content: ["mode", "query", "limit", "offset", "language", "symbolKind", "refresh"],
-  symbol: ["mode", "query", "symbolName", "filePath", "refresh"],
-  file: ["mode", "filePath"],
-}
-
 function validateModeSpecificArguments(tool: string, args: Record<string, unknown>): void {
   if (tool === "bb_search") {
-    const mode = String(args.mode ?? "symbols")
-    const accepted = SEARCH_OPTIONS_BY_MODE[mode]
-    if (accepted) {
-      const irrelevant = Object.keys(args).filter((key) => !accepted.includes(key))
-      if (irrelevant.length > 0) {
-        throw new Error(`bb_search ${mode} mode does not accept: ${irrelevant.join(", ")} — accepted for ${mode}: ${accepted.join(", ")}`)
-      }
-    }
+    const mode = args.mode ?? "symbols"
     if (mode === "file") {
       if (typeof args.filePath !== "string" || args.filePath.trim().length === 0) {
         throw new Error("bb_search file mode requires filePath")
@@ -128,31 +99,16 @@ function validateModeSpecificArguments(tool: string, args: Record<string, unknow
       return
     }
     if (mode === "symbol") {
-      const name = typeof args.symbolName === "string" ? args.symbolName : ""
-      const query = typeof args.query === "string" ? args.query : ""
-      const hasName = name.trim().length > 0
-      const hasQuery = query.trim().length > 0
-      if (!hasName && !hasQuery) throw new Error("bb_search symbol mode requires a non-empty symbolName or query")
-      if (typeof args.symbolName === "string" && !hasName) {
-        // A supplied-but-blank symbolName used to fall through the `??` at the
-        // call site and answer with `""` — an empty, freshness-annotated
-        // SUCCESS for a symbol that exists. Rejecting the blank is the honest
-        // outcome; the caller's `query` is still usable, so the message says so.
-        throw new Error(
-          hasQuery
-            ? `bb_search: symbolName must not be blank when query is given — drop symbolName, or pass a non-empty one`
-            : "bb_search: symbolName must not be blank",
-        )
+      if (typeof args.symbolName !== "string" && typeof args.query !== "string") {
+        throw new Error("bb_search symbol mode requires symbolName or query")
       }
-      if (hasName && hasQuery && name.trim() !== query.trim()) {
-        // `??` at the call site made symbolName silently win, so the caller's
-        // query was never looked up and the answer was an empty success.
-        throw new Error(`bb_search: symbolName ("${name.trim()}") and query ("${query.trim()}") disagree — pass one`)
+      if (typeof args.symbolName === "string" && args.symbolName.trim().length === 0 && typeof args.query !== "string") {
+        throw new Error("bb_search symbol mode requires a non-empty symbolName or query")
       }
       return
     }
     if (typeof args.query !== "string" || args.query.trim().length === 0) {
-      throw new Error(`bb_search ${mode} mode requires a non-empty query`)
+      throw new Error(`bb_search ${String(mode)} mode requires a non-empty query`)
     }
   }
   if (tool === "bb_ask" && (typeof args.query !== "string" || args.query.trim().length === 0)) {
@@ -219,18 +175,6 @@ function validateEditArguments(args: Record<string, unknown>): void {
   }
 }
 
-/**
- * Page-size parameters must be whole numbers.
- *
- * A fractional `limit` reached SQLite as a float bound and surfaced as a raw
- * `datatype mismatch` from the driver, because `slice()` truncates a fractional
- * page silently while the SQL bound does not accept one at all. Rejecting the
- * value at the boundary names the rule instead of leaking a driver message.
- */
-const INTEGER_PARAMETERS = new Set([
-  "limit", "offset", "sampleSize", "maxFiles", "maxNodes", "maxLinks", "maxTokens", "lineStart", "edgeLimit",
-])
-
 function validateProperty(tool: string, name: string, value: unknown, schema: JsonSchemaProperty): void {
   if (value === null) throw new Error(`${tool}: ${name} must not be null`)
   const valid = schema.type === "string" ? typeof value === "string"
@@ -240,11 +184,6 @@ function validateProperty(tool: string, name: string, value: unknown, schema: Js
     : typeof value === "object" && !Array.isArray(value)
   if (!valid) throw new Error(`${tool}: ${name} must be ${schema.type}`)
   if (schema.enum && !schema.enum.includes(value as string)) throw new Error(`${tool}: ${name} must be one of: ${schema.enum.join(", ")}`)
-  if (schema.type === "number") {
-    if (INTEGER_PARAMETERS.has(name) && !Number.isInteger(value)) {
-      throw new Error(`${tool}: ${name} must be a whole number (got ${String(value)})`)
-    }
-    if (INTEGER_PARAMETERS.has(name) && (value as number) < 0) throw new Error(`${tool}: ${name} must be non-negative`)
-  }
+  if (schema.type === "number" && (name === "limit" || name === "offset" || name === "sampleSize" || name === "maxFiles" || name === "maxNodes" || name === "maxLinks" || name === "maxTokens" || name === "lineStart" || name === "edgeLimit") && (value as number) < 0) throw new Error(`${tool}: ${name} must be non-negative`)
   if (name === "confidenceThreshold" && ((value as number) < 0 || (value as number) > 1)) throw new Error(`${tool}: confidenceThreshold must be between 0 and 1`)
 }

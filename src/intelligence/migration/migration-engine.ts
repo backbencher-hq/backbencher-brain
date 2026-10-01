@@ -1,5 +1,5 @@
+import { CrossLanguageIntelligence } from "../../ast/cross-language-intelligence"
 import { CrossLanguageMigrationAssistant } from "../../ast/cross-language-migration-assistant"
-import { loadMigrationContext } from "./migration-source"
 
 export interface MigrationRequest {
   symbolNames: string[]
@@ -29,59 +29,16 @@ export interface MigrationMethodology {
   deduplication: "relationship-id-or-structural-identity"
 }
 
-export type MigrationBatchUnsupportedReason =
-  | "missing-symbol"
-  | "same-language"
-  | "unsupported-target"
-  | "unsupported-source"
-  | "ambiguous-symbol"
+export type MigrationBatchUnsupportedReason = "missing-symbol" | "same-language" | "unsupported-target" | "unplannable"
 
 export interface MigrationPlanResult {
   targetLanguage: string
   plans: any[]
-  /** Aggregated evidence split across every plan in the request. */
-  evidenceTotals: {
-    production: number
-    test: number
-    unresolvable: number
-    crossLanguage: number
-    withLine: number
-    withConfidence: number
-  }
   dependencyOrder: string[]
   dependencyGraph: MigrationDependencyGraph
-  unsupported: Array<{
-    symbolName: string
-    reason: string
-    unsupportedReason: MigrationBatchUnsupportedReason
-    candidates?: Array<{ id: string; name: string; language: string; file: string }>
-  }>
+  unsupported: Array<{ symbolName: string; reason: string; unsupportedReason: MigrationBatchUnsupportedReason }>
   methodology: MigrationMethodology
-  /**
-   * Two independent reductions of the request, reported separately because they
-   * have different causes and a caller needs to tell them apart: `deduplicated`
-   * names were merged (the same name asked for twice), `capped` names were
-   * dropped by the 100-symbol limit.
-   */
-  truncation: {
-    truncated: boolean
-    requested: number
-    returned: number
-    deduplicated: number
-    capped: number
-  }
-  /**
-   * The single authoritative effort figure for the whole request. Per-plan
-   * `effortEstimateHours` is a per-plan view and legitimately double-counts a
-   * relationship cited by two plans; this total is the deduplicated one, and the
-   * formatter prints the reconciliation rather than two disagreeing numbers.
-   */
-  effort: {
-    totalHours: number
-    perPlanSumHours: number
-    sharedRelationshipHours: number
-    reconciliation: string
-  }
+  truncation: { truncated: boolean; requested: number; returned: number }
 }
 
 /**
@@ -91,19 +48,13 @@ export interface MigrationPlanResult {
  * components.
  */
 export function calculateMigrationMethodology(plans: Array<{
-  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean }>
+  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string }>
   dependencies?: Array<{ confidence?: number }>
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
   let missingMappingCount = 0
   for (const plan of plans) {
     for (const relationship of plan.relationshipEvidence ?? []) {
-      // Only edges with a locatable endpoint are migration work. An edge whose
-      // endpoint is not an indexed symbol cannot be scoped, planned or done, so
-      // charging 2 hours for it inflates the total with work nobody can act on.
-      // `endpointsResolved` is absent on legacy callers, which are treated as
-      // resolved so this stays a pure narrowing.
-      if (relationship.endpointsResolved === false) continue
       const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
       relationshipIds.add(identity)
     }
@@ -182,227 +133,60 @@ export function computeDependencyOrder(symbolNames: string[], relationships: Mig
   }
   for (const name of names.sort()) if (state.get(name) === "unvisited") visit(name)
   cycles.sort((a, b) => a.join("|").localeCompare(b.join("|")))
-  // `partial` means "some dependency could not be placed". That includes the case
-  // where NO edge could be placed but unresolved dependencies exist: the old
-  // ternary reported `no-edges` there because `order.length` was 0, which reads
-  // as "this component has no dependencies" when the truth is "every dependency
-  // sits outside the requested set". `no-edges` is reserved for a request with
-  // genuinely no relationships at all.
-  const orderingStatus = cycles.length
-    ? "cyclic"
-    : edges.length === 0 && unresolvedDependencies.length === 0
-      ? "no-edges"
-      : unresolvedDependencies.length || order.length !== names.length
-        ? "partial"
-        : "complete"
+  const orderingStatus = cycles.length ? "cyclic" : unresolvedDependencies.length ? (order.length ? "partial" : "no-edges") : edges.length ? "complete" : "no-edges"
   return { order, graph: { edges, unresolvedDependencies, cycles, orderingStatus } }
 }
 
 export async function generateMigrationPlans(projectId: string, request: MigrationRequest): Promise<MigrationPlanResult> {
-  const requestedNames = request.symbolNames.map((name) => String(name).trim()).filter(Boolean)
-  const uniqueNames = [...new Set(requestedNames.map((name) => name.toLowerCase()))]
-  const names = uniqueNames.slice(0, 100)
+  const names = [...new Set(request.symbolNames.map((name) => String(name).trim()).filter(Boolean))].slice(0, 100)
   const normalizedTargetLanguage = String(request.targetLanguage ?? "").trim().toLowerCase()
-  // Bounded load: the requested symbols and the relationships that touch them.
-  // The previous call loaded and reconstructed every symbol, relationship and
-  // taint flow in the project on every invocation — measured 2342 ms for ONE
-  // symbol on a 1216-symbol repository, flat in the request size — and supplied
-  // only four of the fourteen relationship columns the index stores.
-  const context = await loadMigrationContext(projectId, names)
-  const analysis: CrossLanguageMigrationAssistant.MigrationSource = {
-    symbols: context.requestedSymbols,
-    relationships: context.relationships,
-    nameById: context.nameById,
-    fileById: context.fileById,
-  }
+  const analysis = await CrossLanguageIntelligence.analyzePolyglotProjectFromDB(projectId as any)
+  const symbolsByName = new Map(analysis.crossLanguageSymbols.map((symbol: any) => [String(symbol.name).toLowerCase(), symbol]))
   const plans: any[] = []
   const unsupported: MigrationPlanResult["unsupported"] = []
-  // Refusals come from the planner itself now. The previous code called the
-  // null-returning wrapper and then re-derived the reason from a SECOND,
-  // independent name lookup, so the reason shown and the plan computed could
-  // come from different resolutions of the same name.
   for (const symbolName of names) {
-    const outcome = await CrossLanguageMigrationAssistant.planMigration(symbolName, request.targetLanguage, analysis)
-    if (outcome.ok) {
-      plans.push(outcome.plan)
-      continue
+    const plan = await CrossLanguageMigrationAssistant.generateMigrationPlan(symbolName, request.targetLanguage, analysis)
+    if (plan) plans.push(plan)
+    else {
+      const symbol = symbolsByName.get(symbolName.toLowerCase()) as any
+      const source = String(symbol?.languages?.[0] ?? "").trim().toLowerCase()
+      const unsupportedReason: MigrationBatchUnsupportedReason = !symbol
+        ? "missing-symbol"
+        : source === normalizedTargetLanguage
+          ? "same-language"
+          : !normalizedTargetLanguage
+            ? "unsupported-target"
+            : "unplannable"
+      unsupported.push({ symbolName, reason: `migration is ${unsupportedReason}`, unsupportedReason })
     }
-    const entry: MigrationPlanResult["unsupported"][number] = {
-      symbolName,
-      reason: outcome.refusal.detail,
-      unsupportedReason: outcome.refusal.reason,
-    }
-    if (outcome.refusal.candidates) entry.candidates = outcome.refusal.candidates
-    unsupported.push(entry)
   }
   const planNames = plans.map((plan) => plan.componentName)
-  // `nameById` is the loader's map, which already covers the requested symbols
-  // AND the far endpoints of their relationships. Round 1 rebuilt this with a
-  // linear `crossLanguageSymbols.find(...)` inside the edge loop — O(RxS), which
-  // is 5228 x 1216 comparisons on cobra.
-  const nameById = context.nameById
-
-  // Every indexed relationship touching a planned symbol. A planned symbol that
-  // is called by a symbol the caller did NOT request is a real, named
-  // dependency the order cannot satisfy — that is what `unresolvedDependencies`
-  // is for, and the previous engine only pushed edges where BOTH endpoints were
-  // planned, so the `partial` ordering status was unreachable in production.
-  const plannedIds = new Set<string>()
-  for (const plan of plans) {
-    if (plan.symbolId) plannedIds.add(plan.symbolId)
-    for (const evidence of plan.relationshipEvidence ?? []) {
-      if (evidence.sourceSymbolId) plannedIds.add(evidence.sourceSymbolId)
-      if (evidence.targetSymbolId) plannedIds.add(evidence.targetSymbolId)
-    }
+  const idsByName = new Map<string, Set<string>>()
+  for (const symbol of analysis.crossLanguageSymbols) {
+    if (!planNames.includes(symbol.name)) continue
+    const ids = idsByName.get(symbol.name) ?? new Set<string>()
+    ids.add(symbol.id)
+    idsByName.set(symbol.name, ids)
   }
+  const nameById = new Map<string, string>()
+  for (const [name, ids] of idsByName) for (const id of ids) nameById.set(id, name)
   const graphRelationships: MigrationDependencyEdge[] = []
-  const externalName = (external: string | null | undefined, symbolId: string | null): string | null => {
-    if (symbolId) return nameById.get(symbolId) ?? null
-    const named = String(external ?? "").trim()
-    return named ? named : null
-  }
-  for (const relationship of context.relationships) {
-    const sourceId = relationship.sourceSymbolId
-    const targetId = relationship.targetSymbolId
-    if (!plannedIds.has(sourceId ?? "") && !plannedIds.has(targetId ?? "")) continue
-    const dependent = externalName(relationship.sourceExternal, sourceId)
-    const dependency = externalName(relationship.targetExternal, targetId)
-    // A relationship between two planned symbols is an orderable edge. A
-    // relationship from a planned symbol to something not requested is
-    // unresolved: naming the endpoint is honest; dropping it is a silent gap.
-    if (dependent && dependency) {
-      if (dependent !== dependency) graphRelationships.push({ dependent, dependency, relationshipType: relationship.type })
-      continue
-    }
-    // One endpoint is outside the requested set. Naming it is honest; the
-    // previous code named it with the raw symbol id, which tells a reader
-    // nothing they can look up.
-    if (dependent && !dependency) {
-      const endpoint = String(relationship.targetExternal ?? targetId ?? "").trim()
-      if (endpoint) graphRelationships.push({ dependent, dependency: endpoint, relationshipType: relationship.type })
-    } else if (dependency && !dependent) {
-      const endpoint = String(relationship.sourceExternal ?? sourceId ?? "").trim()
-      if (endpoint) graphRelationships.push({ dependent: endpoint, dependency, relationshipType: relationship.type })
-    }
+  for (const relationship of analysis.crossLanguageRelationships) {
+    const dependent = relationship.source.symbolId ? nameById.get(relationship.source.symbolId) : undefined
+    const dependency = relationship.target.symbolId ? nameById.get(relationship.target.symbolId) : undefined
+    if (dependent && dependency) graphRelationships.push({ dependent, dependency, relationshipType: String(relationship.type) })
   }
   const { order: dependencyOrder, graph: dependencyGraph } = computeDependencyOrder(planNames, graphRelationships)
   const methodology = calculateMigrationMethodology(plans)
-
-  // One authoritative total, plus the arithmetic that reconciles it with the
-  // per-plan figures a reader will add up.
-  const perPlanSumHours = plans.reduce((sum, plan) => sum + (Number(plan.effortEstimateHours) || 0), 0)
-  const totalHours = methodology.baseHours + methodology.relationshipHours + methodology.missingMappingHours
-  const sharedRelationshipHours = perPlanSumHours - totalHours
-
-  const deduplicated = requestedNames.length - uniqueNames.length
-  const capped = uniqueNames.length - names.length
-
-  // The per-edge evidence split, aggregated. A flat per-edge cost makes a plan
-  // look enormous when most of its edges are test callers: measured 55.3% on
-  // cobra. Reporting the split is what makes the number interpretable.
-  const evidenceTotals = plans.reduce(
-    (acc, plan) => {
-      const b = plan.evidenceBreakdown
-      if (!b) return acc
-      acc.production += b.production ?? 0
-      acc.test += b.test ?? 0
-      acc.unresolvable += b.unresolvable ?? 0
-      acc.crossLanguage += b.crossLanguage ?? 0
-      acc.withLine += b.withLine ?? 0
-      acc.withConfidence += b.withConfidence ?? 0
-      return acc
-    },
-    { production: 0, test: 0, unresolvable: 0, crossLanguage: 0, withLine: 0, withConfidence: 0 },
-  )
-
-  return {
-    targetLanguage: normalizedTargetLanguage,
-    plans,
-    evidenceTotals,
-    dependencyOrder,
-    dependencyGraph,
-    unsupported,
-    methodology,
-    effort: {
-      totalHours,
-      perPlanSumHours,
-      sharedRelationshipHours,
-      reconciliation:
-        sharedRelationshipHours === 0
-          ? "per-plan effort sums to the methodology total"
-          : `per-plan effort sums to ${perPlanSumHours}h; ${sharedRelationshipHours}h of that is relationship time on edges cited by more than one plan, counted once in the ${totalHours}h methodology total`,
-    },
-    truncation: {
-      truncated: deduplicated > 0 || capped > 0,
-      requested: requestedNames.length,
-      returned: names.length,
-      deduplicated,
-      capped,
-    },
-  }
+  return { targetLanguage: normalizedTargetLanguage, plans, dependencyOrder, dependencyGraph, unsupported, methodology, truncation: { truncated: request.symbolNames.length > names.length, requested: request.symbolNames.length, returned: names.length } }
 }
 
 export function formatMigrationPlans(result: MigrationPlanResult, format: "text" | "json" = "text"): string {
   if (format === "json") return JSON.stringify(result, null, 2)
-  const lines = [
-    `migration target: ${result.targetLanguage}`,
-    `dependency order: ${result.dependencyOrder.join(" -> ") || "none"} (${result.dependencyGraph.orderingStatus})`,
-    `methodology: base=${result.methodology.baseHours}h relationships=${result.methodology.relationshipHours}h missing-mappings=${result.methodology.missingMappingHours}h`,
-    // The authoritative figure, with the arithmetic that reconciles it against
-    // the per-plan numbers printed below. Previously the header and the per-plan
-    // `effort=` lines were both presented as totals and differed by 8h on a
-    // two-symbol mutual-call request, with nothing explaining why.
-    `total effort: ${result.effort.totalHours}h (${result.effort.reconciliation})`,
-    `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested}; ${result.truncation.deduplicated} duplicate, ${result.truncation.capped} over the 100-symbol cap)`,
-  ]
-  const totals = result.evidenceTotals
-  if (totals && (totals.production || totals.test || totals.unresolvable || totals.crossLanguage)) {
-    // The split is what makes a flat per-edge cost interpretable: on cobra, 55.3%
-    // of a plan's edges are test callers, and an undifferentiated number reads
-    // as "this function is enormous" when it is "this function is well tested".
-    lines.push(
-      `evidence: ${totals.production} production edge(s), ${totals.test} test edge(s), ${totals.crossLanguage} crossing a language boundary, ${totals.unresolvable} with an unresolvable endpoint (not charged)` +
-        (totals.withLine ? `; ${totals.withLine} carry a line` : "; no edge carries a line"),
-    )
-  }
+  const lines = [`migration target: ${result.targetLanguage}`, `dependency order: ${result.dependencyOrder.join(" -> ") || "none"} (${result.dependencyGraph.orderingStatus})`, `methodology: base=${result.methodology.baseHours}h relationships=${result.methodology.relationshipHours}h missing-mappings=${result.methodology.missingMappingHours}h`, `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested})`]
   if (result.dependencyGraph.unresolvedDependencies.length) lines.push(`unresolved dependencies: ${result.dependencyGraph.unresolvedDependencies.map((edge) => `${edge.dependent} -> ${edge.dependency}`).join(", ")}`)
   if (result.dependencyGraph.cycles.length) lines.push(`dependency cycles: ${result.dependencyGraph.cycles.map((cycle) => cycle.join(" -> ")).join("; ")}`)
-
-  for (const plan of result.plans) {
-    lines.push(
-      `\n${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}  [${plan.sourceFile}]`,
-      `effort=${plan.effortEstimateHours}h complexity=${plan.complexityScore}/10 risk=${plan.riskAssessment?.level}`,
-    )
-    // F21: the text output used to print `risk=High` and never the reason, so a
-    // reader of the DEFAULT format could not act on the band. The factors are
-    // the explanation and they belong next to the band.
-    for (const factor of plan.riskAssessment?.factors ?? []) lines.push(`  why: ${factor}`)
-    for (const dependency of plan.dependencies ?? []) {
-      lines.push(`  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%, indexed import)`)
-    }
-    for (const guess of plan.inferredDependencies ?? []) {
-      lines.push(`  ${guess.source} -> (${guess.target ?? "no registered equivalence"}) — name-based guess, not an observed import; excluded from effort and risk`)
-    }
-    if (!(plan.dependencies ?? []).length && !(plan.inferredDependencies ?? []).length) {
-      lines.push(
-        plan.dependencyProvenance?.importEvidence === "unavailable"
-          ? "  library dependencies UNKNOWN: the index records no imports for this component (not the same as 'none')"
-          : "  no library evidence: the index carries no imports for this component",
-      )
-    }
-    const b = plan.evidenceBreakdown
-    if (b) {
-      const cross = b.crossLanguage > 0 ? `, ${b.crossLanguage} cross-language` : ""
-      lines.push(`  evidence: ${b.production} production + ${b.test} test${cross}${b.unresolvable ? `, ${b.unresolvable} unresolvable` : ""}`)
-    }
-  }
-
-  if (result.unsupported.length) {
-    lines.push("\nunsupported:")
-    for (const item of result.unsupported) {
-      lines.push(`  ${item.symbolName}: ${item.reason}`)
-      for (const candidate of item.candidates ?? []) lines.push(`    candidate: ${candidate.name} (${candidate.language}) in ${candidate.file}`)
-    }
-  }
+  for (const plan of result.plans) lines.push(`\n${plan.componentName}: ${plan.sourceLanguage} -> ${plan.targetLanguage}`, `effort=${plan.effortEstimateHours}h complexity=${plan.complexityScore}/10 risk=${plan.riskAssessment?.level}`, ...(plan.dependencies ?? []).map((dependency: any) => `  ${dependency.source} -> ${dependency.target} (${Math.round((dependency.confidence ?? 0) * 100)}%)`))
+  if (result.unsupported.length) lines.push("\nunsupported:\n" + result.unsupported.map((item) => `  ${item.symbolName}: ${item.reason}`).join("\n"))
   return lines.join("\n")
 }

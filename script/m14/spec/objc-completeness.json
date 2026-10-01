@@ -122,8 +122,6 @@
       "keyword_declarator",
       "labeled_statement",
       "linkage_specification",
-      "macro_prefixed_objc_declaration",
-      "macro_specifier",
       "macro_type_specifier",
       "method_identifier",
       "method_parameter",

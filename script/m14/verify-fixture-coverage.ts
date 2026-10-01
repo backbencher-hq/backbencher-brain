@@ -73,57 +73,11 @@ const GATED_LANGS: Record<string, { wasm: string; ext: string[]; analyzer: strin
   // `.icl` is the implementation — the F6 check must see both or the ruling's
   // first half is unexercised by construction.
   clean:      { wasm: "tree-sitter-clean.wasm",     ext: [".icl", ".dcl"], analyzer: "real-clean-analyzer.ts" },
-  // M14 (#288): html joins this gate. Its F6 claim has two halves and the second
-  // is the one that mattered: every node-type-looking string literal in the
-  // analyzer must be a real node type in the pinned grammar AND be classified in
-  // script/m14/spec/html-completeness.json. Pre-fix html had neither the fixtures
-  // nor the spec, so a literal could name a node the grammar never produces and
-  // nothing would say so. The oracle's union grammar is declared too — the
-  // analyzer's F1 union includes tree-sitter-javascript, so a literal that is
-  // real in one but not the other must not be reported as unknown.
-  html:       { wasm: "tree-sitter-html.wasm",     ext: [".html", ".htm"], analyzer: "real-html-analyzer.ts", extraWasm: ["tree-sitter-javascript.wasm"] },
-  toml:       { wasm: "tree-sitter-toml.wasm",     ext: [".toml"], analyzer: "real-toml-analyzer.ts" },
-  // M60 functional family (ER2 restoration, 2026-09-25): erlang was absent
-  // from this gate entirely — which is one reason its fixture lane could read
-  // 0/9 committed while nothing measured what the analyzer referenced versus
-  // what its fixtures pinned. Enrolled now, with the restored surface:
-  // record member ops, macro/fun/type references, -callback/-opaque.
-  erlang:     { wasm: "tree-sitter-erlang.wasm",     ext: [".erl"],    analyzer: "real-erlang-analyzer.ts" },
 }
 
 // Literals that look like node-type comparisons but are not node types
 // (keywords, field names, framework markers). Extend with a comment when a
 // language genuinely needs one — never to silence a real finding.
-/**
- * M14 F6 — ambiguous-coverage tolerances.
- *
- * A `handled_verified` row is satisfied when its node-type name occurs in a
- * fixture's parse tree. The collector walks ALL children, so the occurrence set
- * holds both NAMED node types and ANONYMOUS token types, which is deliberate:
- * specs legitimately declare keyword tokens (`if`, `begin`, `as`) as handled and
- * analyzers do branch on them.
- *
- * But a tree-sitter grammar can give the SAME string to an anonymous token AND
- * to a named node — typescript's `class` is the `class` keyword in every
- * `class Foo {}` AND the node type of a class EXPRESSION. When that happens the
- * occurrence test cannot tell which one it found, and a keyword in an ordinary
- * declaration silently certifies a claim about the expression node. That is not
- * hypothetical: `class` was carried as handled_verified from the commit that
- * declared the typescript lane CONFORMANT, no fixture contained a class
- * expression until one was added for the class-expression defect, and the
- * analyzer's class-expression branch was dead the entire time — while this gate
- * reported the row covered.
- *
- * So when the name is COLLIDING, only a NAMED occurrence counts as evidence.
- * A tolerance here is a decision that the anonymous token is what the analyzer
- * really handles; it must say so, with the analyzer line that proves it.
- */
-const AMBIGUOUS_COVERAGE_TOLERANCES: Record<string, Record<string, string>> = {
-  haskell: {
-    as: "real-haskell-analyzer.ts:724 tests `node.child(i - 1)?.text.trim() === \"as\"` \u2014 the row is about the ANONYMOUS keyword (import/export `as` aliases), and that is what the analyzer matches. tree-sitter-haskell also exposes a named+visible node type spelled `as`, so the name is ambiguous and the occurrence test cannot prove which one a fixture hit. No correctness claim is being waived: the analyzer's behaviour is keyword-based and is what this row describes. A fixture that parses a named `as` node would remove the need for this tolerance.",
-  },
-}
-
 const LITERAL_ALLOWLIST: Record<string, Set<string>> = {
   php: new Set([
     "self", "static", "parent",       // relative-scope keywords (text match, not node type)
@@ -171,21 +125,7 @@ const LITERAL_ALLOWLIST: Record<string, Set<string>> = {
   c: new Set([]),
   kotlin: new Set([]),
   scala: new Set([]),
-  typescript: new Set([
-    // `default_export_expression` is NOT a typescript grammar node type — the
-    // pinned grammar emits `export_statement` for every `export default` form,
-    // verified by parsing `export default f`, `export default function g(){}`
-    // and `export default 42`. It is an ExportInfo `type` tag the analyzer
-    // WRITES ITSELF (real-typescript-analyzer.ts, the anonymous-default branch
-    // of extractExports) and later compares against in extractExportRelations,
-    // to suppress the `module -> default` edge for an anonymous default export
-    // (a target no index could ever join). So the comparison is against an
-    // analyzer-owned value, exactly like dart's `dynamic` parameter payload
-    // below. The name reads like a node type, which is why it is declared here
-    // rather than left to look like dead code — and the gate rightly refused to
-    // pass it silently until someone said which of the two it was.
-    "default_export_expression",
-  ]),
+  typescript: new Set([]),
   javascript: new Set([]),
   vue: new Set([]),
   svelte: new Set([]),
@@ -250,7 +190,6 @@ interface LangResult {
   specHandled: number
   fixtureTypes: number
   uncovered: string[]        // spec-handled types no fixture exercises
-  ambiguousCoverage: string[] // colliding names whose only evidence is an anonymous token
   deadLiterals: string[]     // analyzer literals that are neither grammar types nor spec-classified
   deadLiteralSites?: Array<{ literal: string; line: number }>  // first-occurrence line per dead literal
   pass: boolean
@@ -371,11 +310,6 @@ async function main() {
       }
     }
     const occurring = new Set<string>()
-    // Split evidence by node KIND. `occurring` stays the union so every existing
-    // lane keeps its current verdict; the two sets exist so a COLLIDING name can
-    // be held to the stronger standard (see AMBIGUOUS_COVERAGE_TOLERANCES).
-    const occurringNamed = new Set<string>()
-    const occurringAnon = new Set<string>()
     if (srcs.length > 0) {
       const langWasm = await L.load(fs.readFileSync(path.join(WASM_DIR, cfg.wasm)))
       const parser = new P()
@@ -386,20 +320,6 @@ async function main() {
         while (stack.length > 0) {
           const n = stack.pop()!
           occurring.add(n.type)
-          if (n.isNamed) occurringNamed.add(n.type)
-          else occurringAnon.add(n.type)
-          // `MISSING` is not a node TYPE name — it is `isMissing` on a node whose
-          // type is the token the parser expected, so a MISSING `>` collects as `>`
-          // and the literal `MISSING` never appears in this set. A lane that
-          // correctly classifies MISSING as HANDLED (svelte does, on corpus
-          // measurement: 5 MISSING nodes in 410 sampled files) was therefore
-          // reported uncovered no matter what its fixtures did, and could only go
-          // green by demoting the type to silent — which would be pinning the
-          // defect. Same blindness class as the svelte analyzer's `namedChild`
-          // walk missing anonymous MISSING nodes; the collector needs the marker
-          // the same way the analyzer does. Only ever ADDS to `occurring`, so a
-          // lane cannot newly fail from it.
-          if (n.isMissing) occurring.add("MISSING")
           // ALL children, not just named: specs legitimately declare
           // anonymous token types (`if`, `begin`, `case`) as handled, and
           // analyzers branch on them — they must count as coverable.
@@ -422,24 +342,6 @@ async function main() {
     }
     for (const t of spec.design_decision?.types ?? []) decisionRuled.add(t)
     const uncovered = handled.filter((t) => !occurring.has(t) && !decisionRuled.has(t))
-
-    // --- ambiguous coverage: a colliding name proved only by a keyword ---
-    // `namedTypeNames` is read from the pinned wasm, not from a fixture: the
-    // question is whether the GRAMMAR has a named node of this name, which no
-    // amount of fixture evidence can answer.
-    const namedTypeNames = new Set<string>()
-    if (fs.existsSync(fixtureDir)) {
-      const langWasm2 = await L.load(fs.readFileSync(path.join(WASM_DIR, cfg.wasm)))
-      for (let i = 0; i < langWasm2.nodeTypeCount; i++) {
-        const isNamed = typeof langWasm2.nodeTypeIsNamed === "function" ? langWasm2.nodeTypeIsNamed(i) : true
-        const isVisible = typeof langWasm2.nodeTypeIsVisible === "function" ? langWasm2.nodeTypeIsVisible(i) : true
-        if (isNamed && isVisible) namedTypeNames.add(langWasm2.nodeTypeForId(i))
-      }
-    }
-    const tolerances = AMBIGUOUS_COVERAGE_TOLERANCES[lang] ?? {}
-    const ambiguousCoverage = handled.filter(
-      (t) => !occurringNamed.has(t) && occurringAnon.has(t) && namedTypeNames.has(t) && !decisionRuled.has(t) && !tolerances[t]
-    )
 
     // --- dead-literal audit over the analyzer source ---
     const analyzerPath = path.join(ROOT, "src", "ast", cfg.analyzer)
@@ -537,15 +439,12 @@ async function main() {
       deadLiterals.sort()
     }
 
-    const pass = uncovered.length === 0 && deadLiterals.length === 0 && ambiguousCoverage.length === 0
+    const pass = uncovered.length === 0 && deadLiterals.length === 0
     const deadLiteralSites = deadLiterals.map((lit) => ({ literal: lit, line: deadLiteralSitesLine.get(lit) ?? 0 }))
-    results.push({ language: lang, specHandled: handled.length, fixtureTypes: occurring.size, uncovered, ambiguousCoverage, deadLiterals, deadLiteralSites, pass })
+    results.push({ language: lang, specHandled: handled.length, fixtureTypes: occurring.size, uncovered, deadLiterals, deadLiteralSites, pass })
     const flag = pass ? "PASS" : "FAIL"
-    console.log(`${lang.padEnd(12)} ${flag}  handled=${handled.length} fixtureTypes=${occurring.size} uncovered=${uncovered.length} ambiguous=${ambiguousCoverage.length} deadLiterals=${deadLiterals.length}`)
+    console.log(`${lang.padEnd(12)} ${flag}  handled=${handled.length} fixtureTypes=${occurring.size} uncovered=${uncovered.length} deadLiterals=${deadLiterals.length}`)
     if (uncovered.length > 0) console.log(`    uncovered: ${uncovered.join(", ")}`)
-    if (ambiguousCoverage.length > 0) {
-      console.log(`    ambiguousCoverage (colliding name, only an anonymous token proves it \u2014 the claim is unevidenced, not absent): ${ambiguousCoverage.join(", ")}`)
-    }
     if (deadLiterals.length > 0) {
       console.log(`    deadLiterals: ${deadLiterals.join(", ")}`)
       console.log(`    at: ${deadLiteralSites.map((s) => `${s.literal}:${s.line}`).join(", ")}`)

@@ -1,6 +1,6 @@
 # `bb_doc`
 
-Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Every mode emits its declared section set, an empty result is never reported as passing, and the token budget is enforced against the whole payload. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON. When the cited files are stale, the handler auto-refreshes exactly those files within budget and regenerates the document; refresh=false opts out and answers from existing data with the freshness block.
+Generate read-only, evidence-backed documentation with resolvable citations and a freshness block over the cited files. Supports symbol, file, module, feature, API, project, and documentation-coverage modes in Markdown or JSON.
 
 ## Contract
 
@@ -80,10 +80,6 @@ Generate read-only, evidence-backed documentation with resolvable citations and 
     "maxTokens": {
       "type": "number",
       "description": "output token budget"
-    },
-    "refresh": {
-      "type": "boolean",
-      "description": "false opts out of the inline auto-refresh of the files this document cites (default: auto-refresh those files within budget, then regenerate)"
     }
   },
   "required": [

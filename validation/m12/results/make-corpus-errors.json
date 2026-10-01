@@ -1,59 +1,13 @@
 {
   "analyzer": "make",
-  "corpus": "union of 13 repositories, pinned",
-  "corpusRepositories": [
-    "terraform",
-    "tf-aws-components",
-    "consul",
-    "boundary",
-    "luvit",
-    "kong",
-    "vault",
-    "nomad",
-    "waypoint",
-    "packer",
-    "terragrunt",
-    "Matrix",
-    "torrentinim"
-  ],
-  "corpusRepositoriesAbsent": [
-    "elixir",
-    "cabal",
-    "luarocks",
-    "cython",
-    "tree-sitter-clean",
-    "perl5 (no tracked Makefiles)"
-  ],
-  "corpusRevisions": {
-    "terraform": "db4eef44f5bbd39a115f939304279caee7cf9b12",
-    "tf-aws-components": "1f74a966a0b40ce7e5cae5baec690e5356cf46b8",
-    "consul": "668c7586de219f9f05510cc5734dc1861f0f68cb",
-    "boundary": "edfad8971a5488a82805e62dc939b771a778eb00",
-    "luvit": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
-    "kong": "94b6c29509f6ff8f4f5326a8c86bc9345cc7248b",
-    "vault": "ae269540b773f0f81fc8c34c36c75d15515e4ec4",
-    "nomad": "3f304768e47bbbd905c5cb0e609dd8f09bac767f",
-    "waypoint": "b81cf848b44f57b95cb2e9766839582cc625d9c2",
-    "packer": "4bb4b91351b5a62ed4c1df26ff230aecda5bfbe6",
-    "terragrunt": "17667115bb37a5c72a44962b418eba4471f625b0",
-    "Matrix": "d598862375829cc1d81aebccfe2e3acb0e1a9f92",
-    "torrentinim": "8a0f2294c7e11f71540d6e2bbbc48fa25748494e"
-  },
-  "corpusFileCap": 400,
+  "corpus": "union of pinned clean repos (elixir@024beb1, cabal@670955a4, luarocks@665f160b, terraform@2e1710bf, cython, tree-sitter-clean)",
   "revisions": {
-    "terraform": "db4eef44f5bbd39a115f939304279caee7cf9b12",
-    "tf-aws-components": "1f74a966a0b40ce7e5cae5baec690e5356cf46b8",
-    "consul": "668c7586de219f9f05510cc5734dc1861f0f68cb",
-    "boundary": "edfad8971a5488a82805e62dc939b771a778eb00",
-    "luvit": "a63febcb9108ed8b49c5bf7ea316a808441d6740",
-    "kong": "94b6c29509f6ff8f4f5326a8c86bc9345cc7248b",
-    "vault": "ae269540b773f0f81fc8c34c36c75d15515e4ec4",
-    "nomad": "3f304768e47bbbd905c5cb0e609dd8f09bac767f",
-    "waypoint": "b81cf848b44f57b95cb2e9766839582cc625d9c2",
-    "packer": "4bb4b91351b5a62ed4c1df26ff230aecda5bfbe6",
-    "terragrunt": "17667115bb37a5c72a44962b418eba4471f625b0",
-    "Matrix": "d598862375829cc1d81aebccfe2e3acb0e1a9f92",
-    "torrentinim": "8a0f2294c7e11f71540d6e2bbbc48fa25748494e"
+    "elixir": "024beb1bfcca0a24e859b2586059dd803a086615",
+    "cabal": "670955a4fb518bea5edab97e7bc33ecc694e3499",
+    "luarocks": "665f160b4d0b79e85e66c6cc83e442d72eb40868",
+    "terraform": "2e1710bfc5fa8bb45735b9ebcc9b258e00e9c155",
+    "cython": "51a460b7d704eb11b6f47abe7983c816d0b77129",
+    "tree-sitter-clean": "58729d3b3e27ab5a7093eaaa62b10008a170dc2a"
   },
   "extensions": [
     "Makefile",
@@ -61,40 +15,19 @@
     "makefile",
     "*.mk"
   ],
-  "trackedFiles": 14,
+  "trackedFiles": 7,
   "errorFiles": 0,
   "errorNodes": 0,
   "crashFiles": 0,
   "unexpectedErrorFiles": 0,
-  "residual": {
-    "policy": "real ERROR/MISSING nodes only; the engine's generic hasError-without-a-node warning is excluded and reported separately",
-    "expected": [],
-    "hasErrorNoNodeFiles": [
-      "boundary/Makefile",
-      "torrentinim/Makefile"
-    ],
-    "hasErrorNoNodeDetail": [
-      {
-        "repo": "boundary",
-        "file": "Makefile",
-        "reportedRows": [
-          1
-        ]
-      },
-      {
-        "repo": "torrentinim",
-        "file": "Makefile",
-        "reportedRows": [
-          1
-        ]
-      }
-    ],
-    "hasErrorNoNodeNote": "hasError=true with ZERO ERROR and ZERO MISSING nodes: the grammar's error bit is set by a hidden recovery token that web-tree-sitter does not surface. The file parses into the correct tree and the analyzer's output for it is correct, so this is NOT a file error. It is the engine's conservative fallback (engine.ts:1264) doing its job."
-  },
-  "residualMatches": true,
-  "cleanFiles": 14,
+  "cleanFiles": 7,
   "crashes": [],
   "errors": [],
   "passed": true,
-  "policy": "Every tracked Makefile in the six pinned clean repos is audited through the production parseFile pipeline. The analyzer never crashes, never synthesizes phantom rows, and the vendored tree-sitter-make grammar models the full corpus with zero ERROR/MISSING nodes. Clean acceptance files are those with zero parse errors."
+  "policy": "Every tracked Makefile in the six pinned clean repos is audited through the production parseFile pipeline. The analyzer never crashes, never synthesizes phantom rows, and the vendored tree-sitter-make grammar models the full corpus with zero ERROR/MISSING nodes. Clean acceptance files are those with zero parse errors.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.925Z",
+    "contentSha256": "ef445ab5b65fbe81e49e4a869813410557955a1273b24da59577e23e766ba5b7"
+  }
 }

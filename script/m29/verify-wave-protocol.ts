@@ -51,12 +51,7 @@ function mutant(label: string, caught: boolean, detail = ""): void {
   check(`mutant caught: ${label}`, caught, detail)
 }
 
-// The semicolon is load-bearing: without it tsc 5.9.3 reads the next statement's bare block
-// as this arrow's body and re-parses `({ … })` as a destructuring parameter list, so the file
-// fails to parse (TS1003 at the object's first `"`, TS1005 `'=>'` expected at the block) while
-// bun compiles it. Measured 2026-09-25: `type Step = {...}` + this line + `{ const x = 1 }`
-// reproduces it in three lines; removing the bare block or adding this `;` parses clean.
-const step = (name: string, status: Step["status"]): Step => ({ step: name, status, detail: "" });
+const step = (name: string, status: Step["status"]): Step => ({ step: name, status, detail: "" })
 
 /** A VOLATILE PIN in a byte-gated artifact: the live HEAD, or a wall-clock
  *  timestamp. Either one re-stales the drift gate on the very commit that

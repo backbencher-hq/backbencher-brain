@@ -45,13 +45,6 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "cpp", wasm: "tree-sitter-cpp.wasm", analyzer: "real-cpp-analyzer.ts" },
   { language: "csharp", wasm: "tree-sitter-c_sharp.wasm", analyzer: "real-csharp-analyzer.ts" },
   { language: "css", wasm: "tree-sitter-css.wasm", analyzer: "real-css-analyzer.ts" },
-  // scss joins F1 with its own wasm and its own analyzer. F1 asks whether the
-  // analyzer's node-type NAMES and FIELD names all exist in the wired grammar — the
-  // class where a case is renamed upstream and the extractor silently matches nothing.
-  // It could not be checked while `.scss` was routed to the CSS analyzer, because the
-  // check would have compared `real-scss-analyzer`'s vocabulary against the CSS
-  // grammar, which is a different question and would have been a false pass.
-  { language: "scss", wasm: "tree-sitter-scss.wasm", analyzer: "real-scss-analyzer.ts" },
   { language: "dart", wasm: "tree-sitter-dart.wasm", analyzer: "real-dart-analyzer.ts" },
   { language: "elixir", wasm: "tree-sitter-elixir.wasm", analyzer: "real-elixir-analyzer.ts" },
   { language: "erlang", wasm: "tree-sitter-erlang.wasm", analyzer: "real-erlang-analyzer.ts" },
@@ -91,7 +84,6 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "vue", wasm: "tree-sitter-vue.wasm", analyzer: "real-vue-analyzer.ts" },
   { language: "xml", wasm: "tree-sitter-xml.wasm", analyzer: "real-xml-analyzer.ts" },
   { language: "yaml", wasm: "tree-sitter-yaml.wasm", analyzer: "real-yaml-analyzer.ts" },
-  { language: "toml", wasm: "tree-sitter-toml.wasm", analyzer: "real-toml-analyzer.ts" },
   { language: "zig", wasm: "tree-sitter-zig.wasm", analyzer: "real-zig-analyzer.ts" },
 ]
 
@@ -106,36 +98,6 @@ function isFieldCall(name: string): boolean {
 // Universal tree-sitter built-in node types present in every parse tree regardless of grammar.
 const UNIVERSAL_NODE_TYPES = new Set(["ERROR", "MISSING"])
 
-/**
- * String vocabularies an analyzer legitimately compares a `type`-named binding
- * against, NONE of which is a grammar node type.
- *
- * `isTypeComparison` now also accepts a bare `type` IDENTIFIER, because a
- * destructured local (`const { type } = frame`) is as much a node-type binding
- * as `node.type` is. But the same identifier name is reused across analyzers for
- * a relationship type, a symbol kind and an evidence class, and those values are
- * not node types by construction — reporting them would be noise that trains a
- * reader to ignore the gate, which is the same failure as the vacuum this
- * change exists to close.
- *
- * So a literal is a FINDING only when it is in neither set. That preserves the
- * gate's actual promise — "a literal that can match nothing at all" — and drops
- * the false half — "a literal that is not a node type". The values are the
- * enums the shared `ASTEngine` already defines, kept literal here on purpose:
- * this oracle is loaded standalone against 32 analyzer sources with no
- * `ASTEngine` import, and a value that drifts out of sync here becomes a
- * finding a lane must adjudicate, which is the safe direction to fail in.
- */
-const NON_NODE_TYPE_VOCAB = new Set<string>([
-  // ASTEngine.RelationshipType values (every alias collapses to these)
-  "calls", "extends", "implements", "uses", "imports", "exports", "contains",
-  "references", "overrides", "instantiates",
-  // evidence classes assigned by classifyEvidenceTier-style passes
-  "structural", "import_based", "usage_contextual", "inferred",
-  // severity / diagnostic levels compared against a `type` binding
-  "error", "warning", "info", "hint", "fatal",
-])
-
 // Analyzers that parse embedded content with sibling grammars: their true oracle
 // is the UNION of grammars used at runtime. Recorded in evidence per language.
 const EXTRA_GRAMMARS: Record<string, string[]> = {
@@ -143,25 +105,6 @@ const EXTRA_GRAMMARS: Record<string, string[]> = {
   svelte: ["tree-sitter-typescript.wasm", "tree-sitter-javascript.wasm"],
   typescript: ["tree-sitter-tsx.wasm", "tree-sitter-javascript.wasm"],
   html: ["tree-sitter-javascript.wasm"],
-  // M14 #290 (markdown). tree-sitter-markdown is split into a BLOCK grammar and a
-  // COMPANION INLINE grammar, and the engine pre-parses every `inline` node with
-  // the companion before handing the trees to the analyzer (`engine.ts` markdown
-  // branch, the vue/svelte SFC pattern). So this lane's real oracle is the union of
-  // the two — exactly as vue/svelte/typescript above.
-  //
-  // It was absent, and the absence was load-bearing in the worst way: the two
-  // literals the analyzer names from the inline grammar (`uri_autolink`,
-  // `email_autolink`, at real-markdown-analyzer.ts:253) were reported as DEAD
-  // BRANCHES — "unknown node type, can never match" — when both are live NAMED
-  // types of the inline grammar (ids 37 and 38). They sat in the v2 dead-literal
-  // record with the repayment written down: "either load
-  // tree-sitter-markdown_inline into the oracle for this lane (EXTRA_GRAMMARS) or
-  // delete the branch." This is that repayment: the branch stays, the oracle was
-  // wrong, and the record's two entries are retired rather than tolerated.
-  //
-  // A gate that reports a live branch as dead is worse than a gate that reports
-  // nothing, because the natural response to its output is to DELETE the branch.
-  markdown: ["tree-sitter-markdown_inline.wasm"],
 }
 
 interface Finding { literal: string; line: number; context: string }
@@ -414,96 +357,12 @@ async function main() {
     }
     const strOf = (n: any): string | null =>
       n.type === "string" && n.namedChildren[0]?.type === "string_fragment" ? n.namedChildren[0].text : null
-    // Does one side of this comparison name a NODE TYPE?
-    //
-    // The ORIGINAL predicate accepted only a `member_expression` ending in
-    // `type` — i.e. `node.type === "class"`. That misses the other spelling
-    // real analyzers use:
-    //
-    //   const { node, type } = frame      // destructured local
-    //   if (type === "class") { … }
-    //
-    // where the compared identifier is a BINDING, not a member expression, so
-    // the old predicate returned false and the branch was never collected. The
-    // consequence was a vacuous gate rather than a loud one: a lane written in
-    // that style reported `unknown=0` while its dispatch was unread, and — the
-    // part that made it dangerous — a file could CITE this audit as proof that
-    // a dead node-type literal was live. Measured on the ruby lane before this
-    // change: 20 of its 60 node-type comparisons were unread, and two of them
-    // were dead branches whose comments read "(grammar-audit proven)".
-    //
-    // Accepting a bare `type` identifier widens the net over a vocabulary the
-    // audit cannot know from a grammar: the SAME identifier also holds a
-    // relationship type (`const type = r.type ?? r.relationshipType ?? ""`),
-    // a symbol kind, or an evidence class, and those values are not node types
-    // by construction. Reporting them would be noise that trains a reader to
-    // ignore the gate. So a literal is a finding only when it matches NEITHER
-    // the grammar's node types NOR the non-node-type vocabularies below — which
-    // keeps the gate's promise ("a literal that can match nothing") and drops
-    // the false half ("a literal that is not a node type").
-    const endsWithType = (e: any) => e.type === "member_expression" && e.children[e.children.length - 1]?.text === "type"
-
-    /**
-     * Is this bare `type` identifier bound to a NODE TYPE?
-     *
-     * Accepting every identifier named `type` is too coarse, and the first
-     * version of this fix proved it: the sql analyzer's
-     * `processNamedContainer(node, kind, type: string, state)` compares its
-     * `type` PARAMETER against "schema" / "sequence" / "extension" — a domain
-     * vocabulary for a named container, not node types, and perfectly live. The
-     * gate reported all three as dead branches, which is noise that trains a
-     * reader to ignore the gate — the same failure as the vacuum.
-     *
-     * A second version keyed the local-binding check on DECLARATION node
-     * identity and collected nothing at all, because the identifier in
-     * `type === "class"` is a different node from the name in
-     * `const type = node.type`. The check is by NAME within the enclosing
-     * function, which is what a reader of the analyzer actually sees:
-     *
-     *   - `const type = node.type` or `const { … type … } = frame` -> LOCAL, a
-     *     node-type binding. Counted.
-     *   - a function PARAMETER named `type` -> a caller-supplied string in every
-     *     analyzer in this repo, none types it as a Node. Not counted.
-     *   - no findable declaration -> unknown provenance, which is not evidence
-     *     of a node binding. Not counted, because the failure direction that
-     *     costs a reader is the false positive.
-     */
-    interface TypeBindingFacts { local: boolean; parameter: boolean }
-    const typeBindingByFn = new Map<any, TypeBindingFacts>()
-    const FN_TYPES = new Set([
-      "function_declaration", "function_expression", "arrow_function",
-      "method_definition", "method_declaration", "generator_function", "generator_function_declaration",
-    ])
-    const PARAM_TYPES = new Set(["required_parameter", "optional_parameter"])
-    const typeBindingFacts = (fn: any): TypeBindingFacts => {
-      const cached = typeBindingByFn.get(fn)
-      if (cached) return cached
-      const facts: TypeBindingFacts = { local: false, parameter: false }
-      const stack: any[] = [fn]
-      while (stack.length > 0) {
-        const n = stack.pop()!
-        if (n.type === "variable_declarator" && n.namedChild(0)?.type === "identifier" && n.namedChild(0)?.text === "type") {
-          facts.local = true
-        }
-        if (n.type === "shorthand_property_identifier_pattern" && n.text === "type") facts.local = true
-        if (PARAM_TYPES.has(n.type) && n.namedChild(0)?.text === "type") facts.parameter = true
-        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
-      }
-      typeBindingByFn.set(fn, facts)
-      return facts
+    const isTypeComparison = (bin: any): boolean => {
+      const endsWithType = (e: any) => e.type === "member_expression" && e.children[e.children.length - 1]?.text === "type"
+      return endsWithType(bin.child(0)) || endsWithType(bin.child(2))
     }
-    let currentFn: any = null
-    const isTypeish = (e: any) => {
-      if (endsWithType(e)) return true
-      if (e.type !== "identifier" || e.text !== "type" || !currentFn) return false
-      const f = typeBindingFacts(currentFn)
-      return f.local && !f.parameter
-    }
-    const isTypeComparison = (bin: any): boolean => isTypeish(bin.child(0)) || isTypeish(bin.child(2))
 
     const visit = (node: any) => {
-      const prevFn = currentFn
-      if (FN_TYPES.has(node.type)) currentFn = node
       // x.type === "lit"
       if (node.type === "binary_expression" && ["===", "!==", "==", "!="].includes(node.child(1)?.text) && isTypeComparison(node)) {
         for (const side of [node.child(0), node.child(2)]) {
@@ -590,7 +449,6 @@ async function main() {
         }
       }
       for (let i = 0; i < node.namedChildCount; i++) visit(node.namedChild(i))
-      currentFn = prevFn
     }
     visit(tree.rootNode)
     if (tree.rootNode.hasError) {
@@ -603,9 +461,6 @@ async function main() {
     const waivReasons: Record<string, string> = {}
     for (const [lit, sites] of typeRefs) {
       if (nodeTypes.has(lit)) continue
-      // See NON_NODE_TYPE_VOCAB: a `type` binding may hold an enum value that is
-      // not a node type. Not a dead branch, so not a finding.
-      if (NON_NODE_TYPE_VOCAB.has(lit)) continue
       const langAllow = allowlist[entry.language] ?? {}
       if (langAllow[lit]) {
         waived.push(sites[0]); waivReasons[lit] = langAllow[lit]

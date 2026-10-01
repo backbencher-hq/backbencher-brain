@@ -6,19 +6,19 @@
   "entries": [
     {
       "file": "real-cpp-analyzer.ts",
-      "line": 1220,
+      "line": 797,
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained]"
     },
     {
       "file": "real-cpp-analyzer.ts",
-      "line": 1242,
+      "line": 819,
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
@@ -94,11 +94,11 @@
     },
     {
       "file": "real-zig-analyzer.ts",
-      "line": 1016,
+      "line": 1000,
       "source": "/[!*\\s\\[\\]\\{\\}]+/g",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 1000 -> 1016 — the merged zig analyzer's positions; same statement (char-class strip); regex retained]"
+      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained]"
     },
     {
       "file": "real-clojure-analyzer.ts",

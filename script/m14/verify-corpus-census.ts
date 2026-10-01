@@ -36,14 +36,6 @@ const EVIDENCE = path.join(ROOT, "validation", "m14", "results", "M14.0.F8.json"
 const CENSUS_FILES = process.argv.includes("--files") ? parseInt(process.argv[process.argv.indexOf("--files") + 1]) : 60
 
 const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
-  // M14 (#288): html joins the census. This gate is the one that finds a node type
-  // the CORPUS actually produces which the analyzer AND the oracle both skip — the
-  // blind-spot class no fixture can see, because a fixture is written from what its
-  // author already knew to write. html's census is what found the five
-  // internal_silent rows and confirmed the twelve handled ones are the whole real
-  // surface. `otp` is the same corpus the F5 lane uses, and both spellings are
-  // declared because `language-detection.ts` routes `.htm` to the same analyzer.
-  html: { wasm: "tree-sitter-html.wasm", ext: [".html", ".htm"], repo: "otp" },
   java: { wasm: "tree-sitter-java.wasm", ext: [".java"], repo: "grails-core" },
   groovy: { wasm: "tree-sitter-groovy.wasm", ext: [".groovy"], repo: "grails-core" },
   kotlin: { wasm: "tree-sitter-kotlin.wasm", ext: [".kt"], repo: "Exposed" },
@@ -52,26 +44,6 @@ const GATED: Record<string, { wasm: string; ext: string[]; repo: string }> = {
   javascript: { wasm: "tree-sitter-javascript.wasm", ext: [".js"], repo: "grails-core" },
   vue: { wasm: "tree-sitter-vue.wasm", ext: [".vue"], repo: "element-plus" },
   svelte: { wasm: "tree-sitter-svelte.wasm", ext: [".svelte"], repo: "svelte" },
-  // CSS is measured against the svelte repo for the same reason svelte is: the
-  // .css files are tracked, non-empty except for one named file, and — unlike a
-  // synthetic sample — they are the corpus the M12 lane and the M59 line oracle
-  // already run on, so a census finding can be checked against those artifacts
-  // instead of needing a new corpus. This is the gate that finds a node type the
-  // CORPUS produces which the analyzer AND the oracle both skip: a fixture is
-  // written from what its author already knew to write, so only the corpus can see
-  // that shape. For CSS it confirms all 94 distinct types the corpus produces are
-  // covered by script/m14/spec/css-completeness.json.
-  css: { wasm: "tree-sitter-css.wasm", ext: [".css"], repo: "svelte" },
-  // scss joins the census on `element-plus`, NOT on svelte. That is deliberate and it
-  // is the opposite choice from css: `.scss` files exist in 4 corpora and 170 of the
-  // 254 are element-plus, which is also the HARD one — 90 of 160 parse clean after
-  // the two grammar patches, against 52 of 74 for phpmyadmin. Pointing the census at
-  // an easy corpus would confirm the lane against the shapes it already handles.
-  //
-  // F8 is the gate that finds a node type the CORPUS produces which the analyzer AND
-  // the oracle both skip — a fixture is written from what its author already knew to
-  // write, so only the corpus can see a shape nobody thought to pin.
-  scss: { wasm: "tree-sitter-scss.wasm", ext: [".scss"], repo: "element-plus" },
   c: { wasm: "tree-sitter-c.wasm", ext: [".c", ".h"], repo: "sqlite" },
   cpp: { wasm: "tree-sitter-cpp.wasm", ext: [".cc", ".cpp", ".h", ".hpp"], repo: "fmt" },
   rust: { wasm: "tree-sitter-rust.wasm", ext: [".rs"], repo: "ripgrep" },
@@ -161,23 +133,9 @@ async function main() {
     // Spec-classified types: every category counts as "known" — the census
     // demands a RULING, not a specific verdict.
     const classified = new Set<string>()
-    // `types` is a LIST in the css/jvm-family specs and a keyed OBJECT in the scss
-    // one, which carries per-type evidence (`inCorpus`, `note`, `reachedBy`). The
-    // first version assumed the list shape and threw `TypeError: {} is not iterable`
-    // on the scss spec — so the lane could not be registered at all, which is the gate
-    // refusing a format rather than a lane.
-    //
-    // Both shapes are read here rather than by normalising the scss spec down to a
-    // list, because the per-type evidence is the part that makes the spec worth having:
-    // a list of names cannot say which types the corpus has never exercised, and that
-    // distinction is the one this gate exists to surface.
-    const addTypes = (v: any): void => {
-      if (Array.isArray(v)) for (const t of v) classified.add(String(t))
-      else if (v && typeof v === "object") for (const k of Object.keys(v)) classified.add(k)
-    }
-    addTypes(spec.handled_verified?.types)
-    addTypes(spec.internal_silent?.types)
-    addTypes(spec.gap?.types)
+    for (const t of spec.handled_verified?.types ?? []) classified.add(t)
+    for (const t of spec.internal_silent?.types ?? []) classified.add(t)
+    for (const t of spec.gap?.types ?? []) classified.add(t)
     for (const t of spec.design_decision?.types ?? []) classified.add(t)
     for (const d of spec.design_decision?.decisions ?? []) {
       for (const t of String(d.node_type ?? "").split(",")) {

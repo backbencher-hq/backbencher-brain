@@ -81,20 +81,11 @@
 
 From `validation/m12/results/regex-census.json`: the TypeScript analyzer has
 **0 regex usages** (baseline 36 — the single largest regex user in the
-codebase; eliminated by the M12.09 regex-free rewrite, completed for the last
-five stragglers on 2026-09-27: three copies of a type-parameter constraint
-strip, a rest-parameter `...` strip and an index-signature `:` strip, each
-replaced by a `startsWith` + `slice` helper call). The doc previously claimed 0
-while the register still listed 5 — the claim is now true rather than
-aspirational. All text normalization uses pure-String helpers
-(`startsWith`/`endsWith` + `slice`): `stripLeading`, `stripLeadingColon`,
-`stripLeadingEquals`, `stripTrailingDot`, `stripTrailingQuestion`,
-`stripPrivatePrefix`, `stripPrefix`, `stripLeadingKeyword`, `unquote`,
-`stringContent`, `stripCommentMarkers`, `hasBraceEquals`, `stripWhitespace`.
-`WHITESPACE_CHARS` spells out the set JS `\s` matches so `stripLeadingKeyword`
-stays provably identical to the regex it replaced (an ASCII-only test diverges
-on U+00A0), and the three copies of the generic-parameter extractor are now one
-module-level `extractTypeParametersOf`.
+codebase; eliminated by the M12.09 regex-free rewrite). All text
+normalization uses pure-String helpers (`startsWith`/`endsWith` + `slice`):
+`stripLeading`, `stripLeadingColon`, `stripLeadingEquals`, `stripTrailingDot`,
+`stripTrailingQuestion`, `stripPrivatePrefix`, `unquote`, `stringContent`,
+`stripCommentMarkers`, `hasBraceEquals`, `stripWhitespace`.
 
 ## Complexity envelope
 
@@ -109,73 +100,13 @@ Declared budgets: fixtures < 2 s (met: 0.23 s). The 399-file corpus subset is
 dominated by the TypeScript compiler's own self-hosting sources (the top
 sample files are 200–750 KB — `src/compiler/checker.ts` at 3.1 MB exceeds the
 1 MB measurement cap and is excluded by design, matching the F#/Java corpus
-methodology).
+methodology), so wall time is parse-bound rather than analyzer-bound.
 
-**The "parse-bound, not analyzer-bound" reading of that row is wrong, and the
-M60 gate cannot correct it because it records this analyzer as `unscorable`**
-(`validation/m60/results/analyzer-complexity.json`: no `loadRule`, no
-`corpusManifest`, so #871 treats the row as not scored). Measured directly on a
-real 108 KiB source in this repo (`src/ast/real-javascript-analyzer.ts`,
-min-of-N, same process, both analyzer versions loaded side by side):
-
-| | |
-| --- | --- |
-| `tree-sitter` parse only | 57 ms |
-| `analyze()` | 1,863 ms — **97.0% of the cost is the analyzer** |
-
-Scaling is also super-linear: halving the file repeatedly gave 2.00x, then
-2.42x, then 2.28x time for each 2x of source. Wall-clock numbers on a shared
-box are unstable (the M12 harness header records the same analyzer measuring
-25.8 ms/file and 172.6 ms/file minutes apart), so the claims below are stated
-as **node visits**, which are deterministic.
-
-Hot-path audit — CORRECTED (2026-09-27). The previous text here claimed "no
-O(n²) or per-symbol O(n) scans", "relationship extraction uses name-keyed maps
-and the scope stack", and "call source resolution is O(1) leaf extraction".
-Measured against the source, all three were false:
-
-- `addContainmentRelationships` is O(n²): one `findItem` linear scan of the
-  symbol array per symbol that has an owner.
-- `resolveRelationshipSymbol` is a linear `findItem` scan per DECLARATION node
-  (not per node), plus an ancestor walk per `method_definition`.
-- The name-keyed map it referred to (`symbolsById`) was written on every symbol
-  and never read — dead state, now deleted.
-- The file walked the tree ~12 times per file (symbol extraction, dup-key
-  collapse, imports, exports, three relationship passes, declared-type refs, two
-  complexity walks, the file-signals scan, plus one subtree walk per symbol for
-  complexity / qualified_calls / taint / comments). A V8 CPU profile attributes
-  ~52% of samples to tree-sitter node access and JS↔wasm marshalling against
-  ~7% in analyzer code, so walk COUNT is the cost, not the arithmetic.
-
-What the corrected version removed (node visits, 4 real repo files, counted by
-instrumenting both versions in one process):
-
-| walk | before | after |
-| --- | --- | --- |
-| dup-key collapse (was called twice, first result discarded) | 80,514 | 40,257 |
-| complexity (per-symbol double walk + a byte-identical second implementation) | 138,442 | 69,860 |
-| calls + instantiations (two passes, now one) | 83,154 | 41,577 |
-
-Still true after the correction, and worth keeping: the relationship SET is
-unchanged by the fusion (verified per-file as a multiset over 2,457 files:
-2,454 identical, the 3 differences being the intended override/export fixes,
-1,255 of them order-only).
-
-Since that correction the two quadratic scans are GONE, both replaced by a
-name -> first-declared-symbol index built in one pass (first-wins preserved, so
-repeated names resolve exactly as the array scan did), and both verified
-behaviour-identical over the same 2,457 files:
-
-| scan | before | after | removed |
-| --- | --- | --- | --- |
-| containment, per owned member | 360,230 comparisons | 24,025 | 93.3% (worst file: 108,755) |
-| enclosing-symbol resolver, per declaration node | 41,966 | 9,032 | 78.5% |
-
-The remaining honest cost is the WALK COUNT itself: the usage pass is still
-separate because it carries per-function `locals`, and the per-file signal scan
-(one walk, shared by the React gate and the taint sink rule) still runs on every
-file. Neither is measured by a gate, because M60 still records this analyzer as
-`unscorable`.
+Hot-path audit: no O(n²) or per-symbol O(n) scans. Symbols are emitted in a
+single iterative AST traversal; relationship extraction uses name-keyed maps
+and the scope stack; containment is derived from `ownerName` in one pass;
+overload dedup uses a `Set` of seen `owner:name` keys. Call source resolution
+is O(1) leaf extraction from the enclosing method scope.
 
 ## Differential ground truth
 

@@ -1,287 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:svelte",
-  "inputs": {
-    "files": {
-      "src/ast/analysis-exclusions.ts": {
-        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
-        "bytes": 9702
-      },
-      "src/ast/engine.ts": {
-        "sha256": "0ebe76da6ea322d268e09fd91fad20feb5b51cd20c302820d6d484c2dd1ca8d6",
-        "bytes": 84243
-      },
-      "src/ast/fingerprint.ts": {
-        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
-        "bytes": 8903
-      },
-      "src/ast/framework-detectors.ts": {
-        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
-        "bytes": 23350
-      },
-      "src/ast/framework-intelligence.ts": {
-        "sha256": "4de0e1a8c8f1a98491ffc3349515e841f624369ec9990e75ab9bfdf8393d7dea",
-        "bytes": 48440
-      },
-      "src/ast/language-detection.ts": {
-        "sha256": "5a9e8e0d159f501f694e12650543b805a7e476f17926c4f6a210071ae1831f8d",
-        "bytes": 10154
-      },
-      "src/ast/override-context.ts": {
-        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
-        "bytes": 7047
-      },
-      "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "9628a39c8076741df933509f973682f44a175f6719ce693c0af0370f0071d5fa",
-        "bytes": 87277
-      },
-      "src/ast/test-classification.ts": {
-        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
-        "bytes": 3145
-      },
-      "src/ast/type-inference.ts": {
-        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
-        "bytes": 31754
-      },
-      "src/brain/brain.sql.ts": {
-        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
-        "bytes": 18451
-      },
-      "src/brain/database.ts": {
-        "sha256": "576eaa832a01d4bc066916b88e5cc27f5d1202ea995eda7746917ac336964e29",
-        "bytes": 18198
-      },
-      "src/brain/schema-ddl.ts": {
-        "sha256": "4d90512e4d46192f740400127ca5d1644a2a03cccd8d98ff7ac41e238f035d98",
-        "bytes": 31432
-      },
-      "src/project/project.sql.ts": {
-        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
-        "bytes": 328
-      },
-      "src/project/schema.ts": {
-        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
-        "bytes": 63
-      },
-      "src/tool/brain-log.ts": {
-        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
-        "bytes": 564
-      },
-      "src/util/bb-data-dir.ts": {
-        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
-        "bytes": 1781
-      },
-      "src/util/lazy.ts": {
-        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
-        "bytes": 333
-      },
-      "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
-      },
-      "validation/m12/fixtures/svelte/App.svelte": {
-        "sha256": "92f6982b7a62cbfa87d1adcc9f10d2d9787f162a36302a563521ca6fe7001f57",
-        "bytes": 575
-      },
-      "validation/m12/fixtures/svelte/Button.svelte": {
-        "sha256": "436a1680da5b87e4e74ce645e724745232c820c03821c874fdb2b96902eb9183",
-        "bytes": 357
-      },
-      "validation/m12/fixtures/svelte/Card.svelte": {
-        "sha256": "8b97fe8110093ca6dfba0610dfcfc7b6a1f0500aecbf268fa198f9c962ffbdb0",
-        "bytes": 368
-      },
-      "validation/m12/fixtures/svelte/Negative.svelte": {
-        "sha256": "27e051e3532d88a4d8d19c6b8d1a3856a0696021dfb509685bfb9bce0bc7699e",
-        "bytes": 382
-      },
-      "validation/m12/fixtures/svelte/UserList.svelte": {
-        "sha256": "1f68b1a77f97aecb0987dbedb667f95db7f04ac49734a9182092d07839ecb011",
-        "bytes": 479
-      },
-      "validation/m12/ground-truth/svelte.json": {
-        "sha256": "d039733796fac306c692e418c3c12dc549102370c8065f7cf037f4a8688aad2b",
-        "bytes": 36591
-      }
-    },
-    "digest": "9eae5de10ee9ce55e8c676f6dab96692a49530c31283d3e926c886faf89bf236",
-    "parser": {
-      "path": "/tmp/bb-wasm_tree-sitter-svelte_tree-sitter-svelte.wasm",
-      "sha256": "3d601416b5955a872f044a861efde61081ad1920d26903e9e0b8c4ccebaf09b5",
-      "bytes": 47873
-    },
-    "siblings": {
-      "src/ast/real-bash-analyzer.ts": {
-        "sha256": "b3ff03aeddbffcab9f68e6ede62587b382bba4b0f4846b03f3bd9c839e1a31e8",
-        "bytes": 73496
-      },
-      "src/ast/real-c-analyzer.ts": {
-        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
-        "bytes": 185825
-      },
-      "src/ast/real-clean-analyzer.ts": {
-        "sha256": "98b552f83665aee217ca9e3e89fc14b617c53d7176dbc834367ffb41b4afe055",
-        "bytes": 151894
-      },
-      "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
-        "bytes": 89802
-      },
-      "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
-        "bytes": 134291
-      },
-      "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
-        "bytes": 190596
-      },
-      "src/ast/real-css-analyzer.ts": {
-        "sha256": "ccf4f113549745d0f8309a87d01d51a2d69732eeafab9bb7d599bd5b36cbdb64",
-        "bytes": 140933
-      },
-      "src/ast/real-dart-analyzer.ts": {
-        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
-        "bytes": 119919
-      },
-      "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "22ead3e4a8b7601e45961d889467626db847e91df261d03579de6f70f2d80ad6",
-        "bytes": 86724
-      },
-      "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
-        "bytes": 41969
-      },
-      "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "ffb794762aa3f5c0ca8bfa36b3978568607f2baeeb509c6668dd6552c208819f",
-        "bytes": 36482
-      },
-      "src/ast/real-go-analyzer.ts": {
-        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
-        "bytes": 170963
-      },
-      "src/ast/real-graphql-analyzer.ts": {
-        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
-        "bytes": 21325
-      },
-      "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
-        "bytes": 126319
-      },
-      "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "943f0ce6d7b497f19ba0d77638a76ea5ff88a88b94fa90f6f1f7865adcfeb032",
-        "bytes": 71471
-      },
-      "src/ast/real-hcl-analyzer.ts": {
-        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
-        "bytes": 14474
-      },
-      "src/ast/real-html-analyzer.ts": {
-        "sha256": "8cf208df8d81e20cf3ce6bc52ff1a970171c3a22648a1b6ae710fa97ea4d5717",
-        "bytes": 94338
-      },
-      "src/ast/real-java-analyzer.ts": {
-        "sha256": "6062af27f561c416b9629667121bfcca1e8d81e54d0cee46b9609ad1c5ac142a",
-        "bytes": 152024
-      },
-      "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "b6c03eea979175ebea8bd5ba16f4a9c4a7e53c2a266ea831cd710ead4c531b4a",
-        "bytes": 134094
-      },
-      "src/ast/real-json-analyzer.ts": {
-        "sha256": "12abc8620b7e0d2952d7fb37dca4a77f75f4f69e6e5bf0a9dc07299727f175f5",
-        "bytes": 29491
-      },
-      "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "284b27c21aa6cb4c89fdcc9facfd2335a15f6eb6e2525684526322fa15e944e3",
-        "bytes": 162982
-      },
-      "src/ast/real-lua-analyzer.ts": {
-        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
-        "bytes": 20172
-      },
-      "src/ast/real-makefile-analyzer.ts": {
-        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
-        "bytes": 15750
-      },
-      "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "510d6c234e203ad2ec99ba88ca24122feae2ec5abc9c2e4bb9d0103703b790e4",
-        "bytes": 38730
-      },
-      "src/ast/real-objective-c-analyzer.ts": {
-        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
-        "bytes": 74340
-      },
-      "src/ast/real-perl-analyzer.ts": {
-        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
-        "bytes": 26379
-      },
-      "src/ast/real-php-analyzer.ts": {
-        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
-        "bytes": 114562
-      },
-      "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
-        "bytes": 126264
-      },
-      "src/ast/real-python-analyzer.ts": {
-        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
-        "bytes": 70460
-      },
-      "src/ast/real-r-analyzer.ts": {
-        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
-        "bytes": 39112
-      },
-      "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
-        "bytes": 88887
-      },
-      "src/ast/real-rust-analyzer.ts": {
-        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
-        "bytes": 107870
-      },
-      "src/ast/real-scala-analyzer.ts": {
-        "sha256": "8e5065ddde8ea25e1179debcf3c62e9b67c5acaafa2ff8ad5c9949013a32deea",
-        "bytes": 127225
-      },
-      "src/ast/real-scss-analyzer.ts": {
-        "sha256": "c56b98e24c796a92f1ead56206aeb02ce6ac055b45bcf6f14e4edb9aff437888",
-        "bytes": 45414
-      },
-      "src/ast/real-sql-analyzer.ts": {
-        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
-        "bytes": 29215
-      },
-      "src/ast/real-swift-analyzer.ts": {
-        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
-        "bytes": 107709
-      },
-      "src/ast/real-toml-analyzer.ts": {
-        "sha256": "ec7bd9bc571a46f596c447cb84ca81680bb2c74d37218ddb4db9ec20488eb1ff",
-        "bytes": 25734
-      },
-      "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "72d55a26a084f6ba67187bc8c36440b67bb59a75522551d8731484dcdd693c23",
-        "bytes": 277439
-      },
-      "src/ast/real-vue-analyzer.ts": {
-        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
-        "bytes": 58931
-      },
-      "src/ast/real-xml-analyzer.ts": {
-        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
-        "bytes": 11842
-      },
-      "src/ast/real-yaml-analyzer.ts": {
-        "sha256": "784054714b11cbe5a8de939f79e03b853f4f13917c17beaecb3e8c6783445731",
-        "bytes": 86783
-      },
-      "src/ast/real-zig-analyzer.ts": {
-        "sha256": "f327c176c4466a03e6e14c7ee91de912fa81744b0d8a9d3695908b0c5f5baca8",
-        "bytes": 64750
-      }
-    }
-  },
-  "truthSource": "manual_audit — symbols and the calls/contains/exports/imports/instantiates relationships were audited first, and the `uses` and `references` types were NOT, which is why this file measured precision 0.778 against a correct analyzer. Those 18 edges are now audited, each quoting the line it was read from. THE TEN REMAINING `unknown` EDGES, EXPLAINED CORRECTLY AFTER TWO WRONG EXPLANATIONS. FIRST WRONG: I claimed their targets were function locals, parameters or store sigils rather than component members. FALSE — `Card -> count` is a `variable` at L8, `UserList -> count` a `constant` at L7, and both edges are real. SECOND WRONG: having audited the targets, I added those three to this file as facts. That was also wrong, and M12 said so immediately by reporting them as false negatives. THE ACTUAL RULE IS THE CONFIDENCE TIER, and it is the analyzer's own. This lane emits 0.95 and nothing else — all three of its `confidence:` sites are its OWN emissions (`instantiates` at 411, template member-uses at 776, `this={X}` at 806). The 0.6 edges are the javascript sub-analyzer's script-side `uses`, merged unchanged across the delegation seam, and M12 buckets anything below 0.7 as `unknown`. So the split is TEMPLATE (0.95) versus SCRIPT (0.6), not member versus parameter: every 0.95 edge here is a template read (`Card -> header` L21, `Button -> label` L16, `App -> loading` L29) and every 0.6 edge is a script read (`Card -> count` L15, `handleInput -> *` L8-9, `UserList -> count` L8). WHY THAT IS THE HONEST STATE rather than a gap. S1's whole subject — the template-to-script data flow — is the 0.95 tier, and that tier is now fully audited at 1.000 precision. The 0.6 tier is script-internal flow inherited from the javascript lane, and labelling it below M12's resolution threshold is the correct call: a read inside a function says less about a COMPONENT's data flow than a read in its template. Adding those facts would have demanded the 0.6 tier be treated as resolved and would have made the gate red on a deliberate, documented confidence decision.",
+  "truthSource": "manual_audit",
   "truthReference": "Independent hand audit of validation/m12/fixtures/svelte/*.svelte against Svelte 5 semantics and the TS/JS family contract (M12.09/M12.10, mirrored by Vue M12.12): SFC component -> class (file-level, L1); script top-level const -> constant, let/var -> variable, function -> function via the real JavaScript analyzer (engine pre-parse via context.sfcScriptTrees — always JS-family extraction regardless of lang, mirrors Vue); Svelte props: `export let x` -> Property (JS analyzer reports Variable + export, reclassified + component-owned), `$props()` destructure names -> Property (owner = component); `$:` reactive declaration assignment targets -> Variable (owner = component); rune calls ($state/$derived/$effect/$props/$inspect/$bindable/$host/$render) are compiler macros — no calls, no symbols for the rune itself; template pass emits instantiates only for non-builtin element/self-closing tags (leaf tag names, HTML + Svelte builtins filtered); on: event directives -> calls (leaf handler from the raw_text_expr value — pure-String scan, the grammar exposes template expressions as opaque raw_text leaves: `on:click={inc}` -> inc, `on:click={() => bump()}` -> bump, `on:load={() => nextPage()}` -> nextPage; arrow-param/property expressions like `(e) => e.target.value` emit nothing); bind:/class:/style:/use:/transition:/animate: directives and template blocks (#if/#each/if-blocks) are NEVER symbols or calls; no locals/params as symbols (tmp, event not emitted); contains from ownerName (component-owned props/exports/reactive decls); imports from import directives (svelte/store:writable, ./Card.svelte:Card); console.* and Object-leaf methods filtered; the old analyzer's svelte_script/svelte_block_*/attribute/directive symbols are gone (SFC blocks and template attributes are never symbols).",
   "fixtureDir": "validation/m12/fixtures/svelte",
   "fixtures": [
@@ -294,35 +14,35 @@
   "perFile": {
     "App.svelte": {
       "symbols": 4,
-      "relationships": 11
+      "relationships": 8
     },
     "Button.svelte": {
       "symbols": 7,
-      "relationships": 9
+      "relationships": 4
     },
     "Card.svelte": {
       "symbols": 7,
-      "relationships": 15
+      "relationships": 11
     },
     "Negative.svelte": {
       "symbols": 6,
-      "relationships": 13
+      "relationships": 3
     },
     "UserList.svelte": {
       "symbols": 5,
-      "relationships": 15
+      "relationships": 9
     }
   },
   "passing": {
     "schemaVersion": 1,
     "passed": true,
     "metrics": {
-      "expected": 82,
-      "observedResolved": 82,
-      "truePositive": 82,
+      "expected": 63,
+      "observedResolved": 63,
+      "truePositive": 63,
       "falsePositive": 0,
       "falseNegative": 0,
-      "unknown": 10,
+      "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
@@ -330,7 +50,7 @@
       "recall": 1,
       "falsePositiveRate": 0,
       "falseNegativeRate": 0,
-      "unknownRate": 0.12195121951219512
+      "unknownRate": 0
     },
     "earliestFailingLayer": null,
     "truePositiveIds": [
@@ -341,19 +61,10 @@
       "rel:App.svelte:instantiates:App:Button",
       "rel:App.svelte:instantiates:App:Card",
       "rel:App.svelte:instantiates:App:UserList",
-      "rel:App.svelte:references:nextPage:page",
-      "rel:App.svelte:uses:App:loading",
-      "rel:App.svelte:uses:App:nextPage",
-      "rel:App.svelte:uses:App:page",
       "rel:Button.svelte:calls:Button:bump",
       "rel:Button.svelte:contains:Button:disabled",
       "rel:Button.svelte:contains:Button:label",
       "rel:Button.svelte:contains:Button:onSelect",
-      "rel:Button.svelte:references:bump:count",
-      "rel:Button.svelte:uses:Button:bump",
-      "rel:Button.svelte:uses:Button:disabled",
-      "rel:Button.svelte:uses:Button:doubled",
-      "rel:Button.svelte:uses:Button:label",
       "rel:Card.svelte:calls:Card:reset",
       "rel:Card.svelte:calls:Card:toUpperCase",
       "rel:Card.svelte:calls:Card:writable",
@@ -365,16 +76,9 @@
       "rel:Card.svelte:exports:Card:reset",
       "rel:Card.svelte:exports:Card:title",
       "rel:Card.svelte:imports:Card:svelte/store:writable",
-      "rel:Card.svelte:uses:Card:body",
-      "rel:Card.svelte:uses:Card:header",
-      "rel:Card.svelte:uses:Card:theme",
-      "rel:Negative.svelte:calls:Negative:fade",
       "rel:Negative.svelte:contains:Negative:filtered",
       "rel:Negative.svelte:contains:Negative:query",
       "rel:Negative.svelte:exports:Negative:query",
-      "rel:Negative.svelte:uses:Negative:filtered",
-      "rel:Negative.svelte:uses:Negative:query",
-      "rel:Negative.svelte:uses:Negative:stateVal",
       "rel:UserList.svelte:calls:UserList:derived",
       "rel:UserList.svelte:calls:UserList:readable",
       "rel:UserList.svelte:calls:UserList:select",
@@ -384,9 +88,6 @@
       "rel:UserList.svelte:imports:UserList:svelte/store:derived",
       "rel:UserList.svelte:imports:UserList:svelte/store:readable",
       "rel:UserList.svelte:instantiates:UserList:Card",
-      "rel:UserList.svelte:uses:UserList:doubled",
-      "rel:UserList.svelte:uses:UserList:items",
-      "rel:UserList.svelte:uses:UserList:select",
       "symbol:App.svelte:1:class:App",
       "symbol:App.svelte:6:variable:page",
       "symbol:App.svelte:7:variable:loading",
@@ -419,18 +120,7 @@
     ],
     "falsePositiveIds": [],
     "falseNegativeIds": [],
-    "unknownIds": [
-      "rel:Card.svelte:uses:Card:count",
-      "rel:Negative.svelte:uses:Negative:local",
-      "rel:Negative.svelte:uses:handleInput:event",
-      "rel:Negative.svelte:uses:handleInput:length",
-      "rel:Negative.svelte:uses:handleInput:target",
-      "rel:Negative.svelte:uses:handleInput:tmp",
-      "rel:Negative.svelte:uses:handleInput:value",
-      "rel:UserList.svelte:uses:UserList:$count",
-      "rel:UserList.svelte:uses:UserList:count",
-      "rel:UserList.svelte:uses:select:item"
-    ],
+    "unknownIds": [],
     "unsupportedIds": [],
     "minimizedFailure": null
   },
@@ -438,11 +128,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:svelte",
-      "wallTimeMs": 558.813974,
-      "userCpuMs": 237.804,
-      "systemCpuMs": 31.029,
-      "peakRssBytes": 238092288,
-      "rssDeltaBytes": 3403776,
+      "wallTimeMs": 55.74073,
+      "userCpuMs": 56.098,
+      "systemCpuMs": 16.026,
+      "peakRssBytes": 216117248,
+      "rssDeltaBytes": 5767168,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -452,5 +142,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for svelte. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for svelte. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.108Z",
+    "contentSha256": "5db26b0879e9b149d1737ad03970e6700816f2fe3ca446f8e5b785dfb58f9908"
+  }
 }

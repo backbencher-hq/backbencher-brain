@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -106,7 +106,6 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // migrations go missing (the M22.W2 comment above): the DB every editor
       // and verifier opens is a PRE-EXISTING one.
       ensureSymbolDeclarationColumn(raw)
-      ensureFileMetadataColumn(raw)
     }
   }
 
