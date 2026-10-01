@@ -1,5 +1,24 @@
 // Vue Intelligence Engine
-// M12.12 rewrite: C#-family contract, pure-AST, fully regex-free.
+// M12.12 rewrite: C#-family contract, pure-AST.
+//
+// REGEX-FREE, and the claim is now enforced rather than asserted.
+//
+// History, because the header is what went wrong twice: it first CLAIMED to be
+// regex-free while the file carried 6 literals. Correcting it to admit 6
+// registered-and-justified patterns was true, and still weak — a registered
+// pattern is a pattern, and the census only ever proved they were accounted for.
+// All six are now DELETED (vue final review 2026-09-30): a case-insensitive
+// substring test, quote stripping on a `name:` value, an identifier character
+// class used twice, and the two v-for patterns — the last replaced by
+// `parseVForDirective`, which reproduces their lazy head, their `)` handling and
+// their newline behaviour exactly, backtracking included.
+//
+// Zero is a CLAIM, so it is gated: script/m60/verify-vue-no-regex.ts counts the
+// literals and re-derives the equivalence between the removed v-for patterns and
+// the shipped parser over ~790 generated shapes on every run. The first
+// hand-written parser was wrong (it consumed the separator greedily instead of
+// backtracking, which differs on 170 of those shapes) and every fixture still
+// passed — which is the whole argument for the sweep existing.
 //   - Two-layer parse: (1) tree-sitter-vue gives the SFC skeleton — the
 //     component root, template component usages, and the <script> block whose
 //     body is a `raw_text` node with exact byte offsets; (2) the script body
@@ -42,7 +61,10 @@ import { RealTypeScriptAnalyzer } from "./real-typescript-analyzer"
 function shiftMetadataLineMirrors(md: Record<string, unknown> | undefined, lineOffset: number): void {
   if (!md || lineOffset === 0) return
   for (const [k, v] of Object.entries(md)) {
-    if (!/line/i.test(k)) continue
+    // No regex: a case-insensitive substring test. This classifies a metadata KEY
+    // NAME, and `includes` on a lowercased key is exactly what `/line/i` did
+    // without a pattern literal for the census to track.
+    if (!k.toLowerCase().includes("line")) continue
     if (typeof v === "number") md[k] = v + lineOffset
     else if (Array.isArray(v) && v.some((x) => typeof x === "number")) {
       md[k] = v.map((x) => (typeof x === "number" ? x + lineOffset : x))
@@ -77,6 +99,15 @@ const VUE_BUILTIN_TAGS = new Set([
   "fragment",
 ])
 
+// F9 (master review 2026-09-30): namespaces the vue compiler resolves as
+// MARKUP, so `svg:circle` / `math:mi` are not component usages. Deliberately
+// NOT a "contains a colon => builtin" rule: an unknown namespace fails toward
+// VISIBILITY (it is reported as a usage a human can then reject) rather than
+// silence, which is the failure mode a blanket colon rule would introduce.
+const BUILTIN_NAMESPACES = new Set([
+  "svg", "math", "mathml", "xlink", "html", "xhtml",
+])
+
 const VUE_COMPILER_MACROS = new Set([
   "defineProps", "defineEmits", "defineExpose", "withDefaults", "defineModel",
   "defineSlots", "defineOptions",
@@ -85,6 +116,27 @@ const VUE_COMPILER_MACROS = new Set([
 // ============================================================================
 // PURE-STRING HELPERS (regex-free)
 // ============================================================================
+
+/**
+ * F12: peel the wrappers the TYPE layer adds around a value — `x as const`,
+ * `x satisfies T`, `(x)`, `x!` — so a declaration hoisted as
+ * `const defs = { a: String } as const` is the same declaration as
+ * `const defs = { a: String }`. Bounded: eight levels is far past any real
+ * nesting and the bound keeps a malformed tree from looping.
+ */
+function peelTypeWrappers(node: Node): Node {
+  let cur: Node = node
+  for (let i = 0; i < 8; i++) {
+    const t = cur.type
+    if (t !== "as_expression" && t !== "satisfies_expression" &&
+        t !== "parenthesized_expression" && t !== "non_null_expression") return cur
+    const kids: (Node | null)[] = cur.namedChildren
+    const first = kids[0]
+    if (!first) return cur
+    cur = first
+  }
+  return cur
+}
 
 function unquote(text: string): string {
   if (text.length >= 2) {
@@ -137,6 +189,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- 1. Component symbol ---------------------------------------------------
+    //
+    // Whether this identity was WRITTEN in the file or fell back to the file
+    // stem is only decided once every `<script>` block has been read, so the
+    // declaration of a stem-derived identity is made after that loop — see the
+    // `identityFromFileStem` marking below.
     symbols.push({
       name: moduleName,
       kind: ASTEngine.SymbolKind.Class,
@@ -177,8 +234,38 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!c || c.type !== "start_tag") continue
           this.collectNodeShadowBindings(c, childShadowed)
         }
-        const tag = this.elementTagName(n)
-        if (tag && !HTML_BUILTIN_TAGS.has(tag) && !VUE_BUILTIN_TAGS.has(tag) && !seenUsages.has(tag)) {
+        const rawTag = this.elementTagSpelling(n)
+        // F9 (master review 2026-09-30). TWO defects in this one filter, both
+        // latent on the restored corpora (0 occurrences in 1,139 files), both
+        // proven by probe against production parseFile.
+        //
+        // (a) A NAMESPACED tag is not a component. tree-sitter-vue spells it in
+        // full in `tag_name` (`svg:circle`), and neither builtin set contains a
+        // colon, so `<svg:circle/>` published `instantiates -> svg:circle` — a
+        // target no components registry holds. A known builtin namespace means
+        // markup. An UNKNOWN namespace is still treated as a component, so the
+        // filter fails toward visibility rather than silence.
+        //
+        // (b) A DOTTED tag resolves the LEAF. `tag_name` spells only the root
+        // segment, so `<Form.Input/>` recorded `instantiates -> Form` and the
+        // leaf `.Input` vanished — the graph claimed the whole of Form for a
+        // template that uses one sub-component. The target stays `Form`, which
+        // is the name the registry holds and a resolver must match; the leaf is
+        // carried in metadata, which is lossless without inventing an
+        // unresolvable `Form.Input` symbol.
+        const dotIdx = rawTag?.indexOf(".") ?? -1
+        const colonIdx = rawTag?.indexOf(":") ?? -1
+        const tag = dotIdx > 0 ? rawTag!.slice(0, dotIdx) : rawTag
+        const member = dotIdx > 0 ? rawTag!.slice(dotIdx + 1) : undefined
+        const nsPrefix = colonIdx > 0 ? rawTag!.slice(0, colonIdx) : undefined
+        const isBuiltinNamespace = nsPrefix !== undefined && BUILTIN_NAMESPACES.has(nsPrefix)
+        if (
+          tag &&
+          !isBuiltinNamespace &&
+          !HTML_BUILTIN_TAGS.has(tag) &&
+          !VUE_BUILTIN_TAGS.has(tag) &&
+          !seenUsages.has(tag)
+        ) {
           seenUsages.add(tag)
           const tagNode = this.elementTagNameNode(n)
           relationships.push({
@@ -188,7 +275,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             confidence: 0.95,
             // M59 (#825): the `<Child/>` tag as written in the template.
             ...(tagNode ? { line_number: tagNode.startPosition.row + 1 } : {}),
-            metadata: { isComponentUsage: true },
+            metadata: {
+              // F9(b): the leaf of a dotted tag — see the comment at the filter.
+              // Merged HERE rather than spread above, because this literal's own
+              // `metadata` key comes later and a spread placed before it is
+              // silently overwritten (which is exactly what the first attempt did).
+              ...(member ? { member, componentPath: rawTag! } : {}),
+              isComponentUsage: true,
+            },
           })
         }
       }
@@ -236,7 +330,54 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the block's lang attribute.
     const scriptTreeCount = context?.sfcScriptTrees?.length ?? 0
     const pushedComponentNames = new Set<string>([moduleName])
+    // F12: contracts whose EDGE is emitted after the sub-analyzer merge, not
+    // during the macro walk. The store's relationship identity is
+    // (source, target, type, line) with NO metadata component
+    // (parallel-indexer.ts:3177) and the insert is INSERT OR IGNORE — so two
+    // edges that differ ONLY in metadata are collapsed to the first. The
+    // sub-analyzer's `type_argument` reference is merged in step 3b, AFTER this
+    // walk, so an edge pushed here loses to it at the store and the contract
+    // marker is lost with it. MEASURED: the edge vanished from the database
+    // entirely (script/m14/tmp/vue-mr/f12-store.ts). Annotating the merged row
+    // is the only shape that survives persistence, and it also avoids the
+    // near-duplicate row the m60 svelte round recorded.
+    const pendingContracts: Array<{
+      name: string; marker: string; module?: string; resolved: boolean; line: number; lineOffset: number
+      // F3: the `withDefaults` map for a NAMED contract. There is no prop symbol
+      // to hang a per-prop default on — the members belong to the imported
+      // declaration — so the map travels with the edge. `defaultKeys` is carried
+      // as a COUNT because a graph answer needs to know the contract HAS
+      // defaults, not merely that one key happened to match.
+      defaults?: Map<string, string>
+      defaultsExpression?: string
+    }> = []
+    // F2: the same discipline for provide/inject. The key names a declaration
+    // this file does not own (every corpus key is an IDENTIFIER), so the contract
+    // is an EDGE — emitted after the merge for the same reason as F12's, because
+    // the store's relationship identity has no metadata component and an edge
+    // pushed earlier would lose to a delegated row at the insert.
+    const pendingInjections: Array<{
+      key: string; marker: string; line: number; lineOffset: number
+    }> = []
+    // F2: keys of an inline `provide(K, { … })` value. Annotated onto the symbols
+    // the sub-analyzer already emitted, never duplicated, because the store's
+    // SYMBOL key excludes owner (VSD25).
+    const pendingProvided: Array<{ name: string; owner: string }> = []
     let scriptCyclomaticSum = 0
+    // F7 (master review 2026-09-30): the fact the pipeline already computes.
+    // `hasTypeInference` used to be the literal `false`, so every SFC reported
+    // the same thing — including the 778 of 1,150 restored corpus files with a
+    // lang="ts" block, whose interface/annotation members the TypeScript
+    // analyzer extracted correctly while the flag denied it. It is a per-file
+    // statement about whether a TypeScript grammar was applied, not a
+    // capability claim about the analyzer.
+    let dispatchedToTypeScript = false
+    // F8: when a `name:` option renames the component, every component-owned edge
+    // must source the ONE symbol. The delegated rows arrive with the sub-analyzer's
+    // module name as their source (it is the JS module identity), so the seam
+    // re-points them — otherwise the one Class symbol would be unreachable and
+    // every script edge would dangle.
+    let componentIdentity = moduleName
     for (let bi = 0; bi < scriptTreeCount; bi++) {
       const scriptTree: Tree = context!.sfcScriptTrees![bi]
       const scriptStartLine: number = context!.sfcScriptLines![bi]
@@ -250,6 +391,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       // tsx grammar and reports the block's own lang here). Before this, a
       // <script lang="tsx"> block was handed to the JavaScript analyzer.
       const isTs = context?.sfcScriptLangs?.[bi] === "ts" || context?.sfcScriptLangs?.[bi] === "tsx"
+      if (isTs) dispatchedToTypeScript = true
       {
       const scriptContent = scriptTree.rootNode?.text ?? ""
       const lineOffset = scriptStartLine - 1
@@ -262,12 +404,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       const defaultObject = defaultExport ? this.findDescendantObject(defaultExport) : undefined
       if (defaultObject) patterns["Options API"] = true
       else patterns["Composition API"] = true
-      // The script body is extracted via the JS-family contract (M12.10)
-      // regardless of `lang` — the JS grammar tolerates TS type annotations
-      // (verified: zero ERROR nodes on lang=ts fixtures) and, unlike the TS
-      // analyzer, resolves method_definition scopes inside the Options-API
-      // default-export object (calls source from the method name, not module).
-      // TS-only declarations (interface/type) are not extracted as symbols.
+      // The script body is extracted via the JS/TS family contract, and WHICH
+      // analyzer runs is decided per block by its `lang` attribute: M60/#903 made
+      // this a three-way dispatch (ts / tsx / js) and the comment here used to
+      // say "regardless of `lang`", which #903 falsified. The surviving reason the
+      // JS analyzer is still the DEFAULT is narrower: it resolves
+      // method_definition scopes inside the Options-API default-export object, where
+      // the TS analyzer emitted call sources as `module` (M12.12). TS-only
+      // declarations (interface/type) are not extracted as CONTRACT symbols, but
+      // they ARE extracted as interface/type members by the TS delegate.
       let sub: ASTEngine.ParseResult
       try {
         sub = isTs
@@ -311,22 +456,40 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         )
         if (namePair) {
           const v = namePair.childForFieldName("value")
-          if (v) componentName = v.text.replace(/['"]/g, "")
+          // No regex: `unquote` is the file's existing quote-stripper and the
+          // value of a `name:` option is always a string literal, so stripping
+          // surrounding quotes is the whole job. Pinned for both quote styles by
+          // vue/options-rename-identity (single) and vue/component-name-double-quotes.
+          if (v) componentName = unquote(v.text)
         }
-        // DEDUPE: the SFC skeleton already pushed a Class symbol for
-        // moduleName — pushing again without a `name:` option produced TWO
-        // identical component Class symbols.
-        if (!pushedComponentNames.has(componentName)) {
-          pushedComponentNames.add(componentName)
-          symbols.push({
-            name: componentName,
-            kind: ASTEngine.SymbolKind.Class,
-            range: this.offsetRange(this.nodeToRange(defaultObject), lineOffset, colOffset, scriptStartIndex),
-            visibility: "public",
-            metadata: { nodeType: "vue_options_component", isOptionsComponent: true },
-          })
+        // F8 (master review 2026-09-30): ONE component, ONE Class symbol.
+        //
+        // A `name:` option used to PUSH A SECOND Class alongside the SFC's own,
+        // and the two had DISJOINT edge sets with neither reachable as a target.
+        // Measured through the store on `WidgetFile.vue` declaring
+        // `name: 'ActualName'`: 6 edges sourced `WidgetFile` (the delegated
+        // imports/exports/uses) and 2 contained edges sourced `ActualName`, so
+        // "what contains `lab`?" answered `ActualName` while "what imports from
+        // this file?" answered `WidgetFile` — one component, two answers, and
+        // no edge a consumer could walk to unify them.
+        //
+        // The name is the DECLARED one: `name:` is what `components: {}` resolves
+        // by and what devtools shows. The file stem is not discarded — it is the
+        // module's identity in the import graph and is recorded in
+        // metadata.moduleName. The SFC symbol is RENAMED in place rather than a
+        // second one pushed, so there is exactly one Class either way; the
+        // earlier dedupe only fired when the two names happened to be EQUAL,
+        // which is why the common case was covered and the renamed one was not.
+        if (componentName !== moduleName) {
+          const sfcSymbol = symbols.find((sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === moduleName)
+          if (sfcSymbol) {
+            sfcSymbol.name = componentName
+            sfcSymbol.metadata = { ...(sfcSymbol.metadata ?? {}), moduleName, isOptionsComponent: true }
+            componentIdentity = componentName
+          }
         }
-        this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset, defaultPayloads, scriptStartIndex)
+        pushedComponentNames.add(componentName)
+        this.extractOptionsApi(defaultObject, componentName, symbols, patterns, lineOffset, colOffset, defaultPayloads, scriptStartIndex, scriptTree.rootNode, relationships)
       }
 
       // 3b. Merge JS analyzer output, offset to SFC lines, filter:
@@ -436,9 +599,138 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
               // form gets the same treatment (property identifiers / string
               // literals). Offset to SFC coordinates like every other script
               // artifact. The contains pass follows the range, so both move.
+              const which = fn.text === "defineProps" ? "props" : "emits"
+              // F3: read the enclosing `withDefaults` defaults once, here, where
+              // the macro call is in hand — not later, because by the three
+              // resolutions below the enclosing frame is out of reach.
+              const defaultsArg = which === "props" ? this.withDefaultsObject(n) : null
+              const propDefaults = this.defaultsEntries(defaultsArg)
+              // F3, second half: when the defaults argument is NOT an object
+              // literal it is an identifier or a call — measured on the remaining
+              // 16 of 98 corpus files, every one of the shape
+              // `withDefaults(defineProps<XProps>(), xPropsDefaults)` with the
+              // defaults IMPORTED from a sibling module. Resolving that needs
+              // cross-file constant resolution, which this lane does not do and
+              // should not fake. But dropping it silently makes "this component's
+              // defaults live in another file" indistinguishable from "this
+              // component declares no defaults", so the expression is kept as
+              // text. The `imports` edge the sub-analyzer already emits is what
+              // makes it reachable.
+              const defaultsExpression =
+                defaultsArg && defaultsArg.type !== "object" ? defaultsArg.text : undefined
+              // F14: participants of the TYPE-ARGUMENT form. Deliberately NOT
+              // gated on `entries.length === 0` the way `macroContractName` below
+              // is, and that difference is the whole point: an intersection can
+              // carry BOTH a literal operand and a named one
+              // (`defineProps<LeftProps & { rightB: number }>`), and once
+              // genericMacroEntries could read the literal the old single-exit
+              // emitted the prop SYMBOLS and silently stopped, losing the
+              // `LeftProps` contract edge that options-named-contract pins. A
+              // component may declare a literal prop AND name a declaration; the
+              // two are independent facts about one contract.
+              const typeArgsNode = this.findChildByType(n, "type_arguments")
+              for (const part of this.contractTypeShape(typeArgsNode).participants) {
+                const partKey = `${which}:${part.name}`
+                if (seenMacroNames.has(partKey)) continue
+                seenMacroNames.add(partKey)
+                pendingContracts.push({
+                  name: part.name,
+                  marker: which === "props" ? "isPropContract" : "isEmitContract",
+                  resolved: this.hasTopLevelDeclaration(part.name, n),
+                  line: this.offsetRange(this.nodeToRange(part.node), lineOffset, colOffset, scriptStartIndex).startLine,
+                  lineOffset,
+                  // F3, and a consequence of moving the participant push UP here:
+                  // this row is now the FIRST to claim `seenMacroNames`, so it is
+                  // also the row the F12 `macroContractName` branch skips. Without
+                  // the defaults carried along, adding F14 silently stripped every
+                  // withDefaults default off every NAMED contract — the fixture
+                  // caught it, which is the only reason it is worth recording.
+                  ...(propDefaults.size > 0 ? { defaults: propDefaults } : {}),
+                  ...(defaultsExpression ? { defaultsExpression } : {}),
+                })
+              }
+              // F13: identifier elements of the array form name declarations.
+              const declRefs = this.propDeclarationEntries(firstArg ?? undefined)
+              for (const d of declRefs) {
+                const contractKey = `${which}:${d.name}`
+                if (seenMacroNames.has(contractKey)) continue
+                seenMacroNames.add(contractKey)
+                pendingContracts.push({
+                  name: d.name,
+                  marker: which === "props" ? "isPropContract" : "isEmitContract",
+                  // Same certainty as the macro hoist: the name is written here,
+                  // but this lane has not read the declaration, so the row is the
+                  // weaker of the two — matching `defineProps(binding)`'s shape
+                  // rather than claiming more resolution than it did.
+                  resolved: false,
+                  line: this.offsetRange(this.nodeToRange(d.node), lineOffset, colOffset, scriptStartIndex).startLine,
+                  lineOffset,
+                })
+              }
+              let fromBinding = false
+              let inlineGeneric = false
               let entries = this.propEntries(firstArg ?? undefined)
               if (entries.length === 0) {
-                entries = this.genericMacroEntries(n, fn.text === "defineProps" ? "props" : "emits")
+                entries = this.genericMacroEntries(n, which)
+                if (entries.length > 0) inlineGeneric = true
+              }
+              // F12 (vue master review 2026-09-30): the forms a real component
+              // library writes. `defineProps<AffixProps>()` (a NAMED type
+              // argument) and `defineProps(affixProps)` (a BINDING) are not the
+              // inline literal, and neither produced a symbol: measured on the
+              // restored corpus, 103 of 103 `defineProps<Named>()` sites, 67 of
+              // 67 `defineEmits(binding)` sites and 22 of 22
+              // `defineProps(binding)` sites lost the whole contract — 132 of
+              // the 232 corpus files that declare one.
+              //
+              // A same-file BINDING resolves inside this script tree and its
+              // object-literal keys are published by nothing else, so it yields
+              // component-owned symbols exactly as the inline runtime form does.
+              if (entries.length === 0) {
+                entries = this.boundMacroEntries(firstArg ?? undefined, scriptTree.rootNode, which)
+                // Marks WHICH resolution produced these symbols, so the F12
+                // mutant can revert the binding form alone. A single mutant that
+                // reverts both the inline and the binding resolution would pass
+                // whenever only the inline half is pinned — the M49 T6 lesson.
+                if (entries.length > 0) fromBinding = true
+              }
+              // A NAMED or IMPORTED declaration is an EDGE, not a copy of the
+              // members, and the store is why. The sub-analyzer already
+              // publishes that declaration's members under the DECLARATION's
+              // ownership (`contains LocalProps -> localA`), and the symbol
+              // primary key is `${fileId}:${name}:${startLine}` with owner NOT in
+              // it (parallel-indexer.ts) — so a component-owned copy of a member
+              // at the same name and line was MEASURED to silently replace the
+              // declaration's own row. One edge, no duplicate, and the contract
+              // is answerable in a single hop either way.
+              if (entries.length === 0) {
+                const declared = this.macroContractName(n, firstArg ?? undefined, which)
+                if (declared) {
+                  const key = `${which}:${declared.name}`
+                  if (!seenMacroNames.has(key)) {
+                    seenMacroNames.add(key)
+                    const macroKey = which === "props" ? "isPropContract" : "isEmitContract"
+                    // The sub-analyzer already emits a `references` edge for a
+                    // type ARGUMENT (`relationshipType: "type_argument"`), so a
+                    // second edge to the same target from the same source would
+                    // be a near-duplicate — the m60 svelte round's
+                    // "identical source/target/type/line, collapseable" shape.
+                    // Annotate that row when it is there and add one only when
+                    // there is nothing to annotate (a binding has no type
+                    // argument, so the case this fix exists for emits nothing).
+                    pendingContracts.push({
+                      name: declared.name,
+                      marker: macroKey,
+                      module: declared.module,
+                      resolved: declared.resolved,
+                      line: this.offsetRange(this.nodeToRange(declared.node), lineOffset, colOffset, scriptStartIndex).startLine,
+                      lineOffset,
+                      ...(propDefaults.size > 0 ? { defaults: propDefaults } : {}),
+                      ...(defaultsExpression ? { defaultsExpression } : {}),
+                    })
+                  }
+                  continue
+                }
               }
               const kind = fn.text === "defineProps"
                 ? ASTEngine.SymbolKind.Property
@@ -452,11 +744,30 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
                   name: pn,
                   kind,
                   range: this.offsetRange(this.nodeToRange(pnNode), lineOffset, colOffset, scriptStartIndex),
-                  scope: moduleName,
-                  ownerName: moduleName,
+                  // F8: a contract symbol belongs to the ONE component. `name:`
+                  // is read from a `name:` option in the FIRST block, so by the
+                  // time a `<script setup>` block's macros run, `componentIdentity`
+                  // already holds the declared name — and a script-setup prop
+                  // owned by the FILE STEM while an Options prop is owned by the
+                  // component is exactly the split identity F8 removed.
+                  scope: componentIdentity,
+                  ownerName: componentIdentity,
                   ownerKind: ASTEngine.SymbolKind.Class,
                   visibility: "public",
-                  metadata: { [meta]: true, isScriptSetup: true },
+                  metadata: {
+                    [meta]: true,
+                    isScriptSetup: true,
+                    // Which shape the names came from: "inline" (a literal
+                    // argument), "generic" (an inline type literal) or
+                    // "binding" (a same-file declaration resolved by name).
+                    contractSource: fromBinding ? "binding" : inlineGeneric ? "generic" : "inline",
+                    // F3: the `withDefaults` default for this prop, as WRITTEN
+                    // SOURCE. A same-file binding is included, which is why this
+                    // is keyed off the map rather than off the shape: a binding's
+                    // members have no type annotation, and the default is the only
+                    // thing that says the prop is genuinely optional-by-default.
+                    ...(propDefaults.has(pn) ? { defaultValue: propDefaults.get(pn), hasDefault: true } : {}),
+                  },
                 })
               }
             }
@@ -466,7 +777,268 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (c) macroStack.push(c)
           }
         }
+
+      // F2: provide/inject contract pass. Vue's third contract leg, with no
+        // branch until now: `provide(K, v)` / `inject(K[, d])` over the corpus's
+        // 79 call sites emitted nothing but the bare `calls` edge the sub-analyzer
+        // makes, so the relationship between a provider and a consumer of one key
+        // did not exist in the graph at all.
+        //
+        // The corpus decides the design here: all 79 sites use an IDENTIFIER key
+        // (`provide(anchorKey, …)`, `inject(avatarGroupContextKey, undefined)`)
+        // and none uses a string, so the key names a declaration this file does
+        // not own — the F12 shape, answered with an edge.
+        {
+          const pjStack: Node[] = [scriptTree.rootNode]
+          while (pjStack.length > 0) {
+            const n = pjStack.pop()!
+            if (n.type === "call_expression") {
+              const callee = n.childForFieldName("function")?.text
+              if (callee === "provide" || callee === "inject") {
+                const argsNode = n.childForFieldName("arguments")
+                const keyNode = argsNode?.namedChild(0)
+                if (keyNode && (keyNode.type === "identifier" || keyNode.type === "string")) {
+                  const keyName = keyNode.type === "string" ? unquote(keyNode.text) : keyNode.text
+                  if (keyName) {
+                    pendingInjections.push({
+                      key: keyName,
+                      marker: callee === "provide" ? "isProvideContract" : "isInjectContract",
+                      line: this.offsetRange(this.nodeToRange(keyNode), lineOffset, colOffset, scriptStartIndex).startLine,
+                      lineOffset,
+                    })
+                    if (callee === "provide") {
+                      const value = argsNode?.namedChild(1)
+                      if (value?.type === "object") {
+                        for (let i = 0; i < value.namedChildCount; i++) {
+                          const c = value.namedChild(i)
+                          if (!c || (c.type !== "pair" && c.type !== "method_definition")) continue
+                          const k = c.type === "pair" ? c.childForFieldName("key")?.text : c.childForFieldName("name")?.text
+                          if (k && !k.startsWith("[")) pendingProvided.push({ name: unquote(k), owner: moduleName })
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              if (c) pjStack.push(c)
+            }
+          }
+        }
       }
+      }
+    }
+
+    // F16: `defineOptions({ name: 'X' })` — the `<script setup>` way of declaring a
+    // component's name (Vue 3.3+). It was in VUE_COMPILER_MACROS only so its CALL
+    // edge would be filtered, and the `name:` inside it was never read, so every
+    // component written the modern way fell back to the FILE STEM as its identity
+    // while the file plainly declares otherwise.
+    //
+    // Measured, and found by the contains oracle disagreeing in a direction that
+    // pointed at the analyzer: element-plus/table/src/table-body/td-wrapper.vue and
+    // splitter/src/split-bar.vue both `defineOptions({ name: 'TableTdWrapper' })`
+    // / `('ElSplitterBar')` and both were published as `td-wrapper` /
+    // `split-bar`. F8 unified the component identity but only read `name:` out of a
+    // `defineComponent({ … })` default export, so this is the same defect from the
+    // other side — and it is worse than a cosmetic stem, because every
+    // component-owned edge sources the identity and the store's symbol key is
+    // name+line, so the declared name and the published one are two different
+    // symbols.
+    for (const [bi, scriptTree] of (context?.sfcScriptTrees ?? []).entries()) {
+      const optsCall = this.findCallNamed(scriptTree.rootNode, "defineOptions")
+      if (!optsCall) continue
+      const optsObj = this.firstObjectArgument(optsCall)
+      if (!optsObj) continue
+      const namePair = this.findChildByType(optsObj, "pair")
+      let declared: string | undefined
+      const stack: Node[] = [optsObj]
+      while (stack.length > 0 && declared === undefined) {
+        const n = stack.pop()!
+        if (n.type === "pair") {
+          const keyNode = this.findChildByType(n, "property_identifier")
+          if (keyNode?.text === "name") {
+            const v = this.findChildByType(n, "string")
+            if (v) declared = unquote(v.text)
+          }
+        }
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+      if (!declared || declared === componentIdentity) continue
+      const scriptStartLine: number = context!.sfcScriptLines![bi] ?? 0
+      const scriptStartColumn: number = context!.sfcScriptCols![bi] ?? 0
+      const cls = symbols.find(
+        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === componentIdentity && sy.metadata?.isVueComponent === true,
+      )
+      if (!cls) continue
+      cls.name = declared
+      cls.metadata = { ...(cls.metadata ?? {}), moduleName: componentIdentity, isScriptSetupComponent: true }
+      cls.range = {
+        ...cls.range,
+        startLine: cls.range.startLine,
+        startColumn: cls.range.startColumn + scriptStartColumn,
+      }
+      // Every component-owned edge collected so far sourced the old identity, so
+      // they must follow it — the same re-point F8 performs for `name:`.
+      for (const sym of symbols) if (sym.ownerName === componentIdentity) sym.ownerName = declared
+      for (const e of relationships) {
+        if (e.source === componentIdentity) e.source = declared
+      }
+      componentIdentity = declared
+      break
+    }
+
+    // The component's identity is settled only now: every `<script>` block has
+    // been read, and a block carrying `name:` has already RENAMED the Class
+    // symbol above (F8). A Class still named `moduleName` therefore had no name in
+    // the source — the file never spells its own name — and the m60 surface audit
+    // reports every symbol whose name appears nowhere in its file.
+    //
+    // Declaring it with the audit's own general mechanism (`metadata.synthesized`)
+    // is the right answer rather than a suppression. The audit's header is
+    // explicit that a DECLARED flag cuts the other way from a name allowlist: an
+    // UNDECLARED synthesized name still fails both rows, and that is the hazard
+    // worth catching, which is why the decision belongs HERE — in the lane that
+    // owns the fallback rule — instead of in an allowlist over there.
+    //
+    // Measured: 124 such findings on the 400-file m60 draw, every one of them this
+    // fallback, every one of them a real component.
+    {
+      const cls = symbols.find(
+        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === moduleName && sy.metadata?.isVueComponent === true,
+      )
+      if (cls) cls.metadata = { ...(cls.metadata ?? {}), synthesized: true, identityFromFileStem: true }
+    }
+
+    // F2: attach ownership to the symbols a provided value's keys produced.
+    // Annotated IN PLACE, never re-pushed: the store's symbol key is
+    // `${fileId}:${name}:${startLine}` with owner NOT in it, so a second symbol at
+    // the same name and line would REPLACE this one (VSD25) — annotation is the
+    // only non-lossing shape, and it is why `provide(tourKey, { onClose() {} })`
+    // no longer publishes an unowned method indistinguishable from a
+    // module-level function.
+    for (const p of pendingProvided) {
+      const sym = symbols.find((sy) => sy.name === p.name && sy.ownerName === undefined)
+      if (sym) {
+        sym.ownerName = p.owner
+        sym.ownerKind = ASTEngine.SymbolKind.Class
+        sym.scope = p.owner
+        sym.metadata = { ...(sym.metadata ?? {}), isProvided: true }
+      }
+    }
+
+    // F2: the provide/inject edges, emitted after the merge for the same reason
+    // as F12's — the store's relationship identity has no metadata component, so
+    // an edge pushed earlier would lose to a delegated row at the insert. A key
+    // that both provides and injects yields two rows with different markers, so
+    // the two halves of one key are joinable in the graph by name, which is the
+    // entire point of provide/inject.
+    for (const c of pendingInjections) {
+      const meta = { [c.marker]: true, sfcDelegated: true, sfcLineOffset: c.lineOffset }
+      const existing = relationships.find(
+        (x) => x.source === moduleName && x.target === c.key &&
+          String(x.type ?? x.relationshipType) === String(ASTEngine.RelationshipType.References),
+      )
+      if (existing) {
+        existing.metadata = { ...(existing.metadata ?? {}), ...meta }
+      } else {
+        relationships.push({
+          source: moduleName,
+          target: c.key,
+          type: ASTEngine.RelationshipType.References,
+          confidence: 0.9,
+          line_number: c.line,
+          metadata: meta,
+        })
+      }
+    }
+
+    // F12: the contract edges, emitted AFTER the sub-analyzer merge so the row
+    // they annotate already exists (see `pendingContracts`).
+    for (const c of pendingContracts) {
+      // F8: like the symbols, the contract edge names the ONE component.
+      const contractMeta = {
+        [c.marker]: true,
+        ...(c.module ? { contractModule: c.module } : {}),
+        ...(c.resolved ? {} : { unresolved: true }),
+        // F3: the defaults map, plus its size so a consumer can answer "does this
+        // contract declare defaults" without walking the keys.
+        ...(c.defaults && c.defaults.size > 0
+          ? { defaults: Object.fromEntries(c.defaults), defaultKeys: c.defaults.size }
+          : {}),
+        // F3: an indirect defaults expression, kept as text. Deliberately NOT
+        // `defaultKeys: 0` — zero keys would claim the component declares no
+        // defaults, which is the opposite of the truth.
+        ...(c.defaultsExpression ? { defaultsExpression: c.defaultsExpression } : {}),
+      }
+      // Merge into an EXISTING row rather than pushing a near-duplicate — and the
+      // match must be looser than source+target. `defineProps<NamedProps>()`
+      // produces TWO facts about one declaration: the sub-analyzer's `type_argument`
+      // row (sourced at the enclosing scope, on the macro's line) and this
+      // contract row (sourced at the component). Those agree on target, type and
+      // LINE, which is what the STORE keys on —
+      // `brain_relationship.id = projectId:rel:source:target:type:line` with
+      // `INSERT OR IGNORE` — so pushing a second row loses one of them, and it is
+      // always the DELEGATE's that wins the insert.
+      //
+      // Measured through a real 4-file index (store round-trip, previously never
+      // done for this lane): `isPropContract`, `unresolved` and F3's whole
+      // `defaults` map were dropped on the floor for with-defaults-propagation.vue,
+      // because its two rows collided; skeleton-item.vue survived only because its
+      // two rows happened to differ in source. The analyzer was right and the
+      // information never reached the graph.
+      //
+      // The widened match is deliberately restricted to `sfcDelegated` rows: it must
+      // never annotate an edge this lane did not produce from the same macro line.
+      // Target + type + LINE, and nothing else. Two corrections, both found by
+      // measuring rather than by reading:
+      //
+      // (1) The line must be compared as `c.line`, NOT `c.line - c.lineOffset`.
+      //     `c.line` is ALREADY offset into SFC coordinates when it is pushed, so
+      //     subtracting the offset again compared 113 against 27 and the merge
+      //     never fired — which is why menu.vue's `Pick` row still lost to the
+      //     delegate's after the first attempt looked like it had worked on the
+      //     fixture file.
+      // (2) The SOURCE cannot be part of the match. The sub-analyzer sources its
+      //     `type_argument` row at whatever enclosing scope the macro sits in — the
+      //     component for a top-level `<script setup>` call, but the local
+      //     `const props = withDefaults(…)` binding when the macro is assigned, as
+      //     in menu.vue. Those are one edge described twice, and the store keys on
+      //     the source it RESOLVES, not the one the analyzer wrote.
+      const sameEdge = (x: any): boolean =>
+        x.target === c.name &&
+        String(x.type ?? x.relationshipType) === String(ASTEngine.RelationshipType.References) &&
+        x.metadata?.sfcDelegated === true &&
+        (x.line_number ?? x.line) === c.line
+      const existing = relationships.find(sameEdge)
+      if (existing) {
+        existing.metadata = { ...(existing.metadata ?? {}), ...contractMeta }
+        // Re-attribute to the COMPONENT as well. Merging the metadata without
+        // this loses the one thing the contract edge exists to answer: the row
+        // would still be sourced at whatever enclosing scope the sub-analyzer
+        // named (`global`, a variable, a synthetic), so "what does this component
+        // declare?" has no row to point at. For a `<script setup>` the enclosing
+        // scope IS the component, so this is a refinement rather than a rewrite,
+        // and it is what makes the merged row resolvable to the Class symbol the
+        // store holds. It is also the only reason the collision can be resolved at
+        // all from inside this lane: the store keys on
+        // (source, target, type, line) with no metadata component, so two rows
+        // describing one edge can only become one row if they agree on all four.
+        if (existing.metadata?.sfcDelegated === true) existing.source = componentIdentity
+      } else {
+        relationships.push({
+          source: componentIdentity,
+          target: c.name,
+          type: ASTEngine.RelationshipType.References,
+          confidence: c.resolved ? 1.0 : 0.8,
+          line_number: c.line,
+          metadata: { ...contractMeta, sfcDelegated: true, sfcLineOffset: c.lineOffset },
+        })
       }
     }
 
@@ -493,6 +1065,21 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           line_number: line,
           metadata: { isTemplateExpression: true },
         })
+      }
+    }
+
+    // F8: the seam is where the MODULE-scoped source becomes the COMPONENT's
+    // source. ONE sweep, placed after EVERY producer has run — the template pass
+    // (step 2) and the template `uses` pass (step 3c) both emit before or
+    // independently of the script pass that reads the `name:` option.
+    //
+    // Placed too early once already: the sweep sat before step 3c, which fixed
+    // the delegated rows and every template `instantiates` and left the template
+    // `uses` still sourced at the file stem. The fixture caught it, which is the
+    // only reason this is a comment and not a second defect.
+    if (componentIdentity !== moduleName) {
+      for (const rel of relationships) {
+        if (rel.source === moduleName) rel.source = componentIdentity
       }
     }
 
@@ -557,7 +1144,10 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         architecturalInsights: [],
         architecturalScore,
         codeQuality: errors.length === 0 ? "Excellent" : "Fair",
-        hasTypeInference: false,
+        // F7: true iff a <script> block was parsed with a TypeScript grammar
+        // (lang="ts" or lang="tsx", #903's three-way dispatch). A plain block,
+        // or an SFC with no script, is the JavaScript analyzer and stays false.
+        hasTypeInference: dispatchedToTypeScript,
         hasFrameworkIntelligence: true,
         analysisVersion: "5.0.0-m12.12-family-contract",
       },
@@ -568,6 +1158,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
   // OPTIONS API EXTRACTION
   // ============================================================================
 
+  /**
+   * Which shape the LAST contract resolution came from. A field rather than a
+   * return value because the two call sites (the Options options and the
+   * script-setup macros) each consume the entries in their own loop; the marker
+   * is what lets a fixture pin the shape and a mutant revert one of them
+   * without touching the others.
+   */
+  private lastContractSource: "inline" | "binding" | "generic" | "edge" | "none" = "none"
+
   private extractOptionsApi(
     objectNode: Node,
     componentName: string,
@@ -577,6 +1176,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     colOffset: number,
     payloads?: Map<string, ASTEngine.UniversalSymbol>,
     indexOffset?: number,
+    /**
+     * F12: the script tree this options object lives in, so `props: someDef` /
+     * `emits: someDef` can be resolved exactly as the script-setup macro
+     * binding is. Options API components that hoist their contract to a
+     * `const` lose the whole thing otherwise — 14 files wrote `props:` and
+     * extracted nothing on the restored corpus.
+     */
+    scriptRoot?: Node,
+    relationships?: ASTEngine.UniversalRelationship[],
   ): void {
     const memberName = (n: Node): string | undefined => {
       const key = n.childForFieldName("key")
@@ -637,7 +1245,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (key === "props") {
         // props: array of names OR object of prop declarations
-        for (const { name: pn, node: pnode } of this.propEntries(value ?? child)) {
+        for (const { name: pn, node: pnode } of this.resolveContractEntries(value ?? child, scriptRoot, "props", relationships, componentName)) {
           symbols.push({
             name: pn,
             kind: ASTEngine.SymbolKind.Property,
@@ -648,11 +1256,11 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
             visibility: "public",
-            metadata: { isProp: true },
+            metadata: { isProp: true, contractSource: this.lastContractSource },
           })
         }
       } else if (key === "emits") {
-        for (const { name: en, node: enode } of this.propEntries(value ?? child)) {
+        for (const { name: en, node: enode } of this.resolveContractEntries(value ?? child, scriptRoot, "emits", relationships, componentName)) {
           symbols.push({
             name: en,
             kind: ASTEngine.SymbolKind.Event,
@@ -661,8 +1269,74 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerName: componentName,
             ownerKind: ASTEngine.SymbolKind.Class,
             visibility: "public",
-            metadata: { isEmit: true },
+            metadata: { isEmit: true, contractSource: this.lastContractSource },
           })
+        }
+      } else if (key === "extends" || key === "mixins") {
+        // F1 (master review 2026-09-30, High): Options-API INHERITANCE had no
+        // branch at all, so Vue's own class heritage was absent from the graph —
+        // the base surfaced only as a bare `uses` from the sub-analyzer at
+        // whatever confidence a name mention earns, where the SAME text as a
+        // .ts file emits a real `extends`.
+        //
+        // Vue 2 documents `extends` as class inheritance ("this is like class
+        // inheritance in other languages") and `mixins` as an options merge;
+        // both make the named component's options part of this one, so both are
+        // `extends` edges, distinguished by `isMixin`. Keeping the relation is
+        // deliberate: `extends` is ALREADY in this lane's audited set (the M60
+        // rel-type-coverage gate CHECK 1 lists it for vue), so the oracle now
+        // compares these rows — a coverage GAIN — instead of the rows sitting
+        // where no gate could see them.
+        if (!value || !relationships) continue
+        const isMixin = key === "mixins"
+        for (const base of this.identifiersOf(value)) {
+          relationships.push({
+            source: componentName,
+            target: base.name,
+            type: ASTEngine.RelationshipType.Extends,
+            // A named component the analyzer cannot see is the Vue
+            // documentation's own guarantee — the option is resolved by Vue at
+            // runtime — so this is a declaration of the relationship, not a
+            // guess. It is not `structural` in the closure sense (nothing in
+            // this file states the base's members), which is why the
+            // confidence is below 1.
+            confidence: 0.9,
+            line_number: this.offsetRange(this.nodeToRange(base.node), lineOffset, colOffset, indexOffset).startLine,
+            metadata: { isMixin, isOptionsApi: true },
+          })
+        }
+        // The inline-object form (`extends: { methods: {…} }`) merges another
+        // component's options in wholesale, so its members are THIS component's
+        // members — the same contract a `methods:`/`computed:` block declares.
+        if (value.type === "object") {
+          for (let i = 0; i < value.namedChildCount; i++) {
+            const sub = value.namedChild(i)
+            if (!sub || (sub.type !== "pair" && sub.type !== "method_definition")) continue
+            const subKey = sub.type === "pair" ? sub.childForFieldName("key")?.text : sub.childForFieldName("name")?.text
+            const subValue = sub.type === "pair" ? sub.childForFieldName("value") : undefined
+            if (!subKey) continue
+            if ((subKey === "methods" || subKey === "computed") && subValue) {
+              this.emitObjectMembers(
+                subValue, componentName, symbols,
+                subKey === "methods" ? ASTEngine.SymbolKind.Method : ASTEngine.SymbolKind.Property,
+                subKey === "methods" ? "method" : "computed",
+                lineOffset, colOffset, payloads, indexOffset,
+              )
+            } else if (subKey === "props" && subValue) {
+              for (const { name: pn, node: pnode } of this.propEntries(subValue)) {
+                symbols.push({
+                  name: pn,
+                  kind: ASTEngine.SymbolKind.Property,
+                  range: this.offsetRange(this.nodeToRange(pnode), lineOffset, colOffset, indexOffset),
+                  scope: componentName,
+                  ownerName: componentName,
+                  ownerKind: ASTEngine.SymbolKind.Class,
+                  visibility: "public",
+                  metadata: { isProp: true, inheritedFrom: "extends" },
+                })
+              }
+            }
+          }
         }
       } else if (key === "watch") {
         // watch is NOT a lifecycle hook (was mislabeled isLifecycleHook);
@@ -672,6 +1346,26 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           patterns["Options API"] = true
           this.emitObjectMembers(value, componentName, symbols, ASTEngine.SymbolKind.Method, "isWatcher", lineOffset, colOffset, payloads, indexOffset)
         }
+      } else if (key === "setup") {
+        // F5 (master review 2026-09-30): `setup` was in NONE of the option
+        // branches — not `methods`, not `computed`, not `watch`, not `data`,
+        // not `isLifecycleHook` — so every Options component built around it had
+        // no symbol for its own entry point (20 element-plus + 1
+        // vue-element-admin files measured). It is deliberately NOT folded into
+        // `isLifecycleHook`: it is not a lifecycle hook, it is the composition
+        // function, and merging the two would make that predicate's name lie for
+        // every other caller. Its own branch, its own marker.
+        patterns["Options API"] = true;
+        symbols.push({
+          name: key,
+          kind: ASTEngine.SymbolKind.Method,
+          range: this.offsetRange(this.nodeToRange(child), lineOffset, colOffset, indexOffset),
+          scope: componentName,
+          ownerName: componentName,
+          ownerKind: ASTEngine.SymbolKind.Class,
+          visibility: "public",
+          metadata: { isSetup: true },
+        })
       } else if (this.isLifecycleHook(key)) {
         symbols.push({
           name: key,
@@ -707,6 +1401,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!child || child.type !== "pair") continue
       const keyNode = child.childForFieldName("key")
       if (!keyNode) continue
+      // F6: a bracket-led computed key names a VARIABLE, which is statically
+      // unknowable — the M2/VSD15 ruling, which until now reached
+      // `emitObjectMembers` and none of the other three sites that turn an
+      // object key into a symbol name. Measured: `Property "[key]"` at
+      // panel-date-pick.vue:846, and `[dyn]` from every computed data key.
+      if (keyNode.text.startsWith("[")) continue
       const name = keyNode.type === "string" ? unquote(keyNode.text) : keyNode.text
       if (!name) continue
       const prevIdx = seen.get(name)
@@ -839,6 +1539,300 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * F12: a contract OPTION's entries, in the shape order —
+   * inline literal, then a same-file BINDING, then the declaration EDGE.
+   *
+   * Shared by the Options `props:`/`emits:` options and (for the binding half)
+   * the script-setup macros, because the two differ only in spelling: Vue
+   * hoists the declaration to a `const` in both styles, and both styles lost
+   * the whole contract when the name was not followed.
+   */
+  private resolveContractEntries(
+    value: Node | undefined,
+    scriptRoot: Node | undefined,
+    which: "props" | "emits",
+    relationships: ASTEngine.UniversalRelationship[] | undefined,
+    componentName: string,
+  ): Array<{ name: string; node: Node }> {
+    const inline = this.propEntries(value ?? undefined)
+    if (inline.length > 0) { this.lastContractSource = "inline"; return inline }
+    if (!value || !scriptRoot) { this.lastContractSource = "none"; return [] }
+    const bound = this.boundMacroEntries(value, scriptRoot, which)
+    if (bound.length > 0) { this.lastContractSource = "binding"; return bound }
+    this.lastContractSource = "none"
+    // Unresolvable here (an imported declaration): the contract is an EDGE, and
+    // only when the caller can record it — an options object with no relationship
+    // sink must not silently drop the fact.
+    if (!relationships) return []
+    const declared = this.macroContractNameFromNode(value, which)
+    if (!declared) return []
+    const marker = which === "props" ? "isPropContract" : "isEmitContract"
+    relationships.push({
+      source: componentName,
+      target: declared.name,
+      type: ASTEngine.RelationshipType.References,
+      confidence: declared.resolved ? 1.0 : 0.8,
+      ...(declared.node.startPosition ? { line_number: declared.node.startPosition.row + 1 } : {}),
+      metadata: {
+        [marker]: true,
+        isOptionsApi: true,
+        ...(declared.module ? { contractModule: declared.module } : {}),
+        ...(declared.resolved ? {} : { unresolved: true }),
+      },
+    })
+    return []
+  }
+
+  /** The declaration a bare identifier argument names, without a call node. */
+  private macroContractNameFromNode(
+    arg: Node,
+    _which: "props" | "emits",
+  ): { name: string; node: Node; module?: string; resolved: boolean } | undefined {
+    if (arg.type !== "identifier") return undefined
+    const root = this.scriptRootOf(arg)
+    return {
+      name: arg.text,
+      node: arg,
+      module: root ? this.importModuleFor(arg.text, arg) : undefined,
+      resolved: root ? this.hasTopLevelDeclaration(arg.text, arg) : false,
+    }
+  }
+
+  /**
+   * The identifiers a heritage option names, in the three shapes Vue accepts:
+   * a bare name (`extends: Base`), an array of them (`extends: [A, B]`), and a
+   * string name — which Vue also honours for a globally-registered component.
+   *
+   * Only names are taken. An inline OBJECT (`extends: { methods: … }`) is a
+   * merge rather than a reference, and its members are extracted by the caller;
+   * naming the literal's own keys as base classes would fabricate an inheritance
+   * to a property.
+   */
+  private identifiersOf(node: Node): Array<{ name: string; node: Node }> {
+    const out: Array<{ name: string; node: Node }> = []
+    if (node.type === "identifier") { out.push({ name: node.text, node }); return out }
+    if (node.type === "string") {
+      const v = unquote(node.text)
+      if (v) out.push({ name: v, node })
+      return out
+    }
+    if (node.type === "array") {
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) continue
+        if (c.type === "identifier") out.push({ name: c.text, node: c })
+        else if (c.type === "string") {
+          const v = unquote(c.text)
+          if (v) out.push({ name: v, node: c })
+        }
+      }
+      return out
+    }
+    return out
+  }
+
+  /**
+   * F12: a same-file BINDING as the macro's argument —
+   * `defineProps(boundProps)` / `defineEmits(boundEmits)`.
+   *
+   * The name is an `identifier`; this resolves it to its `variable_declarator`
+   * in the SAME script tree and reads the literal it holds, which is the only
+   * form whose keys are published by nothing else — so component-owned symbols
+   * are safe here and match what the inline runtime form already emits. A
+   * binding that does not resolve (imported from a sibling module) returns
+   * nothing and the caller emits the contract edge instead; this walk never
+   * leaves the tree, so it costs no I/O and cannot depend on the filesystem.
+   */
+  private boundMacroEntries(
+    arg: Node | undefined,
+    scriptRoot: Node,
+    which: "props" | "emits",
+  ): Array<{ name: string; node: Node }> {
+    if (!arg) return []
+    const nameNode = arg.type === "identifier" ? arg : this.findChildByType(arg, "identifier")
+    if (!nameNode) return []
+    const wanted = nameNode.text
+    const stack: Node[] = [scriptRoot]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "variable_declarator") {
+        const nameField = n.childForFieldName("name")
+        const valueField = n.childForFieldName("value")
+        if (nameField?.type === "identifier" && nameField.text === wanted && valueField) {
+          return this.propEntries(peelTypeWrappers(valueField))
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    void which
+    return []
+  }
+
+  /**
+   * F12: the DECLARATION a macro names, when it is not an inline literal —
+   * `defineProps<AffixProps>()` (a `type_identifier` in `type_arguments`) or
+   * `defineProps(affixProps)` (a `binding` identifier). Returns the name plus
+   * the node that writes it, and whether the declaration is reachable in THIS
+   * tree (`resolved`) — which selects the edge's confidence, since a
+   * same-file declaration is a certainty and an imported one is the import's
+   * word for it.
+   */
+  private macroContractName(
+    callNode: Node,
+    arg: Node | undefined,
+    _which: "props" | "emits",
+  ): { name: string; node: Node; module?: string; resolved: boolean } | undefined {
+    // F14: the TYPE-ARGUMENT form is handled by the caller's `contractTypeShape`
+    // loop, which must run even when prop symbols were found — so the branch
+    // that used to live here is removed rather than left as a second, narrower
+    // rule for the same input. What remains here are the forms that carry no
+    // type arguments at all.
+    // The BINDING form: `defineProps(affixProps)` — reject a non-identifier
+    // argument (a literal was already handled by the caller's inline pass).
+    if (arg) {
+      // `defineEmits(tooltipEmits as Mutable<typeof tooltipEmits>)` — a cast
+      // wrapper is still one declaration. Peel the wrappers the type layer adds
+      // and read the identifier underneath.
+      let inner: Node | null = arg
+      for (let i = 0; i < 8 && inner; i++) {
+        if (inner.type === "identifier") break
+        if (inner.type === "as_expression" || inner.type === "satisfies_expression" ||
+            inner.type === "parenthesized_expression" || inner.type === "non_null_expression") {
+          const kids: (Node | null)[] = inner.namedChildren
+          inner = kids.length > 0 ? (kids[0] ?? null) : null
+          continue
+        }
+        break
+      }
+      if (inner?.type === "identifier") {
+        const resolved = this.hasTopLevelDeclaration(inner.text, callNode)
+        return { name: inner.text, node: inner, module: this.importModuleFor(inner.text, callNode), resolved }
+      }
+      // `defineEmits([CHANGE_EVENT])` — an array of CONSTANT REFERENCES — is
+      // NOT handled here, and used to be. F13 moved it to `propDeclarationEntries`,
+      // which the caller runs for EVERY identifier element; this branch read only
+      // the first, so by the time control reached it the key was already in
+      // `seenMacroNames` and the branch was dead. It was also the last caller of
+      // `findDescendantType`, whose WASM descendant search profiled at 5% of
+      // wall clock. Deleted rather than left as a second, narrower rule.
+    }
+    return undefined
+  }
+
+  /** Is `name` declared at this tree's top level (an interface or a type alias)? */
+  private hasTopLevelDeclaration(name: string, callNode: Node): boolean {
+    const root = callNode.parent ? this.scriptRootOf(callNode) : null
+    const scope = root ?? callNode
+    // PERF: the method is called once per contract candidate and walked the whole
+    // subtree looking for a declaration the predicate admits is TOP-LEVEL. A
+    // `defineProps<Foo>()` resolves against a declaration that a component can
+    // actually see, which is a top-level `interface` / `type` in the program; a
+    // same-named declaration nested inside a function body is not that. So
+    // `program`'s direct children are the complete search space, and the walk
+    // that made this O(tree) per call is gone.
+    const stack: Node[] = []
+    for (let i = 0; i < scope.namedChildCount; i++) {
+      const c = scope.namedChild(i)
+      if (c) stack.push(c)
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if ((n.type === "interface_declaration" || n.type === "type_alias_declaration") &&
+          n.childForFieldName("name")?.text === name) {
+        return true
+      }
+    }
+    return false
+  }
+
+  /** The `program` node this call sits in, by climbing parents (web-tree-sitter
+   *  hands back fresh wrappers, so identity is never compared by reference). */
+  /** The first call expression in `root` whose callee is `name` (F16). */
+  private findCallNamed(root: Node, name: string): Node | null {
+    const stack: Node[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "call_expression") {
+        const fn = n.childForFieldName("function")
+        if (fn?.text === name) return n
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return null
+  }
+
+  /** The first object-typed argument of a call, if any (F16). */
+  private firstObjectArgument(call: Node): Node | null {
+    const args = call.childForFieldName("arguments")
+    if (!args) return null
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (c?.type === "object") return c
+    }
+    return null
+  }
+
+  private scriptRootOf(node: Node): Node | null {
+    let cur: Node | null = node.parent
+    let last: Node = node
+    while (cur) {
+      if (cur.type === "program") return cur
+      last = cur
+      cur = cur.parent
+    }
+    return last.parent ? null : last
+  }
+
+  /** The module specifier an identifier was imported from, if any. */
+  private importModuleFor(name: string, callNode: Node): string | undefined {
+    const root = this.scriptRootOf(callNode)
+    if (!root) return undefined
+    // PERF: this walked the ENTIRE script tree — descending into every function
+    // body, every expression — once per contract candidate, so a file with
+    // several macros paid O(contracts x tree_size) with a `.text` marshal at every
+    // node. Profiling the 300-file element-plus draw attributed 2.5% of total
+    // wall clock to `importModule` alone. An `import_statement` can only be a
+    // TOP-LEVEL statement of the program — there is no valid position for one
+    // inside a function or an expression — so the direct children of `program`
+    // are the complete search space. Same answer, one level of walk.
+    const stack: Node[] = []
+    for (let i = 0; i < root.namedChildCount; i++) {
+      const c = root.namedChild(i)
+      if (c) stack.push(c)
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "import_statement") {
+        const src = this.findChildByType(n, "string")
+        const clause = n.namedChildren.find((c: any) => c.type === "import_clause")
+        for (const c of clause?.namedChildren ?? []) {
+          if (!c) continue
+          if (c.type === "named_imports") {
+            for (const sp of c.namedChildren) {
+              if (!sp) continue
+              const alias = sp.childForFieldName("alias")?.text
+              const imp = sp.childForFieldName("name")?.text
+              if ((alias ?? imp) === name) return src ? unquote(src.text) : undefined
+            }
+          } else if (c.type === "identifier" && c.text === name) {
+            return src ? unquote(src.text) : undefined
+          }
+        }
+      }
+      // No descent: the stack holds `program`'s statements, and only an
+      // `import_statement` can match, so descending past it would re-walk the
+      // tree this method used to walk.
+    }
+    return undefined
+  }
+
   private propNames(node: Node | undefined): string[] {
     return this.propEntries(node).map((e) => e.name)
   }
@@ -854,6 +1848,58 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * TabPane.vue:70's `type`). A prop's declaration line is the line its own key
    * is written on, which only this walk can say.
    */
+  /**
+   * F3 (vue master review 2026-09-30): the DEFAULTS object of a
+   * `withDefaults(defineProps<T>(), { … })` call.
+   *
+   * The macro handler visits the inner `defineProps` call, so the defaults sit
+   * one frame UP the parent chain — that frame is what was never looked at, and
+   * it is the whole reason 98 corpus files lost their declared defaults. Climbs
+   * from the macro call to the nearest enclosing `withDefaults` and returns its
+   * SECOND argument, or null when there is no wrapper (the plain `defineProps`
+   * form, which legitimately has no defaults). The hop bound guards against a
+   * pathological tree; `scriptRootOf` above climbs the same way without one.
+   */
+  private withDefaultsObject(macroCall: Node): Node | null {
+    let n: Node | null = macroCall.parent
+    let hops = 0
+    while (n && hops < 8) {
+      if (n.type === "call_expression") {
+        const fn = n.childForFieldName("function")
+        if (fn && fn.text === "withDefaults") return n.childForFieldName("arguments")?.namedChild(1) ?? null
+      }
+      n = n.parent
+      hops++
+    }
+    return null
+  }
+
+  /**
+   * F3: key → raw default-value TEXT of a `withDefaults` defaults object.
+   *
+   * The value is kept as WRITTEN SOURCE, not evaluated: a default may be any
+   * expression (`0`, `'hi'`, `() => []`, `defaultSize`) and this lane has no
+   * evaluator, so pretending otherwise would be a worse lie than storing the
+   * text. A BRACKET-LED computed key is skipped under the same F6 ruling — its
+   * "default" is a variable reference, not a static default.
+   */
+  private defaultsEntries(objects: Node | null): Map<string, string> {
+    const out = new Map<string, string>()
+    if (!objects || objects.type !== "object") return out
+    for (let i = 0; i < objects.namedChildCount; i++) {
+      const c = objects.namedChild(i)
+      if (!c || c.type !== "pair") continue
+      const keyNode = c.childForFieldName("key")
+      const raw = keyNode?.text
+      if (!raw || raw.startsWith("[")) continue
+      const value = c.childForFieldName("value")
+      if (!value) continue
+      const k = keyNode!.type === "string" ? unquote(raw) : raw
+      if (k) out.set(k, value.text)
+    }
+    return out
+  }
+
   private propEntries(node: Node | undefined): Array<{ name: string; node: Node }> {
     // Shallow: props: ['a', 'b'] (array of strings) OR
     // props: { a: {...}, b: {...} } (object — direct pair keys only).
@@ -873,9 +1919,44 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (c && c.type === "pair") {
           const keyNode = c.childForFieldName("key")
           const key = keyNode?.text
-          if (key) out.push({ name: key, node: keyNode ?? c })
+          // F6: same ruling as emitDataKeys / emitObjectMembers. A computed props
+          // or emits key is a variable reference, not a contract name.
+          if (key && !key.startsWith("[")) out.push({ name: key, node: keyNode ?? c })
         }
       }
+    }
+    return out
+  }
+
+  /**
+   * F13 (full 829-file corpus draw, 2026-09-30): the IDENTIFIER elements of a
+   * `defineProps([ … ])` / `defineEmits([ … ])` array.
+   *
+   * `propEntries` accepts string elements only, which is right for its callers —
+   * an identifier is not an event NAME and must not become a symbol (that would
+   * be the F6 phantom class again: `CHANGE_EVENT` is a declaration, and its
+   * value is the event). But dropping it was worse than either: measured, 13
+   * corpus files lost a member of their event set outright, and
+   * time-select.vue's `defineEmits([CHANGE_EVENT, 'blur', 'focus', 'clear',
+   * UPDATE_MODEL_EVENT])` published three events where the component emits five.
+   *
+   * Those constants are imported, so resolving their VALUES needs cross-file
+   * constant folding this lane does not do. The DECLARATION is nameable right
+   * here, and F12 already established the rule for exactly this situation in
+   * `defineProps(binding)`: a named declaration becomes a contract EDGE, never a
+   * copy of its members. This is a separate accessor rather than a flag on
+   * `propEntries` so that the Options-API path, which uses the same helper for
+   * `emits: [ … ]`, keeps ignoring identifiers rather than inheriting a
+   * declaration edge it never asked for.
+   */
+  private propDeclarationEntries(node: Node | undefined): Array<{ name: string; node: Node }> {
+    if (!node || node.type !== "array") return []
+    const out: Array<{ name: string; node: Node }> = []
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      // A member expression (`KEYS.primary`) and a call (`ev('x')`) also do not
+      // name a plain declaration; an identifier does.
+      if (c && c.type === "identifier") out.push({ name: c.text, node: c })
     }
     return out
   }
@@ -897,19 +1978,110 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * M59 (#825) follow-up: genericMacroNames carrying the name node, so macro
    * symbols range at their own key lines (same contract as the runtime form).
    */
+  /**
+   * F14 (full 829-file corpus draw, 2026-09-30): the shape of a macro's TYPE
+   * ARGUMENT, at the level of the contract, with one rule — descend through
+   * intersection / union constituents and through type wrappers, read a generic's
+   * OWN name, and STOP at an object literal.
+   *
+   * The old code had no shape at all: `findChildByType(typeArgs, "object_type")`
+   * reads DIRECT children only, so `defineProps<{ … } & Pick<X, 'a'>>()` — an
+   * intersection — matched nothing and published NO props (measured:
+   * cascader-panel/src/menu.vue, prop symbols `[]`), while a separate
+   * blind-descendant search for the first `type_identifier` reached INTO the
+   * object literal's property signatures and named a prop's TYPE as the
+   * contract. Both halves were visible only at the 829-file draw, and in
+   * opposite directions: node.vue's plain literal `defineProps<{ node: NodeShape;
+   * menuId?: string }>()` should name nothing, yet the oracle derived
+   * `NodeShape` for it — a MISSING that no sampled run had ever seen.
+   *
+   * `CascaderNode[]` inside a property signature is still inside one, so the
+   * array case that made the old pre-order rule look reasonable is covered by
+   * the same stop.
+   */
+  private contractTypeShape(typeArgs: Node | null): {
+    objectTypes: Node[]
+    participants: Array<{ name: string; node: Node }>
+  } {
+    const objectTypes: Node[] = []
+    const participants: Array<{ name: string; node: Node }> = []
+    const seenParticipants = new Set<string>()
+    const addParticipant = (n: Node | null): void => {
+      if (!n || !n.text) return
+      if (seenParticipants.has(n.text)) return
+      seenParticipants.add(n.text)
+      participants.push({ name: n.text, node: n })
+    }
+    const walk = (node: Node | null, depth: number): void => {
+      if (!node || depth > 8) return
+      switch (node.type) {
+        case "intersection_type":
+        case "union_type":
+          // Every constituent contributes to the contract, which is the whole
+          // point of the shape: `{ … } & Pick<X, 'a'> & { other: N }` has THREE
+          // operands and the middle one names a declaration.
+          for (let i = 0; i < node.namedChildCount; i++) walk(node.namedChild(i), depth + 1)
+          return
+        case "parenthesized_type":
+        case "as_expression":
+        case "satisfies_expression":
+        case "non_null_expression": {
+          const kids = node.namedChildren
+          walk(kids.length ? kids[0] : null, depth + 1)
+          return
+        }
+        case "object_type":
+          // Its MEMBERS are the props (read by the caller). Their types are the
+          // props' own business and the delegate already publishes them as
+          // declared_type rows — so this is where the walk stops.
+          objectTypes.push(node)
+          return
+        case "generic_type": {
+          // `Pick<X, 'a'>` — the participant is `Pick`, the generic's OWN name.
+          // Its type ARGUMENTS are not descended into: `X` is the operand of a
+          // utility type, not a declaration this component's contract names, and
+          // the oracle draws the same line.
+          const kids = node.namedChildren
+          const nameNode = kids.length > 0 ? kids[0] : null
+          if (nameNode && (nameNode.type === "type_identifier" || nameNode.type === "nested_type_identifier")) {
+            addParticipant(nameNode)
+          }
+          return
+        }
+        case "type_identifier":
+          addParticipant(node)
+          return
+        default:
+          // array_type, primitive_type, type_parameter, index_signature, and
+          // anything this grammar adds later: not a participant.
+          return
+      }
+    }
+    if (typeArgs) for (let i = 0; i < typeArgs.namedChildCount; i++) walk(typeArgs.namedChild(i), 0)
+    return { objectTypes, participants }
+  }
+
   private genericMacroEntries(callNode: Node, which: "props" | "emits"): Array<{ name: string; node: Node }> {
     const out: Array<{ name: string; node: Node }> = []
     const typeArgs = this.findChildByType(callNode, "type_arguments")
     if (!typeArgs) return out
-    const objectType = this.findChildByType(typeArgs, "object_type")
-    if (!objectType) return out
-    for (let i = 0; i < objectType.namedChildCount; i++) {
+    // F14: an INTERSECTION puts the literal under `intersection_type`, where the
+    // old direct-child lookup could not see it and every prop was lost.
+    const objectTypes = this.contractTypeShape(typeArgs).objectTypes
+    for (const objectType of objectTypes) for (let i = 0; i < objectType.namedChildCount; i++) {
       const member = objectType.namedChild(i)
       if (!member) continue
       if (which === "props") {
         if (member.type === "property_signature") {
           const pid = this.findChildByType(member, "property_identifier")
           if (pid?.text) out.push({ name: pid.text, node: pid })
+        } else if (member.type === "index_signature") {
+          // F6: an INDEX SIGNATURE is not a member. `[key: string]: string`
+          // names a parameter, and emitting it as a Property called `[key]`
+          // published a name no graph can resolve — measured on
+          // panel-date-pick.vue:846, the corpus's one real phantom symbol. The
+          // key of an index signature declares the INDEX, not a member any
+          // caller can name.
         }
       } else {
         // emits: each call_signature is one event overload; the event names
@@ -1022,10 +2194,33 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     const isIdentPart = (ch: string): boolean => isIdentStart(ch) || (ch >= "0" && ch <= "9")
     const isSpace = (ch: string): boolean => ch === " " || ch === "\t" || ch === "\n" || ch === "\r"
     // Context stack: quote chars for strings, "${" for interpolations, "{"
-    // for plain braces inside them. Empty stack = code. String contents
-    // (including object keys like {a: 1} — pre-existing acceptance, not
-    // solved here) never emit; template ${...} regions are code again.
+    // for plain braces inside them. Empty stack = code. String CONTENTS never
+    // emit; template ${...} regions are code again.
+    //
+    // F10 (master review 2026-09-30): an unquoted object-literal KEY is not a
+    // member read either, and at 432 of 1,150 corpus files `{{ { count: 1 } }}`
+    // emitted Uses(count). The colon alone does not identify a key, because in a
+    // TERNARY the colon follows a VALUE: `show ? count : total` reads `count`.
+    // Reading the colon without tracking the `?` deletes every ternary-branch
+    // read — a silent false negative, worse than the false positive it removes,
+    // and invisible to a fixture that only forbids. So a pending `?` is tracked
+    // PER BRACE DEPTH: `c ? { p: 1 } : d` has the `?` at the outer depth and the
+    // object's key colon at the inner one, and the two must not be confused.
     const stack: string[] = []
+    let braceDepth = 0
+    const pendingTernary = new Set<number>()
+    /** Is the identifier starting at `start` an object-literal KEY? */
+    const isKeyPosition = (start: number): boolean => {
+      let k = start
+      while (k < text.length && isIdentPart(text[k])) k++
+      while (k < text.length && isSpace(text[k])) k++
+      if (text[k] !== ":") return false
+      if (text[k + 1] === ":") return false
+      // A colon that CLOSES a pending ternary at this depth is not a key colon,
+      // and it consumes the pending marker.
+      if (pendingTernary.has(braceDepth)) { pendingTernary.delete(braceDepth); return false }
+      return true
+    }
     const emit = (word: string, start: number): void => {
       let k = start - 1
       while (k >= 0 && isSpace(text[k])) k--
@@ -1048,23 +2243,36 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (top === "`") {
         if (ch === "\\") { i += 2; continue }
-        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); i += 2; continue }
+        if (ch === "$" && text[i + 1] === "{") { stack.push("${"); braceDepth++; pendingTernary.delete(braceDepth); i += 2; continue }
         if (ch === "`") { stack.pop(); i++; continue }
         i++
         continue
       }
       // Code context (empty stack, "${", or plain "{").
       if (ch === "'" || ch === '"' || ch === "`") { stack.push(ch); i++; continue }
-      if (ch === "{") { stack.push(ch); i++; continue }
+      if (ch === "{") { stack.push(ch); braceDepth++; pendingTernary.delete(braceDepth); i++; continue }
       if (ch === "}") {
-        if (top === "{" || top === "${") stack.pop()
+        if (top === "{" || top === "${") { stack.pop(); braceDepth--; pendingTernary.delete(braceDepth) }
+        i++
+        continue
+      }
+      if (ch === "?") {
+        // `?.` is optional chaining and `??` is nullish coalescing; neither
+        // opens a ternary, and reading either as one would disarm the key test
+        // for the rest of the expression.
+        if (text[i + 1] !== "." && text[i + 1] !== "?") pendingTernary.add(braceDepth)
+        i++
+        continue
+      }
+      if (ch === ":") {
+        if (pendingTernary.has(braceDepth)) pendingTernary.delete(braceDepth)
         i++
         continue
       }
       if (!isIdentStart(ch)) { i++; continue }
       let j = i + 1
       while (j < text.length && isIdentPart(text[j])) j++
-      emit(text.slice(i, j), i)
+      if (!isKeyPosition(i)) emit(text.slice(i, j), i)
       i = j
     }
   }
@@ -1088,9 +2296,14 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         this.collectVForVars(attrVal.text, shadowed)
       } else if (dname === "#" || dname === "v-slot") {
         // { row, col } — the slot-prop destructuring binds locally.
-        const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
-        let m: RegExpExecArray | null
-        while ((m = re.exec(attrVal.text)) !== null) shadowed.add(m[0])
+        //
+        // No regex, and this is the point of the change: `collectIdentifiers` is
+        // the hand-written stack machine that already tokenizes THIS EXACT class
+        // of template expression text for `uses`, so the lane had TWO tokenizers
+        // for one input — a regex one and a stack-machine one — and they
+        // disagreed on method (documented as such in the regex census). Reusing
+        // the stack machine deletes the duplicate and the disagreement with it.
+        this.collectIdentifierNames(attrVal.text, shadowed, attrVal.startPosition.row)
       }
     }
   }
@@ -1100,12 +2313,15 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * in/of) is bound locally; only the collection part is a member use.
    */
   private collectVForUsage(text: string, out: Map<string, number>, shadowed: Set<string>, baseLine: number): void {
-    const m = /^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+(.+)$/.exec(text)
-    const collection = m ? m[2] : text
+    // No regex — see `parseVForDirective`, which this delegates to and which
+    // reproduces the previous pattern's lazy-match semantics exactly, including
+    // its two fallback cases.
+    const m = this.parseVForDirective(text)
+    const collection = m && m.collectionStart >= 0 ? m.collection : text
     // The collection is a SUBSTRING of `text`, so its line base is the fragment's
     // base plus the breaks the earlier part of the directive value contains —
     // `v-for="item in\n  items"` writes items on the next line.
-    const start = m ? m[0].length - m[2].length : 0
+    const start = m && m.collectionStart >= 0 ? m.collectionStart : 0
     this.collectIdentifiers(collection, out, shadowed, baseLine + RealVueAnalyzer.linesBefore(text, start))
   }
 
@@ -1114,11 +2330,127 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
    * parenthesized form) are bound locally.
    */
   private collectVForVars(text: string, shadowed: Set<string>): void {
-    const m = /^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+/.exec(text)
-    const vars = m ? m[1] : text
-    const re = /[A-Za-z_$][A-Za-z0-9_$]*/g
-    let mm: RegExpExecArray | null
-    while ((mm = re.exec(vars)) !== null) shadowed.add(mm[0])
+    // No regex on both counts: the head is parsed by `parseVForDirective` and the
+    // alias names are tokenized by the same stack machine the rest of the lane
+    // uses. The previous head pattern had NO `(.+)$` tail, so it matched where
+    // the usage pattern could not (an empty or multi-line collection) — that
+    // asymmetry is preserved and pinned by vue/v-for-directive-shapes.
+    const m = this.parseVForDirective(text)
+    const vars = m ? m.aliases : text
+    this.collectIdentifierNames(vars, shadowed, 0)
+  }
+
+  /**
+   * The `v-for` directive grammar, with NO regular expression.
+   *
+   *   v-for="item in items"        v-for="(row, col) in grid"
+   *   v-for="item of items"        v-for="(value, key) of map"
+   *
+   * This replaces `/^\s*\(?([^)]*?)\)?\s+(?:in|of)\s+(.+)$/` and its tail-less
+   * sibling, and reproduces their behaviour rather than an idealised version of
+   * it, because three of the old behaviours are load-bearing:
+   *
+   * 1. `([^)]*?)` is LAZY, so the alias head is the SHORTEST run without a `)`
+   *    for which the rest of the pattern matches. A greedy scan would make
+   *    `item in items` bind `item in items`.
+   * 2. `\)?` is optional, so the `)` belongs to the KEYWORD MATCH, not the head.
+   *    `(row, col) in grid` must bind `row` and `col` — and must stop at the
+   *    first `)`, because the head cannot contain one.
+   * 3. `(.+)$` has no `s` flag, so `.` does NOT match a newline: a collection that
+   *    spans lines fails the pattern, and the caller falls back to treating the
+   *    WHOLE directive as the collection. That fallback is preserved, including
+   *    its consequence that such a file loses its shadowing (the tail-less
+   *    sibling still matches, so `collectVForVars` is unaffected).
+   *
+   * `collectionStart` is the byte offset of the collection within `text`, which
+   * is what `collectVForUsage` needs to count the line breaks before it. It is
+   * `-1` when the tail-less form matched but the collection form did not.
+   */
+  private parseVForDirective(text: string): { aliases: string; collection: string; collectionStart: number } | null {
+    const n = text.length
+    const isWs = (ch: string | undefined): boolean =>
+      ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === "\f" || ch === "\v"
+    let i = 0
+    while (i < n && isWs(text[i])) i++ // \s*
+    if (i < n && text[i] === "(") i++ // \(?
+    const aliasStart = i
+    // At `e`, does `\)?\s+(?:in|of)\s+` match? Returns the offset just past it.
+    // At `e`, does `\)?\s+(?:in|of)\s+` match? Returns the whitespace run that
+    // follows the keyword, because `\s+` is GREEDY and the collection form
+    // backtracks it — so the caller needs the run, not just its end.
+    const keywordAt = (e: number): { wsStart: number; wsEnd: number } | null => {
+      let j = e
+      if (j < n && text[j] === ")") j++ // \)?
+      const ws1 = j
+      while (j < n && isWs(text[j])) j++ // \s+  (one or more)
+      if (j === ws1) return null
+      const two = text.slice(j, j + 2)
+      if (two !== "in" && two !== "of") return null // (?:in|of), no word boundary
+      j += 2
+      const ws2 = j
+      while (j < n && isWs(text[j])) j++ // \s+
+      if (j === ws2) return null
+      return { wsStart: ws2, wsEnd: j }
+    }
+    // The alias head cannot contain ')', so scanning stops just past the first
+    // one — which the keyword matcher above is still allowed to consume.
+    const limit = (() => {
+      const close = text.indexOf(")", aliasStart)
+      return close < 0 ? n : close
+    })()
+    let aliases = ""
+    let collectionStart = -1
+    for (let e = aliasStart; e <= limit; e++) {
+      const kw = keywordAt(e)
+      if (!kw) continue
+      // `\s+(.+)`: the engine took the LONGEST whitespace run and then gave
+      // characters back until `(.+)` had something to match. Reproduce that
+      // backtracking exactly — it is observable: for `v-for="item in  "`
+      // (trailing spaces, no collection) the old pattern matched with the
+      // collection `" "`, so the final space WAS the collection and not
+      // separator. A greedy scan that stops at end-of-string reports no
+      // collection at all, which is a different answer on 170 of the 799
+      // generated shapes.
+      let chosen = -1
+      for (let q = kw.wsEnd; q > kw.wsStart; q--) {
+        const tail = text.slice(q)
+        if (tail.length === 0) continue
+        if (tail.includes("\n")) continue // `.` excludes a newline
+        chosen = q
+        break
+      }
+      if (chosen < 0) continue
+      aliases = text.slice(aliasStart, e)
+      collectionStart = chosen
+      break
+    }
+    if (collectionStart < 0) {
+      // The tail-less form: same shape, but an empty or multi-line collection
+      // still yields a head.
+      for (let e = aliasStart; e <= limit; e++) {
+        if (!keywordAt(e)) continue
+        aliases = text.slice(aliasStart, e)
+        break
+      }
+    }
+    if (aliases === "") return null
+    return {
+      aliases,
+      collection: collectionStart >= 0 ? text.slice(collectionStart) : text,
+      collectionStart,
+    }
+  }
+
+  /**
+   * Tokenize identifiers out of template expression TEXT and SHADOW them, using
+   * the same stack machine `collectIdentifiers` uses for member reads. The lane
+   * previously ran a regex over this input in two places while the stack machine
+   * sat one method away; both now share one tokenizer.
+   */
+  private collectIdentifierNames(text: string, into: Set<string>, baseLine: number): void {
+    const scratch = new Map<string, number>()
+    this.collectIdentifiers(text, scratch, undefined, baseLine)
+    for (const k of scratch.keys()) into.add(k)
   }
 
   private isLifecycleHook(key: string): boolean {
@@ -1221,6 +2553,38 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private elementTagName(element: Node): string | undefined {
     return this.elementTagNameNode(element)?.text
+  }
+
+  /**
+   * F9(b): the tag as WRITTEN, dotted segments and namespace included.
+   *
+   * `tag_name` spells only the FIRST segment: for `<Form.Input />` it is `Form`,
+   * so reading it alone is what silently dropped the sub-component. The spelling
+   * lives in the enclosing `start_tag` / `self_closing_tag` text, up to the first
+   * delimiter. Written with indexOf rather than a regex on purpose — this file's
+   * regex census is a claim the docs now publish, and adding an 7th literal to
+   * recover a string the grammar already hands us in two pieces is the wrong
+   * trade.
+   */
+  private elementTagSpelling(element: Node): string | undefined {
+    // NOTE: do NOT use `tagNameNode.parent` for this. Measured: that is the
+    // `element` node, so its text is the WHOLE element including the leading
+    // `<`, which produced targets like `<div` and `<template` and broke five
+    // fixtures. Look the `start_tag` / `self_closing_tag` up directly instead —
+    // its text starts at the tag name.
+    const tagNode = this.elementTagNameNode(element)
+    const holder = this.findChildByType(element, "start_tag") ?? this.findChildByType(element, "self_closing_tag")
+    let text = holder?.text ?? tagNode?.text
+    if (!text) return undefined
+    // In this grammar `start_tag` spans the delimiters too, so its text BEGINS
+    // with `<`. Drop it (charCode, no regex) or every target reads `<div`.
+    if (text.charCodeAt(0) === 60 /* "<" */) text = text.slice(1)
+    let end = text.length
+    for (const delim of [" ", "\t", "\n", "\r", ">", "/"]) {
+      const i = text.indexOf(delim)
+      if (i >= 0 && i < end) end = i
+    }
+    return end > 0 ? text.slice(0, end) : undefined
   }
 
   /** The `tag_name` node itself — the node that SPELLS the tag, for its line. */
