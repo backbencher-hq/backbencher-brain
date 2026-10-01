@@ -193,7 +193,12 @@ const PY_FRAMEWORK_PATTERN: Record<string, string> = Object.fromEntries(
 const PY_FRAMEWORK_ORDER: string[] = Object.values(PY_FRAMEWORK_MARKERS).map((m) => m.framework)
 
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     // Regex-free module-name derivation: last path segment minus its final
     // extension (pure char scan — the extension is after the LAST dot).
     const base = filePath.split("/").pop() || "module"
@@ -461,7 +466,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Overrides: Derived.method -> Base.method when the base declares the
     // same-name method (in-file or via the cross-file companion index).
-    this.extractOverrideRelationships(ctx)
+    this.extractOverrideRelationships(ctx, context)
 
     // PYD1 family contract: member READS emit `uses` (csharp/dart/php/ruby/
     // swift/objc all do — python was the only managedoo analyzer with none).
@@ -1534,7 +1539,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     walk(rootNode)
   }
 
-  private extractOverrideRelationships(ctx: PythonContext) {
+  private extractOverrideRelationships(ctx: PythonContext, context?: ASTEngine.AnalyzeContext) {
     const byName = new Map<string, ASTEngine.UniversalSymbol[]>()
     for (const s of ctx.symbols) {
       const list = byName.get(s.name) ?? []
@@ -1582,7 +1587,26 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Class && s.name) declaredClasses.add(s.name)
     }
-    const overrideCompanion = (ctx as any)._overrideCompanion as Map<string, Set<string>> | undefined
+    // PY-7. This used to read `(ctx as any)._overrideCompanion` — an underscore-prefixed field
+    // that NOTHING EVER WROTE, on a context the lane could not even receive. Three layers of
+    // disconnection stacked: `analyze()` took three parameters and so never got an
+    // `AnalyzeContext`; the field it read was `_overrideCompanion` while the declared one is
+    // `overrideCompanion`; and no caller populates either. `[key: string]: any` on the context
+    // interface is what let all three read as correct — an unknown property on an index-signature
+    // type is not an error, it is simply `undefined`.
+    //
+    // The consequence was measurable and bad: tier 2 of the three-tier override contract could
+    // never fire, so tier 3 — the 0.5 `first-parent-guess` — absorbed 100% of external
+    // overrides. A census over 3,271 files (script/m14/python-companion-opportunity.ts) scored
+    // those guesses against a corpus-wide tree-derived map of what each base really declares:
+    // 18.7% are true edges a populated index would verify, **57.7% name a base that IS in the
+    // corpus and does NOT declare the method** — fabricated, at a confidence a reader cannot
+    // discount — and 23.6% are genuinely unknown. So the tier was not merely unverified; it was
+    // wrong more often than right, and the suppression logic downstream was ALREADY correct: it
+    // emits a guess only when `!overrideCompanion?.has(firstUnread)`, so a populated index
+    // suppresses the fabrications and promotes the truths with no change to the contract at all.
+    // Only the data was missing.
+    const overrideCompanion = context?.overrideCompanion
     const baseDeclares = (base: string, method: string): boolean => {
       // Same kind requirement as the MRO walk above, and for the same reason: a class
       // variable is not a method, so it cannot be overridden.

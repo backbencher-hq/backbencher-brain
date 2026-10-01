@@ -12192,6 +12192,36 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "python/companion-resolution-discarded",
+    language: "python",
+    defectClass: "confidence-deflation",
+    description:
+      "PY-7 REVERT, the subtle half: the companion index IS read, the base IS resolved from it, and " +
+      "then the answer is published as if nothing had been learned — every override the index confirmed " +
+      "is demoted from its verified confidence to the 0.5 `first-parent-guess`. The EDGE is still right, " +
+      "so no membership comparison notices: only the number a reader weighs it by changes. " +
+      "Caught by python/companion-index/comp-child, whose `Redirect.send -> Mixin.send` row carries " +
+      "`confidenceMin: 0.9` precisely so a demotion fails it. " +
+      "Why it is worth a mutant when the obvious reverts already exist: dropping the companion read " +
+      "altogether and dropping its RESULT are different defects with different consequences. The first " +
+      "changes the edge SET — and a set comparison catches it immediately. The second leaves the set " +
+      "perfect and corrupts only the ranking, which is the failure a graph consumer cannot detect by " +
+      "looking at what is there. 855 corpus edges are in exactly this state today, and the census that " +
+      "found them had to compare confidences rather than members to see it.",
+    transform: r => ({
+      ...r,
+      relationships: ((r.relationships ?? []) as any[]).map((x: any) => {
+        const t = String(x.type)
+        if (!/override/i.test(t)) return x
+        const c = typeof x.confidence === "number" ? x.confidence : 1
+        // Only the CONFIRMED band. An in-file verified override at 1.0 is not what tier 2 produces,
+        // and demoting those too would be a different defect wearing this one's name.
+        if (!(c > 0.5 && c < 1)) return x
+        return { ...x, confidence: 0.5, reasonCode: "first-parent-guess" }
+      }),
+    }),
+  },
+  {
     id: "python/class-dunder-all-not-contained",
     language: "python",
     defectClass: "relationship-loss",

@@ -115,8 +115,8 @@ first. Over the corpus, **2,036 of 3,271 files (62.2%)** carry a framework.
 | Claim | Where it is pinned |
 | --- | --- |
 | grammar bytes | `validation/m14/grammar-pins.json`, lane `python` |
-| 17 fixtures | `validation/m14/fixtures/python/` |
-| 29 mutants | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
+| 19 fixtures | `validation/m14/fixtures/python/` |
+| 30 mutants | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
 | node-type classification | `script/m14/spec/python-completeness.json` |
 | independent truth | `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts` |
 | the measurements behind all of it | `reviews/python/master-review.md` |
@@ -163,8 +163,16 @@ relationship; the same three across three lines publish three, because the store
 
 Filed in the review, not fixed, each with the reason:
 
-- **PY-7** — the companion-index tier of the `overrides` contract is never populated; the
-  0.5 guess tier absorbs its cases and is 0% precise.
+- **PY-7** — the companion-index tier of the `overrides` contract is still never populated **in
+  production**, so the 0.5 guess tier absorbs every external override. Measured, that tier is not
+  merely unverified but **wrong for 57.7% of the guesses whose base is in the corpus** (e.g.
+  `RedirectSession.__init__ -> SessionRedirectMixin.__init__`, where the base declares no
+  `__init__`). The lane now *can* read the tier — it previously could not accept an
+  `AnalyzeContext` at all, read a misspelled field nothing wrote, and relied on
+  `[key: string]: any` to hide both — and supplying an index removes **2,704** fabricated edges
+  and promotes **855** to verified. Pinned both ways: the flat `external-override` fixture pins
+  today's dead-tier behaviour, the sub-directory `companion-index/` fixture pins the tier working.
+  Production population is the remaining, cross-lane half.
 - **PY-9** — a `calls` target is a **leaf**, never a receiver-qualified name: `self.model.save()`
   becomes `save`. This is a repository-wide convention (typescript, java, ruby, go, csharp and
   php all leaf-ify), and python has the most call edges of any lane, so it has the most to lose
