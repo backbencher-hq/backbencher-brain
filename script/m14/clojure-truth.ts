@@ -332,23 +332,6 @@ function walk(root: Node, onList: (node: Node, src: string) => void): void {
         nextOwner = `lambda_${n.startPosition.row}_${n.startPosition.column}`
       }
     }
-    // CLJ-D45: THE ANONYMOUS-FN SHORTHAND IS A CALL SITE, AND THE WALK NEVER VISITED
-    // IT. `#(h %)` parses as an `anon_fn_lit` whose children are the body DIRECTLY —
-    // there is no `list_lit` and no `fn` head, so `onList` never fired and every call
-    // written in the shorthand was invisible to this truth.
-    //
-    // That is a big class rather than a curiosity: clojure/core.clj is written in the
-    // shorthand, and 55 of the residual edges here were calls like `#(shift-mask s m
-    // %)`, `#(seq-reduce …)`, `#(foldvec …)`. The analyzer names the shorthand
-    // `lambda_<row>_<col>` from the node's own position, so the owner rule for `fn`
-    // has to apply here too or the edge is attributed to the enclosing defn.
-    //
-    // Firing `onList` for a node the other derivations ignore is safe: each of their
-    // callbacks opens with `if (node.type !== "list_lit") return`.
-    else if (n.type === "anon_fn_lit" && depth === 0) {
-      nextOwner = `lambda_${n.startPosition.row}_${n.startPosition.column}`
-      onList(n, owner)
-    }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, nextOwner, depth) }
   }
   rec(root, nsAt(nsTimeline, 0), 0)
@@ -761,7 +744,38 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
   // one. `walk` already tracks that owner, so this reuses it rather than keeping
   // a second walk that could disagree.
   const earliest = new Map<string, number>()
+  walk(root, (node, owner) => {
     if (node.type !== "list_lit") return
+    const h = executionHead(node)
+    const nm = h && h.type === "sym_lit" ? symName(h) : ""
+    // A FORWARD DECLARATION is not a definition (CLJ-D23) — `(declare cat
+    // select-keys)` at core.clj:2799 precedes `(defn cat …)` at 7980, and an edge
+    // pointing at the declare would claim the namespace defines `cat` where it
+    // only promises to.
+    if (nm === "declare") return
+    if (!DEF_HEADS.has(nm) && !isDefLikeHead(nm)) return
+    const dn = defNameOf(node)
+    if (!dn) return
+    // THE OWNER IS THE NAMESPACE, AT EVERY DEPTH. A `defn` interns a var in the
+    // current namespace whatever encloses it lexically — `(defn outer [] (defn
+    // inner [] 1))` defines `inner` in the namespace, not inside `outer`. The
+    // first version of this used the lexically enclosing DEFINITION as the owner,
+    // which is the right rule for CALL attribution (an `activeFunction`) and the
+    // wrong one for containment: it demanded
+    // `clickhouse-temporal-bucketing-server-tz -> start-of-year!` for a
+    // `defn-` inside a `deftest` body, and the analyzer — correctly — owned it
+    // by the namespace. 62 edges across metabase.
+    const src = nsAt(timeline, node.startIndex)
+    if (!src) return
+    const k = `${src}->${dn}`
+    const prev = earliest.get(k)
+    if (prev === undefined || h!.startPosition.row + 1 < prev) earliest.set(k, h!.startPosition.row + 1)
+  })
+  const edges: TruthEdge[] = []
+  for (const [k, line] of earliest) {
+    const split = k.indexOf("->")
+    edges.push({ source: k.slice(0, split), target: k.slice(split + 2), type: ASTEngine.RelationshipType.Contains, line })
+  }
   const namespace = timeline.length > 0 ? timeline[timeline.length - 1]!.name : ""
   return { edges, namespace }
 }
@@ -1244,52 +1258,6 @@ const NON_CALL_FORMS = new Set([
 ])
 
 /**
- * NAMESPACE AND CLASS-CREATING FORMS — not invocations, whatever supplies the name.
- *
- * core.clj defines `require` and `import`, and `clojure.core.proxy` defines `proxy`,
- * so the shadow rule was publishing `calls -> require`. A libspec is a DIRECTIVE and
- * `proxy` builds a class; neither invokes a var. Unconditional for the same reason as
- * `THREADING_HEADS`: what the head names is not something that was called.
- */
-const LIBSPEC_OR_CLASS_FORMS = new Set([
-  "ns", "in-ns", "require", "use", "import", "refer", "refer-clojure", "load",
-  "gen-class", "proxy", "defstruct", "extend-type", "extend-protocol", "extend",
-])
-
-/**
- * IS THIS AN ANONYMOUS-FN ARGUMENT PLACEHOLDER — `%`, `%1`, `%&` — rather than a name?
- *
- * `#(inc %)` CALLS `inc`; `#(% 1)` merely applies the argument. Tree-sitter puts both
- * in the same place, so the distinction has to be made on the symbol itself. Mirrors
- * `isAnonArgShorthand` in the analyzer, which is the authority; kept local for the
- * same reason the core list is a parameter rather than an import.
- */
-function isAnonArgShorthand(s: string): boolean {
-  if (s.length === 0) return false
-  if (s.charCodeAt(0) !== 37) return false                    // '%'
-  if (s.length === 1) return true                             // "%"
-  const c1 = s.charCodeAt(1)
-  if (c1 === 38) return s.length === 2                        // "%&" exactly, never "%&x"
-  return c1 >= 49 && c1 <= 57                                 // "%1" .. "%9"
-}
-
-/**
- * THREADING MACROS — transparent expansion, so never a call target.
- *
- * `(-> x (f y))` reads as "call `f` to `y` in the pipeline": the arrow is punctuation.
- * These names are in the core list, which would normally suppress them as standard
- * library; this set exists because core.clj DEFINES `->`, `doto` and `..`, so the
- * shadow rule would otherwise publish `calls -> ->` (12 edges) and `calls -> ..`.
- *
- * Unconditional on purpose, and unlike `loop`/`letfn`/`case` from CLJ-D44: these
- * expand to a call on their ARGUMENTS, so the arrow names nothing that was invoked
- * even in the file that defines it.
- */
-const THREADING_HEADS = new Set([
-  "->", "->>", "some->", "some->>", "cond->", "cond->>", "as->", "doto", "..",
-])
-
-/**
  * THE SPECIAL FORMS — a closed set, and a special form is NOT A CALL.
  *
  * This has to be consulted BEFORE the shadow check, which is the whole point of
@@ -1315,32 +1283,26 @@ const THREADING_HEADS = new Set([
  * the shadow rule would otherwise publish `calls -> ->`.
  */
 /**
- * THE SPECIAL FORMS — a closed set, and a special form is NOT A CALL.
+ * NAMESPACE AND CLASS-CREATING FORMS — not invocations, whatever supplies the name.
  *
- * Consulted BEFORE the shadow check. clojure/core.clj:4748 is `(defmacro fn …)`,
- * so the CLJ-D39 shadow rule says every `(fn …)` below that line is a call to the
- * file's own var, and it published 212 such edges. All 212 are wrong: `fn` is a
- * special form, a file defining it does not turn it into a var, and the compiler
- * still reads the head as a form.
- *
- * CLJ-D44: `loop`, `loop*`, `letfn`, `letfn*` and `case` were in this list and have
- * been REMOVED. They are MACROS, not special forms; core.clj defines every one of
- * them; and CLJ-D43 says a call to a macro the file defines IS a call. The analyzer
- * was right about them and this was wrong — which is the same two-lists-disagree
- * failure as everywhere else in this wave, and the reason a language fact is
- * derived rather than recalled.
- *
- * Kept separate from `src/ast/real-clojure-analyzer.ts` deliberately: this file
- * takes the core list as a PARAMETER so a derivation can run against an injected
- * language surface, and a hard import would undo that. The analyzer's exported
- * `CLOJURE_SPECIAL_FORMS` is the authority, and it now gates its own generic-call
- * emission on the set, so the two can be compared directly.
+ * core.clj defines `require` and `import` (and `clojure.core.proxy` defines
+ * `proxy`), so the shadow rule was publishing `calls -> require`. A libspec is a
+ * directive and a `proxy` builds a class; neither invokes a var.
  */
+const LIBSPEC_OR_CLASS_FORMS = new Set([
+  "ns", "in-ns", "require", "use", "import", "refer", "refer-clojure", "load",
+  "gen-class", "proxy", "defstruct", "extend-type", "extend-protocol", "extend",
+])
+
+const THREADING_HEADS = new Set([
+  "->", "->>", "some->", "some->>", "cond->", "cond->>", "as->", "doto", "..", "doto?", "#",
+])
+
 const SPECIAL_FORM_HEADS = new Set([
-  "def", "do", "fn", "fn*", "if", "if*", "let", "let*", "quote", "quote*", "var", "var*",
-  "recur", "recur*", "throw", "throw*", "try", "try*", "catch", "catch*", "finally",
-  "new", "new*", "set!", "monitor-enter", "monitor-exit", "case*", "letfn*", "loop*",
-  ".", "&",
+  "def", "do", "fn", "fn*", "if", "if*", "let", "let*", "letfn", "letfn*", "loop", "loop*",
+  "quote", "quote*", "var", "var*", "recur", "recur*", "throw", "throw*", "try", "try*",
+  "catch", "catch*", "finally", "new", "new*", "set!", "monitor-enter", "monitor-exit",
+  "case", "case*", ".", "&",
 ])
 
 /** The member of a static-interop head, or null — both dot positions (CLJ-D32). */
@@ -1636,14 +1598,7 @@ export function deriveClojureCallsTruth(
     isCore(name) && !isShadowedAt(name, pos) && referAt(referSegs, name, pos) === ""
 
   walk(root, (node, owner) => {
-    // CLJ-D45: the shorthand's first child is the CALLEE — unless it is `%`/`%1`,
-    // in which case the shorthand merely APPLIES its argument and calls nothing.
-    if (node.type === "anon_fn_lit") {
-      const ah = executionHead(node)
-      if (!ah || ah.type !== "sym_lit") return
-      const an = symName(ah)
-      if (!an || isAnonArgShorthand(an)) return
-    } else if (node.type !== "list_lit") return
+    if (node.type !== "list_lit") return
     if (isLibspecSite(node) || isCaseConstant(node)) return
     const h = executionHead(node)
     if (!h || h.type !== "sym_lit") return
