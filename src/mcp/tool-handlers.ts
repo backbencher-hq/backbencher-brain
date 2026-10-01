@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../brain/database"
+import { annotationId, annotationReachability, canonicalFilePath } from "../brain/annotation-store"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
@@ -26,9 +27,9 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 // M48.P1 (#696): bb_analyze impact aggregates the SAME canonical calculator
 // (computeImpact + its declared budget) so the two doors cannot disagree.
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
-import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows } from "../lsp/cross_language_hover"
+import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
-import { getFileDependencies } from "../intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import { makeProvenance } from "../intelligence/evidence"
@@ -64,6 +65,19 @@ function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | 
     summary,
   }
 }
+
+// bb_security response bounds. The two WINDOW values are what the agent sees;
+// the CENSUS cap is how many findings `recordRun` persists so that a capped
+// scan can never auto-resolve findings that were merely not looked at
+// (completeAnalysisRun resolves any prior `open` finding absent from the set).
+// Exported so the security verifiers can pin them rather than re-deriving
+// magic numbers that used to be inline literals.
+export const SECURITY_FINDINGS_WINDOW = 20
+export const SECURITY_SUSPICIOUS_WINDOW = 5
+/** Cap for the live (non-recording) scan. Matches the engine's own default. */
+export const SECURITY_SCAN_CAP = 500
+/** Cap for the recording scan — large enough that a real project is not truncated. */
+export const SECURITY_RECORD_RUN_CENSUS_CAP = 50_000
 
 export interface ToolContext {
   projectPath: string
@@ -111,10 +125,75 @@ function resolveSafeReadPath(projectPath: string, requested: string): { absolute
   const root = realpathSync(projectPath)
   const candidate = path.resolve(root, requested)
   ensureWithinProject(root, candidate)
-  if (!existsSync(candidate) || !statSync(candidate).isFile()) throw new Error(`file not found: ${requested}`)
+  if (!existsSync(candidate)) throw new Error(`not found: ${requested}`)
+  // A directory is named as such. The old message said "file not found" for a
+  // path that exists, which sent callers looking for a missing file.
+  if (!statSync(candidate).isFile()) throw new Error(`not a file: ${requested}`)
   const absolute = realpathSync(candidate)
+  // The second containment check is the one that matters: realpath resolves
+  // symlinks, so an in-project link pointing outside the project is caught here
+  // and not by the pre-resolution check. It is re-established at the point of
+  // read by readIndexedFile, which re-validates the path it is about to open.
   ensureWithinProject(root, absolute)
   return { absolute, relative: path.relative(root, absolute).split(path.sep).join("/") }
+}
+
+/**
+ * Open an index-verified file, or return an error the caller can act on.
+ *
+ * The handler used to readFileSync bare after the DB lookup, and to THROW for
+ * "file is not indexed", so both a delete between the two statements and an
+ * unindexed file reached the caller as a raw ENOENT / raw Error instead of the
+ * isError envelope this handler's own contract demands.
+ */
+function readIndexedFile(absolute: string, projectPath: string, relative: string): { content: string } | { error: string } {
+  try {
+    // Re-verify containment at the point of use — the check in
+    // resolveSafeReadPath ran before a DB round-trip, and a symlink swapped in
+    // that window would otherwise be followed out of the project.
+    ensureWithinProject(realpathSync(projectPath), realpathSync(absolute))
+  } catch (error: any) {
+    return { error: `refused: ${error?.message ?? String(error)}` }
+  }
+  try {
+    return { content: readFileSync(absolute, "utf8") }
+  } catch (error: any) {
+    return { error: `could not read ${relative}: ${error?.code ?? error?.message ?? String(error)}` }
+  }
+}
+
+/**
+ * Reject a language / symbolKind value this project's index does not hold.
+ *
+ * Both are free-form strings in the public schema compared with SQL `=`, so
+ * "TypeScript" or "Function" produced a byte-identical "no results" to a wrong
+ * symbol name — the caller could not tell a filter that excluded everything
+ * from a symbol that does not exist. The message lists the indexed values, so
+ * the correction arrives in the same round trip. Comparison is
+ * case-insensitive, the same rule the engines' NOCASE equality uses.
+ */
+async function describeUnknownFilters(projectId: string, args: Record<string, any>): Promise<string | null> {
+  const language = typeof args.language === "string" ? args.language.trim() : ""
+  const symbolKind = typeof args.symbolKind === "string" ? args.symbolKind.trim() : ""
+  if (!language && !symbolKind) return null
+  const raw = await BrainDatabase.getRawInstance(projectId)
+  if (language) {
+    const known = (raw.prepare("SELECT DISTINCT language FROM brain_file WHERE project_id=? ORDER BY language").all(projectId) as any[])
+      .map((row) => row.language)
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+    if (!known.some((value) => value.toLowerCase() === language.toLowerCase())) {
+      return `bb_search: language "${language}" is not in this project's index — indexed languages: ${known.join(", ") || "(none)"}`
+    }
+  }
+  if (symbolKind) {
+    const known = (raw.prepare("SELECT DISTINCT symbol_type FROM brain_symbol WHERE project_id=? ORDER BY symbol_type").all(projectId) as any[])
+      .map((row) => row.symbol_type)
+      .filter((value): value is string => typeof value === "string" && value.length > 0)
+    if (!known.some((value) => value.toLowerCase() === symbolKind.toLowerCase())) {
+      return `bb_search: symbolKind "${symbolKind}" is not in this project's index — indexed kinds: ${known.join(", ") || "(none)"}`
+    }
+  }
+  return null
 }
 
 // M48.P1 (#696): canonical impact report for bb_analyze mode=impact.
@@ -142,6 +221,16 @@ async function canonicalImpactReport(
     unresolvedEdges: 0,
     riskLevel: "low",
     truncated: false,
+    // Declared even when empty: a response whose key set changes with the
+    // result forces every consumer to branch on presence.
+    truncationReason: null,
+    depthCap: IMPACT_BUDGET.maxDepth,
+    nodeBudget: IMPACT_BUDGET.maxNodes,
+    depthReached: 0,
+    totalSymbols: 0,
+    totalSymbolsIfKnown: null,
+    notFoundReason: "absent",
+    source: "impact@lsp-canonical (computeImpact, M48.P1) — no walk was performed",
     provenance: makeProvenance({
       evidenceClass: "unknown",
       engine: "impact@lsp-canonical",
@@ -154,6 +243,16 @@ async function canonicalImpactReport(
   })
   let capturedEdges: Array<any> = []
   let capturedNodes: Record<string, any> = {}
+  // computeImpact draws its line at "traversable root / absent". A symbol that
+  // IS indexed but is a namespace, constant, type alias or enum member is
+  // neither, and reporting it as "absent" is a confident FALSE NEGATIVE.
+  // Measured on bb's own src: 78 of 140 distinct symbol names landed here, and
+  // one of them was `ASTEngine` with 390 caller edges — the tool reported
+  // `found:false, riskLevel:"low", directSymbols:0` for it. callers/callees
+  // resolve those same names by exact match of ANY type, so the tool answered
+  // for them one mode earlier and denied them here. The calculator already
+  // renders this case as a declared error naming the type and the
+  // remediation; the wrapper was throwing that message away.
   let result
   try {
     result = await computeImpact(raw, projectId, target, {
@@ -164,24 +263,66 @@ async function canonicalImpactReport(
         return r
       }) as any,
     })
-  } catch {
+  } catch (error: any) {
+    const message = error instanceof Error ? error.message : String(error)
+    // "exists but the graph cannot root here" and "the lookup itself blew up"
+    // are both distinct from "there is no such symbol". Each is carried out
+    // verbatim; neither is dressed as the third.
+    if (/not a traversable root|owning-declaration/i.test(message)) {
+      return {
+        ...notFound(),
+        notFoundReason: "not-traversable",
+        reason: message,
+        provenance: makeProvenance({
+          evidenceClass: "unknown",
+          engine: "impact@lsp-canonical",
+          engineVersion: "m48.01",
+          projectId,
+          source: "computeImpact-declared-error",
+          limitations: [
+            "The target IS in the index; the graph engine cannot root a traversal at it. No impact set exists for it — this is a declared refusal, not an empty answer.",
+            "callers/callees/trace resolve the same name by exact match of ANY symbol type; use those modes, or target the owning declaration.",
+          ],
+          unknowns: ["target-not-traversable"],
+        }),
+      }
+    }
+    if (!/not found/i.test(message)) {
+      return {
+        ...notFound(),
+        notFoundReason: "error",
+        reason: message,
+        provenance: makeProvenance({
+          evidenceClass: "unknown",
+          engine: "impact@lsp-canonical",
+          engineVersion: "m48.01",
+          projectId,
+          source: "computeImpact-error",
+          limitations: ["The impact calculation failed; the reason is reported verbatim rather than as a missing target."],
+          unknowns: ["impact-calc-failed"],
+        }),
+      }
+    }
     return notFound()
   }
 
   const internal = new Map<string, { name: string; file: string; depth: number }>()
-  let unresolvedEdges = 0
+  // Counted once per DISTINCT node id: the entry loop and the raw-edge loop
+  // both counted an external node, so unresolvedEdges was up to double.
+  const unresolvedNodes = new Set<string>()
   let depthReached = 0
   for (const entry of result.impact as Array<{ id: string; name: string; file: string; depth: number }>) {
     if (entry.depth > depthReached) depthReached = entry.depth
     const node = capturedNodes[entry.id]
-    if (node?.isExternal === true || !entry.file) { unresolvedEdges++; continue }
+    if (node?.isExternal === true || !entry.file) { unresolvedNodes.add(entry.id); continue }
     const existing = internal.get(entry.id)
     if (!existing || entry.depth < existing.depth) internal.set(entry.id, { name: entry.name, file: entry.file, depth: entry.depth })
   }
   for (const edge of capturedEdges) {
     const node = capturedNodes[edge.from]
-    if (node?.isExternal === true) unresolvedEdges++
+    if (node?.isExternal === true) unresolvedNodes.add(edge.from)
   }
+  const unresolvedEdges = unresolvedNodes.size
 
   // File-level rollup (one row per file, min depth, first symbol as via).
   const crossLangFiles = new Set<string>()
@@ -224,6 +365,10 @@ async function canonicalImpactReport(
     depthReached,
     // The exact bb_impact count (same result object) — gate-asserted equal.
     totalSymbols: result.shownCount,
+    // computeImpact already runs the bounded independent COUNT that exists
+    // for exactly this ("showing X of Y"). It was computed and then dropped,
+    // so a truncated set could only ever be read as the whole set.
+    totalSymbolsIfKnown: result.totalCountIfKnown,
     source: "impact@lsp-canonical (computeImpact, M48.P1)",
     provenance: makeProvenance({
       evidenceClass: "inferred",
@@ -254,6 +399,14 @@ const handlers: Record<string, ToolHandler> = {
     if (args.mode !== undefined && !"symbols content symbol file".split(" ").includes(String(args.mode))) {
       return textResult(`bb_search: unknown mode "${args.mode}" (known: symbols, content, symbol, file)`, true)
     }
+    // A language / symbolKind value the index does not contain is reported as
+    // an error, because a filter that excludes everything is indistinguishable
+    // from a symbol that does not exist. Checked before any search work so the
+    // correction arrives in the same round trip.
+    if (mode === "symbols" || mode === "content") {
+      const unknown = await describeUnknownFilters(projectId as string, args)
+      if (unknown) return textResult(unknown, true)
+    }
     if (mode === "file") {
       let target: { absolute: string; relative: string }
       try {
@@ -262,9 +415,26 @@ const handlers: Record<string, ToolHandler> = {
         return textResult(`bb_search mode=file: ${e?.message ?? "invalid path"}`, true)
       }
       const raw = await BrainDatabase.getRawInstance(projectId as any)
-      const row = raw.prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?").get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined
-      if (!row) throw new Error(`file is not indexed: ${target.relative}`)
-      const content = readFileSync(target.absolute, "utf8")
+      // Looked up by the INDEXED relative path first, not by the realpath'd
+      // absolute one. resolveSafeReadPath returns realpathSync(candidate) while
+      // brain_file.path holds the path the indexer was given, so a project
+      // reached through a symlink (/tmp, /var on macOS, a symlinked checkout)
+      // reported "file is not indexed" for a file that IS indexed. The relative
+      // path is symlink-independent; the absolute path stays as a fallback for
+      // an index built from realpaths.
+      const byRelative = raw
+        .prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND relative_path=?")
+        .get(projectId, target.relative) as { id: string; language: string; file_hash: string } | undefined
+      const row = byRelative ?? (raw
+        .prepare("SELECT id, language, file_hash FROM brain_file WHERE project_id=? AND path=?")
+        .get(projectId, target.absolute) as { id: string; language: string; file_hash: string } | undefined)
+      // An error envelope, not a throw: this handler's own contract (M40.A7,
+      // stated above) is that invalid input returns isError, and the sibling
+      // branches here already do.
+      if (!row) return textResult(`bb_search mode=file: file is not indexed: ${target.relative}`, true)
+      const read = readIndexedFile(target.absolute, projectPath, target.relative)
+      if ("error" in read) return textResult(`bb_search mode=file: ${read.error}`, true)
+      const content = read.content
       const maxChars = 100_000
       const truncated = content.length > maxChars
       // M35.E1: freshness from the shared resolver — per-item flag + envelope
@@ -279,6 +449,9 @@ const handlers: Record<string, ToolHandler> = {
         content: truncated ? content.slice(0, maxChars) : content,
         contentLength: content.length,
         truncated,
+        // Declared so every mode's response names its match set, even the one
+        // that can only ever match a single file.
+        totalMatches: 1,
         stale: fileStatus !== "fresh",
         freshness: buildStalenessEnvelope(detail.summary, { kind: "file", path: target.relative }),
       }, null, 2))
@@ -294,7 +467,15 @@ const handlers: Record<string, ToolHandler> = {
       // files within budget we repair them inline and run AGAIN so the answer
       // reflects the repair, with the decision declared on the answer.
       const runPass = async () => {
-        const results = await searchContent(projectId as any, String(args.query ?? ""), { maxResults: Number(args.limit ?? 15), languages: args.language ? [String(args.language)] : undefined, symbolKind: args.symbolKind ? String(args.symbolKind) : undefined })
+        // offset was never forwarded, although searchContent fully supports it —
+        // so offset:100 returned page 1 byte-identically and an agent paging
+        // until the page came back empty never terminated.
+        const results = await searchContent(projectId as any, String(args.query ?? ""), {
+          maxResults: Number(args.limit ?? 15),
+          offset: Number(args.offset ?? 0),
+          languages: args.language ? [String(args.language)] : undefined,
+          symbolKind: args.symbolKind ? String(args.symbolKind) : undefined,
+        })
         // M35.E1: freshness block from the shared resolver (rows carry fileId;
         // per-row stale flags are set by searchContent itself).
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, results.map((r: any) => ({ fileId: r.fileId })))
@@ -302,10 +483,24 @@ const handlers: Record<string, ToolHandler> = {
           answer: {
             searchMode: "content",
             query: String(args.query ?? ""),
-            total: results.length,
+            // `total` is the MATCH SET and `returned` is the page. Reporting the
+            // page length as `total` meant a caller could not tell one match
+            // from fifteen, and a truncated page read as a complete one.
+            total: results.totalMatches ?? results.length,
+            returned: results.length,
             staleCount: results.staleCount ?? 0,
             freshCount: results.freshCount ?? 0,
             truncated: results.truncated ?? false,
+            ...(results.truncationReason ? { truncationReason: results.truncationReason } : {}),
+            // Which route matched, and how much of the corpus has a searchable
+            // body. Without these a caller cannot tell a phrase hit (the text
+            // says this verbatim) from a keyword coincidence (it discusses the
+            // same words), nor "nothing matched" from "nothing could match" on a
+            // database indexed before bodies were stored. Declared in
+            // SearchResults and populated by searchContent; carried here because a
+            // disclosure that stops at the search layer is not a disclosure.
+            ...(results.matchMode ? { matchMode: results.matchMode } : {}),
+            ...(results.bodyCoverage ? { bodyCoverage: results.bodyCoverage } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
           },
@@ -334,25 +529,47 @@ const handlers: Record<string, ToolHandler> = {
       // M43.A1 (#657): rerunnable pass — repair stale files inline within
       // budget, then answer from the SECOND pass so the answer reflects the
       // repair (declared).
-      const runPass = async () => {
-        const found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? ""), args.filePath ? String(args.filePath) : undefined)
+      // Both branches produce either an answer or an error envelope, so the
+      // call sites must narrow the type before reading answer/rows/statuses.
+      type SymbolPass = { answer: Record<string, unknown>; rows: Array<{ filePath: string }>; statuses: Map<string, string> } | { envelope: string }
+      const runPass = async (): Promise<SymbolPass> => {
+        let found: { matches: any[] }
+        try {
+          found = await ASTEngine.findSymbol(projectId, String(args.symbolName ?? args.query ?? "").trim(), args.filePath ? String(args.filePath) : undefined)
+        } catch (error: any) {
+          // findSymbol's internals (dynamic import, DB handle) threw. The
+          // handler returns an error envelope rather than letting a raw driver
+          // or loader message reach the caller as a "successful" answer.
+          return { envelope: `bb_search mode=symbol: ${error?.message ?? String(error)}` }
+        }
         // M35.E1: per-match stale flag + envelope block. findSymbol rows alias
         // fileId to the file PATH, so the resolver gets filePath rows.
         const matches = (found as { matches: any[] }).matches ?? []
         const detail = resolveRowsFreshnessDetailed(raw, projectId as any, matches.map((m: any) => ({ filePath: m.fileId })))
         for (const m of matches) m.stale = detail.statuses.get(m.fileId) !== "fresh"
         return {
-          answer: { ...found, freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }) },
+          answer: {
+            ...found,
+            // A symbol name can legitimately be declared in many files (a common
+            // method name) and the whole set is returned. The envelope says so,
+            // instead of leaving the caller to guess whether a long list is
+            // complete.
+            totalMatches: matches.length,
+            truncated: false,
+            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+          },
           rows: matches.map((m: any) => ({ filePath: m.fileId })),
           statuses: detail.statuses,
         }
       }
       const pass1 = await runPass()
+      if ("envelope" in pass1) return textResult(pass1.envelope, true)
       const staleFiles = collectStaleFiles(raw, pass1.rows, pass1.statuses)
       if (staleFiles.length > 0) {
         const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
         if (decision.action === "refreshed") {
           const pass2 = await runPass()
+          if ("envelope" in pass2) return textResult(pass2.envelope, true)
           return textResult(JSON.stringify({ ...pass2.answer, autoRefresh: autoRefreshLine(decision) }, null, 2))
         }
         if (decision.action === "declined") {
@@ -361,7 +578,10 @@ const handlers: Record<string, ToolHandler> = {
       }
       return textResult(JSON.stringify(pass1.answer, null, 2))
     }
-    const query = String(args.query ?? "")
+    // Trimmed once, here, so the value echoed back in "no results for …" is the
+    // value that was actually searched.
+    const query = String(args.query ?? "").trim()
+    if (!query) return textResult("bb_search: query must not be empty", true)
     // M43.A1 (#657): rerunnable pass — the pass answers from the SECOND run
     // after an inline repair, with the decision declared on a trailing line.
     // No staleness (searchCode's own resolution found none) ⇒ one pass, zero
@@ -377,15 +597,49 @@ const handlers: Record<string, ToolHandler> = {
         regex: args.regex === true,
         offset: Number(args.offset ?? 0),
       })
+      // A stale row's snippet is read from CURRENT disk while its line numbers
+      // come from the index, so the two describe different revisions of the
+      // file. The [STALE] marker qualifies the record; the snippet line is
+      // marked separately, because the bytes are on the NEXT line.
       const lines = results.map((result: any) => {
         const stale = result.stale ? " [STALE]" : ""
         const snippet = result.snippet && result.snippet !== result.symbolName
-          ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}`
+          ? `\n    ${String(result.snippet).split("\n").slice(0, 8).join("\n    ")}${result.stale ? "\n    [snippet read from the current file; the line numbers above are from the index]" : ""}`
           : ""
         return `${result.symbolName} [${result.symbolType}] ${result.file}:${result.line} (${result.language})${stale}${snippet}`
       })
+      // The engine already computed totalMatches / truncated / staleCount, and
+      // this response is a rendered STRING — so those fields were structurally
+      // dropped and a truncated page read as a complete one. The footer is what
+      // makes the page legible: how many matches exist, whether the page is all
+      // of them, and how many rows are stale.
+      const total = results.totalMatches ?? results.length
+      const footer: string[] = []
+      if (total > lines.length) {
+        footer.push(
+          `showing ${lines.length} of ${total} match${total === 1 ? "" : "es"}` +
+            (results.truncated ? " — TRUNCATED: a candidate cap or the noise filter kept matches out of this page" : ""),
+        )
+      }
+      if ((results.staleCount ?? 0) > 0) footer.push(`${results.staleCount} of ${lines.length} results are STALE — the file changed after indexing`)
+      if (results.freshnessError) footer.push("freshness could not be resolved for these results (staleCount is not a freshness claim)")
+      if (results.truncated && lines.length === 0) {
+        // An EMPTY page is not automatically a complete answer. When the engine
+        // declared it was cut short, "no results" is a statement the caller
+        // cannot check — a bounded scan and a scan that genuinely found nothing
+        // were byte-identical. Measured case: `(a+)+b` on this repo's own index
+        // returns "no results" in 0.3s when the scan completes and in 2s when
+        // the time budget kills it; the two answers must not look the same.
+        footer.push(
+          `scan was cut short (${results.truncationReason ?? "unknown"}) over ${results.scannedRows ?? "some"} candidate rows — this is NOT a complete answer`,
+        )
+      } else if (results.truncated && lines.length > 0) {
+        footer.push(`TRUNCATED (${results.truncationReason ?? "unknown"}) — this page is not the whole match set`)
+      }
       return {
-        text: lines.length ? lines.join("\n") : `no results for "${query}"`,
+        text: lines.length
+          ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "")
+          : `no results for "${query}"` + (footer.length ? `\n${footer.join("\n")}` : ""),
         results,
         lines,
         rows: results.map((r: any) => ({ fileId: r.fileId })),
@@ -417,28 +671,139 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   bb_ask: async (args, { projectId }) => {
-    const result = await quickAnswer(projectId, String(args.query))
-    const lines = result.sources
-      .slice(0, Number(args.limit ?? 5))
-      .map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`)
-    const head = result.answer ? `answer: ${result.answer}\n\n` : ""
-    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine}${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
-    return textResult(head + (lines.length ? lines.join("\n") : `no semantic matches for "${args.query}"`) + `\n${prov}`)
+    const limit = Number(args.limit ?? 5)
+    const result = await quickAnswer(projectId, String(args.query), { limit })
+
+    // HONESTY FIX (critical; measured on 9 real repositories). This handler
+    // appended `no semantic matches for "<query>"` whenever `sources` was empty
+    // — and `sources` is empty BY DESIGN on every verified-aggregate path, so
+    // the tool printed a correct count and then denied it two lines later:
+    //
+    //   answer: There are 786 symbols in this project
+    //   no semantic matches for "how many symbols are in this project?"
+    //
+    // "No matches" is a true statement only about a RETRIEVAL answer that found
+    // nothing. It is false about an exact aggregate, and also false for
+    // `limit: 0`, where the caller explicitly asked for no rows. The route is
+    // what makes the difference, and quickAnswer declares it.
+    const retrievalAnswer = result.route === "retrieval" || result.route === "symbol-name"
+    const parts: string[] = []
+    if (result.answer) parts.push(`answer: ${result.answer}`)
+
+    // Confidence was computed on every path and thrown away. Surface it: an
+    // aggregate is exact, a retrieval answer is bounded well below certainty,
+    // an unknown is 0.1. A reader can now tell them apart.
+    parts.push(`confidence: ${result.confidence}`)
+
+    const shown = result.sources.slice(0, limit)
+    if (shown.length) {
+      parts.push(shown.map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`).join("\n"))
+    } else if (retrievalAnswer) {
+      parts.push(limit > 0
+        ? `no matches for "${args.query}" in the index`
+        : `limit was 0, so no matches were requested or returned`)
+    }
+
+    // Retrieval facts the engine already computed. Without these the caller
+    // cannot tell a production embedding's cosine from the offline
+    // 50-dimension word-vector one — the difference between "semantic" and
+    // "lexical with a decimal point".
+    if (result.retrieval) {
+      const r = result.retrieval
+      const bits = [`method=${r.method}`, `queryModel=${r.queryModel}`, `indexModel=${r.indexModel}`]
+      if (r.dimension > 0) bits.push(`dimension=${r.dimension}`)
+      bits.push(`embeddingCoverage=${Math.round(r.embeddingCoverage.ratio * 100)}% (${r.embeddingCoverage.embedded}/${r.embeddingCoverage.symbols} symbols embedded)`)
+      if (r.fallbackReason) bits.push(`reason=${r.fallbackReason}`)
+      if (r.discriminative === false) bits.push(`ranking=non-discriminative (${r.nonDiscriminativeCompetitors ?? 0} within the margin of the best)`)
+      parts.push(`[retrieval: ${bits.join(", ")}]`)
+    }
+
+    const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine} (${result.route})${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
+    parts.push(prov)
+    return textResult(parts.join("\n\n"))
   },
 
   bb_analyze: async (args, { projectId }) => {
     const mode = String(args.mode ?? "")
     const allowed = new Set(["mode", "target", "filePath", "limit"])
+    // `limit` is ONE parameter with ONE meaning: the most items this answer
+    // returns. For dependencies it is files, for the test-intel modes entries,
+    // and for the graph modes EDGES PER DIRECTION — because a caller who
+    // passes limit:10 to `callers` means ten callers, not ten files. It was
+    // previously refused outright on the graph modes, which left the largest
+    // answers in the tool (measured: 87,038 bytes for one `callers` call on a
+    // 93-file corpus) with no way at all to ask for less.
+    const LIMIT_MODES = new Set([
+      "callers",
+      "callees",
+      "trace",
+      "dependencies",
+      "test_mapping",
+      "test_gaps",
+      "test_quality",
+    ])
+    if (args.limit !== undefined && !LIMIT_MODES.has(mode)) {
+      return textResult(
+        `bb_analyze ${mode}: limit does not apply to this mode (it bounds callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality) — refusing it rather than ignoring it`,
+        true,
+      )
+    }
+    if (args.limit !== undefined && Number(args.limit) === 0) {
+      // limit 0 became an empty answer that reads as "this project has no
+      // dependencies". That is a measurement claim, and it was never taken.
+      return textResult("bb_analyze " + mode + ": limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer", true)
+    }
+    // The floor is refused because an empty page is indistinguishable from a
+    // real answer; the CEILING is refused for the same reason in the other
+    // direction. `limit` had a floor and no ceiling, so the schema's "maximum
+    // items returned" named no maximum: `limit: 2147483648` was accepted and
+    // answered with the whole corpus, which on a large project is an answer too
+    // big to read rather than one too big to hold.
+    //
+    // It is refused, not clamped. Clamping would return a page that looks like
+    // the caller's request was honoured, which is the failure this whole
+    // parameter exists to prevent.
+    const LIMIT_CEILING: Record<string, number> = {
+      callers: 5_000,
+      callees: 5_000,
+      trace: 5_000,
+      dependencies: 2_000,
+      test_mapping: 2_000,
+      test_gaps: 2_000,
+      test_quality: 2_000,
+    }
+    if (args.limit !== undefined && Number(args.limit) > LIMIT_CEILING[mode]) {
+      return textResult(
+        `bb_analyze ${mode}: limit must be between 1 and ${LIMIT_CEILING[mode]} — refused rather than clamped, so a returned page always means the page asked for. Above this the answer stops being readable (measured on this repository's own src: 20 dependency files of 183 is already 75,911 bytes ~21k tokens, and the per-file edge lists are capped separately).`,
+        true,
+      )
+    }
+    // A target is echoed into the answer's `reason` and `target` fields. A
+    // 4,000-character target therefore produced a 9,409-byte "not found" —
+    // about 2.6k tokens spent on two words of information. The echo is kept,
+    // because it is how a caller tells WHICH name was looked up, and elided
+    // with its length stated so nothing is silently shortened.
+    const MAX_TARGET_ECHO = 200
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
+    // The search term and the ECHO are different things. A 4,000-character
+    // target produced a 9,409-byte "not found" (~2.6k tokens for two words of
+    // information) because it is echoed into `target` and `reason`. Truncating
+    // the SEARCH TERM to fix that would search for a different symbol than the
+    // caller asked for — a wrong answer instead of a long one. So the full
+    // string is resolved and only the echo is bounded, with its full length
+    // stated so nothing is silently shortened.
+    const echo = (t: string): string =>
+      t.length > MAX_TARGET_ECHO ? `${t.slice(0, MAX_TARGET_ECHO)}…(+${t.length - MAX_TARGET_ECHO} more characters)` : t
     const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
     // filePath scopes dependencies plus the three test-intel modes (path
     // prefix); stats stays project-wide and rejects filePath.
     const fileModes = new Set(["dependencies", "test_mapping", "test_gaps", "test_quality"])
     if (args.target && !targetModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: target`, true)
     if (args.filePath && !fileModes.has(mode)) return textResult(`bb_analyze ${mode}: irrelevant options: filePath`, true)
-    if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target) return textResult(`bb_analyze ${mode} requires target`, true)
+    if (["callers", "callees", "trace", "impact", "test_impact"].includes(mode) && !target.trim())
+      return textResult(`bb_analyze ${mode} requires a non-empty target`, true)
 
     // M35.S1: staleness on every read mode — additive truth, rows flagged
     // never dropped, nothing silently re-indexed. Helper builds the shared
@@ -512,32 +877,208 @@ const handlers: Record<string, ToolHandler> = {
     }
 
     if (mode === "callers" || mode === "callees" || mode === "trace") {
-      const result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
-      const nodes = Object.values((result as { nodes: Record<string, any> }).nodes ?? {})
+      // Not-found used to THROW out of the handler, so three of the five
+      // target modes answered a missing symbol with `isError: true` and a bare
+      // text line while the other two returned JSON with `found: false`. An
+      // agent branching on `found` got an exception instead of a value, and
+      // neither branch carried a remediation. The declared shape is the same
+      // for all five, and the key set does not change with the result.
+      let result
+      try {
+        result = await graphTraversal(projectId as any, target, { direction: mode === "trace" ? "both" : mode, maxDepth: 3 })
+      } catch {
+        return withFreshness(
+          {
+            mode,
+            target: echo(target),
+            found: false,
+            notFoundReason: "absent",
+            reason: `bb_analyze ${mode}: symbol '${echo(target)}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
+            root: null,
+            rootCandidates: 0,
+            // No root, so no step: null, not a guess.
+            rootMatch: null,
+            callers: [],
+            callees: [],
+            nodes: {},
+            // The key set must not change with the result, or every consumer
+            // has to branch on presence before it can read a field.
+            summary: {
+              totalCallers: 0,
+              totalCallees: 0,
+              maxDepthReached: 0,
+              maxDepth: 0,
+              crossLanguageEdges: 0,
+              truncated: false,
+              edgeLimit: 0,
+              cappedQueries: 0,
+              callersIfUncapped: null,
+              calleesIfUncapped: null,
+              totalsAreLowerBounds: false,
+              dedupedAtToolLayer: { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
+            },
+            provenance: makeProvenance({
+              evidenceClass: "unknown",
+              engine: "graph@intelligence",
+              engineVersion: "m10.02",
+              projectId,
+              source: "brain_symbol",
+              limitations: ["The target does not exist in the index, so no relationship set was computed. Nothing is claimed about what depends on it."],
+              unknowns: ["target-not-found"],
+            }),
+          },
+          [],
+          { scope: { kind: "dir" } },
+        )
+      }
+      // ── the response page ──────────────────────────────────────────────
+      // Three things were wrong with the wire shape, all measured on the
+      // corpus and on bb's own src:
+      //
+      //   1. NO PAGE. `limit` was refused here, so a high-fan-in symbol
+      //      returned everything: 87,038 bytes (~24k tokens) for one `callers`
+      //      call, 89,929 for `trace`.
+      //   2. PER-EDGE DECORATION. Every edge carried a `metadata.enrichment`
+      //      block (role / layerFlow / criticality / frequency) that no tool
+      //      page documents and no caller can cite — 64 of 64 edges, and the
+      //      bulk of the payload. `evidenceClass` IS documented, so it stays.
+      //   3. ABSOLUTE PATHS. `nodes[].filePath` embedded the checkout's
+      //      absolute path 59 times in one answer, so the same question
+      //      returns different bytes on a different machine and no two answers
+      //      can be diffed or cached.
+      // 25, not 50: measured per-edge payload is ~800 bytes pretty-printed
+      // (from / to / rowId / callSite / evidenceClass, all of which are load-
+      // bearing), so 50 edges is ~56 KB ≈ 15k tokens before the caller has
+      // read a line of it. 25 edges is ~28 KB — enough to see the SHAPE of a
+      // fan-in, which is what the question is usually for — and the true
+      // count is in `summary.callersIfUncapped` / `calleesIfUncapped`, so a
+      // caller who needs the rest passes `limit`.
+      const GRAPH_EDGE_PAGE = 25
+      const edgeLimit = args.limit != null ? Number(args.limit) : GRAPH_EDGE_PAGE
+      const fullCallers = ((result as any).callers ?? []) as any[]
+      const fullCallees = ((result as any).callees ?? []) as any[]
+      // The enrichment block is the indexer's internal inference. Dropping it
+      // from THIS surface is not a contract change: it was never in the
+      // registry description, the schema, or any tool page.
+      const trim = (e: any) => (e?.metadata?.enrichment ? { ...e, metadata: { evidenceClass: e.metadata.evidenceClass } } : e)
+      const pageCallers = fullCallers.slice(0, edgeLimit).map(trim)
+      const pageCallees = fullCallees.slice(0, edgeLimit).map(trim)
+      // Nodes are rebuilt from the RETURNED edges plus the root, so the
+      // payload contains exactly what the answer cites.
+      const allNodes = (result as { nodes: Record<string, any> }).nodes ?? {}
+      const nodeIds = new Set<string>([result.root?.id])
+      for (const e of [...pageCallers, ...pageCallees]) {
+        if (e.from) nodeIds.add(e.from)
+        if (e.to) nodeIds.add(e.to)
+      }
+      const nodes: any[] = []
+      for (const id of nodeIds) {
+        const n = allNodes[id]
+        if (n) nodes.push({ ...n })
+      }
+      // `file` is the project-relative path and is what the answer cites.
+      // `filePath` was the absolute one: it is dropped AFTER freshness is
+      // resolved from it, so the envelope is unaffected.
+      for (const n of nodes) delete n.filePath
+      // The root carried its own absolute `filePath` outside the nodes map, so
+      // one checkout path survived the trim above.
+      const rootNode: any = (result as any).root ? { ...(result as any).root } : null
+      if (rootNode) delete rootNode.filePath
+      const freshable = nodes.filter((n) => !n.isExternal)
       return withFreshness(
-        result as unknown as Record<string, unknown>,
-        nodes.map((n) => (n.isExternal ? { filePath: null } : { filePath: n.filePath || n.file || null })),
-        { onRows: (statuses) => { for (const n of nodes) if (!n.isExternal) n.stale = statuses.get(n.filePath || n.file) !== "fresh" } },
+        {
+          ...(result as unknown as Record<string, unknown>),
+          mode,
+          target,
+          found: true,
+          root: rootNode ?? (result as any).root,
+          callers: pageCallers,
+          callees: pageCallees,
+          nodes: Object.fromEntries(nodes.map((n) => [n.id, n])),
+          summary: {
+            ...(result as any).summary,
+            // What was returned against what the traversal found.
+            // `callersIfUncapped` / `calleesIfUncapped` above are the
+            // traversal's own bounded count, so "showing 50 of 390" is a real
+            // pair of numbers whenever a cap fired.
+            returnedCallers: pageCallers.length,
+            returnedCallees: pageCallees.length,
+            pageEdgeLimit: edgeLimit,
+            pageTruncated: pageCallers.length < fullCallers.length || pageCallees.length < fullCallees.length,
+          },
+        } as Record<string, unknown>,
+        freshable.map((n) => ({ filePath: allNodes[n.id]?.filePath ?? n.file })),
+        {
+          onRows: (statuses) => {
+            for (const n of freshable) n.stale = statuses.get(allNodes[n.id]?.filePath || n.file) !== "fresh"
+          },
+        },
       )
     }
     if (mode === "dependencies") {
-      const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
+      // The scope is normalized ONCE, here, and the NORMALIZED value goes to
+      // both the engine and the denominator. Previously the engine stripped
+      // trailing slashes and this count did not, so `filePath: "src/wide/"`
+      // returned 20 of 68 files with `totalFiles: 0` and `truncated: false` —
+      // a false statement of completeness, 48 files hidden. There is no second
+      // copy of the rule to disagree with.
+      const rawScope = args.filePath ? String(args.filePath) : target || undefined
+      const scopePath = rawScope ? normalizeScopePath(rawScope) : null
+      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
-        ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
-        ...d.dependents.map((x) => ({ fileId: x.fileId })),
+        // Neither list ships a file id any more — a file id is
+        // `<40-hex project id>:<relative path>`, so it repeated the path it sat
+        // next to (56,540 of 121,340 bytes on a 20-file page of this repo's own
+        // src). The path is the locator; resolve it to a row id here, once.
+        ...d.dependencies.filter((x) => !x.external && x.resolution !== "unresolved").map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
+        ...d.dependents.map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
       ])
       const first = deps[0]
+      // Every other collection mode states how many items it returned; this
+      // one returned 20 files of 90 with no summary at all. The total is
+      // counted over the SCOPE — filePath is a path PREFIX, so the honest
+      // denominator is the files under that prefix, not the whole project.
+      // The denominator comes from the engine, which computed the rows with the
+      // same normalization and the same segment boundary. A count written here
+      // is a second opinion about the same question, and it is how the scope
+      // came to disagree with itself.
+      const totalFiles = await scopeFileCount(projectId as any, scopePath)
       return withFreshness(
-        { dependencies: deps },
+        {
+          dependencies: deps,
+          // One provenance for the report. It used to be repeated on all 20
+          // rows — the same engine, the same evidence class, the same
+          // limitations — and that repetition was roughly a third of the
+          // payload on a default call.
+          provenance: dependencyPageProvenance(
+            dependencyProvenance(projectId as any),
+            { projectId: projectId as string, shown: deps.length, total: totalFiles },
+          ),
+          summary: {
+            returned: deps.length,
+            totalFiles,
+            scope: scopePath,
+            truncated: deps.length < totalFiles,
+            // Counted over the RETURNED page, and named as such: these are not
+            // project totals.
+            returnedInternalDependencies: deps.reduce(
+              (n: number, d: any) => n + d.dependencies.filter((x: any) => !x.external).length,
+              0,
+            ),
+            returnedInternalDependents: deps.reduce((n: number, d: any) => n + d.dependents.length, 0),
+            pageLimit: Number(args.limit ?? 20),
+          },
+        },
         rows,
         {
           scope: first ? { kind: "file", path: first.file } : undefined,
           onRows: (statuses) => {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
-              for (const x of d.dependencies) if (!x.external && x.fileId) x.stale = statuses.get(x.fileId) !== "fresh"
-              for (const x of d.dependents) x.stale = statuses.get(x.fileId) !== "fresh"
+              for (const x of d.dependencies)
+                if (!x.external && x.resolution !== "unresolved") x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
+              for (const x of d.dependents) x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
             }
           },
         },
@@ -579,7 +1120,10 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_mapping") {
-      const report = await testMapping(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
+      const report = await testMapping(projectId as any, {
+        filePath: args.filePath ? String(args.filePath) : undefined,
+        maxResults: args.limit != null ? Number(args.limit) : undefined,
+      })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.entries.map((e) => ({ fileId: relToFileId().get(e.file) ?? null })),
@@ -587,7 +1131,10 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "test_gaps") {
-      const report = await testGaps(projectId as any, { filePath: args.filePath ? String(args.filePath) : undefined })
+      const report = await testGaps(projectId as any, {
+        filePath: args.filePath ? String(args.filePath) : undefined,
+        maxResults: args.limit != null ? Number(args.limit) : undefined,
+      })
       return withFreshness(
         report as unknown as Record<string, unknown>,
         report.gaps.map((g) => ({ fileId: relToFileId().get(g.file) ?? null })),
@@ -647,19 +1194,41 @@ const handlers: Record<string, ToolHandler> = {
     // recorded state; staleness applies to live reads only.
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
     if (scope === "orphaned") {
-      const report = await detectOrphans(projectId, { minConfidence: Number(args.confidenceThreshold ?? 0.6), maxResults: Math.max(limit, 100) })
+      // Default 0, not 0.6. Orphan confidence is now EVIDENCE-DERIVED and spans
+      // [0.30, 0.70] for symbols and [0.30, 0.55] for files, so a 0.6 default
+      // would drop most symbol findings AND every single file finding — the
+      // silent whole-rule loss this tool had before, re-created because the
+      // number was left in place while the scale underneath it changed. With
+      // 0, everything the scan found is reported and the ranking decides the
+      // order; a caller who wants only the strongest passes 0.6 and gets them.
+      const threshold = args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold)
+      const report = await detectOrphans(projectId, { minConfidence: threshold, maxResults: Math.max(limit, 100) })
       const items = report.findings.slice(0, limit)
       const derived = derivedStaleness(rawDb, projectId as any, items.map((f) => f.location.file))
       const lines = items.map((f) => `  ${f.rule} ${f.location.symbol || f.location.file} — ${f.location.file}:${f.location.line} (${Math.round(f.confidence * 100)}%)${derived.isStale(f.location.file) ? " [stale]" : ""}`)
-      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; ${report.findings.length} findings${report.provenance.truncated ? "; truncated" : ""}; limitations: ${report.provenance.limitations.length}]`
+      // The census, not the page. This used to print summary.total, which IS
+      // the engine's page length (100), while printing 20 lines: "orphaned code
+      // (100)" above twenty findings, with nothing saying where the other 80
+      // went or how many existed. Every number is now named, including what
+      // the scan suppressed and why — a report of 0 is only honest if the
+      // reader can see that it was not caused by suppression.
+      const census = Number(report.summary?.candidatesTotal ?? items.length)
+      const byRule = Object.entries(report.summary?.candidatesByRule ?? {} as Record<string, number>)
+        .sort((a: any, b: any) => b[1] - a[1]).map(([r, n]) => `${r}=${n}`).join(" ")
+      const suppressed = (report.summary as any)?.suppressedByReason as Record<string, number> | undefined
+      const suppressedLine = suppressed
+        ? `\n[suppressed: ${Object.entries(suppressed).filter(([, n]) => n > 0).map(([k, n]) => `${k}=${n}`).join(" ") || "nothing"}]`
+        : ""
+      const prov = `\n[provenance: ${report.provenance.evidenceClass} via ${report.provenance.engine}; scanned ${report.summary?.scannedSymbols ?? 0} symbol(s) in ${report.summary?.scannedFiles ?? 0} file(s); limitations: ${report.provenance.limitations.length}]`
+      const countLine = `\n[scan: ${census} orphan candidate(s) ${byRule ? `(${byRule})` : ""}; showing ${items.length}${census > items.length ? ` — raise \`limit\` to see more` : ""}]`
       const footer = derived.footer ? `\n${derived.footer}` : ""
-      return textResult(`orphaned code (${report.summary?.total ?? items.length}):\n${lines.join("\n") || "  none"}${prov}${footer}`)
+      return textResult(`orphaned code (${census} found):\n${lines.join("\n") || "  none"}${countLine}${suppressedLine}${prov}${footer}`)
     }
     const result: any = await PatternBrainTools.detectPatterns(projectId, {
       includeOrphaned: args.includeOrphaned !== false,
       includeFramework: args.includeFramework !== false,
       includeAntiPatterns: args.includeAntiPatterns !== false,
-      confidenceThreshold: Number(args.confidenceThreshold ?? 0.6),
+      confidenceThreshold: args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold),
       maxResults: Math.max(limit, 100),
     })
     const allPatterns = result?.patterns ?? []
@@ -667,7 +1236,35 @@ const handlers: Record<string, ToolHandler> = {
     const derived = derivedStaleness(rawDb, projectId as any, items.map((item: any) => item.location?.file))
     const lines = items.map((item: any) => `  [${item.severity}] ${item.type} @ ${item.location?.file}:${item.location?.line} (${Math.round(item.confidence * 100)}%)${derived.isStale(item.location?.file) ? " [stale]" : ""}`)
     const stalenessFooter = derived.footer ? `\n${derived.footer}` : ""
+    // The census and the page are different numbers and the header used to
+    // print neither: it printed statistics.totalFound, which was the page
+    // length, under the words "patterns (N)". With the default limit of 20 the
+    // tool fetched 100, printed 20 and said 100. All three numbers are now
+    // named.
+    const census = Number(result?.scan?.findingsBeforeDisplayLimit ?? result?.statistics?.totalFound ?? allPatterns.length)
+    const typeCounts = Object.entries(result?.statistics?.byType ?? {} as Record<string, number>)
+      .sort((a: any, b: any) => b[1] - a[1])
+      .map(([t, n]) => `${t}=${n}`)
+    const countLine = `\n[scan: ${census} finding(s) across ${typeCounts.join(" ") || "no"} rule(s); showing ${items.length}${census > items.length ? ` — raise \`limit\` to see more` : ""}]`
     if (args.recordRun === true) {
+      // The comment below used to claim the FULL analyzed set was persisted.
+      // It was not: M57.T3 bounded the page inside detectPatterns, so
+      // allPatterns was min(census, max(limit,100)) and the auto-resolve pass
+      // would mark every finding past the page as resolved on the next run —
+      // the exact failure the comment said it prevented. recordRun therefore
+      // re-scans for the whole census. The cost is one finding object per
+      // census entry, which is why it is only paid on this path; the cap keeps
+      // a pathological project from exhausting memory, and the response says so
+      // if the cap was hit.
+      const RECORD_RUN_CENSUS_CAP = 50_000
+      const full: any = await PatternBrainTools.detectPatterns(projectId, {
+        includeOrphaned: args.includeOrphaned !== false,
+        includeFramework: args.includeFramework !== false,
+        includeAntiPatterns: args.includeAntiPatterns !== false,
+        confidenceThreshold: args.confidenceThreshold == null ? 0 : Number(args.confidenceThreshold),
+        maxResults: RECORD_RUN_CENSUS_CAP,
+      })
+      const censusPatterns: any[] = full?.patterns ?? []
       const recorded = await executeAnalysis({
         projectId,
         kind: "patterns",
@@ -676,7 +1273,7 @@ const handlers: Record<string, ToolHandler> = {
         // history must reflect the run, not the truncated preview. Otherwise
         // findings past `limit` would be silently auto-resolved on the next
         // run even though they still exist.
-        persist: () => allPatterns.map((item: any): AnalysisFindingInput => ({
+        persist: () => censusPatterns.map((item: any): AnalysisFindingInput => ({
           fingerprint: item.fingerprint ?? `${item.type}:${item.location?.file ?? "?"}:${item.location?.line ?? "?"}`,
           rule: item.type ?? "pattern",
           title: item.description ?? item.type ?? "pattern finding",
@@ -686,10 +1283,12 @@ const handlers: Record<string, ToolHandler> = {
           location: item.location?.file ? `${item.location.file}:${item.location.line ?? "?"}` : null,
         })),
       })
-      const found = result?.statistics?.totalFound ?? allPatterns.length
-      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+      const found = full?.statistics?.totalFound ?? censusPatterns.length
+      const capped = found > RECORD_RUN_CENSUS_CAP
+      const capNote = capped ? ` — CAPPED at ${RECORD_RUN_CENSUS_CAP}; ${found} findings exist and ${found - RECORD_RUN_CENSUS_CAP} were not recorded, so they will be auto-resolved on the next run` : ""
+      return textResult(`patterns (${found} found, ${recorded.report.run.findingCount} recorded) recorded run ${recorded.report.run.id}: new=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}${capNote}\n${lines.join("\n") || "  none"}${countLine}${stalenessFooter}`)
     }
-    return textResult(`patterns (${result?.statistics?.totalFound ?? items.length}):\n${lines.join("\n") || "  none"}${stalenessFooter}`)
+    return textResult(`patterns (${census} found):\n${lines.join("\n") || "  none"}${countLine}${stalenessFooter}`)
   },
 
   bb_security: async (args, { projectId }) => {
@@ -697,43 +1296,102 @@ const handlers: Record<string, ToolHandler> = {
       const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
+    // A1: `recordRun` persists a SNAPSHOT whose completeness decides whether
+    // still-real findings are auto-resolved. `completeAnalysisRun` marks every
+    // prior `open` finding that is absent from the persisted set as `resolved`,
+    // so a scan capped at the engine default (500) silently resolved everything
+    // past 500 on a project that really had them. `bb_patterns` already guards
+    // this with a census cap + a cap note (tool-handlers.ts:1174-1224); the
+    // security path had no guard at all. Recording asks for a census-sized
+    // scan; the DISPLAY still renders the ordinary window.
+    const recordRun = args.recordRun === true
+    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(
+      projectId,
+      { maxResults: recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP },
+    )
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
     const summary = result?.summary
     // M35.S2: a stale taint/flow finding says so — security honesty. History
     // paths (above) keep their recorded state; this is the live read.
+    //
+    // B3: the unvalidated-source rows are ALSO derived from indexed files, so
+    // they are resolved for freshness too. They were left out, which presented
+    // stale observations as current fact. `derivedStaleness` filters null, and
+    // `file` is now honestly `null` when neither endpoint resolved (it was the
+    // `"?"` sentinel, which resolved to nothing and counted as `missing`).
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
+    const derived = derivedStaleness(rawDb, projectId as any, [...findings, ...suspicious].map((f: any) => f.file))
+    // A1: the engine's own census vs. what is on screen. Silence here is what
+    // made a 5000-flow project read as "20 findings" with no indication that
+    // 4980 were unseen — the same contract bb_visualize and bb_search use.
+    const capNote = result?.truncatedFindings > 0
+      ? ` — CAPPED at ${(recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP).toLocaleString("en-US")}; ${result.deduplicatedFlows} findings exist and ${result.truncatedFindings} were not examined`
+      : ""
+    const countLine =
+      `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} finding(s)` +
+      `${result?.truncatedFindings ? ` (${result.truncatedFindings} beyond the cap)` : ""};` +
+      ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} finding(s)` +
+      `${suspicious.length ? ` and ${Math.min(suspicious.length, SECURITY_SUSPICIOUS_WINDOW)} of ${suspicious.length} unvalidated observation(s)` : ""}]`
+    // B2: the severity counts are the indexer's, and `taint.ts` now normalizes
+    // severity into exactly these five buckets, so the head line cannot print
+    // "0 critical" above a list of critical findings.
     const head = summary
-      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
+      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
       : `security findings (${findings.length})`
-    const lines = findings.slice(0, 20).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
+    const where = (f: any) => (f.file ? `${f.file}:${f.line ?? "?"}` : "<unresolved location>")
+    const lines = findings.slice(0, SECURITY_FINDINGS_WINDOW).map(
+      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}${finding.sourceType ? ` <- ${finding.sourceType}` : ""}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${finding.file && derived.isStale(finding.file) ? " [stale]" : ""}`,
     )
-    const sourceLines = suspicious.slice(0, 5).map(
-      (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
-    )
-    if (args.recordRun === true) {
+    // B1: the two observation states are DIFFERENT facts and were rendered with
+    // one sentence. `source_only` genuinely has no sink ("no sink reached").
+    // `unresolved` has a RESOLVED SINK and is missing the source — the old
+    // text claimed the opposite for it, on the exact rows the indexer's
+    // heuristic detectors produce (they write `source_symbol_id = NULL`).
+    // B2 again: these rows carry the indexer's real severity (an isolated
+    // command-injection sink is `critical`) and were all printed as `[info]`.
+    const sourceLines = suspicious.slice(0, SECURITY_SUSPICIOUS_WINDOW).map((source: any) => {
+      const isSourceOnly = source.state === "source_only"
+      return `  [${source.severity}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}${source.symbol ? ` ${source.symbol}` : ""} @ ${where(source)} (${isSourceOnly ? "no sink reached" : "sink found; source endpoint not resolved to an indexed symbol"})${source.file && derived.isStale(source.file) ? " [stale]" : ""}`
+    })
+    if (recordRun) {
       const findingCount = findings.length
       const recorded = await executeAnalysis({
         projectId,
         kind: "security",
         input: { options: args },
         persist: () => findings.map((finding: any): AnalysisFindingInput => ({
-          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
-          rule: finding.label ?? finding.type ?? "security",
+          // A7: the persisted identity must be stable across runs AND distinct
+          // per sink. The old key was `file:line:label`, which put a DISPLAY
+          // label in the identity: re-labelling a vulnerability type would
+          // resolve the old finding and mint a new one for a flow that never
+          // changed. The key is now the normalized type + sink type + location,
+          // so re-grading `severity` is a repeat and only a genuine move or
+          // change of vulnerability type produces a new row.
+          fingerprint: `taint:${finding.type}:${finding.sinkType ?? "?"}:${finding.file ?? "?"}:${finding.line ?? "?"}`,
+          rule: finding.type ?? "security",
           title: finding.label ?? finding.type ?? "security finding",
           severity: finding.severity ?? "medium",
-          confidence: finding.confidence ?? null,
+          // A7: the engine calibrates 0.7/0.4/0.3 by state; the legacy mapping
+          // dropped it, so this read `?? null` and every persisted security
+          // finding recorded NULL confidence.
+          confidence: typeof finding.confidence === "number" ? finding.confidence : null,
+          // A7: likewise `evidence` was always `[]` — history recorded security
+          // findings with no evidence at all.
           evidence: finding.evidence ?? [],
+          limitations: finding.limitations ?? [],
+          evidenceClass: "static_finding",
+          engine: "taint@intelligence",
           location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
           state: finding.mitigated ? "mitigated" : undefined,
         })),
       })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded${capNote}` + (lines.length ? "\n" + lines.join("\n") : "") + countLine + (sourceLines.length ? `\n\nunvalidated sources (not persisted):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n${derived.footer}` : ""))
     }
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
+    // The zero-findings case still states the census. "clean" alone is
+    // indistinguishable from "found nothing" when the scan was capped or the
+    // index has no taint rows at all, and those are very different facts.
+    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  no findings with both endpoints resolved") + countLine + (sourceLines.length ? `\n\nunvalidated observations (leads, not confirmed exploitable paths):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
   },
 
   bb_visualize: async (args, { projectId }) => {
@@ -794,15 +1452,19 @@ const handlers: Record<string, ToolHandler> = {
     // plan's source file and flag plans whose file changed since the index —
     // a stale plan says so up front instead of silently planning against
     // outdated symbols.
+    //
+    // M53: the file now comes from the plan's OWN symbol, which the planner
+    // records. The previous code re-queried `brain_symbol` by lower-cased NAME
+    // and kept the first matching row, so when two symbols shared a name the
+    // plan was computed for one symbol while the staleness verdict came from
+    // whichever file that name query happened to hit first.
     const migRaw = await BrainDatabase.getRawInstance(projectId as any)
-    const planNames = (result.plans as any[]).map((p) => String(p.componentName ?? "").toLowerCase()).filter(Boolean)
-    const nameToRel = new Map<string, string>()
-    if (planNames.length) {
-      for (const r of migRaw.prepare(`SELECT lower(s.name) AS lname, f.relative_path AS rel FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND lower(s.name) IN (${planNames.map(() => "?").join(",")})`).all(projectId, ...planNames) as Array<{ lname: string; rel: string }>) {
-        if (!nameToRel.has(r.lname)) nameToRel.set(r.lname, r.rel)
-      }
+    const planFiles = new Set<string>()
+    for (const p of result.plans as any[]) {
+      const file = typeof p.sourceFile === "string" ? p.sourceFile : ""
+      if (file && file !== "unknown") planFiles.add(file)
     }
-    const migFiles = [...new Set([...nameToRel.values()])]
+    const migFiles = [...planFiles]
     const migRelToId = new Map<string, string>()
     if (migFiles.length) {
       for (const r of migRaw.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${migFiles.map(() => "?").join(",")})`).all(projectId, ...migFiles) as Array<{ id: string; relative_path: string }>) {
@@ -814,13 +1476,16 @@ const handlers: Record<string, ToolHandler> = {
     const migStatuses = migDetail?.statuses ?? new Map<string, string>()
     const migStatus = (rel: string | undefined) => (rel ? migStatuses.get(migRelToId.get(rel) ?? "") ?? "missing" : "missing")
     for (const p of result.plans as any[]) {
-      p.sourceFile = nameToRel.get(String(p.componentName ?? "").toLowerCase()) ?? null
-      p.stale = migStatus(p.sourceFile) === "stale"
+      p.stale = migStatus(typeof p.sourceFile === "string" ? p.sourceFile : undefined) === "stale"
     }
+    // A plan whose source file could not be resolved counts as `missing`, not
+    // `fresh`. Previously such plans were dropped from the envelope entirely, so
+    // a request whose files were all unresolvable reported a clean 0/0/0.
+    const unresolvedPlans = (result.plans as any[]).filter((p) => !p.sourceFile || p.sourceFile === "unknown").length
     const migSummary = {
       fresh: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "fresh").length,
       stale: migRows.filter((r) => migStatuses.get(r.fileId ?? "") === "stale").length,
-      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length,
+      missing: migRows.filter((r) => migStatuses.get(r.fileId ?? "") !== "fresh" && migStatuses.get(r.fileId ?? "") !== "stale").length + unresolvedPlans,
     }
     const migEnvelopeSource = { ...migSummary, staleRatio: migRows.length ? (migSummary.stale + migSummary.missing) / migRows.length : 0, freshnessMode: "complete" as const }
     const stalePlans = (result.plans as any[]).filter((p) => p.stale).length
@@ -840,20 +1505,68 @@ const handlers: Record<string, ToolHandler> = {
     if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode: symbol|file|module|feature|api|project|coverage", true)
     if (["symbol", "file", "module", "feature"].includes(mode) && !args.target) return textResult(`bb_doc ${mode} mode requires target`, true)
     const request: DocRequest = { mode, target: args.target ? String(args.target) : undefined, format: args.format === "json" ? "json" : "markdown", audience: args.audience, detail: args.detail, includeExamples: args.includeExamples === true, includeDiagrams: args.includeDiagrams === true, includeTests: args.includeTests === true, limit: args.limit == null ? undefined : Number(args.limit), maxTokens: args.maxTokens == null ? undefined : Number(args.maxTokens) }
-    const result = await generateDocumentation(projectId, projectPath, request)
+
+    // M43.A1/A2 parity: bb_doc is a READ tool, so it participates in the inline
+    // bounded auto-refresh like bb_search / bb_ask / bb_analyze do. It did not,
+    // while the registered remediation string it printed told the reader to
+    // "disable with BB_NO_AUTO_REFRESH=1 or refresh=false" — naming two
+    // controls this tool did not have, and leaving AGENTS.md's promise ("reads
+    // refresh stale files within budget") false for this one read path.
+    //
+    // The flow is the shared one: generate, resolve freshness over the files the
+    // doc actually cites, repair exactly those files if they are stale within
+    // budget, then REGENERATE so the answer is not built from the rows the
+    // refresh just replaced. A decline is declared, never silent.
+    const generate = async (): Promise<{ result: any; derived: ReturnType<typeof derivedStaleness>; rows: Array<{ fileId: string | null }>; statuses: Map<string, string> }> => {
+      const result = await generateDocumentation(projectId, projectPath, request)
+      const rawDb = await BrainDatabase.getRawInstance(projectId as any)
+      // Only a file-backed citation can name a file to repair; an index-scoped
+      // citation has no path and contributes to the envelope, not the repair set.
+      const relPaths = (result.citations ?? []).map((c: any) => c.path ?? undefined).filter((p: any): p is string => !!p)
+      const derived = derivedStaleness(rawDb, projectId as any, relPaths)
+      const relToId = new Map<string, string>()
+      if (relPaths.length) {
+        for (const r of rawDb.prepare(`SELECT id, relative_path FROM brain_file WHERE project_id = ? AND relative_path IN (${relPaths.map(() => "?").join(",")})`).all(projectId, ...relPaths) as Array<{ id: string; relative_path: string }>) {
+          relToId.set(r.relative_path, r.id)
+        }
+      }
+      const rows = relPaths.map((p) => ({ fileId: relToId.get(p) ?? null }))
+      return { result, derived, rows, statuses: resolveRowsFreshnessDetailed(rawDb, projectId as any, rows).statuses }
+    }
+
+    const first = await generate()
+    const staleFiles = collectStaleFiles(await BrainDatabase.getRawInstance(projectId as any), first.rows, first.statuses)
+    let autoRefreshLineText = ""
+    let final = first
+    if (staleFiles.length > 0) {
+      const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+      autoRefreshLineText = autoRefreshLine(decision)
+      // Regenerate after a repair: answering from the rows the refresh just
+      // replaced would be the one thing a documentation tool must not do.
+      if (decision.action === "refreshed") final = await generate()
+    }
+
     // M35.S2: the doc carries the registered freshness envelope over its cited
     // files; per-citation freshness is already resolved inside the engine and
     // rendered in Sources. JSON gets the exact registered block; text/markdown
-    // get the footer built from the registered remediation constant.
-    const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, (result.citations ?? []).map((c) => c.path ?? undefined))
+    // get the footer built from the registered remediation constant. A markdown
+    // document that cites no file has no scope to be stale in, and says nothing
+    // about staleness rather than a clean 0/0/0 that reads as a measurement.
     if (request.format === "json") {
-      const parsed = JSON.parse(formatDocumentation(result, "json"))
-      parsed.freshness = buildStalenessEnvelope(derived.summary, { kind: "dir" })
+      const parsed = JSON.parse(formatDocumentation(final.result, "json"))
+      parsed.freshness = buildStalenessEnvelope(final.derived.summary, { kind: "dir" })
+      if (autoRefreshLineText) parsed.autoRefresh = autoRefreshLineText
       return textResult(JSON.stringify(parsed, null, 2))
     }
-    const base = formatDocumentation(result, request.format)
-    return textResult(derived.footer ? `${base}\n\n---\n${derived.footer}` : base)
+    const base = formatDocumentation(final.result, request.format)
+    const parts = [base]
+    if (autoRefreshLineText) parts.push(autoRefreshLineText)
+    if (final.rows.length === 0) {
+      parts.push("Freshness not applicable: this document cites no file, so there is no source to be stale.")
+    } else if (final.derived.footer) {
+      parts.push(`---\n${final.derived.footer}`)
+    }
+    return textResult(parts.join("\n\n"))
   },
 
   bb_edit: async (args, { projectId, projectPath }) => {
@@ -946,9 +1659,40 @@ const handlers: Record<string, ToolHandler> = {
     if (edgeLimitArg !== undefined && (!Number.isFinite(edgeLimitArg) || edgeLimitArg < 1)) {
       return textResult("bb_graph edgeLimit must be a positive number", true)
     }
+    // Validated here rather than trusted: an unknown direction or a non-string
+    // entry in relationshipTypes would otherwise reach the SQL and produce a
+    // silently wrong traversal instead of an error.
+    const directionArg = args.direction === undefined ? undefined : String(args.direction)
+    if (directionArg !== undefined && !["callers", "callees", "both"].includes(directionArg)) {
+      return textResult("bb_graph direction must be one of: callers, callees, both", true)
+    }
+    const relTypesArg = args.relationshipTypes === undefined ? undefined : (args.relationshipTypes as unknown[]).map((t) => String(t))
+    if (relTypesArg !== undefined && relTypesArg.length === 0) {
+      return textResult("bb_graph relationshipTypes must name at least one relationship kind", true)
+    }
+    const crossLangArg = args.includeCrossLanguage === undefined ? undefined : args.includeCrossLanguage !== false
+    // The one bound that is a function of the clock. It is exposed precisely
+    // because it is the one that can be turned off: `0` is how a caller says
+    // "I accept the runtime and I need a reproducible answer".
+    const timeBudgetArg = args.timeBudgetMs === undefined ? undefined : Number(args.timeBudgetMs)
+    if (timeBudgetArg !== undefined && (!Number.isFinite(timeBudgetArg) || timeBudgetArg < 0)) {
+      return textResult("bb_graph timeBudgetMs must be a non-negative number (0 disables the bound)", true)
+    }
+    const maxEdgesArg = args.maxEdges === undefined ? undefined : Number(args.maxEdges)
+    if (maxEdgesArg !== undefined && (!Number.isFinite(maxEdgesArg) || maxEdgesArg < 1)) {
+      return textResult("bb_graph maxEdges must be a positive number", true)
+    }
     let result
     try {
-      result = await graphTraversal(projectId as any, symbol, { maxDepth, edgeLimit: edgeLimitArg })
+      result = await graphTraversal(projectId as any, symbol, {
+        maxDepth,
+        edgeLimit: edgeLimitArg,
+        maxEdges: maxEdgesArg,
+        timeBudgetMs: timeBudgetArg,
+        direction: directionArg as any,
+        relationshipTypes: relTypesArg,
+        includeCrossLanguage: crossLangArg,
+      })
     } catch (error) {
       return textResult(`bb_graph: ${error instanceof Error ? error.message : String(error)}`, true)
     }
@@ -963,11 +1707,23 @@ const handlers: Record<string, ToolHandler> = {
       if (IMPORT.has(e.relationshipType)) return "import_based"
       return "inferred"
     }
+    // Every edge names its two endpoints by symbol id, and a symbol id is
+    // `<projectId>:<file>:<name>:<line>`. That is decodable, but an agent
+    // reading 36 callee edges should not have to parse a string to learn that
+    // one of them is `ext:Errorf`, and must never have to guess which file a
+    // caller lives in. `describe` renders one endpoint out of the engine's own
+    // node map — already computed by the traversal, previously discarded here
+    // — so each edge is self-contained and needs no second call.
+    const describe = (id: string) => {
+      const n = (result.nodes as Record<string, any> | undefined)?.[id]
+      if (!n) return null
+      return { id: n.id, name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+    }
     const edgesOf = (list: any[], direction: "caller" | "callee") =>
       list.map((e) => ({
         direction,
-        from: e.from,
-        to: e.to,
+        from: describe(e.from),
+        to: describe(e.to),
         relationshipType: e.relationshipType,
         confidence: e.confidence,
         tier: tierFor(e),
@@ -975,10 +1731,43 @@ const handlers: Record<string, ToolHandler> = {
         bridgeMechanism: e.bridge ?? e.bridgeMechanism ?? null,
         depth: e.depth,
         callSite: e.callSite ?? null,
+        // Whether this edge is about the symbol that was asked for, or about
+        // one of its members folded on by the owner cascade. Surfacing it is
+        // what makes the documented superset usable: an agent can count the
+        // exact callers without issuing a second, differently-shaped query.
+        match: e.targetMatch ?? e.sourceMatch ?? null,
+        matchedMember: e.matchedMember ?? null,
+        // M26.W2 / GraphEdge.rowId: the stored brain_relationship row this edge
+        // came from. The engine emits it and the contract calls it mandatory
+        // ("an edge without one must never be emitted, never rendered"), but
+        // this handler dropped it — so the tool's own description ("every edge
+        // still traces to a stored relationship row") was a claim the payload
+        // gave an agent no way to check. An edge nobody can audit is an edge
+        // they have to take on faith.
+        rowId: e.rowId ?? null,
       }))
     return textResult(JSON.stringify({
       symbol,
-      root: { id: result.root?.id, name: result.root?.name, filePath: result.root?.filePath ?? null },
+      root: {
+        id: result.root?.id,
+        name: result.root?.name,
+        symbolType: result.root?.symbolType ?? null,
+        file: result.root?.file ?? null,
+        line: result.root?.line ?? null,
+        filePath: result.root?.filePath ?? null,
+        // How many stored symbols this name resolved among. A name is not a
+        // unique identifier — measured: `build` in lodash resolves among 7,
+        // `code_block.go` in cobra among 50, `Command` among 1 — and when this
+        // is > 1 the graph below is about ONE of them, so `root` is the thing
+        // to confirm before reading the edges.
+        candidates: result.rootCandidates ?? 1,
+        // WHICH step resolved the name. `containment` means the answer is about
+        // a symbol whose name CONTAINS the one asked for — measured on the
+        // atlas corpus, `target: "ub"` answers about `hub` and `target: "_"`
+        // about `build_registry`, with nothing else in the payload saying the
+        // name was not itself a symbol.
+        match: result.rootMatch ?? null,
+      },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
       summary: {
@@ -988,114 +1777,570 @@ const handlers: Record<string, ToolHandler> = {
         // "totalCallers" for a symbol with 3,437 sites and said nothing.
         totalCallers: result.summary?.totalCallers ?? result.callers.length,
         totalCallees: result.summary?.totalCallees ?? result.callees.length,
-        maxDepthReached: result.summary?.maxDepthReached ?? maxDepth,
+        // `maxDepthReached` is what the traversal actually walked, not what it
+        // was allowed to walk. The previous fallback reported the REQUESTED
+        // maxDepth whenever the summary was absent, so a graph that stopped at
+        // depth 0 (a leaf with no edges) claimed to have reached depth 3. A
+        // fallback that upgrades a measured fact into a permitted one is worse
+        // than an explicit unknown, so the unknown is what ships.
+        maxDepthReached: result.summary?.maxDepthReached ?? null,
+        // The depth bound this run actually used, paired with
+        // `maxDepthReached`. The engine computes and declares it; the agent
+        // surface dropped it, so a reader holding `maxDepthReached: 2` could
+        // not tell "the walk finished at depth 2" from "the walk was stopped at
+        // depth 2" — which is the distinction the engine added this field for.
+        maxDepth: result.summary?.maxDepth ?? null,
         crossLanguageEdges: result.summary?.crossLanguageEdges ?? 0,
         truncated: result.summary?.truncated === true,
         truncationReason: result.summary?.truncationReason ?? null,
         edgeLimit: result.summary?.edgeLimit ?? null,
+        // The bound on the WHOLE answer. Without it a caller could compute the
+        // ceiling of an answer (per-query limit x fan-out budget x 2) but not
+        // that the ceiling was 20,000 edges.
+        maxEdges: result.summary?.maxEdges ?? null,
+        // The walk-time bound, and whether it fired. Published because this is
+        // the only bound whose firing depends on the clock rather than the
+        // data: two identical calls can legitimately differ, and this is what
+        // tells a reader that the difference was the machine and not the graph.
+        timeBudgetMs: result.summary?.timeBudgetMs ?? null,
+        timeBudgetExhausted: result.summary?.timeBudgetExhausted === true,
+        totalEdgeLimitReached: result.summary?.totalEdgeLimitReached === true,
         cappedQueries: result.summary?.cappedQueries ?? 0,
         callersIfUncapped: result.summary?.callersIfUncapped ?? null,
         calleesIfUncapped: result.summary?.calleesIfUncapped ?? null,
         totalsAreLowerBounds: result.summary?.totalsAreLowerBounds === true,
+        // How much of the answer is about the symbol that was asked for, and
+        // how much the owner cascade folded in from its members. The cascade is
+        // documented; without these numbers a reader cannot use it.
+        // DEPTH 0 only — these four describe the ROOT. An edge at depth >= 1
+        // is about a symbol the traversal discovered, and is counted as
+        // `deeper*`, so the partition is total:
+        //   exact + cascaded + deeper === the number of edges returned.
+        exactCallers: result.summary?.exactCallers ?? 0,
+        cascadedCallers: result.summary?.cascadedCallers ?? 0,
+        exactCallees: result.summary?.exactCallees ?? 0,
+        cascadedCallees: result.summary?.cascadedCallees ?? 0,
+        deeperCallers: result.summary?.deeperCallers ?? 0,
+        deeperCallees: result.summary?.deeperCallees ?? 0,
+        // The fan-out bound, and whether it bit. `truncationReason` can name
+        // `caller-budget-exhausted`; before this it did so without ever saying
+        // what the budget was, so the bound was announced and never quantified.
+        callerBudget: result.summary?.callerBudget ?? 0,
+        calleeBudget: result.summary?.calleeBudget ?? 0,
+        callerBudgetExhausted: result.summary?.callerBudgetExhausted === true,
+        calleeBudgetExhausted: result.summary?.calleeBudgetExhausted === true,
+        // Rows present in BOTH the caller and the callee list. Each is one
+        // relationship seen from two ends, so `totalCallers + totalCallees`
+        // overstates the distinct relationship count by exactly this much.
+        edgesInBothDirections: result.summary?.edgesInBothDirections ?? 0,
+        // What the answer is made of, and which kinds a bound would keep first.
+        edgesByType: result.summary?.edgesByType ?? {},
+        edgeKindPriority: result.summary?.edgeKindPriority ?? [],
+        dedupedAtToolLayer: result.summary?.dedupedAtToolLayer ?? { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
+        // What was actually searched. Without this a caller that asked for
+        // direction:"callers" cannot tell an empty callee list from a callee
+        // list that was never computed, and `relationshipTypes` narrowing is
+        // invisible in the results — a graph of 0 edges reads identically
+        // whether the filter matched nothing or matched everything.
+        scope: {
+          direction: directionArg ?? "both",
+          // The engine's RESOLVED list, not a literal here. This used to be a
+          // hardcoded four-element copy of the engine's default, and when the
+          // default was widened to all ten stored kinds the echo went on naming
+          // four while the answer held 120 `uses` and 11 `contains` edges.
+          relationshipTypes: result.summary?.relationshipTypesUsed ?? [],
+          includeCrossLanguage: crossLangArg !== false,
+        },
       },
       provenance: result.provenance ?? null,
     }, null, 2))
   },
 
-  bb_impact: async (args, { projectId }) => {
+  bb_impact: async (args, { projectId, projectPath }) => {
     const symbol = String(args.symbol ?? "")
     if (!symbol) return textResult("bb_impact requires symbol", true)
+    const relationshipTypes: string[] | undefined =
+      Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map((t: unknown) => String(t)) : undefined
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     try {
-      // The SAME component the editor graph panel's impact mode uses
-      // (src/lsp/impact.ts): declared budget, first-class truncation,
-      // declared total. One truth (M28 decision D-1).
-      const impact = await computeImpact(raw, projectId as string, symbol)
-      return textResult(JSON.stringify({
-        symbol,
-        root: impact.root,
-        budget: { maxNodes: 200, maxDepth: 5 },
-        impact: impact.impact,
-        shownCount: impact.shownCount,
-        totalCountIfKnown: impact.totalCountIfKnown,
-        truncated: impact.truncated,
-        truncationReason: impact.truncationReason,
-      }, null, 2))
+      // M63.T2: ONE list, handed to the component, which hands it to BOTH its
+      // walks. The engine's default is every stored kind, so a filter is a real
+      // choice rather than an accident of a default — and the answer states
+      // which rule it applied.
+      // Freshness is resolved over the files the answer is actually ABOUT — the
+      // dependents' files plus the root's own. An answer about a symbol
+      // describes a set of files, and those are the files that can be stale.
+      // The path->id map is a property of the PROJECT, so it is built once and
+      // both passes read it; building it per pass would make a refresh change
+      // the map a stale answer was measured against.
+      const idByPath = new Map<string, string>()
+      for (const f of raw.prepare("SELECT id, path, COALESCE(relative_path,'') AS rel FROM brain_file WHERE project_id = ?").all(projectId) as Array<{
+        id: string
+        path: string
+        rel: string
+      }>) {
+        idByPath.set(f.path, f.id)
+        if (f.rel.length > 0) idByPath.set(f.rel, f.id)
+      }
+      const runPass = async (): Promise<{ impact: Awaited<ReturnType<typeof computeImpact>>; detail: ReturnType<typeof resolveRowsFreshnessDetailed>; rows: Array<{ fileId: string | null; filePath: string | null }> }> => {
+        const impact = await computeImpact(raw, projectId as string, symbol, {}, undefined, relationshipTypes ? { relationshipTypes } : {})
+        const rows = [
+          ...impact.impact.map((d) => ({ fileId: idByPath.get(d.filePath || d.file) ?? null, filePath: d.filePath || d.file || null })),
+          { fileId: idByPath.get(impact.root.filePath || impact.root.file) ?? null, filePath: impact.root.filePath || impact.root.file || null },
+        ]
+        return { impact, detail: resolveRowsFreshnessDetailed(raw, projectId as any, rows), rows }
+      }
+      const first = await runPass()
+      // The root's file is part of the question — "what breaks if I change
+      // THIS" — so `runPass` already includes it in the rows, and the repair
+      // set and the envelope both see it. Without that, a stale root with
+      // fresh dependents renders as a clean answer.
+      const staleFiles = collectStaleFiles(raw, first.rows, first.detail.statuses)
+      let autoRefreshText = ""
+      let pass = first
+      if (staleFiles.length > 0) {
+        const decision = await maybeAutoRefresh(projectId, projectPath, staleFiles, { perCallOptOut: args.refresh === false })
+        autoRefreshText = autoRefreshLine(decision)
+        if (decision.action === "refreshed") {
+          // Re-run so the answer is not built from the rows the repair just
+          // replaced — the walk itself reads the index, so a refresh without a
+          // second pass would report the pre-refresh graph.
+          pass = await runPass()
+        }
+      }
+      const impact = pass.impact
+      const detail = pass.detail
+      // M63.T1: the payload IS the component's result, plus the freshness of
+      // the files it is about. Four things were missing, and all four are
+      // load-bearing for a refactoring decision:
+      //
+      //   budget   was a literal `{maxNodes: 200, maxDepth: 5}` typed HERE
+      //            while the component owned IMPACT_BUDGET. The numbers
+      //            agreed and nothing kept them agreeing — the next person to
+      //            change the budget would have changed this file too, or
+      //            shipped a payload that lies about its own limits. It is
+      //            the component's budget now, its ceilings included.
+      //   counts   `directCount` is the depth-0 count (exact, or null when the
+      //            counting walk hit a declared ceiling), and `traversal`
+      //            carries what the answer was bounded by: the depth actually
+      //            reached, the engine's own truncation state and reason, its
+      //            per-query site limit, how many of its queries hit it, and
+      //            the root's uncapped count when it could be computed. A
+      //            reader can no longer mistake a 5-node prefix for a 200-node
+      //            one, or `caller-budget-exhausted` for a per-symbol cap.
+      //   identity `rootMatch` (requested / via / nameMatches) and the
+      //            component's `resolution` ride the wire. The member→owner
+      //            substitution that the editor panel renders has been
+      //            invisible to every agent since M44.U5, and a containment
+      //            match was invisible to everyone.
+      //   stale    this surface reported NO freshness at all, on the one tool
+      //            whose answer is acted on. "4 reverse dependencies" derived
+      //            from a weeks-old index is a wrong number with no signal on
+      //            it. Every dependent is flagged, the root's own file is
+      //            declared (`rootStale`), and the envelope is attached — the
+      //            same shape bb_analyze and the graph modes already use.
+      //
+      // A stale dependent is `true`/`false`; one whose file is not in the
+      // index at all is `null`, which is a THIRD state and deliberately not
+      // folded into the other two: "we could not check" is not "fresh".
+      const dependents = impact.impact
+      const rootRow = { fileId: idByPath.get(impact.root.filePath || impact.root.file) ?? null, filePath: impact.root.filePath || impact.root.file || null }
+      for (let i = 0; i < dependents.length; i++) {
+        const id = idByPath.get(dependents[i]!.filePath || dependents[i]!.file) ?? null
+        dependents[i]!.stale = id ? detail.statuses.get(id) !== "fresh" : null
+      }
+      const rootStatus = rootRow.fileId ? (detail.statuses.get(rootRow.fileId) ?? "missing") : null
+      const rootIsStale = rootStatus !== null && rootStatus !== "fresh"
+      return textResult(
+        JSON.stringify(
+          {
+            symbol,
+            root: impact.root,
+            rootStale: rootIsStale ? rootStatus : false,
+            rootMatch: impact.rootMatch,
+            resolution: impact.resolution,
+            rule: impact.rule,
+            budget: impact.budget,
+            traversal: impact.traversal,
+            cascade: impact.cascade,
+            countVerification: impact.countVerification,
+            ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
+            // The component's own bookkeeping does not ride the wire. `tracedId`
+            // is the walk node a cascade row was found at — deciding `via` needs
+            // it and a reader has no use for an opaque id, so the payload
+            // publishes the DECLARED fact (`via`, `viaMember`) and not the
+            // intermediate it was derived from. Everything else on a dependent is
+            // a fact about the stored row or about the file.
+            impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
+            shownCount: impact.shownCount,
+            directCount: impact.directCount,
+            totalCountIfKnown: impact.totalCountIfKnown,
+            truncated: impact.truncated,
+            truncationReason: impact.truncationReason,
+            freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
+          },
+          null,
+          2,
+        ),
+      )
     } catch (error) {
       return textResult(`bb_impact: ${error instanceof Error ? error.message : String(error)}`, true)
     }
   },
 
+  // M63.CL1 — the agent door, rebuilt on the same single owner
+  // (src/lsp/cross_language_hover.ts). Four defects, all measured on a real
+  // polyglot corpus (validation/m63/results/CL1.json), all fixed here:
+  //
+  //   A. The old door ran `SELECT ... WHERE project_id = ? AND name = ?` with
+  //      `.get()` — ONE arbitrary copy of a name the index holds up to 227
+  //      times (the index has one symbol per file/name/line), and reported that
+  //      copy's rows as the whole answer. When the copy SQLite happened to
+  //      return held none, the tool answered `declaredAbsent: true` — "no
+  //      stored cross-language rows for this symbol — absence declared, never
+  //      guessed" — while the index held 21 such rows for the name. A false
+  //      absence is the worst thing a tool whose contract is "never guesses"
+  //      can emit. The facts are now the UNION over every copy, the copies are
+  //      named, and absence is declared only when no copy holds a row.
+  //   B. Each fact now names the counterparty (symbol, file, language, line)
+  //      and the stored row id — the fields bb_graph already returns and the
+  //      hover card did not need. A language pair alone cannot answer "does my
+  //      Kotlin Warehouse reach my Java Inventory, and where".
+  //   C. The answer is bounded by a declared `limit`, and truncation is
+  //      first-class (`truncated` / `truncationReason` / `totalCountIfKnown`),
+  //      exactly as bb_impact reports its budget. 106 stored rows used to
+  //      become 106 identical facts and 20,904 bytes.
+  //   D. The row query filters on `r.project_id = ?`. The old door took the
+  //      symbol id as its only key and never constrained the ROW's project;
+  //      a relationship row minted for another project and pointing at this
+  //      symbol was returned as one of this tool's own facts (reproduced
+  //      before the fix).
   bb_cross_language: async (args, { projectId }) => {
-    const symbol = String(args.symbol ?? "")
+    const symbol = String(args.symbol ?? "").trim()
     if (!symbol) return textResult("bb_cross_language requires symbol", true)
+    const limitRaw = args.limit === undefined || args.limit === null ? CROSS_LANGUAGE_DEFAULT_LIMIT : Number(args.limit)
+    if (!Number.isFinite(limitRaw) || limitRaw < 1 || limitRaw > CROSS_LANGUAGE_MAX_LIMIT) {
+      return textResult(`bb_cross_language: limit must be a number between 1 and ${CROSS_LANGUAGE_MAX_LIMIT}`, true)
+    }
+    const limit = Math.floor(limitRaw)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
-    // The hover derives language from the FILE row (brain_file.language) —
-    // brain_symbol has no language column. Same source, same semantics (D-1).
-    const row = raw.prepare("SELECT s.id AS id, f.language AS language FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { id: string; language: string | null } | undefined
-    if (!row) {
+    // Existence is its own question, and it is asked over every copy: a name
+    // the index does not hold is a loud error (never an empty set), a name it
+    // holds is answered for all of its copies.
+    const exists = raw.prepare("SELECT COUNT(*) AS n FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND s.name = ?").get(projectId, symbol) as { n: number }
+    if (!exists || exists.n === 0) {
       return textResult(`bb_cross_language: symbol '${symbol}' not found — declared error, not an empty set`, true)
     }
-    // The SAME component the hover section renders from (D-1): stored rows
-    // only, per-pair, declared absence when there are none.
-    const rows = storedCrossLanguageRows(raw, row.id)
-    const facts = factsFromRows(rows, row.language ?? null)
+    const result = storedCrossLanguageFactsByName(raw, projectId as string, symbol)
+    // ONE budget over the union, own rows first. Two independent limits would
+    // mean a caller holding one `limit` could not reason about the size of the
+    // answer, and the exact rows — the ones that name the symbol itself — must
+    // never be crowded out by a member's edges.
+    const totalFacts = result.facts.length + result.memberFacts.length
+    const ownShown = result.facts.slice(0, limit)
+    const remaining = Math.max(0, limit - ownShown.length)
+    const memberShown = result.memberFacts.slice(0, remaining)
+    const shownCount = ownShown.length + memberShown.length
+    const truncated = totalFacts > shownCount
+    // `language` is only meaningful when the copies agree. On an ambiguous
+    // name it is null and `languages` carries the truth, rather than the
+    // single language of whichever copy the database happened to return first.
+    const language = result.languages.length === 1 ? result.languages[0]! : null
     return textResult(JSON.stringify({
       symbol,
-      language: row.language,
-      facts,
-      pairCount: facts.length,
-      declaredAbsent: facts.length === 0,
-      absenceNote: facts.length === 0 ? "no stored cross-language rows for this symbol — absence declared, never guessed" : null,
+      language,
+      languages: result.languages,
+      copies: result.copies,
+      copyCount: result.copyCount,
+      ambiguous: result.ambiguous,
+      ambiguityNote: result.ambiguous
+        ? `${result.copyCount} indexed symbols are named '${symbol}' across ${new Set(result.copies.map((c) => c.file)).size} file(s); the facts below are the union over all of them, and every fact names the copy it came from`
+        : null,
+      // Rows on the copies themselves.
+      facts: ownShown,
+      ownFactCount: ownShown.length,
+      // Rows on the MEMBERS of the copies, each marked `owner-cascade` and
+      // naming the member. These are the MEMBER's edges, never the owner's,
+      // which is why they are a separate section and not merged into `facts`.
+      memberFacts: memberShown,
+      memberFactCount: memberShown.length,
+      memberCount: result.memberCount,
+      memberNote: result.memberCount > 0
+        ? `${result.memberCount} member symbol(s) of '${symbol}' hold cross-language rows of their own. They are reported under memberFacts, marked match "owner-cascade" with matchedMember naming the member — they are the MEMBER's edges, not '${symbol}'s. bb_graph's cascaded count for the same symbol is larger, because its cascade is a lexical id-prefix range rather than the store's owner_symbol_id; both are declared rather than reconciled.`
+        : null,
+      pairCount: shownCount,
+      // Distinct language pairs — the number a human actually reads, and the
+      // one that stays small where the row count does not.
+      distinctPairCount: new Set([...ownShown, ...memberShown].map((f) => `${f.pair}|${f.direction}|${f.bridge}|${f.tier}`)).size,
+      storedRowCount: result.storedRowCount,
+      unpairableRowCount: result.unpairableRowCount,
+      collapsedRowCount: result.collapsedRowCount,
+      limit,
+      truncated,
+      truncationReason: truncated
+        ? `declared limit of ${limit} facts; ${totalFacts} stored cross-language rows matched this name (${result.facts.length} on the symbol itself, ${result.memberFacts.length} on its members)`
+        : null,
+      totalCountIfKnown: totalFacts,
+      // ABSENCE MEANS THE NAME IS SILENT, NOT THE SYMBOL. Before this it was
+      // `facts.length === 0` alone, so a class whose members carried 109
+      // cross-language rows while it carried none was answered "absence
+      // declared, never guessed" — a false absence, on the most natural
+      // question a caller can ask ("is this class involved in cross-language
+      // code?"), and the direct opposite of what bb_graph said about the same
+      // symbol on the same index (measured: 7 of 10 such owners, docs/m63/CL2.md).
+      // An empty answer now requires that NEITHER the copies NOR their members
+      // hold a stored row.
+      declaredAbsent: shownCount === 0,
+      // SCOPE, and it used to be wrong. M63.CL4: this read "anywhere in the
+      // index", but all three queries bind a projectId as their first parameter,
+      // so the search covered exactly one project. With the same name present in
+      // a second project that DOES hold cross-language rows for it, the sentence
+      // was false as written — measured, with both projects real
+      // (lane/cl-absence-scope.ts: CLAIM_IS_FALSE). An agent reads this instead of
+      // checking, so an overclaim here is worse than an overclaim in a count.
+      // Absence for THIS project is still correct and still declared; only the
+      // universality was wrong.
+      absenceNote: shownCount === 0
+        ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its members — absence declared, never guessed`
+        : null,
+      // The symptom that produced this change, stated in the answer itself: the
+      // symbol is silent and its members are not. A caller reading only
+      // `declaredAbsent: false` would otherwise assume the symbol itself is the
+      // connected one.
+      silentItselfButNotItsMembers: ownShown.length === 0 && memberShown.length > 0,
     }, null, 2))
   },
 
   // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
   // enforced HERE, in code: author_class is always 'agent' for tool writes —
   // no argument can override it, so an agent note can never masquerade as a
-  // human note. Upsert on (project, symbol, path, author): one note per author
-  // per location, re-annotation updates in place (anti-flood by construction).
+  // human note. One note per author per location is enforced twice over: the id
+  // is an INJECTIVE length-delimited hash of the location (the single owner is
+  // src/brain/annotation-store.ts — the old '_'-flattening key aliased
+  // `Foo.Bar` with `Foo_Bar` and silently destroyed the first note), and a
+  // UNIQUE expression index on (project, symbol, author, COALESCE(path,''))
+  // declares the same rule in the schema. The upsert targets the NATURAL key,
+  // so a row written before the id scheme changed updates in place instead of
+  // being duplicated.
   bb_annotate: async (args, { projectId }) => {
     const symbol = String(args.symbol ?? "").trim()
     const body = String(args.body ?? "")
-    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    const givenPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
     const toolIdentity = String(args.toolIdentity ?? "bb_annotate(mcp)")
     if (!symbol) return textResult("bb_annotate requires symbol", true)
     if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
-    if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
+    // Counted in code points, not UTF-16 units. The declared limit is "2000
+    // chars", and String.length counts an astral character (an emoji, a CJK
+    // extension glyph) as TWO, so a 1001-glyph note was refused under a limit
+    // documented as 2000 characters. Measured against what a reader calls a
+    // character, the limit is now the limit.
+    const bodyChars = [...body].length
+    if (bodyChars > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${bodyChars}) — declared refusal, not silent truncation`, true)
+    // toolIdentity is recorded verbatim (an existing gate depends on that), but it
+    // is a self-declared LABEL, not evidence, and it is returned beside the
+    // ENFORCED author class as though the two carried equal weight. It is also
+    // unbounded, so it is an unbounded row. A declared bound, not a truncation.
+    if ([...toolIdentity].length > 200) return textResult(`bb_annotate: toolIdentity exceeds the declared limit of 200 chars (got ${[...toolIdentity].length}) — declared refusal`, true)
+    // A tool identity is a NAME, not a document. Refusing line breaks and other
+    // control characters keeps "recorded verbatim" honest (verbatim never meant "may
+    // contain a newline") and keeps the stored label safe for every reader of it —
+    // the editor hover, the graph badge, and bb_annotations. Measured: a newline in
+    // this field rendered as a second provenance line that claimed to be a human note.
+    if (/[\u0000-\u001F\u007F]/.test(toolIdentity)) return textResult("bb_annotate: toolIdentity must not contain control characters or line breaks — it is a name, not a document (declared refusal)", true)
     const now = Date.now()
-    const id = `bbann-${projectId}-${symbol}-${annotationPath ?? ""}-agent`.replace(/[^a-zA-Z0-9-]/g, "_")
     const raw = await BrainDatabase.getRawInstance(projectId as any)
+    // The path is resolved to the ONE spelling the index stores, so `./x` and
+    // `/abs/project/x` land on the same row the editor selects. Stored verbatim,
+    // they each created a note that never rendered.
+    const canonical = canonicalFilePath(raw, projectId, givenPath)
+    const annotationPath = givenPath === null ? null : canonical.path
+    // Reachability is MEASURED against the index, not promised. The old reply
+    // claimed the note "renders in the editor hover section and graph badge" for
+    // EVERY note; measured on a real corpus, 100% of the qualified-name notes
+    // matched no symbol name at all, so that claim was false exactly where it
+    // sounded most confident.
+    const reach = annotationReachability(raw, projectId, symbol)
+    // The name matching is necessary but NOT sufficient: the editor also
+    // requires the PATH to match, or to be absent. A note on a symbol the index
+    // holds, written against a file it has never seen, can never be selected by
+    // a file-scoped hover — so the two halves are combined here rather than
+    // reported side by side while contradicting each other.
+    const pathKnown = givenPath === null || canonical.matched
+    const surfaced = reach.surfaced && pathKnown
+    const statement = !reach.surfaced
+      ? reach.statement
+      : !pathKnown
+        ? `'${symbol}' matches ${reach.matchedNames.length} indexed symbol name(s), but no indexed file matches the path '${givenPath}', so NO editor surface will show this note: the hover scopes notes to the file under the cursor. It is stored under that spelling and readable through bb_annotations.`
+        : reach.statement
+    const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
+    // Read what currently holds this location BEFORE the upsert. One note per
+    // location is the right model (the location UNIQUE index enforces it), but
+    // "last writer wins, silently" is not: measured on a real corpus, two agents
+    // writing the same symbol+path left ONE row, the first agent's note gone,
+    // and NEITHER agent told. The second writer now learns whose note it is
+    // replacing — and receives the previous body, so it can merge instead of
+    // clobbering.
+    const prior = raw.prepare(
+      "SELECT author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')",
+    ).get(projectId, symbol, annotationPath) as { author_class: string; tool_identity: string; body: string; time_created: number; time_updated: number } | undefined
+    const isReplacement = prior !== undefined && prior.body !== body
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
+       ON CONFLICT(project_id, symbol_name, author_class, COALESCE(symbol_path, '')) DO UPDATE
+         SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
     ).run(id, projectId, symbol, annotationPath, toolIdentity, body, now, now)
-    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE id = ?").get(id) as any
+    // Re-read by the NATURAL key, not by id: when the upsert updated a row that
+    // predates the current id scheme, that row keeps its original id, and
+    // reading by id would report a row that does not exist.
+    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')").get(projectId, symbol, annotationPath) as any
     return textResult(JSON.stringify({
       stored: true,
       annotation: updated,
-      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed",
-      surfaces: "this note renders in the editor hover section and graph badge (M28.A2)",
+      provenance: "author_class is enforced 'agent' for tool writes — recorded, not claimed; tool_identity is the caller's own label, recorded verbatim and never verified",
+      ...(isReplacement
+        ? {
+            // A note is kept per location, so a second writer REPLACES the first.
+            // That is the declared model, but the replacement is now on the
+            // record: whose note it was, when it was written, and what it said,
+            // so the writer can merge instead of silently clobbering a
+            // colleague's finding — and so an agent that lost a note can see that
+            // it was replaced rather than never stored.
+            replaced: {
+              authorClass: prior.author_class,
+              toolIdentity: prior.tool_identity,
+              previousBody: prior.body,
+              previousCreatedAt: prior.time_created,
+              previousUpdatedAt: prior.time_updated,
+              note: `this location already held a note written by '${prior.tool_identity}'; it has been replaced. Read it above and merge if both matter — only one note is kept per location by design.`,
+            },
+          }
+        : {}),
+      surfacing: {
+        editor: surfaced,
+        nameMatched: reach.surfaced,
+        pathMatched: pathKnown,
+        matchedAs: reach.matchedAs,
+        matchedNames: reach.matchedNames,
+        statement,
+        ...(givenPath === null
+          ? { pathNote: "no path given — a NAME-level note, shown for the symbol wherever it appears" }
+          : canonical.matched
+            ? { pathNote: `path resolved to the indexed spelling '${canonical.path}'` }
+            : { pathWarning: `no indexed file matches '${givenPath}', so no editor surface will scope this note to a file; it is stored under that spelling and readable through bb_annotations` }),
+      },
     }, null, 2))
   },
 
   // M28.A1 read door: every row carries its provenance; absence is declared.
+  //
+  // `path` mirrors the write's disambiguation. It used to be write-only, so a
+  // symbol that lives in several files (measured on a real corpus: `force` in 8
+  // files, `toString` in 6) returned every file's notes mixed together with no
+  // way to ask for one file's note — and the editor hover, which also keyed on
+  // symbol_name alone, showed another file's note as if it belonged to the file
+  // under the cursor. A path filter here returns the notes for THAT file's copy
+  // of the symbol together with any NAME-level notes (written with no path),
+  // because a name-level note applies wherever the name appears. Every row
+  // still carries its own `symbol_path`, so a caller that wants the raw set can
+  // always narrow further.
   bb_annotations: async (args, { projectId }) => {
     const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
+    const givenPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
+    // A `path` filter with no symbol asks "what has been said about this file".
+    // The predicate also matched every NAME-LEVEL note in the project, because a
+    // name-level note does apply wherever the name appears — but that made the
+    // narrow question answer mostly-global: measured on cobra, a path read
+    // returned 2 notes for the file and 48 name-level notes from the whole
+    // project, and under the default limit the file's own notes were nearly cut
+    // off. The file's own notes are now the default answer, and the name-level
+    // set is one explicit flag away rather than an unrequested mixture.
+    const includeNameLevel = args.includeNameLevel === true
     const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
-    if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
+    if (!Number.isFinite(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     const limit = Math.floor(limitRaw)
-    const rows = symbol
-      ? (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, symbol, limit) as any[])
-      : (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, limit) as any[])
+    // The same canonicalization the write door applies, so a reader that filters
+    // by `./src/a.ts` finds the note a writer stored as `src/a.ts`.
+    const canonicalPath = givenPath === null ? null : canonicalFilePath(raw, projectId, givenPath).path
+    // A reader asking for a symbol finds notes written under EITHER name form the
+    // editor accepts, and in BOTH directions: the requested name is resolved to
+    // the set of stored names of every symbol it names (its simple name AND its
+    // qualified name), and a note matches when its symbol_name is in that set.
+    // This is exactly the set the hover selects, so the reader and the editor can
+    // never disagree about which notes exist. Asking for the qualified name finds
+    // the simple-name note, and vice versa.
+    const matchingNames = symbol
+      ? (raw.prepare(
+          `SELECT DISTINCT name AS n FROM brain_symbol WHERE project_id = ? AND (name = ? OR qualified_name = ?)`,
+        ).all(projectId, symbol, symbol) as Array<{ n: string }>).map((r) => r.n)
+      : []
+    // No indexed symbol carries the name at all: fall back to a literal match so a
+    // note stored under an arbitrary name is still findable by that name.
+    const namePredicate = symbol
+      ? (matchingNames.length > 0
+        ? `symbol_name IN (${matchingNames.map(() => "?").join(",")})`
+        : "symbol_name = ?")
+      : null
+    const nameParams: unknown[] = symbol
+      ? (matchingNames.length > 0 ? [...matchingNames] : [symbol])
+      : []
+    const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
+    // The ORDER BY carries a deterministic tiebreak: several agents writing in
+    // the same millisecond share a time_updated, and without a second key their
+    // relative order is whatever SQLite happens to produce, so "read back what
+    // I just wrote" is not reproducible.
+    const ORDER = "ORDER BY time_updated DESC, id"
+    // The flag governs the PATH-ONLY shape only. With a symbol as well, a
+    // name-level note about THAT symbol genuinely applies — it is about the symbol
+    // the caller asked for, not a global answer — so the symbol+path shape keeps
+    // including it regardless of the flag. Applying the flag to both shapes
+    // silently changed that already-correct behaviour, and the round-1 suite
+    // caught the regression.
+    const pathOnlyClause = includeNameLevel ? "(symbol_path = ? OR symbol_path IS NULL)" : "symbol_path = ?"
+    const symbolPathClause = "(symbol_path = ? OR symbol_path IS NULL)"
+    let where: string
+    let params: unknown[]
+    if (symbol && canonicalPath !== null) {
+      where = `project_id = ? AND ${namePredicate} AND ${symbolPathClause}`
+      params = [projectId, ...nameParams, canonicalPath]
+    } else if (symbol) {
+      where = `project_id = ? AND ${namePredicate}`
+      params = [projectId, ...nameParams]
+    } else if (canonicalPath !== null) {
+      where = `project_id = ? AND ${pathOnlyClause}`
+      params = [projectId, canonicalPath]
+    } else {
+      where = `project_id = ?`
+      params = [projectId]
+    }
+    const rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE ${where} ${ORDER} LIMIT ?`).all(...params, limit) as any[]
+    // M48/M63 house rule for every bounded read: a short page is never mistaken
+    // for a complete one. This door returned only `count` (the page size), so a
+    // project with 300 notes and the default limit answered a flat `count: 50`
+    // with no way to know 250 more existed. Declared here the same way bb_search
+    // and bb_graph declare it.
+    const totalCountIfKnown = (raw.prepare(`SELECT COUNT(*) AS c FROM brain_annotation WHERE ${where}`).get(...params) as any).c
+    const truncated = totalCountIfKnown > rows.length
     return textResult(JSON.stringify({
       symbol,
+      path: canonicalPath,
+      includeNameLevel: symbol !== null || includeNameLevel,
       annotations: rows,
       count: rows.length,
+      totalCountIfKnown,
+      truncated,
+      truncationReason: truncated ? `limit ${limit} reached; ${totalCountIfKnown} annotations match this query. Raise limit (max 200) or narrow the filter.` : null,
       declaredAbsent: rows.length === 0,
-      absenceNote: rows.length === 0 ? (symbol ? `no annotations stored for '${symbol}' — absence declared, never guessed` : "no annotations stored for this project yet") : null,
+      absenceNote: rows.length === 0
+        ? (symbol && canonicalPath !== null
+          ? `no annotations stored for '${symbol}' in '${canonicalPath}' — absence declared, never guessed`
+          : symbol
+            ? `no annotations stored for '${symbol}' — absence declared, never guessed`
+            : canonicalPath !== null
+              ? `no annotations stored for '${canonicalPath}' — absence declared, never guessed`
+              : "no annotations stored for this project yet")
+        : null,
     }, null, 2))
   },
 

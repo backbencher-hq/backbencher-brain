@@ -1,0 +1,308 @@
+{
+  "instrument": "css-production-graph",
+  "purpose": "What a CSS user actually gets: the analyzer path (ASTEngine.parseFile) and the PRODUCTION path (pool-worker.parseFile, which parallel-indexer actually calls) are not the same function. pool-worker applies filterNoiseRelationships, which for css/scss/sass keeps `contains` ONLY.",
+  "sampling": {
+    "rule": "seeded pick per lane (FNV-1a + seeded Fisher-Yates), sorted, first N",
+    "samplePerLane": 40,
+    "lanes": [
+      "svelte",
+      "element-plus",
+      "vue-core",
+      "grails-core",
+      "go-tools",
+      "graphql-js",
+      "mojo",
+      "scala3",
+      "zig",
+      "cython",
+      "cloogle.org",
+      "cargo",
+      "fsharp"
+    ],
+    "filesMeasured": 148,
+    "fileList": [
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/animations/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/attribute-selector-case-sensitive/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/attribute-selector-unquoted/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/basic/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/clsx-cannot-prune-1/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/clsx-cannot-prune-2/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/comment-with-apostrophe/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/css-prune-edge-cases/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/custom-css-hash/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/general-siblings-combinator-each-nested/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/general-siblings-combinator-each/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/general-siblings-combinator-slots-between/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/global-with-child-combinator/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/keyframes-autoprefixed/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/local-inside-global/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/nested-css-combinator/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-attribute-selector-pipe-equals/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-class-static/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-descendant-global-inner/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-id/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-whitespace-multiple/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute-whitespace/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/omit-scoping-attribute/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/preserve-specificity/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/pseudo-element/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/root/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/siblings-combinator-component/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/siblings-combinator-key/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/siblings-combinator-nested-slots/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/siblings-combinator-star/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/special-characters/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/supports-import/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/supports-namespace/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/undefined-with-scope/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/unicode-identifier/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/unknown-at-rule-with-following-rules/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/unused-selector-ternary/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/css/samples/unused-ts-as-expression/expected.css",
+      "$HOME/fixtures/repositories/svelte/packages/svelte/tests/server-side-rendering/samples/css-injected-options-nested/_expected.css",
+      "$HOME/fixtures/repositories/svelte/playgrounds/sandbox/demo.css",
+      "$HOME/fixtures/repositories/element-plus/docs/.vitepress/theme/style.css",
+      "$HOME/fixtures/repositories/vue-core/packages-private/template-explorer/style.css",
+      "$HOME/fixtures/repositories/grails-core/build-logic/docs-core/src/main/template/css/custom-pdf.css",
+      "$HOME/fixtures/repositories/grails-core/build-logic/docs-core/src/main/template/css/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-data-neo4j/examples/grails3-neo4j-hibernate/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-data-neo4j/examples/grails3-neo4j/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-data-neo4j/examples/grails3-neo4j/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-doc/resources/css/custom.css",
+      "$HOME/fixtures/repositories/grails-core/grails-profiles/web/skeleton/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-profiles/web/skeleton/grails-app/assets/stylesheets/welcome.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/app1/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/demo33/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/geb-gebconfig/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/gsp-layout/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/gsp-sitemesh3/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate5/grails-hibernate/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate5/grails-hibernate/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate5/grails-schema-per-tenant/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate5/issue450/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/app1/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/demo33/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/demo33/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/demo33/grails-app/assets/stylesheets/grails.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/grails-hibernate/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/grails-partitioned-multi-tenancy/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/issue450/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/hibernate7/views-functional-tests/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/issue-11102/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/issue-11102/grails-app/assets/stylesheets/grails.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/issue-11102/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/mongodb/base/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/mongodb/database-per-tenant/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/mongodb/hibernate5/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/namespaces/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/namespaces/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/custom-user-details-context-mapper/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/custom-user-details-context-mapper/grails-app/assets/stylesheets/errors.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/custom-user-details-context-mapper/grails-app/assets/stylesheets/grails.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/custom-user-details-context-mapper/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/functional-test-app/grails-app/assets/stylesheets/main.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ldap/retrieve-db-roles/grails-app/assets/stylesheets/mobile.css",
+      "$HOME/fixtures/repositories/grails-core/grails-test-examples/spring-security/ui/simple/grails-app/assets/stylesheets/application.css",
+      "$HOME/fixtures/repositories/go-tools/cmd/present/static/article.css",
+      "$HOME/fixtures/repositories/go-tools/cmd/present/static/dir.css",
+      "$HOME/fixtures/repositories/go-tools/cmd/present/static/notes.css",
+      "$HOME/fixtures/repositories/go-tools/cmd/present/static/styles.css",
+      "$HOME/fixtures/repositories/go-tools/gopls/internal/server/assets/common.css",
+      "$HOME/fixtures/repositories/go-tools/gopls/internal/server/assets/splitpkg.css",
+      "$HOME/fixtures/repositories/graphql-js/website/css/globals.css",
+      "$HOME/fixtures/repositories/mojo/lib/Mojolicious/resources/public/mojo/bootstrap/bootstrap.css",
+      "$HOME/fixtures/repositories/mojo/lib/Mojolicious/resources/public/mojo/highlight.js/highlight-mojo-dark.css",
+      "$HOME/fixtures/repositories/mojo/lib/Mojolicious/resources/public/mojo/mojo.css",
+      "$HOME/fixtures/repositories/mojo/t/mojolicious/public/assets/foo.ab1234cd5678ef.css",
+      "$HOME/fixtures/repositories/mojo/t/mojolicious/public/assets/foo/bar/yada.css",
+      "$HOME/fixtures/repositories/scala3/docs/_assets/css/dottydoc.css",
+      "$HOME/fixtures/repositories/scala3/docs/_assets/css/frontpage.css",
+      "$HOME/fixtures/repositories/scala3/docs/_assets/css/search.css",
+      "$HOME/fixtures/repositories/scala3/docs/_spec/_includes/numbering.css",
+      "$HOME/fixtures/repositories/scala3/docs/_spec/public/stylesheets/fonts.css",
+      "$HOME/fixtures/repositories/scala3/docs/_spec/public/stylesheets/print.css",
+      "$HOME/fixtures/repositories/scala3/docs/_spec/public/stylesheets/screen-toc.css",
+      "$HOME/fixtures/repositories/scala3/docs/_spec/public/stylesheets/screen.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc-js/common/css/searchbar.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc-js/common/css/social-links.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc-js/common/css/versions-dropdown.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc-js/contributors/css/content-contributors.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc-testcases/docs/_assets/css/bootstrap.min.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/dotty-icons.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/filter-bar.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/color-tokens.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/colors.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/badge.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/button/icon-button.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/button/label-only-button.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/code-snippet.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/diagram.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/dropdown-menu.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/navigation-item.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/pill.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/switch.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/components/table-of-content.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/arrowNavigation.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/banners.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/container.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/content.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/floatingButton.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/footer.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/header.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/leftMenu.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/mobileMenu.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/noResult.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/layout/searchBar.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/spacing.css",
+      "$HOME/fixtures/repositories/scala3/scaladoc/resources/dotty_res/styles/theme/typography.css",
+      "$HOME/fixtures/repositories/zig/lib/build-web/style.css",
+      "$HOME/fixtures/repositories/zig/lib/build-web/time_report.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/framing.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/opera.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/outline.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/pretty.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/print.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/s5-core.css",
+      "$HOME/fixtures/repositories/cython/Doc/s5/ui/default/slides.css",
+      "$HOME/fixtures/repositories/cloogle.org/frontend/common.css",
+      "$HOME/fixtures/repositories/cloogle.org/frontend/frontend.css",
+      "$HOME/fixtures/repositories/cloogle.org/frontend/src/view.css",
+      "$HOME/fixtures/repositories/cargo/doc/book/theme/cargo.css",
+      "$HOME/fixtures/repositories/fsharp/docs/content/fsdocs-theme.css"
+    ]
+  },
+  "resolutionRules": "Copied from parallel-indexer.ts's insert path: nameToSymbol exact, then leaf, then endsWith(:name) / endsWith(.name) / qualifiedName equality and endsWith. Disclosed: the store also carries an unresolved row as source_external/target_external, so a non-resolving edge is not LOST — it is stored and unjoinable. Both numbers are reported.",
+  "filterRules": "Copied verbatim from src/ast/pool-worker.ts:372 extractLeaf and :380-409 filterNoiseRelationships (the css branch keeps `contains` only).",
+  "analyzerOutput": {
+    "symbols": 9338,
+    "relationshipsEmitted": 29003,
+    "withLine": 0,
+    "linePct": "0.0%"
+  },
+  "productionFilter": {
+    "survived": 10559,
+    "droppedByPoolWorker": 18444,
+    "dropPct": "63.6%"
+  },
+  "storedGraph": {
+    "bothEndsResolve": 3173,
+    "pctOfStored": "30.1%",
+    "pctOfEmitted": "10.9%",
+    "sourceResolves": "47.4%",
+    "targetResolves": "64.9%",
+    "storedUnjoinable": 7386,
+    "selfEdges": 47
+  },
+  "complexity": {
+    "symbols": 9338,
+    "withComplexityOneOrAbsent": 9338,
+    "pctVacuous": "100.0%"
+  },
+  "resolvableEdgeTargetShapes": {
+    "dotted": 1280,
+    "other": 1886,
+    "hashed": 7
+  },
+  "topUnresolvableShapes": [
+    [
+      "target: .nav -> a",
+      117
+    ],
+    [
+      "both: a -> .hover",
+      72
+    ],
+    [
+      "both: a -> .focus",
+      63
+    ],
+    [
+      "target: #content -> .colset-2-its",
+      63
+    ],
+    [
+      "both: .where -> .svelte-xyz",
+      60
+    ],
+    [
+      "source: .theme-dark -> .icon-button",
+      57
+    ],
+    [
+      "both: ul -> li",
+      55
+    ],
+    [
+      "target: .buttons -> input",
+      51
+    ],
+    [
+      "target: th -> a",
+      45
+    ],
+    [
+      "target: .pagination -> a",
+      45
+    ],
+    [
+      "target: .buttons -> a",
+      45
+    ],
+    [
+      "source: li -> a",
+      45
+    ],
+    [
+      "both: .colset-2-its -> article",
+      39
+    ],
+    [
+      "target: a -> .hover",
+      36
+    ],
+    [
+      "source: .no-borderradius -> .buttons",
+      36
+    ],
+    [
+      "both: .colset-3-article -> article",
+      36
+    ],
+    [
+      "target: #content -> .colset-3-article",
+      36
+    ],
+    [
+      "source: .ar -> .icon-button",
+      36
+    ],
+    [
+      "both: .not -> .first-child",
+      35
+    ],
+    [
+      "source: .where -> .svelte-xyz",
+      29
+    ],
+    [
+      "both: input -> .focus",
+      29
+    ],
+    [
+      "source: .no-borderradius -> .pagination",
+      27
+    ],
+    [
+      "target: .snippet-popup -> .scastie",
+      26
+    ],
+    [
+      "target: .nav -> li",
+      25
+    ],
+    [
+      "target: .colset-3-footer -> .col-1",
+      24
+    ]
+  ]
+}

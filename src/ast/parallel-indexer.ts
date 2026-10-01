@@ -18,12 +18,13 @@ import { createStoreDiagnostics } from "./store-diagnostics"
 import { encodeVectorBlob, scanJsonVectorInto } from "../brain/semantic/vector-binary"
 import { Bus } from "../bus"
 import { BrainService } from "../brain/service"
-import { readdir, stat } from "fs/promises"
+import { readdir, stat, open } from "fs/promises"
 import { computeAndStoreProjectHealth } from "./project-health"
 import { CrossLanguageIntelligencePersister } from "./cross-language-intelligence-persister"
 import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
+import { resolveImportTargets } from "./import-resolution"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -245,7 +246,15 @@ export const ParallelIndexerConfig = {
   skipPatterns: [
     // === GENERATED & DEPENDENCY DIRECTORIES ===
     /\/node_modules\//,
-    /\/vendor\//,
+    // NOT here either: /\/vendor\// . `vendor` is a build-output name in
+    // Composer, where it holds third-party code — but it is a FIRST-PARTY
+    // source name in Go (a vendored tree the project then edits) and in
+    // TypeScript projects that keep curated first-party code under
+    // src/vendor/. Measured on this corpus: src/vendor/format.ts is invisible
+    // to the index, so the import that reaches it is reported as an unresolved
+    // specifier and the file has no symbols, no complexity and no freshness —
+    // for a file that is compiled into the product. node_modules is already
+    // skipped by name, and that is where a dependency tree actually lives.
     /\/bower_components\//,
     /\/__pycache__\//,
     /\/\.venv\//,
@@ -322,7 +331,21 @@ export const ParallelIndexerConfig = {
     /\/wwwroot\//,
     /\/testassets\//,
     /\/benchmarkapps\//,
-    /\/test\//,
+    // NOT here: /\/test\// . A directory named `test` is where Go, Python,
+    // Node, Java and most JVM projects keep their test SUITE. Skipping it drops
+    // those files before they are parsed, so is_test_file can never be set for
+    // them, and testMapping/testGaps/testQuality then report every production
+    // symbol untested with the "no-test-evidence-edges" note attached — which
+    // reads as "we looked and found none" rather than "we never saw the tests".
+    // Differential measurement on a corpus holding one file of each shape:
+    //
+    //   spec/format.spec.ts    indexed, is_test_file=1
+    //   tests/engine.test.ts   indexed, is_test_file=1
+    //   test/should-be-…       ABSENT from the index
+    //
+    // Same language, same naming infix, only the directory name differs. The
+    // read paths need the files; deciding what counts as a test is
+    // test-classification.ts's job and it already gates on file type.
   ],
 }
 
@@ -517,6 +540,86 @@ export function shouldSkipCli(filePath: string): boolean {
 
 export function hasValidExtension(filePath: string): boolean {
   return detectLanguageFromPath(filePath) !== null
+}
+
+/**
+ * M14 #277 — admit an EXTENSIONLESS file whose `#!` line names a shell.
+ *
+ * `hasValidExtension` above is deliberately PURE: it answers from the path
+ * alone, so the change-detection paths that call it (an explicit file list, a
+ * rename, a cached mtime) never touch the disk. This helper is the one place
+ * that is allowed to, and it is called only from the directory walk.
+ *
+ * The read is bounded twice over — an extension check first, so only
+ * extensionless candidates are opened at all, and 256 bytes, because a `#!`
+ * line is short by definition. Measured cost on the five bash corpora used for
+ * the routing census: 385 admitted out of 2,582 extensionless files examined,
+ * i.e. 2,582 bounded reads of at most 256 bytes to gain 385 files at a 97.7%
+ * clean-parse rate.
+ *
+ * A recognised extension short-circuits before any read, so this can only ever
+ * ADD files the router previously returned null for. It cannot re-route a file
+ * another lane already owns.
+ */
+export async function admitsShellShebang(filePath: string): Promise<boolean> {
+  const base = filePath.replace(/\\/g, "/").slice(filePath.replace(/\\/g, "/").lastIndexOf("/") + 1)
+  if (base.includes(".")) return false
+  if (detectLanguageFromPath(filePath) !== null) return false
+  let head: string
+  try {
+    const fh = await open(filePath, "r")
+    try {
+      const buf = Buffer.alloc(256)
+      const { bytesRead } = await fh.read(buf, 0, 256, 0)
+      head = buf.subarray(0, bytesRead).toString("utf8")
+    } finally {
+      await fh.close()
+    }
+  } catch {
+    return false
+  }
+  return detectLanguageFromPath(filePath, head) !== null
+}
+
+/**
+ * The symbol body as stored in `brain_symbol.source_text`, bounded.
+ *
+ * This column exists so content search can reach a word that appears only
+ * inside a function — measured unreachable for 27% of body-only words on rake
+ * and 38% on ripgrep, because `searchContent` selected only
+ * name/qualified_name/docstring and the body was indexed solely as a
+ * 50-dimensional hash that cannot be queried by word.
+ *
+ * Bounded for two measured reasons:
+ *  - size. A 25 599-character body was measured on rake (a whole class body).
+ *    `searchContentClassic` loads every symbol row for a project, so an
+ *    unbounded body would make content search memory scale with total source
+ *    rather than with the query.
+ *  - diminishing returns past the cap. The median measured body is 28 tokens
+ *    and p90 is 69, so a few hundred lines is generous: a word a developer
+ *    remembers is overwhelmingly likely to be near the top of the symbol.
+ *
+ * Returns null when there is no body, so the column reads as "this symbol has
+ * no body to search" rather than as an empty string that matches everything.
+ */
+const MAX_BODY_SOURCE_CHARS = 4000
+const MAX_BODY_SOURCE_LINES = 200
+
+function boundSourceText(snippet: string | undefined | null, startLine: number, endLine: number): string | null {
+  if (!snippet) return null
+  let text = String(snippet)
+  // The analyzer's snippet is occasionally the whole file when line information
+  // is missing. Trust the line range when we have one.
+  if (endLine > startLine && startLine > 0) {
+    const lines = text.split("\n")
+    if (lines.length > endLine - startLine + 1) {
+      text = lines.slice(0, endLine - startLine + 1).join("\n")
+    }
+  }
+  const lines = text.split("\n")
+  if (lines.length > MAX_BODY_SOURCE_LINES) text = lines.slice(0, MAX_BODY_SOURCE_LINES).join("\n")
+  if (text.length > MAX_BODY_SOURCE_CHARS) text = text.slice(0, MAX_BODY_SOURCE_CHARS)
+  return text.length > 0 ? text : null
 }
 
 /**
@@ -725,8 +828,15 @@ async function discoverAndFilterFiles(
 
           if (entry.isDirectory()) {
             promises.push(walk(fullPath, localIg, depth + 1))
-          } else if (entry.isFile() && hasValidExtension(fullPath)) {
-            promises.push(processFile(fullPath))
+          } else if (entry.isFile()) {
+            // Two gates, cheapest first: the PURE path-only check admits every
+            // recognised extension with no I/O, and only an extensionless file
+            // pays for the bounded shebang read.
+            if (hasValidExtension(fullPath)) {
+              promises.push(processFile(fullPath))
+            } else if (await admitsShellShebang(fullPath)) {
+              promises.push(processFile(fullPath))
+            }
           }
         }
         await Promise.all(promises)
@@ -1072,6 +1182,35 @@ export async function processWithWorkerPool(
 
     const workers = new Set<ChildProcess>()
     const idleWorkers: ChildProcess[] = []
+    /**
+     * Workers that have exited. Membership is what makes "is this worker still
+     * usable?" answerable, which the pool previously never asked.
+     *
+     * THE RACE THIS EXISTS TO CLOSE. A worker can exit before its `exit` event
+     * is delivered AND before a queued message from it is delivered. The two
+     * orderings are not guaranteed relative to each other, so:
+     *
+     *   1. the process exits        -> `exit` handler runs, `idleWorkers`
+     *                                  does not contain the worker yet, so its
+     *                                  splice is a no-op
+     *   2. a queued `engine_fail`   -> the handler runs LATER and does
+     *      message is delivered        `idleWorkers.push(worker)` unconditionally
+     *
+     * The dead worker is now in the idle pool. `scheduleNext` shifts it and calls
+     * `worker.send(...)` on a closed IPC channel, which raises EPIPE. On a
+     * ChildProcess that surfaces as an 'error' event, and nothing is listening,
+     * so Node terminates the whole index process and the in-flight batch is lost.
+     *
+     * Measured on this repository: the index reached 1,361 of 7,354 files and
+     * died; on `--resume` it reached 1,777, then 1,839, then 2,108. The trigger
+     * was always a large JSON file, and always after the pool had been running
+     * long enough for an engine-failure/exit race.
+     *
+     * Two independent guards, because either alone leaves a window: membership
+     * here stops a dead worker entering the pool, and the `send` try/catch below
+     * stops a dead worker that is already in it from taking the process down.
+     */
+    const deadWorkers = new Set<ChildProcess>()
 
     function handleWorkerTimeout(worker: ChildProcess, batchId: number) {
       try {
@@ -1241,8 +1380,17 @@ export async function processWithWorkerPool(
           } else if (msg.type === "engine_fail") {
             process.stderr.write(`[brain] worker ${msg.workerId} engine load FAILED: ${msg.error}\n`)
             clearStartupTimer(worker)
-            // Still add to idle — regex fallback can handle files without engine
-            idleWorkers.push(worker)
+            // Only pool this worker if it is still alive. This branch is exactly
+            // where a dead worker used to enter the pool: the message can be
+            // delivered after the `exit` event that already ran the splice
+            // below, and there the splice found nothing to remove. See
+            // deadWorkers for the full ordering.
+            if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+              log.warn("engine_fail arrived from a worker that had already exited; not pooling it", { workerId: msg.workerId })
+            } else {
+              // Still add to idle — regex fallback can handle files without engine
+              idleWorkers.push(worker)
+            }
             scheduleNext()
           } else if (msg.type === "file_start") {
             const batch = pendingBatches.get(msg.batchId)
@@ -1283,7 +1431,10 @@ export async function processWithWorkerPool(
               clearTimeout(batch.timeout)
               pendingBatches.delete(msg.batchId)
             }
-            idleWorkers.push(worker)
+            // Same guard as engine_fail, same race: a worker that finished a
+            // batch and died before the message was delivered must not be
+            // pooled.
+            if (!deadWorkers.has(worker) && worker.exitCode === null && !worker.killed) idleWorkers.push(worker)
             scheduleNext()
           }
         } catch (err) {
@@ -1294,6 +1445,10 @@ export async function processWithWorkerPool(
       worker.on("exit", (code, signal) => {
         try {
           clearStartupTimer(worker)
+          // Record the exit FIRST. Every path that puts a worker back into the
+          // idle pool checks this, so a message delivered after the exit is
+          // ignored rather than resurrecting a corpse.
+          deadWorkers.add(worker)
           workers.delete(worker)
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
@@ -1332,7 +1487,19 @@ export async function processWithWorkerPool(
         }
       })
 
-      worker.send({ type: "warmup", workerId })
+      // Same class of hazard as the dispatch path: this send can also hit a
+      // channel that closed during startup. It is wrapped for the same reason —
+      // an unhandled 'error' event here kills the process rather than the worker.
+      try {
+        worker.send({ type: "warmup", workerId })
+      } catch (err: any) {
+        log.warn("warmup send failed; treating the worker as dead", { workerId, error: String(err?.message ?? err) })
+        deadWorkers.add(worker)
+        startupFailures++
+        if (telemetry) telemetry.workerStartupFailures = startupFailures
+        try { worker.kill("SIGKILL") } catch {}
+        if (fileQueue.length > 0) scheduleNext()
+      }
     }
 
     function scheduleNext() {
@@ -1383,6 +1550,17 @@ export async function processWithWorkerPool(
           break
         }
         const worker = idleWorkers.shift()!
+        // A worker can die between being pooled and being dispatched. The splice
+        // in the `exit` handler cannot help here: the worker is already out of
+        // `idleWorkers`, so there is nothing left to remove and the send below
+        // would raise EPIPE on a closed IPC channel — which, on a ChildProcess
+        // with no 'error' listener, terminates the process.
+        if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+          log.warn("skipping a dead worker during dispatch", { batchId: ++batchCounter })
+          deadWorkers.delete(worker)
+          scheduleNext()
+          return
+        }
         const batchFiles = fileQueue.splice(0, batchSize)
         const batchId = ++batchCounter
 
@@ -1393,7 +1571,32 @@ export async function processWithWorkerPool(
           attempts: 1,
         })
 
-        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        try {
+          worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        } catch (err: any) {
+          // The send can still fail after the liveness checks — the channel can
+          // close between them. Treat it as the worker death it is: drop the
+          // batch, requeue its files, and carry on. Previously this threw out of
+          // the scheduler and killed the whole index.
+          log.warn("send to worker failed; treating the worker as dead", { batchId, error: String(err?.message ?? err) })
+          deadWorkers.add(worker)
+          const batch = pendingBatches.get(batchId)
+          pendingBatches.delete(batchId)
+          if (batch) clearTimeout(batch.timeout)
+          for (const f of batchFiles) {
+            const retries = (fileRetries.get(f) || 0) + 1
+            if (retries > MAX_FILE_RETRIES) {
+              results.push({ filePath: f, success: false, error: "Max retries exceeded (send failed)" })
+              processed++
+            } else {
+              fileRetries.set(f, retries)
+              fileQueue.unshift(f)
+            }
+          }
+          try { worker.kill("SIGKILL") } catch {}
+          if (workers.size < numWorkers && fileQueue.length > 0) createWorker(Date.now())
+          scheduleNext()
+        }
       }
     }
 
@@ -1578,7 +1781,13 @@ async function drainBackgroundEmbeddings() {
           const embeddings: any = await Instance.provide({
             directory: job.projectPath,
             fn: () => withTimeout(
-              SemanticEngine.embedMany(docs),
+              // The project id matters for the LOCAL model: it selects the
+              // project's vocabulary, so the identifiers inside a snippet
+              // contribute the same words a query naming that symbol will.
+              // Word vectors are position-independent, so both sides sharing a
+              // vocabulary is a pure coverage increase rather than a change of
+              // vector space — see local-embed.ts `wordVector`.
+              SemanticEngine.embedMany(docs, job.projectId),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),
@@ -1747,14 +1956,14 @@ export async function storeResults(
  
    const insertFile = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_file 
-     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated, metadata)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, is_declaration, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, source_text, scope_kind, is_declaration, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -1833,6 +2042,121 @@ export async function storeResults(
       LEFT JOIN brain_file f ON f.id = s.file_id
       WHERE s.project_id = ? AND s.name = ?
       ORDER BY COALESCE(s.is_declaration, 0) ASC, (s.file_id = ?) DESC, (f.language = ?) DESC, s.id
+      LIMIT 1`
+   )
+
+   // #612 follow-up: a `contains` edge names its TARGET by NAME only, and the
+   // graph's most repeated names are exactly the ones containment is built from —
+   // every constructor normalizes to `constructor` (the family contract), and a
+   // member name recurs in every class that has it. Same-file, same-name
+   // candidates therefore abound and the statement above picks between them by
+   // `s.id` alone, which is `${fileId}:${name}:${line}` compared as TEXT — so it
+   // is the LEXICOGRAPHICALLY smallest line that wins, not the intended symbol
+   // (`constructor:22` beats `constructor:227`, but `constructor:227` beats
+   // `constructor:25`).
+   //
+   // The edge already says which one it meant: a contains edge takes the CHILD's
+   // own naming line as `line_number` (#921 — the same field this family's other
+   // relationship types carry), so the intended target is the candidate written
+   // on that line. MEASURED before landing, over the same-file containment edges
+   // of the ten pinned heavy repos (record:
+   // validation/m14/measurements/containment-612.before.json — the control arm; the
+   // arm after this rule is validation/m14/measurements/containment-612.json. Those two
+   // names, not `M14.0.*`: that namespace belongs to gates that call `emitEvidence`,
+   // and a corpus sweep is a measurement, not a gate. They also sit outside
+   // validation/m14/results/ itself, because the evidence harness validates every
+   // JSON in that directory and a non-harness record there fails it. Probe
+   // contains-line-hint-612;
+   // `line pins 1` = the target name repeats AND exactly one same-file candidate
+   // sits on the edge's own line. The table is the CONTROL arm, and a rule cannot
+   // re-resolve a name it never sees, so the after arm's figures are identical on
+   // the nine repos whose symbol selection did not move; only zig's index run did
+   // (report §8.4), so its row and the totals appear once per arm):
+   //
+   //   repo / lang          ambiguous  line pins 1  pins none  old id-tier WRONG
+   //   nlohmann-json cpp        3,199        3,151         48             2,422
+   //   fmt cpp                  1,220        1,211          9               880
+   //   sqlite c                 1,030        1,030          0               608
+   //   ripgrep rust             1,905        1,905          0             1,434
+   //   go-tools go              3,029        3,029          0             2,151
+   //   zig zig                 27,068       27,068          0            20,440
+   //   all ten repos           49,729       49,672         57            37,318
+   //
+   //   after arm only:
+   //   zig zig                 35,444       35,444          0            28,327
+   //   all ten repos           58,105       58,048         57            45,205
+   //
+   // `old id-tier WRONG` is the probe's counterfactual for the LAST tier of the
+   // statement this one replaces: the id is `${projectId}:${path}:${name}:${line}`
+   // compared as TEXT, so among candidates tied on the tiers above it the
+   // lexicographically smallest LINE wins — `constructor:227` beats
+   // `constructor:25`. The count of edges the WHOLE old statement would misresolve
+   // is larger, and it is measured by replay for exactly that reason: 37,532 of the
+   // control arm's 127,521 edges would resolve to a different symbol, 37,611 to a
+   // symbol whose line the edge contradicts, and 437 to a symbol in ANOTHER FILE —
+   // containment is intra-file, so those edges leave the file they describe. The
+   // after arm's own replay reads 45,419 of its 135,922, 45,498, and the SAME 437
+   // and 436 escapes: the escape counts are arm-invariant, which is how the change
+   // is separated from the population it moved (records:
+   // validation/m14/measurements/containment-old-rule-612.before.json and
+   // validation/m14/measurements/containment-old-rule-612.json, probe
+   // contains-old-rule-612, which replays the old ORDER BY against the same
+   // candidate sets, so no pre-#612 build has to be resurrected to compare).
+   // Every one of the 49,672 edges the line pins (58,048 on the after arm) resolves
+   // to the candidate on that line (`ambiguousCurrentChoiceMatchesHint` ==
+   // `ambiguousHintPinsExactlyOne` on all ten repos), and the 57 the line cannot pin
+   // fall through to the remaining keys, so an edge the hint cannot place loses
+   // nothing. 0 of the 127,521 edges carries a target in another file
+   // (`containsTargetInAnotherFile`; 0 of the after arm's 135,922 too — the rule must
+   // not lose a property the old one did not have either) and 0 is left unplaced
+   // although its line pins one candidate (`contains-residual-612`: 0 rows on both
+   // arms — every after row carries `residual: 0`, and the control record keeps the
+   // same answer as unparsed stdout). The field means what this rule reads it to
+   // mean, verified rather than assumed: 77,793 of the after arm's 77,817 edges
+   // whose target name is unique — the case where the old choice is provably right —
+   // store the target on the edge's own line (99.97%; the control arm reads the same
+   // 24 exceptions as 77,768 of 77,792. Both pairs are the recorded gauges
+   // `containsEdgesTotal` minus `ambiguousTargetName`, and `edgeLineEqualsTargetLine`
+   // minus `ambiguousAndEdgeLineEqualsTargetLine`).
+   //
+   // "On the line" is exact equality of `line_start`, and those 24 rows are a SPAN
+   // shape, not a wrong symbol: every one of them was listed and checked against the
+   // source text (record: validation/m14/measurements/containment-inner-line-samples-612.json,
+   // probe contains-inner-line-samples-612). In all 24 the edge's line IS a line the
+   // name is written on, and the stored span simply OPENS EARLIER — either on the
+   // line directly above (17 rows; nlohmann's `lexer::get_decimal_point`, span
+   // 171-177 with the edge on 172, line 171 being `JSON_HEDLEY_PURE`; `basic_json::create`,
+   // span 410-424, edge 411, line 410 being `JSON_HEDLEY_RETURNS_NON_NULL`) or further
+   // up the file (7 rows; fmt's `write2digits`, span 1193-1218 with the edge on 1210,
+   // a `typedef struct sha1nfo {…} sha1nfo;` whose edge names the trailing
+   // declarator, and the `NLOHMANN_JSON_NAMESPACE_END` macro, whose span is a whole
+   // namespace body). The target name is unique in the file by construction — that
+   // is what selects these rows — so the same-file preference resolves them
+   // correctly; only the equality test is strict, not the resolution.
+   //
+   // The key ORDER is part of the rule, and the first cut of it got this wrong:
+   // `COALESCE(s.is_declaration, 0) ASC` — the definitions-over-declarations
+   // preference added earlier in #612 — ran FIRST and outranked the line, so an
+   // edge whose child is a PROTOTYPE resolved to the same-named DEFINITION below
+   // it. The shape exists in this corpus by name: nlohmann-json's
+   // tests/src/unit-class_lexer.cpp stores `scan_string` twice — the one-line
+   // `void scan_string(...)` declaration at 18 (is_declaration = 1) and its
+   // definition at 19-23 — and carries a `contains` edge from `anonymous@15` to
+   // each, on lines 18 and 19. With the declaration preference first, the line-18
+   // edge falls to the definition and the two edges collapse onto one symbol; with
+   // the order below, each resolves to the symbol its own line names. The two
+   // preferences do not conflict when the order is right, because
+   // they answer different questions: declaration-vs-definition distinguishes two
+   // CANDIDATES for one entity across files, while the line identifies WHICH
+   // declaration the edge means — and a declaration and its definition are two
+   // distinct stored symbols that the edge's own `line_number` already tells
+   // apart. So proximity/identity first, and the declaration preference kept for
+   // the case it was added for (the fallback where no candidate sits on the line).
+   const resolveContainsTargetStmt = rawDb.prepare(
+     `SELECT s.id, s.file_id, f.language FROM brain_symbol s
+      LEFT JOIN brain_file f ON f.id = s.file_id
+      WHERE s.project_id = ? AND s.name = ?
+      ORDER BY (s.file_id = ?) DESC, (s.line_start = ?) DESC, COALESCE(s.is_declaration, 0) ASC, (f.language = ?) DESC, s.id
       LIMIT 1`
    )
 
@@ -1964,6 +2288,15 @@ export async function storeResults(
            fileLayer,
            now,
            now,
+           // The analyzer's FileMetadata, which every analyzer returns and this
+           // table had nowhere to store. The framework_type column above is the
+           // only field ever promoted out of it, so patterns, detectedFrameworks,
+           // architecturalInsights, complexity, cyclomaticComplexity and
+           // codeQuality were computed for all 29 languages and discarded on the
+           // way in. Serialized whole rather than split into columns, matching
+           // brain_relationship.metadata, so a field an analyzer adds later needs
+           // no migration. See ensureFileMetadataColumn in schema-ddl.ts.
+           result.metadata ? JSON.stringify(result.metadata) : null,
          )
  
          // Hoisted per-file index structures — used by both symbol storage and
@@ -1982,7 +2315,6 @@ export async function storeResults(
            "this", "super", "self", "Self", "me", "My",
            "root", "program", "source_file", "module_declaration",
            "package_manifest", "GlobalScope", "SCSS_FILE_SCOPE",
-           "unknown",
          ])
          const isFallbackResult = !!result.fallback
          if (isFallbackResult) {
@@ -1996,6 +2328,20 @@ export async function storeResults(
            SYMBOL_NAME_DENYLIST.add("undefined")
            SYMBOL_NAME_DENYLIST.add("NaN")
            SYMBOL_NAME_DENYLIST.add("Infinity")
+           // `unknown` moved here from the universal set, and it is the one entry
+           // above that was not noise "everywhere" — it is noise from a REGEX
+           // FALLBACK, which is exactly what this block is for. The rationale
+           // three lines up already says it: language-literal words are legitimate
+           // identifiers in verified analyzer output, and only the fallback path
+           // picks them up as noise. `unknown` is a real method name — Ruby's
+           // Logger has five standard severities and `unknown` is one of them, so
+           // `ActiveSupport::Logger#unknown` (activesupport/lib/
+           // active_support/colorize_logging.rb:46) was parsed, stored, and then
+           // dropped here, and never reached the graph. Same for `Status.unknown`
+           // in protobuf/graphql lanes and an `unknown` field in a schema. It also
+           // matches the JS-family treatment right below: `undefined` is already
+           // gated rather than universal for precisely this reason.
+           SYMBOL_NAME_DENYLIST.add("unknown")
          }
          if (JS_FAMILY.has(fileLang)) {
            SYMBOL_NAME_DENYLIST.add("global")
@@ -2018,7 +2364,7 @@ export async function storeResults(
          // `kind` was added for #879: the OWNER fallback below needs to know
          // whether an enclosing span is a container. The #855 edge path reads
          // only id/start/end, so the extra field changes nothing for it.
-         const storeableSpans: { id: string; start: number; end: number; kind: string }[] = []
+         const storeableSpans: { id: string; name: string; start: number; end: number; kind: string }[] = []
          // Hoisted out of the relationship loop: it closes over storeableSpans
          // only, so defining it per relationship would allocate a closure per
          // edge for no reason.
@@ -2028,6 +2374,30 @@ export async function storeResults(
            // begins at or before the line returns the INNERMOST holder first.
            for (let i = storeableSpans.length - 1; i >= 0; i--) {
              const sp = storeableSpans[i]
+             if (sp.start > line) continue
+             if (sp.end >= line) return sp.id
+           }
+           return null
+         }
+         // #612 follow-up (the SOURCE half of the containment target rule): the
+         // innermost STOREABLE span carrying this NAME whose extent covers
+         // `line`. A `contains` edge names its container by name only, and the
+         // in-memory lookups below are FIRST-WINS — so a name that repeats in the
+         // file (cpp's synthetic `anonymous` namespaces, rust's `impl Foo` beside
+         // `struct Foo`, zig's `Group`) resolves to the first candidate rather
+         // than to the one the edge belongs to. The child's own naming line is a
+         // point INSIDE the intended container, so among same-named candidates
+         // the innermost one whose extent covers that line is the only reading the
+         // edge supports. Scanned backwards over storeableSpans (sorted by start
+         // ascending), so the first hit is the innermost. Returns null when NO
+         // candidate of that name covers the line — the edge's own evidence cannot
+         // place it, and the caller keeps the existing choice rather than inventing
+         // one.
+         const enclosingStoreableIdByName = (name: string, line: number | null): string | null => {
+           if (!name || !line || line < 1) return null
+           for (let i = storeableSpans.length - 1; i >= 0; i--) {
+             const sp = storeableSpans[i]
+             if (sp.name !== name) continue
              if (sp.start > line) continue
              if (sp.end >= line) return sp.id
            }
@@ -2142,6 +2512,9 @@ export async function storeResults(
              if (!storeableName(s.name, sStart)) continue
              storeableSpans.push({
                id: `${fileId}:${s.name}:${sStart}`,
+               // #612 source half reads this: the name lookup's FIRST-WINS order
+               // is what the containment rule replaces for same-name candidates.
+               name: String(s.name || ""),
                start: sStart,
                end: Math.max(sEnd, sStart),
                kind: String(s.type || s.kind || "unknown"),
@@ -2215,11 +2588,61 @@ export async function storeResults(
              const _ownerName = symbol.ownerName || symbol.scope
              if (_ownerName) {
                const parentSymbol = nameToSymbol.get(_ownerName)
+               const ownSymbolId = `${fileId}:${symbol.name}:${symbolStartLine}`
+               // #612 (the structural twin of the containment source rule): the
+               // lookup above is FIRST-WINS, so a file that repeats a container
+               // name assigns this symbol's owner to whichever declaration the
+               // analyzer emitted first — and the store then emits its OWN
+               // `contains` edge from that owner, which asserts ENCLOSURE. An
+               // owner whose extent does not cover the child's own naming line
+               // therefore contradicts the edge it just emitted. Prefer the
+               // innermost same-name candidate whose extent COVERS that line; a
+               // name whose candidates all fail the enclosure test keeps the
+               // historical choice rather than inventing one. MEASURED before
+               // landing over the ten pinned heavy repos — owned symbols with a
+               // line / owner name not unique in its file / owner does NOT enclose
+               // its child / of those, a covering candidate of the same name
+               // exists (records:
+               // validation/m14/measurements/containment-owner-span-612.before.json and
+               // validation/m14/measurements/containment-owner-span-612.json, probe
+               // contains-owner-span-612):
+               //   nlohmann-json cpp  5,621 / 2,024 /  1,661 / 1,156
+               //   fmt cpp            1,968 /   840 /    535 /   532
+               //   jq c                 521 /   228 /      0 /     0
+               //   sqlite c           4,946 /   142 /     11 /    11
+               //   ripgrep rust       3,773 / 2,888 /  2,135 / 2,135
+               //   cargo rust         6,914 / 5,021 /  3,064 / 3,064
+               //   go-tools go        9,354 / 1,068 /  3,290 /    51
+               //   terraform go      20,312 / 1,444 / 10,450 /    10
+               //   zls zig            1,706 /   196 /     24 /    24
+               //   zig zig           71,957 / 12,421 / 8,097 / 7,153
+               // The go rows are why the test is ENCLOSURE, not the name alone:
+               // Go's owner contract is a receiver TYPE, and the language allows
+               // that type in another file, so go-tools' 3,290 contradicted owners
+               // (terraform's 10,450) are not name collisions at all — only 51
+               // (resp. 10) have a covering same-name candidate to prefer, and the
+               // rest keep the analyzer's owner rather than a nearer name that is
+               // not it. Where the current owner DOES enclose but a deeper
+               // same-name candidate also does, the innermost still wins — the
+               // reading the edge-source rule uses (nlohmann-json: 1,170 rows
+               // change owner, 1,156 of them contradicted).
+               // Owner spellings reach here qualified in several languages
+               // (`ns.Class`, cpp's `Class::member` scope, rust's impl-target
+               // path). Try the exact spelling first — a same-file symbol really
+               // can be named with dots — then its leaf, the same order the
+               // edge-source rule uses.
+               const ownerLeaf = String(_ownerName).split(/[:.]/).filter(Boolean).pop() ?? String(_ownerName)
+               const coveringOwnerId =
+                 enclosingStoreableIdByName(String(_ownerName), symbolStartLine) ??
+                 (ownerLeaf !== String(_ownerName) ? enclosingStoreableIdByName(ownerLeaf, symbolStartLine) : null)
+               if (coveringOwnerId && coveringOwnerId !== ownSymbolId && String(_ownerName) !== String(symbol.name)) {
+                 ownerSymbolId = coveringOwnerId
+               }
                // M51.A1: the old unconditional `${ownerName}:0` module fallback
                // wrote ids that can never resolve (no stored row can have line
                // 0 with an owner), and a same-named parent would self-own. If
                // the named parent is not a storeable row, leave the owner NULL.
-               if (parentSymbol && parentSymbol.name !== symbol.name) {
+               if (!ownerSymbolId && parentSymbol && parentSymbol.name !== symbol.name) {
                  const parentStartLine = parentSymbol.startLine ?? parentSymbol.range?.startLine ?? 0
                  if (storeableName(parentSymbol.name, parentStartLine)) {
                    ownerSymbolId = `${fileId}:${parentSymbol.name}:${parentStartLine}`
@@ -2377,6 +2800,13 @@ export async function storeResults(
                // docstring-based evidence matching in bb_doc (feature/api
                // lexical SQL) and degrading symbol-mode doc facts.
                symbol.docstring || null,
+               // The symbol's own source text, bounded. Content search selects
+               // name/qualified_name/docstring, so without this a word that
+               // appears ONLY inside a function was unreachable by every
+               // retrieval path — 27% of body-only words on rake, 38% on
+               // ripgrep. The body was in the database only as a
+               // 50-dimensional hash, which cannot be queried by word.
+               boundSourceText(symbol.snippet, symbolStartLine, symbolEndLine),
                // #837: the DDL column (scope_kind) and the typed schema
                // existed for years while this INSERT silently omitted them —
                // every scope value every analyzer emitted died at the store
@@ -2665,7 +3095,38 @@ export async function storeResults(
              }
              const sourceLeaf = extractLeaf(sourceName)
              const targetLeaf = extractLeaf(targetName)
- 
+
+             // #612 follow-up (the SOURCE half of the containment rule): a
+             // `contains` edge carries the CHILD's naming line — a point INSIDE
+             // the container it belongs to — so for a container name that repeats
+             // in this file (cpp's synthetic `anonymous` namespaces, rust's
+             // `impl Foo` beside `struct Foo`, zig's `Group`) the edge itself says
+             // which candidate it means, while the name lookups below are
+             // FIRST-WINS and land on whichever declaration the analyzer happened
+             // to emit first. Pre-landing measurement, nlohmann-json (cpp), on the
+             // 5,625 same-file containment edges: source name not unique in its
+             // file 2,027; of those, exactly one candidate's extent covers the
+             // child's line 2,004 (98.9%); stored source for which the enclosure
+             // the edge asserts is FALSE (its span does not cover the child's
+             // line) 1,161 of the ambiguous ones — the shape in which the current
+             // choice cannot be right. A `contains` edge asserts ENCLOSURE, the
+             // same reasoning that removed the degenerate-container owner clause
+             // in #612. Where no candidate of that name covers the line, nothing
+             // is invented: the existing choice stands (residual 2 of the 2,027
+             // here, plus the unique-name cases no name rule can place). The two
+             // corpus arms of this rule — the same gauges over all ten repos,
+             // before and after — are
+             // validation/m14/measurements/containment-612.before.json and
+             // validation/m14/measurements/containment-612.json (probes
+             // contains-source-hint-612 and contains-source-span-delta-612).
+             const relLine =
+               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+             const sourceIdFromSpan =
+               relType === "contains" && relLine !== null
+                 ? (enclosingStoreableIdByName(String(sourceLeaf), relLine) ??
+                    enclosingStoreableIdByName(String(sourceName), relLine))
+                 : null
+
              // Find source symbol: O(1) name match first, then ends-with/qualified
              // fallbacks over a pre-built list (avoids Array.find closure per rel).
              let sourceSymbol: any = undefined
@@ -2684,7 +3145,12 @@ export async function storeResults(
  
              let sourceId: string | null
              let sourceExternal: string | null = null
-             if (sourceSymbol) {
+             if (sourceIdFromSpan) {
+               // #612 source half: the edge's own line placed its container, and
+               // that placement is the one the enclosure asserts. `sourceExternal`
+               // stays null — the source IS resolved.
+               sourceId = sourceIdFromSpan
+             } else if (sourceSymbol) {
                // Defensive export filter: reject exports of non-public or package-decl symbols
                if (relType === "exports") {
                  const vis = sourceSymbol.visibility || sourceSymbol.modifiers
@@ -2722,8 +3188,21 @@ export async function storeResults(
                sourceExternal = relativePath
              }
 
-             // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later
-             const resolvedRow = resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any
+             // (the analyzer's own line — `relLine` — is declared far above: it
+             // feeds the #612 source half, the #612 containment target rule
+             // immediately below, and the source-attribution fallback further
+             // down. NULL when the analyzer could not derive one — never a
+             // fabricated 0.)
+             // RESOLVE target_symbol_id at insert time — avoid expensive global UPDATE later.
+             // #612 follow-up: a `contains` edge is resolved with the line it
+             // carries (see resolveContainsTargetStmt), which is the only anchor
+             // that distinguishes the many same-named members a C-family file
+             // declares. Every other relationship type keeps line_number as a
+             // SITE (where the call/read happened) and must NOT be resolved by it.
+             const resolvedRow =
+               relType === "contains" && relLine !== null
+                 ? (resolveContainsTargetStmt.get(projectId, targetLeaf, fileId, relLine, fileLang) as any)
+                 : (resolveTargetStmt.get(projectId, targetLeaf, fileId, fileLang) as any)
              const targetId = resolvedRow?.id || null
  
              // is_cross_file must be honest: 1 only when the resolved target
@@ -2779,14 +3258,37 @@ export async function storeResults(
                const m = /:(\d+)$/.exec(cand)
                if (!m) return false
                const line = Number(m[1])
-               const leaf = cand.replace(/^.*:([^:]+):\d+$/, "$1")
-               return storeableName(leaf, line)
+               // The symbol's NAME, recovered by removing the fileId prefix and
+               // the trailing `:<line>` — NOT the last colon-segment.
+               //
+               // The distinction is load-bearing and was a real defect. A symbol
+               // id is `${fileId}:${name}:${line}`, and a NAME MAY CONTAIN A
+               // COLON: the CSS selector `:root` has id `…:a.css::root:1`. The
+               // old `/^.*:([^:]+):\d+$/` took the last colon-segment, so it read
+               // that name as `root` — and `"root"` is in SYMBOL_NAME_DENYLIST
+               // ("root-level nodes that are always noise"). The check therefore
+               // concluded the `:root` row would not be stored, and UN-BOUND
+               // every `contains :root -> --x` edge to an external reference.
+               // The row IS stored, because the insert-time guard tests the FULL
+               // name (`:root`), which is not on the list.
+               //
+               // So this was a third implementation of the storeable test that
+               // was not an exact mirror of the insert-time guards — the exact
+               // failure M51.A1/A3 documents ("the storeable-row replica used by
+               // BOTH the owner-assignment path and the relationship-source path
+               // must stay an exact mirror"). It hit CSS hardest because `:root`
+               // is the single most common custom-property scope in the language,
+               // and it was invisible because the lane had no store-scale check.
+               //
+               // Any language with a symbol whose leaf is a denylisted scope word
+               // was affected the same way — a class named `Root` in Java or
+               // C#, a `global` in JavaScript.
+               const name = cand.slice(fileId.length + 1, cand.length - m[0].length)
+               return storeableName(name, line)
              }
-             // M59/#855: the analyzer's own call-site line, hoisted so the
-             // source-attribution fallback below can key on it. NULL when the
-             // analyzer could not derive one — never a fabricated 0.
-             const relLine =
-               typeof rel.line_number === "number" && rel.line_number > 0 ? rel.line_number : null
+             // (the analyzer's own line is hoisted far above — see the `relLine`
+             // declaration next to the target resolution; it feeds both the
+             // #612 containment target rule and the M59/#855 source fallback)
              // M59/#855: an edge whose analyzer source is a synthetic scope this
              // file will not store (anonymous_*/block_N/lambda_N/object_N) used to
              // be stored with a NULL source id — FK-legal, but UNATTRIBUTABLE, so
@@ -2993,6 +3495,17 @@ export async function storeResults(
              AND INSTR(brain_relationship.target_external, '.') > 0
          `)
  
+         // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+         // See the standalone resolver for the full note. SAME shared
+         // implementation as site 2 — the decision logic is unit tested in
+         // src/ast/import-resolution.ts, so this is a call rather than a third
+         // copy of the rules. Before the cross-language pass on purpose, for
+         // the reason spelled out there.
+         {
+           const imp4 = resolveImportTargets(rawDb as any, projectId)
+           if (imp4.resolved > 0) log.debug("import-target resolution (M60 JD2, inline)", { scanned: imp4.scanned, resolved: imp4.resolved })
+         }
+
          // Cross-language normalization (polyglot fixture finding, M26 addendum):
          // the strategies above recompute is_cross_file but left is_cross_language
          // and bridge_mechanism stale for rows they resolve — so a TS->JS edge
@@ -3146,6 +3659,32 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
 
     const resolved = (r1?.changes || 0) + (r2?.changes || 0)
     log.debug("relationship resolution completed", { resolved, unresolved })
+
+    // Strategy 4 (M60, review JD2): the `<module>:<item>` import form.
+    //
+    // Strategies 1-3 match a bare `name`, a `qualified_name` (`Owner.member`),
+    // or — for a dotted target — everything after the first `.`. None of them
+    // can match `./util.js:helper`, which is what every analyzer emitting the
+    // `module:item` convention actually writes: javascript, typescript,
+    // python, dart, and vue/svelte by delegation. Measured end to end on a
+    // 2-file project: 4 of 4 `imports` edges UNRESOLVED while `exports` edges
+    // (a bare name) and cross-file `calls`/`instantiates` all resolved — the
+    // `path:item` FORM is what failed, not the targets.
+    //
+    // The decision logic lives in src/ast/import-resolution.ts and is unit
+    // tested there (30 assertions, including every shape it must refuse), so
+    // this is a call, not a fourth copy. It runs BEFORE the cross-language
+    // normalization below on purpose: an edge resolved after that pass would
+    // store cross_file=1 with cross_lang=0 and no bridge, which is the exact
+    // silent-invisibility bug that pass exists to prevent.
+    {
+      const imp = resolveImportTargets(rawDb as any, projectId)
+      if (imp.resolved > 0) {
+        log.debug("import-target resolution (M60 JD2)", {
+          scanned: imp.scanned, resolved: imp.resolved, remaining: imp.byReason,
+        })
+      }
+    }
 
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default

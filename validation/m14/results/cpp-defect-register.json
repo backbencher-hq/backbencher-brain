@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T21:58:34.278Z",
+  "corpusRoot": "$HOME/ishaq/fixtures/repositories",
+  "corpora": [
+    "fmt",
+    "nlohmann-json",
+    "catch2",
+    "abseil-cpp",
+    "spdlog",
+    "zig"
+  ],
+  "assertsOn": "analyzer OUTPUT (published symbols and relationships), not tree shapes",
+  "classes": {
+    "D1": {
+      "id": "D1",
+      "title": "a published name is spelled with a C++ keyword",
+      "contract": "C++ has no identifier spelled with a keyword (ISO 14882 [lex.name]); such a name resolves to nothing for any consumer, at any extraction point.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D2": {
+      "id": "D2",
+      "title": "an extends edge names a base equal to its source",
+      "contract": "A class cannot inherit from itself, and the namespace qualifier is the whole information content of a C++ inheritance edge.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D3": {
+      "id": "D3",
+      "title": "more than one contains/references row for one (source, target) pair in one file",
+      "contract": "One edge per pair for the read/include shapes, where many sites express ONE fact. `calls` is deliberately EXCLUDED: two call sites are two facts, each with its own M59.A7 line_number.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D4": {
+      "id": "D4",
+      "title": "a declaration the grammar error-recovered is published under a name that is not the declaration's own",
+      "contract": "A declared name is not a type. When the recovery displaced the declarator, the name is in the adjacent ERROR (recoveredDeclaredName) or there is no readable name and nothing is published.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D5": {
+      "id": "D5",
+      "title": "a symbol is published with a FUNCTION as its owner, and is not a local class/struct/enum",
+      "contract": "C++ has no nested function definition, so a `function_definition` inside a body is a local direct-initialization — a variable, not a function.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D6": {
+      "id": "D6",
+      "title": "the analyzer's own source uses a regex",
+      "contract": "The regex census is the honesty artifact; the doc's claim of zero must be true, not asserted.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "D7": {
+      "id": "D7",
+      "title": "a specifier's name arrives as a qualified_identifier, so the class publishes as `anonymous`",
+      "contract": "A class/struct may have a qualified name (an explicit specialization) and its LEAF is the name; an enum has NO qualified name in C++, so one in that slot is a C++23 [[=attr]] the recovery displaced, and the declared name is the identifier beside it. Publishing `anonymous` also collides with the analyzer's own no-name sentinel.",
+      "gated": true,
+      "n": 0,
+      "byName": {},
+      "sites": []
+    },
+    "R1": {
+      "id": "R1",
+      "title": "REPORTED, not gated: a class/struct node that ends before the source's own brace balance",
+      "contract": "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
+      "gated": false,
+      "n": 715,
+      "byName": {
+        "struct_specifier": 488,
+        "class_specifier": 226,
+        "union_specifier": 1
+      },
+      "sites": [
+        {
+          "repo": "fmt",
+          "file": "fmt/src/os.cc",
+          "line": 262,
+          "name": "stat",
+          "grammarEndsAt": 262,
+          "sourceEndsAt": 8467,
+          "linesOutside": 1217
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 126,
+          "name": "GTEST_API_",
+          "grammarEndsAt": 126,
+          "sourceEndsAt": 7507,
+          "linesOutside": 1431
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 172,
+          "name": "GTEST_API_",
+          "grammarEndsAt": 172,
+          "sourceEndsAt": 8282,
+          "linesOutside": 421
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 771,
+          "name": "GTEST_API_",
+          "grammarEndsAt": 771,
+          "sourceEndsAt": 31767,
+          "linesOutside": 1246
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 900,
+          "name": "GTEST_API_",
+          "grammarEndsAt": 900,
+          "sourceEndsAt": 53779,
+          "linesOutside": 18391
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 1196,
+          "name": "ReplaceDeathTestFactory",
+          "grammarEndsAt": 1196,
+          "sourceEndsAt": 48368,
+          "linesOutside": 914
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 1234,
+          "name": "::testing::UnitTest",
+          "grammarEndsAt": 1234,
+          "sourceEndsAt": 49105,
+          "linesOutside": 184
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 5580,
+          "name": "tm",
+          "grammarEndsAt": 5580,
+          "sourceEndsAt": 208822,
+          "linesOutside": 624
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 5586,
+          "name": "tm",
+          "grammarEndsAt": 5586,
+          "sourceEndsAt": 210215,
+          "linesOutside": 1744
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 5602,
+          "name": "tm",
+          "grammarEndsAt": 5602,
+          "sourceEndsAt": 210215,
+          "linesOutside": 1188
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 6051,
+          "name": "tm",
+          "grammarEndsAt": 6051,
+          "sourceEndsAt": 230038,
+          "linesOutside": 3814
+        },
+        {
+          "repo": "fmt",
+          "file": "fmt/test/gtest/gmock-gtest-all.cc",
+          "line": 9563,
+          "name": "inheritance",
+          "grammarEndsAt": 9563,
+          "sourceEndsAt": 358008,
+          "linesOutside": 13
+        }
+      ]
+    }
+  },
+  "keywordSetSize": 123,
+  "totals": {
+    "files": 1722,
+    "symbols": 45689,
+    "relationships": 238172,
+    "wallMs": 118443,
+    "msPerFile": 68.8
+  },
+  "verdict": {
+    "pass": true,
+    "perClass": {
+      "D1": 0,
+      "D2": 0,
+      "D3": 0,
+      "D4": 0,
+      "D5": 0,
+      "D6": 0,
+      "D7": 0,
+      "R1": 715
+    },
+    "reportedNotGated": {
+      "R1": 715
+    }
+  }
+}

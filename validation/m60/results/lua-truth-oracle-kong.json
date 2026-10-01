@@ -21,17 +21,64 @@
     }
   ],
   "totals": {
-    "truthEdges": 60995,
+    "truthEdges": 60998,
     "observedEdges": 58616,
-    "missing": 2380,
+    "missing": 2383,
     "missingFromAnalyzer": [],
     "exportsDirectPath": {
       "note": "exports compared through parseWithAnalyzer, because the pipeline discards the field (LUA-14). Measured on the same tree-derived truth as every other label.",
       "filesProbed": 150,
-      "truth": 317,
-      "hit": 317,
+      "truth": 318,
+      "hit": 318,
       "missed": 0,
       "spurious": 0,
+      "recall": 1,
+      "precision": 1,
+      "missedSample": [],
+      "spuriousSample": []
+    },
+    "metadataDirectPath": {
+      "note": "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+      "coroutines": {
+        "files": 150,
+        "checks": 300
+      },
+      "frameworkClaimWithoutMemberAccess": {
+        "files": 150,
+        "violations": 0
+      },
+      "spurious": 0,
+      "missedSample": [],
+      "spuriousSample": [],
+      "architecturalScore": {
+        "files": 150,
+        "distinctValues": 6,
+        "values": [
+          70,
+          75,
+          80,
+          85,
+          90,
+          95
+        ],
+        "mean": 85.9,
+        "note": "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine."
+      }
+    },
+    "surfaceDisclosures": {
+      "note": "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+      "filesWithDisclosures": 150,
+      "totalDisclosures": 4
+    },
+    "relationshipsDirectPath": {
+      "note": "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+      "filesProbed": 150,
+      "truth": 8347,
+      "hit": 8347,
+      "missed": 0,
+      "spurious": 0,
+      "loopCoincidenceExempted": 0,
+      "loopCoincidenceSample": [],
       "recall": 1,
       "precision": 1,
       "missedSample": [],
@@ -53,11 +100,11 @@
       ]
     },
     "missingByPipelineDiscard": {
-      "total": 1577,
+      "total": 1580,
       "byLabel": [
         {
           "shape": "return <identifier> at file scope",
-          "n": 1577
+          "n": 1580
         }
       ],
       "labelsAbsentFromPipeline": [
@@ -118,9 +165,9 @@
       "recall": 1
     },
     "exports": {
-      "truth": 1579,
+      "truth": 1582,
       "observed": 0,
-      "missing": 1579,
+      "missing": 1582,
       "unexplained": 0,
       "precision": 1,
       "recall": 0

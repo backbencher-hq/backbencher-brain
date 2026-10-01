@@ -44,12 +44,12 @@
     {
       "name": "F. the fixture set is present and non-empty",
       "passed": true,
-      "detail": "8 fixtures"
+      "detail": "11 fixtures"
     },
     {
       "name": "G. one symbol per tree element and per tree attribute, per file",
       "passed": true,
-      "detail": "12 sources, 39 elements and 40 attributes, all exact"
+      "detail": "15 sources, 52 elements and 63 attributes, all exact"
     }
   ],
   "passed": true,
@@ -119,22 +119,22 @@
     "PublicID"
   ],
   "observed": {
-    "Name": 120922,
-    "CharData": 81479,
-    "element": 46680,
-    "STag": 36248,
-    "ETag": 36224,
-    "content": 36029,
-    "Attribute": 35558,
-    "AttValue": 35558,
-    "EmptyElemTag": 10456,
-    "Comment": 1998,
-    "document": 1201,
-    "prolog": 1162,
-    "XMLDecl": 1149,
-    "VersionNum": 1149,
+    "Name": 120961,
+    "CharData": 81492,
+    "element": 46693,
+    "STag": 36251,
+    "ETag": 36227,
+    "content": 36032,
+    "Attribute": 35581,
+    "AttValue": 35581,
+    "EmptyElemTag": 10466,
+    "Comment": 2001,
+    "document": 1204,
+    "prolog": 1165,
+    "XMLDecl": 1152,
+    "VersionNum": 1152,
     "ERROR": 559,
-    "EncName": 541,
+    "EncName": 544,
     "TokenizedType": 295,
     "EntityRef": 133,
     "AttDef": 48,
@@ -205,26 +205,26 @@
     "CharData": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:ImplicitXmlPrefix.xsd"
     ],
     "EmptyElemTag": [
       "fixture:Catalog.xml",
       "fixture:ConditionalSection.xml",
       "fixture:Doctype.xml",
-      "fixture:Schema.xsd"
+      "fixture:ExternalReference.xsd"
     ],
     "Attribute": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:ImplicitXmlPrefix.xsd"
     ],
     "AttValue": [
       "fixture:Catalog.xml",
       "fixture:Doctype.xml",
-      "fixture:Negative.xml",
-      "fixture:ProcessingInstruction.xml"
+      "fixture:ExternalReference.xsd",
+      "fixture:ImplicitXmlPrefix.xsd"
     ],
     "STag": [
       "fixture:Catalog.xml",
@@ -257,10 +257,10 @@
       "fixture:DtdDeclarations.xml"
     ],
     "EncName": [
-      "corpus:cxf",
       "fixture:Catalog.xml",
-      "fixture:ProcessingInstruction.xml",
-      "probe:PI_SHAPE_PROBE"
+      "fixture:ExternalReference.xsd",
+      "fixture:ImplicitXmlPrefix.xsd",
+      "fixture:IncludedReference.xsd"
     ],
     "VersionNum": [
       "fixture:Catalog.xml",
@@ -368,6 +368,12 @@
       "fixture:DtdDeclarations.xml",
       "probe:DTD_SHAPE_PROBE"
     ],
+    "Comment": [
+      "fixture:ExternalReference.xsd",
+      "fixture:ImplicitXmlPrefix.xsd",
+      "fixture:IncludedReference.xsd",
+      "probe:CDATA_SHAPE_PROBE"
+    ],
     "ERROR": [
       "corpus:cxf",
       "fixture:Negative.xml"
@@ -406,10 +412,6 @@
       "probe:DTD_SHAPE_PROBE"
     ],
     "CharRef": [
-      "corpus:cxf",
-      "probe:CDATA_SHAPE_PROBE"
-    ],
-    "Comment": [
       "corpus:cxf",
       "probe:CDATA_SHAPE_PROBE"
     ],
@@ -457,6 +459,27 @@
       "symbolElements": 1,
       "treeAttributes": 0,
       "symbolAttributes": 0
+    },
+    {
+      "file": "fixture:ExternalReference.xsd",
+      "treeElements": 5,
+      "symbolElements": 5,
+      "treeAttributes": 10,
+      "symbolAttributes": 10
+    },
+    {
+      "file": "fixture:ImplicitXmlPrefix.xsd",
+      "treeElements": 3,
+      "symbolElements": 3,
+      "treeAttributes": 4,
+      "symbolAttributes": 4
+    },
+    {
+      "file": "fixture:IncludedReference.xsd",
+      "treeElements": 5,
+      "symbolElements": 5,
+      "treeAttributes": 9,
+      "symbolAttributes": 9
     },
     {
       "file": "fixture:Negative.xml",
@@ -520,6 +543,9 @@
     "ConditionalSection.xml",
     "Doctype.xml",
     "DtdDeclarations.xml",
+    "ExternalReference.xsd",
+    "ImplicitXmlPrefix.xsd",
+    "IncludedReference.xsd",
     "Negative.xml",
     "ProcessingInstruction.xml",
     "Schema.xsd",

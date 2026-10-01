@@ -1,0 +1,339 @@
+{
+  "issue": "M63.CL1-T1",
+  "code": "CL1-T1",
+  "milestone": "M63",
+  "status": "verified",
+  "checks": 19,
+  "passed": 19,
+  "failed": 0,
+  "failures": [],
+  "currentCommit": "25ef68be44ee255057b3e33067228cf2933a7584",
+  "verifierCommand": "npx tsx script/m63/verify-cl1-corpus-predicate.ts",
+  "evidenceFile": "CL1-T1.json",
+  "predicateSource": "script/m48/c1-repo-worker.ts:185",
+  "measuredDefectsFedToM48Predicate": 6,
+  "measuredDefectsM48PredicateAccepted": 6,
+  "impossibleAnswersFedToM48Predicate": 3,
+  "impossibleAnswersM48PredicateAccepted": 2,
+  "honestAnswersFedToM48Predicate": 2,
+  "verdict": "The recorded M48.C1 'verified' for bb_cross_language accepts EVERY defect measured against the real index. It is a green badge that cannot describe the tool; script/m63/verify-cl1-cross-language.ts replaces it.",
+  "predicateVerdicts": [
+    {
+      "id": "control-invoke",
+      "kind": "control",
+      "defectId": null,
+      "answer": "the honest post-fix answer for `invoke` (227 copies, 21 rows)",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "control-f",
+      "kind": "control",
+      "defectId": null,
+      "answer": "the honest post-fix answer for `f` (106 rows, under the cap)",
+      "askedFor": "f",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "fabrication",
+      "kind": "impossible",
+      "defectId": null,
+      "answer": "a cross-language pair that exists nowhere in the index",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "count-lie",
+      "kind": "measured-defect",
+      "defectId": "D3-count-lie",
+      "answer": "pairCount 99 over a facts array of 21",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "false-absence",
+      "kind": "measured-defect",
+      "defectId": "D1-false-absence",
+      "answer": "declaredAbsent: true while the index holds 21 stored cross-language rows for the name",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "silent-loss",
+      "kind": "measured-defect",
+      "defectId": "D1-silent-loss",
+      "answer": "1 fact for a name holding 21 stored rows, with nothing declaring the loss",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "no-counterparty",
+      "kind": "measured-defect",
+      "defectId": "D2-no-counterparty",
+      "answer": "a fact set that names no other symbol, file, or line",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "unbounded",
+      "kind": "measured-defect",
+      "defectId": "D3-unbounded",
+      "answer": "106 facts with no limit, no total, and no truncation field",
+      "askedFor": "f",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "cross-project",
+      "kind": "measured-defect",
+      "defectId": "D4-leak",
+      "answer": "a fact whose bridge came from a row owned by another project",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "language-lie",
+      "kind": "impossible",
+      "defectId": null,
+      "answer": "a language the name's copies do not have",
+      "askedFor": "invoke",
+      "m48PredicateSays": true
+    },
+    {
+      "id": "empty",
+      "kind": "impossible",
+      "defectId": null,
+      "answer": "an empty object",
+      "askedFor": "invoke",
+      "m48PredicateSays": false
+    }
+  ],
+  "detectors": [
+    {
+      "id": "no-fabrication",
+      "statement": "every pair names two languages the index actually holds for this name",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": false,
+        "count-lie": true,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": true
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "no-count-lie",
+      "statement": "pairCount equals the facts returned, and the declared total is not below them",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": false,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": false
+      },
+      "catchesByDefect": {
+        "D3-count-lie": false,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "no-false-absence",
+      "statement": "declaredAbsent is true only when the index holds no stored row for the name",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": false,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": true
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": false,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "no-silent-loss",
+      "statement": "every stored cross-language row for the name is reported, or the loss is declared as truncation",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": false,
+        "silent-loss": false,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": false
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": false,
+        "D1-silent-loss": false,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "no-unnamed-facts",
+      "statement": "every fact names its counterparty (symbol, file) and the stored row it came from",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": false,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": true
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": false,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "bounded",
+      "statement": "the answer is within the declared limit and its truncation flag agrees with the gap between shown and total",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": false,
+        "cross-project": true,
+        "language-lie": true,
+        "empty": false
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": false,
+        "D4-leak": true
+      }
+    },
+    {
+      "id": "no-cross-project",
+      "statement": "no fact carries a row owned by another project",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": false,
+        "language-lie": true,
+        "empty": true
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": false
+      }
+    },
+    {
+      "id": "language-traceable",
+      "statement": "the declared language is one the name's copies have, or null when they disagree",
+      "catches": {
+        "control-invoke": true,
+        "control-f": true,
+        "fabrication": true,
+        "count-lie": true,
+        "false-absence": true,
+        "silent-loss": true,
+        "no-counterparty": true,
+        "unbounded": true,
+        "cross-project": true,
+        "language-lie": false,
+        "empty": false
+      },
+      "catchesByDefect": {
+        "D3-count-lie": true,
+        "D1-false-absence": true,
+        "D1-silent-loss": true,
+        "D2-no-counterparty": true,
+        "D3-unbounded": true,
+        "D4-leak": true
+      }
+    }
+  ],
+  "honestAnswers": {
+    "invoke": {
+      "copies": 227,
+      "storedRows": 21,
+      "pairableRows": 21,
+      "languages": [
+        "clojure",
+        "java"
+      ]
+    },
+    "f": {
+      "copies": 1,
+      "storedRows": 106,
+      "pairableRows": 106
+    }
+  },
+  "generatedAt": "2026-09-29T04:48:33.534Z",
+  "limitations": [
+    "The answers fed here are built from the jvm-interop corpus's measured facts (230 files, 9,201 symbols, 1,545 stored cross-language rows; `invoke` 227 copies / 21 rows, `f` 1 copy / 106 rows) plus mutations of the honest answer. They are not live tool output.",
+    "This file measures a PREDICATE and a rule set, not the tool. The tool's own behaviour against a real index is gated by script/m63/verify-cl1-cross-language.ts.",
+    "The M48.C1 measurement is recorded as evidence, not asserted as a check, so this gate goes green when the replacement rules hold rather than staying red forever."
+  ],
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-29T04:48:33.538Z",
+    "contentSha256": "bb29f8b6f71cb02d845a5c6ffe09cfd54b876ecc59975380302317a91a515d44"
+  }
+}

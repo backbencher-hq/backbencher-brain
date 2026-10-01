@@ -73,6 +73,49 @@ const AS_JSON = process.argv.includes("--json")
 /** A name that is not a name — R7's runtime half (the register measures the source). */
 const PLACEHOLDER = /^(unknown|undefined|null|none|nil|n\/a|\?|unknown_\w+|_\w*unknown)$/i
 
+/**
+ * Kinds for which a null-flavoured name really is a placeholder.
+ *
+ * `none` is in PLACEHOLDER because it is python's null literal, and `None` is a
+ * perfectly good enum member in VB, C# and anything else on .NET -- `None` as the
+ * zero member of an enum is idiomatic, and P3D writes it in three files. The
+ * audit therefore reported 4 false positives on a 400-file draw:
+ * `enum_member "None"` flagged as "a name that is not a name", for a name that is
+ * written in the file and is exactly what it says.
+ *
+ * A null literal stands in for a VALUE, so the check is scoped to the kinds that
+ * denote one. A member, a type, a namespace and a method are named things, and a
+ * type called `None` is a type.
+ */
+const VALUE_KINDS = new Set(["variable", "constant", "field", "parameter", "local"])
+const isPlaceholderName = (n: string, kind: string): boolean => {
+  if (!n.trim()) return true
+  if (VALUE_KINDS.has(String(kind).toLowerCase())) return PLACEHOLDER.test(n.trim())
+  // outside the value kinds, only the unambiguously synthetic names count
+  return /^(unknown|undefined|n\/a|\?|unknown_\w+|_\w*unknown)$/i.test(n.trim())
+}
+
+/**
+ * A name that is a name BY CONTRACT, not by how the source spells it.
+ *
+ * `constructor` is the family's published name for a constructor, with the class
+ * in `ownerName` — csharp and typescript both publish that literal (five sites
+ * each), and vb does the same, as does `operator` for an operator. The source
+ * says `New` and `+`, so the L4 "name not present in source" check counts every
+ * one of them as a ghost: 393 symbol names and 376 relationship targets on a
+ * 400-file draw, ALL of them contract literals and none of them defects.
+ *
+ * It is a separate channel rather than a suppression, because the number is real
+ * and a reader deserves to see it: `contract literals: N` is reported beside
+ * `ghosts: 0`, so the difference between "clean" and "excused" stays visible. The
+ * exemption is keyed to the KIND for symbols, so a class genuinely called
+ * `constructor` in some language is still reported.
+ */
+const CONTRACT_LITERALS: Record<string, ReadonlySet<string>> = {
+  constructor: new Set(["constructor"]),
+  operator: new Set(["method", "operator", "function"]),
+}
+
 function filesUnder(dir: string, exts: string[], out: string[] = [], cap = 100000): string[] {
   if (out.length >= cap) return out
   let names: string[]
@@ -126,6 +169,8 @@ async function main() {
     const kinds = new Map<string, number>()
     const badNames: any[] = []
     const ghosts: any[] = []
+    const contractNames: any[] = []
+    const contractTargets: any[] = []
     const unlinedSample: Array<{ file: string; label: string; target: string; from: string; reason: string }> = []
     const parseErrors: any[] = []
     let files = 0, filesWithEdges = 0, edges = 0, symbols = 0
@@ -155,8 +200,11 @@ async function main() {
           const k = String(s.kind ?? "?")
           kinds.set(k, (kinds.get(k) ?? 0) + 1)
           const n = String(s.name ?? "")
-          if (!n.trim() || PLACEHOLDER.test(n.trim())) {
+          if (isPlaceholderName(n, k)) {
             badNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: JSON.stringify(n), kind: k, line: s.range?.startLine })
+          } else if (CONTRACT_LITERALS[n.toLowerCase()]?.has(k.toLowerCase())) {
+            // a name by contract — counted, disclosed, and not a ghost
+            contractNames.push({ file: path.relative(CORPUS_ROOT, file), symbol: n, kind: k, line: s.range?.startLine })
           } else if (!src.includes(n)) {
             // A symbol name written nowhere in its own file. Kept in the same channel as
             // badNames because both are "a name that is not a name in this source".
@@ -225,7 +273,11 @@ async function main() {
           const tgt = String(r.target ?? r.to ?? r.toSymbol ?? "")
           const w = writtenForm(tgt)
           if (w.length > 1 && !src.includes(w)) {
-            ghosts.push({ file: path.relative(CORPUS_ROOT, file), label: t, target: tgt, line: ln ?? null })
+            if (CONTRACT_LITERALS[w.toLowerCase()]) {
+              contractTargets.push({ file: path.relative(CORPUS_ROOT, file), label: t, target: tgt, line: ln ?? null })
+            } else {
+              ghosts.push({ file: path.relative(CORPUS_ROOT, file), label: t, target: tgt, line: ln ?? null })
+            }
           }
         }
       }
@@ -243,6 +295,8 @@ async function main() {
       kinds: Object.fromEntries([...kinds.entries()].sort((a, b) => b[1] - a[1])),
       unlinedSample: unlinedSample.slice(0, 40), unlinedSampleCount: unlinedSample.length,
       badNames, ghosts: ghosts.slice(0, 40), ghostCount: ghosts.length,
+      contractNames, contractNameCount: contractNames.length,
+      contractTargets, contractTargetCount: contractTargets.length,
       parseErrors: parseErrors.slice(0, 20), parseErrorCount: parseErrors.length,
     }
     rows.push(row)
@@ -266,6 +320,7 @@ async function main() {
       console.log(`  seam keys     edges missing a key: ${Object.values(row.missingSeamKeys).reduce((a: number, b: any) => a + b, 0)} (${Object.entries(row.missingSeamKeys).map(([k, v]) => `${k}=${v}`).join(" ") || "none"})`)
       console.log(`  names         not a name / not in source: ${badNames.length}`)
       for (const b of badNames.slice(0, 12)) console.log(`      ${b.file} :: ${b.kind} ${b.symbol}${b.why ? ` (${b.why})` : ""}`)
+      console.log(`  contract literals (named by contract, not by source spelling)  ${row.contractNameCount ?? 0} symbols, ${row.contractTargetCount ?? 0} relationship targets`)
       console.log(`  ghost targets ${row.ghostCount}`)
       for (const g of row.ghosts.slice(0, 12)) console.log(`      ${g.file} :: ${g.label} -> ${g.target}${g.line ? ` (line ${g.line})` : ""}`)
       console.log(`  parse errors  ${row.parseErrorCount}`)

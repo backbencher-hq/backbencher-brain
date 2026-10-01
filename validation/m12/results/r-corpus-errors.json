@@ -20,8 +20,8 @@
       "revision": "d598862",
       "trackedRFiles": 80,
       "linesOfCode": 29334,
-      "symbols": 3716,
-      "relationships": 8324,
+      "symbols": 3558,
+      "relationships": 7613,
       "filesWithParseError": 0
     },
     {
@@ -38,8 +38,8 @@
       "revision": "8184460",
       "trackedRFiles": 276,
       "linesOfCode": 50497,
-      "symbols": 3484,
-      "relationships": 10369,
+      "symbols": 3437,
+      "relationships": 10366,
       "filesWithParseError": 1
     },
     {
@@ -47,22 +47,22 @@
       "revision": "313d090",
       "trackedRFiles": 357,
       "linesOfCode": 65252,
-      "symbols": 3963,
-      "relationships": 10092,
+      "symbols": 3965,
+      "relationships": 10093,
       "filesWithParseError": 0
     }
   ],
   "totals": {
     "trackedRFiles": 1174,
-    "symbols": 16305,
-    "relationships": 41820,
+    "symbols": 16102,
+    "relationships": 41107,
     "filesWithParseError": 2
   },
   "note": "Every tracked .R/.r file of every pinned corpus repo, parsed with the shipped grammar. The two remaining parse-error files are CORRECT failures, not defects: shiny/inst/app_template/app.R is a Go text/template file that ships inside the shiny package and is not R, and testthat's tests/.../test-error-1.R is a deliberate syntax-error fixture. Before the hex-float grammar fix Matrix reported 12 error nodes across 4 files.",
-  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T03:06:57.788Z",
-    "contentSha256": "da90596885554a727ae1e9f3818cf35d87d408fc531d690eb8e13f6170ebf8d9"
+    "sealedAt": "2026-09-28T22:02:05.651Z",
+    "contentSha256": "b0ee7f438e71fdb5702c3ebaa6f2ca17d0665801457e4d5b794a1aa4cdf57b19"
   }
 }
