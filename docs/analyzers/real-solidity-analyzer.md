@@ -100,7 +100,7 @@ short circuits only, with the operator read **structurally** rather than by matc
 source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
-`87.87 ms/file, 959 facts/ms` over 389 files at `loadAvg1 22.32` on 8 cores, with
+`50.39 ms/file, 1,672 facts/ms` over 389 files at `loadAvg1 20.03` on 8 cores, with
 `perfIsQualified: false` because of it.
 
 ---
@@ -322,7 +322,7 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | `reservedTargets` | **0** | same, via the imported predicate |
 | Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1307 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
 | Evidence tiers | structural 6112 · usage_contextual 18867 · import_based 899 · inferred 929 | same, read from the analyzer's own central emitter. The 507 SOL-19 rows moved from `structural` to `inferred`, which is the point of that ruling. |
-| Perf | 87.87 ms/file, 959 facts/ms, at `loadAvg1 22.32` / 8 cores — **`perfIsQualified: false`** | same |
+| Perf | 50.39 ms/file, 1,672 facts/ms, at `loadAvg1 20.03` / 8 cores — **`perfIsQualified: false`** | same |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
