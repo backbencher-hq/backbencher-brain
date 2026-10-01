@@ -761,7 +761,38 @@ export function deriveClojureContainsTruth(root: Node): { edges: TruthEdge[]; na
   // one. `walk` already tracks that owner, so this reuses it rather than keeping
   // a second walk that could disagree.
   const earliest = new Map<string, number>()
+  walk(root, (node, owner) => {
     if (node.type !== "list_lit") return
+    const h = executionHead(node)
+    const nm = h && h.type === "sym_lit" ? symName(h) : ""
+    // A FORWARD DECLARATION is not a definition (CLJ-D23) — `(declare cat
+    // select-keys)` at core.clj:2799 precedes `(defn cat …)` at 7980, and an edge
+    // pointing at the declare would claim the namespace defines `cat` where it
+    // only promises to.
+    if (nm === "declare") return
+    if (!DEF_HEADS.has(nm) && !isDefLikeHead(nm)) return
+    const dn = defNameOf(node)
+    if (!dn) return
+    // THE OWNER IS THE NAMESPACE, AT EVERY DEPTH. A `defn` interns a var in the
+    // current namespace whatever encloses it lexically — `(defn outer [] (defn
+    // inner [] 1))` defines `inner` in the namespace, not inside `outer`. The
+    // first version of this used the lexically enclosing DEFINITION as the owner,
+    // which is the right rule for CALL attribution (an `activeFunction`) and the
+    // wrong one for containment: it demanded
+    // `clickhouse-temporal-bucketing-server-tz -> start-of-year!` for a
+    // `defn-` inside a `deftest` body, and the analyzer — correctly — owned it
+    // by the namespace. 62 edges across metabase.
+    const src = nsAt(timeline, node.startIndex)
+    if (!src) return
+    const k = `${src}->${dn}`
+    const prev = earliest.get(k)
+    if (prev === undefined || h!.startPosition.row + 1 < prev) earliest.set(k, h!.startPosition.row + 1)
+  })
+  const edges: TruthEdge[] = []
+  for (const [k, line] of earliest) {
+    const split = k.indexOf("->")
+    edges.push({ source: k.slice(0, split), target: k.slice(split + 2), type: ASTEngine.RelationshipType.Contains, line })
+  }
   const namespace = timeline.length > 0 ? timeline[timeline.length - 1]!.name : ""
   return { edges, namespace }
 }
