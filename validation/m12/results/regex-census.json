@@ -6,11 +6,11 @@
   "describes": "the working tree (a preview; run with --head to anchor it to a commit)",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 26,
+  "totalRegexUsages": 20,
   "analyzersScanned": 43,
   "byClassification": {
-    "needs_review": 17,
-    "normalization": 9
+    "needs_review": 12,
+    "normalization": 8
   },
   "byReceiverCategory": {
     "identifier": 14,
@@ -85,78 +85,6 @@
           "operation": "test",
           "receiver": "leaf",
           "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "count": 6,
-      "usages": [
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 45,
-          "column": 10,
-          "source": "/line/i",
-          "operation": "test",
-          "receiver": "k",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 314,
-          "column": 49,
-          "source": "/['\"]/g",
-          "operation": "replace",
-          "receiver": "v.text",
-          "receiverCategory": "node_text",
-          "classification": "normalization",
-          "justification": ""
-        },
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 1091,
-          "column": 20,
-          "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 1103,
-          "column": 15,
-          "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 1117,
-          "column": 15,
-          "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-vue-analyzer.ts",
-          "line": 1119,
-          "column": 16,
-          "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-          "operation": "other",
-          "receiver": "",
-          "receiverCategory": "other",
           "classification": "needs_review",
           "justification": ""
         }
@@ -345,6 +273,20 @@
           "justification": ""
         }
       ]
+    }
+  ],
+  "retired": [
+    {
+      "file": "real-vue-analyzer.ts",
+      "count": 6,
+      "byClassification": {
+        "needs_review": 5,
+        "normalization": 1
+      },
+      "retiredAt": "2026-09-30",
+      "gate": "script/m60/verify-vue-no-regex.ts",
+      "why": "All six patterns were DELETED rather than re-registered, which is the only outcome in which the lane's own header claim ('regex-free') is true. See validation/m49/regex-debt-register.json `closedByRemoval` for the per-pattern account and the equivalence evidence: 788 generated shapes for the v-for replacement, and byte-for-byte identical output over all 1,139 corpus files.",
+      "note": "Only this file's rows were touched. The artifact's other six files belong to other lanes and their counts are unchanged."
     }
   ]
 }

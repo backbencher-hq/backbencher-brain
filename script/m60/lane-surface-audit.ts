@@ -216,8 +216,18 @@ async function main() {
           parseErrors.push({ file: path.relative(CORPUS_ROOT, file), error: String(e?.message ?? e).slice(0, 80) })
           continue
         }
-        if ((res?.errors?.length ?? 0) > 0 || (res?.metadata?.errors?.length ?? 0) > 0) {
-          const errs: any[] = [...(res.errors ?? []), ...(res.metadata?.errors ?? [])]
+        // Only SEVERITY 'error' counts as a parse error. The list this reads mixes
+        // parse failures with analyzer WARNINGS, and a warning counted as a parse
+        // error is a measurement defect, not a finding: it inflated the vue lane's
+        // parse-error count to 2 on the 400-file draw when neither file failed to
+        // parse. Both were `severity: "warning"` React-hook heuristics —
+        // `useLocale`, a VUE composable, flagged as a React Hook because the TSX
+        // delegate matches any `use[A-Z]` call, inside a `lang="tsx"` script block
+        // (element-plus/docs/examples/table-v2/{filter,selection}.vue). The Vue
+        // analyzer reported 0 diagnostics on both.
+        const allDiags: any[] = [...(res.errors ?? []), ...(res.metadata?.errors ?? [])]
+        const errs = allDiags.filter((d: any) => d?.severity !== "warning" && d?.severity !== "info")
+        if (errs.length > 0) {
           parseErrors.push({ file: path.relative(CORPUS_ROOT, file), error: `${errs.length} parse error(s)` })
         }
         const rels: any[] = res?.relationships ?? []
