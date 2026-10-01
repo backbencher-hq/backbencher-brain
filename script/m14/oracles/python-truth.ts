@@ -816,9 +816,16 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const nm = nameNode ? nameNode.text : ""
       const body = n.childForFieldName("body")
       if (body) walkClassBody(body, nm)
+      // A BASE-CLASS EXPRESSION IS CODE. `class ObjectProxy(with_metaclass(Meta))` calls
+      // `with_metaclass` when the class statement executes, and the analyzer records it as a
+      // call BY THE CLASS. `superclasses` is a child of `class_definition` but not of its
+      // body, so it took the `walkScopes` path below, which derives definitions and not calls —
+      // the same shape of omission as the parameter defaults, and found the same way.
+      const supers = n.childForFieldName("superclasses")
+      if (supers) walkClassBody(supers, nm)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c !== body) walkScopes(c, nm, nm, null)
+        if (c !== body && c !== supers) walkScopes(c, nm, nm, null)
       }
       return
     }
