@@ -410,11 +410,15 @@ if `language-detection.ts` ever routes `PL`, the census's ext sets, the F5 lane'
   (package-block scope, signatures and attributes, 5.38 class/role, imports and
   exports, builtins and branches, inheritance declarations, magic-token invocant).
 - **Forward compatibility**: emissions are identical under the wired 1.2.1 build
-  and a fresh 2.0.0 build on **5,750 of 5,774** files (99.6%). The 24 that differ
-  are all the same shape, and 2.0.0 is the **worse** answer on every one of them —
-  see [the 2.0.0 upgrade](#the-200-upgrade-measured-and-refused).
+  and a fresh 2.0.0 build on **5,765 of 5,774** files (99.8%), measured by two
+  independent passes -- one grammar per process, one corpus per process, 0 parse
+  failures on both sides. The 9 that differ are all the same shape, and 2.0.0 is
+  the **worse** answer on every one of them, which is why the transparency fix is
+  recorded as a bump requirement rather than added to the wired build. An earlier
+  version of this line said 5,750 of 5,774 with 24 differing and the direction
+  reversed; see [the 2.0.0 upgrade](#the-200-upgrade-measured-refused-and-partly-repaid).
 
-## The 2.0.0 upgrade: measured, and refused
+## The 2.0.0 upgrade: measured, refused, and partly repaid
 
 `tree-sitter-perl@2.0.0` declares exactly one type over 1.2.1 --
 `parenthesized_expression` -- and that is the wrapper that removes the multi-child
@@ -428,11 +432,58 @@ paren field:
 | parse damage on mojo | 4 / 275 | 4 / 275 |
 | mojo trees identical to the wired build | 275 / 275 | 152 / 275 |
 
-### The 24 files where 2.0.0 is worse, not just different
+### What the first comparison got wrong, three ways
 
-Identical emissions on 5,750 of 5,774 files is not "compatible", it is "the same
-almost everywhere, and where it is not, here is which one is right". All 24
-differing files are the parenthesised-argument `use` with a ternary in it:
+This section previously read "the 24 files where 2.0.0 is worse", with the
+direction stated the other way round. Three separate faults produced that, and
+they are recorded because each one produced a number that looked like a finding.
+
+**The tool scored crashes as disagreement.** Its in-process diff mode caught a
+thrown parse in `catch {}`, leaving that side's emission set empty. An empty set
+compares equal to "this grammar agrees about nothing", so **2,806 of 5,774 files
+(48.6%) were reported as 100% disagreeing** -- and the denominator still printed
+5,774. Every figure that run produced was computed over 51% of the corpus. The
+aborts were never a property of a file or a grammar: each corpus passes cleanly in
+its own process with 0 parse failures, one file parsed 300 times in a row never
+fails, and `Math/BigInt/t/isa.t` analyzes identically under both grammars in a
+fresh process. The comparison is now two independent passes -- one grammar per
+process, one corpus per process, throws recorded *into* the digest rather than
+dropped -- and it prints its own coverage beside its verdict.
+
+**The labels pointed backwards.** A per-file diff reported
+`items=["VMS","VMS","skip_all","tests"]` as 2.0.0's output. It was **1.2.1's**.
+2.0.0 was the correct side of essentially every disagreement, so a bump would have
+*hidden* these defects rather than fixed them. Three label bugs agreed with each
+other, which is how a measurement gets believed; only running the analyzer
+directly on the file caught it.
+
+**Seven of the node types named by the fix did not exist.** `fat_comma`,
+`anon_sub`, `subroutine`, `match_expression`, `logical_expression`,
+`list_call_expression`, `list_operator_expression` are in **neither** generation --
+they were named by pattern from other grammars' conventions instead of read out of
+`node-types.json`. All seven were dead branches, invisible to the fixture suite
+because fixtures run 1.2.1 where the branches were equally dead. One was
+load-bearing in a commit message, which claimed the `fat_comma` guard was "kept
+for the grammars that do wrap"; no grammar wraps.
+
+### The four rules, and what they repaid
+
+The requirement this section used to state as outstanding -- *harvesting must
+respect the `parenthesized_expression` boundary and must not read a nested list's
+fat-comma keys as import names* -- has now landed, as four rules, all pinned by
+`perl/import-argument-items` and four mutants:
+
+1. A top-level `=>` makes a `use` argument list a key/value **specification**, not a
+   list of names. Scoped to the import site: written into the shared word harvester
+   it also silenced `our @EXPORT_OK = (gamma => 1, delta => 2)` and deleted four
+   real exports.
+2. **Code is not names**, for a `?:` branch.
+3. **Code is not names**, for a call's arguments -- `use feature (sprintf(":%vd",
+   $^V))` was recording sprintf's *format string*.
+4. The `parenthesized_expression` transparency is deliberately **not** in the wired
+   build; see the residual below.
+
+The section's own example, re-measured against the current analyzer:
 
 ```perl
 use Test::More (
@@ -444,44 +495,42 @@ use Test::More (
 
 | | wired 1.2.1 | 2.0.0 |
 | --- | --- | --- |
-| `imports[0].items` | `["*"]` | `["VMS","VMS","skip_all","tests"]` |
+| `imports[0].items` | `["*"]` | `["*"]` |
 
-**1.2.1 is the honest answer and 2.0.0 is the wrong one.** The parse explains it.
-Under 1.2.1 the `(` is attached *inside* the `package` node and the whole argument
-is a bare `conditional_expression` direct child of `use_statement`, so the analyzer
-finds no argument node it can read and falls back to the declared `["*"]`
-wildcard. Under 2.0.0 the argument is a proper `parenthesized_expression`, which is
-exactly the fix that makes the payload reachable -- and the analyzer's word walk
-then harvests straight through it: `VMS` twice (from `$^O eq 'VMS'` and from
-`skip_all => 'VMS'`, one per ternary branch) plus the fat-comma **keys** `skip_all`
-and `tests` as if they were imported names, when they are `Test::More` plan
-arguments.
+Both grammars now agree, and `["*"]` is the honest answer: `skip_all` and `tests`
+are `Test::More` plan arguments and `VMS` appears in a comparison and in a value,
+so there are no imported names to list. Before the rules, 2.0.0 returned
+`["VMS","VMS","skip_all","tests"]`.
 
-So the bump is not a re-baseline cost alone. It needs an analyzer change first:
-import-item harvesting has to respect the `parenthesized_expression` boundary and
-must not read a nested list's fat-comma keys as import names. Until that lands,
-2.0.0 would turn an honest wildcard into a confidently wrong list on 24 corpus
-files (0.4%) while fixing the unreachable-field problem this lane already works
-around.
+### The residual: 9 files, and why it is not a branch
 
-### Why it is refused anyway
+With all four rules in place, **9 of 5,774 files still differ**, and all nine are
+one class: 2.0.0 inserts `parenthesized_expression` between a statement and its
+`list_expression`, so a direct-child lookup finds no list and the `use` loses its
+items -- `use Encode ':all'`, `use overload(...)`, Catalyst's two plugins.
+
+That fix is intentionally **not** in the wired build. `parenthesized_expression`
+does not exist in 1.2.1, the grammar-audit cell is zero-tolerance, and a branch for
+a grammar the lane does not run is dead code by definition -- the same reasoning
+that keeps `noninterpolated_string_content` out. The bump must re-add it, and
+`reviews/perl/master-review.md` is where that requirement is recorded.
+
+### Why it is still refused
 
 Four measured reasons: it changes 123 of 275 trees on the corpus the M12 claims
 were measured on, so it would invalidate the M12 corpus claims and every other
 lane's pinned F5 row; the residual 5 unreachable pairs are genuinely repeated
 fields that a collect-all-children read handles correctly anyway; the analyzer is
-already correct under 1.2.1, so the bump buys no correctness; and as above, on the
-24 files where the two builds differ, the new build is the one that is wrong. It
-is a scheduled grammar bump with an analyzer change and a re-baseline, not a
-silent swap -- and the measurement that decides it lives in the pin registry, not
-in a comment.
+already correct under 1.2.1 on all but 9 of 5,774 files, so the bump buys almost
+no correctness; and those 9 are a regression the bump must fix *first*, not a
+re-baseline cost to accept. It is a scheduled grammar bump with an analyzer change
+and a re-baseline, not a silent swap.
 
-> The forward-compatibility instrument (`fixtures/perl/forward-compat.mts`) was
-> reconstructed on 2026-09-27 after a full disk truncated it to zero bytes, and
-> its digest is now strictly wider than the original's (it covers decorators,
-> evidence tiers and parse-error text). So "5,750 of 5,774" is comparable only to
-> another figure from that file; the earlier "5,847 of 5,875" is not a baseline for
-> it and the two must not be quoted side by side.
+> Reproduce it with the two-pass comparison rather than a single in-process diff:
+> `script/m14/tmp/perl-forward-compat.mts --grammar <name> <corpus>` writes one
+> digest TSV per grammar per corpus, and the TSVs are compared outside any WASM
+> runtime. A digest difference is a *value* change; the instrument prints
+> `parseFailures` per pass so coverage cannot be inferred from the file count.
 
 ## Complexity envelope
 
@@ -527,7 +576,7 @@ real file; a fixture with ten decision points now reports 11.
 
 | station | state |
 | --- | --- |
-| F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. See the correction below. |
+| F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. It is green NOW by measurement (`audit-analyzer-grammar.ts`, `perl PASS refs=53 unknown=0 unknownFields=0`), after PERL-MR4 removed seven node types it had invented. See the correction below. |
 | F3 fixtures | **8 expectations, 8/8 pass.** `validation/m14/fixtures/perl/`, one per defect class |
 | F4 mutation | **32 mutants, 32/32 caught** |
 | perl ownership gate | **15/15** -- perl-owned CONTENT, seconds to run, the row that catches a commit that rebuilt a perl file from a stale base |
