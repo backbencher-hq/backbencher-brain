@@ -41,13 +41,24 @@ zero ERROR nodes:
 
 | Fact | What went wrong without it |
 |---|---|
-| `scoped_identifier` **does not exist** (0 occurrences in 400 files). Qualified access is a nested `field_expression` | every qualified call vanished; a file of them produced an empty graph with no error |
+| a qualified CALLEE is a nested `field_expression`, not a `scoped_identifier` | every qualified call vanished; a file of them produced an empty graph with no error |
 | `binary_expression`'s `operator` is a **named** child at index 1 | `pos(node,1)` returned the operator instead of the right operand, and an anonymous-child scan found nothing — zero `extends` edges corpus-wide |
 | a `where` clause wraps the callable in a `where_expression`; **bare `where T` puts the type variable there as a sibling `identifier`** | every `where`-form declaration was skipped, and the type variable was published as the function's name (`T`) |
 | `f(x)::T = …` is a `typed_expression` on the left; `x::Int = 5` is too | the return-type form was invisible, or the function published under its return type (`Float64`) |
 
 The recurring lesson, recorded in the analyzer: **scan for a name before unwrapping the
 wrapper around it, and you get the wrapper.** This happened three times in one lane.
+
+**A CORRECTION, and the reason it belongs here rather than in a commit log.** An earlier draft of this
+table said `scoped_identifier` **does not exist** in this grammar, on the evidence of 0 occurrences in
+400 corpus files. That was the wrong measurement: the node IS produced — **401 occurrences across 186
+files** — it is simply never the callee of a call. Qualified ACCESS is a `field_expression`, which is
+what the fix routes through, so the code was right and the claim was not. A node census answers "does
+this type occur", and I had asked a narrower question ("is it ever a call callee"), reported the answer
+as the broader one, and wrote it into a permanent artifact. The classification in
+`script/m14/spec/julia-completeness.json` is derived mechanically from the analyzer's own `case` labels
+intersected with the census, precisely so that claims like this cannot be hand-maintained into
+wrongness.
 
 ## Qualified names are kept WHOLE
 

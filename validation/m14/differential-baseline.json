@@ -1585,6 +1585,14 @@
         "avgMsPerFile": 5.3
       },
       "sampleSetHash": "e9708e750546e983"
+    },
+    "julia:julia": {
+      "missing": 83,
+      "unexplained": 434,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 722.0
+      }
     }
   },
   "hashes": {
@@ -1641,13 +1649,20 @@
     "scala3:markdown": "8127d7c0de552761",
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
-    "solidity:solidity": "e9708e750546e983"
+    "solidity:solidity": "e9708e750546e983",
+    "julia:julia": "0b7c135add6ea602"
   },
   "floorMoves": {
     "solidity:solidity": {
       "from": 18,
       "to": 21,
       "why": "SOL-15. The floor moved UP, which is the direction that normally means a regression, so the reason is recorded rather than the number quietly edited. Two repairs landed together. (1) The analyzer's `revert_statement` case had NEVER FIRED \u2014 it tested `namedChild(0).type === \"identifier\"` and the grammar puts an `expression` wrapper there for every spelling \u2014 so 453 custom-error call edges over the 389-file corpus did not exist in this lane at all. (2) The ORACLE had the identical dead branch, which is why F5 agreed at zero: two instruments that are both dead look like corroboration. Fixing only the analyzer made the pair disagree and F5 reported 37 unexplained edges that no re-run would clear, because `sweepStateKey` hashed every analyzer in src/ast but NOT script/m14/oracles \u2014 so an oracle edit left the journal key byte-identical and the next run printed `RESUMED` with the previous truth function's numbers. All three are fixed: the oracles are now part of the sweep state. On the adjudication draw the oracle repair cut calls-unexplained from 47 to 2. The residual 3 is custom-error calls to an error declared in ANOTHER file, classified `evm-member-call` alongside the rest of the cross-file residue; `unclassifiable` is 0."
+    },
+    "julia:julia": {
+      "from": null,
+      "to": 83,
+      "why": "First floor for the julia lane, recorded from a real F5 probe rather than declared. The sample ROTATES 60 of 941 files per run, so `missing` and `unexplained` move between runs on the same code \u2014 observed 98.5%/8.5%, 99.3%/9.6% and 98.0%/9.6% across three probes this session. The stable figures are the unexplained RATE and a direct 40-file measurement (extends 39/39, instantiates 27/27, uses 98.8%, references 97.3%), so the floor is set from the WEAKEST probe rather than the best, and the reason is recorded here because a floor that moves silently is indistinguishable from a regression being tolerated.",
+      "note": "unexplained is dominated by the oracles' own scope limits \u2014 they decline cross-file callee resolution \u2014 plus @eval module and quoted-block shapes. Widening them would mean guessing."
     }
   }
 }
