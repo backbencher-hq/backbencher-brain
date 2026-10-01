@@ -702,54 +702,55 @@ of regex syntax are in comments recording earlier replacements.
 M12 truth drift 92 facts, 85 still-produced, 7 produced-under-another-type,
 **0 not-produced**.
 
-### #982: the oracle has no concept of inactive code, and that is the MISSING floor
+### #982 CORRECTION: the inactive-code thesis was wrong in both directions
 
-Restoring #978 (4th time, `8630a6a8`) made the C lane's MISSING count move: 0 at one
-rotation, 4 at the next, 1 at the one after. UNEXPLAINED stayed 0 throughout. A
-MISSING count that wanders is not a property of the analyzer, so the wandering was
-traced rather than averaged.
+The first version of this section claimed the oracle has no notion of inactive
+regions, that `wmemcmp.c` produced no analyzer uses because it is `#if 0`, and that
+this set a MISSING FLOOR. Measured, both halves are wrong.
 
-Rot 20's four rows were `uses (expr) -> s1`, `-> s2`, `-> n` in
-`zig/lib/libc/mingw/misc/wmemcmp.c` and `uses (expr) -> TlsDtorNode` in
-`zig/lib/libc/mingw/crt/tlssup.c`. Three of them are INACTIVE:
+**The analyzer does not skip `#if 0`.** Same body, four different guards:
 
-    #if 0                       <- line 21
-    int
-    wmemcmp(s1, s2, n)          <- lines 23-27, a K&R definition
-    ...
-    #endif                      <- line 40
+    plain          rels=3   contains, references, uses
+    #if 0          rels=3   contains, references, uses
+    #if 1          rels=3   contains, references, uses
+    #ifdef NOPE    rels=3   contains, references, uses
+    #if 0 / #else  rels=6   contains, references, uses
 
-`grep -cE` over `#if/#ifdef/#else/#endif` shows the entire function sits between
-lines 21 and 40. The analyzer publishes ZERO uses for that whole 56-line file, which
-is correct: the code cannot compile. The oracle emits truth for it anyway.
+Identical edge counts either way. tree-sitter-c parses inside the guard and the
+analyzer walks it, so "#if 0 is why wmemcmp.c is empty" was never true.
 
-That is structural, not a rotation accident. `grep -nE "if0|inactive|IF0"` over the
-22,715-line oracle returns NOTHING: the oracle has no notion of inactive
-preprocessor regions anywhere, so it walks `#if 0` branches exactly like live code.
+**And these rows were already adjudicated.** This section also re-derived, as a new
+finding, a K&R gap that this same file records at line 962: "A local collector fix
+for old-style `declaration_list` parameters is real and correct, but every K&R
+definition measured in these corpora sits inside `#if 0`, so it moved nothing
+(13/16 either way). It is recorded rather than shipped untested." Line 956 further
+classifies `s1`/`s2`/`n` as **oracle fabrications** — old-style parameters with no
+`function_definition` to attach them to — not analyzer misses.
 
-**Blast radius, measured.** Of 400 sampled `.c` files in
-`zig/lib/libc/mingw`, 12 contain an `#if 0` region — 3.0%. A 60-file rotation
-therefore samples ~1.8 of them, which is the entire observed MISSING swing. So the
-C differential has a structural MISSING FLOOR of roughly two files per rotation that
-has nothing to do with the analyzer, and any rotation where it reads 0 is luck
-rather than a clean bill.
+So the `#if 0` regions are inert for the ANALYZER's count and the reason the oracle
+rows persist is that a K&R definition yields no `function_definition` at all. The
+oracle having no `#if 0` filter is real, but it is not the cause of these rows and no
+MISSING floor was demonstrated.
 
-`TlsDtorNode` is the one live row, and it is a different question. It is a
-`typedef struct` used as a variable's type at line 65, and the analyzer publishes no
-type-position `uses` ANYWHERE — measured across five shapes:
+**What actually survives is one row.** `TlsDtorNode` in
+`zig/lib/libc/mingw/crt/tlssup.c` is LIVE (only an `#ifndef WIN32_LEAN_AND_MEAN`
+above it), and it exposes something larger than itself: the analyzer models **no
+function parameters at all**.
 
-    struct S{}; S *v;                        no uses
-    typedef struct T { int a; } T; T *v;     no uses
-    typedef struct T { int a; } T; T d;      no uses
-    typedef int MyInt; MyInt x;              no uses
-    typedef struct T { struct T *next; } T;
-      void f(T *p){ p->next; }               1 use, and not the type
+    int add(int a, int b){ return a + b; }   rels: (none)   syms: function:add
+    int g; int h(void){ return g; }          rels: uses:h->g
 
-`tlssup.c` carries 19 uses, none of them touching `TlsDtorNode` or `dtor_list`. The
-oracle is arguably right that `T *v` USES `T`; the analyzer is consistently silent on
-type position. Adopting it is a corpus-wide SCOPE decision, not a patch — every
-declaration in every file would gain edges — so it is recorded here, NOT taken here.
-Both items are inherited, neither was introduced by #978.
+A global reference yields `uses`; a parameter reference yields NOTHING — no `uses`,
+and no parameter symbols, despite `docs` line 39 claiming `parameter_list` ->
+name/type pairs "stored on function symbols". They are stored and never surfaced.
+That is the undecided item, and it is a SCOPE decision rather than a patch, since
+every function in the corpus would gain edges.
+
+**The lesson, three times over.** `4e4d43d4` (#981 phantoms), `0c22b03b` (#981
+contains) and now this were each written from one observation without first reading
+what this file and the analyzer already concluded. Each was individually plausible and
+each was wrong. The check that catches all three is the same and cheap: read the
+section on the topic, and grep the code, BEFORE writing the mechanism.
 
 ### #981: `contains` independent reach reaches curl — and immediately finds two real defects
 
