@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64a",
+  "tool": "bb_health",
+  "title": "bb_health actionability: which integrity check failed, which language is searchable, and what this call cost",
+  "verifiedState": "verified",
+  "layers": [
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "a healthy battery still prints its summary line",
+      "pass": true,
+      "detail": "integrity: 100% (0 errors, 0 warnings, 12 scored + 1 informational checks)"
+    },
+    {
+      "name": "and names NO checks when nothing failed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the healthy case must add nothing"
+    },
+    {
+      "name": "it states the scored/informational split",
+      "pass": true,
+      "detail": "integrity: 100% (0 errors, 0 warnings, 12 scored + 1 informational checks)"
+    },
+    {
+      "name": "a failed check is NAMED in the text form",
+      "pass": true,
+      "detail": "  WARN  Orphan Owner References: 15 symbols reference an owner_symbol_id that is not a synthetic container and matches no stored symbol. -> "
+    },
+    {
+      "name": "its severity is on the line",
+      "pass": true,
+      "detail": "  WARN  Orphan Owner References: 15 symbols "
+    },
+    {
+      "name": "it carries the check's own REMEDIATION, not just its name",
+      "pass": true,
+      "detail": "  WARN  Orphan Owner References: 15 symbols reference an owner_symbol_id that is not a synthetic container and matches no stored symbol. -> Re-index the affected files (`"
+    },
+    {
+      "name": "and it does not inline the whole paragraph [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "longest detail line 296 chars (the orphan-owner remediation is 3 sentences; only the first, the instruction, is inlined)"
+    },
+    {
+      "name": "the remediation's first sentence is the instruction, not the caveat",
+      "pass": true,
+      "detail": "the dropped second sentence is where --force is documented NOT to help — it stays in integrity.checks[]"
+    },
+    {
+      "name": "no 'run bb_health(integrity=true) for details' pointer is needed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the answer is on the line now"
+    },
+    {
+      "name": "the report object still carries all 13 checks",
+      "pass": true,
+      "detail": "13 checks"
+    },
+    {
+      "name": "and the orphan check is now non-ok",
+      "pass": true,
+      "detail": "status=warn with 15 orphans (threshold is >10 to warn)"
+    },
+    {
+      "name": "a description containing a decimal renders in full",
+      "pass": true,
+      "detail": "  WARN  Relationship Density: 0.27 relationships per symbol. -> Check if the project's pri"
+    },
+    {
+      "name": "every indexed language appears, not only the embedded ones",
+      "pass": true,
+      "detail": "byLanguage=3 languages=3 (python,typescript,ruby)"
+    },
+    {
+      "name": "each row carries symbols, embedded and a percentage",
+      "pass": true,
+      "detail": "{\"language\":\"python\",\"symbols\":6,\"embedded\":6,\"searchablePercent\":100}"
+    },
+    {
+      "name": "embedded never exceeds symbols",
+      "pass": true,
+      "detail": "python 6/6 typescript 6/6 ruby 6/6"
+    },
+    {
+      "name": "the percentage matches its own operands",
+      "pass": true,
+      "detail": "python:100% typescript:100% ruby:100%"
+    },
+    {
+      "name": "the per-language embedded counts sum to the report's own entity count",
+      "pass": true,
+      "detail": "sum=18 embeddedEntities=18 — the join must not count anything the census does not"
+    },
+    {
+      "name": "and the per-language symbol counts sum to counts.symbols",
+      "pass": true,
+      "detail": "sum=18 counts.symbols=18"
+    },
+    {
+      "name": "verbose prints the joined census",
+      "pass": true,
+      "detail": "searchable by language: python:6/6(100%) typescript:6/6(100%) ruby:6/6(100%)"
+    },
+    {
+      "name": "each language shows embedded/total and a percentage",
+      "pass": true,
+      "detail": "searchable by language: python:6/6(100%) typescript:6/6(100%) ruby:6/6(100%)"
+    },
+    {
+      "name": "no unsearchable line is invented when every language has vectors [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "dead=0"
+    },
+    {
+      "name": "the join stays out of the DEFAULT output (verbose owns breakdowns) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the default line count must not grow for this"
+    },
+    {
+      "name": "a call reports its own cost",
+      "pass": true,
+      "detail": "totalMs=21"
+    },
+    {
+      "name": "every phase is a number, not null/NaN",
+      "pass": true,
+      "detail": "{\"totalMs\":21,\"aggregatesMs\":2,\"freshnessMs\":1,\"integrityMs\":0,\"refreshMs\":0,\"pathsMs\":0}"
+    },
+    {
+      "name": "a call that did NOT run integrity reports integrityMs=0",
+      "pass": true,
+      "detail": "integrityMs=0 with integrity:false"
+    },
+    {
+      "name": "a call that did NOT refresh reports refreshMs=0",
+      "pass": true,
+      "detail": "refreshMs=0"
+    },
+    {
+      "name": "the phases do not exceed the total (no double counting)",
+      "pass": true,
+      "detail": "phases=3 total=21"
+    },
+    {
+      "name": "the text form prints this call's cost",
+      "pass": true,
+      "detail": "this call: total=21ms (freshness=1ms aggregates=2ms)"
+    },
+    {
+      "name": "a warm default call omits the zero phases [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "this call: total=21ms (freshness=1ms aggregates=2ms)"
+    },
+    {
+      "name": "the index run's cost is labelled as the index run, not as perf of this call",
+      "pass": true,
+      "detail": "index run: schemaVersion=1 runs=1 latestWallMs=n/a (the last INDEX RUN, not this call)"
+    },
+    {
+      "name": "the ambiguous bare `perf:` label is gone [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "two different measurements were on adjacent lines under one label"
+    },
+    {
+      "name": "running integrity makes its phase non-zero and visible",
+      "pass": true,
+      "detail": "integrityMs=52"
+    },
+    {
+      "name": "and the line shows it",
+      "pass": true,
+      "detail": "this call: total=65ms (integrity=52ms freshness=1ms aggregates=3ms)"
+    },
+    {
+      "name": "the freshness phase is wired (non-zero where there is real work)",
+      "pass": true,
+      "detail": "freshnessMs=110 over 400 files"
+    },
+    {
+      "name": "the battery REUSES the freshness verdicts rather than re-reading the corpus",
+      "pass": true,
+      "detail": "0 of 400 indexed files have changed on disk since indexing. EXACT: every indexed file was resolved against disk, and t"
+    },
+    {
+      "name": "the battery is handed the scan it would otherwise repeat, and says so",
+      "pass": true,
+      "detail": "Hash Drift claims the SAME verdicts; Files Missing says its counts come from the scan this report already ran. Measured: integrity=97ms vs freshness=110ms over 400 files — reported, not asserted: at this fixture size the two phases are the same order of magnitude and an ordering assertion is decided by contention, not by the code"
+    },
+    {
+      "name": "Files Missing reuses them too",
+      "pass": true,
+      "detail": "0 of 400 indexed files no longer exist on disk. EXACT: 0 deleted, 0 unreadable, both from the freshness scan t"
+    },
+    {
+      "name": "the reused Hash Drift count equals the report's own stale count",
+      "pass": true,
+      "detail": "drift=0 freshness.stale=0"
+    },
+    {
+      "name": "and the reused missing count equals the report's own missing count",
+      "pass": true,
+      "detail": "missing=0 freshness.missing=0"
+    },
+    {
+      "name": "the reused verdict is the same measurement, not an approximation",
+      "pass": true,
+      "detail": "the resolver applies the same fast path and the same SHA-256-16 comparison, so the number is the same measurement"
+    },
+    {
+      "name": "with no pre-resolved map the battery does its own scan and AGREES",
+      "pass": true,
+      "detail": "own-scan value=0 vs reused 0"
+    },
+    {
+      "name": "Files Missing: own scan agrees with the reused count",
+      "pass": true,
+      "detail": "own=0 reused=0"
+    },
+    {
+      "name": "a pre-resolved map whose total does not match the index is DISCARDED",
+      "pass": true,
+      "detail": "stale map claimed 12345 drift; the battery reported 0 (truth 0)"
+    }
+  ],
+  "negativeCases": 7,
+  "summary": {
+    "total": 43,
+    "passed": 43,
+    "failed": 0
+  },
+  "decisions": {
+    "A1": "the integrity one-liner names the non-ok checks and carries each check's own first sentence of remediation",
+    "A1_bound": "healthy adds nothing; a pathological project names 3 and counts the rest",
+    "A2": "per-language searchability is the join of the language census and the embedding census, over the same rows a semantic reader searches",
+    "A3": "this call's cost is measured per phase and labelled as distinct from the last index run's",
+    "A3_bound": "zero-valued phases are omitted so a warm call stays one short line"
+  },
+  "limitations": [
+    "Phase timings are wall-clock on a shared machine and are asserted for STRUCTURE (present, non-negative, ordered, non-zero only when the phase ran) rather than for a duration, which no gate can pin."
+  ],
+  "generatedAt": "2026-10-01T03:21:54.118Z"
+}

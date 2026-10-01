@@ -3,53 +3,65 @@
   "code": "CL1",
   "milestone": "M63",
   "status": "verified",
-  "checks": 324,
-  "passed": 324,
+  "checks": 344,
+  "passed": 344,
   "failed": 0,
-  "mutantsCaught": 14,
-  "mutantsTotal": 14,
+  "mutantsCaught": 16,
+  "mutantsTotal": 16,
   "mutantRecords": [
     {
       "id": "M1",
       "name": "pick-one-copy (the old door, planted verbatim)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M2",
       "name": "false absence",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M3",
       "name": "no identity (counterparty stripped)",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     },
     {
       "id": "M4",
       "name": "no bound (limit ignored, truncation undeclared)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M5",
       "name": "cross-project leak (row filter dropped)",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     },
     {
       "id": "M11",
       "name": "unpairable rule removed (a row with no language gets a fabricated pair)",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
+    },
+    {
+      "id": "M16",
+      "name": "the final slice removed (the returned list exceeds its own declared cap)",
+      "caught": true,
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
+    },
+    {
+      "id": "M17",
+      "name": "the depth>=2 descendant count is pinned to zero (absence over-claims again)",
+      "caught": true,
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     },
     {
       "id": "M15",
       "name": "the absence note claims the whole index instead of the searched project",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M14",
@@ -67,35 +79,35 @@
       "id": "M12",
       "name": "collapse rule removed (a same-named cross-language row is emitted twice)",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     },
     {
       "id": "M7",
       "name": "cascade laundered: member rows absorbed into facts",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M8",
       "name": "the pre-CL2 absence rule (own rows only)",
       "caught": true,
-      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+      "note": ""
     },
     {
       "id": "M9",
       "name": "cascade reported with no member to check it against",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     },
     {
       "id": "M6",
       "name": "pair fabrication where the row has no languages",
       "caught": true,
-      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+      "note": "load/throw: TransformError: Transform failed with 1 error:\n$HOME/Documents/Default Project/ishaq/backbencher-brain/src/lsp/__c"
     }
   ],
   "failures": [],
-  "currentCommit": "2d9c5fb96f604f7989bd4ee4f1ebdad58e8c4737",
+  "currentCommit": "06bae005d83c09573d7659a779200d89d6f44518",
   "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
   "evidenceFile": "CL1.json",
   "corpus": {
@@ -224,14 +236,14 @@
       "pairableRows": 8
     },
     {
-      "name": "*1",
+      "name": "ISeq",
       "copies": 1,
       "storedRows": 0,
       "toolFacts": 0,
       "pairableRows": 0
     }
   ],
-  "generatedAt": "2026-09-30T03:17:37.055Z",
+  "generatedAt": "2026-09-30T22:47:30.670Z",
   "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
   "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
   "limitations": [
@@ -241,7 +253,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T03:17:37.058Z",
-    "contentSha256": "f16acda35980c903ee657e0d1251e7702a49a0ea6d6f3f7400a4293c8b573d99"
+    "sealedAt": "2026-09-30T22:47:30.675Z",
+    "contentSha256": "f867e5b2980c9d9691e761a70c06a02d81624a76f186cfc7a450b875f74893b5"
   }
 }

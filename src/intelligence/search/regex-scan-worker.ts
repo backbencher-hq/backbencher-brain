@@ -14,11 +14,19 @@
 // the process — not just the call, the whole server.
 //
 // The only correct fix is isolation with a hard kill. The MATCHING runs in a
-// worker thread that the parent terminates on a deadline. The DATABASE READ
-// stays on the caller's connection and is bounded and measured (~1s for 20k
-// rows), because a second better-sqlite3 handle cannot see this project's
-// write-ahead log and would silently match nothing — a failure that looks
-// exactly like "your pattern has no matches".
+// worker thread that the parent terminates on a deadline, and the DATABASE READ
+// stays on the caller's connection because it is bounded and measured (~1s for
+// 20k rows).
+//
+// An earlier version of this comment claimed a second connection "cannot see
+// this project's write-ahead log and would silently match nothing". That was
+// wrong, and it was wrong in the worst way: the symptom was real — zero matches
+// — but the cause was that the index being queried genuinely held zero symbols,
+// because an earlier run had been interrupted. Measured later, a readonly handle
+// and a read-write handle both read 13,610 rows from the same WAL database. The
+// worker design stands on the measurement above and needs nothing from that
+// claim; the claim itself is retracted so the next reader is not sent looking
+// for a bug in SQLite.
 
 import { Worker, parentPort, workerData } from "node:worker_threads"
 
