@@ -624,6 +624,43 @@ view carries the same charge — otherwise the two effort views would disagree a
 their difference would come out negative, which is round 3's defect reintroduced
 through a different door.
 
+### The rates are data, and one of them is applied to unequal things
+
+`methodology.rates` reports the three constants as numbers, and every total is
+computed from them:
+
+```jsonc
+"rates": { "baseHoursPerComponent": 4, "relationshipHoursPerEdge": 2, "hoursPerUnmappedLibrary": 6 }
+```
+
+Publishing them is not a claim that they are right — they are uncalibrated
+methodology, never fitted against a completed migration. It is a claim that they
+are the *only* inputs, so a reader can substitute their own.
+
+**The per-edge rate is one number applied to kinds that are not the same work.**
+Porting a `calls` edge means rewriting an invocation and its arguments; porting a
+`references` edge usually means changing a type annotation or an import. Nothing
+here can say by how much those differ, because the 2h is not fitted. What *is*
+measured — and reported as `methodology.relationshipByKind`, over the same
+deduplicated edge set the total comes from, so it always sums to
+`relationshipHours` — is how much of the budget rests on that equivalence.
+
+On cobra's `command.go` cohort:
+
+| Kind | Charged edges | Hours | Share |
+|---|---|---|---|
+| `references` | 327 | 654 | 35.5% |
+| `uses` | 267 | 534 | 29.0% |
+| `instantiates` | 230 | 460 | 24.9% |
+| **`calls`** | **136** | **272** | **14.8%** |
+| `imports` | 1 | 2 | 0.1% |
+
+The largest share is `references`; **call sites are a minority of it.** A reader
+who took "1844h of relationship work" to mean "1844h of call sites to port" is
+wrong by a factor of nearly seven, and nothing in the previous output said so. The
+text formatter prints the split and adds the caveat whenever the dominant kind is
+not `calls` and holds more than a quarter of the budget.
+
 The batch total and the per-plan figure use **one** chargeability rule, declared
 once. When they diverged, the tool printed a "shared relationship hours" figure
 of **minus four** — a negative number in a field meant to be a saving. The
@@ -756,6 +793,14 @@ does not make the advice true.
   separate analyzer gap, declared rather than averaged away.
 - **Python has no stdlib classification here**, so its split is `unclassified`
   rather than a guess. `os` and `json` are not listed as dependencies.
+- **The effort constants are uncalibrated.** 4h / 2h / 6h are declared methodology,
+  never fitted against a completed migration. They are reported as data
+  (`methodology.rates`) and every total is computed from them, so a reader can
+  substitute their own. The 2h is one rate applied to `calls`, `references`, `uses`
+  and `instantiates` alike, which are materially different work —
+  `methodology.relationshipByKind` reports how much of the total rests on that
+  equivalence, and on cobra the largest share is `references`, not `calls`. Making
+  the rates *correct* needs a completed migration; making them *visible* is done.
 - Ordering and mapping depend on the analyzer-extracted graph. Reflection,
   dynamic dispatch, and cross-file relations the grammar does not model limit
   completeness.
