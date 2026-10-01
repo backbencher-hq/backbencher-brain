@@ -563,6 +563,115 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // ─────────────────────────────────────────────────────────────────────
 
+    // M60/SDJ-9 — EXTENSION METHOD IDENTITY.
+    //
+    // A Scala 3 extension method is in scope ONLY for its receiver type, so
+    // (receiver, name) is its identity and the receiver is not a detail. The
+    // walk used to publish the bare name, so every extension method in a file
+    // collapsed onto `Owner.name` regardless of receiver.
+    //
+    // Measured over scala3 (script/m14/tmp/scala-extension-identity.ts): 660
+    // files declare 3,203 extension methods across 1,399 blocks, and in **75
+    // files, 177 names are declared in 2+ blocks with DIFFERENT receivers** —
+    // e.g. FileUtils.scala declares `isPackage` for both AbstractFile and JFile
+    // and published both as `FileUtils.isPackage`, byte-identical apart from
+    // range. Nothing downstream could separate them.
+    //
+    // The fix decorates ONLY the ambiguous ones, as `name@Receiver`:
+    //
+    // - Not always. A call's target is the callee as WRITTEN (`f.isPackage` ->
+    //   `isPackage`), and resolution matches that against a symbol name. If all
+    //   3,203 were renamed, the ~3,026 unambiguous ones would stop resolving to
+    //   fix the 177 broken ones — a large regression traded for a small gain.
+    // - Not on the first/second occurrence. "Which one keeps the bare name"
+    //   would be decided by source order, so the published identity of a given
+    //   method would change when an unrelated line was added above it. Every
+    //   colliding member is decorated instead, which is order-INDEPENDENT:
+    //   both `isPackage` become `isPackage@AbstractFile` and `isPackage@JFile`.
+    // - The receiver leaf follows the family `lastSegment` convention used for
+    //   every other target, and it is the same string the `uses` edge already
+    //   publishes, so the name and the edge cannot disagree.
+    //
+    // A genuine duplicate (same receiver AND same name declared twice) is a
+    // compile error, not a naming problem; those keep the receiver form and the
+    // index dedupes them as before.
+    //
+    // Runs HERE — after the walk, before any relationship pass — so that
+    // contains, overrides and uses all build from the corrected name and no
+    // pass has to be taught about the old one.
+    {
+      // owner -> name -> the extension methods declaring that name. The key is
+      // `ownerName ?? ""` and NOT a skipped case: a TOP-LEVEL extension method has
+      // no owner, so `parent.id + "." + name` collapses to the bare name and two
+      // top-level extensions declaring the same name collide on it. Measured:
+      // CaptureOps.scala declares `derivesFromCapability` for both `tp: Type` and
+      // `sym: Symbol` in top-level blocks, and both published as the bare
+      // `derivesFromCapability`. Top-level methods emit no `contains` edge at all,
+      // so this needs no change on the oracle side.
+      const extByOwnerName = new Map<string, Map<string, ASTEngine.UniversalSymbol[]>>()
+      for (const s of symbols) {
+        const recv = s.metadata?.extensionReceiver
+        if (!recv) continue
+        const own = s.ownerName ?? ""
+        let byName = extByOwnerName.get(own)
+        if (!byName) { byName = new Map(); extByOwnerName.set(own, byName) }
+        const list = byName.get(s.name)
+        if (list) list.push(s)
+        else byName.set(s.name, [s])
+      }
+      // The receiver leaf: last dot/bracket-separated segment, no regex.
+      const receiverLeaf = (t: string): string => {
+        let s = t
+        const cut = s.indexOf("[")
+        if (cut > 0) s = s.slice(0, cut)
+        const dot = s.lastIndexOf(".")
+        if (dot >= 0) s = s.slice(dot + 1)
+        return s.trim()
+      }
+      for (const byName of extByOwnerName.values()) {
+        for (const group of byName.values()) {
+          // The criterion is 2+ DECLARATIONS, not 2+ distinct receivers, and the
+          // two are NOT the same thing: PPrint.scala:322 declares two `substring`
+          // OVERLOADS inside ONE extension block
+          // (`substring(range: Option[s.Range])` and `substring(range: s.Range)`).
+          // Those are legitimate overloading — separable by signature, exactly like
+          // the 1,522 plain same-owner overloads this lane deliberately leaves
+          // alone — and they share a receiver, so the receiver cannot tell them
+          // apart and decorating them would be a lie. They are also what a
+          // method-COUNT criterion gets wrong: it would rename both to the same
+          // `substring@SourceFile`, colliding them just as hard while telling the
+          // user a distinction that is not there.
+          //
+          // It also breaks the lane outright. The oracle counts DISTINCT RECEIVERS,
+          // so a method-count analyzer publishes `substring@SourceFile` where the
+          // oracle publishes `substring` — a false MISSING on every overload in a
+          // single-block extension. Found by running both sides over PPrint.scala
+          // (script/m14/tmp/scala-ext-agree.ts).
+          if (group.length < 2) continue
+          const receivers = new Set(group.map((s) => String(s.metadata!.extensionReceiver!)))
+          if (receivers.size < 2) continue
+          for (const s of group) {
+            const leaf = receiverLeaf(String(s.metadata!.extensionReceiver!))
+            const renamed = leaf.length > 0 ? `${s.name}@${leaf}` : `${s.name}@ext${group.indexOf(s) + 1}`
+            // The extension `uses` edge is pushed DURING the walk, before this
+            // pass, so it still carries the bare name as its source. It cannot
+            // be matched by name alone — two colliding members share that name —
+            // but it already names its RECEIVER as the target, and that is
+            // exactly what distinguishes them. Without this the edge would claim
+            // a source that no symbol has.
+            for (const r of relationships) {
+              if (r.metadata?.relationshipType !== "scala_extension_method") continue
+              if (r.source !== s.name) continue
+              if (r.target !== s.metadata!.extensionReceiver) continue
+              r.source = renamed
+            }
+            s.name = renamed
+            s.id = s.ownerName ? `${s.ownerName}.${renamed}` : renamed
+          }
+        }
+      }
+    }
+
     // Relationship post-pass (matches the Kotlin/Java contract):
     //   contains    owner → member
     //   overrides   real methods with 'override' modifier → declaring parent
@@ -2533,6 +2642,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // extension_definition's parameters, NOT on the function node, and
         // the wrapper never becomes a parent symbol. Detect via ancestors.
         isExtension: !!extensionReceiverType,
+        // M60/SDJ-9: the receiver is SEMANTIC — a Scala 3 extension method is
+        // in scope only for its receiver type — and it was recorded NOWHERE.
+        // Two `isPackage` methods, one on AbstractFile and one on JFile,
+        // published byte-identical symbols: same id (`FileUtils.isPackage`),
+        // same kind, same owner, no field to tell them apart. Storing the
+        // receiver is pure information gain and is what lets the identity pass
+        // below separate them.
+        extensionReceiver: extensionReceiverType,
         complexity: this.calculateScalaFunctionComplexity(node),
       },
     )
