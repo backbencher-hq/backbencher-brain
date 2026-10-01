@@ -154,39 +154,58 @@ were in no audited set and had no derivation at all — ~34% of the payload, cor
 by nothing. Both are now derived in the standalone oracle and audited, which is what made the two identity
 defects below findable at all: both are *containment* facts.
 
-**Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the standalone oracle
-`script/m14/ruby-truth.ts`, selected with `BB_RB_ORACLE`):
+**Full corpus, 8,528 `.rb` files, all 8 emitted labels** (`rb-corpus-census.ts` + the standalone
+oracle `script/m14/ruby-truth.ts`, selected with `BB_RB_ORACLE`):
 
 | reading | value |
 |---|---|
-| outside the audited set | **0%** (was 34%) |
-| MISSING | **2,720 (0.418%)** — `contains` 1,067, `calls` 905, `references` 311, `implements` 274, `uses` 144 |
-| UNEXPLAINED | **634 (0.222%)** — `calls` 330, `contains` 253, `instantiates` 50, `implements` 1 |
-| — of which cross-file (out of scope, see below) | 4,118 |
+| outside the audited set | **0%** — every emitted type has an independent derivation |
+| MISSING | **281 (0.043%)** — `calls` 278, `instantiates` 1, `contains` 1, `uses` 1 |
+| UNEXPLAINED | **317 (0.111%)** — `calls` 298, `instantiates` 19 |
+| — of which cross-file (out of scope) | 3,740 |
 
-**The oracle is single-file by construction, and that is now accounted for separately.** It reads one
-file's tree, so an analyzer edge whose target is *defined in another file* cannot be matched by it — not
-because either side is wrong, but because the question is unanswerable from one tree. Those 4,118 edges
-(`calls` 3,192, `uses` 568, `contains` 353, `overrides` 5) are reported as cross-file rather than folded
-into "unexplained"; doing the latter overstated the gap roughly sevenfold (11,843 → 634 once separated).
+**The oracle is single-file by construction, and that is accounted for separately.** It reads one file's
+tree, so an analyzer edge whose target is *defined in another file* cannot be matched by it — not because
+either side is wrong, but because the question is unanswerable from one tree. Those 3,740 edges
+(`calls` 2,852, `uses` 568, `contains` 321) are reported as cross-file rather than folded into
+"unexplained". Conflating them overstated the gap roughly sevenfold in an earlier measurement.
 
-The 634 remaining are genuine same-file disagreements. Per-label causes are itemised in review §40; the
-`calls` 330 are mostly helpers defined in a superclass or included concern, which a single-file oracle
-cannot see, and `contains` 253 is qualified-name and `defined_type` attribution.
+**The 317 that remain are the same-file, different-class case.** A helper defined in one class and called
+from a sibling's method — `next_page` defined in an outbox controller and called from a contexts
+presenter — is resolvable only by following an inheritance or `include` chain, which a single-file oracle
+that reads one tree at a time does not build. Each has a named, reproducible example; none is an
+unexplained disagreement about semantics.
 
-**Where the oracle lives, and why.** It used to be `deriveRubyEdges` inside the shared
-`script/m14/differential.ts`. That file is shared by at least six language lanes and was rewritten
-wholesale six times during this work — once replacing the Ruby derivation with a PHP-derived generic keyed
-on node types (`method_declaration`, `class_declaration`) that do not exist in the Ruby grammar, at which
-point UNEXPLAINED measured **80,761 (28.3%)**. The oracle now lives in **`script/m14/ruby-truth.ts`**,
-which is not a shared file. It contains no regular expressions at all.
+### What the oracle is, and where it lives
 
-**Reading `extends` requires reading `source`, not `from`.** The emitted relationship key is `source`
-(the census reads `r.source ?? r.from`). A probe reading `r.from` reports `undefined` and makes it look
-as though inheritance edges carry no source — which is how one "correction" to this lane's oracle made
-things worse for two rounds. Also note `RUBY_BUILTINS` is the analyzer's *suppression list*, not a
-judgement about the Ruby language: adding an entry that is not in that list is always wrong, even when
-the entry looks obviously like a framework helper.
+`script/m14/ruby-truth.ts`, standalone by design. It used to be `deriveRubyEdges` inside the shared
+`script/m14/differential.ts`, a file six language lanes rewrite; it was replaced wholesale six times
+during this work, once by a PHP-derived generic keyed on node types (`method_declaration`,
+`class_declaration`) that do not exist in the Ruby grammar, at which point the unexplained count measured
+**80,761 (28.3%)**. The oracle contains **no regular expressions** — pure structural rules plus
+character scans, so "no regex" is a property of the construction rather than a lint that can be
+forgotten.
+
+`script/m14/tmp/rb-oracle-agreement.ts` is a permanent **99-case** suite (74 positive, 25 negative) that
+computes the analyzer's edges live, so it fails if either side moves. The negative half is the
+load-bearing half: each case is a shape where the answer is *nothing*, because most of the large defects
+here were rules that asserted more than the contract, and each was found by asking what the analyzer
+does when it emits no edge at all.
+
+### Four things that are easy to get wrong here, and cost real time to get wrong
+
+- **`extends` carries its source under `source`, not `from`.** A probe reading `r.from` prints
+  `undefined` and looks like proof the edge has no source — which is how one "correction" to this lane's
+  oracle made things worse for two rounds.
+- **`RUBY_BUILTINS` is the analyzer's *suppression list*, not a judgement about the language.** Adding
+  an entry that is not in that list is always wrong, even for a name that looks obviously like a
+  framework helper (`flash`, `redirect_to`, `params` are all emitted).
+- **A mixin target must be a *constant*, and a member needs a *namable* owner.** `include local_account`
+  publishes nothing (a lowercase identifier is a local, and in RSpec a `let`), and `attr_reader :site`
+  inside `Class.new do … end` publishes no member because nothing names the class.
+- **This grammar wraps the node you want.** `superclass`, `splat_parameter`, `destructured_parameter` and
+  `exception_variable` all wrap the interesting child, and reading the field expecting a leaf returns
+  nothing — silently, for the entire corpus.
 
 ## Line numbers
 
@@ -288,12 +307,23 @@ Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
   committed sealed artifact is left untouched, because re-running the shared script drops its `bbSeal`
   and adds other lanes' rows — see the review §7.2)
 - Differential on three corpora this lane had never been run against: rubocop **MISSING 0 / unexplained
-  0**; mastodon **0 / 79**; rails **20 / 59**. **All** of the residual is oracle-side and is adjudicated in
-  the review §4.2. Those figures predate the standalone oracle and are kept for continuity; the current
-  whole-corpus reading is the table above.
-- **Symbol coverage and performance have not been re-measured since the later fixes.** Neither is claimed
-  here: `rb-node-coverage.ts` and a Ruby performance benchmark are still outstanding, so this document
-  should not be read as asserting 100% symbol coverage or a performance ceiling.
+  0**; mastodon **0 / 79**; rails **20 / 59**. Those figures predate the standalone oracle and are kept
+  for continuity; the current whole-corpus reading is the table above.
+- Repository-wide relationship-type gate: **ruby 8 emitted, 8 audited, 0 findings** — both of Ruby's
+  recorded DERIVATION debts are repaid and removed from the shrink-only baseline. Gate self-test
+  **17/17**.
+- **Symbol coverage** (`rb-node-coverage.ts`, full corpus): the analyzer names 67 of the 284 grammar node
+  types and the unreferenced ones are overwhelmingly literal or lexical nodes (`string_content`,
+  `comment`, `pair`, `integer`, heredoc parts) that require no declaration rule. The remaining
+  declaration-relevant unreferenced types are pinned in the tool's own ranked output. This is **not** a
+  claim of 100% symbol coverage and the document does not make one.
+- **Performance** (`rb-benchmark.ts`, full 8,528-file corpus, parse isolated, warm, best-of-3):
+  **181 files/s and ~14,900 relationships/s single-threaded; p95 19.9 ms, p99 68.4 ms, max 613 ms** over
+  702,932 relationships and 81,861 symbols. A CPU profile attributes the remaining time to WASM-to-JS
+  node marshalling (`setValue`, `marshalNode`, `get type`, `namedChild`) rather than to analyzer logic,
+  so the binding is the ceiling, not the traversal. Budgets are pinned at p95 <= 40 ms, max <= 4 s and
+  >= 150 files/s — set from the measurement with ~15% headroom rather than from an aspiration, because a
+  budget pinned at the measurement fails on any slower machine and trains its reader to ignore it.
 - Stride census, 400 files per corpus: **zero analyzer-side fabrications after this round**; every
   remaining unexplained edge is an `uses` association the read oracle has no truth derivation for, and
   every remaining missing edge is an `overrides` edge the read oracle fabricated through a nested-class
