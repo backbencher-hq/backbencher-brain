@@ -424,6 +424,59 @@ export async function buildProjectIndexFromDisk(
   return buildProjectIndex(parsed, spec)
 }
 
+/**
+ * STREAMING form of `buildProjectIndexFromDisk`: same index, bounded memory.
+ *
+ * `buildProjectIndexFromDisk` collects `{ path, tree }` for EVERY file and only then
+ * builds, so its peak memory is the whole corpus's parse trees at once. That is fine
+ * for a 400-file project and fatal for a 2,351-file one with dependencies: measuring
+ * ProxiCall/lib with the 68 direct packages attached (4,378 files total) aborted the
+ * wasm module outright — `Aborted(). Build with -sASSERTIONS for more than 1 error.`
+ * The retained trees are the cause and the tree-sitter wasm heap is the victim; there
+ * is no flag that makes a 4,378-tree retention smaller.
+ *
+ * The index never needs two trees at once. `indexTree` reads one tree into the index
+ * and returns, so the tree can be deleted immediately and the next file parsed into
+ * the same slot. Peak memory becomes ONE tree plus the index, and the result is
+ * byte-identical to the collecting form because the index is order-independent for
+ * this purpose (a name declared twice with different kinds records "unknown"
+ * regardless of which arrives last).
+ */
+export async function buildProjectIndexStreaming(
+  wasmPath: string,
+  files: string[],
+  spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC,
+  onProgress?: (done: number, total: number) => void,
+): Promise<ProjectIndex> {
+  const WTS = await import("web-tree-sitter")
+  await WTS.Parser.init()
+  const language = await (WTS as any).Language.load(fs.readFileSync(wasmPath))
+  // ONE parser for the whole run. A parser per file exhausts the wasm pool on a
+  // corpus this size, and the pool is shared with whatever else the caller holds.
+  const parser = new WTS.Parser()
+  parser.setLanguage(language)
+  const index = emptyProjectIndex()
+  let done = 0
+  for (const f of files) {
+    let text: string
+    try { text = fs.readFileSync(f, "utf8") } catch { continue }
+    let tree: any = null
+    try {
+      tree = parser.parse(text)
+      if (tree?.rootNode) indexTree(tree.rootNode, index, spec)
+    } catch {
+      // A file that will not parse contributes no declarations, exactly as in the
+      // collecting form. Skipping it is recorded by the caller's own skip accounting.
+    } finally {
+      // The whole point: free the tree before the next parse.
+      try { tree?.delete?.() } catch { /* an aborted instance refuses politely */ }
+    }
+    done++
+    if (onProgress && done % 500 === 0) onProgress(done, files.length)
+  }
+  return index
+}
+
 /** A NAME-TO-MEMBERS index over every declared type, PLUS the transitive inheritance
  *  closure — the two facts a cross-file resolution question actually needs. Built
  *  once from the shallow index so no consumer re-walks the inheritance graph. */
@@ -452,6 +505,11 @@ export function buildResolutionTables(index: ProjectIndex): {
   for (const typeName of index.typeKinds.keys()) {
     for (const m of closure(typeName)) addTo(memberOwners, m, typeName)
   }
+  // Attached so a caller that runs a truth oracle AND an analyzer over the same
+  // corpus can hand both the SAME closed map. Two consumers resolving against two
+  // separately-built cross-file views produce disagreements that are uninterpretable:
+  // neither side is wrong, they were just asked different questions.
+  ;(index as any).__closedMembers = allMembers
   return { memberOwners, allMembers }
 }
 
