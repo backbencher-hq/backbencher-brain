@@ -328,6 +328,13 @@ export namespace ASTEngine {
     Union = "union", // Zig/C union types
     Mixin = "mixin", // Dart mixin declaration
     Extension = "extension", // Dart extension declaration
+    // An INSTANCE of a class/trait, distinct from the class itself. Haskell
+    // `instance C (T x)` names its TARGET TYPE, so publishing it as a Class
+    // made the module look like it DECLARED that type. A separate kind lets
+    // the indexer keep the symbol while skipping it in the universal
+    // `contains` derivation. String-valued and appended last, so no
+    // existing kind value changes.
+    Instance = "instance",
   }
 
   export interface Parameter {
@@ -1889,6 +1896,21 @@ export namespace ASTEngine {
     /** Owner type name → declared method names, built from previously parsed
      *  files. Used for cross-file override-target resolution. */
     overrideCompanion?: Map<string, Set<string>>
+    /**
+     * Owner type name → (method name → its visibility), parallel to
+     * `overrideCompanion`. ADDITIVE and optional: absent means "visibility unknown",
+     * which is the pre-M60 behaviour and the reason an `overrides` edge used to be
+     * published for a `private` base method.
+     *
+     * PHP does not inherit private methods — a subclass method of the same name is a
+     * DIFFERENT method, not an override — so a name set alone cannot decide an override.
+     * A companion that carried names only therefore cannot decide one either, and the
+     * edge it produced was wrong. This channel lets a caller supply what the name set
+     * omits. Populated by the php differential (`buildPhpOverrideCompanion`, which reads
+     * modifiers off the tree) and by `run-fixtures.ts`'s opt-in cross-file path; absent
+     * in production, which is recorded as a known limitation rather than papered over.
+     */
+    overrideCompanionVisibility?: Map<string, Map<string, string>>
     [key: string]: any
   }
 

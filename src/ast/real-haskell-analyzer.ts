@@ -397,7 +397,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // which would collapse into a self-loop in symbol-ID space).
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || (s.scope && s.scope !== ctx.currentModule ? s.scope : undefined)
-      if (_owner && _owner !== s.name) {
+      // An `Instance` is named after the type it instantiates and is owned by the
+      // module that instantiates it, so emitting containment here asserts the
+      // module DECLARES that type:
+      //   instance (...) => Described (List sep) where
+      // would produce `contains Distribution.Described -> List` for a `List` that
+      // is in scope from elsewhere. The relationship that IS a fact about this
+      // module is the `implements` edge the instance pushes itself.
+      if (_owner && _owner !== s.name && s.kind !== ASTEngine.SymbolKind.Instance) {
         this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
@@ -1552,7 +1559,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     ctx.symbols.push({
       name,
-      kind: ASTEngine.SymbolKind.Class,
+      // An INSTANCE, not a class. It is named after the type it instantiates,
+      // and `contains` is derived from symbol ownership, so publishing it as
+      // a Class asserted this module DECLARES that type. The scope pushed for
+      // the body below stays Class on purpose -- method resolution reads it.
+      kind: ASTEngine.SymbolKind.Instance,
       range: instRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
