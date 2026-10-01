@@ -261,6 +261,12 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       "import_attribute",
       "export_attribute",
       "export_type_attribute",
+      // `-include` / `-include_lib` are declarations too. An include-ONLY header has
+      // no symbol to publish but a real dependency to record, so calling it
+      // "grammar damaged" would be as false as calling a comment-only header
+      // damaged was.
+      "pp_include",
+      "pp_include_lib",
     ])
     //
     // AND there is EVIDENCE of damage. The first version fired on the absence of
