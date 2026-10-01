@@ -10781,11 +10781,12 @@ export function derivePhpDeclaredTypeEdgesIndependent(
  * A method declared in one is invisible to this index — which is correct, because an
  * override target must name a class that something can refer to.
  */
-export function buildPhpOverrideCompanion(
+export function buildPhpOverrideCompanionWithVisibility(
   files: readonly string[],
   parse: (f: string) => any,
-): Map<string, Set<string>> {
+): { names: Map<string, Set<string>>; visibility: Map<string, Map<string, string>> } {
   const out = new Map<string, Set<string>>()
+  const vis = new Map<string, Map<string, string>>()
   for (const f of files) {
     let tree: any
     try { tree = parse(f) } catch { continue }
@@ -10810,18 +10811,56 @@ export function buildPhpOverrideCompanion(
         if (name && body) {
           let declared = out.get(name)
           if (!declared) { declared = new Set<string>(); out.set(name, declared) }
+          let byName = vis.get(name)
+          if (!byName) { byName = new Map<string, string>(); vis.set(name, byName) }
           for (let i = 0; i < body.namedChildCount; i++) {
             const m = body.namedChild(i)
             if (!m || m.type !== "method_declaration") continue
             const mn = m.childForFieldName?.("name")?.text ?? m.namedChildren?.find?.((c: any) => c.type === "name")?.text
-            if (mn) declared.add(String(mn))
+            if (!mn) continue
+            declared.add(String(mn))
+            // M60 round: VISIBILITY, because a name set cannot decide an override.
+            // PHP does not inherit a private method, so a subclass method of the same name
+            // is a different method. The analyzer filters same-file bases from its OWN
+            // symbols; a CROSS-FILE base can only be filtered from this index, which is
+            // why the index carries modifiers. Read off the grammar's anonymous
+            // `visibility_modifier` tokens rather than from source text.
+            // The modifier is a NAMED `visibility_modifier` whose own child is the
+            // anonymous `private`/`protected`/`public` TOKEN — so reading
+            // `method_declaration`'s children for an anonymous one never fires. The first
+            // draft of this loop did exactly that, and the consequence is worth keeping:
+            // the index reported every method `public`, the filter never applied, and the
+            // differential reported 0 unexplained — because BOTH sides were unfiltered
+            // and agreed on a wrong answer. A shared mistake is invisible to a comparison;
+            // only reading the tree independently catches it.
+            let v = "public"
+            for (let k = 0; k < m.namedChildCount; k++) {
+              const c = m.namedChild(k)
+              if (c?.type !== "visibility_modifier") continue
+              for (let q = 0; q < c.childCount; q++) {
+                const t = c.child(q)
+                if (!t.isNamed && (t.type === "private" || t.type === "protected" || t.type === "public")) { v = t.type; break }
+              }
+              break
+            }
+            // A later declaration of the same name does not overwrite a recorded
+            // `private`: `private` is the restrictive reading and the safe default.
+            if (byName.get(String(mn)) !== "private") byName.set(String(mn), v)
           }
         }
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push(c) }
     }
   }
-  return out
+  return { names: out, visibility: vis }
+}
+
+/** Names only — for callers that do not need the visibility channel. */
+export function buildPhpOverrideCompanion(
+  files: readonly string[],
+  parse: (f: string) => any,
+): Map<string, Set<string>> {
+  return buildPhpOverrideCompanionWithVisibility(files, parse).names
 }
 
 export function derivePhpEdges(
@@ -10840,6 +10879,9 @@ export function derivePhpEdges(
    * SAME-FILE inheritance, which is what it did until the M60 round.
    */
   phpCompanion?: Map<string, Set<string>>,
+  /** Parallel to `phpCompanion`: `owner -> method -> visibility`, so the truth can apply
+   *  the same rule the analyzer applies. See `AnalyzeContext.overrideCompanionVisibility`. */
+  phpCompanionVisibility?: Map<string, Map<string, string>>,
 ): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -11205,6 +11247,8 @@ export function derivePhpEdges(
   // guesses stay oracle-silent by design (0.5, below the lane filter).
   {
     const methodsByClass = new Map<string, Set<string>>()
+    /** `class -> method -> visibility`, for the PRIVATE rule (see the add below). */
+    const methodVis = new Map<string, Map<string, string>>()
     const baseByClass = new Map<string, string>()
     const pre: any[] = [root]
     while (pre.length > 0) {
@@ -11229,17 +11273,58 @@ export function derivePhpEdges(
         const mn = pn.childForFieldName?.("name")?.text ??
           pn.namedChildren.find((c: any) => c.type === "name")?.text
         if (mn) {
+          // M60 round — FIXED, and the change was EXPOSED by wiring the companion rather
+          // than found by looking. This climb stopped at a NAMED type only, so a method
+          // declared inside an ANONYMOUS class (`new class($e) { public function
+          // __construct(...) }`) climbed straight past the anonymous class and was
+          // attributed to the enclosing named class. It was latent: with no
+          // cross-file index the `baseSet` lookup below failed and the bogus entry was
+          // never used, so the wrong `clsSet` could not produce an edge. Handing the
+          // oracle the corpus companion supplied the missing `baseSet` and turned the
+          // latent defect into 7 phantom truth rows on phpunit — every one of them an
+          // anonymous class's `__construct`/`status`/`count`/`toString` claimed as an
+          // override of `TestCase`.
+          //
+          // The analyzer has always had this right (M37.13): "anonymous-class methods are
+          // reached only through `new class { ... }` (owner undefined). The class has no
+          // nameable symbol, so no method symbol / promoted-property is fabricated." So
+          // this was the oracle disagreeing with the analyzer about a rule the analyzer
+          // states explicitly — the mirror-image of the R10 defect, and a reminder that
+          // a latent bug is not a fixed one: it is a bug waiting for the input that
+          // reaches it.
           let own: any = pn.parent
           let og = 0
+          let anonymous = false
           while (own && og++ < 12) {
+            // An anonymous class is not an owner: it has no `name`, so nothing can be
+            // contained BY it and nothing can be keyed on it.
+            if (own.type === "anonymous_class") { anonymous = true; break }
             if (own.type === "class_declaration" || own.type === "interface_declaration" ||
                 own.type === "trait_declaration" || own.type === "enum_declaration") break
             own = own.parent
           }
-          const onm = own ? own.namedChildren.find((c: any) => c.type === "name")?.text : null
+          const onm = own && !anonymous ? own.namedChildren.find((c: any) => c.type === "name")?.text : null
           if (onm) {
             if (!methodsByClass.has(onm)) methodsByClass.set(onm, new Set<string>())
             methodsByClass.get(onm)!.add(mn)
+            // VISIBILITY, for the same reason as the companion index: PHP does not
+            // inherit a private method, so a same-named subclass method is a DIFFERENT
+            // method. Read off the grammar's anonymous modifier tokens.
+            // Same shape as the companion index: the modifier is a named
+            // `visibility_modifier` wrapping an anonymous token, so this reads the wrapper.
+            let mv = "public"
+            for (let q = 0; q < pn.namedChildCount; q++) {
+              const c = pn.namedChild(q)
+              if (c?.type !== "visibility_modifier") continue
+              for (let r = 0; r < c.childCount; r++) {
+                const t = c.child(r)
+                if (!t.isNamed && (t.type === "private" || t.type === "protected" || t.type === "public")) { mv = t.type; break }
+              }
+              break
+            }
+            let vm = methodVis.get(onm)
+            if (!vm) { vm = new Map<string, string>(); methodVis.set(onm, vm) }
+            if (vm.get(mn) !== "private") vm.set(mn, mv)
           }
         }
       }
@@ -11264,10 +11349,18 @@ export function derivePhpEdges(
     // Measured before wiring: 1,092 verifiable (subclass method, base method) pairs
     // over the two pinned repos, of which 1,091 are genuinely cross-file.
     for (const [cls, base] of baseByClass) {
-      const baseSet = methodsByClass.get(base) ?? phpCompanion?.get(base)
+      const inFileSet = methodsByClass.get(base)
+      const baseSet = inFileSet ?? phpCompanion?.get(base)
       const clsSet = methodsByClass.get(cls)
       if (!baseSet || !clsSet) continue
+      // A `private` base method is not inherited, so it can never be overridden. The
+      // same-file reading comes from this file's own modifiers; the cross-file reading
+      // from the companion's visibility channel. Same rule, two sources — and the rule
+      // itself is implemented here, not reached through the analyzer.
+      const visOf = (m: string): string | undefined =>
+        inFileSet ? methodVis.get(base)?.get(m) : phpCompanionVisibility?.get(base)?.get(m)
       for (const m of clsSet) {
+        if (visOf(m) === "private") continue
         if (baseSet.has(m)) push("overrides", `${base}.${m}`)
       }
     }
@@ -19239,6 +19332,24 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       "operation",
     ])
 
+    // RELAX NG: `<element name="doc">` DOES DECLARE — it is a named pattern the
+    // grammar defines. So `element`, `attribute` and `define` all declare, while
+    // `ref` does not: `<ref name="elem"/>` POINTS at a pattern defined elsewhere,
+    // so its `name` is a pointer and publishing a component under it would claim
+    // the document declares something it only mentions.
+    //
+    // Written from RELAX NG's own design — a grammar is a set of named patterns
+    // plus patterns that REFERENCE them — rather than fitted to the analyzer.
+    //
+    // Measured on libxml2's test/relaxng/558452.rng, where getting this backwards
+    // in EITHER direction is visible and the two directions are distinguishable:
+    // treating `ref` as declaring renamed `<element name="doc">`'s subtree into
+    // components named after the refs it uses; treating `element` as
+    // non-declaring did the reverse, leaving `contains start -> element` against
+    // the analyzer's `contains start -> doc`. Each was caught by the other, which
+    // is the only reason the final table is right rather than merely plausible.
+    const XML_RELAXNG_DECLARING = new Set(["element", "attribute", "define"])
+
     const XMLSLT_CONSTRUCTS_NAME = new Set([
       "element",
       "attribute",
@@ -19386,11 +19497,16 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         pfxOf.set(spanKey(n), pfx)
         const colon = written.indexOf(":")
         const pre = colon >= 0 ? written.slice(0, colon) : ""
+        // The LOCAL name — what a vocabulary's construct is actually called. When
+        // the element is written unprefixed under a default `xmlns`, that is the
+        // whole written name, which is why every table lookup below must use this
+        // and not re-slice `written`.
+        const local = colon >= 0 ? written.slice(colon + 1) : written
         const eff = pre ? pfx.get(pre) : ns
         // The declaration-name rule applies per CONSTRUCT, not per vocabulary: an
         // XSLT instruction that constructs a result-tree node is not declaring
         // one, so its `name` is data. See XMLSLT_CONSTRUCTS_NAME.
-        const xsltConstruct = eff === "http://www.w3.org/1999/XSL/Transform" && XMLSLT_CONSTRUCTS_NAME.has(written.slice(pre.length + 1))
+        const xsltConstruct = eff === "http://www.w3.org/1999/XSL/Transform" && XMLSLT_CONSTRUCTS_NAME.has(local)
         if (eff && XML_DECL_NS.has(eff) && !xsltConstruct) {
           // The rule is per-VOCABULARY x per-CONSTRUCT, not per vocabulary: a
           // vocabulary being a declaration vocabulary says its CONSTRUCTS may
@@ -19410,7 +19526,17 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           // last 3 analyzer-only edges in a 2,439-file corpus:
           //   analyzer  pingMe -> wsdl:fault,  wsdl:fault -> name,  wsdl:fault -> soap:fault
           //   oracle    pingMe -> pingMeFault, pingMeFault -> name, pingMeFault -> soap:fault
-          const wsdlRef = eff === "http://schemas.xmlsoap.org/wsdl/" && !XML_WSDL_DECLARING.has(written.slice(pre.length + 1))
+          // And the declaring construct's LOCAL NAME is the unprefixed tail of
+          // the written name. That detail is load-bearing: `<xsl:template
+          // xmlns="http://schemas.xmlsoap.org/wsdl/">` contains `<definitions
+          // targetNamespace="…" name="type_test">`, and the element WRITTEN is the
+          // unprefixed `definitions`, so `written.slice(pre.length + 1)` yields the
+          // whole string and nothing ever matched the table. cxf's
+          // type_test_wsdl.xsl renamed 1,585 edges for exactly that reason, and the
+          // analyzer — which keys on the node's local name — was right.
+          const wsdlRef =
+            (eff === "http://schemas.xmlsoap.org/wsdl/" && !XML_WSDL_DECLARING.has(local))
+            || (eff === "http://relaxng.org/ns/structure/1.0" && !XML_RELAXNG_DECLARING.has(local))
           if (!wsdlRef) {
             const decl = named(tag, "Attribute")
               .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
@@ -21760,19 +21886,28 @@ async function main() {
     // `buildPhpOverrideCompanion`'s header for why that matters — and handed to BOTH
     // sides, as a shared INPUT rather than a shared rule.
     const PHP_OVERRIDE_COMPANION = new Map<string, Set<string>>()
+    const PHP_OVERRIDE_VISIBILITY = new Map<string, Map<string, string>>()
     if (lang === "php") {
       for (const f of files) {
         let tree: any = null
         try { tree = parser.parse(fs.readFileSync(f, "utf8")) } catch { continue }
         try {
-          for (const [k, v] of buildPhpOverrideCompanion([f], () => tree)) {
+          const built = buildPhpOverrideCompanionWithVisibility([f], () => tree)
+          for (const [k, v] of built.names) {
             let cur = PHP_OVERRIDE_COMPANION.get(k)
             if (!cur) { cur = new Set<string>(); PHP_OVERRIDE_COMPANION.set(k, cur) }
             for (const m of v) cur.add(m)
           }
+          for (const [k, v] of built.visibility) {
+            let cur = PHP_OVERRIDE_VISIBILITY.get(k)
+            if (!cur) { cur = new Map<string, string>(); PHP_OVERRIDE_VISIBILITY.set(k, cur) }
+            for (const [m, vis] of v) if (cur.get(m) !== "private") cur.set(m, vis)
+          }
         } finally { try { tree?.delete?.() } catch { /* nothing to free */ } }
       }
-      console.log(`  [php-override-companion] ${PHP_OVERRIDE_COMPANION.size} type names carry a declared-method set`)
+      let priv = 0
+      for (const v of PHP_OVERRIDE_VISIBILITY.values()) for (const vis of v.values()) if (vis === "private") priv++
+      console.log(`  [php-override-companion] ${PHP_OVERRIDE_COMPANION.size} type names carry a declared-method set (${priv} private methods indexed, filtered on both sides)`)
     }
 
     // Swift: same cross-file companion for protocol adoption. A class's first
@@ -21943,7 +22078,7 @@ async function main() {
             : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> }
             // M60 php round: the cross-file override companion, so `overrides` is a
             // COMPARED label rather than one that reads PASS on 0 rows vs 0 rows.
-            : lang === "php" ? { overrideCompanion: PHP_OVERRIDE_COMPANION }
+            : lang === "php" ? { overrideCompanion: PHP_OVERRIDE_COMPANION, overrideCompanionVisibility: PHP_OVERRIDE_VISIBILITY }
             : undefined)
         }
       } catch (err) { noteSkip("analyzer-threw", relPath, err); continue }
@@ -22549,7 +22684,7 @@ async function main() {
         }
       }
       if (lang === "php") {
-        for (const e of derivePhpEdges(root, PHP_OVERRIDE_COMPANION)) {
+        for (const e of derivePhpEdges(root, PHP_OVERRIDE_COMPANION, PHP_OVERRIDE_VISIBILITY)) {
           ;(truth as any[]).push(e)
         }
         // R9 (#835): declared-type references — the analyzer emits them, so the truth
