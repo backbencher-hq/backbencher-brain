@@ -231,7 +231,9 @@ export function isRubyInstanceVariableWrite(node: Node): boolean {
     if (!grand || (grand.type !== "assignment" && grand.type !== "operator_assignment")) return false
     const left = grand.childForFieldName("left")
     if (!left || left.id !== parent.id) return false
-    for (let i = 0; i < parent.namedChildCount; i++) {
+    const _nc1 = parent.namedChildCount
+    for (let i = 0; i < _nc1;
+ i++) {
       const c = parent.namedChild(i)
       if (c && c.id === node.id) return c.type !== "call" && c.type !== "element_reference"
     }
@@ -453,7 +455,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (body) {
           const bodyFrames: typeof stack = []
           let bodyVisibility = "public"
-          for (let i = 0; i < body.namedChildCount; i++) {
+          const _nc2 = body.namedChildCount
+          for (let i = 0; i < _nc2;
+ i++) {
             const child = body.namedChild(i)
             if (!child) continue
             bodyFrames.push({
@@ -480,7 +484,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // walks the superclass subtree (RB-C, rack wave).
         const superNode = this.findChild(node, "superclass")
         if (superNode) {
-          for (let i = 0; i < superNode.namedChildCount; i++) {
+          const _nc3 = superNode.namedChildCount
+          for (let i = 0; i < _nc3;
+ i++) {
             const sc = superNode.namedChild(i)
             // The pinned grammar folds every paren-less/paren'd call into
             // `call`, so only that type is matched here (`command` /
@@ -526,7 +532,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (body) {
           const bodyFrames: typeof stack = []
           let bodyVisibility = "public"
-          for (let i = 0; i < body.namedChildCount; i++) {
+          const _nc4 = body.namedChildCount
+          for (let i = 0; i < _nc4;
+ i++) {
             const child = body.namedChild(i)
             if (!child) continue
             bodyFrames.push({
@@ -621,7 +629,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (body) {
           const bodyFrames: typeof stack = []
           let bodyVisibility = "public"
-          for (let i = 0; i < body.namedChildCount; i++) {
+          const _nc5 = body.namedChildCount
+          for (let i = 0; i < _nc5;
+ i++) {
             const child = body.namedChild(i)
             if (!child) continue
             bodyFrames.push({
@@ -683,7 +693,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // setups like `def obj.close` — visiting them fabricated
         // calls->obj), and constants/self never read. Probe-verified on
         // rack minitest specs both ways.
-        for (let i = 0; i < node.namedChildCount; i++) {
+        const _nc6 = node.namedChildCount
+        for (let i = 0; i < _nc6;
+ i++) {
           const c = node.namedChild(i)
           if (!c || c.type !== "instance_variable") continue
           const nm = node.childForFieldName("name")
@@ -1037,7 +1049,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         owner, ownerKind, enclosingMethod, visibilityOverrides, locals)
       return
     }
-    for (let i = 0; i < node.namedChildCount; i++) {
+    const _nc7 = node.namedChildCount
+    for (let i = 0; i < _nc7;
+ i++) {
       const c = node.namedChild(i)
       if (!c) continue
       if (c.type === "method_parameters" || c.type === "block_parameters") continue
@@ -1093,7 +1107,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (left.type === "identifier") {
             localNames.add(left.text)
           }
-          for (let i = 0; i < left.namedChildCount; i++) {
+          const _nc8 = left.namedChildCount
+          for (let i = 0; i < _nc8;
+ i++) {
             const c = left.namedChild(i)
             if (c?.type === "identifier") localNames.add(c.text)
           }
@@ -1119,7 +1135,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Block/lambda parameters (`|item|`, `->(x)`) are locals of the block
       // body — their names must not be mistaken for method calls.
       if (sn.type === "block_parameters" || sn.type === "lambda_parameters") {
-        for (let i = 0; i < sn.namedChildCount; i++) {
+        const _nc9 = sn.namedChildCount
+        for (let i = 0; i < _nc9;
+ i++) {
           const c = sn.namedChild(i)
           if (!c) continue
           if (c.type === "identifier") {
@@ -1164,7 +1182,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // `rescue Exception => ex` binds `ex` as a local of the enclosing
       // scope — the pinned grammar wraps it in `exception_variable`.
       if (sn.type === "exception_variable") {
-        for (let i = 0; i < sn.namedChildCount; i++) {
+        const _nc10 = sn.namedChildCount
+        for (let i = 0; i < _nc10;
+ i++) {
           const c = sn.namedChild(i)
           if (c?.type === "identifier") localNames.add(c.text)
         }
@@ -1185,7 +1205,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // PINNS an outer local, it does not bind a new one.
       if (sn.type === "array_pattern" || sn.type === "find_pattern" ||
           sn.type === "as_pattern") {
-        for (let i = 0; i < sn.namedChildCount; i++) {
+        const _nc11 = sn.namedChildCount
+        for (let i = 0; i < _nc11;
+ i++) {
           const c = sn.namedChild(i)
           if (!c) continue
           if (c.type === "identifier") {
@@ -1199,7 +1221,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `{age: x}` binds x; `{name:}` binds name (shorthand — the name is
         // the hash_key_symbol itself, not an identifier); `{point: [x, y]}`
         // binds x/y through the nested array_pattern (recursed below).
-        for (let i = 0; i < sn.namedChildCount; i++) {
+        const _nc12 = sn.namedChildCount
+        for (let i = 0; i < _nc12;
+ i++) {
           const c = sn.namedChild(i)
           if (!c) continue
           if (c.type === "identifier") localNames.add(c.text)
@@ -1415,7 +1439,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const paramsNode = this.findChild(node, "method_parameters") ||
                        this.findChild(node, "parameters")
     if (!paramsNode) return names
-    for (let i = 0; i < paramsNode.namedChildCount; i++) {
+    const _nc13 = paramsNode.namedChildCount
+    for (let i = 0; i < _nc13;
+ i++) {
       const pc = paramsNode.namedChild(i)
       if (!pc) continue
       if (pc.type !== "optional_parameter" && pc.type !== "keyword_parameter") continue
@@ -1477,7 +1503,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const paramsNode = this.findChild(node, "method_parameters") ||
                        this.findChild(node, "parameters")
     if (!paramsNode) return
-    for (let i = 0; i < paramsNode.namedChildCount; i++) {
+    const _nc14 = paramsNode.namedChildCount
+    for (let i = 0; i < _nc14;
+ i++) {
       const pc = paramsNode.namedChild(i)
       if (!pc) continue
       if (pc.type === "optional_parameter" || pc.type === "keyword_parameter") {
@@ -1526,7 +1554,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // is an ANONYMOUS target — RB-A uses this to suppress `.new` on it instead
     // of leaking a junk `calls:new` (rack spec_lock.rb wave).
     let hasExpressionReceiver = false
-    for (let i = 0; i < node.namedChildCount; i++) {
+    const _nc15 = node.namedChildCount
+    for (let i = 0; i < _nc15;
+ i++) {
       const child = node.namedChild(i)
       if (child && child.id === methodNode.id) break
       if (!child) continue
@@ -1569,7 +1599,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (methodName === "private" || methodName === "protected" || methodName === "public") {
       const args = this.findChild(node, "argument_list")
       if (args && owner && args.namedChildCount > 0) {
-        for (let i = 0; i < args.namedChildCount; i++) {
+        const _nc16 = args.namedChildCount
+        for (let i = 0; i < _nc16;
+ i++) {
           const arg = args.namedChild(i)
           if (!arg || arg.type !== "simple_symbol") continue
           const targetName = this.stripSymbolColon(arg.text)
@@ -1686,7 +1718,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         : ASTEngine.RelationshipType.Implements
       const args = this.findChild(node, "argument_list")
       if (args) {
-        for (let i = 0; i < args.namedChildCount; i++) {
+        const _nc17 = args.namedChildCount
+        for (let i = 0; i < _nc17;
+ i++) {
           const arg = args.namedChild(i)
           // Only CONSTANT mixin targets are pinned (mirrors the differential
           // oracle). A lowercase identifier arg (`include(pattern)` where
@@ -1728,7 +1762,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (methodName === "attr_reader" || methodName === "attr_writer" || methodName === "attr_accessor") {
       const args = this.findChild(node, "argument_list")
       if (args) {
-        for (let i = 0; i < args.namedChildCount; i++) {
+        const _nc18 = args.namedChildCount
+        for (let i = 0; i < _nc18;
+ i++) {
           const arg = args.namedChild(i)
           // Bare strings are legal attribute names too (`attr_reader
           // "name"`); the grammar types them `string`, not simple_symbol.
@@ -1753,7 +1789,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (methodName === "define_method") {
       const args = this.findChild(node, "argument_list")
       if (args) {
-        for (let i = 0; i < args.namedChildCount; i++) {
+        const _nc19 = args.namedChildCount
+        for (let i = 0; i < _nc19;
+ i++) {
           const arg = args.namedChild(i)
           if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
             let name = this.stripSymbolColon(arg.text)
@@ -1831,7 +1869,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (["has_many", "belongs_to", "has_one", "has_and_belongs_to_many"].includes(methodName)) {
         const args = this.findChild(node, "argument_list")
         if (args) {
-          for (let i = 0; i < args.namedChildCount; i++) {
+          const _nc20 = args.namedChildCount
+          for (let i = 0; i < _nc20;
+ i++) {
             const arg = args.namedChild(i)
             // A macro argument must be a LITERAL name: a `simple_symbol`
             // (`belongs_to :account`) or a `string` (`belongs_to "author"`).
@@ -2047,7 +2087,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the owner-gated constant rule would otherwise skip.
    */
   private isDynamicClassFactoryRhs(node: Node): boolean {
-    for (let i = 0; i < node.namedChildCount; i++) {
+    const _nc21 = node.namedChildCount
+    for (let i = 0; i < _nc21;
+ i++) {
       const c = node.namedChild(i)
       if (!c) continue
       // Only `call`: the pinned grammar folds every call shape (paren'd,
@@ -2075,7 +2117,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   private dynamicClassFactoryKind(node: Node): "Class" | "Module" | null {
     let callNode: Node | null = node.type === "call" ? node : null
     if (!callNode) {
-      for (let i = 0; i < node.namedChildCount; i++) {
+      const _nc22 = node.namedChildCount
+      for (let i = 0; i < _nc22;
+ i++) {
         const c = node.namedChild(i)
         if (c && c.type === "call") {
           callNode = c
@@ -2089,7 +2133,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     const methodName = methodNode.text
     if (methodName !== "new" && methodName !== "define") return null
     let receiver: string | undefined
-    for (let i = 0; i < callNode.namedChildCount; i++) {
+    const _nc23 = callNode.namedChildCount
+    for (let i = 0; i < _nc23;
+ i++) {
       const child = callNode.namedChild(i)
       if (child && child.id === methodNode.id) break
       if (!child) continue
@@ -2162,7 +2208,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!params) return undefined
 
     const result: ASTEngine.Parameter[] = []
-    for (let i = 0; i < params.namedChildCount; i++) {
+    const _nc24 = params.namedChildCount
+    for (let i = 0; i < _nc24;
+ i++) {
       const child = params.namedChild(i)
       if (!child) continue
       const childType = child.type
@@ -2273,7 +2321,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private findChild(node: Node, type: string): Node | null {
-    for (let i = 0; i < node.namedChildCount; i++) {
+    const _nc25 = node.namedChildCount
+    for (let i = 0; i < _nc25;
+ i++) {
       const child = node.namedChild(i)
       if (child && child.type === type) return child
     }
