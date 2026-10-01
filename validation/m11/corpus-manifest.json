@@ -498,6 +498,21 @@
         "clean"
       ],
       "coverageNote": "Grammar repository with no substantial Clean application corpus; use for parser smoke tests only until an application repository is acquired."
+    },
+    {
+      "id": "julia",
+      "path": "$HOME/fixtures/repositories/julia",
+      "remote": "https://github.com/JuliaLang/julia",
+      "revision": "63912639992190c6f56ad13286f292186513ab19",
+      "trackedFiles": 941,
+      "trackedBytes": 18289108,
+      "sizeClass": "large",
+      "clean": true,
+      "evidenceEligible": true,
+      "languages": [
+        "julia"
+      ],
+      "note": "the language's own implementation and standard library, which is the strongest corpus available for this lane: it is the code that defines the constructs, written by the people who specified them. SPARSE CHECKOUT \u2014 the clone carries a .git/info/sparse-checkout, so `trackedFiles` counts files PRESENT in the working tree (941) and the tree is clean at the pinned revision. Stated because a sparse clone and a full clone give different file counts for the same revision, and a corpus number without that distinction is not reproducible."
     }
   ],
   "coverageGaps": [
