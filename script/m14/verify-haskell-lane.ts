@@ -296,6 +296,44 @@ add(5, "relationship lines are CORRECT", wrongLine === 0,
       : `audited but neither side derived a row: ${noDerivation.join(", ")} — the audit was comparing nothing to nothing`)
 }
 
+// 15 — the oracle can see the shapes it was historically blind to
+//
+// Criterion 9 checks that every audited label HAS a derivation. It cannot detect
+// a derivation that is systematically empty for one syntactic shape, which is
+// exactly what happened four times here: operator-named bindings, curried
+// parameterized instance targets, GND declarations, and qualified type heads.
+// Each read green, because the label was audited and both sides were non-empty
+// overall; the blindness was per-shape and invisible from that distance.
+{
+  const F = "validation/m14/oracle-shapes/haskell-blindness.hs"
+  const expected: [string, string, string][] = [
+    // label, from, to -- the derivation each blind shape must produce
+    ["contains", "Data.Blindness", "//"],
+    ["contains", "Data.Blindness", "<@>"],
+    ["implements", "Set'", "Described"],
+    ["overrides", "Set'.describe", "Described.describe"],
+    ["contains", "Static", "UserStatic"],
+    ["contains", "Static", "userStaticPtr"],
+    ["implements", "Parsec.ParsecT", "CharParsing"],
+    ["overrides", "Parsec.ParsecT.satisfy", "CharParsing.satisfy"],
+  ]
+  const missed: string[] = []
+  try {
+    const { getParser } = await import("../../src/ast/engine.ts")
+    const { deriveHaskellEdges } = await import("./differential.ts")
+    const parser = await getParser("haskell")
+    const tree = (parser as any).parse(readFileSync(F, "utf8"))
+    const got = new Set((deriveHaskellEdges(tree.rootNode) as any[]).map((e: any) => `${e.label}|${e.from}|${e.target}`))
+    for (const [label, from, to] of expected) if (!got.has(`${label}|${from}|${to}`)) missed.push(`${label} ${from} -> ${to}`)
+    add(15, "the oracle derives the shapes it was historically blind to", missed.length === 0,
+      missed.length === 0
+        ? `${expected.length}/${expected.length} blind-shape derivations present (operator binding, curried instance target, GND, qualified head)`
+        : `the oracle is blind to ${missed.length} shape(s) it used to derive nothing for: ${missed.join("; ")}`)
+  } catch (err: any) {
+    add(15, "the oracle derives the shapes it was historically blind to", false, `could not run: ${String(err?.message ?? err).slice(0, 120)}`)
+  }
+}
+
 // 10 — mutants
 {
   const { out } = run("bun", ["run", "script/m14/mutate-analyzer.ts"], { BB_MUTANT_ONLY: "haskell/" })
