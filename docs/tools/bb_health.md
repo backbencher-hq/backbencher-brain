@@ -60,6 +60,10 @@ Unified index health: file/symbol/relationship/imports counts, embedding model +
     "includeAnalysisRuns": {
       "type": "boolean",
       "description": "include persisted analysis run/finding totals"
+    },
+    "checkUnindexed": {
+      "type": "boolean",
+      "description": "WALK the project and report files on disk that the indexer would index but the index does NOT contain — the direction freshness cannot see (freshness reports files IN the index and gone from disk). Costs a stat per eligible file, i.e. the discovery phase of an index run, so it is opt-in. Uses the INDEXER'S OWN discovery rules, so gitignored files, node_modules, unsupported extensions and >5MB files are correctly NOT counted, and the output names that population. Without this option, index completeness is not asserted at all"
     }
   }
 }

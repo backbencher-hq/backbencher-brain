@@ -1,5 +1,7 @@
 // M64.H7: `existsSync` was imported here and never called — the one dead
 // binding in this module.
+import { relative as relativePath } from "node:path"
+import { statSync } from "node:fs"
 import { BrainDatabase } from "../../brain/database"
 import { resolveRowsFreshnessDetailed, selectSampleFiles, type RowFreshnessReason } from "../../brain/freshness"
 import { runIndexHealthCheck, type IndexHealthReport } from "../../brain/brain-index-health"
@@ -16,6 +18,13 @@ export interface UnifiedHealthOptions {
   sampleSize?: number
   integrity?: boolean
   includeAnalysisRuns?: boolean
+  /**
+   * M64.C: walk the project and report files the indexer would index but the
+   * index does not contain. Opt-in because it costs one stat per eligible file —
+   * the discovery phase of an index run — which a default health call must not
+   * acquire silently.
+   */
+  checkUnindexed?: boolean
   /** Advertised in the registry: verbose=true adds a per-language breakdown and stale/missing file names. */
   verbose?: boolean
   logger?: { log: (...args: any[]) => void; write: (s: string) => void }
@@ -124,6 +133,21 @@ export interface UnifiedHealthReport {
    */
   timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number }
   integrity: IndexHealthReport | null
+  /**
+   * M64.C: the OTHER direction of the index/disk difference. `freshness.missing`
+   * is in the index and gone from disk; this is on disk and absent from the
+   * index. Null means NOT CHECKED, which is a different statement from an empty
+   * result — a caller must not read null as "everything is indexed".
+   */
+  unindexed: {
+    eligibleOnDisk: number
+    indexed: number
+    unindexedCount: number
+    unindexedFiles: string[]
+    walkMs: number
+    /** Names the exact population, so the number cannot be over-read. */
+    population: string
+  } | null
   /** M64.H9: `runs` is a COUNT(*), not the length of a 100-row page. */
   analysisRuns: { runs: number; findings: number; byState: Record<string, number>; runTotalKnown: boolean } | null
   refresh: { requested: boolean; force: boolean; wait: boolean; completed: boolean; durationMs: number | null; processedFiles: number | null; derived: string | null }
@@ -528,6 +552,75 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     }
   })()
 
+  // M64.C: files on disk that the index does not contain.
+  //
+  // The report has always covered ONE direction of the index/disk difference:
+  // `missingFiles` is in the index and gone from disk. The other direction — on
+  // disk, absent from the index — is the one a developer actually hits, and it
+  // is the one the tool was structurally unable to see. Someone who just created
+  // five files gets a report that is silent about all five.
+  //
+  // The tempting cheap version is `brain_index_status.total_files -
+  // indexed_files`, and it is a FALSE CLEAN: those are the last run's numbers, so
+  // a file created after that run is invisible to the subtraction and the answer
+  // reads "0 unindexed". Reporting a stale zero as a current measurement is the
+  // `errors=0` defect this lane has already fixed twice.
+  //
+  // So this asks the INDEXER what it considers a file, under its own rules. The
+  // result is exact for the population "files this project would index", and the
+  // wording never claims more than that: a file the indexer excludes on purpose
+  // (.gitignore, node_modules, >5MB, an unsupported extension) is correctly not
+  // reported, and the population string names the rules so a reader can tell what
+  // the number covers and what it does not.
+  //
+  // OPT-IN because it is a walk — a stat per eligible file, no parsing, the same
+  // cost as one index run's discovery phase. Affordable, but not free, and a
+  // default health call must not silently acquire it.
+  let unindexed: UnifiedHealthReport["unindexed"] = null
+  if (options.checkUnindexed === true) {
+    const walkStarted = now()
+    try {
+      // M64.C: the walk's per-directory `try/catch` swallows a missing or
+      // unreadable directory, so pointing this at a project that is gone returned
+      // an EMPTY eligible set — which then printed "unindexed: none — all 0
+      // indexable file(s) on disk are in the index". A false clean, produced by
+      // the very feature added to prevent false cleans, and found by that
+      // feature's own gate. A root that is not a readable directory makes
+      // completeness UNKNOWN rather than verified.
+      const rootStat = statSync(projectPath)
+      if (!rootStat.isDirectory()) throw new Error(`project path is not a directory: ${projectPath}`)
+      const { discoverIndexableFiles } = await import("../../ast/parallel-indexer")
+      const onDisk = await discoverIndexableFiles(projectPath)
+      // The index keys rows by absolute path and the walk returns absolute paths,
+      // so this is a like-for-like comparison and needs no normalisation.
+      const indexed = new Set(
+        (raw.prepare("SELECT path FROM brain_file WHERE project_id=?").all(projectId) as any[]).map((r) => String(r.path)),
+      )
+      const missingFromIndex = onDisk.filter((p) => !indexed.has(p)).map((p) => relativePath(projectPath, p)).sort()
+      unindexed = {
+        eligibleOnDisk: onDisk.length,
+        indexed: indexed.size,
+        unindexedCount: missingFromIndex.length,
+        unindexedFiles: missingFromIndex,
+        walkMs: now() - walkStarted,
+        population: "files this project would index under the indexer's own rules (.gitignore, .bbignore, skip directories, the compiled-mode path filter, extension and shell-shebang gates, and the >5MB size skip). A file excluded by those rules is correctly absent from this count and is NOT a gap in the index.",
+      }
+      if (missingFromIndex.length > 0) {
+        warnings.push({
+          code: "UNINDEXED_FILES",
+          message: `${missingFromIndex.length} file(s) on disk are not in the index: ${missingFromIndex.slice(0, 5).join(", ")}${missingFromIndex.length > 5 ? `, +${missingFromIndex.length - 5} more` : ""}. The indexer would index these, so it has not run since they appeared. Run refresh=true, or bb_index on the specific paths.`,
+          severity: "warning",
+        })
+      }
+    } catch (error) {
+      // A failed walk must SAY SO. Reporting an empty gap here would read as
+      // "everything on disk is indexed", which is the false clean this whole
+      // block exists to avoid.
+      warnings.push({ code: "UNINDEXED_SCAN_FAILED", message: `could not compare the index against disk: ${error instanceof Error ? error.message : String(error)}. Whether the index is COMPLETE is UNKNOWN — this is not a verified result.`, severity: "warning" })
+      unindexed = null
+    }
+  }
+
   let integrity: IndexHealthReport | null = null
   if (options.integrity === true) {
     const integrityStarted = now()
@@ -749,6 +842,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     // vary and is never printed is not a measurement; it is a claim in a type.
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: (raw as any).driver ?? "sqlite" },
     timing,
+    unindexed,
     integrity, analysisRuns, refresh,
     effectiveConfig,
     languages: languageRows,
@@ -893,6 +987,19 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   // M64.H9: `runs` is a COUNT(*) now, so the number is the project's total
   // rather than the length of a 100-row page. The suffix is kept for readers
   // that want to know which method produced it.
+  // M64.C: named in the DEFAULT output when it was asked for, because "is my
+  // index complete?" is the question and this is its answer. The population is
+  // stated on the same line so the number cannot be over-read as "files missing
+  // from the project" — it is "files the indexer would index, and does not have".
+  if (report.unindexed) {
+    lines.push(report.unindexed.unindexedCount > 0
+      ? `unindexed: ${report.unindexed.unindexedCount} file(s) on disk that the indexer would index are NOT in the index (${report.unindexed.eligibleOnDisk} eligible on disk, ${report.unindexed.indexed} indexed) — e.g. ${report.unindexed.unindexedFiles.slice(0, 3).join(", ")}${report.unindexed.unindexedCount > 3 ? `, +${report.unindexed.unindexedCount - 3} more` : ""}`
+      : `unindexed: none — all ${report.unindexed.eligibleOnDisk} indexable file(s) on disk are in the index (excludes files the indexer skips by rule: gitignored, node_modules, unsupported extension, >5MB)`)
+  } else if (report.warnings.some((w) => w.code === "UNINDEXED_SCAN_FAILED")) {
+    // The one case that must never read as a clean bill: the scan did not run to
+    // completion, so completeness is UNKNOWN rather than verified.
+    lines.push("unindexed: UNKNOWN — the scan failed, so index completeness is NOT verified")
+  }
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings (both are full-table counts, not page lengths)`)
   if (report.integrity) {
     const s = report.integrity.summary
