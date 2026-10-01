@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../brain/database"
-import { annotationId } from "../brain/annotation-store"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
@@ -417,43 +416,47 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(pass1.text)
   },
 
-  bb_ask: async (args, { projectId }) => {
+  bb_ask: async (args, { projectId, projectPath }) => {
     const limit = Number(args.limit ?? 5)
     const result = await quickAnswer(projectId, String(args.query), { limit })
 
-    // HONESTY FIX (critical; measured on 9 real repositories). This handler
-    // appended `no semantic matches for "<query>"` whenever `sources` was empty
-    // — and `sources` is empty BY DESIGN on every verified-aggregate path, so
-    // the tool printed a correct count and then denied it two lines later:
+    // HONESTY FIX (critical, measured on 9 real corpora): this handler used to
+    // append `no semantic matches for "<query>"` whenever `sources` was empty.
+    // `sources` is EMPTY BY DESIGN on every verified-aggregate path, so the
+    // tool printed a correct count and then denied it two lines later:
     //
     //   answer: There are 786 symbols in this project
     //   no semantic matches for "how many symbols are in this project?"
     //
-    // "No matches" is a true statement only about a RETRIEVAL answer that found
-    // nothing. It is false about an exact aggregate, and also false for
-    // `limit: 0`, where the caller explicitly asked for no rows. The route is
-    // what makes the difference, and quickAnswer declares it.
+    // "No matches" is only a true statement about a RETRIEVAL answer that found
+    // nothing. It is a false statement about an exact aggregate, and it is also
+    // false for `limit: 0`, where the caller explicitly asked for no rows.
+    // The route is what makes the difference, and the route is declared by
+    // quickAnswer rather than inferred here.
     const retrievalAnswer = result.route === "retrieval" || result.route === "symbol-name"
+    const shown = result.sources.slice(0, limit)
     const parts: string[] = []
     if (result.answer) parts.push(`answer: ${result.answer}`)
 
     // Confidence was computed on every path and thrown away. Surface it: an
-    // aggregate is exact, a retrieval answer is bounded well below certainty,
-    // an unknown is 0.1. A reader can now tell them apart.
+    // aggregate is exact (0.95), a retrieval answer is bounded well below
+    // certainty, and an unknown is 0.1. A reader can now tell them apart.
     parts.push(`confidence: ${result.confidence}`)
 
-    const shown = result.sources.slice(0, limit)
     if (shown.length) {
       parts.push(shown.map((source, index) => `${index + 1}. ${source.file}:${source.line}\n   ${source.context ?? ""}`).join("\n"))
-    } else if (retrievalAnswer) {
-      parts.push(limit > 0
-        ? `no matches for "${args.query}" in the index`
-        : `limit was 0, so no matches were requested or returned`)
+    } else if (retrievalAnswer && limit > 0) {
+      // Only a retrieval answer that was allowed to return rows and returned
+      // none. This is the one place the sentence is true.
+      parts.push(`no matches for "${args.query}" in the index`)
+    }
+    if (retrievalAnswer && limit === 0) {
+      parts.push(`limit was 0, so no matches were requested or returned`)
     }
 
     // Retrieval facts the engine already computed. Without these the caller
-    // cannot tell a production embedding's cosine from the offline
-    // 50-dimension word-vector one — the difference between "semantic" and
+    // cannot tell a production embedding's cosine from the offline 50-dimension
+    // word-vector one, which is the difference between "semantic" and
     // "lexical with a decimal point".
     if (result.retrieval) {
       const r = result.retrieval
@@ -466,6 +469,7 @@ const handlers: Record<string, ToolHandler> = {
 
     const prov = `[provenance: ${result.provenance.evidenceClass} via ${result.provenance.engine} (${result.route})${result.provenance.unknowns.length ? `; unknowns: ${result.provenance.unknowns.join("; ")}` : ""}]`
     parts.push(prov)
+    void projectPath
     return textResult(parts.join("\n\n"))
   },
 
@@ -989,9 +993,10 @@ const handlers: Record<string, ToolHandler> = {
     if (edgeLimitArg !== undefined && (!Number.isFinite(edgeLimitArg) || edgeLimitArg < 1)) {
       return textResult("bb_graph edgeLimit must be a positive number", true)
     }
-    // Validated here rather than trusted: an unknown direction or a non-string
-    // entry in relationshipTypes would otherwise reach the SQL and produce a
-    // silently wrong traversal instead of an error.
+    // The three traversal controls the engine already implements. Validated
+    // here rather than trusted: an unknown direction or a non-string entry in
+    // relationshipTypes would otherwise reach the SQL and produce a silently
+    // wrong traversal instead of an error.
     const directionArg = args.direction === undefined ? undefined : String(args.direction)
     if (directionArg !== undefined && !["callers", "callees", "both"].includes(directionArg)) {
       return textResult("bb_graph direction must be one of: callers, callees, both", true)
@@ -1030,7 +1035,7 @@ const handlers: Record<string, ToolHandler> = {
     // one of them is `ext:Errorf`, and must never have to guess which file a
     // caller lives in. `describe` renders one endpoint out of the engine's own
     // node map — already computed by the traversal, previously discarded here
-    // — so each edge is self-contained and needs no second call.
+    // — so each edge becomes self-contained and no second call is needed.
     const describe = (id: string) => {
       const n = (result.nodes as Record<string, any> | undefined)?.[id]
       if (!n) return null
@@ -1072,12 +1077,6 @@ const handlers: Record<string, ToolHandler> = {
         file: result.root?.file ?? null,
         line: result.root?.line ?? null,
         filePath: result.root?.filePath ?? null,
-        // How many stored symbols this name resolved among. A name is not a
-        // unique identifier — measured: `build` in lodash resolves among 7,
-        // `code_block.go` in cobra among 50, `Command` among 1 — and when this
-        // is > 1 the graph below is about ONE of them, so `root` is the thing
-        // to confirm before reading the edges.
-        candidates: result.rootCandidates ?? 1,
       },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
@@ -1106,28 +1105,11 @@ const handlers: Record<string, ToolHandler> = {
         // How much of the answer is about the symbol that was asked for, and
         // how much the owner cascade folded in from its members. The cascade is
         // documented; without these numbers a reader cannot use it.
-        // DEPTH 0 only — these four describe the ROOT. An edge at depth >= 1
-        // is about a symbol the traversal discovered, and is counted as
-        // `deeper*`, so the partition is total:
-        //   exact + cascaded + deeper === the number of edges returned.
         exactCallers: result.summary?.exactCallers ?? 0,
         cascadedCallers: result.summary?.cascadedCallers ?? 0,
         exactCallees: result.summary?.exactCallees ?? 0,
         cascadedCallees: result.summary?.cascadedCallees ?? 0,
-        deeperCallers: result.summary?.deeperCallers ?? 0,
-        deeperCallees: result.summary?.deeperCallees ?? 0,
-        // The fan-out bound, and whether it bit. `truncationReason` can name
-        // `caller-budget-exhausted`; before this it did so without ever saying
-        // what the budget was, so the bound was announced and never quantified.
-        callerBudget: result.summary?.callerBudget ?? 0,
-        calleeBudget: result.summary?.calleeBudget ?? 0,
-        callerBudgetExhausted: result.summary?.callerBudgetExhausted === true,
-        calleeBudgetExhausted: result.summary?.calleeBudgetExhausted === true,
-        // Rows present in BOTH the caller and the callee list. Each is one
-        // relationship seen from two ends, so `totalCallers + totalCallees`
-        // overstates the distinct relationship count by exactly this much.
         edgesInBothDirections: result.summary?.edgesInBothDirections ?? 0,
-        dedupedAtToolLayer: result.summary?.dedupedAtToolLayer ?? { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
         // What was actually searched. Without this a caller that asked for
         // direction:"callers" cannot tell an empty callee list from a callee
         // list that was never computed, and `relationshipTypes` narrowing is
@@ -1138,6 +1120,7 @@ const handlers: Record<string, ToolHandler> = {
           relationshipTypes: relTypesArg ?? ["calls", "instantiates", "extends", "implements"],
           includeCrossLanguage: crossLangArg !== false,
         },
+        dedupedAtToolLayer: result.summary?.dedupedAtToolLayer ?? { cascadeRepeatsCollapsed: 0, spellingVariantsCollapsed: 0 },
       },
       provenance: result.provenance ?? null,
     }, null, 2))
@@ -1168,32 +1151,26 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   // M63.CL1 — the agent door, rebuilt on the same single owner
-  // (src/lsp/cross_language_hover.ts). Four defects, all measured on a real
-  // polyglot corpus (validation/m63/results/CL1.json), all fixed here:
+  // (src/lsp/cross_language_hover.ts). Three measured defects, all on real
+  // corpus (validation/m63/results/CL1.json), all fixed here:
   //
   //   A. The old door ran `SELECT ... WHERE project_id = ? AND name = ?` with
   //      `.get()` — ONE arbitrary copy of a name the index holds up to 227
-  //      times (the index has one symbol per file/name/line), and reported that
-  //      copy's rows as the whole answer. When the copy SQLite happened to
-  //      return held none, the tool answered `declaredAbsent: true` — "no
-  //      stored cross-language rows for this symbol — absence declared, never
-  //      guessed" — while the index held 21 such rows for the name. A false
-  //      absence is the worst thing a tool whose contract is "never guesses"
-  //      can emit. The facts are now the UNION over every copy, the copies are
-  //      named, and absence is declared only when no copy holds a row.
+  //      times, and reported that copy's rows as the whole answer. When the
+  //      copy SQLite returned held none, the tool answered
+  //      `declaredAbsent: true` — "no stored cross-language rows for this
+  //      symbol — absence declared, never guessed" — while the index held 21
+  //      such rows for the name. A false absence is the worst thing a tool
+  //      whose contract is "never guesses" can emit. The facts are now the
+  //      UNION over every copy, the copies are named, and absence is declared
+  //      only when no copy holds a row.
   //   B. Each fact now names the counterparty (symbol, file, language, line)
-  //      and the stored row id — the fields bb_graph already returns and the
-  //      hover card did not need. A language pair alone cannot answer "does my
-  //      Kotlin Warehouse reach my Java Inventory, and where".
+  //      and the stored row id — the fields `bb_graph` already returns and the
+  //      hover card did not need.
   //   C. The answer is bounded by a declared `limit`, and truncation is
   //      first-class (`truncated` / `truncationReason` / `totalCountIfKnown`),
   //      exactly as bb_impact reports its budget. 106 stored rows used to
   //      become 106 identical facts and 20,904 bytes.
-  //   D. The row query filters on `r.project_id = ?`. The old door took the
-  //      symbol id as its only key and never constrained the ROW's project;
-  //      a relationship row minted for another project and pointing at this
-  //      symbol was returned as one of this tool's own facts (reproduced
-  //      before the fix).
   bb_cross_language: async (args, { projectId }) => {
     const symbol = String(args.symbol ?? "").trim()
     if (!symbol) return textResult("bb_cross_language requires symbol", true)
@@ -1249,14 +1226,8 @@ const handlers: Record<string, ToolHandler> = {
   // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
   // enforced HERE, in code: author_class is always 'agent' for tool writes —
   // no argument can override it, so an agent note can never masquerade as a
-  // human note. One note per author per location is enforced twice over: the id
-  // is an INJECTIVE length-delimited hash of the location (the single owner is
-  // src/brain/annotation-store.ts — the old '_'-flattening key aliased
-  // `Foo.Bar` with `Foo_Bar` and silently destroyed the first note), and a
-  // UNIQUE expression index on (project, symbol, author, COALESCE(path,''))
-  // declares the same rule in the schema. The upsert targets the NATURAL key,
-  // so a row written before the id scheme changed updates in place instead of
-  // being duplicated.
+  // human note. Upsert on (project, symbol, path, author): one note per author
+  // per location, re-annotation updates in place (anti-flood by construction).
   bb_annotate: async (args, { projectId }) => {
     const symbol = String(args.symbol ?? "").trim()
     const body = String(args.body ?? "")
@@ -1266,18 +1237,14 @@ const handlers: Record<string, ToolHandler> = {
     if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
     if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
     const now = Date.now()
-    const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
+    const id = `bbann-${projectId}-${symbol}-${annotationPath ?? ""}-agent`.replace(/[^a-zA-Z0-9-]/g, "_")
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
-       ON CONFLICT(project_id, symbol_name, author_class, COALESCE(symbol_path, '')) DO UPDATE
-         SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
+       ON CONFLICT(id) DO UPDATE SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
     ).run(id, projectId, symbol, annotationPath, toolIdentity, body, now, now)
-    // Re-read by the NATURAL key, not by id: when the upsert updated a row that
-    // predates the current id scheme, that row keeps its original id, and
-    // reading by id would report a row that does not exist.
-    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')").get(projectId, symbol, annotationPath) as any
+    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE id = ?").get(id) as any
     return textResult(JSON.stringify({
       stored: true,
       annotation: updated,
@@ -1287,54 +1254,21 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   // M28.A1 read door: every row carries its provenance; absence is declared.
-  //
-  // `path` mirrors the write's disambiguation. It used to be write-only, so a
-  // symbol that lives in several files (measured on a real corpus: `force` in 8
-  // files, `toString` in 6) returned every file's notes mixed together with no
-  // way to ask for one file's note — and the editor hover, which also keyed on
-  // symbol_name alone, showed another file's note as if it belonged to the file
-  // under the cursor. A path filter here returns the notes for THAT file's copy
-  // of the symbol together with any NAME-level notes (written with no path),
-  // because a name-level note applies wherever the name appears. Every row
-  // still carries its own `symbol_path`, so a caller that wants the raw set can
-  // always narrow further.
   bb_annotations: async (args, { projectId }) => {
     const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
-    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
     const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
     if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     const limit = Math.floor(limitRaw)
-    // The ORDER BY carries a deterministic tiebreak: several agents writing in
-    // the same millisecond share a time_updated, and without a second key their
-    // relative order is whatever SQLite happens to produce, so "read back what
-    // I just wrote" is not reproducible.
-    const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
-    let rows: any[]
-    if (symbol && annotationPath) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, annotationPath, limit) as any[]
-    } else if (symbol) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, limit) as any[]
-    } else if (annotationPath) {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, annotationPath, limit) as any[]
-    } else {
-      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, limit) as any[]
-    }
+    const rows = symbol
+      ? (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, symbol, limit) as any[])
+      : (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, limit) as any[])
     return textResult(JSON.stringify({
       symbol,
-      path: annotationPath,
       annotations: rows,
       count: rows.length,
       declaredAbsent: rows.length === 0,
-      absenceNote: rows.length === 0
-        ? (symbol && annotationPath
-          ? `no annotations stored for '${symbol}' in '${annotationPath}' — absence declared, never guessed`
-          : symbol
-            ? `no annotations stored for '${symbol}' — absence declared, never guessed`
-            : annotationPath
-              ? `no annotations stored for '${annotationPath}' — absence declared, never guessed`
-              : "no annotations stored for this project yet")
-        : null,
+      absenceNote: rows.length === 0 ? (symbol ? `no annotations stored for '${symbol}' — absence declared, never guessed` : "no annotations stored for this project yet") : null,
     }, null, 2))
   },
 
