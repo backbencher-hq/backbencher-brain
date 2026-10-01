@@ -1,10 +1,10 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-10-01T03:34:02.595Z",
-  "commit": "0d9d1fa73cd4da973ef55b67e9dcd013219e44b9",
+  "at": "2026-10-01T03:43:04.076Z",
+  "commit": "cfe3fd76ddba6687234e4a9723b7710e13263cd5",
   "loadContext": {
-    "loadAvg1": 20.03,
+    "loadAvg1": 13.68,
     "cores": 8,
     "memoryPsiFullAvg10": "0.00"
   },
@@ -150,6 +150,16 @@
         "mean": 1.214,
         "_note": "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live."
       },
+      "natSpecCheck": {
+        "symbolsWithUndocumentedParams": 1971,
+        "symbolsWithOverDocumentedParams": 0,
+        "undocumentedParams": 4660,
+        "overDocumentedParams": 0,
+        "returnDocumentedWithoutReturn": 0,
+        "overDocumentedSamples": [],
+        "returnWithoutReturnSamples": [],
+        "_note": "SOL-23. Documentation checked against the signature. The undocumented-parameter count is a COVERAGE figure and is expected to be large — plenty of code documents only the interesting parameters. The other two are DEFECTS in the source: a `@param` naming a parameter the function does not have, and a `@return` on a function that returns nothing. Both are fully decidable per file because the documentation and the signature are in the same tree."
+      },
       "licences": {
         "moduleSymbols": 389,
         "licensed": 389,
@@ -175,9 +185,9 @@
       "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 19603,
-      "perFileMs": 50.394,
-      "factsPerMs": 1672.337
+      "wallMs": 7888,
+      "perFileMs": 20.278,
+      "factsPerMs": 4155.898
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",
