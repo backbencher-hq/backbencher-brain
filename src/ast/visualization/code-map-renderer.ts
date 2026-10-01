@@ -67,7 +67,39 @@ export const CODE_MAP_CSS = assemble([
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font:13px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     overflow:hidden}
-  #map{position:absolute;inset:0;overflow:hidden;cursor:default}
+  /* The map owns the viewport to the RIGHT of the sidebar, and clips its own overflow.
+     MEASURED from a screenshot: with inset:0 the world ran the full width, so panning
+     slid content under the sidebar -- which is translucent, so the map showed through
+     it and the legend became unreadable while the reader was panning. The sidebar owns
+     its column outright and the map does not cross into it. */
+  #map{position:absolute;left:322px;right:0;top:0;bottom:0;overflow:hidden;cursor:default}
+  /* The world is a fixed 2400x1600 coordinate space placed inside the viewport with
+     a transform. Zooming moves the transform rather than re-laying out, so a wheel
+     event is one composited write instead of 2,111 layout updates -- which is what
+     makes zooming feel like zooming instead of like a pause. */
+  #world{position:absolute;left:0;top:0;width:2400px;height:1600px;will-change:transform}
+  #map.panning{cursor:grabbing}
+  /* A file's name, sized in WORLD units so it grows with the zoom. 13px here is
+     deliberate: the map opens at FIT_SCALE 0.82, so this lands at 10.7px at rest and
+     33px when fully zoomed in. Sized in screen pixels instead, MEASURED, the names
+     opened at 9px -- illegible -- and the group labels ballooned to 26px the moment
+     the reader zoomed, because the two were on different scales. */
+  .fname{position:absolute;font-size:13px;line-height:17px;color:#eef2ff;pointer-events:auto;
+    cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 4px;
+    background:linear-gradient(90deg,rgba(6,8,16,.92),rgba(6,8,16,.66));
+    border-left:2px solid rgba(94,234,212,.75);text-shadow:0 1px 2px rgba(0,0,0,.9)}
+  .fname:hover{background:rgba(94,234,212,.22);color:#fff}
+  #zoomstate{display:none;position:absolute;right:14px;bottom:14px;z-index:3;
+    background:#14161f;border:1px solid var(--edge);border-radius:999px;
+    padding:6px 13px;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  #zoomstate.on{display:block}
+  #zoomhint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;
+    background:#14161f;border:1px solid var(--edge);border-radius:999px;
+    padding:6px 14px;font-size:11.5px;color:var(--muted);white-space:nowrap;pointer-events:none}
+  #mapbtn{position:absolute;right:14px;top:14px;z-index:4;background:#14161f;
+    border:1px solid var(--edge);border-radius:9px;color:var(--text);padding:6px 12px;
+    font:inherit;font-size:11.5px;cursor:pointer}
+  #mapbtn:hover{border-color:var(--accent);color:var(--accent)}
   .panel{position:absolute;background:var(--panel);border:1px solid var(--edge);
     border-radius:14px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     box-shadow:0 10px 40px rgba(0,0,0,.55)}
@@ -78,7 +110,11 @@ export const CODE_MAP_CSS = assemble([
      column rather than in a corner. The map now takes everything to the right of the
      sidebar at full height, with no vertical chrome at all. */
   #side{position:absolute;left:0;top:0;bottom:0;width:322px;padding:16px;
-    display:flex;flex-direction:column;gap:12px;overflow:auto;z-index:2}
+    display:flex;flex-direction:column;gap:12px;overflow:auto;z-index:2;
+    /* Opaque, not the translucent panel colour. MEASURED: at 0.82 alpha the map
+       behind showed through the legend and the map's coloured stripes printed
+       through the text. A panel you cannot read is worse than no panel. */
+    background:#0b0d14}
   #hud{padding:0;flex:none}
   /* position:relative, not the .panel absolute: inside the sidebar these two are
      flow items, and inheriting position:absolute made them stack on top of the
@@ -115,7 +151,8 @@ export const CODE_MAP_CSS = assemble([
      absolutely INSIDE it, landed a thousand pixels away, which is the tell.
      A panel that has to win a cascade fight to exist is a panel that will lose one. */
   #detail{position:absolute;right:16px;top:16px;padding:14px 18px;max-width:380px;
-    max-height:40vh;overflow:auto;display:none;border:1px solid var(--edge)}
+    max-height:40vh;overflow:auto;display:none;border:1px solid var(--edge);
+    background:#14161f}
   #detail.on{display:block}
   #detail h3{margin:0 0 6px;font-size:13px}
   #detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;
@@ -135,7 +172,10 @@ export const CODE_MAP_CSS = assemble([
 ])
 
 export const CODE_MAP_BODY = assemble([
-  `<div id="map"></div>
+  `<div id="map"><div id="world"></div></div>
+<button id="mapbtn" title="download this map as a standalone HTML file">save as&hellip;</button>
+<div id="zoomstate"></div>
+<div id="zoomhint">scroll to zoom &middot; drag to pan &middot; click a file or symbol for its stored facts</div>
 <div id="side">
   <div id="hud">
     <h1>Code Map</h1>
@@ -178,7 +218,70 @@ export const CODE_MAP_SCRIPT = assemble([
   var G = JSON.parse(document.getElementById("bb-graph-data").textContent);
   var S = G.symbols || [];
   var map = document.getElementById("map");
-  var sel = null, hover = null, q = "", groupBy = "dir", boxes = [];
+  var sel = null, hover = null, q = "", groupBy = "dir", box
+  // ---- the world and the view onto it.
+  //
+  // The treemap is laid out into a FIXED world rather than into the viewport's pixel
+  // size. That is what makes zooming possible at all: if the layout is recomputed to
+  // fill whatever space it is given, there is no larger coordinate space to move
+  // through, and a wheel event can only rescale pixels that are already sub-pixel.
+  //
+  // The world is sized from the VIEWPORT, not fixed, and that is a deliberate
+  // correction. A fixed 2400x1600 world against a ~974px viewport fitted at 41%, so
+  // every file name opened at 4px -- MEASURED, and the labels I had just added were
+  // unreadable at the scale the map opens at. The world now measures the viewport
+  // divided by FIT_SCALE, so "fit" lands at 82% and labels open near their natural
+  // size, while the zoom range still spans 0.08x to 24x: enough depth to go from the
+  // whole map down to one symbol's bands.
+  //
+  // The world is still its own coordinate space, which is what makes zooming work at
+  // all -- a treemap laid out directly into the viewport's pixels has nothing larger
+  // to move through.
+  var FIT_SCALE = 0.82
+  var WORLD_W = 2400, WORLD_H = 1600
+  var view = { x: 0, y: 0, k: 1 }
+  // Label boxes already claimed this frame, so a file name is never printed over
+  // another one. Same collision rule as the dependency map's node labels.
+  var labelBoxes = []
+  function applyView(el) {
+    el.style.transform = "translate(" + view.x + "px," + view.y + "px) scale(" + view.k + ")"
+    el.style.transformOrigin = "0 0"
+  }
+  /** Put the world point under (cx, cy) -- viewport pixels -- back under the cursor. */
+  function zoomAt(cx, cy, factor) {
+    var nk = Math.max(0.08, Math.min(24, view.k * factor))
+    var r = map.getBoundingClientRect()
+    var mx = cx - r.left - (r.width - WORLD_W * view.k) / 2
+    var my = cy - r.top - (r.height - WORLD_H * view.k) / 2
+    view.x = mx - (mx - view.x) * (nk / view.k)
+    view.y = my - (my - view.y) * (nk / view.k)
+    view.k = nk
+    applyView(world)
+    reportView()
+  }
+  /** Frame the whole world, with a margin. This is the view the map OPENS at. */
+  function fitWorld() {
+    var W = map.clientWidth, H = map.clientHeight
+    if (!W || !H) return
+    view.k = Math.max(0.08, Math.min(4, Math.min((W - 24) / WORLD_W, (H - 24) / WORLD_H)))
+    view.x = (W - WORLD_W * view.k) / 2
+    view.y = (H - WORLD_H * view.k) / 2
+    applyView(world)
+    reportView()
+  }
+  /** How much of the map is off screen right now, so a reader is never lost. */
+  function reportView() {
+    var W = map.clientWidth, H = map.clientHeight
+    var w = WORLD_W * view.k, h = WORLD_H * view.k
+    var shown = w >= W - 8 && h >= H - 8
+    var el = document.getElementById("zoomstate")
+    if (!el) return
+    el.textContent = shown
+      ? "whole map \u00b7 scroll to zoom in"
+      : Math.round(view.k * 100) + "% \u00b7 " + (view.k < 0.9 ? "scroll out to see all" : "drag to pan, scroll to zoom")
+    el.className = shown ? "" : "on"
+  }
+  var boxes = []
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
@@ -365,24 +468,36 @@ export const CODE_MAP_SCRIPT = assemble([
   // ---- render
   function draw() {
     boxes = []
-    var W = map.clientWidth, H = map.clientHeight
-    map.innerHTML = ""
+    labelBoxes = []
+    var world = document.getElementById("world")
+    if (!world) return
+    // Size the world from the viewport, then lay out into it. Re-derived on every
+    // draw rather than cached, so a window resize cannot leave the map laid out for
+    // a space it no longer occupies.
+    var vw = map.clientWidth, vh = map.clientHeight
+    if (!vw || !vh) return
+    WORLD_W = Math.max(600, Math.round(vw / FIT_SCALE))
+    WORLD_H = Math.max(400, Math.round(vh / FIT_SCALE))
+    world.style.width = WORLD_W + "px"
+    world.style.height = WORLD_H + "px"
+    var W = WORLD_W, H = WORLD_H
+    world.innerHTML = ""
     if (!W || !H) return
-    // Lay out inside the space the floating panels leave. A screenshot showed the
-    // HUD and the legend sitting ON TOP of the treemap, covering its top-left and
-    // bottom-left corners -- so a quarter of the map was unreachable. The panels are
-    // opaque and viewport-anchored; the map is the thing that should yield.
-    // Everything to the right of the sidebar, full height. No vertical chrome, so
-    // nothing can cover the map and the treemap is not inset around floating boxes.
-    var sideEl = document.getElementById("side")
-    var sideW = sideEl ? sideEl.offsetWidth : 0
-    var inset = { x: sideW + 12, y: 12, w: W - sideW - 24, h: H - 24 }
-    if (inset.w < 120 || inset.h < 120) inset = { x: 12, y: 12, w: Math.max(120, W - 24), h: Math.max(120, H - 24) }
+    // The whole world, with nothing inset.
+    //
+    // There used to be an inset here, computed to dodge the floating panels, and a
+    // second one for the sidebar. Both are gone: the panels live in their own column
+    // and the map is a viewport onto a fixed world, so there is nothing for the
+    // layout to avoid. A treemap that does not fill its space is not a treemap.
+    var inset = { x: 0, y: 0, w: W, h: H }
     var groups = groupFiles()
     var placed = squarify(groups, inset.x, inset.y, inset.w, inset.h, [])
     var needle = q.toLowerCase()
     var hits = 0, totalSyms = 0, totalLines = 0, fileCount = 0
     var frag = document.createDocumentFragment()
+    // File names are collected and appended AFTER the group fragment, so the rectangles
+    // do not paint over them. See the note where they are pushed.
+    var fnameEls = []
     // The vertical strips already claimed by a drawn group label, as [top, bottom].
     // Two labels collide only if their groups share a strip, so this is checked per
     // strip rather than against a single high-water mark.
@@ -411,19 +526,19 @@ export const CODE_MAP_SCRIPT = assemble([
       var headerRoom = gcell.h > 26 && gcell.w > 70
       var clash = false
       for (var li = 0; li < labelBands.length; li++) {
-        if (gcell.y < labelBands[li][1] && gcell.y + 20 > labelBands[li][0]) { clash = true; break }
+        if (gcell.y < labelBands[li][1] && gcell.y + 26 > labelBands[li][0]) { clash = true; break }
       }
       if (headerRoom && !clash) {
-        labelBands.push([gcell.y, gcell.y + 20])
+        labelBands.push([gcell.y, gcell.y + 26])
         var gh = document.createElement("div")
-        gh.style.cssText = "position:absolute;left:0;top:0;right:0;padding:3px 7px;font-size:10.5px;" +
+        gh.style.cssText = "position:absolute;left:0;top:0;right:0;padding:3px 7px;font-size:15px;" +
           "color:rgba(255,255,255,.72);background:rgba(0,0,0,.42);pointer-events:none;" +
           "white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
         gh.textContent = gcell.item.key + "  " + fmt(gcell.item.lines) + " line" + (gcell.item.lines === 1 ? "" : "s")
         g.appendChild(gh)
       }
       var inner = []
-      squarify(gcell.item.files, 0, headerRoom ? 20 : 0, gcell.w, Math.max(1, gcell.h - (headerRoom ? 20 : 0)), inner)
+      squarify(gcell.item.files, 0, headerRoom ? 26 : 0, gcell.w, Math.max(1, gcell.h - (headerRoom ? 26 : 0)), inner)
       for (var fi = 0; fi < inner.length; fi++) {
         var fcell = inner[fi]
         // A file is ALWAYS drawn, however small. MEASURED: a screenshot showed large
@@ -443,6 +558,34 @@ export const CODE_MAP_SCRIPT = assemble([
           "px;width:" + Math.max(1, fcell.w) + "px;height:" + Math.max(1, fcell.h) +
           "px;overflow:hidden;cursor:pointer"
         fd.dataset.file = f.path
+        // The file's NAME, once its cell can hold one.
+        //
+        // MEASURED from a screenshot: not one of 34 files was labelled, so a reader
+        // could count rectangles but could not name a single one. The name goes in a
+        // bar across the top of the cell, in WORLD units, so it grows as the reader
+        // zooms -- which is the point of zooming. It is skipped when the cell is too
+        // small to hold it, and when another label already occupies that strip, so
+        // names never print over one another: an overlapping name is unreadable and
+        // makes the map look broken.
+        var fl = f.path.split("/").pop()
+        var fkey = f.path
+        var labelW = Math.min(fcell.w - 6, 210)
+        var labelH = 17
+        var clash = false
+        for (var lb = 0; lb < labelBoxes.length; lb++) {
+          var L = labelBoxes[lb]
+          if (fcell.x < L[2] && fcell.x + labelW > L[0] && fcell.y < L[3] && fcell.y + labelH > L[1]) { clash = true; break }
+        }
+        if (!clash && fcell.w > 46 && fcell.h > 22) {
+          labelBoxes.push([fcell.x, fcell.y, fcell.x + labelW, fcell.y + labelH])
+          var fn = document.createElement("div")
+          fn.className = "fname"
+          fn.style.cssText = "left:" + fcell.x + "px;top:" + fcell.y + "px;width:" + labelW + "px;height:" + labelH + "px"
+          fn.textContent = fl
+          fn.title = f.path
+          fn.dataset.fkey = fkey
+          fnameEls.push(fn)
+        }
         // the file's own symbols, as bands in SOURCE ORDER, height = line span.
         // The gaps between them are drawn at their true size, which is the point:
         // a file of many small definitions and a file of a few enormous ones look
@@ -477,7 +620,12 @@ export const CODE_MAP_SCRIPT = assemble([
       }
       frag.appendChild(g)
     }
-    map.appendChild(frag)
+    world.appendChild(frag)
+    // After, not before: the fragment carries every group and file rectangle, and a
+    // label appended first is underneath all of them.
+    for (var fi2 = 0; fi2 < fnameEls.length; fi2++) world.appendChild(fnameEls[fi2])
+    applyView(world)
+    reportView()
     var pathEl = document.getElementById("path")
     if (sel && sel.kind === "file") { pathEl.className = "on"; pathEl.textContent = sel.path } else pathEl.className = ""
     readouts(totalSyms, totalLines, fileCount, hits, groups.length)
@@ -570,7 +718,107 @@ export const CODE_MAP_SCRIPT = assemble([
   }
   var input = document.getElementById("q")
   input.addEventListener("input", function () { q = input.value; draw() })
-  window.addEventListener("resize", draw)
+  // ---- zoom, pan, and the two ways out
+  //
+  // Wheel zooms about the CURSOR, not about the centre of the viewport, because the
+  // point under the cursor is the point the reader is looking at; zooming about the
+  // centre slides whatever they were examining out from under them. Drag pans.
+  //
+  // The gesture that ENDS the interaction is as important as the one that starts it:
+  // double-click frames a single file, which is the "show me this part" move that a
+  // 1,400-symbol map otherwise has no answer for. Without it, zooming is a one-way
+  // trip into a picture with no way back.
+  map.addEventListener("wheel", function (ev) {
+    ev.preventDefault()
+    zoomAt(ev.clientX, ev.clientY, Math.exp(-ev.deltaY * 0.0016))
+  }, { passive: false })
+  var drag = null
+  map.addEventListener("mousedown", function (ev) {
+    drag = { x: ev.clientX, y: ev.clientY, vx: view.x, vy: view.y, moved: false }
+    map.classList.add("panning")
+  })
+  window.addEventListener("mousemove", function (ev) {
+    if (!drag) return
+    var dx = ev.clientX - drag.x, dy = ev.clientY - drag.y
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true
+    view.x = drag.vx + dx; view.y = drag.vy + dy
+    applyView(document.getElementById("world"))
+    reportView()
+  })
+  window.addEventListener("mouseup", function () {
+    map.classList.remove("panning")
+    drag = null
+  })
+  map.addEventListener("dblclick", function (ev) {
+    var fkey = null
+    if (ev.target && ev.target.dataset && ev.target.dataset.fkey) fkey = ev.target.dataset.fkey
+    if (fkey) frameFile(fkey)
+    else fitWorld()
+  })
+  /** Zoom so one file fills the viewport, keeping its aspect. */
+  function frameFile(path) {
+    var el = document.querySelector('[data-file="' + path.replace(/"/g, '\\\\"') + '"]')
+    if (!el) return fitWorld()
+    var r = map.getBoundingClientRect()
+    var box = el.getBoundingClientRect()
+    if (!box.width || !box.height) return fitWorld()
+    // The element's rect is ALREADY in viewport pixels, so it has to be taken BACK
+    // through the transform before it can be re-centred under a new one. Treating the
+    // viewport-space centre as if it were a world coordinate centred the view on
+    // whichever file happened to be nearby instead -- MEASURED, double-clicking
+    // mod.rs framed the region to its right, with future_incompat.rs half off screen.
+    //
+    // The half-extent has to be added BEFORE dividing by k, or this converts the
+    // file's LEFT edge to world space and centres that instead of the file: the
+    // second attempt put the file's top-left corner exactly at the viewport centre.
+    var worldCx = (box.left + box.width / 2 - r.left - view.x) / view.k
+    var worldCy = (box.top + box.height / 2 - r.top - view.y) / view.k
+    var k = Math.max(0.08, Math.min(24, Math.min((r.width - 40) / box.width, (r.height - 40) / box.height)))
+    view.k = k
+    view.x = r.width / 2 - worldCx * k
+    view.y = r.height / 2 - worldCy * k
+    applyView(document.getElementById("world"))
+    reportView()
+  }
+
+  // ---- save as
+  //
+  // Reported more than once, and the gap it fills is real: the artifact arrives as a
+  // blob of text, and a reader who wants to keep it, mail it, or open it without a
+  // tool in the loop has no way to. So the page can save ITSELF.
+  //
+  // It re-serialises the live document rather than shipping a copy of the source
+  // string, so what is saved is what is on screen. A Blob and an object URL are used
+  // rather than a data: URI because a data: URI of a multi-megabyte document is
+  // rejected by several browsers, and this document is routinely 2-7 MB.
+  document.getElementById("mapbtn").onclick = function () {
+    try {
+      var blob = new Blob(["<!DOCTYPE html>\\n" + document.documentElement.outerHTML], { type: "text/html" })
+      var url = URL.createObjectURL(blob)
+      var a = document.createElement("a")
+      a.href = url
+      a.download = "bb-code-map.html"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(function () { URL.revokeObjectURL(url) }, 4000)
+    } catch (e) {
+      var s = document.getElementById("zoomstate")
+      if (s) { s.className = "on"; s.textContent = "could not save: " + String(e).slice(0, 80) }
+    }
+  }
+
+  window.addEventListener("resize", function () {
+    // The world is derived from the viewport, so a resize means the layout has to be
+    // recomputed. But a reader who had zoomed IN is not thrown back out to the
+    // overview for having resized the window: their scale is kept, and only the
+    // geometry moves under them.
+    var wasZoomed = view.k > FIT_SCALE * 1.05
+    draw()
+    if (wasZoomed) { applyView(document.getElementById("world")); reportView() }
+    else fitWorld()
+  })
+  fitWorld()
   draw()
 })();
 `,

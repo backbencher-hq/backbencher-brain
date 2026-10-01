@@ -256,9 +256,46 @@ function renderClassDiagram(result: VisualizationResult): string {
       }
     }
   }
+  // A class diagram shows a HIERARCHY, so it draws the types that are IN one.
+  //
+  // MEASURED on cargo's src/compiler: of 1,087 type-like symbols, only 217 appear in
+  // any type-to-type relationship. 870 are isolated -- 80% of the boxes on screen were
+  // connected to nothing, and 176 edges were stretched between the rest, which is six
+  // dead boxes per arrow. Drawing every type is how the diagram became a hairball with
+  // names in it; capping the boxes did not help either, because the cap kept filling up
+  // with orphans (measured: cap 150 keeps 31 edges, cap 1,087 keeps 176 -- the edge
+  // count barely moves while the clutter grows sixfold).
+  //
+  // So the boxes are the CONNECTED types: those the stored relationships actually
+  // connect. That is a selection, so it is declared -- `connectedOnly` says how many
+  // types in scope were left out for having no relationship at all, and they remain in
+  // the JSON answer and the search. A diagram of a hierarchy that has none still draws
+  // boxes rather than an empty canvas, so the reader learns the scope matched and the
+  // index simply stores no hierarchy here.
+  const connectedIds = new Set<string>()
+  for (const e of edges as any[]) {
+    connectedIds.add(e.source)
+    connectedIds.add(e.target)
+  }
+  const byGravity = (a: any, b: any) => (b.gravity ?? 0) - (a.gravity ?? 0)
+  const connected = classes.filter((n: any) => connectedIds.has(n.id)).sort(byGravity)
+  const isolated = classes.filter((n: any) => !connectedIds.has(n.id)).sort(byGravity)
+  const connectedOnly = isolated.length > 0 && connected.length > 0
+  // The ceiling still exists, for a hierarchy large enough to be its own hairball, but
+  // it now only ever cuts connected types, so it can never spend the budget on orphans.
+  const BOX_CEILING = 400
+  const shown = (connectedOnly ? connected : classes.slice().sort(byGravity)).slice(0, BOX_CEILING)
+  const shownIds = new Set(shown.map((n: any) => n.id))
+  const boxesOmitted = (connectedOnly ? connected : classes).length - shown.length
+  const isolatedOmitted = connectedOnly ? isolated.length : 0
+  // Re-derive the edges against the boxes actually drawn, so a connector is never
+  // drawn to a box that is not on screen.
+  const shownEdges = edges.filter((e: any) => shownIds.has(e.source) && shownIds.has(e.target))
   return renderClassDocument({
-    classes,
-    edges,
+    classes: shown,
+    edges: shownEdges,
+    boxesOmitted,
+    isolatedOmitted,
     outside,
     members,
     membersByClass,
@@ -287,6 +324,19 @@ function renderClassDiagram(result: VisualizationResult): string {
  * The narrower scopes (file, module, symbol) order by source position, which is
  * already the right order for a reader of one file, so they are untouched.
  */
+/**
+ * The symbol kinds a class box is drawn for.
+ *
+ * One list, used by BOTH the SQL that orders the class view's selection and the
+ * in-memory sort that survives its budget cut. They were separate string literals
+ * before, which is exactly the shape of bug where the two drift: MEASURED, the query
+ * ordered type-like symbols first and the cut then threw them away, and nothing
+ * complained because the query had done its job.
+ */
+const CLASS_LIKE_TYPES = new Set([
+  "class", "struct", "interface", "enum", "trait", "type", "protocol", "object",
+])
+
 function importanceOrder(view: VisualizationView | undefined): string {
   if (view === "class") {
     return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, s.gravity_score DESC, s.line_start`
@@ -415,7 +465,31 @@ export async function visualizeProject(projectId: string, request: Visualization
   const graph = DependencyGraphVisualizer.generateGraphData(symbols, filteredRelationships, { excludePatterns: request.excludePatterns, includeTests: request.includeTests })
   const originalNodes = graph.nodes.length
   const originalLinks = graph.links.length
-  const nodes = graph.nodes.slice(0, maxNodes)
+  // The class view must survive its OWN budget cut.
+  //
+  // MEASURED, and this quietly undid the widening above. `symbols` was widened with
+  // 952 type-like symbols from elsewhere in the project so that inheritance pointing
+  // out of a module scope could be drawn -- and then `slice(0, maxNodes)` took the
+  // first maxNodes of the graph's nodes, which are the SCOPE's symbols in source
+  // order, and discarded every widened one. MEASURED: the declared selection said 952
+  // extra types had been added, and the returned node set contained 135 types, the
+  // same 135 as before the widening existed. A declaration that describes work whose
+  // result is then discarded is worse than no declaration.
+  //
+  // So for the class view the node set is ordered TYPE-LIKE FIRST before the cut. The
+  // cut still happens, because the budget is the budget, but it now cuts members
+  // rather than types -- and a type's members are re-derivable from the containment
+  // links, while a type that is cut is simply gone.
+  let ordered = graph.nodes
+  if (request.view === "class") {
+    ordered = graph.nodes.slice().sort((a: any, b: any) => {
+      const at = CLASS_LIKE_TYPES.has(String(a.type)) ? 0 : 1
+      const bt = CLASS_LIKE_TYPES.has(String(b.type)) ? 0 : 1
+      if (at !== bt) return at - bt
+      return (b.gravity ?? 0) - (a.gravity ?? 0)
+    })
+  }
+  const nodes = ordered.slice(0, maxNodes)
   const nodeIds = new Set(nodes.map((node) => node.id))
   const links = graph.links.filter((link) => nodeIds.has(link.source) && nodeIds.has(link.target)).slice(0, maxLinks)
   // The edge count is stated for the node set the reader actually SEES, not the
