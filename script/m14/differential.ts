@@ -20794,7 +20794,22 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
+          // ER: erlang joins the contains-audited set. It emits `contains` for
+          // module->member and record->field -- the edges the containment graph is
+          // made of -- and script/m60/rel-type-coverage-gate.ts reported
+          // `erlang 1 un-audited: ["contains"]`, which means ~202,000 of this lane's
+          // relationships were stored and compared against NOTHING by this gate.
+          //
+          // Two changes land together, because one without the other fixes nothing.
+          // The oracle behind this filter is now the lane's own
+          // script/m14/erlang-truth-oracle.ts -- the call site imports it by the same
+          // mechanism fsharp-truth-oracle uses -- rather than an inline mirror that
+          // derived seven labels and not this one. A mirror derives whatever the
+          // analyzer derives, so a label it happened not to derive could not be
+          // caught by comparing the two. That is the #910 (c imports) / G7 (groovy
+          // uses) / M60 #278 harness gap this file already records three other
+          // times, in a fourth direction.
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : lang === "erlang" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
