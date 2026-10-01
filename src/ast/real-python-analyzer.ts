@@ -54,6 +54,25 @@ interface PythonContext {
   currentClass: string | undefined
   currentFunction: string | undefined
   moduleName: string
+  /**
+   * The current class DECLARATION, not its name — `${name}@${startLine}`.
+   *
+   * Two `class C` declarations in one file are two different classes that happen to share a
+   * name, and every lookup that keys on the name alone merges them. This is the third genuine
+   * analyzer defect the independent oracle found, and it is a MISATTRIBUTION rather than a
+   * loss: `basesByClass` was keyed by class name, so a `class C` that extends NOTHING inherited
+   * the bases of an unrelated `class C(Base)` declared elsewhere in the file and published
+   * overrides to them. CPython is the referee and it disagrees —
+   *
+   *     L7   class C(Base)      # CPython: bases ['Base']
+   *     L11  class C            # CPython: bases None
+   *
+   * and the lane emitted `C.m -> Base.m` at the line of BOTH `m` definitions, so a class
+   * extending nothing claims to override something.
+   */
+  currentClassKey: string | undefined
+  /** base leaves -> the class DECLARATION that has them, keyed by `currentClassKey`'s form */
+  basesByClassKey: Map<string, string[]>
 }
 
 // Python builtins — never legitimate in-file call targets.
@@ -208,6 +227,8 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       instanceAttrs: new Set(),
       currentModule: moduleName,
       currentClass: undefined,
+      currentClassKey: undefined,
+      basesByClassKey: new Map(),
       currentFunction: undefined,
       moduleName,
     }
@@ -253,13 +274,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Exit frames ALWAYS restore both scopes (may restore to undefined).
       setClass?: string
       setFunc?: string
+      /** the class DECLARATION to restore, which is not the same thing as the class name */
+      setClassKey?: string
     }[] = [{ node: rootNode }]
 
     while (stack.length > 0) {
-      const { node, isExit, setClass, setFunc } = stack.pop()!
+      const { node, isExit, setClass, setFunc, setClassKey } = stack.pop()!
 
       if (isExit) {
         ctx.currentClass = setClass
+        ctx.currentClassKey = setClassKey
         ctx.currentFunction = setFunc
         continue
       }
@@ -318,13 +342,16 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
             this.extractClass(node, ctx)
             const prevClass = ctx.currentClass
             const prevFunc = ctx.currentFunction
+            const prevClassKey = ctx.currentClassKey
             ctx.currentClass = nameNode.text
+            ctx.currentClassKey = `${nameNode.text}@${node.startPosition.row + 1}`
             ctx.currentFunction = undefined
             stack.push({
               node,
               isExit: true,
               setClass: prevClass,
               setFunc: prevFunc,
+              setClassKey: prevClassKey,
             })
           }
           break
@@ -540,6 +567,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     })
     ctx.functionSymbolIndex[`::${className}`] = ctx.symbols.length - 1
     ctx.declaredTypes.add(className)
+    // Bases are recorded against THIS DECLARATION, not against the class name. Two classes
+    // may share a name in one file and have nothing to do with each other, so a name-keyed
+    // base table hands a base-less class the bases of an unrelated namesake.
+    ctx.basesByClassKey.set(`${className}@${node.startPosition.row + 1}`, baseClasses.slice())
 
     // Enum members: assignments with constant values inside the class body.
     if (isEnum) {
@@ -794,6 +825,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       range: this.nodeToRange(node),
       ownerName: className,
       ownerKind: ASTEngine.SymbolKind.Class,
+      // Which `class className` DECLARATION owns this method. `ownerName` alone cannot say:
+      // two classes may share a name in one file, and an override lookup keyed on the name
+      // gives a class the bases of an unrelated namesake — see `basesByClassKey`.
+      ownerClassKey: ctx.currentClassKey,
       visibility: this.pythonVisibility(methodName),
       isAsync,
       isStatic,
@@ -1455,7 +1490,24 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
-        const bases = basesByClass.get(s.ownerName)
+        // The bases of THIS class DECLARATION. `basesByClass` is name-keyed and merges every
+        // same-named class in the file, which is how a `class C` extending nothing ended up
+        // publishing overrides to the bases of an unrelated `class C(Base)` — CPython's own
+        // `ast` reports `bases: None` for that class, and the lane claimed it overrode a
+        // method it does not inherit. The name-keyed table is kept as the fallback for a
+        // method whose owner declaration was not recorded, so the resolution degrades to the
+        // old behaviour rather than to nothing.
+        const raw =
+          (s.ownerClassKey ? ctx.basesByClassKey.get(s.ownerClassKey) : undefined) ??
+          basesByClass.get(s.ownerName)
+        // A base that spells the class's OWN name is the #299 rebind case — `class
+        // ArgumentParser(ArgumentParser)` shadows an IMPORT of the same name — and it must
+        // not become an override target either. It was already excluded from the `extends`
+        // EDGE (the leaf is still recorded in `baseClasses` metadata, so nothing is lost),
+        // and reading overrides from that same metadata without re-applying the exclusion
+        // made every such class publish `C.m -> C.m`: a class overriding itself, which is not
+        // a thing a class can do. The exclusion belongs to both derivations, not one of them.
+        const bases = raw?.filter((b) => b !== s.ownerName)
         if (!bases || bases.length === 0) continue
         // MRO order: the first base that DECLARES this name owns the override.
         const declaring = bases.find((b) => {
