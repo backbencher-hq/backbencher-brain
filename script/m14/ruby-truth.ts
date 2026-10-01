@@ -73,6 +73,10 @@ const RUBY_BUILTINS = new Set(
     // is the analyzer's suppression list, not a judgement about the Ruby language,
     // and adding an entry that is not in the analyzer's list is always wrong.
     "class",
+    // Visibility modifiers. PROBED: `def a; end; private :a` publishes `contains:a`
+    // and NOTHING for `private` - it is a modifier, not a call. Same for its siblings.
+    "private", "public", "protected", "module_function", "private_class_method",
+    "public_class_method", "private_constant",
     "respond_to", "respond_to?",
     "initialize_copy", "initialize_dup", "initialize_clone",
     "send", "__send__", "freeze", "frozen?", "dup", "clone",
@@ -123,7 +127,18 @@ const RUBY_BUILTINS = new Set(
  * arguments are option names, not declarations.
  */
 const ASSOCIATION_MACROS = new Set(["has_many", "belongs_to", "has_one", "has_and_belongs_to_many"])
-const ATTRIBUTE_MACROS = new Set(["attr_reader", "attr_writer", "attr_accessor", "delegate"])
+const ATTRIBUTE_MACROS = new Set(["attr_reader", "attr_writer", "attr_accessor"])
+
+/**
+ * `delegate :a, :b, to: :x` forwards, it does not define. PROBED: it publishes NO
+ * `contains` at all, while `attr_reader :a` publishes `contains:a`. My list had
+ * `delegate` in it, so every `delegate` line in the corpus invented one or more
+ * members - 274 MISSING `contains`, e.g. `size` and `flush` in
+ * `shared_connection_pool.rb`, and `audience_to`/`audience_cc` in `create.rb`. The
+ * forwarded methods belong to the TARGET (`@available`), which is precisely what
+ * makes them not this class's members.
+ */
+const DELEGATE_MACROS = new Set(["delegate", "delegate_missing_to"])
 
 /** Callback macros: symbol args are event names, never members. */
 const CALLBACK_MACROS = new Set([
@@ -327,14 +342,34 @@ function collectParamNames(params: Node, into: Set<string>): void {
     // rest/keyword/block argument read came out as a call. Reading the `name` field
     // is the whole fix, and `continue` matters: without it the plain `identifier`
     // branch below recorded the wrapper's text a SECOND time.
-    const WRAPPED = new Set(["optional_parameter", "keyword_parameter", "splat_parameter",
-      "hash_splat_parameter", "block_parameter", "forward_parameter"])
-    if (WRAPPED.has(c.type)) {
-      const named = c.childForFieldName("name")
-      if (named && named.text && named.text !== "_") into.add(named.text)
+    // `|(a, _)|` is a DESTRUCTURED parameter wrapping two identifiers. It has no
+    // `name` field, so the wrapper loop found nothing and BOTH names fell through to
+    // be read as calls - PROBED: `[1].each do |(a, _)|` should publish only
+    // `calls:each`, and mine published `calls:each calls:a calls:_`.
+    if (c.type === "destructured_parameter") {
+      for (let j = 0; j < c.namedChildCount; j++) {
+        const inner = c.namedChild(j)
+        if (inner && (inner.type === "identifier" || inner.type === "splat_parameter")) {
+          const nm2 = inner.type === "identifier" ? inner.text : inner.childForFieldName("name")?.text
+          // `_` binds too: see the note in collectParamNames.
+          if (nm2) into.add(nm2)
+        }
+      }
       continue
     }
-    if (c.type === "identifier" && c.text !== "_") into.add(c.text)
+    const WRAPPED = new Set(["optional_parameter", "keyword_parameter", "splat_parameter",
+      "hash_splat_parameter", "block_parameter", "forward_parameter", "destructured_parameter"])
+    if (WRAPPED.has(c.type)) {
+      const named = c.childForFieldName("name")
+      if (named && named.text) into.add(named.text)
+      continue
+    }
+    // `_` IS a binding even when it is the throwaway name. PROBED:
+    // `[1].each do |_|` then reading `_` publishes ONLY `calls:each`. Since the
+    // throwaway never binds anything, excluding it from the binding set let every
+    // read of `_` become a call - 622 MISSING `calls`, including the block parameter
+    // of every `scan(RE) do |text, _|` in the corpus.
+    if (c.type === "identifier") into.add(c.text)
   }
 }
 
@@ -384,32 +419,7 @@ function isBound(bindings: Map<number, Set<string>>, scopes: number[], name: str
 export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
   const edges: RubyTruthEdge[] = []
   const bindings = collectBindings(root)
-  /**
-   * Every method name DECLARED anywhere in this file, used to decide whether an
-   * `alias` renames something that exists. The analyzer resolves aliases against
-   * declarations in the same file; `alias foo? bar` with no `bar` publishes nothing.
-   */
-  const declaredNames = new Set<string>()
-  {
-    const st: Node[] = [root]
-    while (st.length > 0) {
-      const nd = st.pop()!
-      if (nd.type === "method" || nd.type === "singleton_method") {
-        const nm = nd.childForFieldName("name")
-        if (nm) declaredNames.add(nm.text)
-      } else if (nd.type === "call") {
-        const mn = nd.childForFieldName("method")
-        const recv = nd.childForFieldName("receiver")
-        if (mn && mn.type === "identifier" && recv && recv.type === "constant") {
-          declaredNames.add(mn.text)
-        }
-      }
-      for (let i = 0; i < nd.namedChildCount; i++) {
-        const c = nd.namedChild(i)
-        if (c) st.push(c)
-      }
-    }
-  }
+
   const bases = new Map<string, string>()
   /** Members declared by each class in THIS file, for implicit `overrides`. */
   const members = new Map<string, Set<string>>()
@@ -613,7 +623,50 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     }
 
     // ----------------------------------------------------------------- blocks
-    if (t === "block" || t === "do_block" || t === "lambda") {
+    if (t === "block" || t === "do_block") {
+      // `x = Class.new do ... end` names a class, and members declared in its block
+      // are its members. PROBED against `beating = Class.new do def beat; end end`:
+      // the analyzer publishes `contains:beat`. My factory rule only fired for a
+      // CONSTANT on the left, so a LOCAL binding produced an anonymous scope and
+      // dropped every method in the block - 253 UNEXPLAINED `contains`, e.g.
+      // `initialize` and `beat` in `actioncable/test/server/base_test.rb`.
+      //
+      // A local name is as namable as a constant here, so this is not the
+      // "anonymous owner" case; the target is known within this file.
+      // `X = Class.new do ... end` where X is a CONSTANT: the block's members belong to
+      // X. PROBED: `X = Class.new do def name; end end` -> `contains:name`.
+      //
+      // With a LOCAL left (`beating = Class.new do ... end`) the analyzer does NOT
+      // reparent: it keeps the members on the ENCLOSING class
+      // (`base_test.rb` -> `contains BaseTest -> beat`), because a local-bound
+      // anonymous class is not a graph node it will name. So the correct owner here is
+      // simply `f.cls`, which is what the fallthrough already does. Naming the local
+      // published `contains` with an owner nothing can resolve, and it was the wrong
+      // owner as well as an invented one.
+      const callParent = n.parent
+      if (callParent !== null && callParent.type === "call" &&
+          callParent.childForFieldName("method")?.text === "new") {
+        const asg = callParent.parent
+        if (asg !== null && asg.type === "assignment") {
+          const left = asg.childForFieldName("left")
+          if (left !== null && left.type === "constant") {
+            const owner = left.text
+            for (let i = n.namedChildCount - 1; i >= 0; i--) {
+              const c = n.namedChild(i)
+              if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: owner, methodId: f.methodId })
+            }
+            continue
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+      }
+      continue
+    }
+
+    if (t === "lambda") {
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
@@ -658,13 +711,22 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // `contains` edges, one per field per struct, for classes that do not exist.
       // Deleted rather than fixed: the premise was wrong, not the predicate.
       //
-      // `X.new { }` where the left is NOT a constant is an anonymous scope.
+      // `x = X.new { }` where the left is NOT a constant. PROBED: the analyzer does
+      // NOT reparent these members onto an anonymous class - it keeps them on the
+      // ENCLOSING class (`class BaseTest; b = Class.new do def beat; end end; end`
+      // gives `contains BaseTest -> beat`). A local-bound anonymous class is not a
+      // graph node it will name, so the members stay where they are lexically.
+      //
+      // Clearing `cls` to `undefined` here was the 253 UNEXPLAINED `contains`: every
+      // member declared inside `b = Class.new do ... end` lost its owner and vanished
+      // from the oracle. Note the contrast with the CONSTANT case just above, which
+      // does reparent - the namable-owner rule again, and the two branches have to
+      // differ.
       if (rightIsCall && methodName === "new") {
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
-          const isLeft = left !== null && c.id === left.id
-          stack.push({ n: c, parent: n, inBody: false, scopes: f.scopes, cls: isLeft ? f.cls : undefined, methodId: f.methodId })
+          stack.push({ n: c, parent: n, inBody: false, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
         }
         continue
       }
@@ -707,25 +769,17 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     }
 
     // ------------------------------------------------------------------ alias
-    // `alias new_name old_name` is a RENAME: it declares exactly ONE method, the new
-    // name. PROBED against `attr_reader :loaded; alias loaded? loaded`:
-    //   analyzer -> contains:loaded      (the attribute, once)
-    //   oracle   -> contains:loaded loaded? loaded
-    // The old name is not a new member and `loaded` was being counted twice, so this
-    // invented a `contains` per alias in the corpus. The analyzer only publishes an
-    // alias when the OLD name already exists in this file - `alias foo? bar` with no
-    // `bar` declared publishes NOTHING at all - so the rule is "the first identifier,
-    // and only if the second one is also declared here".
-    if (t === "alias") {
-      if (f.cls !== undefined) {
-        const first = n.namedChild(0)
-        const second = n.namedChild(1)
-        if (first && second && declaredNames.has(second.text)) {
-          push("contains", unquote(first.text), first.startPosition.row + 1, undefined)
-        }
-      }
-      continue
-    }
+    // `alias` publishes NOTHING. PROBED, three ways:
+    //   def push(x); alias << push    -> contains:push   (no `<<`)
+    //   def a; def b; alias_method :c, :b  -> contains:a b   (no `c`)
+    //   def b; alias_method :c, :b     -> contains:b      (no `c`)
+    // Neither the keyword form nor `alias_method` creates a member. My earlier rule
+    // emitted the new name whenever the old one was declared, which is the OPPOSITE
+    // of the contract and invented a `contains` per alias in the corpus -
+    // `contains:<<` in `shared_timed_stack.rb`, `contains:new` in `request.rb`. The
+    // keyword's identifiers are method-name DECLARATIONS at parse time but the
+    // analyzer does not publish them, so neither does the oracle.
+    if (t === "alias") continue
 
     // ------------------------------------------------------- require/refs
     if (t === "call") {
@@ -804,14 +858,29 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             if (cn) push(methodName === "extend" ? "extends" : "implements", leafName(cn), line)
           }
         }
-        continue
+        // NO `continue` HERE, and that is the fix for 253 UNEXPLAINED `contains`.
+        //
+        // A call carrying a BLOCK (`Class.new do ... end`, `test "x" do ... end`,
+        // `around_action :x do ... end`) used to `continue` out of the walk, so the
+        // `do_block` child was never visited and the enclosing scope never reached
+        // the members inside it. PROBED: `class BaseTest; beating = Class.new do
+        // def beat; end end; end` -> the analyzer publishes `contains:beat`; mine
+        // published nothing. The same bug silently swallowed every block-bodied
+        // definition in the corpus - including `test` blocks, which is why whole
+        // test files looked like they had no members.
+        //
+        // Falling through re-walks the children with the current owner, and the
+        // `do_block` branch then applies its own factory/constant rules.
       }
     }
 
     // ------------------------------------------------------------------ macros
     const macroName = macroOf(n)
     if (macroName) {
-      if (ASSOCIATION_MACROS.has(macroName) || ATTRIBUTE_MACROS.has(macroName)) {
+      if (DELEGATE_MACROS.has(macroName)) {
+        // Forwarding: the arguments name methods on ANOTHER object. Nothing is
+        // declared here, so no `contains` is emitted (probed).
+      } else if (ASSOCIATION_MACROS.has(macroName) || ATTRIBUTE_MACROS.has(macroName)) {
         for (const a of macroArgs(n)) {
           const name = symbolName(a.text)
           if (name.length > 0) {
@@ -973,7 +1042,8 @@ function macroOf(n: Node): string | null {
   const methodNode = n.childForFieldName("method")
   if (!methodNode) return null
   const name = methodNode.text
-  if (ASSOCIATION_MACROS.has(name) || ATTRIBUTE_MACROS.has(name) || CALLBACK_MACROS.has(name)) return name
+  if (ASSOCIATION_MACROS.has(name) || ATTRIBUTE_MACROS.has(name) ||
+      CALLBACK_MACROS.has(name) || DELEGATE_MACROS.has(name)) return name
   return null
 }
 
