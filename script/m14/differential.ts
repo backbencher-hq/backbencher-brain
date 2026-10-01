@@ -6626,6 +6626,19 @@ export function deriveCSharpBareUses(
           t === "tuple_type" || t === "nullable_type" || t === "array_type" || t === "pointer_type" || t === "ref_type") {
         return true
       }
+      // CS-D14. C# has no `int[N]` TYPE -- an array's size is only ever an expression, in `new int[N]`
+      // or `stackalloc`. But the pinned grammar gives the creation's element type a node NAMED
+      // `array_type`, and that node sits in the blanket-true list above, so the size inside the rank
+      // specifier was classified as a type position and the read was dropped:
+      //
+      //     _buffer = new byte[DefaultBufferSize];
+      //                                 ^^^^^^^^^^^^^^^ a READ of a declared const
+      //
+      // Ascending to `array_rank_specifier` and stopping there is exact: a rank specifier holds only
+      // expressions, so nothing under it is a type position whatever its grandparent is. The node
+      // NAME is misleading and the POSITION is not, which is the distinction four defects in this
+      // one function have been about.
+      if (t === "array_rank_specifier") return false
       // `generic_name` and `qualified_name` are DELIBERATELY not in the list above, and their
       // absence was the last of the 17+1 rows this truth got wrong:
       //   `var f = Document.GetRequiredLanguageService<ISyntaxFactsService>();`
