@@ -10,7 +10,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 \u2014 the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
     },
     {
       "file": "real-cpp-analyzer.ts",
@@ -18,7 +18,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 \u2014 the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
@@ -93,6 +93,14 @@
       "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 990 -> 1049 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1049 -> 1081 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1081 -> 1088 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
     },
     {
+      "file": "real-zig-analyzer.ts",
+      "line": 1016,
+      "source": "/[!*\\s\\[\\]\\{\\}]+/g",
+      "operation": "replace",
+      "classification": "needs_review",
+      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 1000 -> 1016 — the merged zig analyzer's positions; same statement (char-class strip); regex retained]"
+    },
+    {
       "file": "real-clojure-analyzer.ts",
       "line": 724,
       "source": "/^%(\\d+|&)?$/",
@@ -146,17 +154,6 @@
       "baselineTotalBefore": 15,
       "baselineTotalAfter": 13,
       "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP \u2014 which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
-    }
-  ],
-  "retired": [
-    {
-      "file": "real-zig-analyzer.ts",
-      "line": 1016,
-      "source": "/[!*\\s\\[\\]\\{\\}]+/g",
-      "operation": "replace",
-      "classification": "needs_review",
-      "retiredAt": "2026-09-30",
-      "reason": "GHOST ROW. The pattern is not in the analyzer: Z18 removed the last regex from real-zig-analyzer.ts by replacing that char-class strip with a character walk, and the row was never deleted. M49's own verifier reports it -- `register has no ghost rows -- 3 ghost, first: real-zig-analyzer.ts | /[!*\\s\\[\\]\\{\\}]+/g (1/0)` -- and had been reporting it while this lane's own zero-regex claim was TRUE and its own register row said otherwise. Retired here rather than deleted silently; the analyzer has 0 regex operations, verified by direct scan and by `script/m49/verify-r2-regex.ts`."
     }
   ]
 }
