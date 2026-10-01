@@ -233,7 +233,7 @@
       },
       {
         "node_type": "objective_c_expression, objective_c_statement, superclass_reference, protocol_qualifiers, protocol_list, category_interface, category_implementation, selector, property_identifier",
-        "missing": "obsolete/dead grammar-era names (pre-pinned-wasm aliases) \u2014 the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions",
+        "missing": "obsolete/dead grammar-era names (pre-pinned-wasm aliases) — the pinned wasm has no such nodes; the analyzer never emits them. Documented to prevent future dead-literal regressions",
         "issue": "objc wave (#267 family)"
       }
     ]
@@ -244,63 +244,63 @@
         "id": "OBJCD1",
         "node_type": "class_interface, class_implementation",
         "status": "RULED",
-        "question": "The pinned grammar parses BOTH plain classes and categories as class_interface/class_implementation \u2014 the category is distinguished by an anonymous `(` token after the class name.",
-        "resolution": "The analyzer scans the non-named children for the `(` token (pure AST, never source-text scanning). A category emits an Extension symbol (categoryName recorded) and NO inheritance edges; its methods are owned by the EXTENDED class. A plain class emits extends (the ONE superclass after the colon \u2014 never a protocol) + implements (protocols under parameterized_arguments). @interface + @implementation of the same class merge into one symbol (dedup key kind:owner:name without start line)."
+        "question": "The pinned grammar parses BOTH plain classes and categories as class_interface/class_implementation — the category is distinguished by an anonymous `(` token after the class name.",
+        "resolution": "The analyzer scans the non-named children for the `(` token (pure AST, never source-text scanning). A category emits an Extension symbol (categoryName recorded) and NO inheritance edges; its methods are owned by the EXTENDED class. A plain class emits extends (the ONE superclass after the colon — never a protocol) + implements (protocols under parameterized_arguments). @interface + @implementation of the same class merge into one symbol (dedup key kind:owner:name without start line)."
       },
       {
         "id": "OBJCD2",
         "node_type": "message_expression",
         "status": "RULED",
-        "question": "ObjC message sends `[receiver selector:arg]` \u2014 which node is the callee, and when is it an instantiation?",
-        "resolution": "The selector is the FIRST identifier AFTER the receiver (never the receiver itself), so `[NSString stringWithFormat:]` calls stringWithFormat, not NSString. When the selector is alloc or new, the RECEIVER is the instantiated class ([[Foo alloc] init] resolves the receiver leaf through the nested inner message) \u2014 instantiates, not calls. Method-body scope only (the analyzer guards activeScope !== global, so file-scope messages are not emitted)."
+        "question": "ObjC message sends `[receiver selector:arg]` — which node is the callee, and when is it an instantiation?",
+        "resolution": "The selector is the FIRST identifier AFTER the receiver (never the receiver itself), so `[NSString stringWithFormat:]` calls stringWithFormat, not NSString. When the selector is alloc or new, the RECEIVER is the instantiated class ([[Foo alloc] init] resolves the receiver leaf through the nested inner message) — instantiates, not calls. Method-body scope only (the analyzer guards activeScope !== global, so file-scope messages are not emitted)."
       },
       {
         "id": "OBJCD3",
         "node_type": "block_literal",
         "status": "RULED",
-        "question": "Blocks `^{ ... }` are anonymous \u2014 should they produce symbols?",
+        "question": "Blocks `^{ ... }` are anonymous — should they produce symbols?",
         "resolution": "No symbol (generated names are execution artifacts, same as C function pointers and closure literals elsewhere in the family). Their BODY message/calls ARE still captured (a block calling setHidden inside a method emits calls from the enclosing method scope)."
       },
       {
         "id": "OBJCD4",
         "node_type": "field_expression",
         "status": "RULED",
-        "question": "ObjC dot-syntax property access (`self.next`, `w.next`, `self.origin.x`) parses as field_expression with a field_identifier \u2014 should these produce uses edges?",
-        "resolution": "Yes for READS (managed-OO family contract \u2014 dart/swift/csharp emit uses for member reads): a field_expression inside a method body emits uses -> the field name with isFieldRead metadata. The LHS of an assignment_expression is a WRITE, never a read, so it is excluded (pure AST: the walk carries the parent type \u2014 never source-text scanning). This mirrors the C analyzer's field_access handling while honoring the family's read-vs-write distinction."
+        "question": "ObjC dot-syntax property access (`self.next`, `w.next`, `self.origin.x`) parses as field_expression with a field_identifier — should these produce uses edges?",
+        "resolution": "Yes for READS (managed-OO family contract — dart/swift/csharp emit uses for member reads): a field_expression inside a method body emits uses -> the field name with isFieldRead metadata. The LHS of an assignment_expression is a WRITE, never a read, so it is excluded (pure AST: the walk carries the parent type — never source-text scanning). This mirrors the C analyzer's field_access handling while honoring the family's read-vs-write distinction."
       },
       {
         "id": "OBJCD5",
         "status": "FIXED",
-        "question": "Pointer/object-return C helper functions (`static NSArray * fn(...)`) were silently dropped: the defining declarator parses NESTED (function_definition > pointer_declarator > function_declarator; generic-return helpers add a generic_specifier sibling), but the name lookup only checked DIRECT function_declarator/identifier children. Worse than a missing symbol: because the function was never symbolized, activeScope stayed 'global' and the function's ENTIRE body (calls/uses/instantiates) was suppressed. First seen on real corpora (afnetworking 49 .m + sdwebimage 104 .m \u2014 Clyde's 4 files never exercised it): 46 of 110 C helpers affected; 180 differential-missing edges (60 + 120), both corpora at only ~97% coverage.",
+        "question": "Pointer/object-return C helper functions (`static NSArray * fn(...)`) were silently dropped: the defining declarator parses NESTED (function_definition > pointer_declarator > function_declarator; generic-return helpers add a generic_specifier sibling), but the name lookup only checked DIRECT function_declarator/identifier children. Worse than a missing symbol: because the function was never symbolized, activeScope stayed 'global' and the function's ENTIRE body (calls/uses/instantiates) was suppressed. First seen on real corpora (afnetworking 49 .m + sdwebimage 104 .m — Clyde's 4 files never exercised it): 46 of 110 C helpers affected; 180 differential-missing edges (60 + 120), both corpora at only ~97% coverage.",
         "resolution": "The defining name is now the FIRST function_declarator in document order that is not inside the compound_statement (parameters nest any function-pointer declarators strictly after the head), then its first identifier child. The oracle already derived these edges (its inBody model does not depend on name resolution), so only the analyzer changed. Both corpora restored to 100% coverage / 0 missing / 0 unexplained. Gated by fixture objc/pointer-return-helpers (expectSymbols HelperObjects/MakeImage + their body calls) + mutant objc/drop-pointer-return-function-bodies.",
         "issue": "M37.15 objc dual-lens pass (#608)"
       },
       {
         "id": "OBJCD6",
         "status": "FIXED",
-        "question": "Macro-invocation-as-declaration inside an @implementation ivar block (`@implementation Foo { SD_LOCK_DECLARE(_lock); }` \u2014 expands to `os_unfair_lock _lock;`) parses as a call_expression at class scope. The scope-only gate (activeScope !== 'global') treated the ivar area as callable because the class name is on the scope stack, fabricating `calls Foo -> SD_LOCK_DECLARE`. Found as the sole unexplained edge in the sdwebimage differential.",
+        "question": "Macro-invocation-as-declaration inside an @implementation ivar block (`@implementation Foo { SD_LOCK_DECLARE(_lock); }` — expands to `os_unfair_lock _lock;`) parses as a call_expression at class scope. The scope-only gate (activeScope !== 'global') treated the ivar area as callable because the class name is on the scope stack, fabricating `calls Foo -> SD_LOCK_DECLARE`. Found as the sole unexplained edge in the sdwebimage differential.",
         "resolution": "The walk now carries an isInBody flag set only by real execution containers (method_definition/method_declaration/function_definition/block_literal). message_expression, call_expression, and field_expression edges require isInBody AND a non-global scope. Class ivar braces and @interface declaration areas are declaration contexts, never call sites. Gated by fixture objc/pointer-return-helpers (forbid calls Widget->LOCK_DECLARE) + mutant objc/emit-ivar-block-macro-calls.",
         "issue": "M37.15 objc dual-lens pass (#608)"
       },
       {
         "id": "OBJCD7",
         "status": "FIXED",
-        "question": "ObjC method identity was the FIRST KEYWORD (leaf) of the selector. ObjC selectors are multi-keyword (`initWithNamespace:diskCacheDirectory:config:`); the full selector IS the method's name (runtime, clangd, Xcode). Leaf naming collapsed distinct methods sharing a first keyword into one symbol (last-wins range) and made message-send call targets unresolvable leaves. Corpus measure (sdwebimage + afnetworking, 1957 methods): 225 colliding method occurrences across 35 owners; SDImageCache alone lost 14 of 59 selectors (three initWithNamespace* overloads merged into one). This was analyzer-vs-oracle circular consistency: the wave-1 census called first-segment naming 'verified consistent' because BOTH sides used it \u2014 the family convention (csharp/dart/swift emit one row per declaration, never losing a distinct method) was never consulted.",
+        "question": "ObjC method identity was the FIRST KEYWORD (leaf) of the selector. ObjC selectors are multi-keyword (`initWithNamespace:diskCacheDirectory:config:`); the full selector IS the method's name (runtime, clangd, Xcode). Leaf naming collapsed distinct methods sharing a first keyword into one symbol (last-wins range) and made message-send call targets unresolvable leaves. Corpus measure (sdwebimage + afnetworking, 1957 methods): 225 colliding method occurrences across 35 owners; SDImageCache alone lost 14 of 59 selectors (three initWithNamespace* overloads merged into one). This was analyzer-vs-oracle circular consistency: the wave-1 census called first-segment naming 'verified consistent' because BOTH sides used it — the family convention (csharp/dart/swift emit one row per declaration, never losing a distinct method) was never consulted.",
         "resolution": "Method symbol identity is now the FULL selector (keyword: + remaining identifier: parts joined, trailing colon only when the final part takes no argument). Message-expression call targets use the same full-selector extraction with alloc/new detection on the first keyword (`[Foo alloc] initWith...:` = alloc+message, not a call to an 'alloc' selector; `[Foo new]` and `[Foo new:...]` = instantiates). Multi-segment selectors with a bare-last part (`imageFromCacheForKey:options:`) keep the trailing colon on all parts. Extraction was validated on all 1957 corpus methods (0 issues). Message call targets are also resolved through nested receivers. The oracle mirror emits identical full-selector message targets.",
         "evidence": "selector-identity fixture pins expectSymbolCount=1 for each of the three initWithNamespace* overloads and setValue:/setValue:forKey: distinctness; forbidSymbols forbid the leaf names; calls pins target the full selectors. Corpus differentials: sdwebimage + afnetworking both 100% covered / 0 missing / 0 unexplained at full corpus. Regression mutant objc/collapse-selector-leaf-naming dies (3 fixture failures)."
       },
       {
         "id": "OBJCD8",
         "status": "FIXED",
-        "question": "ObjC was the ONLY inheritance-based language in the family with ZERO override machinery \u2014 no overrides edge was ever emitted (the analyzer's evidence tier had a dead `overrides -> structural` branch), yet `overrides` was in the differential's compared set for objc. ObjC overriding is implicit (selector reuse in a subclass), like ruby/php/python \u2014 NOT keyword-declared like swift. Every sibling OO language (java, csharp, dart, swift, cpp, groovy, kotlin, scala, ruby, php, python) has override resolution; objc had none.",
-        "resolution": "Implemented the M37.10 implicit-override family model: a subclass method whose IN-FILE superclass declares the SAME FULL SELECTOR is a VERIFIED override @0.95 (evidenceClass structural). When the first parent is an EXTERNAL base (not declared in this file), methods guess-override toward that base @0.5 (evidenceClass inferred, reasonCode first-parent-guess), excluding the universal roots NSObject/NSProxy (mirroring ruby's implicit Object exclusion \u2014 no per-method noise toward the root). The dead `overrides -> structural` evidence branch is now confidence-aware (0.95 -> structural, 0.5 -> inferred). The oracle mirror emits the same verified in-file overrides. sdwebimage gains 287 guess edges at full corpus (family precedent: rake 0->382, phpunit 0->94, cython 0->433); the F5 baseline row for objc was re-pinned with rationale.",
+        "question": "ObjC was the ONLY inheritance-based language in the family with ZERO override machinery — no overrides edge was ever emitted (the analyzer's evidence tier had a dead `overrides -> structural` branch), yet `overrides` was in the differential's compared set for objc. ObjC overriding is implicit (selector reuse in a subclass), like ruby/php/python — NOT keyword-declared like swift. Every sibling OO language (java, csharp, dart, swift, cpp, groovy, kotlin, scala, ruby, php, python) has override resolution; objc had none.",
+        "resolution": "Implemented the M37.10 implicit-override family model: a subclass method whose IN-FILE superclass declares the SAME FULL SELECTOR is a VERIFIED override @0.95 (evidenceClass structural). When the first parent is an EXTERNAL base (not declared in this file), methods guess-override toward that base @0.5 (evidenceClass inferred, reasonCode first-parent-guess), excluding the universal roots NSObject/NSProxy (mirroring ruby's implicit Object exclusion — no per-method noise toward the root). The dead `overrides -> structural` evidence branch is now confidence-aware (0.95 -> structural, 0.5 -> inferred). The oracle mirror emits the same verified in-file overrides. sdwebimage gains 287 guess edges at full corpus (family precedent: rake 0->382, phpunit 0->94, cython 0->433); the F5 baseline row for objc was re-pinned with rationale.",
         "evidence": "selector-identity fixture pins the verified in-file override EvictingCache.overrideable -> StoreCache.overrideable @0.95 (structural) plus the external-base guess StoreCacheTests.* -> SDTestCase.* @0.5 (inferred, first-parent-guess) and the root exclusion (StoreCache : NSObject emits no per-method guesses). Regression mutant objc/drop-override-machinery dies (2 fixture failures)."
       },
       {
         "id": "OC-B",
         "node_type": "class_interface (category) exports",
         "status": "FIXED",
-        "question": "First OO review: a top-level category (`@interface NSString (Trim)`) carries no owner, so the exports pass emitted the extended class name as a top-level public export \u2014 claiming NSString is defined here.",
+        "question": "First OO review: a top-level category (`@interface NSString (Trim)`) carries no owner, so the exports pass emitted the extended class name as a top-level public export — claiming NSString is defined here.",
         "resolution": "Categories are not top-level resolvable units (swift precedent: extension symbols exist but never export). The exports pass now skips Extension symbols. Gated by fixture objc/bare-value-reads forbidExports NSString + mutant objc/export-category-extension.",
         "issue": "M49.OC1 objc first review"
       },
@@ -308,7 +308,7 @@
         "id": "OC-D",
         "node_type": "struct_specifier, enum_specifier, type_definition",
         "status": "FIXED",
-        "question": "First OO review: identical C code lost its entire type inventory in a .m file \u2014 typedefs, structs (+fields), enums (+members) had no symbols while the C analyzer symbolizes all of them (holy-c waves). The pinned objc wasm shares the C node shapes exactly.",
+        "question": "First OO review: identical C code lost its entire type inventory in a .m file — typedefs, structs (+fields), enums (+members) had no symbols while the C analyzer symbolizes all of them (holy-c waves). The pinned objc wasm shares the C node shapes exactly.",
         "resolution": "Ported C's symbol shapes (Struct + Property fields owned by the struct, Enum + EnumMember owned by the enum, Type for aliases, anonymous aggregates named by their typedef; definition-only so `struct Node *p` references stay silent). Type-USE references deliberately NOT ported: every ObjC signature mentions Foundation types, so C-style type-use references would be systematic noise. Gated by fixture objc/bare-value-reads Point/Color/Counter/Size pins + mutant objc/drop-c-type-inventory.",
         "issue": "M49.OC1 objc first review"
       },
@@ -316,7 +316,7 @@
         "id": "OC-E",
         "node_type": "identifier (bare value reads)",
         "status": "FIXED",
-        "question": "First OO review: bare-identifier VALUE reads were invisible on both sides (receivers like [store ...], RHS, call args, returns, locals) \u2014 circular consistency hiding the managed-OO family contract (csharp CS-R1, dart, swift all emit member/value reads). Lanes could not see it; only the hostile battery could.",
+        "question": "First OO review: bare-identifier VALUE reads were invisible on both sides (receivers like [store ...], RHS, call args, returns, locals) — circular consistency hiding the managed-OO family contract (csharp CS-R1, dart, swift all emit member/value reads). Lanes could not see it; only the hostile battery could.",
         "resolution": "Scope-bound inventory with the identical rule on both sides: per-definition value frames (params incl. block params, body locals incl. bare declarators, for-in variables) + block chain + same-file class ivar/property pre-scan + file globals (incl. pointer declarators and multi-declarators). Reads emit uses@0.9 (isBareRead); keywords, zero-arg selectors, declaration names, call callees (CGD17 parity), assignment-LHS writes (C span-match parity), for-in variables, @synthesize/@selector names, and self/super/nil/YES/NO/_cmd never read. Unbound names (types, macros, enum cases) stay silent. Cross-file ivars (headers) stay silent by translation-unit design. Same-key uses merges union the read-kind flags so field-read pins survive. Gated by fixture objc/bare-value-reads (21 expects, 4 forbids) + 4 mutants (drop + write/callee/selector fabrication).",
         "issue": "M49.OC1 objc first review"
       },
@@ -324,7 +324,7 @@
         "id": "OC-R1",
         "node_type": "update_expression operands",
         "status": "RULED",
-        "question": "First OO review: `self.count++` emits uses->count on both sides \u2014 is an update operand a write (GOD4 gates Go inc/dec) or a read?",
+        "question": "First OO review: `self.count++` emits uses->count on both sides — is an update operand a write (GOD4 gates Go inc/dec) or a read?",
         "resolution": "READ (C parity, probe-verified: the C analyzer emits uses for `s->count++` and gates only assignment LHS). The GOD4 inc/dec gating was Go-selector-specific; ObjC follows its C-superset semantics. Pinned by fixture objc/bare-value-reads uses[tick->count].",
         "issue": "M49.OC1 objc first review"
       },
@@ -332,7 +332,7 @@
         "id": "OC-R2",
         "node_type": "property_implementation, selector_expression",
         "status": "RULED",
-        "question": "First OO review: @synthesize names and @selector names \u2014 reads, references, or silent?",
+        "question": "First OO review: @synthesize names and @selector names — reads, references, or silent?",
         "resolution": "SILENT (both sides): @synthesize wires storage without reading; @selector names a method without invoking it (unlike C# nameof-as-call, a SEL value is closer to a method pointer and no family member emits calls for it). @selector is load-bearing-silent (forbid uses[maker->fire] with a bound local of the same spelling); @synthesize is defensive-silent (class-scope, unobservable by edges) gated by forbid uses[Holder->_label] (class scope never sources reads) + mutant objc/emit-synthesize-as-bare-read.",
         "issue": "M49.OC1 objc first review"
       },
@@ -340,23 +340,23 @@
         "id": "OC-F",
         "node_type": "enumerator identifiers in value positions",
         "status": "FIXED",
-        "question": "Second review: `case Red:`, `x == Alpha`, `return Beta` invisible on both sides \u2014 enum cases (OC-D symbols!) never entered the value inventory, though case labels and comparisons genuinely reference them.",
-        "resolution": "Same-file enum cases resolve last in the inventory (locals/params/ivars/globals shadow first). NS_ENUM/NS_OPTIONS need macro expansion AND live in headers \u2014 silent by unit design on both sides (verified: the macro error-recovers, cases unparseable). Gated by fixture objc/second-review + mutant objc/drop-enum-case-reads.",
+        "question": "Second review: `case Red:`, `x == Alpha`, `return Beta` invisible on both sides — enum cases (OC-D symbols!) never entered the value inventory, though case labels and comparisons genuinely reference them.",
+        "resolution": "Same-file enum cases resolve last in the inventory (locals/params/ivars/globals shadow first). NS_ENUM/NS_OPTIONS need macro expansion AND live in headers — silent by unit design on both sides (verified: the macro error-recovers, cases unparseable). Gated by fixture objc/second-review + mutant objc/drop-enum-case-reads.",
         "issue": "M49.OC2 objc second review"
       },
       {
         "id": "OC-G",
         "node_type": "call_expression under at_expression",
         "status": "FIXED",
-        "question": "Second review: `@protocol(P)` emitted calls->protocol (dangling \u2014 nothing named protocol is invocable) while `@encode` stayed silent by shape and `@selector` by ruling (OC-R2). Directives named inconsistently.",
-        "resolution": "Calls with callee `protocol` directly under at_expression are skipped on both sides (message sends named protocol stay calls \u2014 real methods). Gated by fixture forbid + mutant objc/emit-protocol-directive-call.",
+        "question": "Second review: `@protocol(P)` emitted calls->protocol (dangling — nothing named protocol is invocable) while `@encode` stayed silent by shape and `@selector` by ruling (OC-R2). Directives named inconsistently.",
+        "resolution": "Calls with callee `protocol` directly under at_expression are skipped on both sides (message sends named protocol stay calls — real methods). Gated by fixture forbid + mutant objc/emit-protocol-directive-call.",
         "issue": "M49.OC2 objc second review"
       },
       {
         "id": "OC-H",
         "node_type": "function_definition names as values",
         "status": "FIXED",
-        "question": "Second review: `cb = helper` decay and bare function references silent \u2014 file-scope functions symbolized but never bound, though bare `helper` can never invoke a method (receivers required), so global attribution is exact.",
+        "question": "Second review: `cb = helper` decay and bare function references silent — file-scope functions symbolized but never bound, though bare `helper` can never invoke a method (receivers required), so global attribution is exact.",
         "resolution": "Defined function names join globals on both sides (locals shadow first; call-callee and declarator positions still skipped). Gated by fixture (uses without disturbing calls) + mutant objc/drop-function-decay-reads.",
         "issue": "M49.OC2 objc second review"
       },
@@ -364,9 +364,20 @@
         "id": "OC-R3",
         "node_type": "compound assignment, address-of, use-before-declaration",
         "status": "RULED",
-        "question": "Second review: `x *= 2`/`+=` (folded into assignment_expression) gated as writes \u2014 but RMW reads the value! `&buf` reads without reading the value. `use-before-decl` locals invisible.",
-        "resolution": "Compound-assign LHS are writes (C SCD1 parity: `c->count += 1` gated there too; update_expression `++` stays the read form per OC-R1). Address-of emits on both sides (a reference, documented as read). Use-before-declaration in one scope is invalid C \u2014 silence on broken code is correct.",
+        "question": "Second review: `x *= 2`/`+=` (folded into assignment_expression) gated as writes — but RMW reads the value! `&buf` reads without reading the value. `use-before-decl` locals invisible.",
+        "resolution": "Compound-assign LHS are writes (C SCD1 parity: `c->count += 1` gated there too; update_expression `++` stays the read form per OC-R1). Address-of emits on both sides (a reference, documented as read). Use-before-declaration in one scope is invalid C — silence on broken code is correct.",
         "issue": "M49.OC2 objc second review"
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "overrides",
+        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
+        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
       }
     ]
   }

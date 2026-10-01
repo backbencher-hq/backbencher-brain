@@ -372,5 +372,16 @@
         "how_it_was_found": "By probing Android-idiomatic constructs rather than by inspecting the corpus. The probe's first result — receiver-scope chains apparently failing — was a FALSE POSITIVE caused by a control that also failed: `class V { fun f() { } }` errored, which is absurd for real code. Following the control down is what found the actual rule, and had the control not been run the finding would have been reported as 'receiver scopes are broken', which is wrong."
       }
     ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "overrides",
+        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
+        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
+      }
+    ]
   }
 }

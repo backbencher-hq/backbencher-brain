@@ -1,196 +1,472 @@
 {
- "language": "fsharp",
- "grammar": "tree-sitter-fsharp.wasm sha256 16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e, 12,613,928 B — a local rebuild of ionide/tree-sitter-fsharp v0.3.11 plus exactly `module_val_declaration` and `nullable_type` (pin: validation/m14/grammar-pins.json; round: reviews/functional-family/m60-grammar-pins.md). The surfaces below were measured, not read off the grammar: validation/m14/results/fsharp-shape-census.json (a deterministic 120-file draw of .fs/.fsi >= 1KB under the fsharp corpus, every node type counted, subtree shapes dumped for the constructs the oracle must read).",
- "handled_verified": {
-  "_description": "Every node type this lane reads, with the census count that proves the rule is LIVE (a rule for a type the grammar never emits is a claim nobody can falsify). The column that matters is 'times seen in 120 files': the lane was authored with six dead branches (see gap FS-A1) and this list is what retired the guesswork. Fixtures are OWED (the lane has none yet); until they exist this block's evidence is the census artifact, named here rather than implied.",
-  "_evidence": "validation/m14/results/fsharp-shape-census.json",
-  "types": [
-   {"type": "source_file", "count": 120, "used_for": "root"},
-   {"type": "namespace", "count": 138, "used_for": "scope name (identifier | long_identifier)"},
-   {"type": "named_module", "count": 45, "used_for": "scope name"},
-   {"type": "module_defn", "count": 156, "used_for": "scope name"},
-   {"type": "type_definition", "count": 324, "used_for": "type symbol + body dispatch"},
-   {"type": "type_name", "count": 324, "used_for": "clean name + generic params (field names type_name:identifier | type_name:long_identifier)"},
-   {"type": "record_type_defn", "count": 30, "used_for": "class kind"},
-   {"type": "record_field", "count": 181, "used_for": "property symbols (name is the first identifier)"},
-   {"type": "union_type_defn", "count": 67, "used_for": "enum kind"},
-   {"type": "union_type_case", "count": 176, "used_for": "enum_member symbols"},
-   {"type": "enum_type_defn", "count": 4, "used_for": "enum kind"},
-   {"type": "enum_type_case", "count": 12, "used_for": "enum_member symbols"},
-   {"type": "anon_type_defn", "count": 172, "used_for": "class vs interface discrimination (member_signature / inherits / concrete members)"},
-   {"type": "interface_type_defn", "count": 1, "used_for": "interface kind"},
-   {"type": "delegate_type_defn", "count": 1, "used_for": "type kind"},
-   {"type": "type_abbrev_defn", "count": 33, "used_for": "type kind"},
-   {"type": "class_inherits_decl", "count": 20, "used_for": "extends + the override target's base name"},
-   {"type": "interface_implementation", "count": 30, "used_for": "implements"},
-   {"type": "member_defn", "count": 764, "used_for": "member symbols, `override` detection"},
-   {"type": "member_signature", "count": 106, "used_for": "abstract member symbols + default-impl dedup"},
-   {"type": "method_or_prop_defn", "count": 604, "used_for": "method vs property split (the `args:` field)"},
-   {"type": "property_or_ident", "count": 604, "used_for": "member name (last identifier: `this.Speak` -> Speak)"},
-   {"type": "additional_constr_defn", "count": 4, "used_for": "`new` constructor symbols + constructor-chain instantiates"},
-   {"type": "value_declaration", "count": 18, "used_for": "wrapper"},
-   {"type": "function_or_value_defn", "count": 4273, "used_for": "function/variable symbols"},
-   {"type": "value_declaration_left", "count": 2768, "used_for": "binding name (identifier_pattern inside)"},
-   {"type": "function_declaration_left", "count": 1659, "used_for": "function name + arity"},
-   {"type": "argument_patterns", "count": 2241, "used_for": "function-vs-value (a declaration with args)"},
-   {"type": "identifier_pattern", "count": 10124, "used_for": "binding names; also the single-curried-arg member shape"},
-   {"type": "paren_pattern", "count": 1043, "used_for": "parenthesized member args"},
-   {"type": "application_expression", "count": 16316, "used_for": "calls / instantiates"},
-   {"type": "dot_expression", "count": 1072, "used_for": "qualified callee (field: child is the leaf)"},
-   {"type": "infix_expression", "count": 5435, "used_for": "pipeline callee (`a |> f b`)"},
-   {"type": "prefixed_expression", "count": 580, "used_for": "`new Foo(...)` construction sites (prefix token `new`)"},
-   {"type": "long_identifier_or_op", "count": 41480, "used_for": "unqualified and dotted callee text"},
-   {"type": "long_identifier", "count": 15516, "used_for": "type paths (extends/implements/open targets)"},
-   {"type": "identifier", "count": 63694, "used_for": "leaf names everywhere"},
-   {"type": "object_expression", "count": 12, "used_for": "`{ new IFoo with ... }` -> symbol + implements"},
-   {"type": "active_pattern", "count": 53, "used_for": "one function symbol named by the full `(|A|B|)`"},
-   {"type": "exception_definition", "count": 18, "used_for": "class symbol named by the first identifier"},
-   {"type": "type_extension", "count": 13, "used_for": "type symbol (type_name | long_identifier)"},
-   {"type": "attribute", "count": 1270, "used_for": "TypeProvider symbols only"},
-   {"type": "import_decl", "count": 558, "used_for": "references (`open X`) + imports"},
-   {"type": "compiler_directive_decl", "count": 5, "used_for": "macro symbols (#if family)"},
-   {"type": "module_val_declaration", "count": 203, "used_for": "signature-file `val X : T` symbols (FSD9 — NOT yet emitted by the analyzer, see gap FS-A3)"},
-   {"type": "simple_type", "count": 3641, "used_for": "extends/implements target extraction (long_identifier inside)"},
-   {"type": "generic_type", "count": 298, "used_for": "generic interface/extends targets"},
-   {"type": "ERROR", "count": 43, "used_for": "defensive error-path check"}
-  ]
- },
- "internal_silent": {
-  "_description": "Structural wrappers, literals and type-tree internals that correctly emit nothing in this lane's contract.",
-  "types": [
-   "xml_doc", "line_comment", "attributes", "type_arguments", "type_argument",
-   "type_argument_defn", "curried_spec", "arguments_spec", "argument_spec",
-   "argument_name_spec", "access_modifier", "block", "brace_expression",
-   "field_initializers", "field_initializer", "declaration_expression",
-   "fun_expression", "match", "sequential_expression", "const", "unit",
-   "tuple_expression", "list_expression", "list_pattern", "typed_pattern",
-   "optional_pattern", "wildcard_pattern", "repeat_pattern", "attribute_pattern",
-   "disjunct_pattern", "array_pattern", "infix_op", "prefix_op", "postfix_type",
-   "type_extension_elements", "typed_expression", "prefixed_expression (except the `new` prefix, FSD8)"
-  ]
- },
- "gap": {
-  "_description": "Named worklists, not hidden ones. Each count is from the 120-file shape census unless the entry says otherwise.",
-  "gaps": [
-   {
-    "id": "FS-A1",
-    "severity": "medium",
-    "node_type": "app_expression, open_statement, open_decl, module_abbrev, val_property_defn, fsi_directive_decl",
-    "missing": "SIX rules the analyzer dispatches on that the pinned grammar never emits (measured 0 occurrences across 363,609 nodes). They are the dead-rule class the family sweep found in three lanes: `open` is `import_decl` (558), calls are `application_expression` (16,316), `#if` is `compiler_directive_decl` (5). None of them silently drops an edge — `import_decl` and `application_expression` carry the work — but they must be retired so the next reader does not mistake the list for a surface."
-   },
-   {
-    "id": "FS-A2",
-    "severity": "high",
-    "node_type": "method_or_prop_defn `args:`",
-    "missing": "the method/property split reads only paren_pattern / argument_patterns / const \"()\"; of 604 members, 449 carry the `args:` field (paren_pattern 241, const 135, identifier_pattern 73) and the 73 single-curried-arg members (`member this.Clear r = ...`) are classified PROPERTY, which both mislabels them and suppresses every call in their body. Measured on the census draw; the corpus-scale count is what the F5 lane will report."
-   },
-   {
-    "id": "FS-A3",
-    "severity": "medium",
-    "node_type": "module_val_declaration",
-    "missing": "203 `val X : T` declarations in the draw — every one in a .fsi — publish no symbol at all: the analyzer has no branch for the node the lane's own grammar patch added. Decision FSD9 rules what they should be; the analyzer work is owed."
-   },
-   {
-    "id": "FS-A4",
-    "severity": "medium",
-    "node_type": "prefixed_expression",
-    "missing": "156 `new` tokens in the draw are explicit construction sites; today the inner application emits a `calls` edge like any other call, so the lane has no `instantiates` surface on real code (its only instantiates rule is constructor chaining). Decision FSD8 rules the split; the analyzer work is owed."
-   },
-   {
-    "id": "FS-A5",
-    "severity": "high",
-    "node_type": "ERROR",
-    "missing": "14 of 120 files in this draw parse with an error tree (11.7%) — the corpus-scale figure the sweep measured is 15.9% on its own draw. The pin round showed the vendored grammar repairs 9 files unpatched 0.3.11 damages and damages 1; the six grammar-rejected constructs of the sweep's §2d are the remaining, patchable-in-tree work."
-   }
-  ]
- },
- "design_decision": {
-  "description": "The F# lane's contract, each ruling written against the measured shapes above. The oracle (deriveFsharpEdges in script/m14/differential.ts) implements THIS list, not the analyzer's current behavior; a disagreement is a lane defect, and the F5 row is where it is counted.",
-  "decisions": [
-   {
-    "id": "FSD1",
-    "node_type": "namespace, named_module, module_defn",
-    "status": "RULED",
-    "question": "what is a scope, and what is its name?",
-    "resolution": "A scope is one of the three nodes; its name is the first `identifier` or `long_identifier` child, taken AS WRITTEN (a dotted `module A.B` is the one name `A.B`). Nested scopes stack; the innermost scope is the source of file-level edges."
-   },
-   {
-    "id": "FSD2",
-    "node_type": "type_definition and its body wrappers",
-    "status": "RULED (carried over, M12-verified)",
-    "question": "how is a type's kind decided?",
-    "resolution": "record_type_defn -> class; union_type_defn / enum_type_defn -> enum (cases become enum_member symbols); interface_type_defn, or an anon_type_defn whose members are all signatures with no inherit and no concrete member, -> interface; delegate_type_defn / type_abbrev_defn -> type; [<Measure>] -> type; otherwise class. Record fields publish property symbols owned by the type."
-   },
-   {
-    "id": "FSD3",
-    "node_type": "class_inherits_decl",
-    "status": "RULED (RETIRES a heuristic)",
-    "question": "is `inherit X` always an extends edge?",
-    "resolution": "Yes, always. F# implements interfaces with `interface ... with` (FSD4); an `inherit` names a base class, so the four-line guess the analyzer uses today — 'the target starts with I followed by an uppercase letter, therefore implements' — is retired. A base class that happens to be named `IThing` is currently mislabelled implements and a genuine interface declaration is labelled by luck."
-   },
-   {
-    "id": "FSD4",
-    "node_type": "interface_implementation, object_expression",
-    "status": "RULED",
-    "question": "what implements what?",
-    "resolution": "interface_implementation -> implements(type, the interface named by the first long_identifier/identifier inside it). object_expression (`{ new IFoo with ... }`) -> one class symbol named `new IFoo` owned by the enclosing scope AND implements(that enclosing scope, IFoo) — the C# family's anonymous-class precedent."
-   },
-   {
-    "id": "FSD5",
-    "node_type": "member_defn (override token)",
-    "status": "RULED (sharpened)",
-    "question": "which member is an override, and against what?",
-    "resolution": "The `override` token declares an override; a member inside `interface I with` does NOT (that is the type-level implements edge, FSD4). Source = `Owner.member`, target = `Base.member` where Base is the enclosing type's class_inherits_decl target; with no base in the file the target is the bare member name (unqualified). Only CONCRETE members (`method_or_prop_defn`) can carry the token; a `member_signature` never does."
-   },
-   {
-    "id": "FSD6",
-    "node_type": "application_expression",
-    "status": "RULED",
-    "question": "what is a call, and who makes it?",
-    "resolution": "The callee is the first NAMED child of an application_expression; its leaf is the last identifier of the callee's text (last segment for a dotted path, the `field:` child for a dot_expression). Four callee shapes occur in the corpus: long_identifier_or_op (17,243), a nested application_expression (4,740, curried), an infix_expression (1,348: `a |> f b`, callee = the infix's LAST named child), and a dot_expression (758). Source = the enclosing function/method/constructor; a local binding publishes no symbol but its body attributes to the enclosing callable; a computed property body emits no calls (C# family contract). Builtins (FSD11) are filtered. A call whose callee is not one of those shapes is NOT an edge (a lambda application `(fun x -> ..) y` names nothing)."
-   },
-   {
-    "id": "FSD7",
-    "node_type": "method_or_prop_defn",
-    "status": "RULED (retires the misclassification)",
-    "question": "method or property?",
-    "resolution": "The grammar's `args:` FIELD decides: present (paren_pattern, identifier_pattern, argument_patterns, const unit) -> Method; absent -> the member's body follows the name, so Property. This replaces a scan of named children that recognised two of the four arg shapes and therefore filed 73 of the draw's 604 members under the wrong kind — and dropped their calls with them."
-   },
-   {
-    "id": "FSD8",
-    "node_type": "prefixed_expression, additional_constr_defn",
-    "status": "RULED",
-    "question": "what is a construction?",
-    "resolution": "Two forms: (a) the constructor-chain idiom `new() = Type(...)` inside an additional_constr_defn -> instantiates(constructor, Type); (b) an explicit `new` prefix (`prefixed_expression` whose first token is `new`, operand an application_expression) -> instantiates(enclosing callable, the type's leaf) and the inner application emits NO call. Bare application of a capitalised name stays a CALL: F# has no `new` keyword requirement, so what distinguishes a construction is the `new` token, not the capitalisation (the C# family's heuristic does not transfer)."
-   },
-   {
-    "id": "FSD9",
-    "node_type": "module_val_declaration",
-    "status": "RULED (work owed)",
-    "question": "what does `val X : T` publish?",
-    "resolution": "A Function symbol named by its first identifier, owned by the enclosing module/type scope, marked metadata.isDeclaration — a .fsi declares the surface, and a later .fs definition is the SAME entity (the Clean `.dcl`/`.icl` merge precedent). Not yet implemented (gap FS-A3)."
-   },
-   {
-    "id": "FSD10",
-    "node_type": "import_decl, module_abbrev",
-    "status": "RULED (sharpened)",
-    "question": "what does an import reference, and from where?",
-    "resolution": "`open X` -> references(source = the innermost scope, or `Global` when the file declares none, target = X as written, dotted path kept). A module-less file must source its file-level edges from `Global`, never from the opened name itself: self-sourcing is how an import becomes unfalsifiable. `module X = Y` (module_abbrev) -> references(X, Y); the shape does not occur in the corpus draw (0 of 363,609 nodes) and is kept in the spec as a measured-dead branch."
-   },
-   {
-    "id": "FSD11",
-    "node_type": "long_identifier_or_op",
-    "status": "RULED (shared language fact)",
-    "question": "which calls are filtered?",
-    "resolution": "Console output (`printfn`/`printf`/`eprintf*`/`fprintf*`, `Console.Write*`, `Console.Error.*`) and the Object leaf methods (ToString, GetHashCode, Equals, GetType, ReferenceEquals). This is a name list shared with the analyzer — a transcription hazard the differential cannot catch — while every RULE around it is derived independently."
-   },
-   {
-    "id": "FSD12",
-    "node_type": "value_declaration, function_or_value_defn, member_defn",
-    "status": "RULED (M12-verified)",
-    "question": "does a local publish anything?",
-    "resolution": "No: a binding inside a function body is not a symbol; its body's calls attribute to the enclosing callable. Function vs variable: a declaration whose left side carries argument_patterns/type_arguments is a Function, else a Variable (module-level `let x = e`). Values are EXCLUDED from exports; symbols publish exports only for non-variable kinds."
-   }
-  ]
- }
+  "language": "fsharp",
+  "grammar": "tree-sitter-fsharp.wasm sha256 16cb8779a76bf127497a601cc6b7a546d78a5f44aef27ce6d6120339d53d5c0e, 12,613,928 B — a local rebuild of ionide/tree-sitter-fsharp v0.3.11 plus exactly `module_val_declaration` and `nullable_type` (pin: validation/m14/grammar-pins.json; round: reviews/functional-family/m60-grammar-pins.md). The surfaces below were measured, not read off the grammar: validation/m14/results/fsharp-shape-census.json (a deterministic 120-file draw of .fs/.fsi >= 1KB under the fsharp corpus, every node type counted, subtree shapes dumped for the constructs the oracle must read).",
+  "handled_verified": {
+    "_description": "Every node type this lane reads, with the census count that proves the rule is LIVE (a rule for a type the grammar never emits is a claim nobody can falsify). The column that matters is 'times seen in 120 files': the lane was authored with six dead branches (see gap FS-A1) and this list is what retired the guesswork. Fixtures are OWED (the lane has none yet); until they exist this block's evidence is the census artifact, named here rather than implied.",
+    "_evidence": "validation/m14/results/fsharp-shape-census.json",
+    "types": [
+      {
+        "type": "source_file",
+        "count": 120,
+        "used_for": "root"
+      },
+      {
+        "type": "namespace",
+        "count": 138,
+        "used_for": "scope name (identifier | long_identifier)"
+      },
+      {
+        "type": "named_module",
+        "count": 45,
+        "used_for": "scope name"
+      },
+      {
+        "type": "module_defn",
+        "count": 156,
+        "used_for": "scope name"
+      },
+      {
+        "type": "type_definition",
+        "count": 324,
+        "used_for": "type symbol + body dispatch"
+      },
+      {
+        "type": "type_name",
+        "count": 324,
+        "used_for": "clean name + generic params (field names type_name:identifier | type_name:long_identifier)"
+      },
+      {
+        "type": "record_type_defn",
+        "count": 30,
+        "used_for": "class kind"
+      },
+      {
+        "type": "record_field",
+        "count": 181,
+        "used_for": "property symbols (name is the first identifier)"
+      },
+      {
+        "type": "union_type_defn",
+        "count": 67,
+        "used_for": "enum kind"
+      },
+      {
+        "type": "union_type_case",
+        "count": 176,
+        "used_for": "enum_member symbols"
+      },
+      {
+        "type": "enum_type_defn",
+        "count": 4,
+        "used_for": "enum kind"
+      },
+      {
+        "type": "enum_type_case",
+        "count": 12,
+        "used_for": "enum_member symbols"
+      },
+      {
+        "type": "anon_type_defn",
+        "count": 172,
+        "used_for": "class vs interface discrimination (member_signature / inherits / concrete members)"
+      },
+      {
+        "type": "interface_type_defn",
+        "count": 1,
+        "used_for": "interface kind"
+      },
+      {
+        "type": "delegate_type_defn",
+        "count": 1,
+        "used_for": "type kind"
+      },
+      {
+        "type": "type_abbrev_defn",
+        "count": 33,
+        "used_for": "type kind"
+      },
+      {
+        "type": "class_inherits_decl",
+        "count": 20,
+        "used_for": "extends + the override target's base name"
+      },
+      {
+        "type": "interface_implementation",
+        "count": 30,
+        "used_for": "implements"
+      },
+      {
+        "type": "member_defn",
+        "count": 764,
+        "used_for": "member symbols, `override` detection"
+      },
+      {
+        "type": "member_signature",
+        "count": 106,
+        "used_for": "abstract member symbols + default-impl dedup"
+      },
+      {
+        "type": "method_or_prop_defn",
+        "count": 604,
+        "used_for": "method vs property split (the `args:` field)"
+      },
+      {
+        "type": "property_or_ident",
+        "count": 604,
+        "used_for": "member name (last identifier: `this.Speak` -> Speak)"
+      },
+      {
+        "type": "additional_constr_defn",
+        "count": 4,
+        "used_for": "`new` constructor symbols + constructor-chain instantiates"
+      },
+      {
+        "type": "value_declaration",
+        "count": 18,
+        "used_for": "wrapper"
+      },
+      {
+        "type": "function_or_value_defn",
+        "count": 4273,
+        "used_for": "function/variable symbols"
+      },
+      {
+        "type": "value_declaration_left",
+        "count": 2768,
+        "used_for": "binding name (identifier_pattern inside)"
+      },
+      {
+        "type": "function_declaration_left",
+        "count": 1659,
+        "used_for": "function name + arity"
+      },
+      {
+        "type": "argument_patterns",
+        "count": 2241,
+        "used_for": "function-vs-value (a declaration with args)"
+      },
+      {
+        "type": "identifier_pattern",
+        "count": 10124,
+        "used_for": "binding names; also the single-curried-arg member shape"
+      },
+      {
+        "type": "paren_pattern",
+        "count": 1043,
+        "used_for": "parenthesized member args"
+      },
+      {
+        "type": "application_expression",
+        "count": 16316,
+        "used_for": "calls / instantiates"
+      },
+      {
+        "type": "dot_expression",
+        "count": 1072,
+        "used_for": "qualified callee (field: child is the leaf)"
+      },
+      {
+        "type": "infix_expression",
+        "count": 5435,
+        "used_for": "pipeline callee (`a |> f b`)"
+      },
+      {
+        "type": "prefixed_expression",
+        "count": 580,
+        "used_for": "`new Foo(...)` construction sites (prefix token `new`)"
+      },
+      {
+        "type": "long_identifier_or_op",
+        "count": 41480,
+        "used_for": "unqualified and dotted callee text"
+      },
+      {
+        "type": "long_identifier",
+        "count": 15516,
+        "used_for": "type paths (extends/implements/open targets)"
+      },
+      {
+        "type": "identifier",
+        "count": 63694,
+        "used_for": "leaf names everywhere"
+      },
+      {
+        "type": "object_expression",
+        "count": 12,
+        "used_for": "`{ new IFoo with ... }` -> symbol + implements"
+      },
+      {
+        "type": "active_pattern",
+        "count": 53,
+        "used_for": "one function symbol named by the full `(|A|B|)`"
+      },
+      {
+        "type": "exception_definition",
+        "count": 18,
+        "used_for": "class symbol named by the first identifier"
+      },
+      {
+        "type": "type_extension",
+        "count": 13,
+        "used_for": "type symbol (type_name | long_identifier)"
+      },
+      {
+        "type": "attribute",
+        "count": 1270,
+        "used_for": "TypeProvider symbols only"
+      },
+      {
+        "type": "import_decl",
+        "count": 558,
+        "used_for": "references (`open X`) + imports"
+      },
+      {
+        "type": "compiler_directive_decl",
+        "count": 5,
+        "used_for": "macro symbols (#if family)"
+      },
+      {
+        "type": "module_val_declaration",
+        "count": 203,
+        "used_for": "signature-file `val X : T` symbols (FSD9 — NOT yet emitted by the analyzer, see gap FS-A3)"
+      },
+      {
+        "type": "simple_type",
+        "count": 3641,
+        "used_for": "extends/implements target extraction (long_identifier inside)"
+      },
+      {
+        "type": "generic_type",
+        "count": 298,
+        "used_for": "generic interface/extends targets"
+      },
+      {
+        "type": "ERROR",
+        "count": 43,
+        "used_for": "defensive error-path check"
+      }
+    ]
+  },
+  "internal_silent": {
+    "_description": "Structural wrappers, literals and type-tree internals that correctly emit nothing in this lane's contract.",
+    "types": [
+      "xml_doc",
+      "line_comment",
+      "attributes",
+      "type_arguments",
+      "type_argument",
+      "type_argument_defn",
+      "curried_spec",
+      "arguments_spec",
+      "argument_spec",
+      "argument_name_spec",
+      "access_modifier",
+      "block",
+      "brace_expression",
+      "field_initializers",
+      "field_initializer",
+      "declaration_expression",
+      "fun_expression",
+      "match",
+      "sequential_expression",
+      "const",
+      "unit",
+      "tuple_expression",
+      "list_expression",
+      "list_pattern",
+      "typed_pattern",
+      "optional_pattern",
+      "wildcard_pattern",
+      "repeat_pattern",
+      "attribute_pattern",
+      "disjunct_pattern",
+      "array_pattern",
+      "infix_op",
+      "prefix_op",
+      "postfix_type",
+      "type_extension_elements",
+      "typed_expression",
+      "prefixed_expression (except the `new` prefix, FSD8)"
+    ]
+  },
+  "gap": {
+    "_description": "Named worklists, not hidden ones. Each count is from the 120-file shape census unless the entry says otherwise.",
+    "gaps": [
+      {
+        "id": "FS-A1",
+        "severity": "medium",
+        "node_type": "app_expression, open_statement, open_decl, module_abbrev, val_property_defn, fsi_directive_decl",
+        "missing": "SIX rules the analyzer dispatches on that the pinned grammar never emits (measured 0 occurrences across 363,609 nodes). They are the dead-rule class the family sweep found in three lanes: `open` is `import_decl` (558), calls are `application_expression` (16,316), `#if` is `compiler_directive_decl` (5). None of them silently drops an edge — `import_decl` and `application_expression` carry the work — but they must be retired so the next reader does not mistake the list for a surface."
+      },
+      {
+        "id": "FS-A2",
+        "severity": "high",
+        "node_type": "method_or_prop_defn `args:`",
+        "missing": "the method/property split reads only paren_pattern / argument_patterns / const \"()\"; of 604 members, 449 carry the `args:` field (paren_pattern 241, const 135, identifier_pattern 73) and the 73 single-curried-arg members (`member this.Clear r = ...`) are classified PROPERTY, which both mislabels them and suppresses every call in their body. Measured on the census draw; the corpus-scale count is what the F5 lane will report."
+      },
+      {
+        "id": "FS-A3",
+        "severity": "medium",
+        "node_type": "module_val_declaration",
+        "missing": "203 `val X : T` declarations in the draw — every one in a .fsi — publish no symbol at all: the analyzer has no branch for the node the lane's own grammar patch added. Decision FSD9 rules what they should be; the analyzer work is owed."
+      },
+      {
+        "id": "FS-A4",
+        "severity": "medium",
+        "node_type": "prefixed_expression",
+        "missing": "156 `new` tokens in the draw are explicit construction sites; today the inner application emits a `calls` edge like any other call, so the lane has no `instantiates` surface on real code (its only instantiates rule is constructor chaining). Decision FSD8 rules the split; the analyzer work is owed."
+      },
+      {
+        "id": "FS-A5",
+        "severity": "high",
+        "node_type": "ERROR",
+        "missing": "14 of 120 files in this draw parse with an error tree (11.7%) — the corpus-scale figure the sweep measured is 15.9% on its own draw. The pin round showed the vendored grammar repairs 9 files unpatched 0.3.11 damages and damages 1; the six grammar-rejected constructs of the sweep's §2d are the remaining, patchable-in-tree work."
+      }
+    ]
+  },
+  "design_decision": {
+    "description": "The F# lane's contract, each ruling written against the measured shapes above. The oracle (deriveFsharpEdges in script/m14/differential.ts) implements THIS list, not the analyzer's current behavior; a disagreement is a lane defect, and the F5 row is where it is counted.",
+    "decisions": [
+      {
+        "id": "FSD1",
+        "node_type": "namespace, named_module, module_defn",
+        "status": "RULED",
+        "question": "what is a scope, and what is its name?",
+        "resolution": "A scope is one of the three nodes; its name is the first `identifier` or `long_identifier` child, taken AS WRITTEN (a dotted `module A.B` is the one name `A.B`). Nested scopes stack; the innermost scope is the source of file-level edges."
+      },
+      {
+        "id": "FSD2",
+        "node_type": "type_definition and its body wrappers",
+        "status": "RULED (carried over, M12-verified)",
+        "question": "how is a type's kind decided?",
+        "resolution": "record_type_defn -> class; union_type_defn / enum_type_defn -> enum (cases become enum_member symbols); interface_type_defn, or an anon_type_defn whose members are all signatures with no inherit and no concrete member, -> interface; delegate_type_defn / type_abbrev_defn -> type; [<Measure>] -> type; otherwise class. Record fields publish property symbols owned by the type."
+      },
+      {
+        "id": "FSD3",
+        "node_type": "class_inherits_decl",
+        "status": "RULED (RETIRES a heuristic)",
+        "question": "is `inherit X` always an extends edge?",
+        "resolution": "Yes, always. F# implements interfaces with `interface ... with` (FSD4); an `inherit` names a base class, so the four-line guess the analyzer uses today — 'the target starts with I followed by an uppercase letter, therefore implements' — is retired. A base class that happens to be named `IThing` is currently mislabelled implements and a genuine interface declaration is labelled by luck."
+      },
+      {
+        "id": "FSD4",
+        "node_type": "interface_implementation, object_expression",
+        "status": "RULED",
+        "question": "what implements what?",
+        "resolution": "interface_implementation -> implements(type, the interface named by the first long_identifier/identifier inside it). object_expression (`{ new IFoo with ... }`) -> one class symbol named `new IFoo` owned by the enclosing scope AND implements(that enclosing scope, IFoo) — the C# family's anonymous-class precedent."
+      },
+      {
+        "id": "FSD5",
+        "node_type": "member_defn (override token)",
+        "status": "RULED (sharpened)",
+        "question": "which member is an override, and against what?",
+        "resolution": "The `override` token declares an override; a member inside `interface I with` does NOT (that is the type-level implements edge, FSD4). Source = `Owner.member`, target = `Base.member` where Base is the enclosing type's class_inherits_decl target; with no base in the file the target is the bare member name (unqualified). Only CONCRETE members (`method_or_prop_defn`) can carry the token; a `member_signature` never does."
+      },
+      {
+        "id": "FSD6",
+        "node_type": "application_expression",
+        "status": "RULED",
+        "question": "what is a call, and who makes it?",
+        "resolution": "The callee is the first NAMED child of an application_expression; its leaf is the last identifier of the callee's text (last segment for a dotted path, the `field:` child for a dot_expression). Four callee shapes occur in the corpus: long_identifier_or_op (17,243), a nested application_expression (4,740, curried), an infix_expression (1,348: `a |> f b`, callee = the infix's LAST named child), and a dot_expression (758). Source = the enclosing function/method/constructor; a local binding publishes no symbol but its body attributes to the enclosing callable; a computed property body emits no calls (C# family contract). Builtins (FSD11) are filtered. A call whose callee is not one of those shapes is NOT an edge (a lambda application `(fun x -> ..) y` names nothing)."
+      },
+      {
+        "id": "FSD7",
+        "node_type": "method_or_prop_defn",
+        "status": "RULED (retires the misclassification)",
+        "question": "method or property?",
+        "resolution": "The grammar's `args:` FIELD decides: present (paren_pattern, identifier_pattern, argument_patterns, const unit) -> Method; absent -> the member's body follows the name, so Property. This replaces a scan of named children that recognised two of the four arg shapes and therefore filed 73 of the draw's 604 members under the wrong kind — and dropped their calls with them."
+      },
+      {
+        "id": "FSD8",
+        "node_type": "prefixed_expression, additional_constr_defn",
+        "status": "RULED",
+        "question": "what is a construction?",
+        "resolution": "Two forms: (a) the constructor-chain idiom `new() = Type(...)` inside an additional_constr_defn -> instantiates(constructor, Type); (b) an explicit `new` prefix (`prefixed_expression` whose first token is `new`, operand an application_expression) -> instantiates(enclosing callable, the type's leaf) and the inner application emits NO call. Bare application of a capitalised name stays a CALL: F# has no `new` keyword requirement, so what distinguishes a construction is the `new` token, not the capitalisation (the C# family's heuristic does not transfer)."
+      },
+      {
+        "id": "FSD9",
+        "node_type": "module_val_declaration",
+        "status": "RULED (work owed)",
+        "question": "what does `val X : T` publish?",
+        "resolution": "A Function symbol named by its first identifier, owned by the enclosing module/type scope, marked metadata.isDeclaration — a .fsi declares the surface, and a later .fs definition is the SAME entity (the Clean `.dcl`/`.icl` merge precedent). Not yet implemented (gap FS-A3)."
+      },
+      {
+        "id": "FSD10",
+        "node_type": "import_decl, module_abbrev",
+        "status": "RULED (sharpened)",
+        "question": "what does an import reference, and from where?",
+        "resolution": "`open X` -> references(source = the innermost scope, or `Global` when the file declares none, target = X as written, dotted path kept). A module-less file must source its file-level edges from `Global`, never from the opened name itself: self-sourcing is how an import becomes unfalsifiable. `module X = Y` (module_abbrev) -> references(X, Y); the shape does not occur in the corpus draw (0 of 363,609 nodes) and is kept in the spec as a measured-dead branch."
+      },
+      {
+        "id": "FSD11",
+        "node_type": "long_identifier_or_op",
+        "status": "RULED (shared language fact)",
+        "question": "which calls are filtered?",
+        "resolution": "Console output (`printfn`/`printf`/`eprintf*`/`fprintf*`, `Console.Write*`, `Console.Error.*`) and the Object leaf methods (ToString, GetHashCode, Equals, GetType, ReferenceEquals). This is a name list shared with the analyzer — a transcription hazard the differential cannot catch — while every RULE around it is derived independently."
+      },
+      {
+        "id": "FSD12",
+        "node_type": "value_declaration, function_or_value_defn, member_defn",
+        "status": "RULED (M12-verified)",
+        "question": "does a local publish anything?",
+        "resolution": "No: a binding inside a function body is not a symbol; its body's calls attribute to the enclosing callable. Function vs variable: a declaration whose left side carries argument_patterns/type_arguments is a Function, else a Variable (module-level `let x = e`). Values are EXCLUDED from exports; symbols publish exports only for non-variable kinds."
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "calls",
+        "reason": "`calls` is admitted for this lane and compared, but no calls oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a calls oracle exists for this language.",
+        "closes_when": "a calls oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "contains",
+        "reason": "`contains` is admitted for this lane and compared, but no contains oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a contains oracle exists for this language.",
+        "closes_when": "a contains oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "references",
+        "reason": "`references` is admitted for this lane and compared, but no references oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a references oracle exists for this language.",
+        "closes_when": "a references oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "instantiates",
+        "reason": "`instantiates` is admitted for this lane and compared, but no instantiates oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a instantiates oracle exists for this language.",
+        "closes_when": "a instantiates oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "overrides",
+        "reason": "`overrides` is admitted for this lane and compared, but no overrides oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a overrides oracle exists for this language.",
+        "closes_when": "a overrides oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "uses",
+        "reason": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
+        "closes_when": "a uses oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "imports",
+        "reason": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
+        "closes_when": "a imports oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "exports",
+        "reason": "`exports` is admitted for this lane and compared, but no exports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a exports oracle exists for this language.",
+        "closes_when": "a exports oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "extends",
+        "reason": "`extends` is admitted for this lane and compared, but no extends oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a extends oracle exists for this language.",
+        "closes_when": "a extends oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "implements",
+        "reason": "`implements` is admitted for this lane and compared, but no implements oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a implements oracle exists for this language.",
+        "closes_when": "a implements oracle exists for this language; then admit it and reconcile"
+      }
+    ]
+  }
 }
