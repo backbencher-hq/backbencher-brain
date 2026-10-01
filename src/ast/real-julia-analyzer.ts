@@ -252,7 +252,21 @@ export class RealJuliaAnalyzer {
             for (let i = 0; i < 4 && callable && callable.type !== "call_expression"; i++) {
               callable = this.pos(callable, 0)
             }
-            if (callable && callable.type === "call_expression") this.declSites.add(callable.id)
+            if (callable && callable.type === "call_expression") {
+              this.declSites.add(callable.id)
+              // The function's OWN NAME inside its signature is not a reference to itself. For a
+              // GENERIC method the name is a `parametrized_type_expression` — `scaled{T<:Real}` — so
+              // the reference case fired and `function scaled{T<:Real}(...)` published
+              // `references scaled->scaled`. The type HEAD guard covers type declarations; the same
+              // guard is applied here, keyed on the callable, so the signature's PARAMETER types
+              // (`s::Shape`, `k::T`) still register as the references they are.
+              //
+              // Found by dumping the fixture's own output to check a mutant, not by the mutant: it
+              // asserts the absence of a fabricated edge, and a bare `forbidSymbols` would not have
+              // seen a relationship. A self-reference is a weak signal to forbid and an obvious one
+              // to look at, which is the argument for reading the output even when it is green.
+              this.typeHeadSites.add(callable.id)
+            }
           }
           const isMacro = node.type === "macro_definition"
           symbols.push({
