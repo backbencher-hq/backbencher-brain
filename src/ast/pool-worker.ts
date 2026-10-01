@@ -43,6 +43,12 @@ interface BasicSymbol {
 
 interface BasicImport {
   name: string
+  /**
+   * The ORIGINAL imported name when the specifier was aliased (`A as B` -> `A`).
+   * `name` carries the LOCAL binding. Set so brain_import.imported_as has a writer
+   * on this path too; the AST path publishes the same pair via ImportInfo.alias.
+   */
+  alias?: string
   path: string
   type: string
   isExternal: boolean
@@ -171,6 +177,18 @@ function extractBasicImports(content: string, language: string): BasicImport[] {
     java: [/import\s+(?:static\s+)?([\w.]+)/],
   }
 
+  // Capture-group roles per language, keyed to the patterns above: `module` is the
+  // group holding the module/specifier path, `items` the group holding the imported
+  // names. See the note at the derivation site for why this is not inferred.
+  const GROUP_ROLES: Record<string, { module: number; items: number }> = {
+    typescript: { module: 3, items: 1 },
+    javascript: { module: 3, items: 1 },
+    python: { module: 1, items: 2 },
+    go: { module: 3, items: 1 },
+    rust: { module: 1, items: 2 },
+    java: { module: 1, items: 1 },
+  }
+
   const langPatterns = patterns[language] || patterns.javascript || []
 
   for (let i = 0; i < lines.length; i++) {
@@ -178,8 +196,22 @@ function extractBasicImports(content: string, language: string): BasicImport[] {
     for (const pattern of langPatterns) {
       const match = line.match(pattern)
       if (match) {
-        const path = match[3] || match[2] || match[1] || ""
-        const names = match[1] || match[2] || ""
+        // M60: which capture group holds the MODULE and which the ITEM LIST. These
+        // two lines used to be positional (`match[3] || match[2] || match[1]` and
+        // `match[1] || match[2]`), which is only right for patterns shaped like the
+        // JS/TS one — group 1 items, group 3 module. Python's pattern is
+        // `/^from\s+([\w.]+)\s+import\s+(.+)$/`, where group 1 is the MODULE and
+        // group 2 the items, so every python row came out INVERTED:
+        //   `from Cython.Debugger import Cygdb as cygdb`
+        //     imported_name = "Cython.Debugger"  (the module)
+        //     import_path  = "Cygdb as cygdb"    (the imported item)
+        // and isExternal was computed from the wrong string too. The roles are now
+        // stated per language instead of assumed, so a grammar that orders its
+        // groups differently cannot silently invert again.
+        const roles = GROUP_ROLES[language] ?? GROUP_ROLES.javascript
+        const path = String(match[roles.module] ?? "")
+        const names = String(match[roles.items] ?? "")
+        if (!path) continue
         const isExternal = !path.startsWith(".") && !path.startsWith("/")
 
         const items = names
@@ -189,8 +221,22 @@ function extractBasicImports(content: string, language: string): BasicImport[] {
         if (items.length === 0) items.push(path.split("/").pop() || path)
 
         for (const name of items) {
+          // M60: `A as B` used to be stripped to `A` outright, which threw the
+          // local binding name away and left brain_import.imported_as with nothing
+          // to hold — while extractBasicRelationships below KEEPS the alias, so the
+          // fallback and the AST path disagreed about the same construct and that
+          // function's own `as` branch was unreachable.
+          //
+          // `alias` carries the LOCAL binding, which is the convention the analyzer
+          // already uses (ImportInfo.alias is set to `item.split(" as ")[1]`) and
+          // the one brain_import.imported_as is read with: patterns.ts computes
+          // `usedName = imported_as || imported_name` and then looks that name up
+          // IN THE FILE, so it must be the name the source writes. `name` keeps its
+          // original meaning, the imported name.
+          const asMatch = name.match(/^(\S+)\s+as\s+(\S+)$/)
           imports.push({
-            name: name.replace(/\s+as\s+\w+/, "").trim(),
+            name: asMatch ? asMatch[1] : name,
+            alias: asMatch ? asMatch[2] : undefined,
             path,
             type: "named",
             isExternal,
