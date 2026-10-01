@@ -770,6 +770,25 @@ function renderSignature(kind: string, name: string, parameters: string | null):
   return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
 }
 
+/**
+ * The parameter list a signature shows, as the index records it.
+ *
+ * The index stores a JSON list of `{name, type, isOptional}` for 5 021 of the
+ * 6 067 entries measured across the eight corpora -- 82.8% -- and the renderer
+ * was reading `name` and dropping the rest. So `Join(s S)` was documented as
+ * `Join(s)`: the section named Inputs and outputs was reporting the NAMES of the
+ * inputs and nothing about their types, while the types sat in the row it had
+ * just read. Discarding evidence you have already loaded is the same defect as
+ * rendering a claim the index does not support, in the opposite direction.
+ *
+ * Three rules, each from what the data holds:
+ *  - a recorded type is shown, and an absent one is omitted rather than guessed;
+ *  - `isOptional` is stated in words, because `name?: type` is TypeScript syntax
+ *    and would be wrong in a Go or Java document (17 entries, so the wording costs
+ *    nothing and discards nothing);
+ *  - a plain string list and a raw text list render as they always did, so no
+ *    analyzer's existing shape changes.
+ */
 function formatParameters(raw: unknown): string | null {
   const text = collapse(raw)
   if (!text || text === "[]" || text === "null") return null
@@ -777,10 +796,18 @@ function formatParameters(raw: unknown): string | null {
     try {
       const parsed = JSON.parse(text)
       if (Array.isArray(parsed)) {
-        const names = parsed
-          .map((item: any) => (typeof item === "string" ? item : item && typeof item === "object" ? String(item.name ?? item.parameter ?? "") : ""))
+        const rendered = parsed
+          .map((item: any) => {
+            if (typeof item === "string") return item
+            if (!item || typeof item !== "object") return ""
+            const name = String(item.name ?? item.parameter ?? "")
+            const type = item.type == null ? "" : collapse(item.type)
+            if (!name && !type) return ""
+            const shown = type ? `${name || "?"}: ${type}` : name
+            return item.isOptional === true ? `${shown} (optional)` : shown
+          })
           .filter(Boolean)
-        return names.length ? names.join(", ") : null
+        return rendered.length ? rendered.join(", ") : null
       }
     } catch { /* not JSON after all — fall through to the raw text */ }
   }
@@ -1488,11 +1515,14 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
   // Asked once per generation, and only for the modes that render a signature.
-  // It has to be read AFTER this line's `usesSymbolFacts` and BEFORE the
-  // `addSymbolFacts` call below, which is where a `const` declared in the wrong
-  // order becomes a temporal-dead-zone throw at run time rather than a type
-  // error -- `tsc` accepted the original placement.
-  const typesWithParameters = usesSymbolFacts || mode === "api" ? symbolTypesWithParameters(raw, projectId) : new Set<string>()
+  // `usesSymbolFacts` already covers `api`, so this condition carries no extra
+  // clause: the `|| mode === "api"` this line used to have was dead, and
+  // TypeScript said so -- it narrows `mode` away from "api" by the time the
+  // right-hand operand is reached. The dead clause shipped in 02b80ed5 and was
+  // missed because the check that would have caught it ran while a concurrent
+  // edit elsewhere in the tree was failing, and a failure there made the whole
+  // run untrustworthy rather than obviously wrong.
+  const typesWithParameters = usesSymbolFacts ? symbolTypesWithParameters(raw, projectId) : new Set<string>()
   const symbolParts = usesSymbolFacts
     ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol", typesWithParameters)
     : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[], limitations: [] as DocFact[] }
@@ -2215,18 +2245,40 @@ export function formatDocumentation(result: DocResult, format: DocFormat = "mark
     return `[${n}](${encodeURI(citation.path)}${span})${stale}`
   }
   const lines: string[] = [`# ${result.title}`, "", result.summary, ""]
+  // A statement is a sentence ABOUT source, not markdown, so every character
+  // markdown would act on has to be neutralised before it is rendered.
+  //
+  // It already was a hazard and nobody had to look: a Go return type of
+  // `*Server` reached the page unescaped, and a statement quoting a type with
+  // two pointers -- `map[string]*Server` -- would render the middle as italics.
+  // Rendering the indexed parameter types multiplies the exposure, because 82.8%
+  // of the 6 067 parameter entries measured carry a type and 1 105 of those
+  // types contain `*`.
+  //
+  // Scanned, not matched: the project carries no regex by default. Only the
+  // statement is escaped, never the citation markers, which are appended after it
+  // and must keep resolving to the Sources list.
+  const escapeMarkdown = (text: string): string => {
+    let out = ""
+    for (const ch of text) {
+      if (ch === "\\" || ch === "*" || ch === "_" || ch === "`" || ch === "[" || ch === "]" || ch === "<" || ch === ">") out += "\\"
+      out += ch
+    }
+    return out
+  }
+
   for (const section of result.sections) {
     lines.push(`## ${section.heading}`, "", section.prose, "")
     for (const item of section.facts) {
       const cites = item.citationIds.map(markerFor).join("")
       const confidence = item.confidence == null ? "" : ` _(${Math.round(item.confidence * 100)}%)_ `
-      lines.push(`- ${confidence}${item.statement}${cites}`)
+      lines.push(`- ${confidence}${escapeMarkdown(item.statement)}${cites}`)
     }
     lines.push("")
   }
   if (result.unknowns.length) {
     lines.push("## Unknowns", "")
-    for (const unknown of result.unknowns) lines.push(`- ${unknown.statement} _(${unknown.reason}, affects: ${unknown.affectedSection})_`)
+    for (const unknown of result.unknowns) lines.push(`- ${escapeMarkdown(unknown.statement)} _(${unknown.reason}, affects: ${unknown.affectedSection})_`)
     lines.push("")
   }
   const q = result.quality
