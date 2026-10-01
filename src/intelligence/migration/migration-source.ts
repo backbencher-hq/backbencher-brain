@@ -57,6 +57,33 @@ export interface MigrationSymbol {
    * the first place: `bb_search` renders `command.go:54` for the same symbol.
    */
   line: number | null
+  /**
+   * The EXTERNAL import specifiers this symbol's FILE declares, as
+   * `brain_import` holds them.
+   *
+   * Round 2 recorded `dependencyProvenance.importEvidence` as "unavailable" and
+   * declared the missing analyzer lane a BLOCKER. That was wrong, and it was wrong
+   * about the primary corpus: `brain_import` has been written by
+   * `parallel-indexer` all along and is richly populated. Measured across 40 indexed
+   * projects / 82,879 symbols / 13,351 import rows:
+   *
+   *   go          96.2% of files carry imports    91,826 rows
+   *   python      95.8%                           44,810
+   *   clojure     88.8%                            9,516
+   *   javascript  89.6%                            2,320
+   *   rust        78.2%                          326,302
+   *   typescript   0.0%  (22 files)                    0   <- a real gap
+   *
+   * cobra's `command.go` declares `bytes, context, errors, fmt,
+   * github.com/spf13/pflag, io` — 190 Go import rows across 36 files. So the tool was
+   * telling a Go user "the index records no imports for this component" while the
+   * index held ten of them.
+   *
+   * A FILE's imports, not a symbol's: Go, Python and Clojure declare imports at
+   * file scope, so attributing them to one symbol would be a fabrication of a
+   * different kind. A plan therefore reports what its FILE declares, and says so.
+   */
+  imports: string[]
 }
 
 export interface MigrationRelationship {
@@ -174,12 +201,61 @@ export async function loadMigrationSymbolsByPath(
     }
     for (const r of rows) {
       matchedFiles.add(r.file)
-      symbols.push({ id: r.id, name: r.name, type: r.type, language: r.language, file: r.file, line: r.line === null || r.line === undefined ? null : Number(r.line) })
+      symbols.push({ id: r.id, name: r.name, type: r.type, language: r.language, file: r.file, line: toLine(r.line), imports: [] })
     }
   }
   // Overlapping paths (src/api and src/api/v1) can yield the same symbol twice.
   const unique = [...new Map(symbols.map((s) => [s.id, s])).values()]
   return { symbols: unique, unmatched, files: [...matchedFiles].sort() }
+}
+
+/**
+ * Attach each symbol's file's external import specifiers, one query per distinct
+ * file, bounded by the symbols the request resolved.
+ *
+ * Only EXTERNAL imports. A relative import is another file in the same project:
+ * that is a migration-graph edge, and `brain_relationship` already carries those —
+ * treating it as a library to be mapped would invent a third-party dependency for
+ * the project's own code.
+ */
+async function attachFileImports(raw: any, projectId: string, symbols: MigrationSymbol[]): Promise<void> {
+  for (const symbol of symbols) symbol.imports = []
+  const byFile = new Map<string, MigrationSymbol[]>()
+  for (const symbol of symbols) {
+    const file = String(symbol.file ?? "")
+    if (!file || file === "unknown") continue
+    byFile.set(file, [...(byFile.get(file) ?? []), symbol])
+  }
+  for (const [file, owners] of byFile) {
+    let specifiers: string[] = []
+    try {
+      const rows = raw
+        .prepare(
+          `SELECT DISTINCT i.import_path AS path
+           FROM brain_import i
+           JOIN brain_file f ON f.id = i.file_id
+           WHERE f.project_id = ? AND f.relative_path = ? AND i.is_external = 1 AND i.import_path IS NOT NULL
+           ORDER BY i.import_path`,
+        )
+        .all(projectId, file) as Array<{ path: string }>
+      specifiers = rows.map((row) => String(row.path).trim()).filter(Boolean)
+    } catch (error) {
+      // A project indexed before `brain_import` existed simply has no rows. That is
+      // missing EVIDENCE, not a failure: `imports` stays empty and the plan says so.
+      // No logger in this module, and importing one for a single debug line is not
+      // worth the cycle; the catch exists so a pre-brain_import project degrades to
+      // "no evidence" instead of throwing.
+      void error
+    }
+    for (const owner of owners) owner.imports = specifiers
+  }
+}
+
+/** The index stores no line for some symbols; absent is null, never 0. */
+function toLine(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
 }
 
 /** One symbol per id, de-duplicated by id. Ids are unique in a project, so there is
@@ -224,7 +300,7 @@ async function loadMigrationSymbolsById(
       .all(projectId, ...group) as any[]
     for (const row of rows) {
       found.add(row.id)
-      symbols.push({ id: row.id, name: row.name, type: row.type, language: row.language, file: row.file, line: row.line === null || row.line === undefined ? null : Number(row.line) })
+      symbols.push({ id: row.id, name: row.name, type: row.type, language: row.language, file: row.file, line: toLine(row.line), imports: [] })
     }
   }
   return { symbols, unmatched: ids.filter((id) => !found.has(id)) }
@@ -335,6 +411,15 @@ export async function loadMigrationContextForSymbols(
     nameById.set(symbol.id, symbol.name)
     fileById.set(symbol.id, symbol.file)
   }
+
+  // PHASE 2b — the FILE IMPORTS for the capped symbol set, in one bounded query.
+  //
+  // Bounded exactly as the relationship pass is: by the symbols the request
+  // actually resolved, and only their own files. This is the same table three other
+  // modules already read (`doc-engine`, `analysis/dependencies`, `health`), which is
+  // how it went unnoticed that the migration lane was the only one claiming it did
+  // not exist.
+  await attachFileImports(raw, projectId, dedupedSymbols)
 
   const requestedIds = [...new Set(dedupedSymbols.map((s) => s.id))]
 

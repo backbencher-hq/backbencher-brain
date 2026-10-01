@@ -199,6 +199,13 @@ export interface MigrationPlanResult {
 export function calculateMigrationMethodology(plans: Array<{
   relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean; isIntegrationPoint?: boolean }>
   dependencies?: Array<{ confidence?: number }>
+  /**
+   * The measured import split. `imports.unmapped` is a real third-party library
+   * with no registered mapping — the exact case the missing-mapping charge exists
+   * for, and it was counted from `dependencies`, which was ALWAYS EMPTY, so the
+   * charge was structurally 0 on every plan this tool ever produced.
+   */
+  dependencyProvenance?: { imports?: { unmapped?: number; unmappedLibraries?: string[] } }
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
   let missingMappingCount = 0
@@ -220,7 +227,22 @@ export function calculateMigrationMethodology(plans: Array<{
       const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
       relationshipIds.add(identity)
     }
-    missingMappingCount += (plan.dependencies ?? []).filter((dependency) => (dependency.confidence ?? 0) < 0.5).length
+    // Counted from the MEASURED import split, not from `dependencies`. A plan with
+    // no registered mapping and no uncertain guess previously contributed zero,
+    // because both of those collections were empty whenever the index held no
+    // import evidence — so a plan for a Go service using `pflag` reported zero
+    // missing mappings while carrying an unported library.
+    // Per LIBRARY NAME, not per specifier: a file importing `gin` and `gin/render`
+    // declares two specifiers for one library, and charging both bills the research
+    // twice.
+    const measuredUnmapped = plan.dependencyProvenance?.imports?.unmappedLibraries
+    if (Array.isArray(measuredUnmapped)) {
+      missingMappingCount += measuredUnmapped.length
+    } else {
+      // A caller with no measured split (an older caller, or a synthetic plan) still
+      // gets the uncertain-guess count it used to get.
+      missingMappingCount += (plan.dependencies ?? []).filter((dependency) => (dependency.confidence ?? 0) < 0.5).length
+    }
   }
   return {
     baseHours: plans.length * 4,
@@ -810,7 +832,10 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
   const lines = [
     `migration target: ${result.targetLanguage}`,
     `dependency order: ${result.dependencyOrder.join(" -> ") || "none"} (${result.dependencyGraph.orderingStatus})`,
-    `methodology: base=${result.methodology.baseHours}h relationships=${result.methodology.relationshipHours}h missing-mappings=${result.methodology.missingMappingHours}h`,
+    `methodology: base=${result.methodology.baseHours}h relationships=${result.methodology.relationshipHours}h missing-mappings=${result.methodology.missingMappingHours}h` +
+      (result.methodology.missingMappingCount > 0
+        ? `  (${result.methodology.missingMappingCount} third-party librar${result.methodology.missingMappingCount === 1 ? "y has" : "ies have"} no registered mapping; each needs a target-language equivalent chosen by a human)`
+        : ""),
     // The authoritative figure, with the arithmetic that reconciles it against
     // the per-plan numbers printed below. Previously the header and the per-plan
     // `effort=` lines were both presented as totals and differed by 8h on a
@@ -888,8 +913,8 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     if (!(plan.dependencies ?? []).length && !(plan.inferredDependencies ?? []).length) {
       lines.push(
         plan.dependencyProvenance?.importEvidence === "unavailable"
-          ? "  library dependencies UNKNOWN: the index records no imports for this component (not the same as 'none')"
-          : "  no library evidence: the index carries no imports for this component",
+          ? "  library dependencies UNKNOWN: the index holds no external import rows for this file (not the same as 'none')"
+          : "  no library dependency: every import this file declares is standard library or local crate",
       )
     }
     const b = plan.evidenceBreakdown
