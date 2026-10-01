@@ -532,6 +532,72 @@ function aliasTimelineOf(root: Node): { at: number; aliases: Map<string, string>
 }
 
 /** The alias table in force at a byte offset, merged across every form so far. */
+/**
+ * THE ANALYZER'S `activeFunction` AT EVERY NODE — ONE RULE, SHARED.
+ *
+ * CLJ-D48 first derived this inside `deriveClojureTypeRelationTruth`, and
+ * `instantiates` was still reading `walk`'s owner, which is a different question and
+ * gave a different answer on 299 edges. Two derivations, two answers, one language
+ * fact — the same lesson as the four alias tables, and the reason this lives at module
+ * scope rather than inside a derivation where the next one cannot find it.
+ *
+ * The rule is the analyzer's own: a call or a constructor is attributed to the
+ * innermost enclosing FUNCTION FORM, and to the NAMESPACE when there is none. Which
+ * makes three positions `walk`'s owner gets wrong:
+ *
+ *   · `fn` — the active function is literally the FORM NAME, so `(fn [] (throw
+ *     (IllegalArgumentException. …)))` at core.clj:4776 publishes
+ *     `fn -> IllegalArgumentException` while `walk` invents `lambda_4772_15`. The
+ *     generated lambda name is the CALLS owner (CLJ-D45) and is a different thing.
+ *   · a PROXY or DEFTYPE METHOD — `(proxy [ThreadLocal] [] (initialValue [] (doto
+ *     (java.text.SimpleDateFormat. …))))` publishes `initialValue -> …`. The method
+ *     IS a function form.
+ *   · `def` — a var, not a function. `(def pool (delay (ForkJoinPool.)))` publishes
+ *     `clojure.core.reducers -> ForkJoinPool`; `walk`'s owner says `pool`.
+ *
+ * A `defn`-family form takes its own name; a method-impl position takes its head.
+ */
+function activeFunctionOf(root: Node): Map<number, string> {
+  const m = new Map<number, string>()
+  const rec = (n: Node, fn: string): void => {
+    m.set(n.startIndex, fn)
+    let next = fn
+    // An ANONYMOUS FUNCTION IS OWNED BY ITS GENERATED NAME, `lambda_<row>_<col>`,
+    // for both `(fn …)` and the `#(…)` shorthand. I first wrote the form name `fn`
+    // here, inferring it from one core.clj sample, and the fixture refuted it
+    // immediately: the analyzer publishes `lambda_17_12 -> java.util.HashMap` for
+    // `(def via-fn (fn [] (java.util.HashMap.)))`. Where the bare string `fn` appears
+    // as a source is a different position again, and one sample was not the evidence.
+    const lambdaName = (): string => `lambda_${n.startPosition.row}_${n.startPosition.column}`
+    if (n.type === "anon_fn_lit") {
+      next = lambdaName()
+    } else if (n.type === "list_lit") {
+      const h = executionHead(n)
+      const nm = h && h.type === "sym_lit" ? symName(h) : ""
+      if (nm === "fn") {
+        next = lambdaName()
+      } else if (nm === "fn*") {
+        // `fn*` IS NOT `fn` FOR OWNERSHIP. `(fn* [sig] …)` at core.clj:4773 publishes
+        // `fn -> IllegalArgumentException`, while `(fn [] …)` and `#(…)` publish the
+        // GENERATED name. One sample of each and they are genuinely two rules, which
+        // is the fourth time in this file that a name I assumed was a synonym turned
+        // out to be two contracts. `fn*` is the compiler intrinsic the reader expands
+        // to, and the analyzer has no lambda-naming for it.
+        next = "fn"
+      } else if (SHADOW_FN_PARAM_HEADS.has(nm)) {
+        const dn = defNameOf(n)
+        if (dn) next = dn
+      } else if (isMethodImplPosition(n) && h && h.type === "sym_lit") {
+        const mn = symName(h)
+        if (mn && !isAnonArgShorthand(mn)) next = mn
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, next) }
+  }
+  rec(root, "")
+  return m
+}
+
 function aliasesInForce(timeline: { at: number; aliases: Map<string, string> }[], idx: number): Map<string, string> {
   const m = new Map<string, string>()
   for (const t of timeline) { if (t.at > idx) break; for (const [k, v] of t.aliases) m.set(k, v) }
@@ -992,6 +1058,20 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
   // `resolvedNs !== currentNamespace` is part of the RULE and not a guard added
   // afterwards.
   const timeline = namespaceTimeline(root)
+  // CLJ-D50: THE ALIAS TIMELINE, NOT THE `ns` FORM.
+  //
+  // This derivation read its aliases from `namespaceTimeline`, which only sees the
+  // `ns` form's clauses. A TOP-LEVEL `(require '[clojure.java.io :as jio])` is not in
+  // an `ns` form at all, so `jio` was never in the table and core.clj:7267 published
+  // the bare, unresolvable `references: clojure.core -> jio`.
+  //
+  // This is CLJ-D40's defect in a derivation CLJ-D40 never reached, and it was
+  // INVISIBLE while the shared alias table was also wrong about prefix lists: two
+  // errors in the same direction cancel in a diff. `aliasTimelineOf` handles the
+  // quoted top-level form, the `:as-alias` positional spelling and the relative
+  // libspec, and it is already the `calls` derivation's source — one reader, one
+  // answer.
+  const aliasTl = aliasTimelineOf(root)
   const walkAliasedUses = (): void => {
     walk(root, (node) => {
       if (node.type !== "list_lit") return
@@ -1000,7 +1080,7 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
       if (!h || h.type !== "sym_lit") return
       const form = symName(h)
       if (NON_CODE_HEADS.has(form)) return
-      const al = aliasesAt(timeline, node.startIndex)
+      const al = aliasesInForce(aliasTl, node.startIndex)
       const ns = nsAt(timeline, node.startIndex)
       const mark = (name: string, line: number) => {
         const slash = name.indexOf("/")
@@ -1023,11 +1103,19 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
         // fabrications, and the fix is one `??`.
         const prefix = name.slice(0, slash)
         const resolved = al.get(prefix) ?? prefix
-        if (resolved === ns) return
-        const id = `references|${ns}->${resolved}@${line}`
+        // CLJ-D50, THE OTHER HALF: the FROM side needs the fallback chain CLJ-D47
+        // gave the `calls` derivation. `nsAt` returns "" for a file with no `ns` form
+        // and the analyzer attributes those references to `user`, so 70 edges in this
+        // corpus were published as `references||…` — a relationship with only one end,
+        // which is what the "all extracted, resolved and emitted" contract exists to
+        // prevent. The two halves drifting apart is the same lesson as the alias
+        // tables: one language fact re-derived in four places, each copy differing.
+        const from = ns !== "" ? ns : "user"
+        if (resolved === from) return
+        const id = `references|${from}->${resolved}@${line}`
         if (seen.has(id)) return
         seen.add(id)
-        out.push({ label: "references", from: ns, to: resolved, line })
+        out.push({ label: "references", from, to: resolved, line })
       }
       // NOT yet restricted to call-shaped positions. Restricting it traded 31
       // fewer misses for 653 MORE fabrications — a worse net residual (894
@@ -1113,6 +1201,14 @@ function ctorClassOf(node: Node): string | null {
     return arg && arg.type === "sym_lit" ? symName(arg) : null
   }
   if (form.endsWith(".") && form.length > 1 && !form.startsWith(".")) return form.slice(0, -1)
+  // CLJ-D51, THE PART THAT IS NOT DERIVABLE: a static factory call `Class/method`
+  // is an `instantiates` edge ONLY when the method is a record factory —
+  // `RecordToTestStatics1/create` at test_clojure/protocols.clj:291 is, and
+  // `Integer/parseInt` is not. Adding the shape unconditionally took `instantiates`
+  // from 99.62% to 66.67%, 520 fabricated edges, which is the measurement that says
+  // it cannot be decided from one file: telling a record factory from an ordinary
+  // static method needs to know that `RecordToTestStatics1` IS a record, and that is
+  // cross-file type knowledge. Recorded rather than guessed.
   if (form.startsWith("->") && form.length > 2 && form !== "->>") {
     const cls = form.slice(2)
     const namePart = cls.includes("/") ? cls.slice(cls.indexOf("/") + 1) : cls
@@ -1154,6 +1250,7 @@ export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
   const out: RelEdge[] = []
   const seen = new Set<string>()
   const tl = namespaceTimeline(root)
+  const activeFn = activeFunctionOf(root)
   walk(root, (node, owner) => {
     if (node.type !== "list_lit") return
     if (isLibspecSite(node) || isCaseConstant(node)) return
@@ -1165,10 +1262,21 @@ export function deriveClojureInstantiatesTruth(root: Node): RelEdge[] {
     if (!cls0) return
     const cls = resolveAlias(cls0, aliasesAt(tl, node.startIndex))
     const line = h.startPosition.row + 1
-    const id = `${owner}->${cls}@${line}`
+    // CLJ-D48, THE `instantiates` HALF: the source is the analyzer's `activeFunction`
+    // and not `walk`'s owner. 299 edges, and the three positions that differ are listed
+    // at `activeFunctionOf` above.
+    // The fallback is the NAMESPACE, not `walk`'s owner. `owner` is a different
+    // question — it tracks `def` — and `(def via-def (delay (java.io.StringReader. …)))`
+    // publishes `clj.fixture.activefn -> java.io.StringReader`, because a `def` creates
+    // a var and not a function.
+    // …and where there is no `ns` either, the analyzer attributes to Clojure's default
+    // namespace, `user` — CLJ-D47's chain again, and the second derivation in this file
+    // to need it. `instantiates||java.io.File` is the shape.
+    const src = activeFn.get(node.startIndex) || nsAt(tl, node.startIndex) || "user"
+    const id = `${src}->${cls}@${line}`
     if (seen.has(id)) return
     seen.add(id)
-    out.push({ label: "instantiates", from: owner, to: cls, line })
+    out.push({ label: "instantiates", from: src, to: cls, line })
   })
   return out
 }
@@ -1212,38 +1320,12 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
     seen.add(id)
     out.push({ label, from, to, line })
   }
-  // CLJ-D48: THE SOURCE IS THE ANALYZER'S `activeFunction`, WHICH IS SET BY
-  // FUNCTION FORMS ONLY — NOT BY `def`.
-  //
-  // `walk`'s owner tracks `def` as well as `defn`, which is right for `calls` (a
-  // `def` initializer's calls are attributed to the var it builds) and wrong for
-  // type relations. `(def ^ThreadLocal thread-local-utc-date-format (proxy
-  // [ThreadLocal] [] …))` at instant.clj:162 is published by the analyzer as
-  // `clojure.instant -> ThreadLocal`, because a `def` creates a VAR, not a
-  // function, so there is no active function and `ctxName` falls back to the
-  // namespace. The interface positions beside it are attributed the same way.
-  //
-  // The mirror case is a method body: `Vec` is a `deftype` and `iterator` a `defn`
-  // inside it, and the analyzer publishes `iterator -> java.util.Iterator` — the
-  // INNERMOST function, not the type that owns it. One rule covers both: the
-  // innermost enclosing function form, else the namespace. Measured, not inferred:
-  // it takes `extends` from 7 residuals to 0 and `implements` from 16 to the alias
-  // residuals alone.
-  const activeFn = new Map<number, string>()
-  {
-    const rec = (n: Node, fn: string): void => {
-      activeFn.set(n.startIndex, fn)
-      let next = fn
-      if (n.type === "list_lit") {
-        const h = executionHead(n)
-        const nm = h && h.type === "sym_lit" ? symName(h) : ""
-        if (SHADOW_FN_PARAM_HEADS.has(nm)) { const dn = defNameOf(n); if (dn) next = dn }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, next) }
-    }
-    rec(root, "")
-  }
-  const typeSource = (n: Node): string => activeFn.get(n.startIndex) || nsAt(tl, n.startIndex)
+  // `||`, NOT `??`. `activeFunctionOf` stores "" for "no enclosing function", and
+  // `??` only falls back on null/undefined — so an empty active function was passed
+  // straight through to `add`, whose `if (!from || !to) return` then DROPPED the edge
+  // silently. That is CLJ-D47's empty-source bug for the third time in this file, and
+  // it cost 6 `extends` edges the moment the two derivations were unified.
+  const typeSource = (n: Node): string => activeFunctionOf(root).get(n.startIndex) || nsAt(tl, n.startIndex)
 
   const isDefTypeish = (form: string) => form === "deftype" || form === "defrecord"
   walk(root, (node, ctx) => {
