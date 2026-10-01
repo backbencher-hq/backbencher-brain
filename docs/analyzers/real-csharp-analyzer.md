@@ -102,6 +102,39 @@ gate on the parsed *and* the runtime layer, with the assembled pattern printed.
 
 Gate: `bun script/m14/verify-csharp-no-regex.ts --list <paths>`.
 
+## aspnetcore, exhaustively — and the last known coverage defect, finally located
+
+`--sample 100000` over the whole corpus: **10,667 files** (the sample pool implies ~4,002, so every
+earlier estimate of this corpus was wrong), 631,892 truth edges, 631,888 covered — **100%**,
+**MISSING=4**, unexplained 67.
+
+| label | unexplained |
+| --- | --- |
+| references | 45 |
+| uses | 15 |
+| contains | 3 |
+| instantiates | 2 |
+| extends | 2 |
+
+**All four MISSING rows are `instantiates → string`, and they are a real analyzer gap.** The shape is
+a **target-typed `new()` inside a collection expression assigned to a property**:
+
+    typeInfo.ValidateAsync(new CollectionSiblingRoot { Items = [new() { Name = null }, …] })
+                                                            ^^^^^^ element type inferred as `string`
+
+`new string(...)` reconciles fine in isolation — the minimal case passes on both sides — so the gap is
+not about `string`. It is that the implicit-`new` type resolution here runs through a **property
+declarator inside a collection expression**, and the analyzer does not resolve that path while the
+oracle does. It is the analyzer-side counterpart of the collection-expression problem fixed on the
+oracle side as CS-D12, which is consistent rather than coincidental: that round established the
+collection expression is a shape the two sides walked differently.
+
+**Not fixed.** Four edges in 631,892 is 0.0006%, and closing it means matching the oracle's implicit-
+`new` resolution across a property-declarator-in-collection-expression path — a real change to the
+analyzer's resolution logic, not a one-line filter, and therefore not something to attempt at the end
+of a session without the differential pinned to prove it. It is named, located to a file and a shape,
+and left.
+
 ## Field-level gates (2026-09-29)
 
 Every other gate in this lane asks whether a relationship or a symbol EXISTS with the
