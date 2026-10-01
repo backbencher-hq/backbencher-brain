@@ -132,6 +132,7 @@ rather than by argument:
 | A class nested in a **class body** had no `ownerName`, so no `contains` | loss | 60 edges recovered |
 | A name bound in a **lambda or comprehension** was published as a class member | fabrication | 20 edges removed |
 | Override bases keyed by class **name**, merging same-named classes | misattribution | 32 edges corrected |
+| A class **variable** satisfied the "base declares this name" test | fabrication, marked **verified** | 22 fabricated edges at 0.95 |
 
 The third is the one worth remembering: it neither added nor removed an edge, it pointed a
 *correct-looking* edge at the wrong class — which is why neither a count nor a set comparison can
