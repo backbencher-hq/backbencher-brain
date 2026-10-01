@@ -671,6 +671,21 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // worker boundary. It was dropped here AND never bound in the
           // brain_symbol INSERT, so brain_symbol.docstring was always NULL.
           docstring: s.docstring ?? null,
+          // SOL-16. `docstring` alone cannot answer "is this NatSpec, or a stray
+          // `//` remark?" — and Solidity's documentation system has THREE forms
+          // (`///`, the slash-star block, and a plain line comment), so the kind is
+          // the difference between documented code and a comment that happened to sit
+          // above a declaration. `docTags` is the structured half: the tags are inside
+          // `docstring` already, but a consumer that wants `@param` names should not
+          // have to re-parse prose, and `comments` is the per-comment array the
+          // TypeScript lane populates for the same job, so a reader of Solidity
+          // documentation should not have to learn a second shape.
+          //
+          // Purely additive, on the same terms as the CSS forwarding above: nothing
+          // read these before, so no consumer changes behaviour.
+          docstringKind: (s as any).docstringKind ?? (s.metadata as any)?.docstringKind ?? null,
+          docTags: (s as any).docTags ?? (s.metadata as any)?.docTags ?? null,
+          comments: (s as any).comments ?? (s.metadata as any)?.comments ?? null,
           // #612 store-phase (same seam class as docstring above and scope_kind
           // below): the declaration/definition fact. c has published
           // `metadata.isDeclaration` since the HC1 review, and cpp/rust/zig
