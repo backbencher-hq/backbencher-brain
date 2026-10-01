@@ -240,6 +240,17 @@ export class RealJuliaAnalyzer {
           const sig = this.firstNamedChildOfType(node, "signature")
           const name = sig ? this.signatureName(sig) : ""
           if (!name) break
+          // Same distinction as the short form, on the signature: `function bump!(c, by)` puts the
+          // function's own name and parameters in a `call_expression`, and walking into it emitted
+          // `bump! -calls-> bump!`. Only the SHORT form's declaration site was recorded, so the long
+          // form kept self-calling; the fixture lane is what found the asymmetry.
+          if (sig) {
+            let callable: Node | null = this.pos(sig, 0)
+            for (let i = 0; i < 4 && callable && callable.type !== "call_expression"; i++) {
+              callable = this.pos(callable, 0)
+            }
+            if (callable && callable.type === "call_expression") this.declSites.add(callable.id)
+          }
           const isMacro = node.type === "macro_definition"
           symbols.push({
             name,
@@ -769,6 +780,20 @@ export class RealJuliaAnalyzer {
   }
 
   private signatureName(sig: Node): string {
+    // A signature may carry a RETURN TYPE. `function scaled{T<:Real}(s::Shape, k::T)::Float64`
+    // makes the signature a `typed_expression` whose siblings are the callable and the return
+    // type, so an identifier scan returns `Float64` — the function was published under its RETURN
+    // TYPE and `scaled` was lost. Found by the julia fixture lane, authored before the run.
+    // A signature is never a typed variable declaration, so unwrapping here is unambiguous.
+    if (sig.type === "typed_expression") {
+      const callable = this.pos(sig, 0)
+      if (callable) return this.signatureName(callable)
+    }
+    // A call_expression reached here may have a QUALIFIED or PARAMETRIC name —
+    // `scaled{T<:Real}(…)` puts the name in a `field_expression`, so there is no direct identifier
+    // child and the identifier/call scans below both miss it and the function is never declared.
+    // `calleeName` already resolves a `field_expression` path, so delegate rather than duplicate.
+    if (sig.type === "call_expression") return this.calleeName(sig) ?? ""
     // `where T` / `where {T}`: the callable is pos(0). Check this BEFORE any identifier scan,
     // because in the unbraced form the type variable IS a sibling identifier and the scan would
     // return `T` — a function symbol named after a parameter.
@@ -881,6 +906,16 @@ export class RealJuliaAnalyzer {
    */
   private fieldPath(node: Node): string {
     if (node.type === "identifier") return node.text.trim()
+    // A PARAMETRIC name is a `parametrized_type_expression`, not a `field_expression`:
+    // `scaled{T<:Real}(s, k)` has callee children `parametrized_type_expression` +
+    // `argument_list`, so nothing matched and the function was never declared at all. Found by
+    // the julia fixture lane. `fieldPath` is the one place qualified-name resolution lives, so the
+    // parametric case belongs here too rather than as a second, divergent name-resolver in
+    // `calleeName` — two resolvers for one notion of "name" is how they drift apart.
+    if (node.type === "parametrized_type_expression") {
+      const base = this.pos(node, 0)
+      return base ? this.fieldPath(base) : ""
+    }
     if (node.type === "quote_expression") return node.text.trim()
     if (node.type === "macro_identifier") return node.text.trim().replace(/^@/, "")
     if (node.type === "operator") return node.text.trim()
@@ -906,21 +941,22 @@ export class RealJuliaAnalyzer {
       const callable = this.unwrapWhere(call)
       if (callable !== call) return this.calleeName(callable)
     }
-    // Positional: the callee is pos(0), never an argument. A `field_expression` here is a
-    // qualified callee and its whole path is the name.
+    // Positional: the callee is pos(0), NEVER an argument. Every shape a callee can take —
+    // `identifier`, `field_expression` (qualified), `parametrized_type_expression` (parametric),
+    // `quote_expression` (`Base.:(==)`), `where_expression`, `parenthesized_expression` — is
+    // resolved by `fieldPath`, which is the single place name-resolution lives.
+    //
+    // These were three separate branches and each covered one shape, so every new shape was a
+    // silent miss: `parametrized_type_expression` was the third, and it made
+    // `function scaled{T<:Real}(s, k)` vanish entirely — a generic method, the very construct
+    // Julia is distinctive for, found by the fixture lane. A list of shapes is a maintenance
+    // liability; one resolver with the shapes inside it is not.
     const calleeNode = this.pos(call, 0)
-    if (calleeNode && calleeNode.type === "field_expression") {
+    if (calleeNode) {
       const path = this.fieldPath(calleeNode)
       if (path) return path
     }
     for (const c of this.namedChildren(call)) {
-      if (c.type === "identifier") return c.text.trim()
-      if (c.type === "field_expression") {
-        // `Base.show` — the WHOLE path names the thing being called, because the last segment
-        // alone is ambiguous (see fieldPath: 72 measured collisions).
-        const path = this.fieldPath(c)
-        if (path) return path
-      }
       if (c.type === "where_expression" || c.type === "parenthesized_expression") {
         const inner = this.calleeName(c)
         if (inner) return inner
