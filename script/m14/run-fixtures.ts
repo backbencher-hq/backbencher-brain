@@ -50,6 +50,15 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   dart: { wasm: "tree-sitter-dart.wasm", analyzerFile: "real-dart-analyzer", className: "RealDartAnalyzer", ext: "dart" },
   swift: { wasm: "tree-sitter-swift.wasm", analyzerFile: "real-swift-analyzer", className: "RealSwiftAnalyzer", ext: "swift" },
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
+  // M60 julia wave. A lane that cannot fail is decoration: the language was named in
+  // language-detection.ts and dispatched in engine.ts — so the website advertised it —
+  // while being absent from this map, which is the gate that would have caught the four
+  // defects registration exposed (a drifting scope that reassigned ownership of every
+  // later sibling, `f(x)::T = …` being invisible, 2,502 false self-calls, and every type
+  // referencing itself). `ext` is `jl` only: `.jul` exists in the wild and is deliberately
+  // undeclared, since no corpus measures it and declaring it would be a claim without
+  // coverage.
+  julia: { wasm: "tree-sitter-julia.wasm", analyzerFile: "real-julia-analyzer", className: "RealJuliaAnalyzer", ext: "jl" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   // M14.6 perl wave: the lane had no fixture directory at all, so none of its
