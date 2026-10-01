@@ -59,6 +59,46 @@ const ZIG_VALUE_RHS = new Set([
  * edge survives a year of gates (the #916 lesson, applied to zig). The oracle
  * still derives every POSITION and every LEAF from the tree on its own.
  */
+/** Z57: the names this file declares at FILE SCOPE, derived from the tree and
+ *  memoised per root. Function-LOCALS are excluded on purpose: a local does not
+ *  shadow a builtin type, only a file-scope declaration is visible to a type
+ *  annotation written elsewhere in the file. */
+const ZIG_FILE_SCOPE_NAMES = new WeakMap<object, Set<string>>()
+export function zigFileScopeNames(root: Node): Set<string> {
+  const cached = ZIG_FILE_SCOPE_NAMES.get(root as unknown as object)
+  if (cached) return cached
+  const BARRIERS = new Set([
+    "function_declaration", "test_declaration", "block", "if_statement", "if_expression",
+    "for_statement", "for_expression", "while_statement", "while_expression",
+    "switch_statement", "switch_expression", "catch_expression", "defer_statement",
+    "expression_statement", "comptime_statement", "errdefer_statement",
+  ])
+  const out = new Set<string>()
+  const stack: Node[] = [root]
+  let guard = 0
+  while (stack.length > 0 && guard++ < 400000) {
+    const n = stack.pop()!
+    if (n.type === "variable_declaration" || n.type === "function_declaration" || n.type === "container_field") {
+      const c0 = n.namedChildCount > 0 ? n.namedChild(0) : null
+      // `field_identifier` was here for one commit and the F1 grammar audit caught it
+      // on the next run: it is NOT a node type in the pinned grammar (Z45), so the
+      // disjunct is dead -- and I had reintroduced the very leftover Z45 removed, in
+      // the very gate that reports such leftovers. A dead disjunct reads like coverage
+      // of a case that cannot occur, which is why the audit exists and why it runs.
+      if (c0 && c0.type === "identifier") {
+        let q: Node | null = n.parent
+        let fileScope = true
+        let hops = 0
+        while (q && hops++ < 40) { if (BARRIERS.has(q.type)) { fileScope = false; break } q = q.parent }
+        if (fileScope) out.add(stripZigQuoting(c0.text))
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  ZIG_FILE_SCOPE_NAMES.set(root as unknown as object, out)
+  return out
+}
+
 export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
   "void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble",
   "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
@@ -1854,7 +1894,19 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Zero-regex: the two remaining tests are a Set membership and a
       // character-code range.
       const head = leaf
-      if (!head || ZIG_DECLARED_TYPE_BUILTINS.has(head)) return
+      // Z57: a builtin-looking NAME that this file DECLARES is not a builtin
+      // reference. `zig/test/behavior/basic.zig` does `const @"u8" = u16;` and then
+      // `const c: @"u8" = 300;` — a user type alias whose name happens to be a
+      // builtin — and `zls/.../Interner.zig` declares `f80`. Both were invisible to
+      // the graph.
+      //
+      // The bug was SPELLING, not declaration: the quoted `@"u8"` slipped past the
+      // name filter while the plainly-spelled `f80` did not, so whether a user's own
+      // type reached the declared-type graph depended on whether they had quoted it.
+      // That is the same name-keyed blindness as #963 and the quoting family — a rule
+      // that cannot see that a name is locally declared — and it is fixed the same
+      // way, on both sides of the comparison, or the two will simply disagree.
+      if (!head || (ZIG_DECLARED_TYPE_BUILTINS.has(head) && !zigFileScopeNames(rootNode).has(head))) return
       // ≡ /^\d/ — first char is 0-9 (rejects `123abc`-style heads). A quoted
       // identifier starts with `@`, so it is exempt by construction.
       const c0 = head.charCodeAt(0)
