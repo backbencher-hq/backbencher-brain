@@ -150,6 +150,76 @@ characterised as a target-typed `new()` in an object initialiser, and shown *not
 four plausible minimal shapes. Closing it needs the actual file and a bisect, not another guess from
 the census row — and the census row is one line long while the file is 400 lines.
 
+## Where this lane stands — 2026-09-29, end of round
+
+### Gates, all green
+
+| gate | result |
+| --- | --- |
+| F1 grammar coverage | `PASS` refs=106 unknown=0 unknownFields=0 |
+| F3 fixtures | **18 / 18** |
+| F4 mutants | **58 / 58 caught** |
+| F5 differential | 4 corpora at **100%**, `MISSING=0` (see the census table) |
+| `verify-csharp-line-numbers` | **PASS** — 18,091 relationships, 0 out of bounds |
+| `verify-csharp-symbols` | **PASS** — 2,692 symbols, 0 defects over 5 properties |
+| `verify-csharp-no-regex` | **PASS** — 0 literals, **0 runtime `RegExp` constructions** |
+| `verify-csharp-overrides-symmetry` | **PASS** |
+| `verify-csharp-oracle-regressions` | **PASS** |
+| `verify-oracle-coverage` | **PASS** |
+| harness typecheck | csharp **0 errors** (gate red on four *other* lanes) |
+
+### Eight defects, seven of them in the truth
+
+**In every case the analyzer was right and the oracle was silent, incomplete or wrong.** F3 asserts
+what the analyzer emits, so a perfect analyzer passes every fixture while the oracle judging it lies —
+no fixture can find an oracle defect, and all seven were invisible to F3 by construction.
+
+### Line numbers: done, re-verified after every change this round
+
+200 roslyn files, **18,091 relationships, 0 out of bounds, 0 non-integer.** The 61 null lines are all
+`owner → constructor` and are *correct*: `constructor` and `Finalize` are synthesized names the file
+never writes, so no line exists for them. The gate asserts the boundary — a null line is legal only
+for a synthesized name, and a null line on a written name is a defect — and pins the exact case in
+`csharp/callsite-lines-825`.
+
+### Regex: proven, not asserted
+
+Three layers: the source is **parsed** (so `/a\/b/` and `a / b / c` cannot be confused), `RegExp` is
+replaced with a recording subclass before the analyzer loads and runs, and the shipped file is hashed
+against the working copy. The runtime layer is the one that matters — a pattern assembled from an
+array or a variable still has to *construct* a RegExp, and the count is **0**. Proved by replay: a
+pattern joined from array parts, invisible to grep and to the source scan, produced 20 constructions.
+
+### Relationship labels: compared set widened 4 → 7
+
+The oracle derives eight; the compared set had four, so half the labels were computed and checked by
+nothing. All three added labels measured 100% under the harness's own matcher before being added.
+`overrides` remains excluded on **both** sides under C923, gated by a symmetry check that fails on
+either half desyncing — because that pair is what silently desynced once already.
+
+### Performance: flat per file, super-linear per depth
+
+Per-file cost is flat (29–39 ms from 50 to 400 files). Per **nesting depth** it is not: cost rises
+**363×** for 32× depth at constant symbol count, and the mechanism is long ancestor walks. One of the
+five offending predicates is fixed (2.06× at depth 128, output unchanged); four remain, named, with
+measured headroom. The depth sweep is a reusable instrument, not a one-off — it is the only thing in
+the lane that varies an axis other than file count, and that is why nothing else caught this.
+
+### Open, named rather than closed
+
+1. **aspnetcore `MISSING=4`** — 0.0006% of 631,892 edges. Located to a file; four minimal
+   reproductions all reconcile, so the shape is not yet pinned.
+2. **Four more depth predicates** — `isCSharpNamePosition`, `isCSharpPreprocText`,
+   `findContainingCSharpFunction`, one inline type-constraint check. A memoisation of the third was
+   attempted, proved wrong on 2,854 of 48,645 nodes, and reverted.
+3. **powershell not re-verified exhaustively** after CS-D13.
+4. **Target resolution** — 95.6% floor. A census, not a gate, because this repo has no external
+   surface to resolve a framework member against and a gate that cries wolf on `ThrowIfCancellationRequested`
+   gets bypassed. **A BCL + attribute + keyword list is the single artifact that would make it real.**
+5. **Section A of completeness** fails in five lanes on `ERROR`/`MISSING` — a shared-schema gap; csharp's
+   own inventory is 241 types with **0 gaps**.
+6. **main is diverged**, and needs a human merge decision.
+
 ## Field-level gates (2026-09-29)
 
 Every other gate in this lane asks whether a relationship or a symbol EXISTS with the
