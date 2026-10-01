@@ -6454,7 +6454,25 @@ export function deriveCSharpBareUses(
         }
         return false
       }
-      if (t === "variable_declaration" || t === "parameter" || t === "property_declaration" ||
+      // CS-D12. `property_declaration` was in the blanket-true list below, which is right for the
+      // property's TYPE and wrong for everything else hanging off it. A property's initializer and
+      // its attribute lists are VALUE contexts:
+      //
+      //   public static int[] Choice { get; } = [ new(OLD, LSP) ];
+      //                                ^^^^^^^ a type      ^^^^^^^^^^^^^^^^^^^^^ reads
+      //
+      // so both were gated as type positions and dropped. This is the same root cause as the
+      // attribute case, which is why a narrower fix for one symptom did not move the other: two
+      // independent corpus residuals (fsharp 8 edges, powershell) share this one cause.
+      //
+      // The test is the same range check `variable_declarator` uses a few lines above: true only for
+      // the declared type's own extent. That makes the property's INITIALIZER, its ATTRIBUTES and
+      // its ACCESSORS value contexts, which is what all three are, and leaves the type unchanged.
+      if (t === "property_declaration") {
+        const tf = cur.childForFieldName?.("type")
+        return !!tf && n.startIndex >= tf.startIndex && n.endIndex <= tf.endIndex
+      }
+      if (t === "variable_declaration" || t === "parameter" ||
           t === "indexer_declaration" || t === "event_declaration" || t === "event_field_declaration" ||
           t === "base_list" || t === "type_parameter_list" || t === "type_parameter_constraints_clause" ||
           t === "tuple_type" || t === "nullable_type" || t === "array_type" || t === "pointer_type" || t === "ref_type") {
