@@ -139,6 +139,18 @@ function calleeName(fn: any): string {
     // records as a `uses` member read — the information is not lost by staying silent here.
     return ""
   }
+  // EVERY OTHER SHAPE NAMES NOTHING — M60 #902's allowlist, exactly.
+  //
+  // `python/callee-shapes` pins four shapes out, and the text fallback below was quietly
+  // re-deriving two of them: a `conditional_expression` text-slices to its ALTERNATIVE branch,
+  // so `(A if flag else B)(x)` published `calls -> B`, which is the same fabrication #902
+  // forbids one branch earlier. The allowlist is a rule about SHAPES and it is answerable from
+  // the grammar; a text fallback is a rule about strings and it is answerable from neither.
+  //
+  // This is the third time this function has been wrong by being too generous — a subscript,
+  // a callee's text cut at the first `(`, and now this — and the fix each time was to name
+  // LESS. A callee edge is an assertion about the source, and the default should be silence.
+  return ""
   // A NAME MUST LOOK LIKE A NAME. The text fallback is the last resort for a callee shape with
   // no `attribute`/`identifier` node of its own, and on a file that is not python at all it
   // produced whole comment blocks as call targets:
@@ -153,8 +165,6 @@ function calleeName(fn: any): string {
   // The gate is the language's own: a python identifier, or nothing. A callee whose name is not
   // an identifier has no name, and an edge with a fabricated target is worse than no edge,
   // because a consumer resolving that string finds nothing that could possibly be it.
-  const leaf = calleeLeaf(fn.text)
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : ""
 }
 
 /**
