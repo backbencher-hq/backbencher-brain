@@ -89,6 +89,49 @@ export type SearchResults = SearchResult[] & {
    */
   rankedMatches?: number
   /**
+   * How much of the searchable corpus has a symbol BODY to search.
+   *
+   * Content search matches name, qualified_name, docstring and body. The body
+   * column arrived after databases were indexed, so a project indexed before it
+   * has none — and a search over such a project silently misses every word
+   * that appears only inside a function. This ratio is what lets a caller tell
+   * "nothing matched" from "nothing could match", which are opposite facts.
+   */
+  bodyCoverage?: { withBody: number; symbols: number; ratio: number }
+  /**
+   * Which route produced this result set.
+   *
+   * `phrase` means the query appeared verbatim in the name, qualified name,
+   * docstring or body. `terms` means nothing matched verbatim and the query's
+   * individual content words were matched instead. These are different claims:
+   * a phrase hit says the code contains this text, a terms hit says it
+   * discusses these words. Reported so a caller can weaken its confidence
+   * accordingly instead of presenting a keyword coincidence as a quotation.
+   */
+  matchMode?: "phrase" | "terms"
+  /**
+   * Which of the query's content words the BEST result actually matched, and
+   * which it ignored.
+   *
+   * Present only on the terms route, because that is the only route where the
+   * two differ in kind. A match on 1 of 3 query words is a different claim from
+   * 3 of 3: the same symbol would match any query sharing that one word, so
+   * presenting it as "closest matches" without saying so invites reading a
+   * coincidence as a finding. The words are named rather than counted because a
+   * count alone does not tell a reader WHICH word carried the match.
+   *
+   * Measured on rake: requiring full coverage to present a result would discard
+   * 9 of 11 answerable questions to reject 2 of 7 inapplicable ones, so this is
+   * disclosed to the answer rather than used as a filter.
+   */
+  termMatch?: { queryTerms: string[]; topMatched: string[] }
+  /**
+   * How many candidate rows the scan actually looked at. Present so a bounded
+   * answer can say "stopped after N of M" rather than only "stopped", and
+   * absent when the scan completed.
+   */
+  scannedRows?: number
+  /**
    * Why the candidate set is smaller than the raw match set, when it is: a
    * per-phase candidate cap was reached, the noise filter removed rows after
    * the cap, or (regex mode) the row cap or the time budget stopped the scan.
@@ -227,6 +270,18 @@ export interface SemanticSearchResults {
     discriminative?: boolean
     /** How many other candidates scored within the margin of the best. */
     nonDiscriminativeCompetitors?: number
+    /**
+     * Which of the query's content words the best keyword-fallback result
+     * matched, and which it ignored. Present only when the fallback used the
+     * terms route.
+     *
+     * It exists because the answer text lists code blocks, and a reader cannot
+     * otherwise tell a match on every word they used from a match on one common
+     * one. On rake, "where is the request handled" returns five code blocks that
+     * matched the single word `request` — in a GitHub Actions file, in a
+     * repository with no request handling at all.
+     */
+    termMatch?: { queryTerms: string[]; topMatched: string[] }
   }
 }
 
@@ -345,6 +400,19 @@ export interface GraphTraversalResult {
    *  (measured: lodash holds eight symbols named `build`, cobra holds fifty
    *  structural symbols named `code_block.go`). */
   rootCandidates: number
+  /** How the root was found: `exact` (a structural symbol of that name),
+   *  `exact-any-kind` (a symbol of that name the graph cannot traverse — a
+   *  constant, a type alias — which still has callers), or `containment` (the
+   *  documented near-miss fallback, or a case difference, because SQLite's LIKE
+   *  is case-insensitive for ASCII).
+   *
+   *  `containment` means the answer is about a symbol whose name CONTAINS the
+   *  one asked for. Measured on the atlas corpus: `target: "ub"` answered
+   *  `found: true` rooted at `hub`, and `target: "_"` answered `found: true`
+   *  rooted at `build_registry`, with nothing in the payload saying the name
+   *  was not found at all. `found: true` alone means "a root was found", which
+   *  is a weaker claim than the one a reader assumes. */
+  rootMatch: "exact" | "exact-any-kind" | "containment"
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
@@ -368,6 +436,14 @@ export interface GraphTraversalResult {
      *  is what bounds it, and `truncated` is true when it fires. */
     timeBudgetMs: number
     timeBudgetExhausted: boolean
+    /** Stored rows the vendored/generated/fixture/noise policy removed before any
+     *  bound applied. Non-zero means the edge sets are smaller than the store's BY
+     *  POLICY, not because nothing was found — so an empty edge set with
+     *  `truncated: false` does not mean "nothing references this". Reported here
+     *  rather than as a truncation reason: a bound means the walk stopped early,
+     *  a filter means it finished and removed rows, and `truncated` must not mean
+     *  both. */
+    noiseFiltered: { callers: number; callees: number }
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
@@ -472,15 +548,22 @@ export interface CouplingEntry {
 export interface FileDependency {
   file: string           // relative path
   fileId: string
+  /** The project-relative path of the target (`external: false` and resolved),
+   *  or the specifier as written when it is external or unresolved. No
+   *  `fileId`: one embeds the project id AND the relative path, so it repeated
+   *  the path beside it. The path is the locator. */
   dependencies: Array<{
     path: string
     external: boolean
-    fileId?: string
     /** How this target was reached: an exact path match, a segment-anchored
-     *  suffix match, or nothing (the specifier the caller wrote, unresolved). */
+     *  suffix match, or nothing (the specifier the caller wrote, unresolved).
+     *  This is the part a path cannot tell you. */
     resolution?: "resolved" | "suffix-match" | "unresolved"
   }>
-  dependents: Array<{ path: string; fileId: string }>
+  /** The project-relative path only. A file id embeds the project id AND the
+   *  relative path, so carrying both repeated the path for every edge; the path
+   *  is the locator. */
+  dependents: Array<{ path: string }>
   /** The TRUE sizes of the two lists above. They are capped so one widely
    *  imported file cannot dominate a page; these are the real counts. */
   dependenciesTotal: number
@@ -518,7 +601,21 @@ export interface ComplexityReport {
   /** How many FILES the scope covered. A file scope can match many
    *  (`target: "src"`), and without this a one-file answer and an eighty-file
    *  answer are the same shape — measured 163 symbols with `linesOfCode: 2`. */
+  /** Files HOLDING A SYMBOL the metrics above are computed over. */
   filesInScope: number
+  /** Files the scope NAMES, whether or not any of them hold an indexed symbol.
+   *  Equals `filesInScope` unless a file in scope has no symbols — measured on
+   *  backbencher-brain/src, `target: "ast"` reported 83 of 84. Published so the
+   *  difference is visible rather than an unexplained discrepancy. */
+  filesMatchingScope: number
+  /** For a file-shaped scope, WHICH of the two shapes it was:
+   *  `exact-file` (one `brain_file.relative_path`) or `directory-prefix` (every
+   *  file under a path prefix, on a segment boundary). Absent for a symbol or
+   *  project scope, where the question does not arise.
+   *
+   *  `scope` reads `"file"` for both, which reads as ONE file: measured,
+   *  `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. */
+  scopeMatch?: "exact-file" | "directory-prefix"
   /** Which relationship types `metrics.couplingEdges` counted. `exports` and
    *  `contains` are index bookkeeping; counting them inflated the number by
    *  1.20x on bb's own src and 2.24x on a small corpus. */
@@ -642,8 +739,17 @@ export interface SecurityFindingV2 {
 }
 
 export interface SecurityHotspot {
-  key: string                      // file or symbol
+  /**
+   * Identity of the hotspot. `kind: "file"` → a project-relative path.
+   * `kind: "symbol"` → `<file>::<name>`, because a bare name is ambiguous:
+   * measured on one real index, 213 of 1,433 finding symbol names spanned more
+   * than one file and the top hotspot was `main` across 223 files. Use `name`
+   * for the bare symbol.
+   */
+  key: string
   kind: "file" | "symbol"
+  /** Bare symbol name; absent for file hotspots. */
+  name?: string
   findings: number
   maxSeverity: "critical" | "high" | "medium" | "low" | "unknown"
 }
@@ -656,6 +762,13 @@ export interface SecuritySummaryV2 {
   crossLanguage: number
   scannedFlows: number
   deduplicatedFlows: number
+  /**
+   * Deduplicated findings omitted by the `maxResults` cap. `0` means the report
+   * is complete. `deduplicatedFlows` is the pre-cap census and `total` is what
+   * was returned, so a caller that reads only `total` cannot tell a capped scan
+   * from a small one — this is the field that tells them.
+   */
+  truncatedFindings: number
 }
 
 export interface SecurityReport {
@@ -709,6 +822,11 @@ export interface TestMappingReport {
   provenance: EvidenceProvenance
   summary: {
     productionSymbols: number
+    /** Symbols the documented population filter removed — noise paths and noise
+     *  symbol names. So `productionSymbols + excludedAsNoise` is the store's
+     *  population under this mode's own filter, and a reader can check it
+     *  instead of taking it on trust. */
+    excludedAsNoise: number
     /** How many entries this answer returned, against the population above. */
     returned: number
     truncated: boolean
@@ -742,7 +860,21 @@ export interface TestGapReport {
   gaps: TestGap[]
   provenance: EvidenceProvenance
   summary: {
+    /** The production-symbol population this mode scanned — the SAME number
+     *  `test_mapping` reports as `productionSymbols`, so the two modes can be
+     *  compared. */
+    productionSymbols: number
+    /** How many GAP rows exist: `productionSymbols - directlyTested`. Named
+     *  `total` for compatibility, but it is a count of gaps, NOT of production
+     *  symbols. The two used to be indistinguishable: on the atlas corpus the
+     *  modes answered 169 and 163 under names that read as one question, and
+     *  nothing in either payload said how they relate. */
     total: number
+    /** Production symbols excluded because a test calls them directly — the
+     *  difference between the population and the gap count. */
+    directlyTested: number
+    /** Symbols the population filter dropped as noise. */
+    excludedAsNoise: number
     /** How many gap rows this answer returned, against `total`. */
     returned: number
     truncated: boolean

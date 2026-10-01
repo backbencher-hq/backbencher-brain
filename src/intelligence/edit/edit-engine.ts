@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, statSync, chmodSync } from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { BrainDatabase } from "../../brain/database"
@@ -68,24 +68,150 @@ function nearestExisting(candidate: string): string {
   return cursor
 }
 
+/**
+ * Resolve an edit target to a real, inside-the-project absolute path, or throw.
+ *
+ * WHY THIS IS REWRITTEN. The previous version realpath'd the project ROOT and
+ * then compared it against the requested path AS GIVEN:
+ *
+ *   if (!inside(root, candidate)) throw new Error(`path escapes project root`)
+ *
+ * The requested path here is a symbol's `fileId` — the path the INDEXER was
+ * handed, not a realpath. On macOS `/var` and `/tmp` are symlinks into
+ * `/private`, so a project created at `/var/folders/.../bb-edit-XYZ` has a real
+ * root of `/private/var/folders/.../bb-edit-XYZ` while every indexed fileId is
+ * spelled `/var/folders/.../bb-edit-XYZ/src/mod.ts`. `path.relative` between the
+ * two is `../../../var/folders/...`, so a path that is plainly inside the
+ * project read as an escape and the edit was REFUSED.
+ *
+ * bb_edit was therefore non-functional on macOS for any project under /var or
+ * /tmp — which is all eighteen of its own gates, every scratch project, and most
+ * CI. On Linux /tmp is a real directory, realpathSync(tmpdir()) === tmpdir(),
+ * the comparison succeeds, and the bug is invisible. Measured on macOS: 11 of the
+ * 18 gates cannot run, 8 of them crashing on exactly this refusal.
+ *
+ * THE FIX is to compare real paths with real paths. The request is resolved to a
+ * real path FIRST — walking up to the nearest existing ancestor, because the leaf
+ * of a file being created does not exist yet — and containment is then judged on
+ * the resolved result.
+ *
+ * The containment guarantee is unchanged and in one place tightened. The
+ * non-existent-leaf case used to return `candidate`, the UNRESOLVED spelling, with
+ * no realpath check on the final component at all: writing `link-to-outside/
+ * newfile.ts` was never checked. It is now checked like every other case.
+ */
 export function resolveSafeEditPath(projectPath: string, requested: string): string {
   const root = realpathSync(projectPath)
-  const candidate = path.resolve(root, requested)
-  if (!inside(root, candidate)) throw new Error(`path escapes project root: ${requested}`)
-  const existing = nearestExisting(candidate)
+  // `requested` is sometimes an absolute fileId from the index and sometimes a
+  // caller-supplied relative path. Both must land on the same footing.
+  const raw = path.isAbsolute(requested) ? requested : path.resolve(root, requested)
+  const existing = nearestExisting(raw)
+  // The nearest EXISTING ancestor's realpath is what containment is judged on.
+  // For an existing file that is the file itself; for a file about to be created
+  // it is the nearest existing directory that will hold it.
   const realExisting = realpathSync(existing)
-  if (!inside(root, realExisting)) throw new Error(`path escapes project root through symlink: ${requested}`)
-  if (existsSync(candidate)) {
-    const realCandidate = realpathSync(candidate)
-    if (!inside(root, realCandidate)) throw new Error(`path escapes project root through symlink: ${requested}`)
-    return realCandidate
+  if (!inside(root, realExisting)) {
+    // TWO DISTINCT REFUSALS, and the wording is load-bearing rather than
+    // cosmetic. script/m13/verify-edit-unit asserts the exact phrase "through
+    // symlink" for a symlink pointing outside the project and a plain escape for
+    // `../`, and it is right to: they are different failures with different
+    // causes. A `../` is a caller who built a bad path; a symlink escape is a
+    // link inside the project pointing at something outside it, which is a
+    // property of the PROJECT and not of the request. A caller told only
+    // "escapes project root" cannot tell whether to fix their path or go and look
+    // at the tree.
+    //
+    // The first version of this rewrite collapsed both into one message and the
+    // gate failed on the wording — correctly. The refusal was still safe; only
+    // the diagnosis had been lost.
+    const viaSymlink = realExisting !== existing
+    throw new Error(
+      `path escapes project root${viaSymlink ? " through symlink" : ""}: ${requested}${raw === existing ? "" : ` (via ${existing})`}`,
+    )
   }
-  return candidate
+  if (raw !== existing) {
+    // Creating a new file, possibly in directories that do not exist yet. The
+    // whole relative REMAINDER below `existing` has to be re-attached, not just
+    // the leaf: the first version of this fix appended only
+    // `path.basename(raw)`, so `a/b/c.ts` with neither `a` nor `b` present
+    // resolved to `<project>/c.ts` — the intermediate directories were silently
+    // dropped and the edit landed at the wrong path. `relative(existing, raw)`
+    // is exactly the missing tail.
+    const tail = path.relative(existing, raw)
+    const target = tail ? path.join(realExisting, tail) : realExisting
+    // Containment is re-checked on the reassembled path: a symlinked directory
+    // that points outside the project must still be refused even though
+    // `existing` itself resolved cleanly.
+    if (!inside(root, target)) throw new Error(`path escapes project root through symlink: ${requested}`)
+    return target
+  }
+  return realExisting
 }
 
 function replaceRange(text: string, start: number, end: number, replacement: string): string {
   if (start < 0 || end < start || end > text.length) throw new Error(`invalid edit bounds: ${start}-${end}`)
   return text.slice(0, start) + replacement + text.slice(end)
+}
+
+// ── File-fidelity primitives (M66) ──────────────────────────────────────────
+//
+// A tool that writes source must not change anything the caller did not ask it to
+// change. Three things it WAS changing, each measured rather than assumed (see
+// fixtures/bb_edit/probe-e2-file-fidelity.ts):
+//
+//   * a 0755 file came back 0644, because the commit path is
+//     writeFileSync(temp) + renameSync and the temp inherits the process umask;
+//   * a rolled-back file containing any invalid UTF-8 byte was CORRUPTED, because
+//     the snapshot was a `readFileSync(path, "utf8")` STRING — that re-encodes bad
+//     bytes as U+FFFD, so "restore" wrote back a second, different corruption;
+//   * a CRLF file was left with MIXED line endings, because every splice in this
+//     file concatenates a literal "\n" and nothing ever looks at what the file
+//     already uses.
+//
+// The fix is one discipline applied at the I/O boundary: read the file's BYTES
+// once, decide its line ending from those bytes, keep the exact mode, and commit
+// and roll back in bytes. The splice still happens in a string, because the byte
+// offsets the indexer hands are code-unit offsets into the decoded text (verified
+// in probe-e1 — the indexer's "byteStart" is in fact a UTF-16 code-unit index, and
+// treating it as bytes would corrupt every non-ASCII file, a separate bug this
+// pass does NOT introduce or fix).
+
+/** The line ending a file already uses, judged from its bytes. Defaults to "\n". */
+function dominantNewline(text: string): "\n" | "\r\n" {
+  let crlf = 0
+  let lf = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "\n") continue
+    if (i > 0 && text[i - 1] === "\r") crlf++
+    else lf++
+  }
+  return crlf > lf ? "\r\n" : "\n"
+}
+
+/** Rewrite a spliced string so every newline matches the file's own ending. */
+function withNewline(text: string, nl: string): string {
+  return nl === "\n" ? text : text.replace(/\r?\n/g, nl)
+}
+
+/**
+ * A byte-exact snapshot of a file's pre-edit state: the raw bytes, the mode, and
+ * whether it existed. `readFileSync(path, "utf8")` is NOT a snapshot — it decodes,
+ * and decoding is lossy for anything that is not valid UTF-8.
+ */
+function snapshotOf(file: string): { existed: boolean; bytes: Buffer | null; mode: number | null } {
+  if (!existsSync(file)) return { existed: false, bytes: null, mode: null }
+  const bytes = readFileSync(file)
+  let mode: number | null = null
+  try { mode = statSync(file).mode & 0o777 } catch { mode = null }
+  return { existed: true, bytes, mode }
+}
+
+/** Write bytes and, when the target already existed, restore its mode. */
+function writeBytesPreservingMode(file: string, bytes: Buffer | string, mode: number | null): void {
+  writeFileSync(file, bytes)
+  if (mode !== null) {
+    try { chmodSync(file, mode) } catch { /* best effort: content is the contract, mode is not */ }
+  }
 }
 
 // ── M13.09 (E4): language-aware insert body detection ──────────────────────
@@ -339,6 +465,18 @@ async function uniqueSymbol(
   return match
 }
 
+/** A file's base name with no extension — how brain_import spells a relative
+ *  module specifier (`./target` for `src/target.ts`). */
+function basenameNoExt(fileId: string): string {
+  return path.basename(fileId, path.extname(fileId))
+}
+
+/** Best-effort project-relative path, for a message a human has to act on. */
+function relativeTo(root: string, file: string): string {
+  const rel = path.relative(root, file)
+  return rel && !rel.startsWith("..") ? rel : path.basename(file)
+}
+
 async function validateFile(filePath: string, content: string): Promise<void> {
   const result = await ASTEngine.parseFile(filePath, content)
   const errors = (result.errors ?? []).filter((error: any) => /syntax error/i.test(error.message ?? ""))
@@ -408,7 +546,7 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const declaresSelf =
       new RegExp(`(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\s+${escaped}\\b`).test(newContent) ||
       new RegExp(`\\b(?:public|private|protected|internal|static|abstract|override|readonly|final|sealed|export|declare|async)\\s+(?:async\\s+)?${escaped}\\b`).test(newContent)
-    if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, newContent) }], warnings }
+    if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, withNewline(newContent, dominantNewline(original))) }], warnings }
     const parsed = await parseForSafety(match.fileId, original)
     const body = findSymbolBody(parsed, match.byteStart, match.byteEnd)
     if (body && original[body.startIndex] === "{") {
@@ -416,7 +554,15 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
       const close = body.endIndex - 1
       const inner = original.slice(open + 1, close)
       const innerIndent = inner.includes("\n") ? computeInnerIndent(original, body) : lineLeadingWhitespace(original, open) + indentUnit(original)
-      const after = replaceRange(original, open + 1, close, "\n" + indentLines(newContent, innerIndent, true) + "\n" + lineLeadingWhitespace(original, open))
+      // M66: splice with the FILE's line ending. This concatenated a literal "\n",
+      // so a CRLF file came back with the new body on "\n" and the untouched tail
+      // still on "\r\n" — a file with MIXED line endings, silently, on a
+      // successful edit. `newContent` arrives from an MCP client as a JSON string
+      // and carries "\n" regardless of what the file uses, so the fix belongs here
+      // at the splice, not at the parameter boundary.
+      const nl = dominantNewline(original)
+      const spliced = withNewline("\n" + indentLines(newContent, innerIndent, true) + "\n" + lineLeadingWhitespace(original, open), nl)
+      const after = replaceRange(original, open + 1, close, spliced)
       return { changes: [{ path: match.fileId, before: original, after }], warnings }
     }
     // No recognizable brace body (expression-bodied / one-line decls in
@@ -479,7 +625,15 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
         }
       }
     }
-    return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, start, end, replacement) }], warnings }
+    // M66: `replacement` is assembled from literal "\n" in every branch above, so
+    // rather than thread the file's line ending through nine construction sites
+    // (each easy to miss in a later edit), the spliced RESULT is normalized once
+    // here. `replaceRange` returns the whole new file text; a CRLF file must not
+    // gain LF-terminated lines from an insert, and normalizing the result is
+    // exactly equivalent to having built it right.
+    const nl = dominantNewline(original)
+    const after = withNewline(replaceRange(original, start, end, replacement), nl)
+    return { changes: [{ path: match.fileId, before: original, after }], warnings }
   }
   if (request.mode === "delete") {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -493,13 +647,87 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const leftovers = parsedAfter.occurrences
       .filter((o) => o.text === symbolName && isReferenceSite(o, ""))
       .map((o) => `line ${o.startLine}: ${o.parentType || "reference"}`)
-    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
-    if ((callers > 0 || leftovers.length > 0) && request.force !== true) {
-      const detail = [indexedCallers, leftovers.length > 0 ? `${leftovers.length} live reference(s) surviving deletion (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})` : null].filter(Boolean).join("; ")
-      throw new Error(`cannot delete ${symbolName}: ${detail}; pass force=true after reviewing impact`)
+
+    // M68: check the files that IMPORT this module, not only this one.
+    //
+    // MEASURED, three call shapes, same declaration, same index:
+    //
+    //   import { target } from './target'          2 edges -> 'calls'    GUARDED
+    //   import { target as aliased } from './...'  1 edge  -> 'exports' ONLY
+    //
+    // So in the aliased shape the analyzer never resolved the call site to the
+    // imported symbol, the `calls` edge does not exist, and the guard's two inputs
+    // were both empty: zero indexed callers, and zero occurrences of the name in
+    // the DECLARATION file. The delete proceeded, and the result was
+    // caller.ts still calling a function that no longer exists — a build break
+    // reported as SUCCESS.
+    //
+    // The fix is not to trust the edges more (they are what failed here) but to
+    // consult the one index table that DID record the dependency: brain_import.
+    // For each file whose import resolves to this module, parse that file and look
+    // for the deleted NAME. An aliased import still spells the original name in
+    // its specifier — `import { target as aliased }` contains `target`, with
+    // parent=import_specifier — so the alias case is caught by name, not by
+    // needing to resolve the alias.
+    //
+    // WHY THIS DOES NOT OVER-REFUSE, which was the real design risk: refusing on
+    // any unresolved edge would make `delete` unusable on any project with
+    // imperfect edges, which is most of them. This instead requires POSITIVE
+    // evidence in each importing file — the name must actually appear there — so a
+    // file that imports the module for something else is not blocked. A `side-
+    // effect` import that never mentions the name is correctly not a reference.
+    // `import_path` is stored as the WRITTEN specifier — `./target`, not `target`
+    // — and `imported_name` duplicates it, so a comparison against the bare stem
+    // matched nothing. Measured: the query returned zero rows for a project whose
+    // importer was plainly recorded, which is why the first version of this guard
+    // still let the aliased delete through. The stem is compared on both the
+    // written form and the bare form so a specifier recorded either way matches.
+    const stem = basenameNoExt(match.fileId)
+    const importerRows = raw.prepare(
+      "SELECT DISTINCT i.file_id AS fileId, f.path AS path FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE i.project_id = ? AND i.is_external = 0 AND i.file_id <> ? " +
+        "AND (i.import_path = ? OR i.import_path = ? OR i.imported_name = ? OR i.imported_name = ?)",
+    ).all(projectId, match.fileId, stem, `./${stem}`, stem, `./${stem}`) as Array<{ fileId: string; path: string }>
+
+    const importerLeftovers: string[] = []
+    for (const importer of importerRows) {
+      let importerText: string
+      try { importerText = readFileSync(importer.path, "utf8") } catch { continue }
+      if (!importerText.includes(symbolName)) continue
+      let importerParsed
+      try { importerParsed = await parseForSafety(importer.path, importerText) } catch { continue }
+      for (const o of importerParsed.occurrences) {
+        if (o.text !== symbolName) continue
+        // An import specifier naming this symbol is the dangling dependency
+        // itself; anything else is a call. Both are survivors of the deletion.
+        if (!isReferenceSite(o, "") && !/import/.test(o.parentType)) continue
+        importerLeftovers.push(`${relativeTo(projectPath, importer.path)}:${o.startLine}`)
+      }
     }
-    if (leftovers.length > 0) {
-      warnings.push(`delete ${symbolName} (forced): ${leftovers.length} reference(s) remain in ${match.fileId}: ${leftovers.slice(0, 10).join("; ")}${leftovers.length > 10 ? "; …" : ""}`)
+
+    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
+    const totalLeftovers = leftovers.length + importerLeftovers.length
+    if ((callers > 0 || totalLeftovers > 0) && request.force !== true) {
+      const parts = [
+        indexedCallers,
+        // The phrase "surviving deletion" is kept because script/m13/verify-edit-unit
+        // asserts on it, and a gate that greps for it is checking that the
+        // refusal SAYS what survives — which is right. The WHERE is new
+        // information layered on top, not a replacement: the declaring file and
+        // the importing files are different risks and the message distinguishes
+        // them.
+        leftovers.length > 0
+          ? `${leftovers.length} live reference(s) surviving deletion in the declaring file (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})`
+          : null,
+        importerLeftovers.length > 0
+          ? `${importerLeftovers.length} reference(s) surviving deletion in importing file(s) — ${[...new Set(importerLeftovers.map((l) => l.split(":")[0]))].slice(0, 4).join(", ")}`
+          : null,
+      ].filter(Boolean).join("; ")
+      throw new Error(`cannot delete ${symbolName}: ${parts}; pass force=true after reviewing impact`)
+    }
+    if (totalLeftovers > 0) {
+      const where = [...leftovers.map((l) => `${path.basename(match.fileId)} ${l}`), ...importerLeftovers]
+      warnings.push(`delete ${symbolName} (forced): ${totalLeftovers} reference(s) remain — ${where.slice(0, 10).join("; ")}${where.length > 10 ? "; …" : ""}`)
     }
     const pruned = await ImportPruner.prune(deleted, match.fileId)
     return { changes: [{ path: match.fileId, before: original, after: pruned }], warnings }
@@ -596,7 +824,29 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
 export async function executeEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditResult> {
   const { changes, warnings, summary } = await planEdit(projectPath, projectId, request)
   if (request.dryRun === true) return { mode: request.mode, dryRun: true, changes, formatted: false, validated: false, reindexed: false, warnings: warnings.length > 0 ? warnings : undefined, summary }
-  const snapshots = new Map(changes.map((change) => [change.path, { existed: existsSync(change.path), content: change.before }]))
+  // M66: the snapshot is BYTES, not a decoded string. The previous snapshot was
+  // `content: change.before` — the plan's `before` field, which came from
+  // `readFileSync(path, "utf8")`. For a file containing any byte sequence that is
+  // not valid UTF-8, that read does not fail, it silently substitutes U+FFFD, so
+  // the "snapshot" already differed from disk and a rollback wrote back the
+  // substitution characters: a rollback that corrupts the file it is restoring.
+  // One latin-1 comment anywhere in the repo turns any failed edit into silent
+  // data loss. Reading the bytes once, here, at the last moment before the first
+  // write, closes that — `change.before` remains what the PLAN saw (a lossy
+  // string, which is fine for a diff preview) while the bytes are what ROLLBACK
+  // restores.
+  const snapshots = new Map(changes.map((change) => [change.path, snapshotOf(change.path)]))
+  // M66: which files were ACTUALLY replaced on disk, as opposed to merely
+  // planned. A file whose write never happened needs no restore, and trying to
+  // restore one is actively harmful: if the write failed because the directory is
+  // read-only, the restore into that same directory fails too, and the rollback
+  // then reports a file as "NOT restored" that was never modified in the first
+  // place. The engine did that until script/m67 made the failure real with a
+  // read-only directory: the commit failed on `writeFileSync(temp)` with EACCES,
+  // nothing had been written, and the answer came back "ROLLBACK INCOMPLETE" for
+  // a file that was never at risk. A false alarm in a safety mechanism is how you
+  // train people to ignore it.
+  const committed: string[] = []
   // Track every temp file created during the write loop so the catch block can
   // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
   const temps: string[] = []
@@ -606,7 +856,19 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       const temporary = `${change.path}.bb-edit-${randomUUID()}`
       temps.push(temporary)
       writeFileSync(temporary, change.after, "utf8")
+      // M66: carry the mode across the rename. renameSync REPLACES the inode, so
+      // a 0755 script or a 0600 secret the tool edited came back 0644 — the temp
+      // inherits the process umask and nothing preserved the original. An edit
+      // that quietly drops a file's permissions is a change the caller never
+      // asked for and cannot see in a diff.
+      const originalMode = snapshots.get(change.path)!.mode
       renameSync(temporary, change.path)
+      // Past this point the file on disk is NOT the pre-edit file, so putting it
+      // back is the engine's responsibility.
+      committed.push(change.path)
+      if (originalMode !== null) {
+        try { chmodSync(change.path, originalMode) } catch { /* best effort: content is the contract */ }
+      }
     }
     if (request.format !== false) for (const change of changes) await BrainSurgicalPatcher.tryAutoFormat(change.path)
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
@@ -629,11 +891,38 @@ export async function executeEdit(projectPath: string, projectId: string, reques
   } catch (error) {
     // Roll back every file to its pre-edit snapshot, then scrub any orphaned
     // .bb-edit-* temp files so a mid-loop failure never leaks temp artifacts.
-    for (const [file, snapshot] of snapshots) {
-      if (snapshot.existed) writeFileSync(file, snapshot.content, "utf8")
-      else rmSync(file, { force: true })
+    //
+    // M66: each restore is its own try/catch and the loop does NOT stop on the
+    // first failure. A bare `writeFileSync(file, snapshot.content)` meant one
+    // unwritable file (read-only, vanished directory, permission) threw out of
+    // the catch block: the remaining files were never restored, the
+    // orphaned-temp scrub after it never ran, and the original error was REPLACED
+    // by the rollback's — the caller saw "EPERM" instead of the validation failure
+    // that caused the rollback, with a half-reverted working tree. Now every
+    // COMMITTED file is attempted, failures are collected, temps are always
+    // scrubbed, and the ORIGINAL error still propagates — annotated, because a
+    // partial rollback is the most important thing a caller can be told.
+    //
+    // Only `committed` paths are restored. A path that was planned but never
+    // replaced on disk is already correct, and attempting a restore of it can only
+    // fail and raise a false alarm — which is exactly what happened: a write that
+    // failed because its directory was read-only produced "ROLLBACK INCOMPLETE"
+    // for a file nothing had been written to.
+    const rollbackFailures: string[] = []
+    for (const file of committed) {
+      const snapshot = snapshots.get(file)!
+      try {
+        if (snapshot.existed) writeBytesPreservingMode(file, snapshot.bytes!, snapshot.mode)
+        else rmSync(file, { force: true })
+      } catch (e: any) {
+        rollbackFailures.push(`${file}: ${e?.message ?? String(e)}`)
+      }
     }
     for (const t of temps) { try { rmSync(t, { force: true }) } catch {} }
+    if (rollbackFailures.length > 0) {
+      ;(error as any).rollbackFailures = rollbackFailures
+      ;(error as any).message = `${(error as any).message} — ROLLBACK INCOMPLETE, these files were NOT restored: ${rollbackFailures.join("; ")}`
+    }
     throw error
   }
 }

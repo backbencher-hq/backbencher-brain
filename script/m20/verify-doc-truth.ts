@@ -18,7 +18,7 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
-import { generateDocumentation, formatDocumentation, type DocRequest, type DocResult } from "../../src/intelligence/documentation/doc-engine"
+import { generateDocumentation, formatDocumentation, explainEmptyRequiredSections, assertUnknownsNameRenderedSections, resolveUnknownSections, type DocRequest, type DocResult, type DocSection, type DocUnknown, type SectionDraft } from "../../src/intelligence/documentation/doc-engine"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { docSourceFingerprint, docRelevantWorkingTreeChanges } from "../../src/intelligence/documentation/evidence"
@@ -132,6 +132,19 @@ function locallyPresentExternalImport(statement: string, localPaths: Set<string>
     if (bareNoExt && !bare.includes("/") && (p.endsWith("/" + bareNoExt) || pNoExt.endsWith("/" + bareNoExt))) return true
   }
   return false
+}
+
+/**
+ * Sections an unknown may name that are not a rendered section id: the
+ * generator's own generic target for "no evidence at all", and the feature/api
+ * names used before the declared set was fixed.
+ */
+const GENERIC_UNKNOWN_SECTIONS = new Set<string>(["overview", "inventory", "dependencies", "examples", "diagrams"])
+
+/** A section is an unexplained placeholder when it is empty and nothing says why. */
+function isUnexplainedEmpty(section: DocSection, unknowns: Array<{ affectedSection: string }>): boolean {
+  if (section.facts.length > 0) return false
+  return !unknowns.some((u) => u.affectedSection === section.id)
 }
 
 /** The required sections each mode declares in docs/BB_DOC.md. */
@@ -414,6 +427,33 @@ try {
     const real = JSON.stringify(d).length
     check("the token estimate covers the whole payload", d.quality.budget.estimatedTokens * 4 >= real,
       `estimatedTokens*4=${d.quality.budget.estimatedTokens * 4} actualChars=${real}`)
+
+    // ── the figure's own scope, and the transport's overhead, measured ───────
+    // `estimatedTokens` describes the object `generateDocumentation` returns, and
+    // it covers that object. It does NOT describe the bytes the MCP handler
+    // sends: the shared handler adds a `freshness` envelope to every tool's
+    // result and serialises with two-space indentation, which on a real corpus
+    // is about a third more again. Measured on rebar3, project mode, limit 20:
+    //   engine object 16 904 chars  ->  reported 16 908
+    //   handler compact 17 000     (+96 for the envelope)
+    //   wire (indented) 21 925     (+4 925 for the indentation)
+    //
+    // The transport is shared with every other tool, so changing it is not this
+    // lane's decision — but the gap between the number a caller budgets from and
+    // the bytes it receives is a fact about this tool's contract, and it is
+    // pinned here so a change in the shared handler shows up as a diff in this
+    // gate rather than as a surprise in a client's token budget.
+    {
+      const res = await createToolHandlers().bb_doc({ mode: "project", format: "json", limit: 20 }, { projectPath: root, projectId } as any)
+      const wire = (res.content[0].text as string).length
+      const transported = JSON.stringify(JSON.parse(res.content[0].text as string)).length
+      const objectChars = JSON.stringify(d).length
+      const reported = d.quality.budget.estimatedTokens * 4
+      check("T27: the reported figure covers the object, and the transport's overhead is disclosed",
+        reported >= objectChars && transported >= objectChars && wire >= transported,
+        `reported ${reported} >= engine object ${objectChars}; handler adds a freshness envelope to ${transported} (+${transported - objectChars}); ` +
+        `the wire form is indented and carries ${wire} (+${wire - transported}), ${(wire / objectChars).toFixed(2)}x the object. A caller budgeting from estimatedTokens is budgeting for the OBJECT, not the wire bytes.`)
+    }
     // The DEFAULT call must fit the DEFAULT budget. It used to overflow it 3x
     // on every real repository measured and return the oversized document.
     check("the default call fits the default budget", d.quality.budget.passed,
@@ -484,6 +524,562 @@ try {
     }
   }
 
+  // ── T20: NO required section is ever silently empty ─────────────────────
+  // A required section that is empty with nothing explaining it is a
+  // PLACEHOLDER, and a reader cannot tell it from a measurement that found
+  // nothing. This is the defect class that produced `Risks` (empty on every
+  // corpus because it read a source nothing produces) and eight more sections
+  // audited empty in 100% of cases on 4 corpora.
+  //
+  // The rule is exact: for every declared section, an empty section must carry
+  // an unknown whose affectedSection IS that section. An explanation aimed at a
+  // different section is not an explanation — which is the whole point, because
+  // the test unknown names `tests` while `feature` mode renders `test-coverage`.
+  {
+    const REQUIRED: Record<DocRequest["mode"], string[]> = {
+      symbol: ["api", "behavior", "dependencies", "tests", "limitations"],
+      file: ["overview", "public-symbols", "dependencies", "risks"],
+      module: ["purpose", "entry-points", "public-surface", "module-graph"],
+      feature: ["entry-points", "flow", "components", "test-coverage"],
+      api: ["endpoints", "inputs-outputs", "errors", "examples"],
+      project: ["architecture", "inventory", "risks", "documentation-map"],
+      coverage: ["documented", "undocumented", "stale", "unsupported"],
+    }
+    const placeholders: string[] = []
+    for (const mode of Object.keys(REQUIRED) as DocRequest["mode"][]) {
+      for (const detail of ["brief", "standard", "deep"] as const) {
+        const target = mode === "symbol" || mode === "feature" ? "add" : mode === "file" ? "src/lib/math.ts" : mode === "module" || mode === "coverage" ? "src" : undefined
+        const d = await doc({ mode, target, detail, limit: 20 })
+        for (const id of REQUIRED[mode]) {
+          const section = d.sections.find((s) => s.id === id)
+          if (!section) { placeholders.push(`${mode}/${detail}:${id} ABSENT`); continue }
+          if (section.facts.length > 0) continue
+          const named = d.unknowns.some((u) => u.affectedSection === id)
+          if (!named) {
+            const aimed = d.unknowns.filter((u) => u.affectedSection !== id).map((u) => u.affectedSection)
+            placeholders.push(`${mode}/${detail}:${id} empty and unexplained (unknowns aim at ${JSON.stringify([...new Set(aimed)])})`)
+          }
+        }
+      }
+    }
+    // The failure detail must name EVERY placeholder, not a sample: a gate that
+    // showed 6 of 24 findings hid three quarters of the evidence it was written
+    // to surface, which is how the rest of them survived two review rounds.
+    // An entry reads "<mode>/<detail>:<section> <verdict>", so the section name
+    // is what follows the colon whose prefix holds a slash. Scanned, not
+    // matched: this project carries no regex.
+    const bySection = new Map<string, number>()
+    for (const entry of placeholders) {
+      const colon = entry.indexOf(":")
+      const prefix = colon === -1 ? "" : entry.slice(0, colon)
+      const rest = colon === -1 ? entry : entry.slice(colon + 1)
+      const key = prefix.includes("/") ? rest.split(" ")[0] : prefix
+      bySection.set(key, (bySection.get(key) ?? 0) + 1)
+    }
+    check("T20: no required section is empty without an unknown naming THAT section", placeholders.length === 0,
+      `${Object.values(REQUIRED).flat().length} declared section(s) x 3 detail levels x 7 modes = ${Object.values(REQUIRED).flat().length * 21} checks; ` +
+      `placeholders: ${placeholders.length}` +
+      (placeholders.length ? `; by section: ${JSON.stringify(Object.fromEntries([...bySection].sort((a, b) => b[1] - a[1])))}; all: ${JSON.stringify(placeholders)}` : ""))
+    // The predicate must convicts a result that genuinely has one, or it is a
+    // check that cannot fail.
+    const synthetic = { sections: [{ id: "risks", heading: "Risks", prose: "", facts: [], citations: [] }], unknowns: [{ statement: "x", reason: "not-indexed" as const, affectedSection: "overview" }] }
+    negative("T20 the unexplained-empty predicate convicts a misaimed explanation",
+      isUnexplainedEmpty(synthetic.sections[0], synthetic.unknowns) === true && isUnexplainedEmpty({ ...synthetic.sections[0], facts: [{ classification: "extracted" as const, statement: "s", confidence: 1, citationIds: ["c"] }] }, synthetic.unknowns) === false,
+      "an empty section with an unknown aimed elsewhere is flagged; a populated section never is")
+    // And it must not convict a genuinely explained one.
+    negative("T20 an explained-empty section is accepted",
+      isUnexplainedEmpty(synthetic.sections[0], [{ statement: "y", reason: "not-indexed" as const, affectedSection: "risks" }]) === false,
+      "an unknown naming the section itself is an explanation")
+  }
+
+  // ── T21: every affectedSection names a section that EXISTS in that result ─
+  // An unknown that points at a section the result does not render is a claim
+  // about something the reader cannot see, and it is how a section reads as
+  // unexplained while a message appears to cover it.
+  {
+    const mismatches: string[] = []
+    for (const mode of Object.keys(REQUIRED_SECTIONS) as DocRequest["mode"][]) {
+      const target = mode === "symbol" || mode === "feature" ? "add" : mode === "file" ? "src/lib/math.ts" : mode === "module" || mode === "coverage" ? "src" : undefined
+      const d = await doc({ mode, target, limit: 20 })
+      const present = new Set(d.sections.map((s) => s.id))
+      for (const u of d.unknowns) {
+        // `overview` is the generic target for a result with no evidence, and
+        // `flow`/`entry-points` name feature/api sections; a section id that is
+        // in NO mode's declared set is always wrong.
+        if (!present.has(u.affectedSection) && !GENERIC_UNKNOWN_SECTIONS.has(u.affectedSection)) {
+          mismatches.push(`${mode}: "${u.statement.slice(0, 50)}" -> ${u.affectedSection} (rendered: ${JSON.stringify([...present])})`)
+        }
+      }
+    }
+    check("T21: every unknown names a section the result actually renders", mismatches.length === 0,
+      `${mismatches.length} misaimed: ${JSON.stringify(mismatches.slice(0, 4))}`)
+  }
+
+  // ── T22: the sections that were placeholders now carry real cited content ──
+  // `limitations` was a literal `facts: []` and `unsupported` was a literal
+  // `facts: []`: empty in 100% of cases on every corpus and every detail level,
+  // with nothing saying why. T20 proves they are no longer *unexplained*; this
+  // proves they are no longer *empty*, and that what they carry is about the
+  // requested subject and cites something.
+  {
+    /** A section's facts are real content when each cites a source that resolves. */
+    const isCited = (section: DocSection, citations: DocResult["citations"]): boolean =>
+      section.facts.length > 0 && section.facts.every((item) => item.citationIds.length > 0 && item.citationIds.every((id) => citations.some((citation) => citation.id === id)))
+
+    const symbolDoc = await doc({ mode: "symbol", target: "add", detail: "deep", limit: 20 })
+    const limitations = symbolDoc.sections.find((section) => section.id === "limitations")!
+    check("T22: symbol `limitations` is real cited content, not an empty section", isCited(limitations, symbolDoc.citations),
+      `${limitations.facts.length} fact(s), ${limitations.citations.length} citation(s); first: ${limitations.facts[0]?.statement.slice(0, 130) ?? "(none)"}`)
+    // It must be about THIS symbol, not generic filler: a limitations section
+    // that says the same thing for every target is prose, not a measurement.
+    // This is its own predicate, not a number computed once, so the negative
+    // twin below exercises the same test the real check uses.
+    const aboutSubject = (section: DocSection, subject: string): boolean =>
+      section.facts.length > 0 && section.facts.every((item) => item.statement.includes(subject))
+    check("T22: every `limitations` fact names the symbol it constrains", aboutSubject(limitations, "add"),
+      `${limitations.facts.filter((item) => item.statement.includes("add")).length}/${limitations.facts.length} name "add"; generic facts would pass the citation check and mean nothing`)
+    negative("T22 the cited-content and subject predicates each convict their defect shape",
+      isCited({ ...limitations, facts: [{ classification: "extracted", statement: "add has no docstring", confidence: 1, citationIds: [] }] }, symbolDoc.citations) === false
+      && aboutSubject({ ...limitations, facts: [{ classification: "extracted", statement: "A limitation of the tool in general", confidence: 1, citationIds: [symbolDoc.citations[0]?.id ?? "none"] }] }, "add") === false
+      && aboutSubject(limitations, "add") === true,
+      "a fact citing nothing is rejected by the citation predicate; a cited fact naming no subject is rejected by the subject predicate; the real section passes both")
+
+    // `unsupported` needs an index state that actually produces content: a file
+    // with parser errors, and a symbol in a language whose comment marker this
+    // tool cannot read.
+    const nowMs = Date.now()
+    const httpId = "gate-http-file", pyId = "gate-py-file", brokenId = "gate-broken-file"
+    for (const [id, rel, language, syntax] of [[httpId, "src/server.ts", "typescript", 0], [pyId, "src/legacy.py", "python", 0], [brokenId, "src/broken.ts", "typescript", 1]] as const) {
+      writeFileSync(path.join(root, rel), language === "python" ? "def legacy():\n    return 1\n" : "export function placeholder(): void {}\n")
+      raw.prepare(`INSERT OR REPLACE INTO brain_file
+        (id, project_id, path, relative_path, file_hash, size_bytes, line_count, last_modified, language, framework_type, has_syntax_errors, error_report, is_test_file, layer, time_created, time_updated)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)`)
+        .run(id, projectId, path.join(root, rel), rel, `gate-${id}`, 10, 1, nowMs, language, id === httpId ? "net_http" : null, syntax, syntax ? "Unexpected token at line 1" : null, null, nowMs, nowMs)
+    }
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run("gate-http-sym", projectId, httpId, "serve", "serve", "function", 1, 1, "void", "req: Request, res: Response", null, "export", nowMs, nowMs)
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run("gate-py-sym", projectId, pyId, "legacy", "legacy", "function", 1, 1, "int", "", null, "public", nowMs, nowMs)
+
+    const coverageDoc = await doc({ mode: "coverage", target: "src", detail: "deep", limit: 20 })
+    const unsupported = coverageDoc.sections.find((section) => section.id === "unsupported")!
+    check("T22: coverage `unsupported` names what it could not measure, cited", isCited(unsupported, coverageDoc.citations) && unsupported.facts.some((item) => item.statement.includes("parser errors")) && unsupported.facts.some((item) => item.statement.includes('"#"')),
+      `${unsupported.facts.length} fact(s): ${unsupported.facts.map((item) => item.statement.slice(0, 95)).join(" || ")}`)
+    // The python symbol must NOT be asserted as undocumented-and-therefore-a-
+    // finding: the honest statement is that the verdict is unverified.
+    const undocumented = coverageDoc.sections.find((section) => section.id === "undocumented")!
+    const legacyRow = undocumented.facts.filter((item) => item.statement.includes("legacy"))
+    check("T22: a symbol whose comment marker is unreadable is called unverified, not undocumented",
+      legacyRow.length > 0 && unsupported.facts.some((item) => item.statement.includes("unverified")),
+      `undocumented lists ${legacyRow.length} 'legacy' row(s) (classification ${legacyRow.map((item) => item.classification).join(",")}); unsupported states the verdict is unverified: ${unsupported.facts.some((item) => item.statement.includes("unverified"))}`)
+
+    // ── T24: `api` mode, which had NO input on 8 of 8 corpora ────────────────
+    const apiDoc = await doc({ mode: "api", detail: "deep", limit: 20 })
+    const endpoints = apiDoc.sections.find((section) => section.id === "endpoints")!
+    const inputsOutputs = apiDoc.sections.find((section) => section.id === "inputs-outputs")!
+    check("T24: `api` mode describes an HTTP surface the index DOES attribute",
+      isCited(endpoints, apiDoc.citations) && endpoints.facts.some((item) => item.statement.includes("serve"))
+        && inputsOutputs.facts.some((item) => item.statement.includes("req: Request"))
+        && inputsOutputs.facts.some((item) => item.statement.includes("returns void")),
+      `endpoints ${endpoints.facts.length} fact(s): ${endpoints.facts[0]?.statement.slice(0, 100) ?? "(none)"}; inputs-outputs ${inputsOutputs.facts.length} fact(s): ${inputsOutputs.facts.map((item) => item.statement.slice(0, 100)).join(" || ") || "(none)"}`)
+    const errors = apiDoc.sections.find((section) => section.id === "errors")!
+    const examples = apiDoc.sections.find((section) => section.id === "examples")!
+    check("T24: `api` mode says which of its sections it cannot fill, and why",
+      errors.facts.length === 0 && examples.facts.length === 0
+        && apiDoc.unknowns.some((u) => u.affectedSection === "errors" && u.statement.includes("no table, column or symbol type"))
+        && apiDoc.unknowns.some((u) => u.affectedSection === "examples"),
+      `errors explained: ${apiDoc.unknowns.some((u) => u.affectedSection === "errors")}; examples explained: ${apiDoc.unknowns.some((u) => u.affectedSection === "examples")}; errors facts=${errors.facts.length} examples facts=${examples.facts.length}`)
+// ── T28: `endpoints` holds endpoints, not every symbol in an HTTP file ────
+// Found on a real repository, not by a fixture. Broadening the selection to
+// files the index marks `net_http` made the mode work — and then made it
+// report `module blog()` and `struct Config()` as endpoints. Measured on
+// go_tools: those 25 files hold 281 exported symbols, of which 121 are
+// property accessors, 25 module declarations, 19 structs, 18 variables and 3
+// interfaces. Only 95 are callable.
+//
+// So the fixture now plants a struct and a module declaration in the
+// HTTP-attributed file alongside the handler, and the gate requires that
+// neither reaches the section.
+{
+  for (const [symId, name, kind] of [["gate-sh-struct", "Widget", "struct"], ["gate-sh-module", "widgetmod", "module"]] as const) {
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run(symId, projectId, httpId, name, name, kind, 3, 9, null, "", null, "export", Date.now(), Date.now())
+  }
+  const withNoise = await doc({ mode: "api", detail: "deep", limit: 20 })
+  const noisyEndpoints = withNoise.sections.find((section) => section.id === "endpoints")!
+  const named = noisyEndpoints.facts.map((item) => item.statement)
+  check("T28: `endpoints` reports callables and route-signalled symbols only",
+    named.some((statement) => statement.includes("serve"))
+      && !named.some((statement) => statement.includes("Widget") || statement.includes("widgetmod")),
+    `${named.length} endpoint fact(s) in a file holding a handler, a struct and a module declaration; handler present: ${named.some((s) => s.includes("serve"))}; struct or module leaked in: ${named.filter((s) => s.includes("Widget") || s.includes("widgetmod")).length}`)
+  // And the honest part: an endpoint the index cannot route must say so,
+  // rather than implying a documented route exists.
+  const routesNamed = noisyEndpoints.facts.filter((item) => !item.statement.includes("no method, path or route")).length
+  check("T28: an endpoint the index cannot route says so, instead of implying a route exists",
+    noisyEndpoints.facts.length > 0 && routesNamed === 0,
+    `${noisyEndpoints.facts.length - routesNamed}/${noisyEndpoints.facts.length} state that no method, path or route is recorded; first: ${named[0]?.slice(0, 150) ?? "(none)"}`)
+  // The predicate, shared with its twin.
+  const isEndpointSubject = (statement: string): boolean =>
+    !(statement.includes("struct ") || statement.includes("module ") || statement.includes("property ") || statement.includes("variable ") || statement.includes("interface "))
+  negative("T28 the endpoint-subject predicate convicts each non-callable type",
+    isEndpointSubject("struct Widget() is defined in a/b.go at lines 3-9.") === false
+      && isEndpointSubject("module widgetmod() is defined in a/b.go at lines 1-2.") === false
+      && isEndpointSubject("method ServeHTTP(w, r) is defined in a/b.go at lines 1-9.") === true
+      && isEndpointSubject("function NewServer(cfg) is defined in a/b.go at lines 1-9.") === true,
+    "struct, module, property, variable and interface subjects are rejected; method and function subjects are accepted — and the gate's own endpoint list is judged by this predicate")
+  for (const [symId] of [["gate-sh-struct"], ["gate-sh-module"]] as const) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+}
+
+    // The negative twin, and the important half: with the framework attribution
+    // removed, the mode must return to explaining itself and must NOT keep the
+    // endpoint it found a moment ago.
+    raw.prepare("UPDATE brain_file SET framework_type=NULL WHERE id=?").run(httpId)
+    const apiWithout = await doc({ mode: "api", detail: "deep", limit: 20 })
+    const endpointsWithout = apiWithout.sections.find((section) => section.id === "endpoints")!
+    check("T24: with no HTTP surface indexed, `api` claims no endpoint and says what it looked for",
+      endpointsWithout.facts.length === 0
+        && apiWithout.unknowns.some((u) => u.affectedSection === "endpoints" && u.statement.includes("No endpoint is indexed"))
+        && apiWithout.unknowns.some((u) => u.affectedSection === "endpoints"
+          && u.statement.includes("0 contract path(s)") && u.statement.includes("0 route-ish symbol type(s)")
+          && u.statement.includes("0 HTTP-attributed file(s)") && u.statement.includes("0 callable exported symbol(s)")),
+      `endpoints facts with the attribution removed: ${endpointsWithout.facts.length} (was ${endpoints.facts.length}); ` +
+      `${apiWithout.unknowns.filter((u) => u.affectedSection === "endpoints").length} note(s) name it; the section's own explanation: ` +
+      `"${(apiWithout.unknowns.find((u) => u.affectedSection === "endpoints" && u.statement.startsWith("No endpoint is indexed"))?.statement ?? "*** ABSENT ***").slice(0, 260)}"`)
+    raw.prepare("UPDATE brain_file SET framework_type='net_http' WHERE id=?").run(httpId)
+  }
+
+  // ── T25: the two guards can actually fail ─────────────────────────────────
+  // Both are assertions about the code's own output, so a gate that only ever
+  // sees them pass is not evidence: `return` would pass every positive case.
+  {
+    const draft = (id: string, over: Partial<SectionDraft> = {}): SectionDraft => ({ id, heading: id, required: true, audience: "all", facts: [], ...over })
+    const section = (id: string, facts: DocSection["facts"] = []): DocSection => ({ id, heading: id, prose: "", facts, citations: [] })
+    const throws = (fn: () => void): boolean => { try { fn(); return false } catch { return true } }
+
+    // A required section that can be empty and cannot say why must THROW.
+    const undocumented = { affectedSection: "overview", reason: "not-indexed" as const, statement: "x" }
+    check("T25: a required section that can render empty and cannot explain itself throws",
+      throws(() => explainEmptyRequiredSections([section("risks")], [draft("risks")], [undocumented])),
+      "an empty required section with no note and no emptyExplanation is refused rather than shipped as a placeholder")
+    const oneFact: DocSection["facts"] = [{ classification: "extracted", statement: "s", confidence: 1, citationIds: ["c"] }]
+    check("T25: a required section that DOES declare why it can be empty is accepted",
+      !throws(() => explainEmptyRequiredSections([section("risks")], [draft("risks", { emptyExplanation: "no finding is indexed" })], []))
+        && !throws(() => explainEmptyRequiredSections([section("risks", oneFact)], [draft("risks")], []))
+        && !throws(() => explainEmptyRequiredSections([section("risks")], [draft("risks", { required: false })], [])),
+      "a declared explanation, a RENDERED section that has facts, and an OPTIONAL section are each accepted — the guard is narrow, and it judges the rendered section because a draft can be capped to nothing on its way in")
+    // And the explanation it writes must name the section it explains.
+    const written: DocUnknown[] = []
+    explainEmptyRequiredSections([section("errors")], [draft("errors", { emptyExplanation: "the index records no error surface" })], written)
+    check("T25: the written explanation names its own section", written.length === 1 && written[0].affectedSection === "errors" && written[0].statement === "the index records no error surface",
+      `wrote ${JSON.stringify(written)}`)
+    // A CAVEAT must not stand in for an explanation of emptiness: that is the
+    // api-mode defect where a freshness note made an empty endpoints section
+    // look accounted for.
+    const withCaveat = new Map([["endpoints", new Set(["freshness"] as const)]])
+    const afterCaveat: DocUnknown[] = []
+    explainEmptyRequiredSections([section("endpoints")], [draft("endpoints", { emptyExplanation: "no endpoint is indexed" })], afterCaveat, withCaveat as never)
+    const withAbsence = new Map([["tests", new Set(["tests"] as const)]])
+    const afterAbsence: DocUnknown[] = []
+    explainEmptyRequiredSections([section("tests")], [draft("tests", { emptyExplanation: "no test names it" })], afterAbsence, withAbsence as never)
+    check("T25: a caveat does not excuse an empty section, but an absence does",
+      afterCaveat.length === 1 && afterCaveat[0].affectedSection === "endpoints" && afterAbsence.length === 0,
+      `a freshness note about endpoints still left the section unexplained (${afterCaveat.length} explanation written); a test-gap note about tests was accepted as the explanation (${afterAbsence.length} written) — otherwise the reader is shown a caveat and no reason`)
+
+    // The dangling-pointer assertion must throw too.
+    check("T25: a note naming a section the result does not render throws",
+      throws(() => assertUnknownsNameRenderedSections({ mode: "api", sections: [section("endpoints")], unknowns: [{ affectedSection: "flow", reason: "not-indexed", statement: "x" }] }))
+        && !throws(() => assertUnknownsNameRenderedSections({ mode: "api", sections: [section("endpoints")], unknowns: [{ affectedSection: "endpoints", reason: "not-indexed", statement: "x" }] })),
+      "a note aimed at an unrendered section is refused; a note aimed at a rendered one is accepted")
+    // The same predicate, on the real predicate used by T20.
+    negative("T25 both guards convict their defect shape [negative]",
+      throws(() => explainEmptyRequiredSections([section("x")], [draft("x")], [])) && throws(() => assertUnknownsNameRenderedSections({ mode: "api", sections: [section("a")], unknowns: [{ affectedSection: "b", reason: "not-indexed", statement: "x" }] })),
+      "neither guard is a no-op: both reject a result they should reject")
+  }
+
+  // ── T29: an explanation must be AIMED, not defaulted to the lead ───────────
+  // A concern whose preferred section does not exist in this mode lands on the
+  // document's lead section, and it was then accepted as that section's
+  // explanation. The scope note says how much of the project was not examined;
+  // that is not a reason the Endpoints section has no endpoints — and on the
+  // 5 382-file typescript index it was the only note the section carried.
+  {
+    const section = (id: string): DocSection => ({ id, heading: id, prose: "", facts: [], citations: [] })
+    // api mode renders none of the sections `scope` prefers, so `scope` is
+    // defaulted rather than aimed, and must not excuse the section.
+    const defaulted = resolveUnknownSections([section("endpoints"), section("inputs-outputs")], [
+      { statement: "The scope contains more indexed files than the evidence limit allows.", reason: "output-budget", affectedSection: "@concern:scope" },
+    ])
+    const written: DocUnknown[] = []
+    explainEmptyRequiredSections(
+      [section("endpoints"), section("inputs-outputs")],
+      [{ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: [], emptyExplanation: "no endpoint is indexed" },
+       { id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: [], emptyExplanation: "no signature to report" }],
+      written, defaulted,
+    )
+    // The same concern, in a mode that DOES render a section it prefers. `scope`
+    // prefers `overview`, which `file` mode renders and `api` mode does not — so
+    // the identical note is aimed in one and defaulted in the other, and only the
+    // aimed one may excuse its section. `freshness` would not do here: it is a
+    // caveat in every mode, aimed or not, and this rule does not change that.
+    const aimed = resolveUnknownSections([section("overview"), section("public-symbols")], [
+      { statement: "The scope contains more indexed files than the evidence limit allows; 40 file(s) were not examined.", reason: "output-budget", affectedSection: "@concern:scope" },
+    ])
+    const writtenAimed: DocUnknown[] = []
+    explainEmptyRequiredSections(
+      [section("overview"), section("public-symbols")],
+      [{ id: "overview", heading: "Overview", required: true, audience: "all", facts: [], emptyExplanation: "no indexed file matched this target" },
+       { id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: [], emptyExplanation: "no exported symbol is indexed" }],
+      writtenAimed, aimed,
+    )
+    check("T29: the same concern, aimed in one mode and defaulted in another, is treated differently",
+      written.length === 2
+        && ["endpoints", "inputs-outputs"].every((id) => written.some((item) => item.affectedSection === id))
+        && written.every((item) => item.statement.startsWith("no ") || item.statement.startsWith("No "))
+        && writtenAimed.length === 1 && writtenAimed[0].affectedSection === "public-symbols",
+      `the scope note DEFAULTED onto api's lead: both empty sections were written up (${written.length}: ${written.map((item) => item.affectedSection).join(",")}), so "endpoints" got its own reason rather than inheriting a scope caveat; ` +
+      `the same note AIMED at file mode's "overview": only "public-symbols" was written (${writtenAimed.length}: ${writtenAimed.map((item) => item.affectedSection).join(",")})`)
+    negative("T29 the aimed-or-defaulted rule convicts both defect shapes",
+      resolveUnknownSections([section("endpoints")], [{ statement: "x", reason: "output-budget", affectedSection: "@concern:scope" }]).get("endpoints")?.has("scope") === false
+        && resolveUnknownSections([section("stale")], [{ statement: "x", reason: "not-indexed", affectedSection: "@concern:freshness" }]).get("stale")?.has("freshness") === true,
+      "a scope note defaulted onto a section that does not render is struck from the explaining set; a freshness note aimed at a section the mode does render is kept — so the rule discriminates rather than disabling caveats wholesale")
+  }
+
+  // ── T30: a rendered signature never claims an empty argument list ────────
+  // `bb_doc` rendered `name()` whenever the index's `parameters` column was
+  // empty, which is a claim that the symbol takes no arguments. Reading the
+  // declaration off disk for every sampled symbol with an empty column, across
+  // six languages: **1 218 of 1 218 have a real parameter list** (excluding
+  // declarations whose list is genuinely empty or C's explicit `(void)`).
+  // `Malloc(size_t size)` rendered as `Malloc()`, `application(app)` as
+  // `application()`. 14 267 `function` and 2 702 `method` symbols across the
+  // eight corpora were affected.
+  {
+    /** An empty pair of brackets with no caveat is a claim the symbol takes nothing. */
+    const claimsNoArguments = (statement: string): boolean =>
+      statement.includes("()") && !statement.includes("no parameter list")
+
+    // One callable WITH a parameter list, one callable WITHOUT, one property
+    // that legitimately has none. All three matter: the second is the defect and
+    // the third is the over-correction.
+    for (const [symId, name, kind, params] of [
+      ["gate-sig-args", "withArgs", "function", "a: number, b: string"],
+      ["gate-sig-noargs", "withoutArgs", "function", null],
+      ["gate-sig-prop", "aProperty", "property", null],
+    ] as const) {
+      raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+        (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+        .run(symId, projectId, localPaths.has("src/lib/math.ts") ? String(raw.prepare("SELECT id FROM brain_file WHERE project_id=? AND relative_path=?").get(projectId, "src/lib/math.ts").id) : "", name, name, kind, 5, 5, "void", params, null, "export", Date.now(), Date.now())
+    }
+    // One document each: symbol mode takes a single target, so asking it for all
+    // three at once would only ever document one of them and the other two
+    // assertions would pass vacuously on an empty list.
+    const factsFor = async (target: string): Promise<string[]> => {
+      const one = await doc({ mode: "symbol", target, detail: "deep", limit: 20 })
+      return one.sections.flatMap((section) => section.facts).map((item) => item.statement)
+    }
+    const withArgs = (await factsFor("withArgs")).filter((statement) => statement.includes("withArgs"))
+    const withoutArgs = (await factsFor("withoutArgs")).filter((statement) => statement.includes("withoutArgs"))
+    const property = (await factsFor("aProperty")).filter((statement) => statement.includes("aProperty"))
+    check("T30: a signature with no indexed parameter list never claims an empty one",
+      withArgs.some((statement) => statement.includes("(a: number, b: string)"))
+        && withoutArgs.length > 0 && withoutArgs.every((statement) => !claimsNoArguments(statement))
+        && withoutArgs.some((statement) => statement.includes("no parameter list"))
+        && property.length > 0 && property.every((statement) => !statement.includes("no parameter list")),
+      `with-args rendered: ${withArgs[0]?.slice(0, 90) ?? "(absent)"}; ` +
+      `without-args rendered: ${withoutArgs[0]?.slice(0, 130) ?? "(absent)"}; ` +
+      `property rendered: ${property[0]?.slice(0, 90) ?? "(absent)"} — and it carries NO caveat, because the fixture's index records a parameter list for no property at all, so the absence is the expected shape there rather than a gap. ` +
+      `A hand-written list of kinds that take arguments gets this wrong in both directions: it excluded property, which does carry parameter lists for 343 symbols in the typescript index, and it would have added a caveat to every field in a project whose index never records them.`)
+    negative("T30 the false-signature predicate convicts both defect shapes",
+      claimsNoArguments("function Malloc() is defined in a/b.h at lines 1-9.") === true
+        && claimsNoArguments("method application() is defined in a.rb at lines 8-10.") === true
+        && claimsNoArguments("function Malloc is defined in a/b.h at lines 1-9; the index records no parameter list for it, so its arguments are not described here.") === false
+        && claimsNoArguments("property p is defined in a/b.h at line 3.") === false,
+      "an empty bracket pair is a false claim whether the symbol is a function or a method; the same rendering with the caveat, and a property that never took arguments, are both accepted")
+    for (const symId of ["gate-sig-args", "gate-sig-noargs", "gate-sig-prop"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+  }
+
+  // Two small shared helpers for T31 and T32, so the checks and their negative
+  // twins judge facts by the same code path the assertions quote.
+  const factsOf = async (target: string): Promise<string[]> => {
+    const one = await doc({ mode: "symbol", target, detail: "deep", limit: 20 })
+    return one.sections.flatMap((section) => section.facts).map((item) => item.statement)
+  }
+  const mathFileId = String((raw.prepare("SELECT id FROM brain_file WHERE project_id=? AND relative_path=?").get(projectId, "src/lib/math.ts") as any)?.id ?? "")
+
+  // ── T31: a signature shows the types the index records ───────────────────
+  // The index stores a JSON list of `{name, type, isOptional}` for 82.8% of the
+  // 6 067 parameter entries measured across the eight corpora, and the renderer
+  // read `name` and discarded the rest — so `Join(s S)` documented as `Join(s)`.
+  // A section named Inputs and outputs was reporting the names of the inputs and
+  // nothing about their types, from a row it had just read.
+  {
+    for (const [symId, name, params] of [
+      ["gate-pt-typed", "typedParams", '[{"name":"alpha","type":"Alpha","isOptional":false},{"name":"beta","type":"Beta[]","isOptional":true}]'],
+      ["gate-pt-untyped", "untypedParams", '[{"name":"gamma"},{"name":"delta"}]'],
+    ] as const) {
+      raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+        (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+        .run(symId, projectId, mathFileId, name, name, "function", 7, 9, "void", params, null, "export", Date.now(), Date.now())
+    }
+    const typedFacts = (await factsOf("typedParams"))
+    const untypedFacts = (await factsOf("untypedParams"))
+    check("T31: a recorded parameter type is rendered, and an absent one is not invented",
+      typedFacts.some((statement) => statement.includes("alpha: Alpha") && statement.includes("beta: Beta[]") && statement.includes("optional"))
+        && untypedFacts.some((statement) => statement.includes("gamma, delta"))
+        && !untypedFacts.some((statement) => statement.includes("gamma:") || statement.includes("delta:")),
+      `typed: ${typedFacts[0]?.slice(0, 120) ?? "(absent)"}; untyped: ${untypedFacts[0]?.slice(0, 120) ?? "(absent)"} — a type that the index does not record must not appear, and optionality is stated in words because \`name?: type\` is TypeScript syntax and would be wrong in a Go document`)
+    const showsType = (statement: string, parameter: string): boolean => statement.includes(`${parameter}: `)
+    negative("T31 the type-rendering predicate convicts both defect shapes",
+      showsType("function f(alpha: Alpha) is defined in a.ts.", "alpha") === true
+        && showsType("function f(alpha) is defined in a.ts.", "alpha") === false
+        && showsType("function f(alpha: Alpha) is defined in a.ts.", "beta") === false,
+      "a type the index records is shown; a parameter with no recorded type gets none; and a type is never attached to a parameter that does not have one")
+    for (const symId of ["gate-pt-typed", "gate-pt-untyped"]) raw.prepare("DELETE FROM brain_symbol WHERE id=?").run(symId)
+  }
+
+  // ── T32: markdown-hostile characters in a statement are escaped ───────────
+  // A statement is a sentence about source, not markdown. A Go return type of
+  // `*Server` reached the page unescaped, and rendering the indexed parameter
+  // types multiplies the exposure: 1 105 of the measured types contain `*`.
+  // A statement with two of them would render the middle as italics.
+  {
+    // The renderer emits exactly one piece of its own markdown: the confidence
+    // marker `_ (NNN%) _`, appended before the statement. It has to be removed
+    // before the rest is judged, or the predicate flags the tool's own
+    // formatting — which is what the first version of this check did, on a
+    // correctly escaped line. Third time this session that the defect was in the
+    // check rather than in the code.
+    const stripConfidence = (line: string): string => {
+      const start = line.indexOf("_(")
+      if (start === -1) return line
+      const end = line.indexOf(")_", start)
+      return end === -1 ? line : line.slice(0, start) + line.slice(end + 2)
+    }
+    /** A rendered statement with a markdown-active character the escaper missed. */
+    const hasBareMarkdownChar = (raw: string): boolean => {
+      if (!raw.startsWith("- ")) return false
+      const line = stripConfidence(raw)
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === "\\") { i++; continue }
+        if (ch === "[") {
+          // A citation marker is appended AFTER the statement and must stay
+          // unescaped -- `[7]` for a file source and `[^i3]` for an index source
+          // are how the renderer points at the Sources list, and escaping them
+          // would break every link in the document. Those two shapes are the only
+          // ones `markerFor` produces.
+          // The blind spot this leaves is a statement whose own text contains a
+          // bracket-wrapped number; it is stated rather than hidden, and the
+          // escaper is exercised directly by the negative twin below.
+          let j = i + 1
+          if (line[j] === "^") { j++; if (line[j] === "i") j++ }
+          let digits = 0
+          while (j < line.length && line[j] >= "0" && line[j] <= "9") { j++; digits++ }
+          if (digits > 0 && line[j] === "]") { i = j; continue }
+          return true
+        }
+        if (ch === "]" || ch === "*" || ch === "_" || ch === "`") return true
+      }
+      return false
+    }
+    raw.prepare(`INSERT OR REPLACE INTO brain_symbol
+      (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, return_type, parameters, docstring, visibility, is_declaration, gravity_score, time_created, time_updated)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,1,?,?)`)
+      .run("gate-md-star", projectId, mathFileId, "hostileName", "hostileName", "function", 11, 13, "map[string]*Server", '[{"name":"m","type":"*Server","isOptional":false}]', null, "export", Date.now(), Date.now())
+    const md = formatDocumentation(await doc({ mode: "symbol", target: "hostileName", detail: "deep", limit: 20 }), "markdown")
+    // Facts and Unknowns only. The Quality block is composed by the renderer and
+    // uses backticks for the snapshot digest on purpose; a third version of this
+    // predicate flagged that line and called it an unescaped source statement.
+    const qualityAt = md.indexOf("## Quality")
+    const bullets = md.slice(0, qualityAt === -1 ? md.length : qualityAt).split("\n").filter((line) => line.startsWith("- "))
+    const offenders = bullets.filter(hasBareMarkdownChar)
+    check("T32: a rendered statement carries no unescaped markdown-active character", offenders.length === 0,
+      `${bullets.length} fact/unknown bullet(s) rendered for a symbol whose return type is \`map[string]*Server\`; bullets with a bare \`*\` \`_\` \`\\\`\` \`[\` or \`]\`: ${offenders.length}${offenders.length ? ` -> ${JSON.stringify(offenders.slice(0, 2).map((line) => line.slice(0, 90)))}` : ""}; sample: ${(bullets.find((line) => line.includes("\\*")) ?? bullets[0] ?? "(none)").slice(0, 120)}`)
+    // The twin isolates each property: the tool's confidence marker must be
+    // invisible to the predicate, the escaped form must be accepted, and a bare
+    // asterisk or bracket must be rejected.
+    // The twin isolates each property: a bare asterisk, a bare bracket pair and a
+    // bare underscore are all rejected; the escaped form is accepted; and the two
+    // pieces of markdown the renderer emits itself -- the `_ (NNN%) _` confidence
+    // marker and the `[7]` / `[^i3]` citation markers -- are recognised rather
+    // than mistaken for unescaped source text.
+    const bare = (body: string) => hasBareMarkdownChar(`-  _(100%)_ ${body}`)
+    negative("T32 the escaping predicate convicts an unescaped statement",
+      bare("function f(): *Server is defined in a.go.[1]") === true
+        && bare("function f(): map\\[string\\]\\*Server is defined in a.go.[7]") === false
+        && bare("function f(x: [string]) is defined in a.go.[1]") === true
+        && bare("function f(): _x_ is defined in a.go.[1]") === true
+        && bare("function f(): ok is defined in a.go.[^i3]") === false,
+      "a bare asterisk, a bare bracket pair and a bare underscore are each flagged; the fully escaped form is accepted; and both pieces of markdown the renderer emits are invisible to the predicate")
+
+    // And the citation markers must still resolve after escaping: the escaper
+    // must not touch what the renderer appends after the statement.
+    const listed = new Set([...md.split("\n").filter((line) => line.startsWith("- [") || line.includes("]: ")).join("\n").split("\n")].map((line) => line.trim()))
+    const markerLines = bullets.filter((line) => line.includes("[1]") || line.includes("[2]") || line.includes("[3]"))
+    check("T32: escaping did not break the citation markers", markerLines.length > 0,
+      `${markerLines.length} bullet(s) still carry an inline citation marker after escaping; first: ${markerLines[0]?.slice(0, 110) ?? "(none)"}`)
+    raw.prepare("DELETE FROM brain_symbol WHERE id=?").run("gate-md-star")
+  }
+
+  // ── T26: the announced evidence bounds ARE the applied bounds ─────────────
+  // `bb_doc` announced a per-section evidence cap in a sentence and assembled the
+  // section from the UNCAPPED draft, so the sentence was the only description of
+  // the cap and it was false: measured on rebar3 at `brief` it claimed "115 of
+  // 120 inventory items were not selected" — a claim of keeping 5 — while the
+  // document kept far more, and the number the reader saw came from the token
+  // budget's halving instead. Nothing could detect it, because the only record
+  // of the bound was the prose.
+  //
+  // The bounds are now published as numbers, and this asserts the identity that
+  // was false: everything available is either emitted or accounted for by one of
+  // the two bounds, and `emitted` is the section's real fact count.
+  {
+    const accountsForEveryFact = (bounds: DocResult["quality"]["bounds"]): boolean =>
+      bounds.sections.every((row) => row.emitted + row.droppedForBudget === row.capped && row.capped <= Math.max(row.available, bounds.perSection) && row.emitted <= bounds.perSection)
+
+    const offenders: string[] = []
+    const emittedMismatch: string[] = []
+    let capNotes = 0
+    for (const mode of Object.keys(REQUIRED_SECTIONS) as DocRequest["mode"][]) {
+      for (const detail of ["brief", "standard", "deep"] as const) {
+        const target = mode === "symbol" || mode === "feature" ? "add" : mode === "file" ? "src/lib/math.ts" : mode === "module" || mode === "coverage" ? "src" : undefined
+        const d = await doc({ mode, target, detail, limit: 20 })
+        capNotes += d.unknowns.filter((u) => u.statement.includes("per-section evidence cap")).length
+        if (!accountsForEveryFact(d.quality.bounds)) {
+          offenders.push(`${mode}/${detail}: ${d.quality.bounds.sections.filter((row) => row.emitted + row.droppedForBudget !== row.capped).map((row) => `${row.id} ${row.emitted}+${row.droppedForBudget}!=${row.capped}`).join(", ")}`)
+        }
+        for (const row of d.quality.bounds.sections) {
+          const actual = d.sections.find((section) => section.id === row.id)?.facts.length
+          if (actual !== row.emitted) emittedMismatch.push(`${mode}/${detail}:${row.id} reports ${row.emitted}, section holds ${actual}`)
+          if (row.emitted > d.quality.bounds.perSection) offenders.push(`${mode}/${detail}:${row.id} emitted ${row.emitted} over a cap of ${d.quality.bounds.perSection}`)
+        }
+      }
+    }
+    check("T26: every fact is either emitted or accounted for by a published bound", offenders.length === 0,
+      `7 modes x 3 detail levels; ${capNotes} cap note(s) announced; violations: ${offenders.length}${offenders.length ? ` -> ${JSON.stringify(offenders.slice(0, 4))}` : ""}`)
+    check("T26: the published `emitted` count IS the section's fact count", emittedMismatch.length === 0,
+      `${emittedMismatch.length} mismatch(es)${emittedMismatch.length ? `: ${JSON.stringify(emittedMismatch.slice(0, 4))}` : ""} — a bound that reports a number other than the one in the section is the same fabrication as a prose claim, with a number attached`)
+    negative("T26 the bounds predicate convicts the uncounted-fact shape",
+      accountsForEveryFact({ perSection: 5, sections: [{ id: "inventory", available: 120, capped: 5, droppedForBudget: 0, emitted: 9 }] }) === false
+        && accountsForEveryFact({ perSection: 5, sections: [{ id: "inventory", available: 120, capped: 20, droppedForBudget: 0, emitted: 25 }] }) === false
+        && accountsForEveryFact({ perSection: 20, sections: [{ id: "inventory", available: 120, capped: 20, droppedForBudget: 8, emitted: 12 }] }) === true,
+      "9 emitted against a cap of 5 is rejected; 25 emitted against a cap of 20 is rejected; 12 emitted as 20 capped minus 8 dropped for budget is accepted — so the predicate discriminates and is not a tautology over real data")
+    // And the corpus measurement that found it, restated as an assertion: the cap
+    // must actually shorten a section that has more facts than the cap allows.
+    const wide = await doc({ mode: "project", target: undefined, detail: "brief", limit: 20 })
+    const widest = Math.max(...wide.quality.bounds.sections.map((row) => row.available))
+    check("T26: the cap really does bind — the widest section is cut to it", widest > wide.quality.bounds.perSection && wide.quality.bounds.sections.every((row) => row.emitted <= wide.quality.bounds.perSection),
+      `widest section had ${widest} fact(s) available, the cap is ${wide.quality.bounds.perSection}, and no section emitted more than the cap: ${wide.quality.bounds.sections.map((row) => `${row.id} ${row.emitted}/${row.available}`).join(", ")}`)
+  }
+
   // ── T19: an edge whose target is a SYMBOL names that symbol, for EVERY
   // relationship type the analyzer publishes — not the hand-listed set. ──
   {
@@ -535,7 +1131,17 @@ try {
 
 const failed = checks - passed
 const result = {
-  issue: "M20.D3", code: "D3", milestone: "M20",
+  // NOT `D3`. This gate and `verify-doc-examples-diagrams.ts` both wrote
+  // `validation/m20/results/D3.json`, and the manifest assigns D3 to the
+  // examples/diagrams verifier, so every run of this gate destroyed that
+  // record and every run of that one destroyed this. Two verifiers sharing one
+  // evidence file is last-writer-wins: the file is evidence of whichever ran
+  // last, which is how a milestone ends up `verified` with numbers no verifier
+  // produced. No manifest code covers this gate's scope — D1 is the mode and
+  // option contract, D2 citation resolution and freshness, D3 examples and
+  // diagrams — so it records under its own name outside the D* namespace rather
+  // than claiming a code that belongs to another verifier.
+  issue: "M20.DOC-TRUTH", code: "DOC-TRUTH", milestone: "M20",
   status: failed === 0 && docRelevantWorkingTreeChanges(ROOT).length === 0 ? "verified" : "known-gap",
   checks, passed, failed, negativeCases,
   currentCommit: (() => { try { return execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim() } catch { return "unknown" } })(),
@@ -543,18 +1149,18 @@ const result = {
   workingTreeRelevantChanges: docRelevantWorkingTreeChanges(ROOT),
   verifierCommand: "bun run script/m20/verify-doc-truth.ts",
   corpusCompanion: "fixtures/bb_doc/verify-corpus.ts (real repositories, real runtime)",
-  evidenceFile: "D3.json",
+  evidenceFile: "DOC-TRUTH.json",
   generatedAt: new Date().toISOString(),
   limitations: [
     "Fixture-level truth/self-consistency gate; the same predicate set runs against real indexed repositories by fixtures/bb_doc/verify-corpus.ts.",
-    "api mode is unmeasured for its purpose here: the fixture has one api_contract_path and no HTTP surface.",
+    "api mode's surface is planted in the fixture (a file the index marks net_http with an exported symbol) rather than drawn from a real HTTP project; the negative half removes the attribution and proves the mode then claims nothing.",
   ],
 }
 mkdirSync(path.join(ROOT, "validation/m20/results"), { recursive: true })
-writeFileSync(path.join(ROOT, "validation/m20/results/D3.json"), JSON.stringify(result, null, 2) + "\n")
+writeFileSync(path.join(ROOT, "validation/m20/results/DOC-TRUTH.json"), JSON.stringify(result, null, 2) + "\n")
 if (failures.length) {
   console.log("\nFAILURES:")
   for (const f of failures) console.log(`  ${f}`)
 }
-console.log(failed === 0 ? "\nDOC D3: PASS" : `\nDOC D3: ${failed} FAILURES`)
+console.log(failed === 0 ? "\nDOC TRUTH: PASS" : `\nDOC TRUTH: ${failed} FAILURES`)
 process.exit(failed ? 1 : 0)
