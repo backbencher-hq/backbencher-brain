@@ -2,236 +2,108 @@
   "issue": "M55.V1",
   "code": "V1",
   "milestone": "M55",
-  "status": "verified",
-  "checks": 94,
-  "passed": 94,
-  "failed": 0,
-  "realFailed": 0,
-  "negativeCases": 17,
+  "status": "known-gap",
+  "checks": 55,
+  "passed": 36,
+  "failed": 19,
+  "realFailed": 19,
+  "negativeCases": 14,
   "mutants": {
-    "total": 17,
-    "caught": 17
+    "total": 14,
+    "caught": 14
   },
-  "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0",
+  "currentCommit": "2d32f088b926e3ad7b88b6c77dc4fd158669f71d",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-19T02:54:51.032Z",
+  "generatedAt": "2026-09-30T02:39:16.044Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
-    "fixturePresent": true,
-    "rigAvailable": true,
-    "rigMissing": [],
-    "captureRun": "live-22",
+    "fixturePresent": false,
+    "rigAvailable": false,
+    "rigMissing": [
+      "Xvfb (display tooling)",
+      "xdotool (display tooling)",
+      "import (display tooling)",
+      "code (the editor under test)",
+      "python3 + PIL (script/m55/pixel-read.py)",
+      "declared fixture workspace ($HOME/bb-demo-hub)"
+    ],
+    "captureRun": "owner-test-2026-09-21",
     "probeFile": "validation/m55/results/V1-probe.json",
-    "probeStatus": "read",
+    "probeStatus": "blocked",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
     "blockedPathStatus": "blocked",
-    "blockedPathReason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
+    "blockedPathReason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), code (the editor under test), python3 + PIL (script/m55/pixel-read.py), declared fixture workspace ($HOME/Documents/Default Project/ishaq/.bbgraph-base/validation/m55/.blocked-path-fixture-absent)"
   },
   "frameFacts": {
     "base:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 3066,
-      "textFraction": 0.0015,
-      "textRows": 19
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "hover-declaration:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 6588,
-      "textFraction": 0.0032,
-      "textRows": 20
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "open-in-graph:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 3324,
-      "textFraction": 0.0016,
-      "textRows": 17
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "hover:diff": {
-      "ok": true,
-      "changedPixels": 161577,
-      "changedFraction": 0.0779,
-      "box": [
-        418,
-        30,
-        640,
-        309
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "hub:panel": {
-      "ok": true,
-      "width": 729,
-      "height": 810,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 741,
-      "textFraction": 0.0013,
-      "textRows": 5
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "hub:editor": {
-      "ok": true,
-      "width": 864,
-      "height": 810,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 605,
-      "textFraction": 0.0009,
-      "textRows": 7
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "R2: the impact view is not the hub view (distinct surfaces)": {
-      "ok": true,
-      "changedPixels": 12792,
-      "changedFraction": 0.0217,
-      "box": [
-        0,
-        0,
-        448,
-        585
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "R2: the call-hierarchy view differs from impact (distinct surfaces)": {
-      "ok": true,
-      "changedPixels": 159817,
-      "changedFraction": 0.2707,
-      "box": [
-        0,
-        0,
-        468,
-        810
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ctor-hover:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 5541,
-      "textFraction": 0.0027,
-      "textRows": 19
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ctor-hover:diff": {
-      "ok": true,
-      "changedPixels": 115466,
-      "changedFraction": 0.0557,
-      "box": [
-        377,
-        12,
-        1243,
-        1061
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
-      "ok": true,
-      "changedPixels": 14902,
-      "changedFraction": 0.0252,
-      "box": [
-        0,
-        82,
-        448,
-        521
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ch-click:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 3616,
-      "textFraction": 0.0017,
-      "textRows": 20
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ch-click:editor-diff": {
-      "ok": true,
-      "changedPixels": 123348,
-      "changedFraction": 0.3506,
-      "box": [
-        0,
-        0,
-        1209,
-        291
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ch-click:navigation": {
-      "ok": true,
-      "changedPixels": 123348,
-      "changedFraction": 0.3506,
-      "box": [
-        0,
-        0,
-        1209,
-        291
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "ch-click:whole-diff": {
-      "ok": true,
-      "changedPixels": 466518,
-      "changedFraction": 0.225,
-      "box": [
-        48,
-        35,
-        1689,
-        1039
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "zero-usage:stats": {
-      "ok": true,
-      "width": 1920,
-      "height": 1080,
-      "background": [
-        18,
-        19,
-        20
-      ],
-      "textPixels": 6390,
-      "textFraction": 0.0031,
-      "textRows": 19
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     },
     "zero-usage:diff": {
-      "ok": true,
-      "changedPixels": 213238,
-      "changedFraction": 0.1028,
-      "box": [
-        377,
-        12,
-        1243,
-        1061
-      ]
+      "ok": false,
+      "reason": "PIL (python3-pil) is not available"
     }
   },
   "claimTrace": [
@@ -296,7 +168,27 @@
       "frame": "4-open-in-graph.png"
     }
   ],
-  "failures": [],
+  "failures": [
+    "R2: the base frame is a 1920x1080 render with content (not a blank/unstyled frame): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the hover-declaration frame is a 1920x1080 render with content (not a blank/unstyled frame): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the open-in-graph frame is a 1920x1080 render with content (not a blank/unstyled frame): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: asking for the hover changed the workbench (the card rendered): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the hover's change is a card-sized block, not a stray pixel: null",
+    "R2: the hub frame shows rendered rows in the panel region: {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the hub frame KEPT the editor column (P1: the panel never steals the editor): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the impact view is not the hub view (distinct surfaces): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the call-hierarchy view differs from impact (distinct surfaces): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the call-site hover is its own frame (different position, same identity): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the constructor hover frame shows a rendered card (T1 U5): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the constructor card is its OWN frame, not the method card again (T1 U5 — different identity): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the clicked call-hierarchy frame shows a rendered surface (T2): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: clicking a caller row CHANGED the editor (the navigation landed somewhere new) — T2: {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the click NAVIGATED to another file — the editor's TOP lines changed, not just a cursor band (T2): the editor content did not change after the click (no navigation at all)",
+    "R2: the click frame is its own frame (not the pre-click one): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the zero-usage frame shows a rendered card (T3): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}",
+    "R2: the zero-usage card is its own frame, not the used symbol's card again (T3): {\"ok\":false,\"reason\":\"PIL (python3-pil) is not available\"}"
+  ],
   "limitations": [
     "The frames leg depends on the declared EXTERNAL fixture ($HOME/bb-demo-hub), its owner index in ~/.bb, and the display tooling — by owner decision the fixture is not vendored into the repo, so on a machine without it the leg is BLOCKED-WITH-REASON, never green.",
     "The protocol declares a PINNED VS Code 1.85.0 from .vscode-test; that pin is not present on this machine, so the session runs the system `code` and records its exact version in the evidence. The pin's comparability guarantee is therefore declared but not honored here — recorded, not hidden.",
@@ -305,7 +197,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:51.032Z",
-    "contentSha256": "f897e9d1016d68f1dfc2d3bd43cc8c5642fa302f207d003c5528801bf42a466a"
+    "sealedAt": "2026-09-30T02:39:16.094Z",
+    "contentSha256": "0d335cfdc790289893a971bdf0ff78b1dff5267627b78b90b8fefd64d10ce6ee"
   }
 }
