@@ -1,24 +1,26 @@
 // Grammar A/B for two groovy wasm builds: is a REBUILD behaviourally identical to
 // the one already shipped?
 //
-// Why this exists, and why it is not a hash comparison:
+// Why behaviour and not a hash:
 //
-//   The lane's own record (`reviews/m49-w8-groovy-class-body-dot-continuation.md`)
-//   measured that `tree-sitter build --wasm` is NOT byte-reproducible. Two builds
-//   of the *identical* grammar source produce wasms that differ, and the same
-//   offset also separates a rebuild from the shipped artifact. So a differing
-//   sha256 is not evidence that the source changed, and a matching one is not
-//   evidence that it did not.
+//   The lane's older record (`reviews/m49-w8-groovy-class-body-dot-continuation.md`)
+//   measured that `tree-sitter build --wasm` is NOT byte-reproducible, and this script
+//   was written for that world. It no longer holds for the toolchain now pinned below:
+//   two independent builds of identical source, and the committed artifact, all produce
+//   the same sha256. That older measurement was taken with the historical emscripten
+//   toolchain, so it was true of that build and false of this one.
 //
-//   What the artifact can be checked on is BEHAVIOUR. This parses every file in
-//   the corpus with both wasms and compares, per file, the count of ERROR/MISSING
-//   nodes and a hash of the tree's node-type sequence. Zero differences across
-//   7,114 files means the toolchain in use is the one the shipped wasm was built
-//   with, which is the precondition for trusting ANY grammar change measured
-//   against it.
+//   A hash is therefore a valid FIRST check now, and cheap. This stays the check that
+//   survives a toolchain change, because it compares what the parser actually does
+//   rather than what the linker happened to emit: it parses every corpus file with both
+//   wasms and compares, per file, the count of ERROR/MISSING nodes and a hash of the
+//   tree's node-type sequence. Zero differences across 7,114 files means the toolchain
+//   in use is the one the shipped wasm was built with, which is the precondition for
+//   trusting ANY grammar change measured against it -- and it is the only check that
+//   catches a change that holds the error total flat while reshaping the tree.
 //
 // This also pins the toolchain, which `grammars/tree-sitter-groovy/package.json`
-// did not record:
+// still does not record:
 //   tree-sitter-cli    0.25.1   (0.26.9's prebuilt binary needs GLIBC 2.39 and
 //                                cannot run on this host; 0.25.1 reproduces the
 //                                shipped wasm's behaviour exactly)
