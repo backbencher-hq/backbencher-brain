@@ -154,6 +154,60 @@ export function perlWordValues(node: Node): string[] {
     }
     return values
   }
+  // PERL-MR4. The generic recursion below used to descend into EVERY named child,
+  // which means anything reachable from an argument was published as an IMPORTED
+  // NAME. Two shapes made that visible, and tree-sitter-perl 2.0.0 is what exposed
+  // them — its `parenthesized_expression` puts argument lists where 1.2.1's
+  // multi-child paren field did not, so the same latent rule starts harvesting:
+  //
+  //   use overload '""' => sub { ... }, bool => sub { ... }, fallback => 1;
+  //        1.2.1: items=["*"]                      2.0.0: items=["\"\"","as_string","bool","fallback"]
+  //
+  // A fat-comma KEY is not an import — it is the name of an overload slot, a
+  // metaclass role, a `has` attribute, whichever pragma is in play — and the
+  // VALUE is code. Neither is a module name. So a pair is not an argument list
+  // (callers that want keys have `fatCommaKeys` for exactly that), and a
+  // sub's BODY is code (PERL-MR12 made the same refusal on the callee side, for
+  // the same reason: text that is written is not thereby a name).
+  //
+  // Measured over all seven corpora with a freshly built 2.0.0 wasm: 23 of 5,774
+  // files differ between the grammars, and the change ADDED 21 import emissions
+  // while REMOVING 11. Both directions are addressed — the added ones by this
+  // guard, the removed ones by the argument-reach fix below.
+  if (node.type === "fat_comma") return []
+  if (node.type === "subroutine_declaration_statement" || node.type === "subroutine" || node.type === "anon_sub" || node.type === "block" || node.type === "block_statement") return []
+
+  // PERL-MR4, third clause, and it is the same principle as the closure guard
+  // above rather than a new one: CODE IS NOT NAMES. A branch of `?:`, `and`/`or`,
+  // `||`, or `//` computes a value; it does not declare an import.
+  //
+  //   use Catalyst (
+  //       'Test::Plugin',
+  //       '+TestApp::Plugin::FullyQualified',
+  //       (eval { require MooseX::Role::Parameterized; 1 }
+  //           ? ('+TestApp::Plugin::ParameterizedRole' => { method_name => 'affe' })
+  //           : ()),
+  //   );
+  //
+  // The two plugins on top are the arguments. Inside the ternary there are no
+  // arguments at all: `+TestApp::Plugin::ParameterizedRole` is a KEY and `affe`
+  // is a hash VALUE, and which of them the import gets is decided at runtime.
+  // The node is `conditional_expression`, and its branches are reached because the
+  // harvester walks every descendant — so without this clause the recorded items
+  // were ["+TestApp::Plugin::FullyQualified","+TestApp::Plugin::ParameterizedRole",
+  // "Test::Plugin","affe","method_name"]: two real arguments, one key, and two
+  // hash values.
+  //
+  // Note this is NOT the `=>` rule above: the outer list has no top-level `=>`, so
+  // `isArgumentSpecification` correctly says "this is a name list" and the
+  // argument count is right. Only the descent into the branch is wrong.
+  if (node.type === "conditional_expression" || node.type === "match_expression") return []
+  if (node.type === "binary_expression" || node.type === "logical_expression") {
+    const op = node.childForFieldName("operator") ?? node.children.find((c: any) => !c.isNamed)
+    const t = op ? op.type : ""
+    if (t === "and" || t === "or" || t === "||" || t === "&&" || t === "//") return []
+  }
+
   const values: string[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
@@ -188,6 +242,74 @@ function splitWords(text: string): string[] {
 }
 
 /**
+ * PERL-MR4: is this argument list a KEY/VALUE SPECIFICATION rather than a list of
+ * names to import?
+ *
+ *   use overload q{""} => 'as_string', bool => sub () { 1 }, fallback => 1;
+ *        q{""}      a key   -- which overload slot
+ *        'as_string' a value -- the HANDLER the file must define, not to import
+ *        bool       a key
+ *        fallback   a key
+ *
+ * None of it is an imported name. The `=>` is an ANONYMOUS TOKEN between the
+ * list's children rather than a `fat_comma` wrapper — which is why a `fat_comma`
+ * guard changed nothing when it was tried first, and why that guard is kept
+ * separately for the grammars that do wrap.
+ *
+ * The discriminator is POSITIONAL, and has to be: `as_string` and `fallback` are
+ * perfectly good identifiers, and no spelling test separates "a handler the file
+ * defines" from "a symbol a module exports". The `=>` is the only thing in the
+ * source that says so.
+ *
+ * SCOPED to import arguments, and that scoping is the whole lesson: the first
+ * version put this inside `perlWordValues`, where it also silenced
+ * `our @EXPORT_OK = (gamma => 1, delta => 2)` — a list that uses `=>` precisely
+ * because its KEYS are the exported names. One rule, applied one level too high,
+ * deleted four real exports.
+ */
+function isArgumentSpecification(statement: Node): boolean {
+  // A list WRAPPER is transparent: 2.0.0 puts the arguments in
+  // `parenthesized_expression > list_expression`, so the `=>` tokens are
+  // grandchildren of the node `perlArgumentNodes` returns. Checking only the
+  // direct children is what the first attempt did, and it silently did nothing
+  // on exactly the grammar this rule exists for — 2.0.0 still harvested
+  // `q{""}`, `as_string`, `bool`, `fallback` and the file count went UP, from 23
+  // differing to 27.
+  const WRAPPERS = new Set(["list_expression", "parenthesized_expression", "array_expression", "hash_expression", "anonymous_array_expression", "anonymous_hash_expression"])
+  const hasFatArrow = (n: any): boolean => {
+    for (let i = 0; i < n.childCount; i++) {
+      const child = n.child(i)
+      if (!child) continue
+      if (!child.isNamed && child.type === "=>") return true
+    }
+    return false
+  }
+  // The `=>` tokens sit BETWEEN the arguments in the STATEMENT's own child list --
+  // `perlArgumentNodes` returns only the NAMED children, so scanning the arguments
+  // never sees them. That is why the first version of this rule was inert on
+  // 1.2.1 as well as 2.0.0: on 1.2.1 the four harvested words came back as four
+  // argument nodes with no `=>` among them. Measured directly on
+  // Moose-2.4000/lib/Moose/Exception.pm:
+  //     1.2.1  overload items=["\"\"","as_string","bool","fallback"]   <- the defect
+  //     2.0.0  overload items=["*"]
+  // so the harvest is a 1.2.1 defect and 2.0.0 is accidentally correct (it
+  // reaches no argument nodes at all). The bump would have PAPERED OVER it.
+  const nodes = [statement, ...Array.from({ length: statement.childCount }, (_, i) => statement.child(i)).filter(Boolean)] as any[]
+  for (const n of nodes) {
+    if (!n) continue
+    if (hasFatArrow(n) || n.type === "fat_comma") return true
+    // One level of list wrappers only. Descending further would reach a closure
+    // body, where a `=>` is a hash constructor the FILE wrote, not a specifier —
+    // and treating that as "no imported names" would drop real items.
+    for (let i = 0; i < n.childCount; i++) {
+      const child = n.child(i)
+      if (child && WRAPPERS.has(child.type) && (hasFatArrow(child) || child.type === "fat_comma")) return true
+    }
+  }
+  return false
+}
+
+/**
  * The argument nodes of a call or `use`, across BOTH live grammar generations
  * (see the class's own comment for the measured shape of each). EXPORTED
  * because script/m14/differential.ts's perl oracle must read arguments by the
@@ -204,8 +326,29 @@ export function perlArgumentNodes(node: Node): Node[] {
     if (child && node.fieldNameForChild(i) === "arguments" && perlWordValues(child).length > 0) fromField.push(child)
   }
   if (fromField.length) return fromField
+  // PERL-MR4: 2.0.0 inserts `parenthesized_expression` between the statement and
+  // its `list_expression`, so the direct-child lookup below cannot see the list at
+  // all and every parenthesised `use` lost its arguments. Measured on
+  // Catalyst-Runtime-5.90132/t/lib/PluginTestApp.pm:
+  //     1.2.1  Catalyst items=["+TestApp::Plugin::FullyQualified","Test::Plugin"]
+  //     2.0.0  Catalyst items=["*"]
+  // Two real plugins dropped by the bump, in every parenthesised `use` across the
+  // corpora. The wrapper is a grouping paren, so it is transparent here exactly
+  // as the `_` and `,` tokens are -- and the same transparency the
+  // `isArgumentSpecification` wrapper set already assumes, which is why that rule
+  // had to be taught to look through wrappers before it could work at all.
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i)
+    if (!child || child.type !== "parenthesized_expression") continue
+    const inner = perlFindChildByType(child, "list_expression")
+    if (inner) return inner.namedChildren.filter((c): c is Node => !!c && perlWordValues(c).length > 0)
+    const innerArgs = perlArgumentNodes(child)
+    if (innerArgs.length) return innerArgs
+  }
   const list = perlFindChildByType(node, "list_expression")
   if (list) return list.namedChildren.filter((c): c is Node => !!c && perlWordValues(c).length > 0)
+  // `parenthesized_expression` is itself a valid argument carrier when it holds a
+  // single value (`use Foo ('Bar')`), so accept it in the fallback too.
   const result: Node[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
@@ -215,7 +358,7 @@ export function perlArgumentNodes(node: Node): Node[] {
     // absent from the wired grammar and so absent here for the same reason as
     // `noninterpolated_string_content` above: the audit is zero-tolerance and
     // this lane does not run 2.0.0. The bump re-adds it.
-    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword") {
+    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
       if (perlWordValues(child).length > 0) result.push(child)
     }
   }
@@ -677,7 +820,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const args = this.argumentValues(node)
           imports.push({
             module,
-            items: args.length > 0 ? args : ["*"],
+            items: args.length > 0 && !isArgumentSpecification(node) ? args : ["*"],
             isDefault: true,
             range: this.nodeToRange(node),
             metadata: { perlSpecific: true, type: "use" },
