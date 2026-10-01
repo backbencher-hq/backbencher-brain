@@ -12271,6 +12271,85 @@ export const MUTANTS: Mutant[] = [
     // The same limit applies to the lambda/comprehension scope guard: both are questions
     // about the TREE, asked inside `analyze()`, and a ParseResult cannot answer them.
   {
+    id: "python/override-matches-a-class-variable",
+    language: "python",
+    defectClass: "fabricated-relationship",
+    description:
+      "REVERT of the fourth genuine analyzer defect, and the most damaging of the four: a class " +
+      "VARIABLE on a base is made indistinguishable from a METHOD, so the name-keyed match finds " +
+      "it and the lane publishes an override that overrides nothing — at 0.95, with no " +
+      "\`reasonCode\`, which reads as a verified fact. `class Base: attr = None` beside " +
+      "`class Derived(Base): def attr(self)` published `Derived.attr -> Base.attr`. There is no " +
+      "method on Base to override: `Base.attr` is the value `None`, which CPython's own \`ast\` " +
+      "reports as `attr(var)` against `attr(def)`.\n\n" +
+      "The transform PROMOTES the variable's SYMBOL KIND rather than clearing a flag, and that " +
+      "distinction is the whole lesson of writing it: a first version cleared " +
+      "\`isClassVariable\` in metadata and reported \`0 -> 0\` — a survivor — because the fix " +
+      "reads \`kind\`, not that flag. A mutant has to move the field the resolution actually " +
+      "consults. Reproducing the pre-fix observable means reproducing the pre-fix " +
+      "*indistinguishability*, not editing the nearest metadata.\n\n" +
+      "Caught by python/class-variable-is-not-overridden, whose three positives are the half that " +
+      "must survive: a fix that stopped matching on name at all would pass every forbid in that " +
+      "fixture and lose real overrides. In the corpus this was 20 fabricated VERIFIED edges in " +
+      "\`Cython/Compiler/Nodes.py\`, where Cython declares class state at class level so nearly " +
+      "every method shares a name with a variable on its base.",
+    transform: r => {
+      // The pre-fix observable is an EXTRA EDGE, so the faithful revert ADDS that edge rather
+      // than editing a symbol and hoping the graph re-derives. Two earlier versions of this
+      // mutant tried the latter — clearing `isClassVariable` in metadata, then promoting the
+      // symbol's `kind` — and both reported `0 -> 0`, because the override resolution runs
+      // INSIDE `analyze()` and by the time a ParseResult exists the edges are already emitted.
+      // A mutant has to move the thing a consumer actually observes.
+      //
+      // Reproduced here: a base class VARIABLE named after a method the derived class declares
+      // produces an `overrides` edge that overrides nothing, which is exactly what a name-keyed
+      // match cannot tell apart from a method.
+      const basesOf = new Map<string, Set<string>>()
+      for (const x of (r.relationships ?? []) as any[]) {
+        if (x.type !== "extends") continue
+        const src = String(x.source ?? "")
+        if (!basesOf.has(src)) basesOf.set(src, new Set())
+        basesOf.get(src)!.add(String(x.target ?? ""))
+      }
+      const methodsByName = new Map<string, string[]>()
+      for (const s of (r.symbols ?? []) as any[]) {
+        if (s.kind !== "method") continue
+        const n = String(s.name)
+        if (!methodsByName.has(n)) methodsByName.set(n, [])
+        methodsByName.get(n)!.push(String(s.ownerName ?? ""))
+      }
+      const existing = new Set(
+        ((r.relationships ?? []) as any[])
+          .filter((x: any) => x.type === "overrides")
+          .map((x: any) => `${x.source}->${x.target}`),
+      )
+      const added: any[] = []
+      for (const s of (r.symbols ?? []) as any[]) {
+        if (!(s.metadata as any)?.isClassVariable) continue
+        const owner = String(s.ownerName ?? "")
+        const name = String(s.name)
+        for (const derived of methodsByName.get(name) ?? []) {
+          if (derived === owner) continue
+          if (!basesOf.get(derived)?.has(owner)) continue
+          const edge = `${derived}.${name}->${owner}.${name}`
+          if (existing.has(edge)) continue
+          existing.add(edge)
+          added.push({
+            source: `${derived}.${name}`,
+            target: `${owner}.${name}`,
+            fromSymbol: `${derived}.${name}`,
+            toSymbol: `${owner}.${name}`,
+            type: "overrides",
+            relationshipType: "overrides",
+            confidence: 0.95,
+          })
+        }
+      }
+      if (added.length === 0) return r
+      return { ...r, relationships: [...((r.relationships ?? []) as any[]), ...added] }
+    },
+  },
+  {
     id: "python/class-variable-binding-suppressed",
     language: "python",
     defectClass: "relationship-loss",
