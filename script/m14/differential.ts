@@ -37,6 +37,7 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
+import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
@@ -20769,6 +20770,25 @@ async function main() {
         // failure a lane-owned oracle exists to catch, and 10,365 `contains` edges over 941 files
         // were otherwise uncorroborated.
         for (const e of deriveJuliaContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // `extends` + `instantiates`: the two labels F5's allowlist admits for EVERY language, so
+        // julia was comparing 79 and 194 of them against ZERO truth rows and the harness was
+        // printing "COMPARED WITH NO TRUTH — the published coverage for those labels is not
+        // coverage". Every one of those edges landed in `unexplained`, which is the right verdict
+        // for an uncorroborated edge and also means two labels were contributing a percentage to the
+        // lane's row that meant nothing.
+        //
+        // Both are derivable from one tree, which is what makes them worth an oracle rather than a
+        // note. `instantiates` is SCOPED to constructions of types the same tree declares, and says
+        // so: a call to a type from another file is, from one tree, indistinguishable from a call to
+        // a function, and the truth side is not allowed to guess — a wrong truth row is worse than a
+        // missing one. So the analyzer's cross-file `instantiates` edges stay UNEXPLAINED, which is
+        // the honest reading rather than a row invented to make a number look better.
+        for (const e of deriveJuliaExtendsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJuliaInstantiatesTruth(root)) {
           ;(truth as any[]).push(e)
         }
       }
