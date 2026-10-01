@@ -81,8 +81,32 @@ if (registry) {
 
 // Byte-freshness: the real generator's verify mode must pass (exit 0). This is
 // the same artifact check the gate runs; we assert it here as the docs gate.
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
-harness.check("docs: generator verify mode passes (bb_edit.md byte-fresh)", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
+// The check spawns the generator. It used to spawn `bun`, which is the same
+// hardcoded-runtime bug as `import.meta.dir` in this file: under Node the spawn
+// fails with ENOENT and the assertion reads
+//
+//   docs: generator verify mode passes (bb_edit.md byte-fresh)
+//
+// which says the DOCUMENTATION IS STALE. It is not. Running the generator under
+// Node on the same tree prints `TOOL DOCS: PASS (16 public tools, 18 artifacts)`,
+// so the artifact was byte-fresh the whole time and this gate was reporting a
+// missing runtime as a content defect — the worst possible direction for a
+// freshness check, because the correct response to it is to regenerate.
+//
+// It now spawns the runtime it is itself running under, which is what the repo
+// does elsewhere (process.execPath in script/m31/verify-gate-selftest.ts,
+// script/m65/verify-rules-gate-selftest.ts), and only the invocation differs:
+// Bun runs a .ts file directly, Node needs the tsx loader.
+const runningUnderBun = typeof (globalThis as any).Bun !== "undefined"
+const generatorArgs = runningUnderBun
+  ? ["run", "script/verify-tool-docs.ts"]
+  : ["--import", "tsx", "script/verify-tool-docs.ts"]
+const gen = spawnSync(process.execPath, generatorArgs, { cwd: root, encoding: "utf8", timeout: 300_000 })
+harness.check(
+  `docs: generator verify mode passes (bb_edit.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
+  gen.status === 0,
+  gen.status === 0 ? "" : `exit ${gen.status}: ${(gen.stderr || gen.stdout || "").slice(0, 200)}`,
+)
 
 // ── 2. Evidence committed and passing (e1..e11) ────────────────────────────
 const E_FILES = ["e1", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10", "e11"]
