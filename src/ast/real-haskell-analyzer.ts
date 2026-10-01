@@ -1463,10 +1463,27 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Anchor at the node carrying the class NAME, for the same reason `data` and
+    // `instance` are anchored there (§4e). A class declaration routinely puts the
+    // keyword alone and the name many lines down:
+    //   class
+    //     ( c SpecVersion
+    //     , c TestedWith
+    //     ...
+    //     FieldGrammar (c :: Type -> Constraint) (g :: Type -> Type) where
+    // The class node itself starts on the bare `class` keyword and its `name` child
+    // is ~9 lines later, so every `contains` edge for the class cited a line with
+    // no name on it. This was the last remaining criterion-5 row.
+    const classRange = this.nodeToRange(node)
+    if (nameNode) {
+      classRange.startLine = nameNode.startPosition.row + 1
+      classRange.startColumn = nameNode.startPosition.column
+    }
+
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Interface,
-      range: this.nodeToRange(node),
+      range: classRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
