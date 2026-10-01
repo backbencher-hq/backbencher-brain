@@ -53,8 +53,23 @@ const spec = {
   },
   handled_verified: {
     _rule: "the analyzer reads this node to produce a symbol, a relationship, an import, or a metadata value; each is pinned by a fixture in validation/m14/fixtures/xml, except where corpus.grammarTypesNotObserved says no corpus example exists",
-    types: Object.keys(shape.declared).sort(),
-    reasons: shape.declared,
+    // ERROR is a tree-sitter PSEUDO-node, so check B of the shape gate counts only
+    // *named* types and never lists it — but the analyzer does read it
+    // (`real-xml-analyzer.ts:668`, `node.isError` -> the per-file error count) and
+    // `corpus.errorFiles` is measured from that read. The bucket is therefore
+    // shape.declared PLUS ERROR. It used to be hand-added to the emitted JSON, which
+    // meant regenerating the record silently dropped it and the inventory gate then
+    // reported `2 node type(s) in NO bucket: ERROR, MISSING` — the record had been
+    // right and the emitter unable to reproduce it, which is the failure mode this
+    // file is supposed to make impossible.
+    types: [...Object.keys(shape.declared), "ERROR"].sort(),
+    reasons: {
+      ...shape.declared,
+      ERROR:
+        "counted, not walked: real-xml-analyzer.ts:668 reads node.isError to record a file's " +
+        "grammar-error count, so the analyzer consults it and the class is handled. ERROR is a " +
+        "tree-sitter pseudo-node, not a grammar construct — see internal_silent MISSING for the paired one.",
+    },
   },
   pass_through_classified: {
     _rule: "walked THROUGH deliberately, each with the reason, so a pass-through is a decision on record and not a shrug",
@@ -69,6 +84,10 @@ const spec = {
       // reads as "a classified row the wasm no longer produces". The gate was
       // right and this file was wrong.
       ...Object.keys(shape.passthrough).sort().filter((t: string) => !t.startsWith("_")),
+      // MISSING is the paired pseudo-node of ERROR: the walk reads node.isMissing
+      // (`real-xml-analyzer.ts:664`) and `continue`s, so it is walked THROUGH with no
+      // output. Same hand-added-then-regenerated problem as ERROR above.
+      "MISSING",
     ],
   },
   gap: {
@@ -85,7 +104,20 @@ const spec = {
       { concept: "imports", relationship: "imports", ruling: "a FILE PATH, the one case where a value is the right target", measured: "630 distinct schemaLocation targets, 238 DOCTYPE external IDs, 78 entity/notation external IDs, 18 stylesheet hrefs — 0 of them emitted before the fix", node_type: "" },
       { concept: "declared name", ruling: "in a declaration vocabulary the DECLARED name is an attribute VALUE and the tag is kept as meta.tagName", measured: "26,578 in-vocabulary declarations: recall 0.045 -> 0.696, with the 29,196 out-of-vocabulary `name` attributes (DATA) left untouched", node_type: "" },
       { concept: "self edge", ruling: "refused for references and imports; ALLOWED for contains, because a DTD and an element it declares routinely share a name and those are two distinct declarations", measured: "3 self-references and 3 phantom symbols removed from a 20-symbol XSD; the contains case is pinned by xml/dtd-declarations and xml/conditional-section", node_type: "" },
-      { concept: "PEReference", ruling: "inside an internal subset it is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing", measured: "24 corpus occurrences, 0 edges; the parameter entity it would name is declared by the PEDecl and IS published", node_type: "PEReference" },
+      {
+        concept: "PEReference",
+        ruling:
+          "a USE, unless it is a DeclSep. Inside an internal subset a PEReference is a separator " +
+          "(XML 1.0 s2.4) and emits nothing; in the doctypedecl external-id position and inside " +
+          "replacement text it names a parameter entity and IS published as `references`",
+        measured:
+          "24 corpus occurrences: 19 published as uses, 5 inside internal subsets where it is a DeclSep — " +
+          "those 5 are the DECLARED residual of script/m12/xml-entity-accounting.mts. This ruling used " +
+          "to read `emits nothing / 0 edges`, which was true only of the 5-site subset and wrong for the " +
+          "other 19; the spec was not corrected when the analyzer was, so the record asserted a " +
+          "refusal the analyzer no longer performs",
+        node_type: "PEReference",
+      },
       { concept: "xmlns with an empty prefix", ruling: "declares nothing publishable", measured: "4 corpus occurrences published a symbol named the empty string; 0 now, pinned by the M12 probe", node_type: "Attribute" },
     ],
   },
@@ -101,10 +133,6 @@ const spec = {
     {
       concept: "exports",
       measured: "an XML document has no public surface to export. The whole file is the surface and the document element is already a symbol.",
-    },
-    {
-      concept: "PEReference as a use",
-      measured: "inside an internal subset a PEReference is a DeclSep (XML 1.0 s2.4) — a separator, not a use — so it emits nothing. The parameter entity it would name is declared by the PEDecl instead, and that IS published (85 parameter-entity declarations, 10 with a real file import).",
     },
     {
       concept: "standalone .dtd documents",
@@ -150,14 +178,20 @@ const spec = {
       "`.wsdl` (805), `.pom` (693), `.xhtml` (36) and extensionless build files (4) are XML-shaped but the grammar does not declare them, so routing them would be a claim the grammar does not back. The M60 #913 ruling is to refuse rather than to claim. 1,538 files, visible debt.",
   },
   gates: {
-    contract: "script/m12/xml-contract-probe.ts (90 checks, was 14)",
-    completeness: "script/m12/xml-node-types-compare.ts (9 checks + a self-test that catches 9 of 9 mutations; its predecessor scraped the analyzer's source with a regular expression and was satisfied by an EMPTY list)",
-    fixtures: "bun script/m14/run-fixtures.ts --lang xml (8, was 1)",
-    mutants: "bun script/m14/mutate-analyzer.ts (9, all caught, was 0)",
+    contract: "script/m12/xml-contract-probe.ts (103 checks, was 14, all passing)",
+    completeness: "script/m12/xml-node-types-compare.ts (checks A-G + a self-test that catches 11 of 11 mutations, each recomputed from a mutated copy so a mutation that disables a check is itself caught; its predecessor scraped the analyzer's source with a regular expression and was satisfied by an EMPTY list)",
+    fixtures: "bun script/m14/run-fixtures.ts --lang xml (18, was 1)",
+    mutants: "bun script/m14/mutate-analyzer.ts (21, all caught, 0 survivors, was 0)",
     corpusErrors: "script/m12/xml-corpus-errors.ts (revision-pinned manifest + declared negative controls)",
     corpusMeasure: "script/m12/xml-corpus-measure.ts (same manifest; the two gates previously disagreed on the same files)",
-    referenceAgreement: "fixtures/xml/probes/grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own)",
-    reproducibility: "bash fixtures/xml/run-all.sh [--full]",
+    referenceAgreement: "script/m12/xml-grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own; VENDORED, artifact validation/m12/results/grammar-verdict-vs-reference.json)",
+    grammarAb: "script/m12/xml-grammar-corpus-ab.mts (8,888 files, BOTH wasms in-repo — validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm vs wasm/tree-sitter-xml.wasm — 31 improved, 2 regressed, 8,855 unchanged; artifact validation/m12/results/grammar-corpus-ab.json)",
+    entityAccounting: "script/m12/xml-entity-accounting.mts (11,940 EntityRef sites, 11,929 accounted, 11 DECLARED residual; PEReference 24 sites, 19 published, 5 DECLARED residual)",
+    declaredNameLines: "script/m12/xml-declared-name-lines.mts (8,889 files, 52,651 declaration anchors, 0 mis-anchored; 43 offenders and exit 1 with the fix reverted)",
+    vocabTables: "script/m12/xml-vocab-tables.ts (the analyzer and the oracle each keep their own declaration-vocabulary table and cover the same 4 namespaces; exit 1 on drift, failure-proven)",
+    differentialGap: "script/m12/xml-differential-gap.mts (all six corpora: 250,103 distinct oracle truth keys, 250,135 analyzer contains edges, 43 unexplained, and all 43 named by the rule that emitted them)",
+    corpusDifferential: "script/m12/xml-corpus-differential.mts (8,889 files: 657,432 symbols, 230,603 relationships, 13/13 symbol classes, 18/20 relationship classes — the 2 absent are entity references, an oracle gap DECLARED in the artifact as knownGapEntityReferenceCoverage)",
+    reproducibility: "npx tsx script/m12/xml-grammar-corpus-ab.mts && npx tsx script/m12/xml-differential-gap.mts && npx tsx script/m12/xml-entity-accounting.mts && npx tsx script/m12/xml-declared-name-lines.mts  (corpus via XML_CORPUS_ROOT, default $HOME/fixtures/xml/repos)",
   },
   knownGateGaps: [],
   // Sections E and F are CLOSED. They read a `grails-core:xml` floor row out of

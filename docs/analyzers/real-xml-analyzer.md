@@ -362,14 +362,35 @@ emitted it:
 | libxml2 | 1,311 | 23,652 | 23,647 | 24 | 0.1% |
 | libxslt | 1,144 | 21,499 | 21,493 | 18 | 0.1% |
 | maven | 3,250 | 53,786 | 53,786 | 0 | 0.0% |
-| **total** | **8,889** | **250,103** | **250,060** | **43** | **0.02%** |
+| **total** | **8,889** | **250,103** | **250,092** | **43** | **0.02%** |
 
-The 43 are named rather than absorbed. **18** are `pseudo_attribute` — a synthetic
-`xml-stylesheet` representation, an analyzer artefact rather than a fact in the
-tree, so the oracle correctly declines to corroborate it. **10** are
-`dtd_content_model` self-references such as `contains dia:group -> dia:group`,
-where a DTD content model admits the element it belongs to and both readings are
-defensible. Neither is in a class the oracle claims to derive.
+Read the columns carefully, because the two counts are of *different populations*
+and conflating them is how this table previously acquired a total that was wrong
+in the fourth digit. **`oracle` is distinct truth keys** (a `from`→`target` set, so
+one key counts once however many writings produced it): 250,103. The analyzer
+emits **250,135** `contains` edges — 250,092 corroborated + 43 unexplained — and it
+is that larger figure which is the denominator for the percentage. The oracle set is
+11 keys *smaller* than the analyzer's corroborated count, which is expected: the
+set de-duplicates while the edge count does not, and the two `xml_*` residuals
+below are exactly the files where one name has 200+ writings.
+
+All 43 are **named rather than absorbed**, enumerated by the rule that emitted them
+(`script/m12/xml-differential-gap.mts` publishes this table, with a corroborated
+count per role):
+
+| role | unexplained | reading |
+|---|---|---|
+| `pseudo_attribute` | 18 | a synthetic `xml-stylesheet` representation — an analyzer artefact rather than a fact in the tree, so the oracle correctly declines to corroborate it |
+| `dtd_content_model` | 10 | self-references such as `contains dia:group -> dia:group`, where a DTD content model admits the element it belongs to and both readings are defensible |
+| `dtd_ndata_notation` | 7 | the `NDATA`/`SYSTEM` notation of an unparsed entity; the oracle derives the entity, not its notation binding |
+| `dtd_attribute_declaration` | 4 | an `<!ATTLIST>` re-declaring an attribute the oracle counts once |
+| `xml_attribute` | 2 | the `libxml2` stress files where one name has 200+ writings |
+| `xml_element` | 2 | the same stress files, element side |
+
+18 + 10 + 7 + 4 + 2 + 2 = **43**, and none is a class the oracle claims to derive.
+Publishing the roles is what keeps the number from decaying into a tolerance: each
+row is individually falsifiable, so a new defect appears as a new row instead of
+quietly shrinking a percentage.
 
 Getting here meant fixing the **oracle**, not this analyzer: the review had
 attributed the five-corpora gap to oracle coverage on the strength of a shape
@@ -396,7 +417,8 @@ place. Failure-proven: removing WSDL from one table exits 1.
 
 ### Corpus inputs
 
-- Manifest: `$HOME/fixtures/xml/repositories/MANIFEST.json` (also outside version control) — six repositories at pinned
+- Manifest: `validation/m12/corpus/MANIFEST.json` (vendored; the corpora themselves
+  live in the sibling worktree and are addressed by `XML_CORPUS_ROOT`) — six repositories at pinned
   revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
   `*.xsl`, `*.xslt`, `*.svg`, `*.rng`), deterministic lexicographic order.
   grails-core's 314 are 146 xml + 9 xsd + 4 dtd + 155 svg, so a lane that measured
@@ -432,15 +454,25 @@ run names files that are expected to fail and fails the run if they succeed.
   artifact `validation/m12/results/corpus-differential.json`. Both are in this
   repository and both are re-derivable from a clone (the corpus itself lives in the
   sibling worktree and is addressed by `XML_CORPUS_ROOT`).
-  What remains outside version control is the corpus manifest
-  (`$HOME/fixtures/xml/repositories/MANIFEST.json`, ~20 KB), the grammar
-  A/B probe, and the expat agreement probe — 33 further probe files and 31 outputs
-  in `fixtures/xml/`. None of them is load-bearing for a number quoted above.
+  The grammar A/B probe, the conforming-parser verdict probe, the corpus manifest
+  and the pre-repair wasm are vendored too, so **no number quoted in this document
+  depends on an instrument outside version control**. What remains in the sibling
+  worktree is scratch — the `dbg*.mts` debugging probes and the per-finding
+  forensics output — which nothing cites.
 - Lane registration and per-language record: `script/m14/completeness-inventory.ts`
   → `script/m14/spec/xml-completeness.json`, emitted by
   `script/m14/emit-xml-completeness.ts`
-- M14 fixtures: `validation/m14/fixtures/xml/` (15), mutants via
-  `script/m14/mutate-analyzer.ts` (16, all caught)
+- M14 fixtures: `validation/m14/fixtures/xml/` (18 fixture pairs), mutants via
+  `script/m14/mutate-analyzer.ts` (21, all caught, 0 survivors)
+- Grammar A/B: `script/m12/xml-grammar-corpus-ab.mts` →
+  `validation/m12/results/grammar-corpus-ab.json`; both wasms in-repo
+  (`validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm`,
+  sha256 `50ad134273834d5efe37…`) — **31 improved / 2 regressed / 8,855 unchanged**
+- Grammar verdict vs a conforming parser:
+  `script/m12/xml-grammar-verdict-vs-reference.mts` →
+  `validation/m12/results/grammar-verdict-vs-reference.json` — **16 agree, 0 disagree**
+- Corpus manifest: `validation/m12/corpus/MANIFEST.json` (vendored; corpora
+  addressed by `XML_CORPUS_ROOT`)
 - Declared-name line contract: `script/m12/xml-declared-name-lines.mts` — 8,889
   files, 52,651 declaration anchors, **0 mis-anchored**; 43 offenders and exit 1
   with the fix reverted
@@ -455,6 +487,19 @@ run names files that are expected to fail and fails the run if they succeed.
   symbols, 229 relationships, **with the predicate written into the script**
 - Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
   `script/m14/verify-grammar-pins.ts`
+- Grammar corpus A/B: `script/m12/xml-grammar-corpus-ab.mts`, artifact
+  `validation/m12/results/grammar-corpus-ab.json` — **both wasms now live in this
+  repository**, so the comparison cannot go dead the way it did once by pointing its
+  pre-repair arm at the patched build:
+  `validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm`
+  (sha256 `50ad134273834d5efe37…`, 50,008 B) and `wasm/tree-sitter-xml.wasm`.
+  Re-run: **31 improved, 2 regressed, 8,855 unchanged** over 8,888 files
+- Grammar verdict vs a conforming parser:
+  `script/m12/xml-grammar-verdict-vs-reference.mts`, artifact
+  `validation/m12/results/grammar-verdict-vs-reference.json` — **16 agree, 0
+  disagree** over 16 accept/reject cases
+- Corpus manifest: `validation/m12/corpus/MANIFEST.json` (vendored; six
+  repositories at pinned revisions, 8,889 tracked files)
 - Evidence scripts: `script/m12/xml-corpus-errors.ts`,
   `xml-corpus-measure.ts`, `xml-node-types-compare.ts`,
   `xml-contract-probe.ts`, and `regex-census.ts`
