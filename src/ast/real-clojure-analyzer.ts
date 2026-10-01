@@ -159,24 +159,56 @@ function isDefLikeHead(head: string): boolean {
 }
 
 /**
- * CLJ-D32 — the member name of a STATIC interop head `Class/.member`, or null.
+ * CLJ-D32 — the member name of a STATIC interop head, or null.
  *
- * The discriminator is the `/.`: a `/` alone qualifies a NAMESPACE (`str/join`,
- * `clojure.string/trim`) and must keep going to the generic call branch, so a
- * plain slash is not enough. It has to be a slash immediately followed by a dot,
- * with a dot-led member and a non-empty class in front. `Integer/parseInt` has
- * neither and correctly returns null. Character indexing, no regex: the
- * zero-regex census reads this file.
+ * Clojure writes a static member access THREE ways, and only one of them is
+ * unambiguous with a plain character test:
+ *
+ *   `String/.toUpperCase`  a dot immediately AFTER the slash
+ *   `java.io.File./getName` a dot immediately BEFORE the slash
+ *   `String/toUpperCase`   no dot at all — AMBIGUOUS
+ *
+ * The third is left as a call on purpose. `String/toUpperCase` and
+ * `clojure.string/trim` have the same shape, and a rule that promoted both would
+ * turn every namespace-qualified call into a member access — a far larger
+ * fabrication than the one it fixed. So the dot is the discriminator, and BOTH
+ * dot positions are recognised: the fixture for CLJ-D32 caught the second form
+ * emitting `calls -> java.io.File./getName`, a dangling target, because the
+ * first version of this test only looked right of the slash.
+ *
+ * For the `Class./member` spelling the class carries Clojure's trailing dot
+ * (`java.io.File.`), which is dropped so the edge names `java.io.File` — the
+ * same target the `Class.` constructor spelling produces.
+ *
+ * Character indexing, no regex: the zero-regex census reads this file.
  */
 function staticInteropMember(head: string): string | null {
   const slash = head.lastIndexOf("/")
   if (slash <= 0) return null
-  if (head.charCodeAt(slash + 1) !== 46 /* . */) return null
-  const member = head.slice(slash + 2)
+  const member = head.slice(slash + 1)
   if (member.length === 0) return null
-  const cls = head.slice(0, slash)
-  if (cls.length === 0) return null
-  return member
+  const afterDot = head.charCodeAt(slash + 1) === 46 /* . */
+  const beforeDot = head.charCodeAt(slash - 1) === 46 /* . */
+  if (afterDot) {
+    // `Class/.member` — the class has no trailing dot of its own.
+    const m = head.slice(slash + 2)
+    return m.length > 0 && head.slice(0, slash).length > 0 ? m : null
+  }
+  if (beforeDot) {
+    // `Class./member` — strip the class's trailing dot, then require a member.
+    const cls = head.slice(0, slash - 1)
+    return member.length > 0 && cls.length > 0 ? member : null
+  }
+  return null
+}
+
+/** The CLASS of a static interop head, or null — `Class` or `java.io.File`. */
+function staticInteropClass(head: string): string | null {
+  const slash = head.lastIndexOf("/")
+  if (slash <= 0) return null
+  if (staticInteropMember(head) === null) return null
+  const cls = head.charCodeAt(slash + 1) === 46 ? head.slice(0, slash) : head.slice(0, slash - 1)
+  return cls.length > 0 ? cls : null
 }
 
 // CLJ-D20: the anonymous-argument shorthands — `%`, `%1`..`%N`, `%&` — are
@@ -217,10 +249,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     const patterns: Record<string, boolean> = {}
 
     let currentNamespace = "user"
-    // CLJ-D34: has this file DECLARED a namespace? `user` is a real namespace
-    // when `(in-ns 'user)` says so, and a synthetic fallback only when nothing
-    // declared one — the two must not be treated alike.
-    let namespaceExplicit = false
+    // CLJ-D34: has this file DECLARED its namespace with an `ns`/`in-ns` form?
+    // A file that declares none still HAS a namespace — `user` — and saying so
+    // is what makes its exports resolvable.
+    let sawNamespaceForm = false
     // F3 (adversarial review): Object.create(null) — the SAME prototype-
     // pollution class as F5-2, missed on this record: a plain `{}` alias
     // table answered `["toString"]` with the inherited function, so
@@ -1160,6 +1192,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         // ── ns form ──────────────────────────────────────────────────────
         else if (formName === "ns" || formName === "in-ns") {
+          sawNamespaceForm = true
           // CLJ-D31: `in-ns` IS A NAMESPACE FORM. `(in-ns 'clojure.pprint)` is how
           // a file loaded into a running runtime declares its namespace — and
           // `currentNamespace` stayed "user" for it, so every top-level
@@ -1189,7 +1222,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
               nsName = innerName
             }
           }
-          if (nsName) { currentNamespace = nsName; namespaceExplicit = true }
+          if (nsName) currentNamespace = nsName
           if (formName === "ns") {
             // F3: null-prototype reset (see the declaration).
             namespaceAliases = Object.create(null)
@@ -1791,9 +1824,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the uncurried interop statics already declared in the core list, and
         // the suppression gate above still catches them by their whole head name.
         else if (staticInteropMember(formName) !== null) {
-          const slash = formName.lastIndexOf("/")
-          const clsName = formName.slice(0, slash)
-          const member = formName.slice(slash + 2) // past `/.`
+          const member = staticInteropMember(formName)!
+          const clsName = staticInteropClass(formName)
           const src = activeFunction ? activeFunction.name : currentNamespace
           const headNode = executionHead(node)
           const line = headNode ? headNode.startPosition.row + 1 : undefined
@@ -1980,6 +2012,28 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // ── CLJ-D34: the IMPLICIT namespace is still a namespace ───────────────
+    // A Clojure file with no `ns`/`in-ns` form is evaluated in the ambient
+    // namespace, and `user` is its conventional name. Representing that is
+    // strictly more complete than not: without a namespace symbol the harness's
+    // export invariant could not tell that `undeclared-fn` belongs to a
+    // namespace at all, and reported a perfectly ordinary top-level definition
+    // as an unresolvable export. The module symbol carries the file's first line
+    // — the namespace exists from the top of the file, which is exactly what
+    // "ambient" means.
+    if (!sawNamespaceForm) {
+      const implicitNs: ASTEngine.UniversalSymbol = {
+        name: currentNamespace,
+        kind: ASTEngine.SymbolKind.Module,
+        range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 },
+        scope: "",
+        visibility: "public",
+        metadata: { clojureSpecific: true, isImplicitNamespace: true },
+      }
+      symbols.push(implicitNs)
+      exports.push({ name: currentNamespace, kind: ASTEngine.SymbolKind.Module, range: implicitNs.range, visibility: "public" })
+    }
+
     // ── Post-loop: contains for owned symbols ─────────────────────────────
     // Every symbol carries ownerName (namespace for top-level forms, protocol
     // for protocol methods, record for fields/methods). Emit one contains per
@@ -2020,13 +2074,25 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       const _owner = s.ownerName
       // Anonymous functions are locals — no namespace-contains edge.
       //
-      // CLJ-D34: `user` IS ONLY A FALLBACK WHEN NOTHING DECLARED A NAMESPACE.
-      // The skip existed so a file with no `ns` form would not claim a `user`
-      // namespace it never declared. But `(in-ns 'user)` at
-      // clojure/core/server.clj:169 DECLARES one, and the eight definitions that
-      // follow it belong to it — 36 real containment edges the file was losing.
-      // So the guard is on the fallback, not on the name.
-      if (!_owner || (!namespaceExplicit && _owner === "user") || s.metadata?.isAnonymous) continue
+      // CLJ-D34: `user` IS AN ORDINARY NAMESPACE, in both the explicit and the
+      // implicit case. The skip this replaces existed so a file with no `ns` form
+      // would not claim a `user` namespace it never declared — but that is
+      // exactly what Clojure does: `(defn f …)` in a file with no `ns` form
+      // interns `f` into the ambient namespace, and `user` is the conventional
+      // name for it.
+      //
+      // A fixture pair is what settled it, in the direction OPPOSITE to the one
+      // this comment originally argued. Treating a fallback `user` as a
+      // non-namespace published the SYMBOL but withheld its `contains`, and the
+      // export pass's own invariant then fired: "export `undeclared-fn` does not
+      // resolve to a top-level symbol (membership rides Contains)". Withholding
+      // the membership while keeping the export is the one option that cannot be
+      // made consistent, because the two must agree. `(in-ns 'user)` at
+      // clojure/core/server.clj:169 declares one explicitly and the eight
+      // definitions after it belong to it — 36 containment edges were being lost
+      // there — and the implicit case now behaves the same way, which is both
+      // simpler and true.
+      if (!_owner || s.metadata?.isAnonymous) continue
       const key = `${_owner}->${s.name}`
       const prev = containsPick.get(key)
       if (prev === undefined) { containsPick.set(key, s); continue }
@@ -2049,6 +2115,26 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
     const seenExports = new Set<string>()
     const finalExports: ASTEngine.ExportInfo[] = []
+    // CLJ-D38: A SPEC ANNOTATION IS NOT A SECOND PUBLIC ENTITY.
+    //
+    // `(s/fdef my-inc :args …)` then `(defn my-inc [x] …)` produced TWO exports
+    // named `my-inc` — one Interface (the spec) and one Function (the var) —
+    // because the dedupe key is `name|kind`, and the two differ in kind. The
+    // export pass's duplicate-name invariant caught it, and the invariant is
+    // right: a namespace exports each name ONCE. A spec annotates a var; it
+    // does not introduce a second thing to export.
+    //
+    // But a spec is a public entity in its own right when nothing else claims
+    // the name — `(s/def ::email :string?)` and `(s/def my-spec :int?)` have no
+    // `defn` at all, and those exports must stay. So the rule is exactly the one
+    // `contains` uses (CLJ-D33): a real definition displaces the annotation, and
+    // an annotation with no definition stands on its own.
+    const definedNames = new Set<string>()
+    for (const s of symbols) {
+      if (s.metadata?.isForwardDeclaration) continue
+      if (s.metadata?.isSpec) continue
+      definedNames.add(s.name)
+    }
     for (const s of symbols) {
       const isNSLevel = !s.scope || s.scope === currentNamespace || (s.ownerName === currentNamespace)
       // CLJ-D23: a `(declare …)` var is public in its namespace but NOT defined
@@ -2057,6 +2143,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Variables with one name, and the export pass's duplicate-name
       // invariant fires — the fixture caught exactly that.
       if (s.metadata?.isForwardDeclaration) continue
+      if (s.metadata?.isSpec && definedNames.has(s.name)) continue
       if (isNSLevel && s.visibility === "public" && exportedKinds.has(s.kind)) {
         const key = `${s.name}|${s.kind}`
         if (seenExports.has(key)) continue

@@ -1,124 +1,125 @@
 {
   "checks": [
     {
-      "description": "markdown: every named node type classified",
+      "description": "xml: every named node type classified",
       "id": "inventory-fully-classified",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "markdown: 0 confirmed gaps declared",
+      "description": "xml: 0 confirmed gaps declared",
       "id": "gap-list-present",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "markdown: 6 ruled, 0 pending owner",
+      "description": "xml: 0 ruled, 7 pending owner",
       "id": "design-decisions-tracked",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "every named node type classified (markdown)",
-      "detail": "72 types, 30 handled, 42 silent, 0 gaps, 6 decisions",
+      "description": "every named node type classified (xml)",
+      "detail": "56 types, 28 handled, 25 silent, 0 gaps, 7 decisions",
       "id": "section-a-structural",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "2 relationship kinds pinned by markdown fixtures",
-      "detail": "pinned: contains, uses",
+      "description": "3 relationship kinds pinned by xml fixtures; 3 emitted and all accounted for",
+      "detail": "pinned: contains, imports, references; emitted: contains, imports, references",
       "id": "section-b-relationship-kinds",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "Matrix 1b payload rows pinned for markdown (3)",
-      "detail": "range, visibility, ownerName",
+      "description": "Matrix 1b payload rows pinned for xml (1)",
+      "detail": "complexity",
       "id": "section-c-payload-matrix",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
       "description": ">=2 distinct evidenceClass values pinned by fixtures",
-      "detail": "2 tier(s) pinned: reference_qualified, structural",
+      "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
       "id": "section-d-evidence-tiers",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "scala3:markdown at corpus floor (missing 0, unexplained 0)",
-      "detail": "floor scala3:markdown: missing=0, unexplained=0 (differential-baseline.json)",
+      "description": "grails-core:xml at corpus floor (missing 0, unexplained 0)",
+      "detail": "floor grails-core:xml: missing=0, unexplained=0 (differential-baseline.json)",
       "id": "section-e-differential",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "markdown avgMsPerFile recorded (F9 gate enforces budget)",
-      "detail": "scala3:markdown 2.2 ms/file",
+      "description": "xml avgMsPerFile recorded (F9 gate enforces budget)",
+      "detail": "grails-core:xml 17.5 ms/file",
       "id": "section-f-perf-budget",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
-      "description": "markdown analyzer docs present and committed",
-      "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md",
+      "description": "xml analyzer docs present and committed",
+      "detail": "docs/analyzers/real-xml-analyzer.md",
       "id": "section-g-docs",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     },
     {
       "description": "cross-language consistency checks all pass",
       "detail": "12 checks pass",
       "id": "section-h-cross-language",
-      "language": "markdown",
+      "language": "xml",
       "status": "pass"
     }
   ],
   "claimLevel": "L2",
-  "commit": "0a536438be8e178dda2e3ef9af2086358e41a383",
-  "committedAt": "2026-09-28T22:48:03-04:00",
+  "commit": "dc6da03d30bd65a80621250d7f338eb522bb0f5f",
+  "committedAt": "2026-10-01T01:39:23-04:00",
   "data": {
     "languages": {
-      "markdown": {
+      "xml": {
         "gaps": [],
-        "nodeTypeCount": 72,
-        "pendingDecisions": [],
-        "ruledDecisions": [
-          "MD-D1",
-          "MD-D2",
-          "MD-D3",
-          "MD-D4",
-          "MD-D5",
-          "MD-D6"
+        "nodeTypeCount": 56,
+        "pendingDecisions": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
         ],
+        "ruledDecisions": [],
         "sections": {
           "section-a-structural": {
-            "detail": "72 types, 30 handled, 42 silent, 0 gaps, 6 decisions",
+            "detail": "56 types, 28 handled, 25 silent, 0 gaps, 7 decisions",
             "status": "pass"
           },
           "section-b-relationship-kinds": {
-            "detail": "pinned: contains, uses",
+            "detail": "pinned: contains, imports, references; emitted: contains, imports, references",
             "status": "pass"
           },
           "section-c-payload-matrix": {
-            "detail": "range, visibility, ownerName",
+            "detail": "complexity",
             "status": "pass"
           },
           "section-d-evidence-tiers": {
-            "detail": "2 tier(s) pinned: reference_qualified, structural",
+            "detail": "4 tier(s) pinned: import_based, reference_qualified, structural, usage_contextual",
             "status": "pass"
           },
           "section-e-differential": {
-            "detail": "floor scala3:markdown: missing=0, unexplained=0 (differential-baseline.json)",
+            "detail": "floor grails-core:xml: missing=0, unexplained=0 (differential-baseline.json)",
             "status": "pass"
           },
           "section-f-perf-budget": {
-            "detail": "scala3:markdown 2.2 ms/file",
+            "detail": "grails-core:xml 17.5 ms/file",
             "status": "pass"
           },
           "section-g-docs": {
-            "detail": "docs/analyzers/markdown.md, docs/analyzers/real-markdown-analyzer.md",
+            "detail": "docs/analyzers/real-xml-analyzer.md",
             "status": "pass"
           },
           "section-h-cross-language": {
@@ -154,9 +155,9 @@
       "description": "rust rulings RUST-D1/D2/D3 (2026-08-28): trait supertraits -> extends, impl -> implements, no class-based overrides edge; macro_rules! bodies opaque token trees (invocations call the macro NAME only, no expansion); scope tied to pinned tree-sitter-rust. 185/185 types classified A-H 8/8; ripgrep:rust differential 1948/1948 0 missing 0 unexplained; 122/122 mutants incl. 7 rust; union_item + trait associated_type gaps closed fixture-first; use-list import contract pinned (module/items, alias-aware, wildcards, extern crate)"
     }
   ],
-  "regeneratedAt": "2026-09-29T02:50:12.505Z",
-  "regeneratedAtCommit": "0a536438be8e178dda2e3ef9af2086358e41a383",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-10-01T05:39:49.569Z",
+  "regeneratedAtCommit": "dc6da03d30bd65a80621250d7f338eb522bb0f5f",
+  "runtime": "node v20.19.5",
   "schemaVersion": 2,
   "title": "Completeness spec (#419) — A–H sections per language"
 }

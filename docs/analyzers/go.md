@@ -369,6 +369,82 @@ its walk reaches first. That is a measured property, not a claim.
 - **prometheus, grpc-go and etcd are measured but not gate-pinned** — the differential still maps go
   to go-tools + terraform, so those 2,901 files are evidence, not a gate.
 
+## Round 7 (2026-09-29): the ninth label, and two latent crashes in my own oracle
+
+Round 6 left the go lane auditing eight labels. There was a ninth.
+
+`imports` has been emitted for every `import_spec` since **GO18**, and the analyzer's own comment
+says go's `requiredKinds` "has named `imports` since the wave" — completeness section B reads the
+marker, so the kind was claimed twice over and compared by nobody. Across the five corpora that is
+**2,214 distinct import targets**, entirely outside the differential, and it is the label framework
+detection reads (GOD7 rewrote framework detection on top of it).
+
+The allowlist is now an explicit enumeration of the labels the analyzer actually emits, each on its
+**own physical line** — that formatting is load-bearing and has bitten three times, because a `//`
+comment on that expression runs to end of line and deletes the rest of it.
+
+### GOD10 — the wrapper the recovery threw away
+
+An unterminated import block does not parse into a degraded `import_declaration`; the grammar emits a
+**bare `ERROR` node holding the specs directly**, so a pass keyed on the wrapper lost the whole
+block. Ruled **publish**, per GO16 (recovery must not swallow a declaration the tree can still see) and
+consistent with the GO15/GO17 distinction that suppresses only *values* read out of a recovery.
+**0 corpus instances in 6,836 files** — a full-extent read returns 100% with or without the defect,
+so only a shapes probe could find it.
+
+### Two undefined identifiers in the round-6 oracle (GO42)
+
+`d8823c13` removed the three round-6 oracles from `differential.ts` entirely. Restoring them exposed
+that the inlined copy referenced **two identifiers defined nowhere**: `goEmbeddedFieldLeaf` (should be
+`goEmbeddedLeaf`) and `GO_PLAIN_IDENTIFIER` (a *regex*, in a lane that forbids one). Either throws the
+moment the branch runs.
+
+It survived a 100% run because the branch is reached only by an embedded field and **the F5 draw
+rotates** — the same command reports `rot 2` then `rot 7`. The deeper cause was two copies of one
+derivation: the tested field-driven copy in `tmp/`, and an untested copy wired into the gate.
+
+**Consequence, recorded as a rule:** the F5 sample is never a stable count. Full-extent, sorted,
+non-rotating reads (`go-round7-refs-recheck.ts`) are the only figures that can carry a coverage claim.
+
+### GO41 — `overrides` was a promise with nothing behind it
+
+The go analyzer emits `RelationshipType.Overrides` **zero times**, yet `overrides` sat in the compared
+set. Go has no override: dispatch is interface satisfaction (already `implements`) and embedding is
+already `contains` on the owner. The entry is dead and is removed rather than left as an empty promise.
+
+### Two instrument bugs this round, both recorded
+
+- A duplicate-edge detector keyed on `source|target|line` **without the file** collided `main|fmt|9`
+  across 14 files and reported 5,703 "duplicates" of which none were.
+- GOD10's own mutant used `indexOf("import (")`, which matched inside `imports-recovered.go`'s own
+  **comment** — the fixture documents the shape, so the literal appears in a `//` line — and the
+  mutant survived its own fixture until made line-based and comment-aware.
+
+An instrument that cannot produce a false positive cannot produce a finding. Both are in the review
+and in the mutant's description.
+
+### Round 7 measurements (draw-independent, 5 corpora / 6,836 files)
+
+| label | measure | MISSING | UNEXPLAINED |
+| --- | ---: | ---: | ---: |
+| `imports` | 2,214 distinct targets | 0 | 0 |
+| `references` | 9,999 distinct targets (116,329 `declared_type` + 10,736 `return_type`) | 0 | 0 |
+| `uses` | 154,656 rows | 0 | 4 |
+| `contains` | 67,751 memberships | 0 | 0 |
+
+`imports` also reads **0 line mismatches** and **0 duplicate edges** — the first go oracle to assert
+either. 11/11 discriminating shapes pass; reverting GOD10 fails precisely one of them.
+
+Gates: fixtures **17/17**, mutants **54/54**, F6 36 types / 129 fixture types / 0 uncovered,
+differential **100%** on both pinned corpora across nine labels, tsc clean.
+
+### Round 7's own limits
+
+Unchanged and still open: the differential is **blind to source** (GO36/GO38 were both source
+defects), send/receive direction is invisible to the matcher, the 4 `uses` EXTRA stand as GO-GAP-2,
+shadowing is resolved by name, there is **no M60 line round for go**, and prometheus/grpc-go/etcd are
+measured but not gate-pinned.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`
