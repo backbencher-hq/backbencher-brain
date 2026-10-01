@@ -294,9 +294,18 @@ Not every Erlang file is Erlang to this grammar. Two real classes in OTP are not
 
 A file with **no recoverable declaration of any kind** — no `fun_decl`,
 `module_attribute`, `pp_define`, `record_decl`, `type_alias`/`opaque`/`nominal`,
-`import_attribute`, `export_attribute`, `export_type_attribute` — therefore yields
-**no symbols and no relationships**, and publishes its error count instead.
+`import_attribute`, `export_attribute`, `export_type_attribute`,
+`pp_include`, `pp_include_lib` — **and** ERROR/MISSING nodes present, therefore
+yields **no symbols and no relationships** and publishes its error count instead.
 `metadata.grammarDamaged` says so.
+
+Both halves of that condition are load-bearing, and each was added because the probe
+caught the rule being wrong. Without the error requirement it labelled
+comment-only and directive-only headers "damaged" — a header holding a single
+`-compile({parse_transform, …})` is not a parse that went wrong. Without the include
+forms it labelled include-only headers unreadable, when `-include("other.hrl")` is a
+real dependency worth recording. Absence of a declaration is not evidence of damage;
+the presence of ERROR nodes is.
 
 Every edge recoverable from those fragments is fabricated: the lines and the nesting
 are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes
@@ -345,13 +354,14 @@ cowboy@c965d1a, 4,326 `.erl` files — not a sample.
 
 | what | measurement |
 |---|---|
-| files | 4,326 read, 4,326 examined, 132 grammar errors (3.05%), **0 unexamined** |
-| symbols | 181,529 |
-| relationships | 994,670 |
+| files | 4,617 read (`.erl` AND `.hrl`), 4,617 examined, 139 grammar errors (3.01%), **0 unexamined** |
+| symbols | 209,247 |
+| relationships | 1,032,785 |
 | relationship types emitted | `calls`, `references`, `contains`, `uses`, `instantiates`, `implements` |
 | dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
-| unknown symbols through the production entry | **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members |
-| M60 line coverage (six dimensions) | 974,192 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
+| unknown symbols through the production entry | 4,617 files, **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members, all 26 symbol-free files accounted for with 0 suspect |
+| parse-error taxonomy | **20 named causes, 0 unclassified**; 112 of the 139 failing files are not defects in anything |
+| M60 line coverage (six dimensions) | 974,203 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
 | regexes in the analyzer | **0** (verified with comments stripped: no `RegExp`, no `.match/.replace/.test/.search/.matchAll`, no regex literal) |
 
 Two deliberately-empty classes are counted rather than hidden:
@@ -359,7 +369,7 @@ Two deliberately-empty classes are counted rather than hidden:
 | class | count | ruling |
 |---|---|---|
 | remote call / fun value whose **module** is a macro | 3,324 | ER-D35 |
-| whole-file grammar damage, no declaration survived | 12 | ER-D38 |
+| whole-file grammar damage, no declaration survived | 23 | ER-D38 |
 
 ### Performance
 
