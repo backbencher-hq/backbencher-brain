@@ -3817,6 +3817,128 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
       }
     }
 
+    // ── The authoritative name-resolution pass (review I13) ──
+    //
+    // Strategies 1, 2 and 4 above only fill `target_symbol_id IS NULL`, and that is
+    // the whole problem. `storeResults` already resolved most edges at INSERT time,
+    // and it could not do it correctly: the relationship loop there sits INSIDE
+    // `for (const result of batch)`, so a file's edges are matched against only the
+    // symbols stored SO FAR — its own, plus earlier files in the same batch. Which
+    // of two same-named symbols an edge binds to therefore depended on the order
+    // batches happened to be stored, and because every strategy above requires IS
+    // NULL, a wrong attachment made at insert time was never revisited. This
+    // function is the first point at which the symbol table is complete, so it is
+    // the only place a correction can be correct.
+    //
+    // MEASURED on zod/src (324 real TypeScript files, 9,950 symbols, 43,347
+    // relationships), indexing ONE root twice with a fresh store each time so every
+    // id is identical by construction:
+    //
+    //   brain_file / brain_symbol / brain_import   0 differing rows
+    //   resolution agreement   6-12% of edges disagree, varying with scheduling
+    //   unattached             14,090 vs 14,139 — a different NUMBER resolve each run
+    //
+    //   run1 v4/classic/compat.ts:getErrorMap:51
+    //   run2 v3/errors.ts:getErrorMap:11
+    //
+    // Two files exporting a same-named function is everyday, and which one an edge
+    // binds to was a function of store order. The counts never move, so every
+    // count-based check passed while the graph underneath differed: bb_graph and
+    // bb_analyze callers/callees answered differently for two people with identical
+    // code, and a bug that reproduced locally but not in CI had no explanation.
+    //
+    // `contains` and `overrides` were EXACTLY stable, and that is the diagnosis
+    // rather than a coincidence: they resolve structurally — by explicit id, and by
+    // the edge's own line_number inside its own file — so they never consult a name
+    // that could have several candidates.
+    //
+    // The population is read off the data rather than guessed. Measured over one
+    // clean index of that corpus, the attached target's `name` EQUALS
+    // `target_external` for 100% of calls, exports, uses, extends, instantiates,
+    // implements and contains, 69% of references, and 0% of overrides and imports
+    // (those resolve structurally and by the `module:item` form). So the guard below
+    // — a bare name, i.e. no `.` and no `:`, which is what strategies 1-4 and this
+    // pass between them own — is exactly the name-resolved population, and it leaves
+    // dotted `module:item` and structural edges to the strategies above.
+    //
+    // `contains` is excluded because its target is pinned to the edge's own line
+    // rather than to a name, so recomputing it by name would discard the pin.
+    //
+    // SET-BASED, and that is the whole trick. The obvious formulation is a
+    // correlated subquery per row; measured, it takes 167 s for these 43,347
+    // relationships, of which 164 s is the apply step alone rescanning the pick
+    // table once per relationship. A window function over a join resolves every
+    // relationship in one pass: 5.3 s total (109 ms source table, 2.6 s pick,
+    // 2.6 s apply). The ranking is `resolveTargetStmt`'s, deliberately — a
+    // definition ahead of a declaration (#612), then same-file, then
+    // same-language — with `s.id` making the choice total.
+    //
+    // IDEMPOTENCE is the property that makes this a fix rather than another
+    // opinion, and it is checked: the pass is a fixed point, so running it twice
+    // assigns identical targets (attachment count 32,082 and a content fingerprint
+    // of all 43,347 assignments unchanged). An earlier attempt placed this in
+    // `storeResults`, where it resolved against a partial table and could not work;
+    // an earlier SQL spelling correlated the UPDATE target from a subquery's ORDER
+    // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
+    // Both are why the location and the set-based shape are load-bearing.
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+    // The source file and language the ranking depends on, materialised once
+    // because they cannot be correlated out of a subquery's ORDER BY here.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_src AS
+      SELECT r.id AS rel_id, src.file_id AS src_file, COALESCE(sf.language, '') AS src_lang
+      FROM brain_relationship r
+      LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id
+      LEFT JOIN brain_file sf ON sf.id = src.file_id
+      WHERE r.project_id = '${projectId}'
+    `)
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_pick AS
+      SELECT rel_id, target_symbol_id FROM (
+        SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
+               ROW_NUMBER() OVER (PARTITION BY t.rel_id
+                 ORDER BY COALESCE(s.is_declaration, 0) ASC,
+                          (s.file_id = t.src_file) DESC,
+                          (COALESCE(f.language, '') = t.src_lang) DESC,
+                          s.id ASC) AS rn
+        FROM _i13_src t
+        JOIN brain_relationship r ON r.id = t.rel_id
+        JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
+        LEFT JOIN brain_file f ON f.id = s.file_id
+        WHERE r.project_id = '${projectId}'
+          AND r.target_external IS NOT NULL
+          AND r.relationship_type <> 'contains'
+          AND instr(r.target_external, '.') = 0
+          AND instr(r.target_external, ':') = 0
+      ) WHERE rn = 1
+    `)
+    // Without this the apply step degrades to a scan per row — the 164 s above.
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_pick_rel ON _i13_pick(rel_id)`)
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = p.target_symbol_id
+      FROM _i13_pick p
+      WHERE brain_relationship.id = p.rel_id
+    `)
+    // The target these rows now hold is not necessarily the one insert-time picked,
+    // so the cross-FILE flag is recomputed for the same population. Before the
+    // cross-language pass below on purpose: that pass is upgrade-only, so it has to
+    // see the final target to fill its bridge.
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET is_cross_file = CASE WHEN t.file_id <> s.file_id THEN 1 ELSE 0 END
+      FROM brain_symbol t, brain_symbol s
+      WHERE t.id = brain_relationship.target_symbol_id
+        AND s.id = brain_relationship.source_symbol_id
+        AND brain_relationship.project_id = '${projectId}'
+        AND brain_relationship.relationship_type <> 'contains'
+        AND instr(brain_relationship.target_external, '.') = 0
+        AND instr(brain_relationship.target_external, ':') = 0
+    `)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
     // worker-pool flow (batches are stored with skipResolution=true, so a TS
