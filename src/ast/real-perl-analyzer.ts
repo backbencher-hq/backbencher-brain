@@ -174,8 +174,16 @@ export function perlWordValues(node: Node): string[] {
   // files differ between the grammars, and the change ADDED 21 import emissions
   // while REMOVING 11. Both directions are addressed — the added ones by this
   // guard, the removed ones by the argument-reach fix below.
-  if (node.type === "fat_comma") return []
-  if (node.type === "subroutine_declaration_statement" || node.type === "subroutine" || node.type === "anon_sub" || node.type === "block" || node.type === "block_statement") return []
+  // PERL-MR4: there is deliberately NO `fat_comma` check here, and there was one
+  // for several hours. tree-sitter-perl has no such node type in EITHER
+  // generation -- a `=>` pair is flat children of a `list_expression` with the
+  // `=>` as an ANONYMOUS TOKEN between them -- so the check could never match.
+  // It passed the fixture suite (which runs 1.2.1, where it was equally dead) and
+  // only the F1 grammar cell caught it, by reporting an unknown type as a dead
+  // branch. Naming a type by PATTERN from another grammar's conventions instead of
+  // reading node-types.json is the mistake, and it is easy to repeat, because such
+  // a branch is invisible to every test that is not the grammar audit.
+  if (node.type === "subroutine_declaration_statement" || node.type === "anonymous_subroutine_expression" || node.type === "block" || node.type === "block_statement") return []
 
   // PERL-MR4, third clause, and it is the same principle as the closure guard
   // above rather than a new one: CODE IS NOT NAMES. A branch of `?:`, `and`/`or`,
@@ -201,7 +209,7 @@ export function perlWordValues(node: Node): string[] {
   // Note this is NOT the `=>` rule above: the outer list has no top-level `=>`, so
   // `isArgumentSpecification` correctly says "this is a name list" and the
   // argument count is right. Only the descent into the branch is wrong.
-  if (node.type === "conditional_expression" || node.type === "match_expression") return []
+  if (node.type === "conditional_expression") return []
 
   // PERL-MR4, fourth clause -- the same "code is not names" rule, now for a CALL's
   // own arguments. This was the last disagreement between the two grammars in the
@@ -223,8 +231,8 @@ export function perlWordValues(node: Node): string[] {
   //
   // The callee name is not lost: this refuses only descending INTO the call, and
   // `sprintf` is published by the ordinary call machinery.
-  if (node.type === "function_call_expression" || node.type === "method_call_expression" || node.type === "list_call_expression" || node.type === "list_operator_expression" || node.type === "function_call_list_expression") return []
-  if (node.type === "binary_expression" || node.type === "logical_expression") {
+  if (node.type === "function_call_expression" || node.type === "method_call_expression" || node.type === "func0op_call_expression" || node.type === "func1op_call_expression" || node.type === "coderef_call_expression" || node.type === "ambiguous_function_call_expression") return []
+  if (node.type === "binary_expression" || node.type === "lowprec_logical_expression" || node.type === "logical_not_expression") {
     const op = node.childForFieldName("operator") ?? node.children.find((c: any) => !c.isNamed)
     const t = op ? op.type : ""
     if (t === "and" || t === "or" || t === "||" || t === "&&" || t === "//") return []
@@ -274,7 +282,7 @@ function splitWords(text: string): string[] {
  *        fallback   a key
  *
  * None of it is an imported name. The `=>` is an ANONYMOUS TOKEN between the
- * list's children rather than a `fat_comma` wrapper — which is why a `fat_comma`
+ * list's children rather than a `fat_comma` wrapper that the grammar does not have — which is why a `fat_comma`
  * guard changed nothing when it was tried first, and why that guard is kept
  * separately for the grammars that do wrap.
  *
@@ -297,7 +305,11 @@ function isArgumentSpecification(statement: Node): boolean {
   // on exactly the grammar this rule exists for — 2.0.0 still harvested
   // `q{""}`, `as_string`, `bool`, `fallback` and the file count went UP, from 23
   // differing to 27.
-  const WRAPPERS = new Set(["list_expression", "parenthesized_expression", "array_expression", "hash_expression", "anonymous_array_expression", "anonymous_hash_expression"])
+  // `parenthesized_expression` is 2.0.0-only and deliberately NOT listed, for the
+  // reason PERL-MR11 gives for `noninterpolated_string_content`: a branch for a
+  // grammar this lane does not run is dead code by definition, and the bump
+  // requirement lives in reviews/perl/master-review.md instead.
+  const WRAPPERS = new Set(["list_expression", "array_expression", "hash_expression", "anonymous_array_expression", "anonymous_hash_expression"])
   const hasFatArrow = (n: any): boolean => {
     for (let i = 0; i < n.childCount; i++) {
       const child = n.child(i)
@@ -319,13 +331,13 @@ function isArgumentSpecification(statement: Node): boolean {
   const nodes = [statement, ...Array.from({ length: statement.childCount }, (_, i) => statement.child(i)).filter(Boolean)] as any[]
   for (const n of nodes) {
     if (!n) continue
-    if (hasFatArrow(n) || n.type === "fat_comma") return true
+    if (hasFatArrow(n)) return true
     // One level of list wrappers only. Descending further would reach a closure
     // body, where a `=>` is a hash constructor the FILE wrote, not a specifier —
     // and treating that as "no imported names" would drop real items.
     for (let i = 0; i < n.childCount; i++) {
       const child = n.child(i)
-      if (child && WRAPPERS.has(child.type) && (hasFatArrow(child) || child.type === "fat_comma")) return true
+      if (child && WRAPPERS.has(child.type) && hasFatArrow(child)) return true
     }
   }
   return false
@@ -359,14 +371,6 @@ export function perlArgumentNodes(node: Node): Node[] {
   // as the `_` and `,` tokens are -- and the same transparency the
   // `isArgumentSpecification` wrapper set already assumes, which is why that rule
   // had to be taught to look through wrappers before it could work at all.
-  for (let i = 0; i < node.childCount; i++) {
-    const child = node.child(i)
-    if (!child || child.type !== "parenthesized_expression") continue
-    const inner = perlFindChildByType(child, "list_expression")
-    if (inner) return inner.namedChildren.filter((c): c is Node => !!c && perlWordValues(c).length > 0)
-    const innerArgs = perlArgumentNodes(child)
-    if (innerArgs.length) return innerArgs
-  }
   const list = perlFindChildByType(node, "list_expression")
   if (list) return list.namedChildren.filter((c): c is Node => !!c && perlWordValues(c).length > 0)
   // `parenthesized_expression` is itself a valid argument carrier when it holds a
@@ -380,7 +384,7 @@ export function perlArgumentNodes(node: Node): Node[] {
     // absent from the wired grammar and so absent here for the same reason as
     // `noninterpolated_string_content` above: the audit is zero-tolerance and
     // this lane does not run 2.0.0. The bump re-adds it.
-    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword" || child.type === "parenthesized_expression") {
+    if (child.type === "string_literal" || child.type === "interpolated_string_literal" || child.type === "quoted_word_list" || child.type === "autoquoted_bareword") {
       if (perlWordValues(child).length > 0) result.push(child)
     }
   }
