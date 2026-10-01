@@ -93,6 +93,9 @@ export class RealJuliaAnalyzer {
    */
   private foreignMarked = new Set<string>()
 
+  /** Set while the walk is inside a `macro_definition`, whose body is QUOTED code. */
+  private inMacroBody = false
+
   /**
    * `call_expression` nodes that are the LEFT-HAND SIDE of a short-form declaration, i.e.
    * `f(x) = …` rather than an invocation. Julia writes a function definition with the same node
@@ -108,6 +111,7 @@ export class RealJuliaAnalyzer {
   private typeHeadSites = new Set<number>()
 
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+    this.inMacroBody = false
     this.foreignMarked.clear()
     this.declSites.clear()
     this.typeHeadSites.clear()
@@ -126,7 +130,7 @@ export class RealJuliaAnalyzer {
     let activeScope = ""
     let depth = 0
 
-    const walkStack: { node: Node; activeScope: string; isExit: boolean }[] = [{ node: rootNode, activeScope: "", isExit: false }]
+    const walkStack: { node: Node; activeScope: string; inMacroBody: boolean; isExit: boolean }[] = [{ node: rootNode, activeScope: "", inMacroBody: false, isExit: false }]
 
     while (walkStack.length > 0) {
       const frame = walkStack.pop()!
@@ -152,6 +156,7 @@ export class RealJuliaAnalyzer {
         // of everything after it. Frames are pushed exit-first with children reversed, so children
         // always pop before their parent's exit frame and restoring here is well-ordered.
         activeScope = frame.activeScope
+        this.inMacroBody = frame.inMacroBody
         continue
       }
       const scope = frame.activeScope
@@ -269,6 +274,10 @@ export class RealJuliaAnalyzer {
             }
           }
           const isMacro = node.type === "macro_definition"
+          // Remember whether the scope we are about to advance came from a macro, and restore it on
+          // the way out. `activeScope` is restored by the exit frame; this flag rides alongside it.
+          const wasInMacro = this.inMacroBody
+          if (isMacro) this.inMacroBody = true
           symbols.push({
             name,
             kind: isMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Function,
@@ -349,8 +358,26 @@ export class RealJuliaAnalyzer {
           // which is a DEFINITION and not a binding — handled by its own case below.
           const lhs = this.pos(assign, 0)
           if (!lhs || lhs.type === "call_expression") break
-          const name = lhs.text.trim()
+          // `global x45350::Int = 1` puts a `typed_expression` on the left, so `lhs.text` is the
+          // WHOLE left-hand side and the binding published as a symbol named `x45350::Int` — the
+          // annotation welded into the name, so nothing could resolve to it. Found by the F5
+          // `contains` oracle, which derives `Foo45350 contains x45350` from Julia's containment
+          // rule and the analyzer had no edge for it to match. The NAME is the typed expression's
+          // first child; its second is the type, which is a reference and not part of the name.
+          const nameNode = lhs.type === "typed_expression" ? this.pos(lhs, 0) ?? lhs : lhs
+          const name = nameNode.text.trim()
           if (!name || IMPLICIT_OR_CONSTANT.has(name)) break
+          // A binding inside a macro's body is part of QUOTED code that expands at the CALL SITE,
+          // so it is not a declaration OF the macro. `macro cached(expr) quote local v = …; v end`
+          // published `cached contains v`, asserting the macro declares `v` — when `v` is a
+          // temporary in generated code and `esc` deliberately reaches the caller's scope instead.
+          //
+          // Found by the F5 `contains` ORACLE, which derives truth from Julia's own containment rule
+          // and shares nothing with this analyzer: it derived 8 of 8 edges for a fixture and its one
+          // disagreement was this edge. That is the disagreement an independent instrument is FOR —
+          // the fixtures asserted `cached` as a macro and never looked at what it appeared to
+          // contain. A `local` in generated code is not a member of anything.
+          if (this.inMacroBody && node.type !== "const_statement") break
           symbols.push({
             name,
             kind: node.type === "const_statement" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
@@ -563,12 +590,12 @@ export class RealJuliaAnalyzer {
       // Recurse with the (possibly advanced) scope, and push an exit frame so `depth` tracks
       // nesting. The scope is advanced for the CHILDREN of the node that advanced it, which is
       // what makes `contains` ownership correct for a module or a function body.
-      walkStack.push({ node, activeScope: scope, isExit: true })
+      walkStack.push({ node, activeScope: scope, inMacroBody: this.inMacroBody, isExit: true })
       const childScope = activeScope
       depth++
       for (let i = node.namedChildCount - 1; i >= 0; i--) {
         const c = node.namedChild(i)
-        if (c) walkStack.push({ node: c, activeScope: childScope, isExit: false })
+        if (c) walkStack.push({ node: c, activeScope: childScope, inMacroBody: this.inMacroBody, isExit: false })
       }
     }
 
