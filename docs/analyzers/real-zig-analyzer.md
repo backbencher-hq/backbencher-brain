@@ -184,6 +184,41 @@ Line numbers are NOT claimed for complexity (`metadata.complexity` /
 `cyclomaticComplexity` are counts, not positions) or for symbol declarations
 beyond their own declaration line.
 
+### M59 / M60 compliance, measured by two independent instruments
+
+M59's contract (`reviews/m49-callsite-line-gap.md`) is three obligations. All three
+are measured here **twice** — by this lane's `zigw-line-accuracy.ts` and by M59's own
+`script/m59/oracle-callsite.ts`:
+
+| obligation | instrument | result |
+|---|---|---|
+| every relationship corresponding to a source construct carries that construct's **1-based** line | `oracle-callsite.ts --lang=zig --files-per-lang=1200` | **31,128 / 31,128 with a line, 0 without** |
+| " | `zigw-line-accuracy.ts 3839` (full corpus) | **453,933 relationships, 0 without a line** |
+| the line is the **right** line — it carries the name the edge names | `oracle-callsite.ts` | **0 INCONSISTENT** |
+| " | `zigw-line-accuracy.ts 3839` | **453,933 at 100.00%, 0 off**; per-class 100% |
+| the claim is **falsifiable** | `--shift 1` | **13.76%** — one line collapses it, so 100% is a measurement, not a tautology |
+
+**The declared exception list.** M59 requires relationships with no single source
+construct to be *declared* rather than given an invented line. Zig's list is
+**empty**, and per class the construct each line points at is: `calls` the callee
+leaf · `uses` the member leaf or the identifier · `contains` the **member's own
+declaration line** (synthesized from the symbol table rather than walked at a site,
+but still a real construct) · `references` the type **name** node (M59.A7) · the
+import twin the **path literal** inside `@import("…")` (M60.A7) · `instantiates` the
+construction site · `exports` the `pub` declaration. Where a line genuinely cannot be
+derived the field is **omitted, never written as 0** (#820) — which is why presence
+is 100% rather than 100%-of-a-guess.
+
+**What M59's oracle could not check, and why it is not Zig's problem.** The oracle
+reports **80 of 31,128 rows (0.26%)** as `notCheckable`: an `@import` target is a
+*path inside a string literal*, so it is written on the line but is not an
+identifier-shaped token. The same shape makes go's and ruby's `imports` rows
+uncheckable. The path-specific rule here checks an `imports` edge against the path as
+written or its last segment and reports 100% over 453,933 edges. Worth stating rather
+than leaving as a number: M59's artifact retains `notCheckableSample` for only **3
+files per language**, so those rows cannot be itemised from it — **for any lane**. That
+is a cap on what M60's fold-in can evidence, and it belongs to the shared instrument.
+
 ## Complexity
 
 Per-symbol cyclomatic complexity on every function/method, from a base of 1:
@@ -237,7 +272,7 @@ reproduces.
 | `exports` gate | `zigw-exports.ts 200` | **PHANTOM 0, MISSING 0** |
 | source-keyed `uses`/`calls` gate | `zigw-uses-calls.ts 200` | **PHANTOM 0, MISSING 0, 4,590 source agreements** — the axis F5 structurally discards, compared as source SETS per (label, target) |
 | name-level gate | `zigw-unexplained.ts 1200` | **UNEXPLAINED 0, MISSING 0** in BOTH directions at (label, `normTarget(target)`) level — the axis the five site-level gates structurally cannot see, and the one that found Z40 |
-| M60 line accuracy | `zigw-line-accuracy.ts 300` | **28,355 relationships, 100.00%, 0 off**, every class at 100%. Calibration: `--shift 1` collapses it to **13.50%** (24,528 off), so the check is tight rather than merely green |
+| M60 line accuracy | `zigw-line-accuracy.ts 3839` | **453,933 relationships, 100.00%, 0 off**, every class at 100%. Calibration: `--shift 1` collapses it to **13.76%** (391,467 off), so the check is tight rather than merely green |
 | M60 line cross-check | `line-accuracy.ts zig zig,zls,ghostty 300` | **41,635 relationships, 0 wrong** — an independent generic probe over the same files; a different instrument counting a different draw, which is why the two totals are both stated rather than reconciled to one |
 | evidence tiers | `zigw-evidence-tier.ts` | every class carries a tier the family rule allows (`import_based` for `imports`/`exports` and the import `references` twin, `structural` for a proven `instantiates`, `declared_type` for a type reference) |
 | F5 wiring | `zigw-f5-wiring.ts` | the lane's audit is wired — and this gate has reported a real loss five times, including a commit that reverted `zig-truth.ts` from seven exports to four and dropped the whole of the Z37–Z39 work from HEAD |
