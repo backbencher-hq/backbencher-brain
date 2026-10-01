@@ -4634,17 +4634,12 @@ export function deriveJavaScriptOverrides(root: any): { label: string; from: str
             // `static` is an UNNAMED token child, which is why it is found among
             // `children` and not among `namedChildren`.
             if ((c.children ?? []).some((k: any) => k.type === "static")) continue
-            // An ACCESSOR (`get x()` / `set x(v)`) is classified `property` by this
-            // analyzer's declared contract, and the override pass considers only
-            // Methods and Constructors — so accessors never produce an override.
-            // The oracle mirrors that here, and that mirroring is LOCKSTEP ON A KNOWN
-            // OMISSION rather than a shared conviction: in JavaScript a subclass
-            // accessor DOES override a base accessor of the same name, so the lane
-            // does not model a real relationship. It is recorded as J10 rather than
-            // absorbed, because lockstep on a rule believed right is exactly how X1
-            // happened; lockstep on a rule KNOWN to be incomplete is a different
-            // thing, provided the incompleteness is written down.
-            if ((c.children ?? []).some((k: any) => k.type === "get" || k.type === "set")) continue
+            // J10 (was a lockstep skip): an accessor IS a prototype member, and a
+            // subclass accessor DOES shadow the base accessor of the same name, so
+            // the oracle now derives these rows instead of mirroring the omission.
+            // The `seen` set below collapses the `get`/`set` pair to ONE truth row,
+            // which is why widening the analyzer needed no dedup reasoning here —
+            // it needed the SAME dedup reasoning on the analyzer side, and got it.
             member = c.childForFieldName("name")?.text ?? ""
           }
           else if (c.type === "field_definition") {
