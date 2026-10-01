@@ -169,8 +169,11 @@ Named, with their measured size. None of these is hidden in a percentage.
 
 1. **Cross-file inheritance resolves as `extends`.** 507 edges over the 389-file
    corpus: an ancestor that is really an interface declared in **another file** gets
-   the wrong KIND — not a missing edge. A per-file analyzer cannot see it. Reported as
-   `implementsCrossFileUnresolved`.
+   the wrong KIND — not a missing edge. Reported as `implementsCrossFileUnresolved`.
+   The census in limitation 3 quantifies the same ceiling from the other side: 430
+   `external` call targets resolve through an ancestor's member list, and some ancestor
+   routes are **under-counted** here precisely because these 507 edges mis-type the very
+   bases whose members are being looked for.
 2. **`overrides` is now 422/100 emitted/unresolved — and the 100 are a real
    ambiguity, not a gap.** 414 of the 422 point at a base declared in **another file**
    (`overridesEmittedExternal`), carried at 0.75 with a `reasonCode`. That was not the
@@ -192,6 +195,28 @@ Named, with their measured size. None of these is hidden in a percentage.
    would lose real edges. Note the figure ROSE from 1,786 while the lane got more
    correct — see limitation 11. Top
    targets are in the surface artifact as the adjudication surface.
+
+   **The `external` class was then MEASURED rather than left as a ceiling.**
+   `script/m60/solidity-projectwide-census.ts` audits all 1,677 of them against the whole
+   389-file corpus and gives each one of four verdicts: `in-file` 35 (2.1% — the name
+   matches a local declaration, so the *caller* is under-determined, not the target
+   missing), `ancestor-member` 430 (25.6% — an ancestor declared in another file declares
+   that member), `project-declared` 1,134 (67.6%), and `external` **78 (4.7%)**. So
+   **93.3% is project-resolvable and 4.7% is the true floor** — low-level EVM members
+   like `x.delegatecall` and library free functions from packages this corpus does not
+   contain (solady's `ShortStrings.wrap`).
+
+   The important part is not the ratio. **The ceiling is an unfilled parameter, not a
+   language limit.** `AnalyzeContext` is this repo's own hook for project-wide knowledge,
+   **fifteen sibling analyzers already read it**, and no production caller populates it —
+   the JavaScript lane's external-override fixture says so in its own header. So this is
+   the size of the prize for wiring one shared parameter fifteen lanes are already written
+   to accept, not a shortfall in Solidity support. The census resolves nothing and
+   publishes no relationship: every row is a measurement of what such a pass *would*
+   find, kept separate from the graph so a measurement can never be read as a fact the
+   index holds. Its denominator is asserted equal to the sum of its routes, because the
+   first version counted 35 rows it never gave a verdict and every percentage was
+   therefore computed against a number the numerators did not cover.
 4. **Two store-refused names.** `self` and `root` are real Solidity identifiers that
    `pool-worker.ts`'s shared `UNIVERSAL` denylist drops. The lane refuses the
    declaration so no edge dangles, and the **drift between the two lists is checked**

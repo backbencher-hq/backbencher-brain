@@ -34,6 +34,11 @@ const read = (p: string) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8
 
 const doc = fs.readFileSync(DOC, "utf8")
 const surface = read("validation/m60/results/solidity-surface.json")
+// The project-wide census is a SECOND artifact and the doc cites its figures, so the
+// gate reads it too. A doc-truth gate that checked one artifact and the doc quoted two
+// would let half the numbers drift unchecked — which is the same seam class as the
+// `revert_statement` branch: a case in the source that reads as coverage.
+const projCensus = read("validation/m60/results/solidity-projectwide-census.json")
 const census = read("validation/m60/results/solidity-type-census.json")
 const adj = read("validation/m60/results/solidity-unexplained-adjudication.json")
 const baseline = read("validation/m14/differential-baseline.json")
@@ -85,6 +90,16 @@ const checks: Check[] = [
   { doc: `${Math.round(t.perf.factsPerMs).toLocaleString("en-US")} facts/ms`, what: "perf factsPerMs tracks the artifact", actual: t.perf.factsPerMs, expect: (v) => Math.round(v as number) === Math.round(t.perf.factsPerMs) },
   { doc: `loadAvg1 ${surface.loadContext.loadAvg1.toFixed(2)}`, what: "load context tracks the artifact", actual: surface.loadContext.loadAvg1, expect: (v) => v === surface.loadContext.loadAvg1 },
   { doc: "perfIsQualified: false", what: "perf qualification", actual: surface.perfIsQualified, expect: (v) => v === false },
+  // ── the project-wide census (M60.solidity-projectwide-census)
+  { doc: "`ancestor-member` 430", what: "census ancestor-member", actual: projCensus.totals.counts["ancestor-member"], expect: (v) => v === 430 },
+  { doc: "`project-declared` 1,134", what: "census project-declared", actual: projCensus.totals.counts["project-declared"], expect: (v) => v === 1134 },
+  { doc: "`in-file` 35", what: "census in-file", actual: projCensus.totals.counts["in-file"], expect: (v) => v === 35 },
+  { doc: "`external` **78", what: "census true floor", actual: projCensus.totals.counts["external"], expect: (v) => v === 78 },
+  { doc: "93.3% is project-resolvable", what: "census project-resolvable pct", actual: projCensus.totals.projectResolvablePct, expect: (v) => v === "93.3%" },
+  { doc: "4.7% is the true floor", what: "census truly-external pct", actual: projCensus.totals.trulyExternalPct, expect: (v) => v === "4.7%" },
+  // The invariant the census asserts internally, re-checked here because a gate that
+  // trusts a sibling script's self-report is not a second opinion.
+  { doc: "denominator is asserted equal to the sum of its routes", what: "census denominator equals its numerators", actual: projCensus.totals.routeSumMatchesAudited, expect: (v) => v === true },
   // ── per-kind counts, all ten
   { doc: "contains` 5587", what: "kinds.contains", actual: t.kinds.contains, expect: (v) => v === 5587 },
   { doc: "uses` 14128", what: "kinds.uses", actual: t.kinds.uses, expect: (v) => v === 14128 },
