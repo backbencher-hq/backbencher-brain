@@ -164,18 +164,8 @@ const GIANT_CORPUS_OFFSET = 25000
 // `offset` stays reachable — a fixed 2000 meant an agent paging a large result
 // set got an empty page while thousands of matches existed — and reaching it is
 // reported as `truncated`, not hidden.
-//
-// Generous on purpose: at 2,000 the cap cost real recall on real corpora, and a
-// retrieval tool that silently under-answers is worse than a slow one.
-const PHASE_CAP_MIN = 20000
-const PHASE_CAP_MAX = 200000
-
-/**
- * Chunk size for the id-set join — SQLite refuses a statement with more bound
- * parameters than its compiled limit, and a 20,000-placeholder `IN (…)` is a
- * raw "too many SQL variables" driver error reaching the caller.
- */
-const ID_JOIN_CHUNK = 500
+const PHASE_CAP_MIN = 2000
+const PHASE_CAP_MAX = 50000
 
 function phaseCap(budget: number): number {
   return Math.min(PHASE_CAP_MAX, Math.max(PHASE_CAP_MIN, budget * 4))
@@ -435,29 +425,17 @@ function fetchByIds(
 ): CorpusRow[] {
   const distinct = [...new Set(idRows.map((r) => r.id))]
   if (distinct.length === 0) return []
-  // Chunked: one `IN (…)` over a large id set exceeds SQLite's bound-parameter
-  // limit and fails with a raw "too many SQL variables" driver error reaching
-  // the caller for a query that should simply return its matches.
-  const out: CorpusRow[] = []
-  for (let start = 0; start < distinct.length; start += ID_JOIN_CHUNK) {
-    const chunk = distinct.slice(start, start + ID_JOIN_CHUNK)
-    const placeholders = chunk.map(() => "?").join(",")
-    out.push(
-      ...(raw
-        .prepare(
-          "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-            "s.docstring, s.symbol_type AS symbolType, " +
-            "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
-            "COALESCE(s.complexity, 0) AS complexity, " +
-            "f.relative_path AS relativePath, f.path AS filePath, " +
-            "COALESCE(f.language, 'unknown') AS language " +
-            "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
-            "WHERE s.id IN (" + placeholders + ")" + filterSql,
-        )
-        .all(...chunk, ...filterParams) as CorpusRow[]),
-    )
-  }
-  return out
+  const placeholders = distinct.map(() => "?").join(",")
+  return raw.prepare(
+    "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
+      "s.docstring, s.symbol_type AS symbolType, " +
+      "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
+      "COALESCE(s.complexity, 0) AS complexity, " +
+      "f.relative_path AS relativePath, f.path AS filePath, " +
+      "COALESCE(f.language, 'unknown') AS language " +
+      "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
+      "WHERE s.id IN (" + placeholders + ")" + filterSql,
+  ).all(...distinct, ...filterParams) as CorpusRow[]
 }
 
 function buildResults(
