@@ -255,30 +255,39 @@ Separated from the parser, because the two have opposite consequences:
 Parse stays flat; **the analyzer does not**. The 32→64 step is 3.46× for 2× depth, which is
 super-linear.
 
-**The mechanism is a COUNT explosion, not a long walk** — which is the opposite of the first
-guess and only a counter could tell them apart. Thirteen per-node ancestor-climb loops were
-instrumented to count invocations and iterations separately:
+**The mechanism is LONG WALKS, and getting that wrong took two attempts worth recording.**
 
-| depth | nodes | climb calls | climb iterations | calls/node | calls ÷ (nodes×depth) |
-| --- | --- | --- | --- | --- | --- |
-| 8 | 68 | 421 | 421 | 6.2 | 0.77 |
-| 16 | 108 | 965 | 965 | 8.9 | 0.56 |
-| 32 | 188 | 2,821 | 2,821 | 15.0 | 0.47 |
-| 64 | 348 | 9,605 | 9,605 | 27.6 | 0.43 |
+The first write-up of this section claimed a "call-count explosion, not a long walk", on the
+evidence that thirteen per-node climb loops showed equal invocation and iteration counts. **That
+evidence was an instrumentation artifact**: both counters were incremented on the same line inside
+the loop body, so they were equal by construction and the "no walk is long" inference was worthless.
+Re-instrumented correctly — invocations counted *before* the loop, iterations *inside* it:
 
-Two readings, and they point at different fixes:
+| depth | nodes | loop invocations | loop iterations | iterations per invocation |
+| --- | --- | --- | --- | --- |
+| 16 | 108 | 123 | 965 | 7.8 |
+| 64 | 348 | 363 | 9,605 | **26.5** |
 
-- **calls == iterations, at every depth.** Not one of those loops ever iterates more than once — so
-  no single walk is long. The cost is **how many times the walks are started**, not how far they go.
-  A "memoise the ancestor chain" fix would address nothing.
-- **calls/node doubles as depth doubles** (6.2 → 27.6), so calls ≈ O(nodes × depth). Since nodes is
-  itself ≈ 5.4 × depth here, that is **O(depth²)** and it matches the measured 363× on the symbol
-  axis.
+The opposite of what was claimed. Invocations grow slowly (123 → 363, roughly with node count), and
+each one walks **deeper** as depth grows — 7.8 ancestors at depth 16, 26.5 at depth 64. Total
+iterations therefore go 965 → 9,605, which is **O(nodes × depth) = O(depth²)** and matches the 363×
+per-symbol cost measured on the depth axis.
 
-The shape is therefore *per-node scope resolution over every enclosing scope*, and the fix is to
-resolve the enclosing scope once per subtree rather than once per node — hoisting, not caching.
-Which of the thirteen call sites dominates has **not** been isolated; the counts above locate the
-class precisely and the line not at all.
+No single site dominates the invocations: `isImportName`, `isCSharpQualifiedNamePart` and three
+others sit at 19–20% each, and the rest under 2%. So this is not one bad predicate but a family of
+ancestor-ascending predicates — `isImportName` alone walks the whole chain to the root for every
+identifier it is asked about, on a file with no `using` directive at all.
+
+**What this points at, stated as a direction rather than a fix.** Every one of these predicates
+answers "is there an ancestor of kind X?", which is a pure function of the ancestor chain and is
+identical for a whole subtree. Recomputing it per node recomputes the same answer O(depth) times.
+The direction is to answer it once per subtree — carry the answer down during the walk, or memoise
+per node — and the win would be largest for the predicates that climb to the root unconditionally
+rather than stopping early.
+
+**Still not fixed, and the line is still not named.** What is established: the axis (depth), the
+shape (O(nodes × depth)), the family (ancestor-ascending predicates, none dominant), and that the
+first localisation attempt was wrong because of where its counters were placed.
 
 **So the linearity claim, restored an hour ago on the strength of flat per-file cost, is too strong
 as written and is now scoped correctly: the analyzer is flat per file, and super-linear per unit of
