@@ -83,7 +83,34 @@ const MALLOC_FUNCTIONS = ["malloc", "calloc", "realloc", "kmalloc", "vmalloc"]
 const FREE_FUNCTIONS = ["free", "kfree", "vfree"]
 const UNSAFE_STRINGS = ["strcpy", "sprintf", "gets"]
 const SAFE_STRINGS = ["strncpy", "snprintf"]
-const EXPORT_MACROS = ["EXPORT_SYMBOL", "EXPORT_SYMBOL_GPL"]
+/**
+ * Macros that mark a declaration as part of a module's PUBLIC API.
+ *
+ * The kernel convention (`EXPORT_SYMBOL`) and the userspace one are BOTH here, and
+ * they are structurally different, which is why the exported name is read from two
+ * different places (#963).
+ *
+ * Measured over the three corpora, the userspace markers appear 955 (`GIT_EXTERN`),
+ * 163 (`CURL_EXTERN`) and 401 (`REDISMODULE_API`) times -- 1,519 real API markers that
+ * produced NOTHING, because until #963 the list held only the two kernel macros, which
+ * appear zero times in three userspace codebases.
+ *
+ * `GIT_EXTERN` is included for completeness but is NOT reachable: its 400 uses are all
+ * the parenthesised form `GIT_EXTERN(int) git_revert(...)`, which is not valid C -- a
+ * macro call in declaration position -- so the grammar yields an ERROR node. That is a
+ * declared limit, not an oversight, and it is why the name is read from the DECLARATOR:
+ * in the userspace bare form the name is where C puts it.
+ */
+const EXPORT_MACROS = [
+  // Kernel: the exported NAME is the macro's first argument.
+  "EXPORT_SYMBOL",
+  "EXPORT_SYMBOL_GPL",
+  // Userspace: the macro is a storage-class-like PREFIX, and the name is the
+  // declarator's. All 555 uses of these two parse cleanly.
+  "CURL_EXTERN",
+  "REDISMODULE_API",
+  "GIT_EXTERN",
+]
 const FORMAT_FUNCTIONS = ["printf", "fprintf", "sprintf", "snprintf", "scanf", "fscanf", "sscanf", "syslog", "dprintf"]
 const DANGEROUS_FUNCTIONS = ["system", "popen", "execve", "execvp", "execl", "execlp"]
 const SIGNAL_FUNCTIONS = ["signal", "sigaction", "sigprocmask", "sigemptyset", "sigfillset", "sigaddset", "sigdelset", "sigwait", "sigpending", "sigsuspend"]
@@ -973,6 +1000,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const errors: ASTEngine.ParseError[] = []
     const scopeManager = new CScopeManager()
     const emittedUseRelationships = new Set<string>()
+    // #963: one `exports` edge per (name, marker) pair, for the same per-pair reason
+    // every other dedup key in this file uses.
+    const emittedExports = new Set<string>()
     // #962: one `instantiates` edge per (function, type) pair, beside the `uses` set
     // for the same per-pair-not-per-line reason.
     const emittedInstantiates = new Set<string>()
@@ -1642,6 +1672,74 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         case "declaration":
           {
+            // #963: a declaration introduced by an export marker, in the USERSpace
+            // spelling, where the marker is a PREFIX rather than a call.
+            //
+            //   kernel      EXPORT_SYMBOL(my_function, GPL);   <- a call_expression
+            //   userspace   CURL_EXTERN int curl_strequal(...); <- a bare identifier
+            //
+            // The kernel spelling reaches the `call_expression` branch and the
+            // EXPORT_MACROS test there; the userspace one never does, which is half of
+            // why `exports` fired zero times in 2,798 files -- the other half being
+            // that the list held only kernel macros. So the marker is tested HERE, on
+            // the declaration's FIRST child, which is where C puts a
+            // storage-class-like prefix.
+            //
+            // The exported NAME is the declarator's, never the marker's argument: the
+            // marker's argument here is a RETURN TYPE (`CURL_EXTERN(int)`) or nothing
+            // at all (`REDISMODULE_API` is defined empty), so reading it would publish
+            // `exports int -> CURL_EXTERN` -- a type as an exported name, the same
+            // defect #962 corrected for `instantiates`.
+            {
+              // The marker arrives as a `macro_prefixed_type_specifier` -- the node #743's
+              // grammar wave added for `MACRO int` -- whose FIRST CHILD is a
+              // `macro_specifier` holding the macro name, with the real type after it.
+              // `CURL_EXTERN int curl_strequal(...)` parses as
+              //   declaration
+              //     macro_prefixed_type_specifier
+              //       macro_specifier "CURL_EXTERN"
+              //       primitive_type    "int"
+              //     function_declarator "curl_strequal(...)"
+              // so the marker is one level down and the declaration's own first child is
+              // NOT an identifier -- which is why testing `namedChild(0).type ===
+              // "identifier"` found nothing and `exports` stayed at zero after the
+              // macro list was widened.
+              const first = node.namedChild(0)
+              let marker = ""
+              if (first && (first.type === "identifier" || first.type === "field_identifier")) {
+                marker = first.text.trim()
+              } else if (first && (first.type === "macro_prefixed_type_specifier" || first.type === "macro_type_specifier")) {
+                for (let i = 0; i < first.namedChildCount; i++) {
+                  const c = first.namedChild(i)
+                  if (c && (c.type === "macro_specifier" || c.type === "identifier")) {
+                    marker = c.text.trim()
+                    break
+                  }
+                }
+              }
+              if (marker && inArray(EXPORT_MACROS, marker) && node.childForFieldName("declarator")) {
+                const idNode = this.exportedDeclarationName(node)
+                // The exported NAME can never be the marker itself; a recovery-split
+                // declaration reaches the marker and must publish nothing.
+                if (idNode && idNode.text.trim() === marker) continue
+                if (idNode) {
+                  const xKey = `${idNode.text}::exports::${marker}`
+                  if (!emittedExports.has(xKey)) {
+                    emittedExports.add(xKey)
+                    isKernelExport = true
+                    patterns["Public API export"] = true
+                    relationships.push({
+                      source: idNode.text,
+                      target: marker,
+                      type: ASTEngine.RelationshipType.Exports,
+                      confidence: 1.0,
+                      line_number: this.nodeLine(idNode),
+                      metadata: { relationshipType: "module_export", exportMacro: marker },
+                    })
+                  }
+                }
+              }
+            }
             // #918, the DECLARATION spelling of the same heading — recovery cut
             // the region at the first parameter (`declaration` + an ERROR holding
             // the rest of the parameter list and the body's opening — measured:
@@ -2092,18 +2190,37 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               hasSafeStrings = true
             } else if (inArray(EXPORT_MACROS, target)) {
               isKernelExport = true
+              // #963: the exported NAME is read from TWO places, because the two
+              // conventions put it in two places.
+              //
+              //   kernel      EXPORT_SYMBOL(my_function, GPL);
+              //               the name IS the macro's first argument
+              //   userspace   CURL_EXTERN int curl_strequal(const char*, const char*);
+              //               the macro is a PREFIX -- here it expands to `extern`,
+              //               so the declaration is ordinary C -- and the name is the
+              //               DECLARATOR's
+              //
+              // Reading only the argument (the previous behaviour) is why `exports`
+              // fired zero times in 2,798 files: the kernel macros appear nowhere in
+              // three userspace codebases, and the userspace markers take the other
+              // shape. Adding the userspace macros while still reading only the
+              // argument would have published `exports int -> CURL_EXTERN` for 157 curl
+              // declarations -- a TYPE as the exported name, which is the same defect
+              // #962 corrected for `instantiates`.
               const arg = node.childForFieldName("arguments")?.namedChild(0)
-              if (arg && arg.text.trim()) {
+              const declName = this.exportedDeclarationName(node)
+              const nameNode = declName ?? (arg && arg.text.trim() ? arg : null)
+              if (nameNode) {
                 relationships.push({
-                  source: arg.text,
-                  target: "KERNEL_EXPORT",
+                  source: nameNode.text,
+                  target: target,
                   type: ASTEngine.RelationshipType.Exports,
                   confidence: 1.0,
-                  // M59.A7: the exported NAME is written in the macro argument;
-                  // the marker target (KERNEL_EXPORT) is synthesised and the
-                  // oracle verifies this edge by its SOURCE token.
-                  line_number: this.nodeLine(arg),
-                  metadata: { relationshipType: "linux_kernel_export", exportMacro: target },
+                  // M59.A7: the exported NAME is the edge's SOURCE token; the marker
+                  // target is the macro as written, so a consumer can tell an
+                  // `__declspec(dllexport)` boundary from a kernel `EXPORT_SYMBOL` one.
+                  line_number: this.nodeLine(nameNode),
+                  metadata: { relationshipType: "module_export", exportMacro: target },
                 })
               }
             } else if (inArray(FORMAT_FUNCTIONS, target)) {
@@ -5773,6 +5890,60 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         const hit = declared(typeNameOf(a))
         if (hit) return hit
       }
+    }
+    return null
+  }
+
+  /**
+   * #963: the DECLARATOR's identifier for a declaration introduced by an export marker.
+   *
+   * `CURL_EXTERN int curl_strequal(const char *a, const char *b);` -- the macro is a
+   * prefix (it expands to `extern`), the declaration is ordinary C, and the exported
+   * name is the function's own identifier. That is the same question the member
+   * extractor asks, so it is asked with the same helper: walk the declarator chain and
+   * take the first `identifier`.
+   *
+   * Returns null when the marker introduces nothing declarable -- a marker on a
+   * forward reference whose declarator did not survive recovery, or a marker in an
+   * ERROR span with no recoverable declarator. Null means NO EDGE, which is the honest
+   * outcome: an `exports` edge whose source names nothing a consumer can resolve is the
+   * defect #962 corrected, not a partial result.
+   */
+  private exportedDeclarationName(callNode: Node): Node | null {
+    // `callNode` is the MARKER's call (the kernel spelling) or the DECLARATION itself
+    // (the userspace spelling, where this is reached from the `declaration` case). Both
+    // are accepted, because the two conventions differ in where the marker sits -- and
+    // a helper that assumed one of them returned null for the other with no error, which
+    // is why `exports` stayed at zero after the macro list was widened.
+    let decl: Node | null =
+      callNode.type === "declaration" || callNode.type === "function_definition" ? callNode : null
+    for (let depth = 0; !decl && callNode && depth < 6; depth++) {
+      const up: Node | null = callNode.parent
+      if (!up) break
+      if (up.type === "declaration" || up.type === "function_definition") decl = up
+      else if (up.type === "preproc_ifdef" || up.type === "preproc_if") return null
+      callNode = up
+    }
+    if (!decl) return null
+    const declarator = decl.childForFieldName("declarator")
+    if (!declarator) return null
+    let n: Node | null = declarator
+    for (let depth = 0; n && depth < 12; depth++) {
+      if (n.type === "identifier") {
+        // A declaration whose marker was DETACHED from its declarator by recovery --
+        // curl_setup.h:1343 `CURL_EXTERN curl_socket_t curl_dbg_socket(` spans two
+        // lines, and the parse hands back a declaration node starting at
+        // `curl_socket_t`, with the `CURL_EXTERN` prefix consumed separately. The
+        // walk then reaches the marker itself and would publish
+        // `exports CURL_EXTERN -> CURL_EXTERN` -- the marker naming itself, which is the
+        // phantom class this whole change exists to avoid. An exported name can never
+        // BE the marker, so the walk rejects it here rather than publishing it.
+        return n.text.trim() ? n : null
+      }
+      if (n.type === "type_identifier" || n.type === "primitive_type") return null
+      // A `macro_specifier` on this path is the MARKER, not a name.
+      if (n.type === "macro_specifier" || n.type === "macro_type_specifier") return null
+      n = n.childForFieldName("declarator") || n.namedChild(0)
     }
     return null
   }
