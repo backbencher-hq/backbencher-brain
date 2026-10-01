@@ -206,7 +206,7 @@ declaration-chain edges (`HTTPBasicAuth.__init__` twice, `Prop.prop` four times)
 direction. A residual that resists two honest attempts is a decision to escalate, not a bug to
 paper over.
 
-**The harness also reports, permanently:** 6,787 declared guesses confirmed by the tree **0**
+**The harness also reports, permanently:** 4,690 declared guesses confirmed by the tree **0**
 times, and 1 file truncated at the 1 MiB parse limit whose unread tail is a PY-19 coverage
 concern rather than an analyzer error — now **disclosed on the result** rather than in a log
 line, as an `errors` entry carrying both byte counts and the percentage, plus a structured
