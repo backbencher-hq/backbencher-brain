@@ -116,7 +116,22 @@ function calleeName(fn: any): string {
     // records as a `uses` member read — the information is not lost by staying silent here.
     return ""
   }
-  return calleeLeaf(fn.text)
+  // A NAME MUST LOOK LIKE A NAME. The text fallback is the last resort for a callee shape with
+  // no `attribute`/`identifier` node of its own, and on a file that is not python at all it
+  // produced whole comment blocks as call targets:
+  //
+  //     CommonDataTypes.py  CommonDataTypes -> "}\n\n-- -----...\n--   Diagnostics\n"
+  //
+  // `CommonDataTypes.py` in the corpus is an ASN.1 grammar (`Diagnostics ::= INTEGER`) that the
+  // error-tolerant parse accepts and this derivation then sliced up. Eight of the fifteen
+  // `missing calls` in the entire differential were that — the ORACLE fabricating targets, the
+  // same failure mode as naming a subscript expression, one level further down.
+  //
+  // The gate is the language's own: a python identifier, or nothing. A callee whose name is not
+  // an identifier has no name, and an edge with a fabricated target is worse than no edge,
+  // because a consumer resolving that string finds nothing that could possibly be it.
+  const leaf = calleeLeaf(fn.text)
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : ""
 }
 
 /**
@@ -635,7 +650,14 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // guarantees exists on every instance of the class. It is a real member of the
     // class's surface and the first version of this file ignored it, which is why 727
     // `contains` edges looked unexplained.
-    if (n.type === "assignment" && ownerClass) {
+    // `assignment` AND `augmented_assignment`. `self.x += 1` is a READ-MODIFY-WRITE, so it
+    // still declares the instance attribute, and it is very often the FIRST site the attribute
+    // is written at. In `_wrapt.py` the analyzer publishes `contains ObjectProxy ->
+    // __wrapped__` at L353 — `self.__wrapped__ += other` — while this derivation took L365,
+    // `self.__wrapped__ = operator.idiv(...)`, the second write, because it recognised only
+    // `=`. That is not a cosmetic difference: `contains` resolves by NAME **AND LINE**, so a
+    // `contains` edge on the wrong line resolves against the wrong span in the store.
+    if ((n.type === "assignment" || n.type === "augmented_assignment") && ownerClass) {
       const left = n.childForFieldName("left")
       if (left && left.type === "attribute") {
         const attr = left.childForFieldName("attribute")
