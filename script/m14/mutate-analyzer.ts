@@ -8475,6 +8475,33 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "uses", source: "exec", target: "on_stdout_line", line_number: 42, confidence: 1.0, metadata: { relationshipType: "identifier_usage", nodeType: "identifier" } }] }),
   },
   {
+    id: "rust/route-verbs-revert-to-four",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "RUST-D24: reverts the route extractor to the FOUR verbs it used to know (get, post, put, delete). The framework guard separately listed six, so head/patch were recognised as actix and produced no route at all, and options/trace/`#[route(..)]` were absent from both sides \u2014 four of the seven routes in the fixture were silently dropped, with no error anywhere.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        if (String(x.type) !== "exports") return true
+        const t = String(x.target ?? "")
+        return !(t === "/users/{id}" || t === "/ping" || t === "/cors" || t === "/legacy")
+      }),
+    }),
+  },
+  {
+    id: "rust/absolute-use-path-doubles-segment",
+    language: "rust",
+    defectClass: "relationship-corruption",
+    description: "RUST-D25: a leading-`::` use path has NO `path` field in the grammar, so the namedChild(0) fallback used the NAME as its own prefix. `use ::libc::c_int;` published module `libc::libc::c_int`. This mutant restores that doubling; the fixture forbids the doubled module so the regression cannot return quietly.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((im: any) =>
+        String(im.module ?? "").startsWith("::")
+          ? { ...im, module: String(im.module).slice(2).split("::").map((x) => x + "::" + x).join("::").replace(/::$/, "") }
+          : im),
+    }),
+  },
+  {
     id: "go/drop-bare-uses",
     language: "go",
     defectClass: "relationship-loss",
