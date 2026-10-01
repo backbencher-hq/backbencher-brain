@@ -737,6 +737,14 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // SOL-23: the NatSpec-vs-signature findings, per symbol. Additive on the same
           // terms as the rest of this block.
           undocumentedParameters: (s as any).undocumentedParameters ?? null,
+          // Data location (`transient` / `storage` / `memory` / `calldata`). Read by the
+          // analyzer from the declaration's `location:` field, and invisible until it is
+          // whitelisted here. The CORPUS cannot exercise it — this grammar reports
+          // `transient` on the state-variable field rather than as a `layout_specifier`
+          // node, and no OpenZeppelin contract at 5.5.0 declares one — so the fixture is
+          // the only place this can be gated, which is worth knowing before anyone reads
+          // a zero here as a broken path.
+          stateLocation: (s as any).stateLocation ?? (s.metadata as any)?.stateLocation ?? null,
           overDocumentedParameters: (s as any).overDocumentedParameters ?? null,
           returnDocumentedWithoutReturn: (s as any).returnDocumentedWithoutReturn ?? false,
           docstringKind: (s as any).docstringKind ?? (s.metadata as any)?.docstringKind ?? null,

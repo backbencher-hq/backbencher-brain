@@ -70,6 +70,7 @@ the index.
 | SOL-13 | A function is a declaration container | Its **locals belong to it**, so `contains f -> ok` rather than `contains C -> ok`. | Solidity locals are strictly function-scoped, so the contract-level edge is simply false. PowerShell PS3 deliberately keeps a method's owner as its class; that is right for PowerShell and wrong here, and the divergence is stated rather than inherited. |
 | SOL-22 | A file's LICENCE | `// SPDX-License-Identifier: MIT` attaches to the **module** symbol as `license`, read from the file's **first comment run** only. | The licence reached nothing: its next named sibling is the `pragma_directive`, which is not a DECLARATION, so SOL-16's attachment rule had nothing to land on — and the module symbol is pushed before that pre-pass runs, so it was the one symbol that could never be documented. Zero of 5,976 symbols carried a licence on a corpus where 389 of 389 files state one; now 100%, MIT and BSD-3-Clause. A licence buried on line 400 is a remark that happens to contain the word, so only the first run is scanned, and a file whose first comment is an ordinary remark gets no key at all rather than a guess. |
 | SOL-23 | NatSpec checked against the SIGNATURE | `undocumentedParameters`, `overDocumentedParameters` and `returnDocumentedWithoutReturn` per callable. Zero regex — the tag scan reads a leading `@` and the whitespace-delimited name after it. | SOL-16 reads the documentation; this asks whether it is TRUE, and both halves are in the same tree. An undocumented parameter is a coverage gap and usually benign (4,660 over the corpus). A `@param` naming a parameter that does not exist, and a `@return` on a void function, are real defects — and BOTH are **zero** across all 389 files. That zero is only meaningful because natspec-check-sol23 forces the branches: without it, "zero defects" and "the checker never ran" are indistinguishable, which is this repo's clean-looking-zero failure in its purest form. Reported as counts and samples, never as relationships — there is no second symbol to connect an edge to, and an edge to a parameter that may not exist would put a target in the graph no project declares. |
+| SOL-21 | A PROJECT-WIDE INDEX, read when one is supplied | `AnalyzeContext.projectIndex` (`src/ast/project-index.ts`, optional and additive). With it: an inheritance kind declared elsewhere is SETTLED — 507 undecided → 0, of which **99 were genuinely mis-typed** — and a call to an ancestor's member becomes `crossFileInheritedMember` (456). `external` call targets fall **1,677 → 190**. | The ceiling was an unfilled parameter, not a language limit: fifteen sibling analyzers already read `AnalyzeContext` and nothing populated it. Two grades, NOT interchangeable — `crossFileInheritedMember` (the owner's ancestors declare the name, so the call SITE proves which type) versus `projectMemberCandidate` (some project type declares it, but a Solidity `calls` edge carries no receiver type for a free function, so WHICH is undecidable). Collapsing them would have turned 1,031 honest candidates into 1,031 confident facts. The index is built by reading the TREE, never by the analyzer it feeds, so it cannot inherit that analyzer's mistakes. **Production does not supply it yet** — see the limits. |
 | SOL-19 | An inheritance edge whose KIND was undecided says so | `extends B` where `B` is declared in **another file** is emitted at **0.9**, tier **`inferred`**, with `kindUnresolved: true`, `assumedKind`, `reasonCode: "base-not-declared-in-file"`. A base resolved in-file keeps 1.0/`structural`. | The inheritance is structural — the tree states it — but the row's KIND is part of what it asserts, and when the base is elsewhere the kind was decided by the ABSENCE of a declaration. It was published at **1.0/`structural`**: 507 corpus rows where a guess read as a fact, and a consumer filtering `extends` to find contracts inherited a mis-typed base. The edge is still emitted — omitting a TRUE edge to avoid annotating an uncertain KIND would trade a labelled fact for a silence. The tier is decided at the call site, not by a `confidence < 1` heuristic: that heuristic was tried and it relabelled `instantiates` (0.95, structural evidence) as inferred. A conservative score and an undecided claim are different facts. |
 | SOL-20 | `qualified_calls` | The qualified call expressions a symbol **makes** (`token.transfer`, `super.supportsInterface`), accumulated on the frame that owns the code and deduplicated when it closes. `abi.` and `type.` receivers are excluded. | The TypeScript lane populates this and the lane left it unset, so a consumer could ask "which qualified calls does this symbol make" for every language but this one. `abi.`/`type.` are LANGUAGE NAMESPACES, not calls on an object — publishing them beside `Helpers.twice` would destroy the distinction a reader of this field most needs — while `super.f()` is kept, because `super.supportsInterface` says something the bare name cannot. Reuses the `namespaceBuiltin` split SOL-15 already draws. Measured: 601 symbols over 407 distinct names. |
 | SOL-18 | Per-symbol `complexity` and `ownerKind` | Every function, modifier, constructor and fallback/receive carries a cyclomatic `complexity` attributed through the FRAME stack (1 + branch nodes inside that frame, nested declarations excluded); `ownerKind` is the kind of the enclosing type — `contract`, `interface` or **`library`** — read from the declaration table, and is ABSENT for a local whose owner is a function. | Before SOL-18 **every** Solidity symbol reported complexity 1: `pool-worker` defaults to `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither, so the field was populated corpus-wide with a constant that reads as a measurement. It now reaches **25**, with 690 symbols above 1 and a mean of 1.214. The frame attribution costs one increment per branch node and no second traversal, which is the cost the TypeScript lane measured and removed. `else` is PART of `if_statement` in this grammar, so an if/else pair is ONE branch. |
@@ -103,7 +104,11 @@ source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
 `20.28 ms/file, 4,156 facts/ms` over 389 files at `loadAvg1 13.68` on 8 cores, with
-`perfIsQualified: false` because of it.
+`perfIsQualified: false` because of it. A separate best-of-N run — **ms/file best-of-3**, median
+98.545, worst 101.168, **spread x1.69** on an
+UNCHANGED analyzer — is in `script/m60/solidity-perf.ts`, and the spread is the contention the single figure has
+been carrying all along. Contention only ever adds time, so the fastest trial is an UPPER BOUND on the unloaded
+figure, and it is still not a qualified one.
 
 ---
 
@@ -296,6 +301,42 @@ Named, with their measured size. None of these is hidden in a percentage.
     constructors. A state variable or a struct field is 1 by construction, which is the
     correct answer and not a measurement — stated so the mean of 1.214 is not read as a
     claim about the whole symbol table.
+14. **PRODUCTION DOES NOT SUPPLY THE PROJECT INDEX YET.** SOL-21 is built, gated and
+    measured, and `parallel-indexer.ts` is the one place left to call it. The reason it
+    is not called from here is stated in the code rather than implied: the pool hands a
+    worker only its BATCH, so an incremental run would resolve against a SUBSET of the
+    project and report a different answer for the same file depending on what else was
+    being indexed — a worse failure than an unresolved edge, and not one lane's call to
+    make unilaterally. `enrichWithProjectIndex()` is the seam: one call, after the
+    per-file pass, before results are stored, for opted-in languages only. Both rows —
+    the no-index row production publishes today, and the with-index row — are in
+    `validation/m60/results/solidity-projectwide-census.json`, so the gap is visible
+    rather than assumed.
+15. **`M60.solidity-perf` reports an UPPER BOUND, not a qualified figure.** Best of 3
+    trials is 59.738 ms/file at `loadAvg1` [21.17, 22.58, 27.07], and `perfIsQualified` is **false**
+    because no trial ran below the rule's `loadAvg1 < 8`. The box is shared: a
+    14-minute poll during this change never saw it below 16, with other agents'
+    processes at ~200% CPU. Contention only ever adds time, so the fastest trial is the
+    closest available approach to the unloaded figure — and the ×1.69 spread across
+    three runs of an UNCHANGED analyzer is exactly the noise the surface artifact's
+    `perFileMs` has been carrying all along. Nothing here upgrades an unqualified figure
+    by relabelling it.
+16. **THE CASE AUDIT IS A PROOF, and it is pinned.** `script/m60/solidity-case-audit.ts`
+    answers "can this switch case lose a row?" mechanically: a case whose body is only
+    `break` cannot, by construction — 53 of 62 such cases are that — and
+    the remaining 9 have a real body, are listed with a reason each, and the gate
+    FAILS if that set grows or shrinks. Two dead branches were found this way
+    (`revert_statement`, `using_alias`) and neither was visible to any count-based gate,
+    because a branch that emits nothing changes no count. The first version of the
+    expectation was hand-written from memory and the gate immediately rejected all three
+    of its entries, which is the gate working.
+17. **State-variable DATA LOCATION is read but the corpus cannot exercise it.** This
+    grammar reports `transient` on the declaration's `location:` FIELD, not as a
+    `layout_specifier` node — that node is the contract-level `layout at 0x100` clause,
+    a different construct. Zero of 389 production files declare a data location, because
+    no OpenZeppelin contract at this revision uses transient storage. So
+    `state-location-transient.sol` is the only place that read is gated, and a zero in a
+    census is not a broken path.
 12. **NatSpec reaches 46.5% of symbols, and that is not 100%.** 2,773 of 5,976 carry a
     `docstring`; 5,254 comments were read and 2,895 attached. The gap is real and not a
     defect — a comment before an expression, or a trailing remark, documents nothing.
@@ -324,7 +365,7 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | `reservedTargets` | **0** | same, via the imported predicate |
 | Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1307 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
 | Evidence tiers | structural 6112 · usage_contextual 18867 · import_based 899 · inferred 929 | same, read from the analyzer's own central emitter. The 507 SOL-19 rows moved from `structural` to `inferred`, which is the point of that ruling. |
-| Perf | 20.28 ms/file, 4,156 facts/ms, at `loadAvg1 13.68` / 8 cores — **`perfIsQualified: false`** | same |
+| Perf | 20.28 ms/file, 4,156 facts/ms, at `loadAvg1 13.68` / 8 cores — **`perfIsQualified: false`** | best-of-3 **59.738 ms/file** (median 98.545, worst 101.168, spread x1.69); `script/m60/solidity-perf.ts` |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |

@@ -776,6 +776,14 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // TEMP AUDIT INSTRUMENTATION — removed immediately after the census is written.
+    // M60 CASE AUDIT. Off unless asked for: two object increments per node is nothing
+    // next to the analysis itself, but "nothing next to" is not "free", and a production
+    // path should not carry an instrument nobody reads. Read ONCE per file, not per node.
+    const caseAudit = process.env.BB_SOLIDITY_CASE_AUDIT === "1"
+    const __hits: Record<string, number> = {}
+    const __emits: Record<string, number> = {}
+    let __cur = "(pre)"
     const addRel = (
       source: string,
       target: string,
@@ -784,6 +792,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       line: number,
       metadata: Record<string, unknown> = {},
     ) => {
+      if (caseAudit) __emits[__cur] = (__emits[__cur] ?? 0) + 1
       if (!source || !target) return
       if (!isPlausibleSymbolName(target)) return
       // SOL-1: EVERY edge carries the line of the node that BEARS ITS NAME, and
@@ -913,6 +922,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `metadata: undefined` (pool-worker drops the object at the worker boundary),
         // so a value only in metadata is invisible to a fixture — which is exactly how
         // the first version of this feature looked like it had never run.
+        ...(typeof meta.stateLocation === "string" ? { stateLocation: meta.stateLocation as string } : {}),
         ...(Array.isArray(meta.undocumentedParameters)
           ? { undocumentedParameters: meta.undocumentedParameters as string[] } : {}),
         ...(Array.isArray(meta.overDocumentedParameters)
@@ -1527,6 +1537,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       let descend = true
 
+      if (caseAudit) {
+        __hits[node.type] = (__hits[node.type] ?? 0) + 1
+        __cur = node.type
+      }
       switch (node.type) {
         // ----------------------------------------------------- file structure
         case "source_file":
@@ -2684,6 +2698,7 @@ const meta = modifiersOf(node)
         documentedSymbols,
         symbolsWithComplexity,
         symbolsWithQualifiedCalls,
+        ...(caseAudit ? { __caseHits: __hits, __caseEmits: __emits } : {}),
         inheritanceKindsResolvedProjectWide,
         natSpecCheck: {
           symbolsWithUndocumentedParams,
