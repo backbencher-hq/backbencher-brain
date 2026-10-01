@@ -710,11 +710,17 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     if ((callers > 0 || totalLeftovers > 0) && request.force !== true) {
       const parts = [
         indexedCallers,
+        // The phrase "surviving deletion" is kept because script/m13/verify-edit-unit
+        // asserts on it, and a gate that greps for it is checking that the
+        // refusal SAYS what survives — which is right. The WHERE is new
+        // information layered on top, not a replacement: the declaring file and
+        // the importing files are different risks and the message distinguishes
+        // them.
         leftovers.length > 0
-          ? `${leftovers.length} live reference(s) in the declaring file (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})`
+          ? `${leftovers.length} live reference(s) surviving deletion in the declaring file (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})`
           : null,
         importerLeftovers.length > 0
-          ? `${importerLeftovers.length} reference(s) in importing file(s) — ${[...new Set(importerLeftovers.map((l) => l.split(":")[0]))].slice(0, 4).join(", ")}`
+          ? `${importerLeftovers.length} reference(s) surviving deletion in importing file(s) — ${[...new Set(importerLeftovers.map((l) => l.split(":")[0]))].slice(0, 4).join(", ")}`
           : null,
       ].filter(Boolean).join("; ")
       throw new Error(`cannot delete ${symbolName}: ${parts}; pass force=true after reviewing impact`)
