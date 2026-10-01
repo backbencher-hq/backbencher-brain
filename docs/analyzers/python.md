@@ -17,7 +17,7 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Completeness | 130 node types, 60 handled, 65 silent, **0 unclassified**, 7 explicit decisions |
 | Regex | **0** — no `RegExp`, no `/…/` literal |
 | Corpus | 3,271 `.py` files, 23,911 symbols, 99,743 relationships, 0 parse errors |
-| Independent oracle | **90 disagreements over 3,271 files**, down from 6,048 — three were real analyzer defects, the rest the instrument's own (PY-21) |
+| Independent oracle | **99.94% — 161,059 edges agreed, 90 disagreements.** Every relationship type the analyzer emits has an independent second derivation (PY-23) |
 
 ## What a consumer may rely on
 
@@ -33,6 +33,8 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | `uses` | 0.9 | A member **read** (`self.x`), marked `isMemberRead`. Excludes assignment targets, call callees, and call receivers. |
 | `instantiates` | 0.9 | A class **declared in this file** called with `New()`. Never an imported class. |
 | `overrides` | **0.95 verified / 0.5 guessed** | See the resolution contract below — the two confidences mean two different things. |
+
+**All nine emitted types are under independent verification.** `contains` `extends` `overrides` `calls` `instantiates` `uses` `references` `imports` `exports` — 161,059 edges agreed by two derivations that never share a helper, 90 disagreements (PY-23).
 
 `references` and `depends` are not emitted: name identity is carried by `imports`, `exports`
 and `calls`, and emitting a second edge for the same fact would double the graph without adding
