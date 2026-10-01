@@ -8,6 +8,7 @@ import { BrainSurgicalPatcher } from "../../ast/brain-surgical-patcher"
 import { ImportPruner } from "../../ast/import-pruner"
 import { reindexFilesParallel } from "../../ast/parallel-indexer"
 import { parseForSafety, assertFreshFiles, type IdentifierOccurrence, type SafetyParse, type BodyRange } from "../../ast/safety-primitives"
+import { EXTENSION_LANGUAGE } from "../../ast/language-detection"
 
 export type EditMode = "write" | "update" | "insert" | "delete" | "refactor"
 export type InsertPosition = "before" | "after" | "inside-top" | "inside-bottom"
@@ -471,6 +472,148 @@ function basenameNoExt(fileId: string): string {
   return path.basename(fileId, path.extname(fileId))
 }
 
+/** Occurrence parents that are an import or re-export SPECIFIER — the one place a
+ *  deleted name makes a module edge dangle.
+ *
+ *  MEASURED, not guessed. parseForSafety was run over twelve import shapes and the
+ *  parentType each one reports:
+ *
+ *    import { target as aliased } from './target'   import_specifier    <- caught
+ *    import target from './target'                  import_clause       <- caught
+ *    export { target } from './target'              export_specifier    <- caught
+ *    from .target import target                     dotted_name         <- caught
+ *    from .target import target as aliased         dotted_name         <- caught
+ *    import m.target.Target;                        scoped_identifier   <- caught
+ *    use crate::target::target;                    scoped_identifier   <- caught
+ *    import * as m from './target'                 (no occurrence)      correct
+ *    const { target } = require('./target')         (no occurrence)
+ *    require_relative 'target'                     (no occurrence)
+ *    import "example.com/m/target"                 (no occurrence)
+ *    alias M.Target, as: :target                   (no occurrence)
+ *
+ *  The five "(no occurrence)" rows are not gaps to paper over. In each, the module
+ *  path is a string literal or a scoped path and the deleted name is not a separate
+ *  identifier — Go's `import "m/target"` names no symbol at all, so deleting one of
+ *  that module's exports is not a dangling reference to the symbol. They are
+ *  correctly out of scope for a per-symbol check, and "fixing" them would mean
+ *  matching substrings of a path, which is how a guard starts refusing deletes it
+ *  should allow. */
+const IMPORT_SPECIFIER_PARENTS = new Set([
+  "import_specifier",
+  "import_clause",
+  "export_specifier",
+  "dotted_name",
+  "scoped_identifier",
+])
+
+/** Extensions a module specifier may be resolving to, derived from the product's
+ *  OWN language table rather than a second hand-written list. A hard-coded list
+ *  here would drift the moment a language is added, and it would drift silently:
+ *  a missing extension means a real import stops resolving, which makes the delete
+ *  guard permissive — the dangerous direction. */
+const MODULE_EXTENSIONS: readonly string[] = Object.freeze(
+  Array.from(new Set(Object.keys(EXTENSION_LANGUAGE).filter((k) => k !== k.toUpperCase()).map((k) => `.${k}`))),
+)
+
+/** Resolve a recorded import specifier to the file it names, or null when it does
+ *  not name `declRelPath`.
+ *
+ *  Pure path arithmetic on POSIX-style project-relative paths — no regex, no
+ *  filesystem probing, so the answer is a fact about the recorded specifier rather
+ *  than about which files happen to exist right now.
+ *
+ *  `import_path` is the specifier AS WRITTEN (`./user`, `../models/user`,
+ *  `@/models/user`), never a resolved path, so the importer's own directory has to
+ *  be joined on before the comparison. Getting that wrong is not theoretical: the
+ *  first version of this guard compared the specifier to the bare stem, so
+ *  `../models/user` matched nothing and an aliased cross-directory import deleted
+ *  silently.
+ *
+ *  A NON-RELATIVE specifier is left unresolved rather than guessed, and that covers
+ *  two different situations which must not be conflated:
+ *
+ *    bare package   `react`, `lodash/fp` — names a package, not a project file.
+ *      Cannot be shown to refer to this file, so it does not block. Correct.
+ *
+ *    path ALIAS     `@/models/user`, `~/models/user` — names a project file, and
+ *      resolving it needs the tsconfig/jsconfig `paths` map, which this function
+ *      does not have. MEASURED: the indexer does not record these in brain_import
+ *      at all, so there is no row to resolve FROM. An earlier version of this
+ *      function did handle `@/` and `~/` by assuming `src/`, and it was dead code
+ *      — the delete still proceeded, because the absence of the row, not the
+ *      arithmetic, was the reason. Assuming `src/` would also be wrong outright in
+ *      any project whose alias points elsewhere, so the branch is gone rather than
+ *      left to look like coverage.
+ *
+ *  This is a real blind spot and it is recorded as one in script/m70 rather than
+ *  papered over: a project using path aliases gets no importer-based protection
+ *  from this guard, and its only remaining signal is the indexed `calls` edge. */
+function resolveImportToFile(importerRelPath: string, spec: string, declRelPath: string): boolean {
+  if (!spec) return false
+  const importerDir = path.posix.dirname(importerRelPath.replace(/\\/g, "/"))
+  let base: string
+  if (spec.startsWith("./") || spec.startsWith("../") || spec === "." || spec === "..") {
+    base = path.posix.normalize(path.posix.join(importerDir, spec))
+  } else if (spec.startsWith("/")) {
+    base = path.posix.normalize(spec.slice(1))
+  } else return false
+
+  const declExt = path.posix.extname(declRelPath)
+  const declStem = declRelPath.slice(0, declRelPath.length - declExt.length)
+  // `path.posix.normalize` has already collapsed `.` and `..`, so the comparisons
+  // below need no further cleanup.
+  //
+  // 1. Written with the extension, or extensionless (Node ESM and bundlers, Go,
+  //    Java, Rust all write `pkg/mod` for `pkg/mod.go`).
+  if (base === declRelPath || base === declStem) return true
+  // 2. The specifier names a DIRECTORY whose index file is the declaration:
+  //    `import { x } from './target'` for `target/index.ts`. The direction of this
+  //    test is the part I got wrong first. Asking "is the declaration's stem
+  //    inside the specifier's directory" (dirname(declStem) startsWith base)
+  //    is far too loose — it would also match `target/deep/thing.ts`, a file three
+  //    levels below a module the specifier never named. The only true statement
+  //    here is that the declaration IS that directory's index, so the directory
+  //    and the file's own name are compared together.
+  if (path.posix.dirname(declStem) === base) {
+    const asIndex = path.posix.basename(declStem)
+    if (asIndex === "index" || MODULE_EXTENSIONS.some((e) => asIndex === `index${e}`)) return true
+  }
+  return false
+}
+
+/** The project-relative path of the file a mutation targets.
+ *
+ *  `match.fileId` is NOT always the index's `<projectId>:<relativePath>` key.
+ *  MEASURED: on the wire path (which is what bb_edit's caller supplies and what
+ *  the engine receives) it is the ABSOLUTE path,
+ *
+ *    /var/folders/…/bb-tr-iBZK19/src/target.ts
+ *
+ *  while the row's own id is
+ *
+ *    863a3af6…:src/target.ts
+ *
+ *  so looking the file up by id returned undefined and every cross-directory
+ *  importer check silently found zero candidates. The guard reported nothing, and
+ *  a guard that reports nothing when the evidence is present is worse than one
+ *  that is absent, because it looks like a clean bill of health.
+ *
+ *  Resolved by `path`, not by parsing the key: a `<projectId>:<path>` id is split
+ *  on the FIRST colon only after confirming the prefix is this project's hex id,
+ *  and the absolute path is handled by relativizing against the project root.
+ *  Both forms are accepted because the indexer and the wire use different ones. */
+function projectRelativePath(raw: any, projectId: string, fileId: string, projectRoot?: string): string | null {
+  const row = raw
+    .prepare("SELECT relative_path AS relPath FROM brain_file WHERE project_id = ? AND (id = ? OR path = ?)")
+    .get(projectId, fileId, fileId) as { relPath?: string } | undefined
+  if (row?.relPath) return row.relPath.replace(/\\/g, "/")
+  if (projectRoot && path.isAbsolute(fileId)) {
+    const rel = path.relative(projectRoot, fileId)
+    if (rel && !rel.startsWith("..")) return rel.split(path.sep).join("/")
+  }
+  return null
+}
+
 /** Best-effort project-relative path, for a message a human has to act on. */
 function relativeTo(root: string, file: string): string {
   const rel = path.relative(root, file)
@@ -663,45 +806,87 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     // reported as SUCCESS.
     //
     // The fix is not to trust the edges more (they are what failed here) but to
-    // consult the one index table that DID record the dependency: brain_import.
-    // For each file whose import resolves to this module, parse that file and look
-    // for the deleted NAME. An aliased import still spells the original name in
-    // its specifier — `import { target as aliased }` contains `target`, with
-    // parent=import_specifier — so the alias case is caught by name, not by
-    // needing to resolve the alias.
+    // consult the one index table that DID record the dependency: brain_import,
+    // and to look for the dependency where it is unambiguous.
     //
-    // WHY THIS DOES NOT OVER-REFUSE, which was the real design risk: refusing on
-    // any unresolved edge would make `delete` unusable on any project with
-    // imperfect edges, which is most of them. This instead requires POSITIVE
-    // evidence in each importing file — the name must actually appear there — so a
-    // file that imports the module for something else is not blocked. A `side-
-    // effect` import that never mentions the name is correctly not a reference.
-    // `import_path` is stored as the WRITTEN specifier — `./target`, not `target`
-    // — and `imported_name` duplicates it, so a comparison against the bare stem
-    // matched nothing. Measured: the query returned zero rows for a project whose
-    // importer was plainly recorded, which is why the first version of this guard
-    // still let the aliased delete through. The stem is compared on both the
-    // written form and the bare form so a specifier recorded either way matches.
-    const stem = basenameNoExt(match.fileId)
-    const importerRows = raw.prepare(
-      "SELECT DISTINCT i.file_id AS fileId, f.path AS path FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
-        "WHERE i.project_id = ? AND i.is_external = 0 AND i.file_id <> ? " +
-        "AND (i.import_path = ? OR i.import_path = ? OR i.imported_name = ? OR i.imported_name = ?)",
-    ).all(projectId, match.fileId, stem, `./${stem}`, stem, `./${stem}`) as Array<{ fileId: string; path: string }>
+    // THE PRECISE EVIDENCE IS THE SPECIFIER, NOT THE NAME. An aliased import
+    // still spells the original name in its specifier — `import { target as
+    // aliased }` contains `target` with parent=import_specifier — and that
+    // specifier is broken the moment the declaration is deleted, regardless of
+    // anything else in the file. It needs no scope analysis and no alias
+    // resolution.
+    //
+    // I first scanned each importing file for every *reference* to the name and
+    // that was wrong twice over, both measured:
+    //
+    //   import { user as modelUser } from '../models/user'   -> DELETED (BUG)
+    //     The specifier is '../models/user'. The guard compared the specifier to
+    //     the bare stem and to './'+stem, so a cross-directory import matched
+    //     nothing and the aliased delete went through silently — the original
+    //     defect, still present, just narrowed to any import that is not in the
+    //     same directory as the declaration. My own m68 gate used './target' for
+    //     every case, so it was green throughout while this shape was broken.
+    //
+    //   const user = { n: 1 }; String(user.n)               -> REFUSED (BUG)
+    //     in a file importing an UNRELATED './user'. The occurrence is a genuine
+    //     reference — to the file's own local `user`. A name scan cannot tell
+    //     "the imported symbol is used here" from "something else with this name
+    //     is used here", and no amount of care in the scan fixes that; it needs
+    //     scope resolution, which is not what this guard should be.
+    //
+    // So: resolve the specifier to a real path, and count only specifiers. Both
+    // bugs are structural consequences of the scan, and both disappear with it.
+    //
+    // WHY IT STILL DOES NOT OVER-REFUSE, the design risk that made the first
+    // version unacceptable. Refusing on any unresolved edge would make `delete`
+    // unusable on any project with imperfect edges, which is most of them. Three
+    // properties keep it honest:
+    //
+    //   * a specifier is required — an importing file that never names the
+    //     deleted symbol is not a reference, so `import './target'` for its side
+    //     effects, which is extremely common, never blocks a delete;
+    //   * the specifier must RESOLVE to this file — a same-stem module in another
+    //     directory (`src/types/user.ts` beside `src/models/user.ts`, a layout
+    //     found in most real projects) is a different module and never matches;
+    //   * a namespace import (`import * as m`) names no symbol, and deleting one
+    //     export from a module that still exists does not dangle, so it correctly
+    //     does not block.
+    const declRelPath = projectRelativePath(raw, projectId, match.fileId, projectPath)
+    const importerRows = declRelPath === null
+      ? []
+      : (raw.prepare(
+        // The LIKE is a PREFILTER on the specifier's last segment, nothing more.
+        // It bounds the candidate set without deciding anything: the decision is
+        // made by resolveImportToFile below, which walks the real path.
+        "SELECT DISTINCT i.file_id AS fileId, f.path AS path, f.relative_path AS relPath, i.import_path AS spec " +
+        "FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE i.project_id = ? AND i.is_external = 0 AND i.file_id <> ? AND i.import_path IS NOT NULL " +
+        "AND (i.import_path = ? OR i.import_path LIKE ? OR i.import_path LIKE ?)",
+      ).all(
+        projectId,
+        match.fileId,
+        basenameNoExt(match.fileId),
+        `%/${basenameNoExt(match.fileId)}`,
+        `./${basenameNoExt(match.fileId)}`,
+      ) as Array<{ fileId: string; path: string; relPath: string; spec: string }>)
 
+    // One parse per candidate file, not one per row: several specifiers in the
+    // same file can match the prefilter.
+    const parsedByFile = new Map<string, Awaited<ReturnType<typeof parseForSafety>> | null>()
     const importerLeftovers: string[] = []
     for (const importer of importerRows) {
-      let importerText: string
-      try { importerText = readFileSync(importer.path, "utf8") } catch { continue }
-      if (!importerText.includes(symbolName)) continue
-      let importerParsed
-      try { importerParsed = await parseForSafety(importer.path, importerText) } catch { continue }
-      for (const o of importerParsed.occurrences) {
+      if (!resolveImportToFile(importer.relPath, importer.spec, declRelPath as string)) continue
+      let parsed = parsedByFile.get(importer.fileId)
+      if (parsed === undefined) {
+        try { parsed = await parseForSafety(importer.path, readFileSync(importer.path, "utf8")) }
+        catch { parsed = null }
+        parsedByFile.set(importer.fileId, parsed)
+      }
+      if (!parsed) continue
+      for (const o of parsed.occurrences) {
         if (o.text !== symbolName) continue
-        // An import specifier naming this symbol is the dangling dependency
-        // itself; anything else is a call. Both are survivors of the deletion.
-        if (!isReferenceSite(o, "") && !/import/.test(o.parentType)) continue
-        importerLeftovers.push(`${relativeTo(projectPath, importer.path)}:${o.startLine}`)
+        if (!IMPORT_SPECIFIER_PARENTS.has(o.parentType)) continue
+        importerLeftovers.push(`${relativeTo(projectPath, importer.path)}:${o.startLine} (${o.parentType})`)
       }
     }
 
