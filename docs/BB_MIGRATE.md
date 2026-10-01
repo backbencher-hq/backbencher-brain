@@ -39,7 +39,6 @@ are read and surfaced:
 | `sourceExternal` / `targetExternal` | same | 100% of rows carry a value |
 | `endpointsResolved` | derived | both endpoints are indexed symbols |
 | `isTestEvidence` | derived from file paths | — |
-| `isIntegrationPoint` | derived from `relationship_type` | — |
 
 There is **no fabricated constant** in this evidence. A previous version wrote
 `strength: 0.8` for every row while the row's real confidence sat unread; that
@@ -162,40 +161,6 @@ A migration plan is a claim about one specific component; silently choosing one 
 the failure this tool can least afford. Staleness is judged from the plan's own
 symbol, not from a second name-based lookup that could resolve elsewhere.
 
-**One exception, and it is not ambiguity.** Go and many other languages permit
-`Execute` and `execute` in the same file: two functions, one component, one
-file. Measured on cobra: five such pairs, all single-file. If every candidate is
-in the same file and exactly one matches the requested spelling, that is the
-answer. If no candidate matches exactly, the collision is real and is refused
-with both candidates named. The engine preserves the caller's spelling for this
-to work — it used to lowercase before planning, so asking for `Dual` returned a
-plan for `dual`.
-
-## What is charged, and what is not
-
-Two independent reasons an indexed edge is **not** billed as migration work:
-
-1. **Its endpoint is not an indexed symbol** (`endpointsResolved: false`). You
-   cannot locate, plan, or do an edge with no endpoint. The name the indexer saw
-   is preserved in `targetExternal`, and the count is reported.
-2. **It is structural** (`isIntegrationPoint: false`) — `contains` or `exports`.
-   `contains` is emitted by the indexer as an auto-generated ownership edge
-   ("owner contains member") whose `line_number` is the **member's declaration
-   line, not a call site**. Billing 2 hours to "update the place that contains
-   this function" is billing for nothing. Measured on cobra: 792 `contains` and
-   8 `exports` out of 5321 edges, ~15% of all evidence.
-
-Every other type — `calls`, `uses`, `references`, `imports`, `instantiates`,
-`extends`, `implements`, `overrides` — is an integration point and is charged.
-**An unrecognised type is charged**, not waved through: assuming a new kind of
-edge is structural would understate the work, and that is the worse error.
-
-`evidenceBreakdown` partitions every cited edge into exactly one bucket:
-
-```
-evidence: 14 production + 147 test integration points, 1 structural, 1 unresolvable
-```
-
 ## Effort: one number, reconciled
 
 - **`effort.totalHours`** — authoritative:
@@ -215,15 +180,8 @@ on edges cited by more than one plan, counted once in the 20h methodology total)
 Methodology constants, labelled as methodology rather than measurement:
 
 - 4 base hours per supported component
-- 2 hours per **chargeable** indexed relationship (resolvable AND an integration
-  point), deduplicated across the request
+- 2 hours per **resolvable** indexed relationship, deduplicated across the request
 - 6 hours per indexed import with no registered equivalence
-
-The batch total and the per-plan figure use **one** chargeability rule, declared
-once. When they diverged, the tool printed a "shared relationship hours" figure
-of **minus four** — a negative number in a field meant to be a saving. The
-reconciliation now reports `INTERNAL MISMATCH` rather than printing it, and a
-claim asserts the gap is never negative.
 
 These are flat per-unit figures, not estimates calibrated against completed
 migrations. Read the evidence split before reading the total.
@@ -266,12 +224,7 @@ reports `complete`.
 - `returned` — distinct names processed (cap 100)
 - `deduplicated` — names merged as duplicates
 - `capped` — names dropped by the limit
-- `cappedNames` — **which** names the cap dropped, in request order
 - `truncated` — true if either reduction applied
-
-Without `cappedNames` a caller learns only that 30 names vanished and cannot
-tell which, so a migration wave that silently excluded a component is
-indistinguishable from one that included it.
 
 A caller can always tell a merged duplicate from a dropped name.
 

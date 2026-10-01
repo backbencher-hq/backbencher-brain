@@ -183,16 +183,7 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
       !AnalysisExclusions.isNoiseSymbolName(r.name) &&
       (includeMethods || r.symbolType !== "method"),
   )
-  // What the filter removed, as a NUMBER the answer carries.
-  //
-  // The population was silently smaller than the store's, and nothing said so:
-  // on the atlas corpus the documented filter (`symbol_type IN
-  // PROD_SYMBOL_TYPES`, non-test files) selects 171 symbols and the report said
-  // `productionSymbols: 169`. Two symbols were dropped as noise paths or noise
-  // names — a reasonable decision, and one an agent cannot reconstruct, because
-  // the numbers do not reconcile against anything they can query.
-  const excludedAsNoise = prodRows.length - filtered.length
-  return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise }
+  return { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles }
 }
 
 // MODE: mapping — production symbols -> test evidence, keyed by RESOLVED symbol
@@ -202,7 +193,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   // The page, not the whole corpus: see DEFAULT_PAGE. At the old 1000 a
   // single call on backbencher-brain/src rendered 375,270 bytes (~104k tokens).
   const maxResults = options.maxResults ?? DEFAULT_PAGE
-  const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles, excludedAsNoise } = await loadGraph(projectId, includeMethods, options.filePath)
+  const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
   const linksByTarget = new Map<string, TestLink[]>()
   let classifiedEdges = 0
@@ -278,9 +269,6 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
     }),
     summary: {
       productionSymbols: entries.length,
-      // So `productionSymbols + excludedAsNoise` is the store's population
-      // under this mode's own documented filter, and a reader can check it.
-      excludedAsNoise,
       returned: ranked.length,
       truncated: entries.length > ranked.length,
       testedSymbols: tested,
@@ -307,7 +295,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
 export async function testGaps(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestGapReport> {
   const maxResults = options.maxResults ?? DEFAULT_PAGE
   const includeMethods = options.includeMethods ?? true
-  const { filtered, testEdges, nonCodeTestFiles, excludedAsNoise } = await loadGraph(projectId, includeMethods, options.filePath)
+  const { filtered, testEdges, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
   // One pass over the edges: classify once, count per target (the count is the
   // previous implementation's `links.length`, needed to reproduce its order).
@@ -367,27 +355,7 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
   return {
     gaps,
     provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-gaps@intelligence", engineVersion: "m10.02", projectId, source: "static-test-mapping", limitations: ["A missing static link does not prove that runtime coverage is absent."], truncated: candidates.length > maxResults, unknowns: gapUnknowns }),
-    summary: {
-      // `total` is the number of GAPS, not the number of production symbols —
-      // it is `productionSymbols` minus the ones with a direct test. That is
-      // correct and it was invisible, because `test_mapping.summary` reports a
-      // field of the same name meaning the population: on the atlas corpus the
-      // two modes answered 169 and 163 for what reads as one question, and
-      // nothing in either payload said the arithmetic.
-      //
-      // The population is now stated here under its own name, and the identity
-      // closes in public:
-      //   productionSymbols = gaps + directlyTested + excludedAsNoise
-      // which on that corpus is 169 = 163 + 6 + 0.
-      productionSymbols: filtered.length,
-      total: candidates.length,
-      directlyTested: filtered.length - candidates.length,
-      excludedAsNoise,
-      returned: gaps.length,
-      truncated: candidates.length > gaps.length,
-      byCategory,
-      highRisk,
-    },
+    summary: { total: candidates.length, returned: gaps.length, truncated: candidates.length > gaps.length, byCategory, highRisk },
   }
 }
 

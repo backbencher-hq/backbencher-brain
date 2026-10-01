@@ -44,8 +44,6 @@ export interface MigrationPlanResult {
     production: number
     test: number
     unresolvable: number
-    /** Containment/export edges, shown but not charged. */
-    structural: number
     crossLanguage: number
     withLine: number
     withConfidence: number
@@ -71,13 +69,6 @@ export interface MigrationPlanResult {
     returned: number
     deduplicated: number
     capped: number
-    /**
-     * The names the 100-symbol cap dropped, in request order. Without this a
-     * caller learns only that 30 names vanished, and cannot tell which — so a
-     * migration wave that silently excluded a component looks identical to one
-     * that included it. Bounded by the cap itself.
-     */
-    cappedNames: string[]
   }
   /**
    * The single authoritative effort figure for the whole request. Per-plan
@@ -100,26 +91,19 @@ export interface MigrationPlanResult {
  * components.
  */
 export function calculateMigrationMethodology(plans: Array<{
-  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean; isIntegrationPoint?: boolean }>
+  relationshipEvidence?: Array<{ id: string; sourceSymbolId: string | null; targetSymbolId: string | null; relationshipType: string; endpointsResolved?: boolean }>
   dependencies?: Array<{ confidence?: number }>
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
   let missingMappingCount = 0
   for (const plan of plans) {
     for (const relationship of plan.relationshipEvidence ?? []) {
-      // This MUST be the same chargeability rule the per-plan effort uses, or the
-      // two views disagree. It did once: the per-plan figure had started
-      // excluding structural edges and this still counted them, which made the
-      // batch total LARGER than the sum of its own parts and produced a
-      // "shared relationship hours" figure of MINUS FOUR.
-      //
-      // Not charged, for two reasons: an endpoint that is not an indexed symbol
-      // (the edge cannot be located, planned or done), and a structural edge
-      // (`contains`/`exports`, which records nesting or declaration rather than a
-      // call to update). Both flags are absent on legacy callers, where an absent
-      // flag means "charge it" so this stays a pure narrowing.
+      // Only edges with a locatable endpoint are migration work. An edge whose
+      // endpoint is not an indexed symbol cannot be scoped, planned or done, so
+      // charging 2 hours for it inflates the total with work nobody can act on.
+      // `endpointsResolved` is absent on legacy callers, which are treated as
+      // resolved so this stays a pure narrowing.
       if (relationship.endpointsResolved === false) continue
-      if (relationship.isIntegrationPoint === false) continue
       const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
       relationshipIds.add(identity)
     }
@@ -216,15 +200,7 @@ export function computeDependencyOrder(symbolNames: string[], relationships: Mig
 
 export async function generateMigrationPlans(projectId: string, request: MigrationRequest): Promise<MigrationPlanResult> {
   const requestedNames = request.symbolNames.map((name) => String(name).trim()).filter(Boolean)
-  // Deduplicate CASE-SENSITIVELY, preserving the caller's spelling.
-  //
-  // This used to lowercase before planning, which destroyed the one piece of
-  // information that distinguishes two real components: Go (and most languages)
-  // treat `Execute` and `execute` as different functions in the same file. Asking
-  // for `Dual` returned a plan for `dual`. The planner resolves a name
-  // case-insensitively and prefers an EXACT match, which is the right place for
-  // that decision — it has the candidate list, and this layer does not.
-  const uniqueNames = [...new Set(requestedNames)]
+  const uniqueNames = [...new Set(requestedNames.map((name) => name.toLowerCase()))]
   const names = uniqueNames.slice(0, 100)
   const normalizedTargetLanguage = String(request.targetLanguage ?? "").trim().toLowerCase()
   // Bounded load: the requested symbols and the relationships that touch them.
@@ -331,13 +307,12 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
       acc.production += b.production ?? 0
       acc.test += b.test ?? 0
       acc.unresolvable += b.unresolvable ?? 0
-      acc.structural += b.structural ?? 0
       acc.crossLanguage += b.crossLanguage ?? 0
       acc.withLine += b.withLine ?? 0
       acc.withConfidence += b.withConfidence ?? 0
       return acc
     },
-    { production: 0, test: 0, unresolvable: 0, structural: 0, crossLanguage: 0, withLine: 0, withConfidence: 0 },
+    { production: 0, test: 0, unresolvable: 0, crossLanguage: 0, withLine: 0, withConfidence: 0 },
   )
 
   return {
@@ -355,12 +330,7 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
       reconciliation:
         sharedRelationshipHours === 0
           ? "per-plan effort sums to the methodology total"
-          : sharedRelationshipHours > 0
-            ? `per-plan effort sums to ${perPlanSumHours}h; ${sharedRelationshipHours}h of that is relationship time on edges cited by more than one plan, counted once in the ${totalHours}h methodology total`
-            : // Defensive: a NEGATIVE gap means the two views disagree, which is a
-              // defect in the chargeability rule rather than a fact about the
-              // request. Say so instead of printing "minus 4h of shared time".
-              `INTERNAL MISMATCH: per-plan effort sums to ${perPlanSumHours}h but the methodology total is ${totalHours}h; the two views disagree and the total is not trustworthy`,
+          : `per-plan effort sums to ${perPlanSumHours}h; ${sharedRelationshipHours}h of that is relationship time on edges cited by more than one plan, counted once in the ${totalHours}h methodology total`,
     },
     truncation: {
       truncated: deduplicated > 0 || capped > 0,
@@ -368,9 +338,6 @@ export async function generateMigrationPlans(projectId: string, request: Migrati
       returned: names.length,
       deduplicated,
       capped,
-      // `names` is the deduplicated list, so the dropped ones are the tail of
-      // the DEDUPLICATED request, in the order the caller sent them.
-      cappedNames: uniqueNames.slice(100),
     },
   }
 }
@@ -386,20 +353,15 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     // `effort=` lines were both presented as totals and differed by 8h on a
     // two-symbol mutual-call request, with nothing explaining why.
     `total effort: ${result.effort.totalHours}h (${result.effort.reconciliation})`,
-    `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested}; ${result.truncation.deduplicated} duplicate, ${result.truncation.capped} over the 100-symbol cap)` +
-      (result.truncation.cappedNames.length
-        ? `\ndropped by the cap, NOT planned: ${result.truncation.cappedNames.slice(0, 20).join(", ")}${result.truncation.cappedNames.length > 20 ? `, … and ${result.truncation.cappedNames.length - 20} more` : ""}`
-        : ""),
+    `truncated: ${result.truncation.truncated} (${result.truncation.returned}/${result.truncation.requested}; ${result.truncation.deduplicated} duplicate, ${result.truncation.capped} over the 100-symbol cap)`,
   ]
   const totals = result.evidenceTotals
-  if (totals && (totals.production || totals.test || totals.unresolvable || totals.structural || totals.crossLanguage)) {
+  if (totals && (totals.production || totals.test || totals.unresolvable || totals.crossLanguage)) {
     // The split is what makes a flat per-edge cost interpretable: on cobra, 55.3%
     // of a plan's edges are test callers, and an undifferentiated number reads
     // as "this function is enormous" when it is "this function is well tested".
     lines.push(
-      `evidence: ${totals.production} production integration point(s), ${totals.test} test, ${totals.crossLanguage} crossing a language boundary` +
-        (totals.structural ? `, ${totals.structural} structural (containment/export, not charged)` : "") +
-        (totals.unresolvable ? `, ${totals.unresolvable} with an unresolvable endpoint (not charged)` : "") +
+      `evidence: ${totals.production} production edge(s), ${totals.test} test edge(s), ${totals.crossLanguage} crossing a language boundary, ${totals.unresolvable} with an unresolvable endpoint (not charged)` +
         (totals.withLine ? `; ${totals.withLine} carry a line` : "; no edge carries a line"),
     )
   }
@@ -431,8 +393,7 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
     const b = plan.evidenceBreakdown
     if (b) {
       const cross = b.crossLanguage > 0 ? `, ${b.crossLanguage} cross-language` : ""
-      const structural = b.structural ? `, ${b.structural} structural` : ""
-      lines.push(`  evidence: ${b.production} production + ${b.test} test integration points${cross}${structural}${b.unresolvable ? `, ${b.unresolvable} unresolvable` : ""}`)
+      lines.push(`  evidence: ${b.production} production + ${b.test} test${cross}${b.unresolvable ? `, ${b.unresolvable} unresolvable` : ""}`)
     }
   }
 

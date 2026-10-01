@@ -21,8 +21,6 @@
 //   M2 fabricated total         (total invented when unknown)
 //   M3 unbounded impact         (budget lifted)
 //   M4 differential break       (containment rule dropped from total count)
-//   M12 via erased              (a cascaded row claims to be an exact one)
-//   M13 composition undeclared  (the cascade breakdown stops being published)
 //   M5 truncation state lost    (truncated flag always false)
 //
 // Differential sampling statement: the differential census samples ALL flat
@@ -372,14 +370,8 @@ async function main(): Promise<void> {
       {
         name: "M4 differential break (cascade dropped from the total count)",
         home: "component",
-        // M63.T2: the range predicate is now a separate per-range term rather
-        // than part of a per-member disjunction, so the mutation narrows the
-        // RANGE to a point (`owner = prefix AND owner = prefix`, which no
-        // stored owner can satisfy because the prefix ends in a colon) instead
-        // of deleting the clause. The parameter count is unchanged, so the
-        // mutation is the cascade and nothing else.
-        from: 'new Array(ranges).fill(" OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?)")',
-        to: 'new Array(ranges).fill(" OR (m.owner_symbol_id = ? AND m.owner_symbol_id = ?)")',
+        from: 'new Array(batchSize).fill("(m.id = ? OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?))")',
+        to: 'new Array(batchSize).fill("(m.id = ?)")',
         // sym:klass is reached only through its member (other → mem): with
         // the cascade gone the declared total of a class drops from 1 to 0.
         probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:klass").total !== 1
@@ -423,30 +415,6 @@ async function main(): Promise<void> {
           const r = await m.computeImpact(fx.raw, fx.projectId, "hub2")
           return r.impact.some((d: any) => d.id === r.root.id)
         },
-      },
-      {
-        name: "M12 how-each-dependent-is-a-dependent erased (every row claims to be exact)",
-        home: "component",
-        from: 'via: edge.targetMatch === "owner-cascade" ? "member" : "exact",',
-        to: 'via: "exact" as const,',
-        // sym:other is in Klass's impact set ONLY because the row names its
-        // member, so `via: "exact"` on that row is a false claim about the
-        // stored row. The engine already publishes the classification; this
-        // mutant is what dropping it looks like.
-        probe: async (m) => {
-          const r = await m.computeImpact(fx.raw, fx.projectId, "Klass")
-          return !r.impact.some((d: any) => d.via === "member" && d.viaMember?.name === "mem")
-        },
-      },
-      {
-        name: "M13 the cascade composition stops being declared",
-        home: "component",
-        from: "cascade = { exact, member, rangeFolded }",
-        to: "cascade = null",
-        // The rows would still carry `via`; the answer would stop saying how
-        // many of them are `range-folded`, which is the one number a reader
-        // needs to weigh a conservative over-count.
-        probe: async (m) => (await m.computeImpact(fx.raw, fx.projectId, "Klass")).cascade === null,
       },
       {
         name: "M7 fabricated total when the ceiling is hit (a partial count as a total)",
@@ -498,7 +466,7 @@ async function main(): Promise<void> {
     // equality still holds, and the summary reads BETTER than before while
     // testing less. (Measured: the M7 anchor was invalidated by a field added
     // to a return literal, the suite reported 10/10, and nothing failed.)
-    const EXPECTED_MUTANTS = 13
+    const EXPECTED_MUTANTS = 11
     let caught = 0
     let mutantsTotal = 0
     let skipped = 0
