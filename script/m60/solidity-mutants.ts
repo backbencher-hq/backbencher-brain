@@ -546,6 +546,69 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/qualified-calls-dropped",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-20 REVERT: stop publishing `qualified_calls`. 601 corpus symbols over 407 distinct qualified names stop saying which qualified calls they MAKE, and no relationship, count or line changes \u2014 so nothing but a gate can notice. Caught by call-resolution-sol15's `everything` row.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const y: any = { ...s }
+        delete y.qualified_calls
+        delete y.qualifiedCalls
+        return y
+      }),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
+  },
+  {
+    id: "solidity/qualified-calls-include-namespaces",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-20 REVERT, the over-collection direction: include `abi.` and `type.` receivers. It ADDS rows rather than removing them, so no count-based gate would notice, and the effect is to put `abi.encode` in the same list as `Helpers.twice` \u2014 destroying the one distinction a reader of this field most needs, since a language namespace is not a call on an object. Caught by the same row, because the pinned list is exact.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const list = s.qualified_calls ?? s.qualifiedCalls
+        if (!Array.isArray(list) || list.length === 0) return s
+        const widened = [...new Set([...list, "abi.encode", "type.max"])].sort()
+        return { ...s, qualified_calls: widened, qualifiedCalls: widened }
+      }),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
+  },
+  {
+    id: "solidity/inheritance-kind-overstated",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-19 REVERT: publish cross-file inheritance at confidence 1.0 with tier \"structural\", dropping `kindUnresolved`. No COUNT changes and no kind changes \u2014 the edge is still `extends` to the right target \u2014 which is why this needs its own mutant: the defect is purely that a guess was labelled a fact. 537 corpus rows carried it. A consumer weighting by evidence tier read an undecided KIND as structural, and one filtering `extends` to find contracts inherited a mis-typed base. Caught by inheritance-sol5's `confidenceMax: 0.95` and `meta.kindUnresolved` pin, plus its `confidenceMin: 0.99` forbid.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.type !== "extends" && x.type !== "implements") || (x.metadata ?? {}).kindUnresolved !== true) return x
+        const { kindUnresolved: _k, assumedKind: _a, reasonCode: _r, ...rest } = x.metadata ?? {}
+        return { ...x, confidence: 1, metadata: { ...rest, evidenceClass: "structural" } }
+      }),
+    }),
+    caughtBy: "solidity/inheritance-sol5",
+  },
+  {
+    id: "solidity/library-owner-kind-as-contract",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-19 REVERT, a bug from the PREVIOUS commit: report a library member's `ownerKind` as \"contract\". `declareSymbol` maps BOTH `contract_declaration` and `library_declaration` to `SymbolKind.Class`, so deriving ownerKind from the SymbolKind cannot tell them apart. No gate caught this \u2014 the fixture that pinned it had been written against the buggy output. Found by reading contracts/utils/Strings.sol back. Caught by complexity-sol18's `fromLibrary` row, now pinned as `library`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.ownerKind === "library" ? { ...s, ownerKind: "contract" } : s),
+    }),
+    caughtBy: "solidity/complexity-sol18",
+  },
+  {
     id: "solidity/complexity-flattened-to-one",
     language: "solidity",
     defectClass: "payload-loss",

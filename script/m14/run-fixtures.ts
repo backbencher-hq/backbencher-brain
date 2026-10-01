@@ -232,6 +232,9 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   // populates for the same job, so the key is allowlisted for cross-lane parity
   // rather than because Solidity needed a new spelling.
   "docstringKind", "docTags", "comments",
+  // SOL-20: the field the TypeScript lane populates for "which qualified calls does this
+  // symbol make". Allowlisted for cross-lane parity, on the same terms as `comments`.
+  "qualified_calls", "qualifiedCalls",
   // relationship rows
   "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
   "line_number", "confidence", "contains", "symbol", "isImport", "isContained",
