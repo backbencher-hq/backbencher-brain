@@ -158,6 +158,45 @@ post-loop is one pass over the symbol list. No O(n²) or per-symbol O(n) scans.
   present — 4 dead defensive references absent from both grammars);
   differential unchanged at 1.000/1.000
 
+### Corpus validation at full extent (2026-09-30) — 13,101 real `.rs` files
+
+The record above is the 2026-08-28 M12 pass and is kept as history. The lane is
+now validated against **13,101 real `.rs` files across six pinned corpora**:
+
+| corpus | pin | `.rs` files |
+|---|---|---|
+| rust-lang/rust `src/` | `master` (library + compiler + tools, incl. rust-analyzer and clippy) | 10,505 |
+| cargo | `523e530` | 1,372 |
+| tokio | `aa18e84` | 807 |
+| serde | `6693a89` | 208 |
+| ripgrep | `3fce3b5` | 110 |
+| hyper | `e60932d` | 99 |
+
+**`tests`, `test`, `benches` and `examples` are included.** They are where
+`macro_rules` takes its strangest forms and where a declaration-position bug hides
+most easily; an audit that skips them audits a corpus nobody ships, so the skip
+list is down to non-source trees only (`.git`, `target`, `node_modules`, `vendor`).
+
+Two findings came out of that scope change, both recorded in the spec:
+
+- **RUST-D21 — a wasm tree must be released explicitly.** Sweeping this corpus
+  aborted mid-run: 4,000 files clean, 5,000 aborts in `ts_parser__reduce` →
+  `ts_malloc_default`, while **all 7,773 rustc files parse individually**. The
+  grammar rejects nothing; web-tree-sitter simply never frees a `Tree` without
+  `tree.delete()`, so one retained tree per file exhausts the wasm heap. Because
+  these tools print their report at the END, exhaustion produced **no output at
+  all** — indistinguishable from an empty corpus. The first fix (recycling the
+  parser) was wrong and the growth curve is what proved it: monotonic
+  375 → 491 → 936 MB before, flat 311 → 149 → 103 MB after. Production is immune
+  by design — `parallel-indexer`'s worker `exit` handler respawns the worker and
+  re-routes its batch, and a fresh worker's fresh heap succeeds.
+- **RUST-D19 — a trait method signature's parameters declare.** Found only at
+  full extent: cargo's `src/compiler/mod.rs:142-143` published `uses` edges for
+  `on_stdout_line`/`on_stderr_line` parameters of a bodiless
+  `function_signature_item`, because `collectFunctionBindings` collects
+  `function_item` only. Two sites in 13,101 files — the whole argument for a
+  full-extent gate as its own run rather than a larger sample.
+
 ## M14 verification (issue #261, 2026-08-28)
 
 Deep line-by-line review of the analyzer and its differential residuals
