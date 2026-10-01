@@ -181,7 +181,14 @@ const rel = (root: string, relPath: string) => path.join(root, relPath)
     // The O(files named) claim, measured on a project far larger than the ask.
     const big = await getUnifiedHealth(pid, root, { paths: ["src/a.ts"], freshness: "complete", sampleSize: 200 })
     harness.check("the scoped answer is O(files named), not O(project)", big.pathChecks!.length === 1 && big.pathChecks![0].status === "fresh", `${big.pathChecks!.length} path resolved; the project scan still ran separately and is reported as such`)
-    harness.check("and its own cost is reported", big.timing.pathsMs >= 0 && big.timing.pathsMs < Math.max(1, big.timing.freshnessMs + big.timing.pathsMs), `pathsMs=${big.timing.pathsMs} vs freshnessMs=${big.timing.freshnessMs}`)
+    // The claim here is that the scoped phase's cost is MEASURED and reported
+    // separately — not that it is smaller. The first version of this check
+    // asserted `pathsMs < max(1, freshnessMs + pathsMs)`, which is not even an
+    // ordering: on a one-file fixture freshnessMs rounds to 0, so it reduced to
+    // `pathsMs < pathsMs` and failed. Same defect class as the timing assertion
+    // dropped in verify-actionability, and the same lesson: a fixture too small
+    // to support the claim will decide the claim by rounding.
+    harness.check("and its own cost is measured and reported separately from the corpus scan", Number.isFinite(big.timing.pathsMs) && big.timing.pathsMs >= 0 && Number.isFinite(big.timing.freshnessMs), `pathsMs=${big.timing.pathsMs} (the named path) vs freshnessMs=${big.timing.freshnessMs} (the project scan it did not replace) — both reported, neither asserted to be ordered`)
   } finally { clean(root, pid) }
 }
 
