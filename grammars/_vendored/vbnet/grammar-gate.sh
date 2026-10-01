@@ -20,27 +20,44 @@
 # The floor is a measured reading, not a number someone typed: `--accept` writes
 # whatever the corpus says right now, and after that any drop is a failure.
 set -uo pipefail
-export PATH="$HOME/fixtures/bin:$HOME/.local/bin:$PATH"
-ROOT=$HOME/backbencher-brain
+
+# ── paths, resolved from THIS FILE rather than hardcoded ────────────────────
+# The original hardcoded $HOME/…, which made the gate unrunnable on
+# any other machine and on any clone. Everything below is derived from the
+# script's own location, so a clone is self-contained. Overridable for a
+# toolchain that lives elsewhere:
+#
+#   BB_VB_BIN      extra PATH entry for the `tree-sitter` CLI (build half only)
+#   BB_VB_CORPUS   root holding runtime-mvb/ p3d/ dismt/ tankex/ (default below)
+#   BB_VB_BUILDLOG where the build half's log goes (default /tmp/vb-build.log)
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$HERE/../../.." && pwd)"
+[ -n "${BB_VB_BIN:-}" ] && export PATH="$BB_VB_BIN:$PATH"
+# The CLI itself is NOT vendored: it is an 18.8 MB ELF binary, and this repo
+# installs tooling rather than committing it. `--no-build` never needs it.
+command -v tree-sitter >/dev/null 2>&1 || [ -x "${BB_VB_BIN:-/nonexistent}/tree-sitter" ] || \
+  echo "note: tree-sitter CLI not on PATH — the BUILD half will fail; --no-build still works"
+export PATH="$ROOT/node_modules/.bin:$PATH"
 TSX=$ROOT/node_modules/.bin/tsx
-PROBES=$HOME/fixtures/probes
-VAL=$HOME/fixtures/validation
+PROBES=$ROOT/script/m14/tmp
+VAL=$HERE
 FLOOR=$VAL/grammar-floor.json
-CAND=$VAL/grammar-candidate.json
+CAND=${BB_VB_CANDIDATE:-$VAL/grammar-candidate.json}
+BUILDLOG=${BB_VB_BUILDLOG:-/tmp/vb-build.log}
 ACCEPT=0
 [ "${1:-}" = "--accept" ] && ACCEPT=1
-[ "${1:-}" = "--no-build" ] || "$ROOT/../fixtures/grammar-repro/repair-loop.sh" >/tmp/vb-build.log 2>&1
+[ "${1:-}" = "--no-build" ] || "$HERE/repair-loop.sh" >"$BUILDLOG" 2>&1
 BUILD_RC=$?
 if [ "${1:-}" != "--no-build" ]; then
-  if ! grep -qE "^cases: [0-9]+ pass / 0 fail" /tmp/vb-build.log; then
-    echo "BUILD or REPRO CASES FAILED — see /tmp/vb-build.log"
-    grep -E "GENERATE FAILED|BUILD FAILED|FAIL |cases:" /tmp/vb-build.log | head -30
+  if ! grep -qE "^cases: [0-9]+ pass / 0 fail" "$BUILDLOG"; then
+    echo "BUILD or REPRO CASES FAILED — see $BUILDLOG"
+    grep -E "GENERATE FAILED|BUILD FAILED|FAIL |cases:" "$BUILDLOG" | head -30
     exit 1
   fi
-  echo "repro cases: $(grep -o 'cases: .*' /tmp/vb-build.log | head -1)"
+  echo "repro cases: $(grep -o 'cases: .*' "$BUILDLOG" | head -1)"
 fi
 
-OUT=$(OUT=$CAND $TSX $PROBES/grammar-baseline.ts 2>&1)
+OUT=$(OUT=$CAND BB_VB_CORPUS="${BB_VB_CORPUS:-$HOME/fixtures/vb-corpus}" $TSX $PROBES/grammar-baseline.ts 2>&1)
 echo "$OUT" | tail -12
 echo ""
 
