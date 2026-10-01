@@ -4862,6 +4862,22 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
   // all silent). Type truth uses the analyzer's declaredTypes pre-pass
   // contract exactly: struct/union/enum WITH a body, typedef aliases.
   // Macros: preproc_def/preproc_function_def name.
+  // #969: C keywords can never be a DECLARED NAME. Under recovery a keyword can
+  // surface as a plain `identifier` (a spliced directive, a truncated declarator), and
+  // admitting it then publishes reads of it -- `uses void` in redis/deps/jemalloc, and
+  // `references struct` in curl's version_win32. A keyword is not a name anything can
+  // resolve to, so both rows were fabrications. Kept to the 24 C89 keywords plus the
+  // C99/C11 additions the lane's grammar has nodes for, and matched on TEXT because
+  // the recovery that produces these has already lost the node type that would say
+  // `primitive_type`.
+  const C_KEYWORDS = new Set([
+    "auto", "break", "case", "char", "const", "continue", "default", "do", "double",
+    "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long",
+    "register", "restrict", "return", "short", "signed", "sizeof", "static", "struct",
+    "switch", "typedef", "union", "unsigned", "void", "volatile", "while",
+    "_Bool", "_Complex", "_Imaginary", "_Alignas", "_Alignof", "_Atomic", "_Generic",
+    "_Noreturn", "_Static_assert", "_Thread_local",
+  ])
   const DECL_PARENT_TYPES = new Set([
     "declaration", "parameter_declaration", "field_declaration", "init_declarator",
     "function_declarator", "pointer_declarator", "array_declarator", "type_definition",
@@ -5351,14 +5367,20 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
             const inFunction = (() => { let c: any = n; while (c) { if (c.type === "function_definition") return true; c = c.parent } return false })()
             if (!inFunction) {
               const nm = n.childForFieldName("name")
-              if (nm && nm.text.trim()) declaredTypes.add(nm.text)
+              // #969: an UNTAGGED `struct`/`union` has no `name` field, and the
+              // lookup returns the KEYWORD itself -- so `struct` was admitted as a
+              // declared type and every mention of it became a `references` row
+              // (curl/lib/curlx/version_win32.c). A keyword is not a type anything can
+              // resolve to.
+              if (nm && nm.text.trim() && !C_KEYWORDS.has(nm.text.trim())) declaredTypes.add(nm.text.trim())
             }
           }
         } else if (n.type === "enum_specifier") {
           const nm = n.childForFieldName("name")
-          // CGD20-mirror (see struct branch): skip function-local enums.
+          // CGD20-mirror (see struct branch): skip function-local enums. #969: and skip
+          // keywords -- an untagged `enum` resolves `name` to the keyword.
           const inFunction = (() => { let c: any = n; while (c) { if (c.type === "function_definition") return true; c = c.parent } return false })()
-          if (nm && nm.text.trim() && !inFunction) declaredTypes.add(nm.text)
+          if (nm && nm.text.trim() && !inFunction && !C_KEYWORDS.has(nm.text.trim())) declaredTypes.add(nm.text.trim())
         } else if (n.type === "type_definition") {
           // typedef name. TWO shapes (measured, probe c-oswin):
           //  (a) `typedef struct Jim_Obj Jim_Obj;` / `typedef long i64;` —
@@ -5403,7 +5425,8 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
               ident = findLeaf(declField)
             }
           }
-          if (ident && !inFunction) declaredTypes.add(ident)
+          // #969: a keyword surfaced as a bare identifier under recovery is not a type.
+          if (ident && !inFunction && !C_KEYWORDS.has(ident)) declaredTypes.add(ident)
         } else if (n.type === "identifier" || n.type === "field_identifier") {
           // CGD23/CGD24 (M37 #601): macro definition names are TEXTUALLY
           // file-scoped (the C preprocessor has no lexical scope — a #define
@@ -5456,7 +5479,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // #966: an ENUMERATOR declares a member regardless of whether its enum is
           // file-scope or function-local. #961 ruled function-local TYPES are
           // published, and the analyzer publishes their MEMBERS too -- owned by the
-          // type, not by the function:
+          // type, not the function:
           //
           //   curl/src/tool_paramhlp.c:418  enum e_action { allow, deny, set }
           //     declared INSIDE a function (that enum_specifier is fnLocal=true)
@@ -5487,7 +5510,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
-          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || isEnumeratorMember || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
+          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || isEnumeratorMember || (!C_KEYWORDS.has(n.text) && !isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
             // is the preproc_function_def) is what makes the name unmaskable-as-
@@ -6626,19 +6649,6 @@ export function deriveCSharpBareUses(
           t === "tuple_type" || t === "nullable_type" || t === "array_type" || t === "pointer_type" || t === "ref_type") {
         return true
       }
-      // CS-D14. C# has no `int[N]` TYPE -- an array's size is only ever an expression, in `new int[N]`
-      // or `stackalloc`. But the pinned grammar gives the creation's element type a node NAMED
-      // `array_type`, and that node sits in the blanket-true list above, so the size inside the rank
-      // specifier was classified as a type position and the read was dropped:
-      //
-      //     _buffer = new byte[DefaultBufferSize];
-      //                                 ^^^^^^^^^^^^^^^ a READ of a declared const
-      //
-      // Ascending to `array_rank_specifier` and stopping there is exact: a rank specifier holds only
-      // expressions, so nothing under it is a type position whatever its grandparent is. The node
-      // NAME is misleading and the POSITION is not, which is the distinction four defects in this
-      // one function have been about.
-      if (t === "array_rank_specifier") return false
       // `generic_name` and `qualified_name` are DELIBERATELY not in the list above, and their
       // absence was the last of the 17+1 rows this truth got wrong:
       //   `var f = Document.GetRequiredLanguageService<ISyntaxFactsService>();`
