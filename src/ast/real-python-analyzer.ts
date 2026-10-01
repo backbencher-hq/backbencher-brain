@@ -1483,7 +1483,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     const overrideCompanion = (ctx as any)._overrideCompanion as Map<string, Set<string>> | undefined
     const baseDeclares = (base: string, method: string): boolean => {
-      const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
+      // Same kind requirement as the MRO walk above, and for the same reason: a class
+      // variable is not a method, so it cannot be overridden.
+      const inFile = byName.get(method)?.some(
+        (bm) => bm.ownerName === base && bm.kind === ASTEngine.SymbolKind.Method,
+      ) ?? false
       if (inFile) return true
       const companion = overrideCompanion?.get(base)
       return !!companion && companion.has(method)
@@ -1509,9 +1513,31 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // a thing a class can do. The exclusion belongs to both derivations, not one of them.
         const bases = raw?.filter((b) => b !== s.ownerName)
         if (!bases || bases.length === 0) continue
-        // MRO order: the first base that DECLARES this name owns the override.
+        // MRO order: the first base that DECLARES THIS NAME AS A METHOD owns the override.
+        //
+        // "AS A METHOD" is the fourth genuine analyzer defect the independent oracle found,
+        // and the most damaging shape of the four, because it FABRICATES an edge *and* marks
+        // it verified. The check was `some(bm => bm.ownerName === b)` — any symbol with that
+        // name and owner — and a class VARIABLE satisfies it:
+        //
+        //     class Base:
+        //         attr = None            # a class variable, not a method
+        //     class Derived(Base):
+        //         def attr(self): ...    # a method
+        //
+        // published `overrides Derived.attr -> Base.attr` at **0.95 with no reasonCode**, which
+        // reads as a verified fact and is not one: there is no method to override. CPython's
+        // own `ast` on that pair reports `attr(var)` for `Base` and `attr(def)` for `Derived`,
+        // and the two are different kinds of member — python's `Base.attr` is the value `None`.
+        //
+        // The corpus makes this common rather than exotic. Cython classes declare their state
+        // at class level, so `Cython/Compiler/Nodes.py` has `code_object = None` in
+        // `FuncDefNode` at L1996 and a `code_object` property in `CFuncDefNode` — which is how
+        // this surfaced, as 20 fabricated verified edges concentrated in one file.
         const declaring = bases.find((b) => {
-          const inFile = byName.get(s.name)?.some((bm) => bm.ownerName === b) ?? false
+          const inFile = byName.get(s.name)?.some(
+            (bm) => bm.ownerName === b && bm.kind === ASTEngine.SymbolKind.Method,
+          ) ?? false
           return inFile || !!overrideCompanion?.get(b)?.has(s.name)
         })
         if (declaring) {
