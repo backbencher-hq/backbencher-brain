@@ -39,6 +39,7 @@ import { deriveDartContainsTruth } from "./oracles/dart-contains"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
+import { deriveJuliaUsesTruth, deriveJuliaReferencesTruth } from "./oracles/julia-refs"
 // M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
 // was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
 // published `contains` that nothing compared while the lane printed a percentage.
@@ -20800,6 +20801,25 @@ async function main() {
         for (const e of deriveJuliaCallsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // `uses` + `references`, the last two structural labels without independent truth (15,499
+        // and 33,938 edges over 941 files). Both are NARROW on purpose and that is the point: `uses`
+        // is not "every identifier read", which would need scope and binding analysis and could not
+        // be derived from one tree. It is a MEMBER READ OF A VALUE — `a.b` reads the member `b` of
+        // something — which is a syntactic fact. `references` is a reference to a TYPE or a
+        // NAMESPACE.
+        //
+        // The rule both turn on is that Julia spells namespace access and field access IDENTICALLY:
+        // `Base.show` and `obj.field` are the same node and the tree says nothing about which. The
+        // test is syntactic and stated rather than assumed, and it needs BOTH a receiver test and an
+        // ancestor test — the outermost link of a namespace path is identified by its nested
+        // receiver, the inner links by their ancestor, and either test alone publishes a plausible
+        // answer for the easy case and a wrong one for the rest.
+        for (const e of deriveJuliaUsesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveJuliaReferencesTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
@@ -21132,6 +21152,10 @@ async function main() {
           // and the gap is where the remaining `unexplained` rows live, which is the correct place
           // for them rather than a place to invent a row.
           ...(lang === "julia" ? ["calls"] : []),
+          // …and `uses` + `references`, the last two structural labels. Every compared label now
+          // has an oracle behind it, which is the point of the allowlist: a label in the comparison
+          // set with nothing behind it is not coverage, it is a number.
+          ...(lang === "julia" ? ["uses", "references"] : []),
           // M60: dart joins the contains-audited set. Its containment surface — the
           // backbone the graph is navigated by, and the largest unadmitted blob the
           // label-coverage sweep found — had no independent truth at any scale, and
