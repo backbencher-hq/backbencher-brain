@@ -188,9 +188,25 @@ async function mixed() {
 
       harness.check("the freshness phase is wired (non-zero where there is real work)", both.timing.freshnessMs > 0, `freshnessMs=${both.timing.freshnessMs} over ${both.freshness.checked} files`)
       harness.check("the battery REUSES the freshness verdicts rather than re-reading the corpus", /SAME ones bb_health's own freshness scan just produced/.test(drift.description), drift.description.slice(0, 118))
-      // The pre-fix battery hashed 400 files in this call; the post-fix one runs
-      // 13 SQL aggregates. So it must be cheaper than the scan it used to repeat.
-      harness.check("and its phase is now CHEAPER than the corpus scan it used to duplicate", both.timing.integrityMs < both.timing.freshnessMs, `integrity=${both.timing.integrityMs}ms vs freshness=${both.timing.freshnessMs}ms over ${both.freshness.checked} files (pre-fix the battery hashed the same 400 files a second time)`)
+      // REMOVED, deliberately: "integrityMs < freshnessMs".
+      //
+      // It looked like the direct witness for A4 (the battery no longer hashes
+      // the corpus a second time), and it failed intermittently in the MERGED
+      // tree: integrity=71ms vs freshness=57ms over the same 400 files, then
+      // 43/43 on the two reruns that followed. Both phases sit at tens of
+      // milliseconds here, so machine contention decides the order.
+      //
+      // It is also redundant. What actually proves the reuse is structural and
+      // already asserted above: the check's own description names the map it
+      // reused, the reused hash-drift count equals the resolver's own count, and
+      // a pre-resolved map whose total does not match the index is DISCARDED —
+      // which is only observable if the reuse path is real. A gate that goes red
+      // on noise trains people to ignore red, so the unsupported claim goes and
+      // the numbers are recorded here instead.
+      //
+      // Measured for the record: pre-fix this call hashed the same 400 files a
+      // second time; post-fix the battery runs 13 SQL aggregates.
+      harness.check("the battery is handed the scan it would otherwise repeat, and says so", /SAME ones bb_health's own freshness scan just produced/.test(drift.description) && /both from the freshness scan this report already ran/.test(missingCheck.description), `Hash Drift claims the SAME verdicts; Files Missing says its counts come from the scan this report already ran. Measured: integrity=${both.timing.integrityMs}ms vs freshness=${both.timing.freshnessMs}ms over ${both.freshness.checked} files — reported, not asserted: at this fixture size the two phases are the same order of magnitude and an ordering assertion is decided by contention, not by the code`)
       harness.check("Files Missing reuses them too", /from the freshness scan this report already ran/.test(missingCheck.description), missingCheck.description.slice(0, 110))
       harness.check("the reused Hash Drift count equals the report's own stale count", drift.value === both.freshness.stale, `drift=${drift.value} freshness.stale=${both.freshness.stale}`)
       harness.check("and the reused missing count equals the report's own missing count", missingCheck.value === both.freshness.missing, `missing=${missingCheck.value} freshness.missing=${both.freshness.missing}`)
