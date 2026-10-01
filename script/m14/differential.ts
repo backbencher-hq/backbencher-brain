@@ -36,6 +36,7 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // M60 label-coverage sweep: dart published the largest single-label blob of any
 // unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
+import { deriveDartImportsTruth } from "./oracles/dart-imports"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -20798,6 +20799,18 @@ async function main() {
         for (const e of deriveDartContainsTruth(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60: dart's `imports` / `exports` — the last Dart relationship classes
+        // with no Dart-derived truth, and the ones a dependency graph exists to
+        // answer ("what does this file reach for", "what does this library
+        // publish"). 7,340 rows measured EXACT by script/m14/oracles/dart-imports
+        // against both corpora, and the label is now admitted on BOTH sides of the
+        // comparison: pushing truth without the analyzer-side allowlist entry is the
+        // fabricated-MISSING class the csharp #910 note above records, and the
+        // allowlist entry without the truth is the mirror image the groovy G7 note
+        // records — either half alone is a harness gap dressed as a result.
+        for (const e of deriveDartImportsTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "julia") {
         // M60 julia `contains` truth, derived from JULIA'S OWN containment rule in a lane-owned
@@ -21160,7 +21173,7 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []),
+          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
