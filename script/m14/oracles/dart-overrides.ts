@@ -398,6 +398,38 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
   }
   collect(root)
 
+  // The member set each in-file type EXPOSES, not just the one it DECLARES —
+  // the same inheritance closure `ProjectIndex` builds and that the analyzer's
+  // cross-file pass consumes. This is what makes "nearest wins" mean the same thing
+  // on both sides.
+  //
+  // The distinction is not cosmetic. `sealed class TemplateState extends Equatable`
+  // declares no `props` but exposes it, and `class TemplateInitial extends
+  // TemplateState` does declare `props`. Asked for the NEAREST base that DECLARES
+  // the member, the answer is Equatable; asked for the nearest base that EXPOSES
+  // it — the nearest base whose interface the member actually replaces — the answer
+  // is TemplateState. 81 freezed rows in ProxiCall/lib turn on it.
+  //
+  // The analyzer resolves TemplateState at confidence 0.95, the same as an in-file
+  // edge, because with a project index it has genuinely verified the exposure. So
+  // the contract this oracle implements is the exposer, and the declarer walk is a
+  // stricter question than the edge is asking.
+  const exposedOf = (cls: string, seen = new Set<string>()): Set<string> => {
+    if (seen.has(cls)) return new Set<string>()
+    seen.add(cls)
+    // The companion is PART of the closure, not a separate later pass. That is what
+    // `ProjectIndex`'s `allMembers` does — it closes over bases whether the base is
+    // in the file or in the index — and a closure that stopped at the file boundary
+    // would understate every in-file type that inherits from another package, which
+    // is the freezed case exactly: `TemplateState extends Equatable` exposes `props`
+    // through Equatable, so TemplateState exposes it too.
+    const out = new Set<string>(methodsOf.get(cls) ?? (companion?.get(cls) ?? []))
+    for (const b of supertypesOf.get(cls) ?? []) for (const m of exposedOf(b, seen)) out.add(m)
+    return out
+  }
+  const exposed = new Map<string, Set<string>>()
+  for (const cls of methodsOf.keys()) exposed.set(cls, exposedOf(cls))
+
   const edges: TruthEdge[] = []
   const add = (from: string, to: string): void => {
     edges.push({ label: "overrides", from, target: to })
@@ -428,7 +460,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         const supMethods = methodsOf.get(sup)
         if (supMethods) {
           // declared IN THIS FILE — the higher-priority pass
-          if (supMethods.includes(m)) {
+          if ((exposed.get(sup) ?? supMethods).has(m)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
             break
