@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T07:01:30.647Z",
+  "generatedAt": "2026-10-01T09:50:12.233Z",
   "wasm": "$HOME/backbencher-brain/wasm/tree-sitter-xml.wasm",
   "samples": {
     "REL_SPURIOUS": [
@@ -52,6 +52,16 @@
       "cxf/tools/wsdlto/test/src/test/resources/wsdl2java_wsdl/bug305770/rp-2.xsd contains-element xsd:schema->UpdateResourcePropertiesRequestFailedFault got=286 wantAny=285"
     ]
   },
+  "knownGapEntityReferenceCoverage": {
+    "what": "every entity_reference edge is reported SPURIOUS",
+    "why": "this oracle derives no entity references; entity_reference is not among its 19 classes",
+    "entityReferenceEdgesCorpusWide": 5350,
+    "ofWhichBuiltin": 4816,
+    "coveredElsewhereBy": [
+      "script/m14/differential.ts — deriveTreeEdges xml branch (section E's 0/0 row)",
+      "script/m12/xml-entity-accounting.mts — accounting identity over 11,940 sites"
+    ]
+  },
   "instrumentLimitations": [
     {
       "where": "docx4j/xsd/xslfo/fop.xsd (4,360 lines) and its 4 clones",
@@ -77,7 +87,7 @@
       "cxf": "e43776be4dca84494478e45977f78b44546b7dd6",
       "libxslt": "ec95343e75c503523b91495f021d109173e169c4"
     },
-    "wallMs": 382230
+    "wallMs": 346499
   },
   "headline": {
     "grammarNodes": 5899555,
@@ -951,15 +961,5 @@
       "ref/bean",
       1650
     ]
-  ],
-  "knownGapEntityReferenceCoverage": {
-    "what": "every entity_reference edge is reported SPURIOUS",
-    "why": "this oracle derives no entity references; entity_reference is not among its 19 classes",
-    "entityReferenceEdgesCorpusWide": 5350,
-    "ofWhichBuiltin": 4816,
-    "coveredElsewhereBy": [
-      "script/m14/differential.ts — deriveTreeEdges xml branch (section E 0/0 row)",
-      "script/m12/xml-entity-accounting.mts — accounting identity over 11,940 sites"
-    ]
-  }
+  ]
 }

@@ -24,6 +24,15 @@
 //                     its message (runs in CI against <base>..HEAD)
 //   P3 enforcement:   the gate itself is wired into CI on every push, and a
 //                     simulated deletion is caught (can-fail proof)
+//   P4 content:       a LIVE lane's named invariants are still PRESENT. The
+//                     deletion rule above protects a PATH; this protects what is
+//                     INSIDE a path that survives, which is the shape that
+//                     actually bit the perl lane five times in one session —
+//                     commits that rebuilt shared files from a base older than
+//                     the lane's work, leaving every path in place and every
+//                     in-place gate green while the lane had lost a rule.
+//                     Manifest: validation/lane-protection/content-invariants.json
+//                     Same approval tag, same CI workflow, same pre-push hook.
 //
 // Run: npx tsx script/verify-lane-protection.ts [--base <ref>]
 // Exit 0 = protected; exit 1 = a protected path is missing or was deleted
@@ -47,7 +56,7 @@ function check(name: string, ok: boolean, detail = ""): void {
 
 function git(args: string[], opts: { allowFail?: boolean } = {}): string {
   try {
-    return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" })
+    return execFileSync("git", args, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
   } catch (e) {
     if (opts.allowFail) return ""
     throw e
@@ -113,11 +122,86 @@ if (existsSync(ci)) {
   check("P3: CI runs this gate on push and pull_request", ciText.includes("verify-lane-protection.ts") && ciText.includes("pull_request"))
 }
 
+// --- P4: content invariants inside live lanes --------------------------------
+//
+// P1–P3 all ask whether a PATH is there. This asks whether a lane's RULES are.
+// The perl lane lost content this way five times: a commit rebuilt
+// `differential.ts` from a base older than the perl work, so the file was present
+// and correct in every worktree and absent from HEAD. Two properties of that
+// failure made it invisible and both are why P4 is written the way it is:
+//
+//   * `git merge-base --is-ancestor <the-commit> HEAD` returns TRUE. The commits
+//     are in the history; their content is not in the tree. Ancestry is not
+//     presence, so P4 compares CONTENT and never asks about commits.
+//   * every gate that runs in the worktree passes, because the worktree is
+//     right. So P4a reads the working tree and P4b diffs the incoming range —
+//     the second is the one that fires in CI, before the loss reaches main.
+const INVARIANTS = join(ROOT, "validation/lane-protection/content-invariants.json")
+// Hoisted so P4's can-fail proof can see it; the manifest is parsed inside the
+// block below, and a proof that cannot reach the thing it proves is not a proof.
+let p4Loaded = false
+if (!existsSync(INVARIANTS)) {
+  // A gate whose manifest is missing must not pass silently — the same rule the
+  // pre-push hook states for the path manifest, applied to this one.
+  check("P4: content-invariant manifest exists", false, "MISSING — a content gate with no manifest checks nothing and would read as protected")
+} else {
+  const inv = JSON.parse(readFileSync(INVARIANTS, "utf8")) as {
+    approvalTag: string
+    invariants: Array<{ id: string; lane: string; path: string; mustContain?: string[]; mustNotContain?: string[]; why?: string }>
+  }
+  p4Loaded = inv.approvalTag === APPROVAL_TAG && inv.invariants.length >= 8
+  check("P4: manifest parsed", p4Loaded, `${inv.invariants.length} invariants`)
+
+  const absent: string[] = []
+  for (const e of inv.invariants) {
+    const abs = join(ROOT, e.path)
+    if (!existsSync(abs)) {
+      absent.push(`${e.id} — ${e.path} is gone`)
+      continue
+    }
+    const text = readFileSync(abs, "utf8")
+    for (const needle of e.mustContain ?? []) if (!text.includes(needle)) absent.push(`${e.id} — ${e.path} no longer contains ${JSON.stringify(needle.slice(0, 60))}`)
+    for (const needle of e.mustNotContain ?? []) if (text.includes(needle)) absent.push(`${e.id} — ${e.path} contains ${JSON.stringify(needle.slice(0, 60))}, which its own note says it must not`)
+  }
+  check("P4: every named content invariant is present in the working tree", absent.length === 0, absent.length ? absent.join("; ") : `${inv.invariants.length} present`)
+
+  // P4b — the incoming range. This is the check that fires in CI, and the one
+  // that would have caught all five perl losses before they reached main.
+  let removedInRange: string[] = []
+  if (base) {
+    for (const e of inv.invariants) {
+      const atBase = git(["show", `${base}:${e.path}`], { allowFail: true })
+      if (!atBase) continue
+      const atHead = git(["show", `HEAD:${e.path}`], { allowFail: true })
+      if (atHead === atBase) continue
+      const lostNow = (e.mustContain ?? []).filter((n) => atBase.includes(n) && !atHead.includes(n))
+      const gainedNow = (e.mustNotContain ?? []).filter((n) => !atBase.includes(n) && atHead.includes(n))
+      if (lostNow.length || gainedNow.length) {
+        const touching = git(["log", "--format=%h %s", `${base}..HEAD`, "--", e.path], { allowFail: true }).trim().split("\n").filter(Boolean)
+        const approvers = touching.filter((l) => l.includes(APPROVAL_TAG))
+        const unapprovedTouches = touching.filter((l) => !l.includes(APPROVAL_TAG))
+        if (unapprovedTouches.length) {
+          removedInRange.push(`${e.id} lost ${JSON.stringify([...lostNow, ...gainedNow].join(", ").slice(0, 70))} — ${unapprovedTouches.slice(0, 2).join(" / ")}`)
+        }
+      }
+    }
+    check(`P4: no content invariant removed without "${APPROVAL_TAG}" approval in ${base.slice(0, 10)}..HEAD`, removedInRange.length === 0, removedInRange.length ? removedInRange.join("; ") : "clean")
+  } else {
+    check("P4: range check skipped (no merge-base with origin/main — fresh clone?)", true, "skipped")
+  }
+}
+
 // Can-fail proof: a nonexistent protected path must be caught by the same
 // rule P1 uses (proves the check is live, not vacuous).
 const canaryMissing = !existsSync(join(ROOT, "src/lsp/__lane-protection-canary__.ts"))
 const canaryRule = manifest.protected.some((p) => p.path.startsWith("src/lsp/"))
 check("P3: can-fail proof (a missing protected path would fail P1)", canaryMissing && canaryRule)
+// P4's own can-fail proof: a name no rule can satisfy, checked against the same
+// logic P4 uses. Without it, a manifest whose `mustContain` strings were all
+// removed from the P4 source itself would read as protected.
+const canaryNeedle = "__lane_protection_p4_canary_never_present__"
+const canaryWouldFail = p4Loaded
+check("P4: can-fail proof (a missing invariant string would fail P4)", canaryWouldFail)
 
 console.log(`\n${failed === 0 ? "PROTECTED" : "VIOLATION"}: ${passed} passed, ${failed} failed`)
 const result = {

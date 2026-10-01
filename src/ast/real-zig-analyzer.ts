@@ -93,7 +93,7 @@ export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
  * target (script/m14/tmp/c924-name-surface-probe.ts). An unterminated `@"` is
  * malformed source, not a name: it is kept verbatim.
  */
-function stripZigQuoting(text: string): string {
+export function stripZigQuoting(text: string): string {
   if (!text.includes('@"')) return text
   let out = ""
   let i = 0
@@ -275,8 +275,25 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { relationshipType: "zig_import", isImport: true },
               })
             }
-            this.pushChildren(node, walkStack, container, inFunction, anonContainer)
-            continue
+            // Z35: this branch used to swallow the BINDING, and the rule it
+            // actually implemented was "an @import binding is a symbol only when
+            // the right-hand side is LONGER than the import itself" \u2014
+            // `const std = @import("std")` published no symbol while
+            // `const longer = @import("std").ArrayList` published one, in the same
+            // file. That is not a rule any language has, and it cost three things:
+            // the module's namespace was missing its most common declaration
+            // (1,458 bindings in 400 corpus files), a `pub const X = @import(...)`
+            // re-export named a binding the index could not resolve (the fixture
+            // runner\u0027s export invariant caught it), and the binding was invisible
+            // while the import EDGE was perfect. The fix is the REMOVAL of an early
+            // exit: at file or container scope the walk falls through to the same
+            // const/var handling every other declaration gets, so kind, visibility
+            // and owner are decided in ONE place. Inside a function body the exit
+            // stays (Z9, and the family\u0027s LocalsAreNotSymbols rule).
+            if (inFunction) {
+              this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+              continue
+            }
           }
 
         // `const` vs `var` (anonymous tokens, probe-verified): a mutable
@@ -343,6 +360,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: {
             zigDeclaration: kind,
             ...(rhsType === "error_set_declaration" ? { zigErrorSet: true } : {}),
+            // Z35: a NAMESPACE IMPORT BINDING is a distinct fact from any other
+            // const, and a consumer asking "which names in this file are modules"
+            // cannot ask without it. It is also what makes the regression
+            // reconstructible by a MARKER rather than by a list of names.
+            ...(this.isZigImportBinding(rhs) ? { zigImportBinding: true } : {}),
           },
         }
         symbols.push(sym)
@@ -353,7 +375,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // importer can use, and it tripped the fixture runner's export invariant
         // as soon as an opaque container started owning its declarations. The
         // `pub` fact survives as the member's `visibility: "public"`.
-        if (isExported && !container) exports.push({ name: varName, kind })
+        // Z33: the export carries its RANGE so the `exports` relationship can be
+        // attributed to the line the name is written on (M59.A7/M60). The interface
+        // has always had the optional field; nothing populated it.
+        if (isExported && !container) exports.push({ name: varName, kind, range: this.nodeRange(node) })
 
         // Container members belong to the new container symbol.
         const newContainer = isContainer ? sym : container
@@ -543,7 +568,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             },
           }
           symbols.push(sym)
-          if (isExported && !isMethod) exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function })
+          if (isExported && !isMethod) exports.push({ name: fnName, kind: ASTEngine.SymbolKind.Function, range: this.nodeRange(node) })
         }
         // Function body: execution artifacts only — no declaration symbols.
         this.pushChildren(node, walkStack, container, true, anonContainer)
@@ -738,6 +763,39 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // analyzer previously emitted NO calls/uses relationships at all — a
     // 30 KB std source with 56 call sites produced zero edges.
     this.analyzeZigCodeRelationships(rootNode, relationships, symbols)
+
+    // Z30: the `imports` twin. An import names a MODULE, not a symbol: 176 of the
+    // 394 distinct module targets in 400 corpus files contain a path separator
+    // (`../build/gresource.zig`), which no zig declaration name can hold. 16 lanes
+    // emit the type and the graph engine, the brain\u0027s evidence enrichment and the
+    // MCP handler all read it, so a lane without it has no import graph rather than
+    // a sparser one. The `references` twin STAYS \u2014 it is the edge this lane\u0027s
+    // declared-type/reference truth derives \u2014 so this ADDS a class rather than
+    // reclassifying one. Both carry the path literal\u0027s line (M60.A7).
+    this.collectZigImportSites(rootNode, imports, relationships)
+
+    // Z32: `instantiates` \u2014 the type ZIG.D.1 ruled out, on the premise that
+    // generics are "monomorphized without a runtime type dispatch the analyzer can
+    // attribute statically". The first half is true and the conclusion is not: a
+    // generic type application is the most STATICALLY READABLE instantiation there
+    // is, because `fn \u2026 type` is a declaration in the file. Measured over 400
+    // corpus files: 34 in-file type-returning functions, 82 application sites, and
+    // 101 constructions of an in-file type \u2014 the second class being exactly what
+    // ZIG.GAP.3 has wanted, and the family\u0027s mechanism for it is this very type
+    // (c/cpp with `isConstructor`, clojure, clean). Contract as those lanes write
+    // it: source is the enclosing symbol or `(global)`, the target must be a type
+    // DECLARED IN THIS FILE (so the edge is proven, not inferred \u2014 hence
+    // confidence 1.0 and `isExternalTarget: false`), and the line is the HEAD
+    // node\u0027s, the type name\u0027s own line.
+    this.analyzeZigInstantiation(rootNode, relationships)
+
+    // Z33: `exports` \u2014 the type the relationship census caught unclassified. Zig\u0027s
+    // `pub` IS the language\u0027s public API surface (1,465 exported declarations in
+    // 391 of 400 corpus files), recorded in `res.exports` and published as NO
+    // relationship, so `bb_graph --type exports` returned nothing for this lane
+    // while returning an API surface for 16 others. Generated FROM the export list,
+    // so the two surfaces cannot drift.
+    this.emitZigExportEdges(relationships, exports)
 
     // Z3 (zig review): bare-identifier value reads. The analyzer emitted NO
     // bare-identifier edges at all (`return MAX` produced zero relationships)
@@ -937,6 +995,282 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
    * are keyed on the SOURCE's own spellings and stay consistent with the tree),
    * and before the result leaves the analyzer.
    */
+  /** Z35: is this right-hand side a module import? The two shapes the import
+   *  branches recognise, in one place so three sites cannot disagree. */
+  private isZigImportBinding(rhs: Node | null): boolean {
+    if (!rhs) return false
+    const host = rhs.type === "call_expression" || rhs.type === "builtin_function" ? rhs : null
+    if (!host) return false
+    for (let i = 0; i < host.namedChildCount; i++) {
+      const c = host.namedChild(i)
+      if (c && (c.type === "builtin_identifier" || c.type === "identifier")) {
+        const t = String(c.text ?? "")
+        return t === "@import" || t === "@cImport" || t === "import"
+      }
+    }
+    return false
+  }
+
+  /**
+   * Z30: every `@import("path")` / `@cImport(\u2026)` SITE, whether or not the import
+   * is the whole right-hand side.
+   *
+   * The three shape branches each ask "is the RHS exactly an @import?", so
+   * `const v = @import("build.zig.zon").version;` (a .zon manifest read),
+   * `const c = @import("c.zig").c;` (a module\u0027s C bindings) and
+   * `try @import("apple_sdk").addPaths(b, lib);` (a call ON a module, not even a
+   * declaration) fell through all of them: no fact, no edge, no symbol \u2014 460 of
+   * 1,918 sites, 24% of the class. It is a SITE PASS rather than a fourth shape
+   * test, which is the lesson of this wave written down: a rule that enumerates
+   * the shapes it has seen keeps losing the one it has not.
+   *
+   * Measured shape: `builtin_function[builtin_identifier, arguments]`, the path in
+   * `arguments[string[string_content]]`. `@cImport({ @cInclude(\u2026) })` nests its
+   * include strings and has no module path of its own, so it records the fact and
+   * publishes no edge \u2014 the same asymmetry the shape branches have.
+   *
+   * Dedupe key `(line, target)` against what the branches already pushed, so a
+   * site they handled is not recorded twice.
+   */
+  private collectZigImportSites(
+    rootNode: Node,
+    imports: ASTEngine.ImportInfo[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    const stack: Node[] = [rootNode]
+    const seenFacts = new Set<string>()
+    for (const f of imports) seenFacts.add(`${f.range?.startLine ?? 0}|${f.module ?? ""}`)
+    // TWO dedupe sets, one per TYPE. Keying both on "any isImport edge" was wrong
+    // in a way only the fixture could see: the shape branches publish a
+    // `references` twin, so every site they handled looked already-seen and the
+    // pass skipped it \u2014 including its `imports` twin, which is the edge the whole
+    // class exists for. Dedupe is per LABEL, exactly as the F5 matcher compares.
+    const seenRefEdges = new Set<string>()
+    const seenImportEdges = new Set<string>()
+    for (const r of relationships) {
+      if ((r.metadata as any)?.isImport && typeof r.line_number === "number") {
+        const k = `${r.line_number}|${r.target}`
+        if (r.type === ASTEngine.RelationshipType.Imports) seenImportEdges.add(k)
+        else seenRefEdges.add(k)
+      }
+    }
+    const firstString = (host: Node | null): Node | null => {
+      if (!host) return null
+      for (let i = 0; i < host.namedChildCount; i++) {
+        const c = host.namedChild(i)
+        if (c && (c.type === "string" || c.type === "string_content")) return c
+      }
+      return null
+    }
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "builtin_function" || n.type === "call_expression") {
+        let id: Node | null = null
+        if (n.type === "builtin_function") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && (c.type === "builtin_identifier" || c.type === "identifier")) { id = c; break }
+          }
+        } else {
+          id = n.namedChildCount > 0 ? n.namedChild(0) : null
+        }
+        const text = String(id?.text ?? "")
+        if (text === "@import" || text === "@cImport" || text === "import") {
+          let args: Node | null = null
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "arguments") { args = c; break }
+          }
+          let strNode = firstString(n) ?? firstString(args)
+          if (strNode && strNode.type === "string") {
+            for (let i = 0; i < strNode.namedChildCount; i++) {
+              const sc = strNode.namedChild(i)
+              if (sc && sc.type === "string_content") { strNode = sc; break }
+            }
+          }
+          if (strNode) {
+            let target = String(strNode.text ?? "")
+            if (
+              (target.startsWith('"') && target.endsWith('"')) ||
+              (target.startsWith("'") && target.endsWith("'"))
+            ) {
+              target = target.substring(1, target.length - 1)
+            }
+            const line = this.nodeLine(strNode) ?? 0
+            const isUsingNamespace = n.parent?.type === "using_namespace_declaration"
+            if (target && line > 0) {
+              const k = `${line}|${target}`
+              if (!seenFacts.has(k)) {
+                seenFacts.add(k)
+                imports.push({
+                  module: target,
+                  isDefaultImport: false,
+                  range: this.nodeRange(n),
+                  metadata: { zigImport: true, builtin: text, ...(isUsingNamespace ? { usingnamespace: true } : {}) },
+                })
+              }
+              if (!seenImportEdges.has(k)) {
+                seenImportEdges.add(k)
+                relationships.push({
+                  source: "(global)",
+                  target,
+                  type: ASTEngine.RelationshipType.Imports,
+                  confidence: 0.9,
+                  line_number: line,
+                  metadata: { relationshipType: "zig_import", isImport: true, zigImportDep: true },
+                })
+              }
+              if (!seenRefEdges.has(k)) {
+                seenRefEdges.add(k)
+                relationships.push({
+                  source: "(global)",
+                  target,
+                  type: ASTEngine.RelationshipType.References,
+                  confidence: 1.0,
+                  line_number: line,
+                  metadata: { relationshipType: "zig_import", isImport: true },
+                })
+              }
+            }
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  /**
+   * Z32: `instantiates` for the two statically derivable classes \u2014 a call to an
+   * in-file `fn \u2026 type`, and a construction of an in-file type (`TypeName{ \u2026 }`,
+   * bare or QUALIFIED: `Color.C{ .r = 1 }`). The inventory is the tree\u0027s own
+   * declarations, so the class needs no inference. `.{ \u2026 }` is an
+   * anonymous_struct_initializer with no name and instantiates nothing (Z21).
+   */
+  private analyzeZigInstantiation(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
+    const typeNames = new Set<string>()
+    const typeFns = new Set<string>()
+    const inventory = (n: Node): void => {
+      if (n.type === "function_declaration" || n.type === "function_signature") {
+        const t = n.childForFieldName?.("type")
+        if (t && (t.type === "builtin_type" || t.type === "identifier") && String(t.text) === "type") {
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (c && c.type === "identifier") { typeFns.add(String(c.text)); break }
+          }
+        }
+      }
+      if (n.type === "struct_declaration" || n.type === "enum_declaration" || n.type === "union_declaration" || n.type === "opaque_declaration") {
+        const p = n.parent
+        // Bind the child ONCE. `p.namedChild(0)` is a method call, so the
+        // `?.type === "identifier"` guard above cannot narrow the later
+        // `p.namedChild(0).text` — TypeScript reports the object as possibly null
+        // (TS2531) even though the guard proves it. Same value, one call, and the
+        // narrowing works. Caught by the pre-push review: this was the only type
+        // error anywhere in the tree that uncommitted work INTRODUCED; the other
+        // two sit outside every local hunk and predate this work.
+        const firstChild = p && p.type === "variable_declaration" && p.namedChildCount > 0 ? p.namedChild(0) : null
+        if (firstChild && firstChild.type === "identifier") {
+          typeNames.add(String(firstChild.text))
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) inventory(c)
+      }
+    }
+    inventory(rootNode)
+    if (typeNames.size === 0 && typeFns.size === 0) return
+    const seen = new Set<string>()
+    const enclosingName = (n: Node): string => {
+      let cur: Node | null = n.parent
+      while (cur) {
+        if (cur.type === "function_declaration" || cur.type === "test_declaration") {
+          for (let i = 0; i < cur.namedChildCount; i++) {
+            const c = cur.namedChild(i)
+            if (c && c.type === "identifier") return String(c.text)
+          }
+        }
+        cur = cur.parent
+      }
+      return "(global)"
+    }
+    const push = (source: string, target: string, line: number, md: Record<string, unknown>): void => {
+      if (!target || line <= 0) return
+      const k = `${source}|${target}|${line}`
+      if (seen.has(k)) return
+      seen.add(k)
+      relationships.push({
+        source,
+        target,
+        type: ASTEngine.RelationshipType.Instantiates,
+        confidence: 1.0,
+        line_number: line,
+        metadata: { zigSpecific: true, isExternalTarget: false, ...md },
+      })
+    }
+    const sites = (n: Node): void => {
+      if (n.type === "call_expression") {
+        const callee = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (callee && callee.type === "identifier" && typeFns.has(String(callee.text))) {
+          push(enclosingName(n), String(callee.text), this.nodeLine(callee) ?? 0, { isGenericTypeApplication: true })
+        }
+      }
+      if (n.type === "struct_initializer" || n.type === "struct_literal") {
+        const first = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (first) {
+          const raw = String(first.text ?? "")
+          const nm = raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+          if (first.type !== "call_expression" && typeNames.has(nm)) {
+            push(enclosingName(n), nm, this.nodeLine(first) ?? 0, { isConstructorApplication: true })
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) sites(c)
+      }
+    }
+    sites(rootNode)
+  }
+
+  /**
+   * Z33: one `exports` relationship per exported declaration, GENERATED FROM the
+   * export list so the array and the edges cannot drift \u2014 which is the failure the
+   * `imports` twins already paid for once, when they were added to three shapes and
+   * not the fourth and only a bidirectional gate caught it.
+   *
+   * Source is `(file)`, not `(global)`: the exporting entity is the compilation
+   * unit, and `(global)` is this lane\u0027s marker for the EXPRESSION scope that reads
+   * and imports are attributed to. Keeping them apart lets a consumer group an API
+   * surface without guessing which convention a row used. The line is omitted \u2014
+   * never written as 0 \u2014 when a declaration carries none (#820).
+   */
+  private emitZigExportEdges(
+    relationships: ASTEngine.UniversalRelationship[],
+    exports: ASTEngine.ExportInfo[],
+  ): void {
+    const seen = new Set<string>()
+    for (const e of exports) {
+      const name = String(e.name ?? "")
+      if (!name) continue
+      const line = e.range?.startLine ?? 0
+      const k = `${name}|${line}`
+      if (seen.has(k)) continue
+      seen.add(k)
+      relationships.push({
+        source: "(file)",
+        target: name,
+        type: ASTEngine.RelationshipType.Exports,
+        confidence: 1.0,
+        ...(line > 0 ? { line_number: line } : {}),
+        metadata: { zigExport: true, exportKind: String(e.kind ?? "") },
+      })
+    }
+  }
+
   private canonicalizePublishedNames(
     symbols: ASTEngine.UniversalSymbol[],
     relationships: ASTEngine.UniversalRelationship[],
@@ -946,6 +1280,25 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (typeof s.name === "string") s.name = stripZigQuoting(s.name)
       if (typeof s.ownerName === "string") s.ownerName = stripZigQuoting(s.ownerName)
       if (typeof s.id === "string") s.id = stripZigQuoting(s.id)
+      // Z31: the TYPE-bearing payload was left out of this pass, so one declared
+      // type was published two ways in one result — `references (declared-type) ->
+      // weird type` (an EDGE, stripped) beside `returnType: @"weird type"` (a symbol
+      // FIELD, not). A consumer matching a declared type against a published name
+      // or an edge target cannot resolve a quoted type at all, which is the class
+      // Z18 fixed on the edge side. The class is small in the wild (0 of 8,273
+      // symbols over 400 corpus files carry a quoted payload type) and that is
+      // exactly why a SYNTHETIC fixture is the instrument for it: a corpus census
+      // reads 0 and the defect is still live. Complete or it is a partial fix
+      // wearing a complete fix's name, hence the five surfaces.
+      if (typeof (s as any).returnType === "string") (s as any).returnType = stripZigQuoting((s as any).returnType)
+      for (const p of (s as any).parameters ?? []) {
+        if (typeof p?.type === "string") p.type = stripZigQuoting(p.type)
+        if (typeof p?.name === "string") p.name = stripZigQuoting(p.name)
+      }
+      for (const key of ["genericParameters", "decorators", "comments"] as const) {
+        const arr = (s as any)[key]
+        if (Array.isArray(arr)) (s as any)[key] = arr.map((v: any) => (typeof v === "string" ? stripZigQuoting(v) : v))
+      }
     }
     for (const r of relationships) {
       if (typeof r.source === "string") r.source = stripZigQuoting(r.source)
