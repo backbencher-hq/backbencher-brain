@@ -11,6 +11,7 @@
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
 import { ASTEngine } from "./engine"
+import { treeContainsNodeType } from "./node-walk"
 
 // ============================================================================
 // BUILTIN FILTER — C#-family contract (mirrors TypeScript analyzer)
@@ -131,23 +132,6 @@ function jsDecoratorName(decorator: Node): string {
  */
 function stripLeadingAt(text: string): string {
   return text.startsWith("@") ? text.slice(1) : text
-}
-
-/**
- * Does this tree contain a node of `type`? Iterative, early-exit, no allocation
- * beyond the stack — one cheap traversal instead of one ancestor walk per node.
- */
-function treeContainsNodeType(root: Node, type: string): boolean {
-  const stack: Node[] = [root]
-  while (stack.length > 0) {
-    const n = stack.pop()!
-    if (n.type === type) return true
-    for (let i = 0; i < n.namedChildCount; i++) {
-      const c = n.namedChild(i)
-      if (c) stack.push(c)
-    }
-  }
-  return false
 }
 
 function stripWhitespace(text: string): string {
