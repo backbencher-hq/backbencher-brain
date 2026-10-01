@@ -26,13 +26,51 @@
 # Step 5 is the one that matters. Every prior incident would have been caught by it, because the
 # staged diff was 131, 131 and 247 lines when the intended hunk was 22, 15 and 19.
 #
+# COMMIT SAFELY, WHICH IS WHERE THE FOURTH INCIDENT HAPPENED.
+#
+# This script guards the INDEX. It did not guard the COMMIT, and `git commit` then swept in a peer's
+# staged file alongside my hunk. Resetting and unstaging that file BY NAME was not enough either —
+# a second peer file went in the next attempt — because a denylist of the files I happened to notice
+# is not an allowlist of the files I meant. So the commit path is explicit here: an ALLOWLIST is
+# taken as arguments, everything else is unstaged, and the staged set is asserted to equal it before
+# the commit is even offered.
+#
+#   stage-shared.sh --commit <msg-file> <path>...
+#
+# ALWAYS pass every path you intend to commit, even the ones you believe are already correct. An
+# omitted path is unstaged, which is the safe direction; a swept-in path is the unsafe one, and there
+# is no version of this that fails safe if you forget.
+#
 # USAGE
 #   stage-shared.sh <path> <patch-file> [expected-staged-lines]
+#   stage-shared.sh --commit <msg-file> <path>...
 #
-# The third argument is optional but recommended: the number of ADDED lines the staged diff should
-# contain. The script fails if the staged diff has more, which turns "did I sweep up someone else's
-# work?" into a hard error instead of something to notice three commits later.
+# The third argument to the first form is optional but recommended: the number of ADDED lines the
+# staged diff should contain. The script fails if the staged diff has more, which turns "did I sweep
+# up someone else's work?" into a hard error instead of something to notice three commits later.
 set -euo pipefail
+
+# ---- commit form: allowlist, then assert, then commit -----------------------------------------
+if [ "${1:-}" = "--commit" ]; then
+  MSG="${2:?--commit needs a message file}"
+  shift 2
+  [ "$#" -ge 1 ] || { echo "--commit needs at least one path (an empty allowlist commits everything)" >&2; exit 2; }
+  for p in "$@"; do git restore --staged "$p" 2>/dev/null || true; done
+  STAGED="$(git diff --cached --name-only | sort)"
+  WANT="$(printf '%s\n' "$@" | sort)"
+  if [ "$STAGED" != "$WANT" ]; then
+    echo "STAGED SET != ALLOWLIST — refusing to commit." >&2
+    echo "  staged:"; printf '    %s\n' $STAGED >&2
+    echo "  wanted:"; printf '    %s\n' $WANT >&2
+    echo "  a peer's file is in the index. It was left staged, not discarded." >&2
+    exit 7
+  fi
+  echo "allowlist verified, staged set matches exactly:"
+  printf '    %s\n' $STAGED
+  git commit -q -F "$MSG"
+  echo "committed: $(git show --stat --format='%h %s' -1 | head -1)"
+  exit 0
+fi
 
 PATH_ARG="${1:?usage: stage-shared.sh <path> <patch-file> [expected-added-lines]}"
 PATCH="${2:?missing patch file}"
