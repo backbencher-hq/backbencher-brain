@@ -175,10 +175,10 @@
   "limitations": [
     "The unreadable case is produced with chmod, which does not restrict root — on a runner that ignores file modes the case degrades to a read that succeeds. The gate asserts the category is REACHABLE, not that it occurs on every platform."
   ],
-  "generatedAt": "2026-10-01T05:27:42.201Z",
+  "generatedAt": "2026-10-01T08:13:46.802Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T05:29:32.340Z",
-    "contentSha256": "2eb6c72d81fe889d0fca803323f14a3d0b18fde17c86a9d8e9e9dfc9bc6c5835"
+    "sealedAt": "2026-10-01T08:17:39.801Z",
+    "contentSha256": "607971230455dec7c4c55b39925ee7c82664ddabdb82aa19a316f9e1ff3c9437"
   }
 }

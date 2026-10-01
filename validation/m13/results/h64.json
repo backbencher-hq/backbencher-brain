@@ -34,17 +34,17 @@
     {
       "name": "the sampled mode (the indexer's hot path) declares itself an ESTIMATE",
       "pass": true,
-      "detail": "38 of 200 sampled files have changed on disk since indexing (estimated 48 total). ESTIMATE"
+      "detail": "43 of 200 sampled files have changed on disk since indexing (estimated 54 total). ESTIMATE"
     },
     {
       "name": "and is still reproducible",
       "pass": true,
-      "detail": "38 both times"
+      "detail": "43 both times"
     },
     {
       "name": "the sampled mode is still unbiased (within 2% of the true rate)",
       "pass": true,
-      "detail": "sampled 19.0% vs true 20.0%"
+      "detail": "sampled 21.5% vs true 20.0%"
     },
     {
       "name": "Files Missing from Disk describes its own method honestly",
@@ -324,10 +324,10 @@
   "limitations": [
     "Real-index measurements were taken against this repo's own index; a re-measurement of the complete-scan wall time was blocked by concurrent machine load, so the controlled synthetic comparison is the perf evidence."
   ],
-  "generatedAt": "2026-10-01T05:28:27.500Z",
+  "generatedAt": "2026-10-01T08:15:31.599Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T05:29:32.317Z",
-    "contentSha256": "e431acf9e336ddb547f373a7feef0d4220315b80fbd622f020ed7d2236192d90"
+    "sealedAt": "2026-10-01T08:17:39.763Z",
+    "contentSha256": "150819d1b72c76cbbe082385b81f5d79a6b3245eb17315f64467fe93937b5a2a"
   }
 }

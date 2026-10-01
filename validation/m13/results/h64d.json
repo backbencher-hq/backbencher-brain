@@ -120,7 +120,7 @@
     {
       "name": "every spelling of one file resolves to the same indexed row",
       "pass": true,
-      "detail": "src/a.ts -> src/a.ts:fresh | ./src/a.ts -> src/a.ts:fresh | src//a.ts -> src/a.ts:fresh | src/./a.ts -> src/a.ts:fresh | /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-h64d-paths-8TFwrw/src/a.ts -> src/a.ts:fresh"
+      "detail": "src/a.ts -> src/a.ts:fresh | ./src/a.ts -> src/a.ts:fresh | src//a.ts -> src/a.ts:fresh | src/./a.ts -> src/a.ts:fresh | /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-h64d-paths-M0zJi8/src/a.ts -> src/a.ts:fresh"
     },
     {
       "name": "and they all normalise to one project-relative path",
@@ -206,7 +206,7 @@
     {
       "name": "and its own cost is measured and reported separately from the corpus scan",
       "pass": true,
-      "detail": "pathsMs=0 (the named path) vs freshnessMs=0 (the project scan it did not replace) — both reported, neither asserted to be ordered"
+      "detail": "pathsMs=2 (the named path) vs freshnessMs=0 (the project scan it did not replace) — both reported, neither asserted to be ordered"
     }
   ],
   "negativeCases": 3,
@@ -224,10 +224,10 @@
   "limitations": [
     "The `absent` case is asserted with a path that does not exist. A caller who misspells an EXISTING file gets `not-indexed` rather than `absent`, because the two are genuinely indistinguishable from the filesystem alone; the reason string says which case it is."
   ],
-  "generatedAt": "2026-10-01T05:28:08.052Z",
+  "generatedAt": "2026-10-01T08:14:20.192Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T05:29:32.335Z",
-    "contentSha256": "ce032bd5bd805fa6f30f8f88e967013055d6ee0da512dc81a99b23ea2ee58d8f"
+    "sealedAt": "2026-10-01T08:17:39.788Z",
+    "contentSha256": "6a2f1286364c4ae94d426283da44c0bd92bbe305e8274f754481bda86fb31a91"
   }
 }
