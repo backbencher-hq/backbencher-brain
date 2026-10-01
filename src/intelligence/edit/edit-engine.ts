@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync, statSync, chmodSync } from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { BrainDatabase } from "../../brain/database"
@@ -68,24 +68,134 @@ function nearestExisting(candidate: string): string {
   return cursor
 }
 
+/**
+ * Resolve an edit target to a real, inside-the-project absolute path, or throw.
+ *
+ * WHY THIS IS REWRITTEN. The previous version realpath'd the project ROOT and
+ * then compared it against the requested path AS GIVEN:
+ *
+ *   if (!inside(root, candidate)) throw new Error(`path escapes project root`)
+ *
+ * The requested path here is a symbol's `fileId` — the path the INDEXER was
+ * handed, not a realpath. On macOS `/var` and `/tmp` are symlinks into
+ * `/private`, so a project created at `/var/folders/.../bb-edit-XYZ` has a real
+ * root of `/private/var/folders/.../bb-edit-XYZ` while every indexed fileId is
+ * spelled `/var/folders/.../bb-edit-XYZ/src/mod.ts`. `path.relative` between the
+ * two is `../../../var/folders/...`, so a path that is plainly inside the
+ * project read as an escape and the edit was REFUSED.
+ *
+ * bb_edit was therefore non-functional on macOS for any project under /var or
+ * /tmp — which is all eighteen of its own gates, every scratch project, and most
+ * CI. On Linux /tmp is a real directory, realpathSync(tmpdir()) === tmpdir(),
+ * the comparison succeeds, and the bug is invisible. Measured on macOS: 11 of the
+ * 18 gates cannot run, 8 of them crashing on exactly this refusal.
+ *
+ * THE FIX is to compare real paths with real paths. The request is resolved to a
+ * real path FIRST — walking up to the nearest existing ancestor, because the leaf
+ * of a file being created does not exist yet — and containment is then judged on
+ * the resolved result.
+ *
+ * The containment guarantee is unchanged and in one place tightened. The
+ * non-existent-leaf case used to return `candidate`, the UNRESOLVED spelling, with
+ * no realpath check on the final component at all: writing `link-to-outside/
+ * newfile.ts` was never checked. It is now checked like every other case.
+ */
 export function resolveSafeEditPath(projectPath: string, requested: string): string {
   const root = realpathSync(projectPath)
-  const candidate = path.resolve(root, requested)
-  if (!inside(root, candidate)) throw new Error(`path escapes project root: ${requested}`)
-  const existing = nearestExisting(candidate)
+  // `requested` is sometimes an absolute fileId from the index and sometimes a
+  // caller-supplied relative path. Both must land on the same footing.
+  const raw = path.isAbsolute(requested) ? requested : path.resolve(root, requested)
+  const existing = nearestExisting(raw)
+  // The nearest EXISTING ancestor's realpath is what containment is judged on.
+  // For an existing file that is the file itself; for a file about to be created
+  // it is the nearest existing directory that will hold it.
   const realExisting = realpathSync(existing)
-  if (!inside(root, realExisting)) throw new Error(`path escapes project root through symlink: ${requested}`)
-  if (existsSync(candidate)) {
-    const realCandidate = realpathSync(candidate)
-    if (!inside(root, realCandidate)) throw new Error(`path escapes project root through symlink: ${requested}`)
-    return realCandidate
+  if (!inside(root, realExisting)) {
+    throw new Error(`path escapes project root: ${requested}${raw === existing ? "" : ` (via ${existing})`}`)
   }
-  return candidate
+  if (raw !== existing) {
+    // Creating a new file, possibly in directories that do not exist yet. The
+    // whole relative REMAINDER below `existing` has to be re-attached, not just
+    // the leaf: the first version of this fix appended only
+    // `path.basename(raw)`, so `a/b/c.ts` with neither `a` nor `b` present
+    // resolved to `<project>/c.ts` — the intermediate directories were silently
+    // dropped and the edit landed at the wrong path. `relative(existing, raw)`
+    // is exactly the missing tail.
+    const tail = path.relative(existing, raw)
+    const target = tail ? path.join(realExisting, tail) : realExisting
+    // Containment is re-checked on the reassembled path: a symlinked directory
+    // that points outside the project must still be refused even though
+    // `existing` itself resolved cleanly.
+    if (!inside(root, target)) throw new Error(`path escapes project root through symlink: ${requested}`)
+    return target
+  }
+  return realExisting
 }
 
 function replaceRange(text: string, start: number, end: number, replacement: string): string {
   if (start < 0 || end < start || end > text.length) throw new Error(`invalid edit bounds: ${start}-${end}`)
   return text.slice(0, start) + replacement + text.slice(end)
+}
+
+// ── File-fidelity primitives (M66) ──────────────────────────────────────────
+//
+// A tool that writes source must not change anything the caller did not ask it to
+// change. Three things it WAS changing, each measured rather than assumed (see
+// fixtures/bb_edit/probe-e2-file-fidelity.ts):
+//
+//   * a 0755 file came back 0644, because the commit path is
+//     writeFileSync(temp) + renameSync and the temp inherits the process umask;
+//   * a rolled-back file containing any invalid UTF-8 byte was CORRUPTED, because
+//     the snapshot was a `readFileSync(path, "utf8")` STRING — that re-encodes bad
+//     bytes as U+FFFD, so "restore" wrote back a second, different corruption;
+//   * a CRLF file was left with MIXED line endings, because every splice in this
+//     file concatenates a literal "\n" and nothing ever looks at what the file
+//     already uses.
+//
+// The fix is one discipline applied at the I/O boundary: read the file's BYTES
+// once, decide its line ending from those bytes, keep the exact mode, and commit
+// and roll back in bytes. The splice still happens in a string, because the byte
+// offsets the indexer hands are code-unit offsets into the decoded text (verified
+// in probe-e1 — the indexer's "byteStart" is in fact a UTF-16 code-unit index, and
+// treating it as bytes would corrupt every non-ASCII file, a separate bug this
+// pass does NOT introduce or fix).
+
+/** The line ending a file already uses, judged from its bytes. Defaults to "\n". */
+function dominantNewline(text: string): "\n" | "\r\n" {
+  let crlf = 0
+  let lf = 0
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] !== "\n") continue
+    if (i > 0 && text[i - 1] === "\r") crlf++
+    else lf++
+  }
+  return crlf > lf ? "\r\n" : "\n"
+}
+
+/** Rewrite a spliced string so every newline matches the file's own ending. */
+function withNewline(text: string, nl: string): string {
+  return nl === "\n" ? text : text.replace(/\r?\n/g, nl)
+}
+
+/**
+ * A byte-exact snapshot of a file's pre-edit state: the raw bytes, the mode, and
+ * whether it existed. `readFileSync(path, "utf8")` is NOT a snapshot — it decodes,
+ * and decoding is lossy for anything that is not valid UTF-8.
+ */
+function snapshotOf(file: string): { existed: boolean; bytes: Buffer | null; mode: number | null } {
+  if (!existsSync(file)) return { existed: false, bytes: null, mode: null }
+  const bytes = readFileSync(file)
+  let mode: number | null = null
+  try { mode = statSync(file).mode & 0o777 } catch { mode = null }
+  return { existed: true, bytes, mode }
+}
+
+/** Write bytes and, when the target already existed, restore its mode. */
+function writeBytesPreservingMode(file: string, bytes: Buffer | string, mode: number | null): void {
+  writeFileSync(file, bytes)
+  if (mode !== null) {
+    try { chmodSync(file, mode) } catch { /* best effort: content is the contract, mode is not */ }
+  }
 }
 
 // ── M13.09 (E4): language-aware insert body detection ──────────────────────
@@ -408,7 +518,7 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const declaresSelf =
       new RegExp(`(?:function|class|interface|type|enum|struct|impl|def|fn|func|method|const|let|var|val)\\s+${escaped}\\b`).test(newContent) ||
       new RegExp(`\\b(?:public|private|protected|internal|static|abstract|override|readonly|final|sealed|export|declare|async)\\s+(?:async\\s+)?${escaped}\\b`).test(newContent)
-    if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, newContent) }], warnings }
+    if (declaresSelf) return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, match.byteStart, match.byteEnd, withNewline(newContent, dominantNewline(original))) }], warnings }
     const parsed = await parseForSafety(match.fileId, original)
     const body = findSymbolBody(parsed, match.byteStart, match.byteEnd)
     if (body && original[body.startIndex] === "{") {
@@ -416,7 +526,15 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
       const close = body.endIndex - 1
       const inner = original.slice(open + 1, close)
       const innerIndent = inner.includes("\n") ? computeInnerIndent(original, body) : lineLeadingWhitespace(original, open) + indentUnit(original)
-      const after = replaceRange(original, open + 1, close, "\n" + indentLines(newContent, innerIndent, true) + "\n" + lineLeadingWhitespace(original, open))
+      // M66: splice with the FILE's line ending. This concatenated a literal "\n",
+      // so a CRLF file came back with the new body on "\n" and the untouched tail
+      // still on "\r\n" — a file with MIXED line endings, silently, on a
+      // successful edit. `newContent` arrives from an MCP client as a JSON string
+      // and carries "\n" regardless of what the file uses, so the fix belongs here
+      // at the splice, not at the parameter boundary.
+      const nl = dominantNewline(original)
+      const spliced = withNewline("\n" + indentLines(newContent, innerIndent, true) + "\n" + lineLeadingWhitespace(original, open), nl)
+      const after = replaceRange(original, open + 1, close, spliced)
       return { changes: [{ path: match.fileId, before: original, after }], warnings }
     }
     // No recognizable brace body (expression-bodied / one-line decls in
@@ -479,7 +597,15 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
         }
       }
     }
-    return { changes: [{ path: match.fileId, before: original, after: replaceRange(original, start, end, replacement) }], warnings }
+    // M66: `replacement` is assembled from literal "\n" in every branch above, so
+    // rather than thread the file's line ending through nine construction sites
+    // (each easy to miss in a later edit), the spliced RESULT is normalized once
+    // here. `replaceRange` returns the whole new file text; a CRLF file must not
+    // gain LF-terminated lines from an insert, and normalizing the result is
+    // exactly equivalent to having built it right.
+    const nl = dominantNewline(original)
+    const after = withNewline(replaceRange(original, start, end, replacement), nl)
+    return { changes: [{ path: match.fileId, before: original, after }], warnings }
   }
   if (request.mode === "delete") {
     const raw = await BrainDatabase.getRawInstance(projectId)
@@ -596,7 +722,18 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
 export async function executeEdit(projectPath: string, projectId: string, request: EditRequest): Promise<EditResult> {
   const { changes, warnings, summary } = await planEdit(projectPath, projectId, request)
   if (request.dryRun === true) return { mode: request.mode, dryRun: true, changes, formatted: false, validated: false, reindexed: false, warnings: warnings.length > 0 ? warnings : undefined, summary }
-  const snapshots = new Map(changes.map((change) => [change.path, { existed: existsSync(change.path), content: change.before }]))
+  // M66: the snapshot is BYTES, not a decoded string. The previous snapshot was
+  // `content: change.before` — the plan's `before` field, which came from
+  // `readFileSync(path, "utf8")`. For a file containing any byte sequence that is
+  // not valid UTF-8, that read does not fail, it silently substitutes U+FFFD, so
+  // the "snapshot" already differed from disk and a rollback wrote back the
+  // substitution characters: a rollback that corrupts the file it is restoring.
+  // One latin-1 comment anywhere in the repo turns any failed edit into silent
+  // data loss. Reading the bytes once, here, at the last moment before the first
+  // write, closes that — `change.before` remains what the PLAN saw (a lossy
+  // string, which is fine for a diff preview) while the bytes are what ROLLBACK
+  // restores.
+  const snapshots = new Map(changes.map((change) => [change.path, snapshotOf(change.path)]))
   // Track every temp file created during the write loop so the catch block can
   // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
   const temps: string[] = []
@@ -606,7 +743,16 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       const temporary = `${change.path}.bb-edit-${randomUUID()}`
       temps.push(temporary)
       writeFileSync(temporary, change.after, "utf8")
+      // M66: carry the mode across the rename. renameSync REPLACES the inode, so
+      // a 0755 script or a 0600 secret the tool edited came back 0644 — the temp
+      // inherits the process umask and nothing preserved the original. An edit
+      // that quietly drops a file's permissions is a change the caller never
+      // asked for and cannot see in a diff.
+      const originalMode = snapshots.get(change.path)!.mode
       renameSync(temporary, change.path)
+      if (originalMode !== null) {
+        try { chmodSync(change.path, originalMode) } catch { /* best effort: content is the contract */ }
+      }
     }
     if (request.format !== false) for (const change of changes) await BrainSurgicalPatcher.tryAutoFormat(change.path)
     for (const change of changes) await validateFile(change.path, readFileSync(change.path, "utf8"))
@@ -629,11 +775,31 @@ export async function executeEdit(projectPath: string, projectId: string, reques
   } catch (error) {
     // Roll back every file to its pre-edit snapshot, then scrub any orphaned
     // .bb-edit-* temp files so a mid-loop failure never leaks temp artifacts.
+    //
+    // M66: each restore is its own try/catch and the loop does NOT stop on the
+    // first failure. A bare `writeFileSync(file, snapshot.content)` meant one
+    // unwritable file (read-only, vanished directory, permission) threw out of
+    // the catch block: the remaining files were never restored, the
+    // orphaned-temp scrub after it never ran, and the original error was REPLACED
+    // by the rollback's — the caller saw "EPERM" instead of the validation failure
+    // that caused the rollback, with a half-reverted working tree. Now every file
+    // is attempted, failures are collected, temps are always scrubbed, and the
+    // ORIGINAL error still propagates — annotated, because a partial rollback is
+    // the most important thing a caller can be told.
+    const rollbackFailures: string[] = []
     for (const [file, snapshot] of snapshots) {
-      if (snapshot.existed) writeFileSync(file, snapshot.content, "utf8")
-      else rmSync(file, { force: true })
+      try {
+        if (snapshot.existed) writeBytesPreservingMode(file, snapshot.bytes!, snapshot.mode)
+        else rmSync(file, { force: true })
+      } catch (e: any) {
+        rollbackFailures.push(`${file}: ${e?.message ?? String(e)}`)
+      }
     }
     for (const t of temps) { try { rmSync(t, { force: true }) } catch {} }
+    if (rollbackFailures.length > 0) {
+      ;(error as any).rollbackFailures = rollbackFailures
+      ;(error as any).message = `${(error as any).message} — ROLLBACK INCOMPLETE, these files were NOT restored: ${rollbackFailures.join("; ")}`
+    }
     throw error
   }
 }
