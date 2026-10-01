@@ -5,6 +5,21 @@ export type JsonSchemaProperty = {
   description?: string
   enum?: readonly string[]
   items?: JsonSchemaProperty
+  /**
+   * The value used when the caller omits this property.
+   *
+   * Declared so it can be stated in the SCHEMA rather than only in prose inside the
+   * description. A default that exists only as the word "(default)" in a sentence is
+   * something a caller has to read and interpret, while a schema `default` is a fact a
+   * client, a test or a generated page can read directly. bb_visualize's `view` states
+   * it both ways on purpose: the machine-readable field for tools, the prose for people
+   * reading the parameter list.
+   *
+   * It is documentation, not behaviour: validateProperty never reads it, because an
+   * omitted property is defaulted by the tool itself and an explicit one is checked
+   * against `enum`. Adding it must not change what any call validates as.
+   */
+  default?: string | number | boolean
 }
 
 export interface ToolInputSchema {
