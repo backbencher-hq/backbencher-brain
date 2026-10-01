@@ -12798,6 +12798,32 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: [...(r.relationships ?? []), { type: "instantiates", source: "wrapped", target: "state", confidence: 1, line_number: 20, metadata: { erlangSpecific: true, isRecordExpr: true } }] }),
   },
   {
+    id: "erlang/grammar-damaged-fabricates",
+    language: "erlang",
+    defectClass: "relationship-fabrication",
+    description: "ER-D38 regression: derives edges from a file the grammar could not read. Not every Erlang file is Erlang to this grammar — wx's api_gen sources are code-GENERATION TEMPLATES (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`) and OTP's pre-R16 `-module(Name, Params)` is unparseable — and what comes back is a run of top-level ERROR nodes with loose call/atom fragments between them. Everything derivable from that wreckage describes structure the source does not have. Caught by the full-corpus dual lens as 55 analyzer-only edges in wxListCtrl.erl alone (`calls wxe_util:get_cbId@31` and thirty more, line numbers that are error recovery rather than source). grammar-damaged-er3 FORBIDS the recoverable call and the recoverable symbol and REQUIRES zero of each",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s.name !== "not_a_function"),
+      relationships: [
+        ...(r.relationships ?? []),
+        { type: "calls", relationshipType: "calls", from: "not_a_function", source: "not_a_function", to: "some_module:some_function", target: "some_module:some_function", line_number: 22, confidence: 1, metadata: { erlangSpecific: true, context: "remote function call" } },
+      ],
+    }),
+  },
+  {
+    id: "erlang/file-scope-source-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D32's edge half: `currentSource` falls back to the module name alone instead of the file path, so in a module-less include fragment a FILE-SCOPE edge has no source and pushRel drops it silently — no error, no counter. Found on otp/lib/stdlib/test/epp_SUITE_data/mac2.erl, which is four `-define` blocks and one `-plupp({?p, ?'p', ?P, ?'P'})` with no module and no function: the analyzer published the four macro constants and their `contains` edges (the macros exist) and published nothing saying they are USED. fragment-file-scope-er3 REQUIRES both file-scope macro references",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !((x.metadata ?? {}).context === "macro use" && (x.from ?? x.source ?? "").includes("fragment-file-scope-er3")),
+      ),
+    }),
+  },
+  {
     id: "erlang/type-syntax-bare-atom-counted",
     language: "erlang",
     defectClass: "relationship-fabrication",
