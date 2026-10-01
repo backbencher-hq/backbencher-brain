@@ -37,7 +37,7 @@
  *
  * Exit 0 only when every criterion passes.
  */
-import { readFileSync, existsSync } from "node:fs"
+import { readFileSync, existsSync, rmSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 
 const ANALYZER = "src/ast/real-haskell-analyzer.ts"
@@ -233,10 +233,20 @@ add(5, "relationship lines are CORRECT", wrongLine === 0,
       (resolved ? ` (${resolved} resolved-target edges excluded and named: ${[...RESOLVED_TARGETS.keys()].join(", ")})` : "")
     : `${wrongLine} of ${rels} do: ${wrongSamples.join("; ")}`)
 
+// The gate's own cold-pool state, reset before each run for reproducibility.
+const POOL_STATE = "validation/m14/tmp/haskell-lane-cold-pool.json"
+
 // 6 — the differential, RUN HERE (never read from a file)
 {
+  try { rmSync(POOL_STATE, { force: true }) } catch { /* first run */ }
   const { out } = run("bun", ["run", "script/m14/differential.ts", "--lang", "haskell", "--sample", "60"],
-    { BB_F5_FREEZE_POOL: "1" })
+    // An isolated, reset-per-run pool. `BB_F5_FREEZE_POOL` pins the ROTATION, but
+    // the pool's `seen` set is shared state that any other lane's sweep advances, so
+    // a pinned wave still moved underneath this gate and the verdict alternated
+    // between PASS and FAIL on an unchanged tree. The gate resets its own pool, so
+    // wave 1 is drawn from the same never-sampled set every time. Coverage runs keep
+    // the shared default — there the rotation is the point.
+    { BB_F5_FREEZE_POOL: "1", BB_F5_COLD_POOL_STATE: POOL_STATE })
   const m = /files=(\d+) tree-truth=(\d+) covered=\d+ \([\d.]+%\)(?: covered)? MISSING=(\d+) \| analyzer-edges=(\d+) unexplained=(\d+)/.exec(out)
   if (!m) {
     const err = /corpus repo missing: (\S+)/.exec(out)?.[1]
