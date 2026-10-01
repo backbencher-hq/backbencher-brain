@@ -497,6 +497,28 @@ code was taken for it: D1 is the mode and option contract, D2 citation
 resolution and freshness, and D3 examples and diagrams, so none of the three
 covers statement truth and result self-consistency.
 
+**The gates are mutation-audited.** A gate never shown to fail on a broken tool
+is not evidence, so `script/m31/verify-gate-selftest.ts` plants a defect in the
+doc engine or the MCP handler, requires the gate to go red, and removes the
+checkout. One mutation per failure class, all five detected, every control
+passing:
+
+| entry | mutation reintroduced |
+|---|---|
+| `m20-doc-truth-cap` | the per-section cap measured but not applied |
+| `m20-doc-truth-signature` | `name()` for a symbol with no indexed parameter list |
+| `m20-doc-modes-contract` | the invalid-mode guard removed |
+| `m20-doc-citations-freshness` | every source reporting `fresh` |
+| `m20-doc-examples-honest` | the honest `not-observed` unknown removed |
+
+That work also fixed three defects in the audit itself, which are recorded
+because each one manufactured false confidence: it invoked every gate through a
+runtime that was not installed on the machine it ran on, so the whole audit
+could not execute; it counted a gate that CRASHED on startup as a gate that
+DETECTED the mutation; and the subset filter added for convenience could stamp a
+partial run into the file that records the full audit. A mechanism that reports
+success without checking is worse than no mechanism, because it is believed.
+
 The same predicates run against real repositories by
 `fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
 **382 checks pass, 0 fail, 1 disclosed skip, 56/56 negatives proved able to
