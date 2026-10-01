@@ -223,3 +223,5 @@ grammars/tree-sitter-yaml/src/parser.c
 # `tree-sitter generate` rebuilds it deterministically from grammar.js.
 !grammars/tree-sitter-solidity/src/grammar.json
 !grammars/tree-sitter-solidity/src/node-types.json
+__pycache__/
+*.pyc
