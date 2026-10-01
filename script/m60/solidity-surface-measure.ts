@@ -154,6 +154,11 @@ const damage = await parseDamage(files.map((f) => f.abs), grammar)
 const kinds: Record<string, number> = {}
 const tiers: Record<string, number> = {}
 let symbols = 0
+const ownerKinds: Record<string, number> = {}
+let complexitySymbols = 0
+let complexityTotal = 0
+let complexityAboveOne = 0
+let maxComplexity = 0
 let relationships = 0
 let withLine = 0
 const dupSeen = new Map<string, number>()
@@ -207,6 +212,16 @@ for (const f of files) {
     allDeclaredNames.add(s.name)
     if (s.ownerName) owners.add(s.ownerName)
     symbols++
+    // SOL-18 — per-symbol complexity and ownerKind, tallied from the symbol's OWN
+    // fields for the reason the comment below gives: `parseFile` returns every symbol
+    // with `metadata: undefined`.
+    if (typeof s.ownerKind === "string" && s.ownerKind !== "") ownerKinds[s.ownerKind] = (ownerKinds[s.ownerKind] ?? 0) + 1
+    if (typeof s.complexity === "number") {
+      complexitySymbols++
+      complexityTotal += s.complexity
+      if (s.complexity > 1) complexityAboveOne++
+      if (s.complexity > maxComplexity) maxComplexity = s.complexity
+    }
     // NOT read from `s.metadata`: `parseFile` returns every symbol with
     // `metadata: undefined` because pool-worker.ts drops the object at the worker
     // boundary. Reading the getter fact from metadata reported 0 on a corpus where
@@ -351,6 +366,14 @@ const out = {
       commentsAttached,
       documentedSymbols,
       natspecNote: "SOL-16. `commentsRead` is every `comment` node in the corpus; `commentsAttached` is how many of them landed on a declaration, which is the count that matters because Solidity attaches documentation to what FOLLOWS it. The gap between the two is real: a comment before an expression, or a trailing remark at the end of a body, documents nothing. `documentedSymbols` is the share of the 5,976 symbols that carry a `docstring`, which the store persists to `brain_symbol.docstring` — a column NULL for every Solidity symbol before this.",
+      ownerKinds,
+      perSymbolComplexity: {
+        symbolsWithAValue: complexitySymbols,
+        aboveOne: complexityAboveOne,
+        max: maxComplexity,
+        mean: complexitySymbols > 0 ? Number((complexityTotal / complexitySymbols).toFixed(3)) : 0,
+        _note: "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live.",
+      },
       overridesEmitted,
       overridesEmittedExternal,
       overridesUnresolved,
