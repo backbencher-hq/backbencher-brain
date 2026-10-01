@@ -543,9 +543,32 @@
         "question": "Is an enum VALUE (`enum Color { red }` — `(enum_body (enum_constant (identifier)))`) a read of its own enum? The DT-F+ declaration-name gate listed `enum_declaration` (the enum's name) but not the value's node, so every constant was published as `uses Color -> red` on the declaration line.",
         "resolution": "No. `enum_constant` joins the declaration-name gate on BOTH sides (the analyzer's `isDartDeclNameParent` and the differential oracle's DECL_PARENTS, single rule stated twice) — a bind, never a read. The constants' ARGUMENTS stay ordinary reads. WHY IT OUTLIVED EVERY GATE: the edge was emitted at confidence 0.6, below the M12 harness's 0.7 claim threshold, so it was filed as `unknown` rather than as a false positive and no gate scored it — the M12 #933 triage is the instrument that surfaced it. Pinned by dart/enum-constant-decls and the CAUGHT mutant dart/enum-constant-decl-read.",
         "issue": "#933 (dart half)"
+      },
+      {
+        "id": "DT-C1",
+        "node_type": "contains",
+        "status": "RULED — the label is now compared, and closing it took four language facts the first draft got wrong",
+        "question": "Dart published `contains` — 7,698 edges in a 25-file sample, the largest single-label blob the M60 label-coverage sweep found — with no oracle at all and no allowlist entry, so none of it was compared while the lane printed a percentage.",
+        "resolution": "Written from Dart's own containment rule in script/m14/oracles/dart-contains.ts, sharing no rule table or member list with RealDartAnalyzer, and wired with its allowlist entry in the same commit (full mirror, per M49.G7). Four language facts were found by the corpus, not by reading the grammar: (1) `static final X = e;` is a different field shape from `final T x;` — static_final_declaration_list — and handling only the first derived 2 of the 431 properties the jni bindings' `Arrays` publishes; (2) Dart 3 `extension type X._(...)` is its own declaration node, and the jni bindings declare every type that way; (3) `extension X on int` carries an extension_body, not a class_body, so every extension member was invisible; (4) a Dart 2.17+ ENHANCED enum puts fields, methods and constructors directly in the enum_body beside the constants. The oracle also had to STOP inventing: a draft assumed the analyzer disambiguates repeated members with `$1`, `$2` and fabricated that suffix, manufacturing 233 truth rows the analyzer does not publish — a fabrication on the TRUTH side, the direction that quietly inflates coverage. The `$` suffixes are LITERAL in the source (`static core$_.int binarySearch$1(`). Result: proxicall 100% covered / MISSING 0 / unexplained 2.6% (from unmeasured), dart-http 100% / MISSING 0 / unexplained 0%. 19 gate checks in script/m14/verify-dart-contains.ts pin every shape above, including the no-invention rule.",
+        "measured_by": "script/m14/verify-dart-contains.ts, script/m14/tmp/dart-contains-adjudicate.ts"
       }
     ],
     "lastUpdated": "2026-09-24 (M60 dart lane: DARTD20-DARTD22)"
   },
-  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims)"
+  "lastUpdated": "2026-09-30 (master review 3: F2 re-scope gaps to deferrable units, F3 classify 4 unclassified corpus types, F4 mark 6 fixture-only claims)",
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs this analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS: such a label is compared by nothing while the lane still prints a percentage. `contains` left this list when the M60 oracle landed.",
+    "declared_gaps": [
+      {
+        "label": "imports",
+        "reason": "Emitted by the analyzer (65 edges per 15 files on proxicall) and dropped by the allowlist. There is no imports oracle for this lane, so admitting the label today would turn invisible edges into UNEXPLAINED ones rather than into a measurement — the #910 shape in reverse.",
+        "closes_when": "an imports oracle exists; then admit the label and reconcile"
+      },
+      {
+        "label": "overrides",
+        "reason": "One edge per sample. The allowlist omits `overrides` for dart (with csharp, swift, cpp) and carries no note saying why; the analyzer still emits the label. Open question, separate from the contains work.",
+        "closes_when": "the csharp/dart/swift/cpp overrides exclusion is decided"
+      }
+    ]
+  }
 }
