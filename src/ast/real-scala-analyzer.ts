@@ -754,11 +754,22 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     for (const imp of imports) {
+      // M60/SDJ-11: `target: imp.module || ""` published a `references` edge with an
+      // EMPTY target for any import whose module path failed to resolve — the error
+      // recovery shapes in scala3's negative tests (`import`, `import}}`, and the
+      // type-operator wildcard `import <:<.*`, where the only written name is an
+      // operator that is not an `identifier` so no path segment is collected).
+      // Measured on scala3 (script/m14/tmp/scala-empty-target.ts): 7 edges, all
+      // `references`. An edge with an empty endpoint names nothing — it cannot be
+      // resolved, hovered or followed — and it only inflates the edge count, so the
+      // statement is kept in `imports` and the unnameable edge is simply not
+      // published.
+      if (!imp.module || imp.module.length === 0) continue
       relationships.push({
         // S1.7: ONE top-level sentinel — imports join calls/instantiates on
         // "(script)" (was "root", a third disconnected file-root node).
         source: "(script)",
-        target: imp.module || "",
+        target: imp.module,
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         // M59 (#825): an import reference occurs where its TARGET is written —
@@ -3021,14 +3032,20 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     const pathStr = parts.join(".")
 
-    if (selectors.length === 0) {
-      let last = "*"
-      if (pathStr.length > 0) {
-        const idx = pathStr.lastIndexOf(".")
-        last = idx >= 0 ? pathStr.substring(idx + 1) : pathStr
-      }
-      if (last === "*") last = pathStr
-      selectors.push({ local: last, imported: last })
+    if (selectors.length === 0 && pathStr.length > 0) {
+      // M60/SDJ-11: a bare `import` with no path AND no selector is an ERROR
+      // RECOVERY shape — scala3's negative tests carry `import`, `import}}` and
+      // `import =:=._`. The old code synthesised a selector anyway: `last` started
+      // at `*`, and with an empty path the `if (last === "*") last = pathStr` line
+      // made it the empty string, so a `references` edge was published whose target
+      // was "". Measured on scala3 (script/m14/tmp/scala-empty-target.ts): 7 such
+      // edges, all `references`, once the operator names were accounted for. An
+      // edge with an empty endpoint names nothing — it cannot be resolved, hovered
+      // or followed, and it only inflates the edge count. The import STATEMENT is
+      // still recorded below with empty items, which is the honest shape.
+      const idx = pathStr.lastIndexOf(".")
+      const last = idx >= 0 ? pathStr.substring(idx + 1) : pathStr
+      if (last.length > 0) selectors.push({ local: last, imported: last })
     }
 
     imports.push({

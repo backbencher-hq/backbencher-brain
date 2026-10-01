@@ -51,10 +51,39 @@ grammar) and loads through the engine's real `getParser` path.
 | imports | ✅ | `import_declaration` → identifier chain + `namespace_selectors` / `namespace_wildcard` / `as_renamed_identifier` → module path + specifiers | — |
 | exports | ✅ | non-private top-level classes/traits/objects/enums/functions | — |
 | overrides | ✅ | `override` modifier + enclosing class supertypes → owner-qualified source, declaring-parent target via companion index (`override-context.ts`, shared with Java/Kotlin); without context → first hierarchy parent (deterministic per-file default) | 0.9 |
-| references | ✅ | imports → source `root`, target = dotted module path | 0.9 |
+| references | ✅ | imports → source `(script)` sentinel, target = dotted module path. **An import whose module path cannot be resolved publishes no edge** (SDJ-11) — see invariants below | 0.9 |
 | contains | ✅ | owner → owned members via `ownerName` only (top-level declarations never self-contain) | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 | field_access | ❌ (not emitted) | property accesses covered at call level; not materialized as separate edges in M12.05 | — |
+
+## Invariants (measured, not asserted)
+
+These are corpus-level properties this analyzer is held to. Each has a script under
+`script/m14/tmp/` that measures it; the numbers are from the corpora, not from fixtures.
+
+| invariant | measurement | result |
+|---|---|---|
+| **no relationship has an empty target** | `scala-empty-target.ts` over both corpora | scala3 **0**, cats-effect **0**. An unnameable edge cannot be resolved, hovered or followed, so an import whose module path is empty publishes no edge (SDJ-11). |
+| **anonymous class names are unique per file** | `scala-anon-collision.ts` | 3,330 anonymous symbols over 1,503 files; files with a duplicate name **402 → 0**. Collisions take `#2`, `#3`, … and the first occurrence keeps the bare name (SDJ-8). |
+| **an anonymous class's members are attributed to it, not merged** | `scala-anon-consequence.ts` | `CheckCaptures.scala` declares 4 `TypeTraverser` classes; 7 of 8 member edges were previously misattributed to a single node. Now 8/8. |
+| **every damaged file is reported** | `scala-damage-census.ts` | 513 of 18,446 scala3 files are damaged (2.8%); **513/513 reported**, 483 naming a node and 30 using the file-level fallback. Zero silent. |
+| **analysis is linear in definitions, not quadratic** | `scala-perf-shape.ts`, `scala-perf-corpus.ts` | shape exponent **1.53 → 0.98**; full-corpus **425.6s → 147.4s**; worst single file **135,382ms → 2,971ms**. The cause was `extractScalaDoc` re-scanning all preceding siblings per doc comment. |
+| **output is unchanged by the perf fix** | `scala-output-equivalence.ts` | 226,635 nodes, 38,601 relationships, 6,730 symbols — **zero differences** against the committed pre-fix output. |
+
+### Known identity limits (SDJ-9, open)
+
+Two symbol-identity limits are measured and **not** fixed, because each fix must move the
+contains oracle in the same commit or the lane reports a false MISSING:
+
+- **Extension methods drop their receiver.** 3,203 extension methods across 1,399 blocks;
+  in **75 files, 177 names** are declared in 2+ blocks with different receivers
+  (`FileUtils.isPackage` exists for both `AbstractFile` and `JFile`). A Scala 3 extension
+  method is in scope only *for its receiver type*, so this is semantic, not cosmetic. The
+  receiver is already available at the emit site (the analyzer publishes a `uses` edge to
+  it), so the fix is to disambiguate the name on collision by the receiver leaf.
+- **Nested locals take the enclosing type as owner.** `val cls` declared in two different
+  `lazy val`s of one object publishes as the same owner. 1,148 duplicate names are
+  same owner + kind + signature and therefore indistinguishable in the graph.
 
 ## Supported constructs
 
