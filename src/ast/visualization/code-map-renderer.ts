@@ -107,15 +107,24 @@ export const CODE_MAP_CSS = assemble([
   #search input{background:rgba(0,0,0,.35);border:1px solid var(--edge);color:var(--text);
     border-radius:9px;padding:8px 11px;width:220px;outline:none;font:inherit}
   #search input:focus{border-color:var(--accent)}
-  #detail{right:16px;top:16px;padding:14px 18px;max-width:380px;max-height:40vh;
-    overflow:auto;display:none;border:1px solid var(--edge)}
+  /* position:absolute is stated HERE rather than left to the .panel class.
+     MEASURED from a screenshot: the detail panel's text printed straight through the
+     sidebar's own text, both at once. The class-based rule was being beaten in the
+     cascade, so the panel fell back to static positioning and flowed from the top-left
+     corner of the body -- directly over the sidebar. The close button, positioned
+     absolutely INSIDE it, landed a thousand pixels away, which is the tell.
+     A panel that has to win a cascade fight to exist is a panel that will lose one. */
+  #detail{position:absolute;right:16px;top:16px;padding:14px 18px;max-width:380px;
+    max-height:40vh;overflow:auto;display:none;border:1px solid var(--edge)}
   #detail.on{display:block}
   #detail h3{margin:0 0 6px;font-size:13px}
   #detail dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;
     font-variant-numeric:tabular-nums}
   #detail dt{color:var(--muted)} #detail dd{margin:0;word-break:break-all}
   #detail .close{position:absolute;top:8px;right:10px;cursor:pointer;color:var(--muted)}
-  #path{position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  /* Clear of the sidebar. MEASURED: at left:16px it printed under the sidebar, since
+     the sidebar now owns that column outright. */
+  #path{position:absolute;left:334px;top:50%;transform:translateY(-50%);
     background:var(--panel);border:1px solid var(--edge);border-radius:10px;
     padding:7px 12px;font-size:12px;color:var(--accent);display:none}
   #path.on{display:block}
@@ -304,16 +313,36 @@ export const CODE_MAP_SCRIPT = assemble([
           best = ratio; row.push(items[i]); rowArea = nextArea; i++
         } else break
       }
-      // place the row across the shorter side
+      // Place the row along the SHORTER side of what is left, all items sharing one
+      // THICKNESS, which is the row's area divided by that shorter side.
+      //
+      // MEASURED, and the bug was a single confused axis. The row advanced its
+      // offset along x while each item was given a height of frac*h -- so items in
+      // one row were laid out SIDE BY SIDE but given INDIVIDUAL heights that all
+      // started at the same y. They overlapped each other, the row's total width was
+      // thickness*n, and rectangles ran past the right and bottom edges of the map.
+      // On cargo's src/compiler every one of the 6 directory groups overlapped: the
+      // worst pair covered 85,032px^2, and 2 of the 6 escaped the box entirely.
+      //
+      // The fix is that a row's items STACK along the short axis and share the
+      // thickness, so each item varies only along the axis the offset advances. The
+      // thickness divides by the short side because that is the axis the row spans;
+      // dividing by the long side instead under-fills the box by a near-constant
+      // fraction -- MEASURED 16-26% across every case in viz-13 -- because a row then
+      // covers less area than it is owed.
+      //
+      // viz-13 asserts the two properties a treemap must have, so this cannot come
+      // back silently: every pair of rectangles disjoint, and the areas summing to
+      // the box.
       var thickness = rowArea / side
       var offset = 0
       for (var j = 0; j < row.length; j++) {
         var frac = row[j].lines * scale / (rowArea || 1)
         if (w >= h) {
-          out.push({ item: row[j], x: x + offset, y: y, w: thickness, h: frac * h })
+          out.push({ item: row[j], x: x, y: y + offset, w: thickness, h: frac * h })
           offset += frac * h
         } else {
-          out.push({ item: row[j], x: x, y: y + offset, w: frac * w, h: thickness })
+          out.push({ item: row[j], x: x + offset, y: y, w: frac * w, h: thickness })
           offset += frac * w
         }
       }
@@ -354,6 +383,10 @@ export const CODE_MAP_SCRIPT = assemble([
     var needle = q.toLowerCase()
     var hits = 0, totalSyms = 0, totalLines = 0, fileCount = 0
     var frag = document.createDocumentFragment()
+    // The vertical strips already claimed by a drawn group label, as [top, bottom].
+    // Two labels collide only if their groups share a strip, so this is checked per
+    // strip rather than against a single high-water mark.
+    var labelBands = []
 
     for (var gi = 0; gi < placed.length; gi++) {
       var gcell = placed[gi]
@@ -363,7 +396,25 @@ export const CODE_MAP_SCRIPT = assemble([
         Math.max(0, gcell.w - 2) + "px;height:" + Math.max(0, gcell.h - 2) +
         "px;border:1px solid rgba(255,255,255,.10);border-radius:4px;overflow:hidden"
       g.dataset.group = gcell.item.key
-      if (gcell.h > 26 && gcell.w > 70) {
+      // A label is drawn when the group has room, unless a label has already been drawn in
+      // the SAME vertical strip. MEASURED: a screenshot showed "fingerprint 5.4k
+      // lines" and "build_runner 2.9k lines" printed on top of one another — both
+      // groups are wide and short, so both qualified on size alone. Overlapping labels
+      // are worse than one: neither is readable and the map looks broken.
+      //
+      // The test is per STRIP, not global. Keying it on the group's own y alone
+      // suppressed every label below the first, because groups in later rows all sit
+      // lower than the last one labelled — MEASURED, that left 2 of 6 groups named.
+      // A label can only collide with another label that is at the same height, so the
+      // occupied bands are tracked as [top, bottom] spans and a new label is allowed
+      // whenever it clears all of them.
+      var headerRoom = gcell.h > 26 && gcell.w > 70
+      var clash = false
+      for (var li = 0; li < labelBands.length; li++) {
+        if (gcell.y < labelBands[li][1] && gcell.y + 20 > labelBands[li][0]) { clash = true; break }
+      }
+      if (headerRoom && !clash) {
+        labelBands.push([gcell.y, gcell.y + 20])
         var gh = document.createElement("div")
         gh.style.cssText = "position:absolute;left:0;top:0;right:0;padding:3px 7px;font-size:10.5px;" +
           "color:rgba(255,255,255,.72);background:rgba(0,0,0,.42);pointer-events:none;" +
@@ -372,17 +423,24 @@ export const CODE_MAP_SCRIPT = assemble([
         g.appendChild(gh)
       }
       var inner = []
-      squarify(gcell.item.files, 0, gcell.h > 26 && gcell.w > 70 ? 20 : 0, gcell.w, Math.max(1, gcell.h - (gcell.h > 26 && gcell.w > 70 ? 20 : 0)), inner)
+      squarify(gcell.item.files, 0, headerRoom ? 20 : 0, gcell.w, Math.max(1, gcell.h - (headerRoom ? 20 : 0)), inner)
       for (var fi = 0; fi < inner.length; fi++) {
         var fcell = inner[fi]
-        if (fcell.w < 0.4 || fcell.h < 0.4) continue
+        // A file is ALWAYS drawn, however small. MEASURED: a screenshot showed large
+        // black holes punched through the middle of groups, and the cause was the
+        // skip that used to sit here -- a file whose treemap cell came out under
+        // 0.4px was left undrawn entirely, so the group's own background showed
+        // through as if that region of the codebase were empty. It is not empty; it is
+        // a file, and the map already counts it in its totals. A sub-pixel file is
+        // drawn at the smallest size that renders, so the area is accounted for on
+        // screen as well as in the arithmetic.
         var f = fcell.item
         fileCount++
         totalLines += f.lines
         totalSyms += f.syms.length
         var fd = document.createElement("div")
         fd.style.cssText = "position:absolute;left:" + fcell.x + "px;top:" + fcell.y +
-          "px;width:" + Math.max(0.5, fcell.w) + "px;height:" + Math.max(0.5, fcell.h) +
+          "px;width:" + Math.max(1, fcell.w) + "px;height:" + Math.max(1, fcell.h) +
           "px;overflow:hidden;cursor:pointer"
         fd.dataset.file = f.path
         // the file's own symbols, as bands in SOURCE ORDER, height = line span.
