@@ -154,7 +154,7 @@
     {
       "name": "a waited refresh racing a detached one still completes",
       "pass": true,
-      "detail": "refresh: completed force=false wait=true durationMs=9837 derived=skipped-unchanged (unchanged — derived data still consistent)"
+      "detail": "refresh: completed force=false wait=true durationMs=8319 derived=skipped-unchanged (unchanged — derived data still consistent)"
     },
     {
       "name": "and the index is whole afterwards",
@@ -175,12 +175,12 @@
     {
       "name": "selection is not the bottleneck at 264k files",
       "pass": true,
-      "detail": "168ms to rank 264,000 ids (the first implementation of this same selection took 2,448ms here — it sorted the whole set; the warm-bb_health budget is 2,000ms)"
+      "detail": "155ms to rank 264,000 ids (the first implementation of this same selection took 2,448ms here — it sorted the whole set; the warm-bb_health budget is 2,000ms)"
     },
     {
       "name": "cost per file does not grow with corpus size (no superlinear blow-up)",
       "pass": true,
-      "detail": "ns/file: 8000.0, 1160.0, 780.0, 636.4"
+      "detail": "ns/file: 3000.0, 4320.0, 870.0, 587.1"
     },
     {
       "name": "the fast path selects EXACTLY the same files a stable sort would",
@@ -195,7 +195,7 @@
     {
       "name": "requesting every file is O(n) sort only, not a hash rank",
       "pass": true,
-      "detail": "32ms for 50,000 files returned whole (a path sort, not a hash rank)"
+      "detail": "16ms for 50,000 files returned whole (a path sort, not a hash rank)"
     },
     {
       "name": "MCP: a healthy index is not an error result",
@@ -265,7 +265,7 @@
     {
       "name": "the history payload is the documented JSON shape",
       "pass": true,
-      "detail": "{\\n  \"health\": {\\n    \"projectId\": \"8f212f"
+      "detail": "{\\n  \"health\": {\\n    \"projectId\": \"76a415"
     },
     {
       "name": "and a healthy index in history mode reports healthy=true",
@@ -304,10 +304,10 @@
     "The multi-model case is proven by direct table manipulation, not by running a second embedding provider — the fixture cannot produce a second model without one.",
     "The concurrency checks are single-process. Cross-process serialization is the index lock's job (script/m43/verify-p1-index-lock.ts), not this gate's."
   ],
-  "generatedAt": "2026-09-30T08:13:18.180Z",
+  "generatedAt": "2026-10-01T03:19:59.613Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T09:19:40.936Z",
-    "contentSha256": "163b997ed3050542f549670ffe06eaa8daf18d6264873cf5bf5b9b236ef604fc"
+    "sealedAt": "2026-10-01T04:33:12.628Z",
+    "contentSha256": "787f2a9c39754a0421ed049a24330fce0f6393855a9e65c34fa140b83f4cc36c"
   }
 }

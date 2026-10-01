@@ -128,12 +128,12 @@
     {
       "name": "a call reports its own cost",
       "pass": true,
-      "detail": "totalMs=8"
+      "detail": "totalMs=21"
     },
     {
       "name": "every phase is a number, not null/NaN",
       "pass": true,
-      "detail": "{\"totalMs\":8,\"aggregatesMs\":2,\"freshnessMs\":1,\"integrityMs\":0,\"refreshMs\":0,\"pathsMs\":0}"
+      "detail": "{\"totalMs\":21,\"aggregatesMs\":2,\"freshnessMs\":1,\"integrityMs\":0,\"refreshMs\":0,\"pathsMs\":0}"
     },
     {
       "name": "a call that did NOT run integrity reports integrityMs=0",
@@ -148,18 +148,18 @@
     {
       "name": "the phases do not exceed the total (no double counting)",
       "pass": true,
-      "detail": "phases=3 total=8"
+      "detail": "phases=3 total=21"
     },
     {
       "name": "the text form prints this call's cost",
       "pass": true,
-      "detail": "this call: total=8ms (freshness=1ms aggregates=2ms)"
+      "detail": "this call: total=21ms (freshness=1ms aggregates=2ms)"
     },
     {
       "name": "a warm default call omits the zero phases [negative]",
       "pass": true,
       "negative": true,
-      "detail": "this call: total=8ms (freshness=1ms aggregates=2ms)"
+      "detail": "this call: total=21ms (freshness=1ms aggregates=2ms)"
     },
     {
       "name": "the index run's cost is labelled as the index run, not as perf of this call",
@@ -175,17 +175,17 @@
     {
       "name": "running integrity makes its phase non-zero and visible",
       "pass": true,
-      "detail": "integrityMs=81"
+      "detail": "integrityMs=52"
     },
     {
       "name": "and the line shows it",
       "pass": true,
-      "detail": "this call: total=142ms (integrity=81ms freshness=2ms aggregates=54ms)"
+      "detail": "this call: total=65ms (integrity=52ms freshness=1ms aggregates=3ms)"
     },
     {
       "name": "the freshness phase is wired (non-zero where there is real work)",
       "pass": true,
-      "detail": "freshnessMs=15 over 400 files"
+      "detail": "freshnessMs=110 over 400 files"
     },
     {
       "name": "the battery REUSES the freshness verdicts rather than re-reading the corpus",
@@ -195,7 +195,7 @@
     {
       "name": "the battery is handed the scan it would otherwise repeat, and says so",
       "pass": true,
-      "detail": "Hash Drift claims the SAME verdicts; Files Missing says its counts come from the scan this report already ran. Measured: integrity=314ms vs freshness=15ms over 400 files — reported, not asserted: at this fixture size the two phases are the same order of magnitude and an ordering assertion is decided by contention, not by the code"
+      "detail": "Hash Drift claims the SAME verdicts; Files Missing says its counts come from the scan this report already ran. Measured: integrity=97ms vs freshness=110ms over 400 files — reported, not asserted: at this fixture size the two phases are the same order of magnitude and an ordering assertion is decided by contention, not by the code"
     },
     {
       "name": "Files Missing reuses them too",
@@ -249,10 +249,10 @@
   "limitations": [
     "Phase timings are wall-clock on a shared machine and are asserted for STRUCTURE (present, non-negative, ordered, non-zero only when the phase ran) rather than for a duration, which no gate can pin."
   ],
-  "generatedAt": "2026-10-01T03:11:23.042Z",
+  "generatedAt": "2026-10-01T03:21:54.118Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T03:13:48.151Z",
-    "contentSha256": "430bd7f2e21453139265393a32bdb11377d19988821164cedea0ac97ed8c85ab"
+    "sealedAt": "2026-10-01T04:33:12.622Z",
+    "contentSha256": "e84cb67df4251ffd537fb1ca1c42e315b9bab17d52267f481c575a46027b7614"
   }
 }

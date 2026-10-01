@@ -136,7 +136,7 @@
     {
       "name": "a SAMPLED breakdown says it is a sample",
       "pass": true,
-      "detail": "freshness why: 3 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh); 1 missing: deleted from disk (a refr"
+      "detail": "freshness why: 4 fresh by mtime+size only (file not read — a same-size edit preserving the mtime reads as fresh) — over the 4-file SAMPLE, not the pro"
     },
     {
       "name": "and a complete one does not claim to be a sample",
@@ -175,10 +175,10 @@
   "limitations": [
     "The unreadable case is produced with chmod, which does not restrict root — on a runner that ignores file modes the case degrades to a read that succeeds. The gate asserts the category is REACHABLE, not that it occurs on every platform."
   ],
-  "generatedAt": "2026-09-30T22:47:41.766Z",
+  "generatedAt": "2026-10-01T03:20:37.613Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T22:52:52.275Z",
-    "contentSha256": "855285e0799ba6ef6d6f323f14db950640e6218d058955502f6fa29edb40ca94"
+    "sealedAt": "2026-10-01T04:33:12.648Z",
+    "contentSha256": "b4e5e0437f2e34a2e1a367d8780b790dd44e2d24aac3ebae93784cf1c2467f65"
   }
 }
