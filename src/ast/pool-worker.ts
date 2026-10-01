@@ -983,7 +983,48 @@ process.on("message", async (msg: any) => {
     }
     process.send?.({ type: "ready", workerId: msg.workerId })
   } else if (msg.type === "parse_batch") {
-    const { batchId, files, projectPath } = msg
+    const { batchId, files, projectPath, projectIndexes } = msg
+    // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
+    // and cached for the worker's lifetime — a worker is forked once and then serves many
+    // batches, so rebuilding per batch would re-parse the project for every batch.
+    //
+    // It arrives as a PLAIN object because `fork()` serialises IPC with JSON and JSON
+    // cannot carry a `Map`; a `Map` would arrive as `{}` and the index would silently
+    // resolve nothing, which looks like "the feature does not work" rather than "the
+    // transport dropped it". `deserializeProjectIndex` refuses a payload it does not
+    // fully understand instead of best-effort parsing it, so a format change is a
+    // no-enrichment outcome and never a wrong answer.
+    //
+    // A worker that cannot deserialise gets NO index, which is exactly the pre-SOL-21
+    // per-file behaviour. Enrichment is therefore additive and never load-bearing.
+    let indexCache: Map<string, ASTEngine.n> | null = null
+    if (projectIndexes !== undefined && projectIndexes !== null) {
+      try {
+        const mod: any = await import("./project-index")
+        indexCache = new Map()
+        for (const [lang, raw] of Object.entries(projectIndexes as Record<string, unknown>)) {
+          const built = mod.deserializeProjectIndex(raw)
+          if (built !== null) {
+            mod.buildResolutionTables(built)
+            indexCache.set(lang, built)
+          }
+        }
+      } catch (e: any) {
+        log(`[Worker] project index unavailable, continuing per-file: ${e?.message ?? e}`)
+        indexCache = null
+      }
+    }
+    const extnameOf = (p: string): string => {
+      const base = p.slice(p.lastIndexOf("/") + 1)
+      const dot = base.lastIndexOf(".")
+      return dot <= 0 ? "" : base.slice(dot).toLowerCase()
+    }
+    const contextFor = (filePath: string): ASTEngine.AnalyzeContext | undefined => {
+      if (indexCache === null) return undefined
+      const ext = extnameOf(filePath)
+      const built = indexCache.get(ext)
+      return built === undefined ? undefined : { projectIndex: built }
+    }
     // 45s per-file self-timeout; env-configurable (BB_FILE_TIMEOUT_MS) so
     // deterministic crash/timeout fixtures die fast (M21.W1).
     const FILE_TIMEOUT_MS = Number(process.env.BB_FILE_TIMEOUT_MS || 45000)
@@ -1020,7 +1061,7 @@ process.on("message", async (msg: any) => {
           process.exit(1)
         }, FILE_TIMEOUT_MS)
 
-        const result = await parseFile(filePath, projectPath)
+        const result = await parseFile(filePath, projectPath, contextFor(filePath))
         clearTimeout(fileTimer)
 
         process.send?.({ type: "file_done", batchId, filePath, result })

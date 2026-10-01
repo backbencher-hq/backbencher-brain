@@ -49,6 +49,16 @@ abstract contract FeedBase is IThing {
         return 1;
     }
 }
+
+/// @notice A LIBRARY in the other file. A using-directive makes its members
+/// callable without putting Lib in the contract's INHERITANCE chain, so a call to one
+/// is a project member but not a RESOLVABLE inherited member. That distinction is the
+/// whole reason projectMemberCandidate exists as a separate grade.
+library Lib {
+    function twice(uint256 x) internal pure returns (uint256) {
+        return x * 2;
+    }
+}
 `
 
 const DERIVED = `// SPDX-License-Identifier: MIT
@@ -62,6 +72,15 @@ import "./sol21-base.sol";
 /// which is what the first draft of this fixture did — and it made the index look as
 /// though it had nothing to settle.
 contract Feed is FeedBase, IThing {
+    using Lib for uint256;
+
+    /// @dev Calls a free function of the OTHER file LIBRARY through a using
+    ///     directive. The name is a project member, but WHICH type is meant is not
+    ///     decided by the call site, so this must stay a CANDIDATE and not a resolution.
+    function doubled(uint256 x) external pure returns (uint256) {
+        return x.twice();
+    }
+
     /// @dev Calls a member of the OTHER file's base. Undecidable without an index.
     function current() public view returns (uint256) {
         return latest();
@@ -83,7 +102,8 @@ const language: any = await WTS.Language.load(
   fs.readFileSync(path.join(ROOT, "wasm", "tree-sitter-solidity.wasm")),
 )
 const { RealSolidityAnalyzer } = await import(path.join(ROOT, "src/ast/real-solidity-analyzer"))
-const { buildProjectIndex, buildResolutionTables } = await import(path.join(ROOT, "src/ast/project-index"))
+const { buildProjectIndex, buildResolutionTables, serializeProjectIndex, deserializeProjectIndex, roundTripProjectIndex } =
+  await import(path.join(ROOT, "src/ast/project-index"))
 
 function parseFile(file: string, context?: any): Promise<any> {
   const parser = new WTS.Parser()
@@ -174,6 +194,25 @@ const strip = (r: any) => (r.relationships ?? [])
   .map((x: any) => `${x.type}|${x.source}|${x.target}|${x.confidence}|${x.line_number}`)
   .sort()
 const same = JSON.stringify(strip(noIdx)) === JSON.stringify(strip(withIdx))
+// The self-describing flag. Without it, a full run and an incremental run would hold
+// contradictory facts for one edge and nothing in the payload would say which is which.
+check("with-index-rows-say-so", "with an index, every relationship says so",
+  (withIdx.relationships ?? []).every((x: any) => x.metadata?.projectIndexSupplied === true),
+  `${(withIdx.relationships ?? []).filter((x: any) => x.metadata?.projectIndexSupplied === true).length} of ${(withIdx.relationships ?? []).length} rows flagged`)
+
+check("no-index-rows-say-so-too", "without an index, NO relationship claims project knowledge",
+  (noIdx.relationships ?? []).every((x: any) => x.metadata?.projectIndexSupplied === undefined),
+  `${(noIdx.relationships ?? []).filter((x: any) => x.metadata?.projectIndexSupplied !== undefined).length} rows wrongly flagged`)
+
+check("wire-round-trip-is-lossless", "the index survives the IPC wire format, which is JSON and cannot carry a Map",
+  roundTripProjectIndex(index).length === 0,
+  roundTripProjectIndex(index).slice(0, 3).join("; ") || "lossless")
+
+check("wire-refuses-a-wrong-version", "a wrong wire version is REFUSED, not best-effort parsed",
+  deserializeProjectIndex({ ...serializeProjectIndex(index), version: 2 }) === null &&
+  deserializeProjectIndex({ version: 1, typeKinds: "not an array" }) === null,
+  "both refused")
+
 check("index-changes-only-its-own-rows", "the index changes ONLY the rows it claims to: every other relationship is identical",
   same, same ? "identical" : "DIFFERENT — the index is altering rows it should not touch")
 

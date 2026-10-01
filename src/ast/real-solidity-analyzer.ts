@@ -2668,6 +2668,29 @@ const meta = modifiersOf(node)
     const detectedPatterns = [...patterns]
     const detectedFrameworks = [...frameworks]
 
+    // SOL-21 — ONE FLAG ON EVERY ROW, so the output is self-describing.
+    //
+    // The index is built from the file set the run is indexing, which for an INCREMENTAL
+    // run is a subset of the project. That means the same edge can be `extends` +
+    // `kindUnresolved` in one run and `implements` in the next, and a call can be
+    // `external` in one and `crossFileInheritedMember` in the other. That is run-
+    // dependence, and it is the one thing that would make this feature worse than
+    // useless: a store that holds both would contain contradictory facts for one edge.
+    //
+    // It is not hidden, it is LABELLED. Every relationship carries
+    // `projectIndexSupplied`, so a consumer can always tell "this is a per-file answer"
+    // from "this was settled with project knowledge", and a row whose kind is
+    // `kindUnresolved` is not in conflict with one that was settled — the first says it
+    // does not know. Enrichment is then MONOTONIC: a full re-index can only add
+    // resolution, never contradict a settled answer, because a settled answer is only
+    // ever written when the index knew.
+    if (projectIndex) {
+      for (const rel of relationships) {
+        const md = rel.metadata as Record<string, unknown>
+        if (md.projectIndexSupplied === undefined) md.projectIndexSupplied = true
+      }
+    }
+
     return {
       language: "solidity",
       symbols,

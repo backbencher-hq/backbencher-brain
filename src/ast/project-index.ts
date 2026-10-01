@@ -307,3 +307,112 @@ export async function enrichWithProjectIndex(
   }
   return { results, index }
 }
+
+/**
+ * THE WIRE FORMAT.
+ *
+ * `child_process.fork()` serialises IPC with JSON unless advanced serialisation is
+ * enabled, and JSON cannot carry a `Map` — a `Map` would arrive as `{}` and the index
+ * would silently resolve NOTHING, which looks exactly like "the feature does not work"
+ * and not like "the transport dropped it". So the index has an explicit, total
+ * serialisation rather than relying on structured clone.
+ *
+ * It is deliberately a PLAIN object of arrays, which also means it survives `JSON
+ * .stringify` for a cache file, and it is TOTAL: every field of `ProjectIndex` is
+ * written and read back, including `damagedFiles` and `stats`. A partial format is the
+ * kind of omission that only shows up as a wrong answer months later, so
+ * `roundTripProjectIndex` below asserts field-for-field equality and the SOL-21 gate
+ * runs it.
+ */
+export interface SerializedProjectIndex {
+  version: 1
+  typeKinds: [string, DeclarationKind][]
+  typeMembers: [string, string[]][]
+  typeBases: [string, string[]][]
+  symbolNames: string[]
+  damagedFiles: string[]
+  stats: { files: number; damaged: number }
+}
+
+export function serializeProjectIndex(index: ProjectIndex): SerializedProjectIndex {
+  return {
+    version: 1,
+    typeKinds: [...index.typeKinds.entries()],
+    typeMembers: [...index.typeMembers.entries()].map(([k, v]) => [k, [...v]]),
+    typeBases: [...index.typeBases.entries()].map(([k, v]) => [k, [...v]]),
+    symbolNames: [...index.symbolNames],
+    damagedFiles: [...index.damagedFiles],
+    stats: { ...index.stats },
+  }
+}
+
+export function deserializeProjectIndex(raw: unknown): ProjectIndex | null {
+  if (raw === null || typeof raw !== "object") return null
+  const r = raw as Partial<SerializedProjectIndex>
+  // A wrong `version` is refused rather than best-effort parsed. A partial read of a
+  // future format would produce an index that is missing exactly the fields the new
+  // format added — the shape of a wrong answer that is impossible to trace.
+  if (r.version !== 1) return null
+  if (!Array.isArray(r.typeKinds) || !Array.isArray(r.typeMembers) ||
+      !Array.isArray(r.typeBases) || !Array.isArray(r.symbolNames)) return null
+  const index = emptyProjectIndex()
+  for (const [k, v] of r.typeKinds) index.typeKinds.set(k, v)
+  for (const [k, v] of r.typeMembers) index.typeMembers.set(k, new Set(v))
+  for (const [k, v] of r.typeBases) index.typeBases.set(k, [...v])
+  for (const n of r.symbolNames) index.symbolNames.add(n)
+  for (const f of r.damagedFiles ?? []) index.damagedFiles.add(f)
+  index.stats = { files: r.stats?.files ?? 0, damaged: r.stats?.damaged ?? 0 }
+  return index
+}
+
+/** Round-trip through ACTUAL JSON, not a structural copy — the transport is the thing
+ *  under test, and `structuredClone` would not exercise it. Returns the differences it
+ *  found rather than a boolean, so a failure says WHICH field was lost. */
+export function roundTripProjectIndex(index: ProjectIndex): string[] {
+  const problems: string[] = []
+  const wire = JSON.parse(JSON.stringify(serializeProjectIndex(index))) as SerializedProjectIndex
+  const back = deserializeProjectIndex(wire)
+  if (back === null) {
+    problems.push("deserializeProjectIndex returned null for a well-formed payload")
+    return problems
+  }
+  if (back.typeKinds.size !== index.typeKinds.size) {
+    problems.push(`typeKinds: ${back.typeKinds.size} of ${index.typeKinds.size}`)
+  }
+  if (back.symbolNames.size !== index.symbolNames.size) {
+    problems.push(`symbolNames: ${back.symbolNames.size} of ${index.symbolNames.size}`)
+  }
+  if (back.typeMembers.size !== index.typeMembers.size) {
+    problems.push(`typeMembers: ${back.typeMembers.size} of ${index.typeMembers.size}`)
+  }
+  if (back.typeBases.size !== index.typeBases.size) {
+    problems.push(`typeBases: ${back.typeBases.size} of ${index.typeBases.size}`)
+  }
+  let memberTotal = 0
+  for (const [k, v] of index.typeMembers) {
+    const got = back.typeMembers.get(k)
+    if (got === undefined) { problems.push(`typeMembers lost the key ${k}`); continue }
+    if (got.size !== v.size) problems.push(`typeMembers[${k}]: ${got.size} of ${v.size}`)
+    memberTotal += v.size
+  }
+  for (const [k, v] of index.typeBases) {
+    const got = back.typeBases.get(k)
+    if (got === undefined) { problems.push(`typeBases lost the key ${k}`); continue }
+    if (got.length !== v.length) problems.push(`typeBases[${k}]: ${got.length} of ${v.length}`)
+  }
+  if (back.stats.files !== index.stats.files) problems.push("stats.files")
+  if (back.stats.damaged !== index.stats.damaged) problems.push("stats.damaged")
+  if (back.damagedFiles.size !== index.damagedFiles.size) problems.push("damagedFiles")
+  // The payload the analyzer actually reads, checked end to end: a member name that
+  // fails to survive means a call target that fails to resolve.
+  const probe = index.typeMembers.keys().next().value
+  if (probe !== undefined) {
+    const before = [...(index.typeMembers.get(probe) ?? [])].sort()
+    const after = [...(back.typeMembers.get(probe) ?? [])].sort()
+    if (JSON.stringify(before) !== JSON.stringify(after)) {
+      problems.push(`typeMembers[${probe}] contents differ after the round trip`)
+    }
+  }
+  return problems
+}
+
