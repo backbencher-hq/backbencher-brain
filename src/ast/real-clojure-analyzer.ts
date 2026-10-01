@@ -237,26 +237,6 @@ export const isAnonArgShorthand = (s: string): boolean => {
   return true
 }
 
-/**
- * THE SPECIAL FORMS — a closed set, and a special form is NOT a call.
- *
- * CLJ-D41/CLJ-D44. Exported so the truth oracle and the analyzer cannot disagree
- * about it: two lists is two answers, and the disagreement between them was 5 of
- * the 105 residual edges in this wave.
- *
- * Macros are deliberately absent. `loop`, `letfn`, `case`, `..` and `tap>` are
- * macros, core.clj defines every one of them, and CLJ-D43 says a call to a macro
- * the file defines IS a call. Suppressing those was my error, not the analyzer's.
- * `fn*` and `let` are here and were missing from the core list's reach: `fn*` is a
- * compiler intrinsic with no public var, and `let` is shadowed in core.clj.
- */
-export const CLOJURE_SPECIAL_FORMS: ReadonlySet<string> = new Set([
-  "def", "do", "fn", "fn*", "if", "if*", "let", "let*", "quote", "quote*", "var", "var*",
-  "recur", "recur*", "throw", "throw*", "try", "try*", "catch", "catch*", "finally",
-  "new", "new*", "set!", "monitor-enter", "monitor-exit", "case*", "letfn*", "loop*",
-  ".", "&",
-])
-
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -1947,7 +1927,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // side effects) attribute to the namespace — the load-time context
         // that actually invokes them — instead of being dropped. The edge
         // carries isTopLevel so consumers can tell the contexts apart.
-        else if (formName && !CLOJURE_SPECIAL_FORMS.has(formName) && !isCoreCallSuppressed(formName, headStartIndex(node))) {
+        else if (formName && !isCoreCallSuppressed(formName, headStartIndex(node))) {
           const src = activeFunction ? activeFunction.name : currentNamespace
           const topMeta: Record<string, any> = activeFunction ? {} : { isTopLevel: true }
           const headNode = executionHead(node)

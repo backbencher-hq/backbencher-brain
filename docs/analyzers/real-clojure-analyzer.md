@@ -299,23 +299,6 @@ and 29 times. Three groups stay non-calls unconditionally — threading macros
 (transparent expansion), def heads (`CLJ-D30` owns those), and libspec or
 class-creating forms (a directive invokes nothing).
 
-**Special form or macro (CLJ-D44).** `loop`, `letfn` and `case` were in the truth's
-special-form list and are **macros**, not special forms. `core.clj` defines every one
-of them, so CLJ-D43 says a call to them is a call — the analyzer was right and the truth
-was wrong. At the same time the analyzer could not see `fn*` (a compiler intrinsic with
-no public var, so the core-list gate never reaches it) or `let` (shadowed in
-`core.clj`). Each side had the other's gaps. The analyzer now exports
-`CLOJURE_SPECIAL_FORMS` and gates its own generic-call emission on it, which is what
-makes the two comparable.
-
-**The anonymous-fn shorthand (CLJ-D45).** `#(f …)` parses as an `anon_fn_lit` whose
-children are the body *directly* — no `list_lit`, no `fn` head — so a walk that fires on
-lists never visits it. 55 residual edges were calls written this way; `core.clj` is
-written in the shorthand. The analyzer names it `lambda_<row>_<col>` from the node's own
-position, so the `fn` owner rule applies there too. `#(% 1)` is the mirror case and the
-reason the head needs a *name* test rather than a shape test: it applies its argument
-rather than calling it, with identical node shape.
-
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with
