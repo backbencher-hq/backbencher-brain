@@ -25,6 +25,14 @@ import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
+// REPAIR (2026-09-30, vue wave): the `Instance` containment guard added by the
+// contains-edge round below names `ASTEngine.SymbolKind.Instance` and
+// `ASTEngine` was never imported here, so `storeResults` threw on EVERY batch
+// and rolled the whole insert back — indexing was broken for every language on
+// this tree, not just the lane that wrote the guard. `SymbolKind.Instance` does
+// exist (engine.ts) and the guard is semantically right; only the import was
+// missing. No cycle: engine.ts does not import this module.
+import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -2665,7 +2673,12 @@ export async function storeResults(
              // the edge for forward-declared containers (declared after their
              // members in the analyzer output). Both endpoints now resolve by
              // construction: owner via storeableName, child via the insert above.
-             if (ownerSymbolId) {
+             // An `Instance` symbol is named after the type it instantiates, so
+            // containing it would assert the module DECLARES that type. The
+            // relationship is already carried by `implements`; the containment is
+            // not a fact about this module. Haskell publishes these; the KIND,
+            // not the language, decides.
+            if (ownerSymbolId && symbol.kind !== ASTEngine.SymbolKind.Instance) {
                // Dedup: skip if the engine already generated a contains for this (owner, child) pair
                const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
                const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
