@@ -5519,36 +5519,46 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
       // parses as
       //
       //   call_expression
-      //     identifier    "MAP_HUGETLB"           <- the #ifdef's tested macro
-      //     argument_list "(flags & MAP_HUGETLB)" <- the NEXT line
+      //     identifier      "MAP_HUGETLB"        <- the #ifdef's tested macro
+      //     argument_list   "(flags & MAP_HUGETLB)"  <- the NEXT line
       //
-      // The source contains no call: `#ifdef X` TESTS a macro, it does not invoke
-      // one -- the analyzer's #956 ruling, extended by #908/#912. Measured across
-      // 2,600 corpus files this fabricated 36 rows the differential then reported
-      // as MISSING, convicting a correct analyzer.
+      // because the directive's identifier is spliced into code and the following
+      // parenthesized expression becomes its argument list. The source contains no
+      // call; `#ifdef X` TESTS a macro, it does not invoke one -- which is the
+      // analyzer's #956 ruling, and #908/#912 beyond it.
       //
-      // The test is the PHYSICAL LINE, and that choice is load-bearing. The first
-      // version used the file's existing isDirectiveConditionText() and it
-      // OVER-SUPPRESSED: that predicate is true for any identifier whose ancestor
-      // chain reaches a preproc_* node without crossing a statement/declaration,
-      // which is also true of REAL calls and REAL macro invocations inside
-      // `#ifdef` blocks -- it ate 15 true rows (`strcmp`, `S_ISREG`, `strerror_s`,
-      // `sasl_choose_krb5`, ...), turning them into unexplained edges and trading
-      // one error class for the opposite one. The file's own comment on that
-      // predicate warns of exactly this: "the exclusion must not eat CONDITIONAL
-      // CODE". A directive line is physically a line starting with `#`, so checking
-      // the line is both exact and immune to that over-suppression: real code
-      // inside a conditional is never on a `#` line.
+      // The oracle's USES derivation already guarded this with
+      // isDirectiveConditionText; the CALLS branch did not, so it published six
+      // fabricated `calls -> MAP_*` rows and the differential reported them as six
+      // MISSING -- convicting a correct analyzer. A superset oracle would have
+      // traded a fabrication for an unexplained edge, the same trade this file
+      // refuses for svelte (see deriveSvelteComponentUsages).
       if (name && !seen.has(name) && !isDirectiveLineName(fn)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
       }
     } else if (n.type === "field_expression") {
-      // CGD-FIELD mirror: member reads are `uses` on the field leaf; an
-      // assignment-LHS field is a WRITE (analyzer SCD1 gate).
+      // CGD-FIELD mirror: a member ACCESS is `uses` on the field leaf.
+      //
+      // #965: the assignment-LHS exclusion below was the WITHDRAWN SCD1/CGD1 rule,
+      // and the oracle still enforced it. #960 reversed that ruling -- a write to a
+      // field IS a `uses` -- on the grounds that the analyzer was already
+      // inconsistent with itself: `p->f++` published a `uses` while the semantically
+      // identical `p->f += 1` did not, purely because the grammar folds
+      // compound-assign into `assignment_expression` while `++` is an
+      // `update_expression`, so no reading existed under which the two differed.
+      //
+      // Measured cost of the stale gate, curl/docs/examples/hiperfifo.c alone:
+      //   timeout.tv_sec  = timeout_ms / 1000;   <- dropped by the oracle
+      //   timeout.tv_usec = (...) * 1000;         <- dropped by the oracle
+      //   conn->global    = g;                   <- dropped by the oracle
+      // Three real `uses` the analyzer emits and the oracle could not account for.
+      //
+      // `isCallee` STAYS: a field callee (`conn->close(...)`) is a `calls` edge, not
+      // a `uses`, on both sides.
       const parent = n.parent
       const isCallee = !!parent && parent.type === "call_expression"
-      if (!isCallee && !isAssignLhs(n)) {
+      if (!isCallee) {
         const leaf = n.namedChildren.find((c: any) => c.type === "field_identifier")
         if (leaf && !seen.has("use:" + leaf.text)) {
           seen.add("use:" + leaf.text)
