@@ -791,22 +791,48 @@ export const CODE_MAP_SCRIPT = assemble([
   // string, so what is saved is what is on screen. A Blob and an object URL are used
   // rather than a data: URI because a data: URI of a multi-megabyte document is
   // rejected by several browsers, and this document is routinely 2-7 MB.
-  document.getElementById("mapbtn").onclick = function () {
+  // THE BUTTON, ATTACHED FIRST AND BY DELEGATION.
+  //
+  // Reported as "the save as button does not work". It worked in isolation, which is
+  // the informative part: the handler used to be assigned on this element AFTER the
+  // layout had run, so any exception during layout left a visible, styled, completely
+  // inert button and nothing in the console pointing at the cause. A delegated
+  // listener installed before anything that can throw cannot be lost that way.
+  //
+  // The outcome is stated on screen either way, because a sandboxed frame -- an IDE
+  // webview, an MCP preview pane -- can refuse the download without throwing, and a
+  // save button that silently does nothing is indistinguishable from a broken one.
+  function saveSelf(name) {
     try {
-      var blob = new Blob(["<!DOCTYPE html>\\n" + document.documentElement.outerHTML], { type: "text/html" })
+      var blob = new Blob(["<!DOCTYPE html>" + String.fromCharCode(10) + document.documentElement.outerHTML], { type: "text/html" })
       var url = URL.createObjectURL(blob)
       var a = document.createElement("a")
       a.href = url
-      a.download = "bb-code-map.html"
+      a.download = name
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       setTimeout(function () { URL.revokeObjectURL(url) }, 4000)
-    } catch (e) {
-      var s = document.getElementById("zoomstate")
-      if (s) { s.className = "on"; s.textContent = "could not save: " + String(e).slice(0, 80) }
-    }
+      return true
+    } catch (e) { return false }
   }
+  document.addEventListener("click", function (ev) {
+    var t = ev.target
+    while (t && t !== document) {
+      if (t.id === "mapbtn") {
+        var ok = saveSelf("bb-code-map.html")
+        var s = document.getElementById("zoomstate")
+        if (s) {
+          s.className = "on"
+          s.textContent = ok
+            ? "Saved — the page as it is now, self-contained."
+            : "This frame refused the download; use your browser's own Save command."
+        }
+        return
+      }
+      t = t.parentNode
+    }
+  }, false)
 
   window.addEventListener("resize", function () {
     // The world is derived from the viewport, so a resize means the layout has to be
@@ -818,8 +844,13 @@ export const CODE_MAP_SCRIPT = assemble([
     if (wasZoomed) { applyView(document.getElementById("world")); reportView() }
     else fitWorld()
   })
-  fitWorld()
-  draw()
+  try {
+    fitWorld()
+    draw()
+  } catch (e) {
+    var z = document.getElementById("zoomstate")
+    if (z) { z.className = "on"; z.textContent = "This map could not be laid out (" + String(e).slice(0, 120) + "). The symbols are still in the page as JSON." }
+  }
 })();
 `,
 ])

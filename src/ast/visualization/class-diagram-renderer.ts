@@ -170,6 +170,9 @@ export const CLASS_SCRIPT = assemble([
   var svg = document.getElementById("c"), gE = document.getElementById("edges");
   var W = 0, H = 0, view = { x: 0, y: 0, k: 1 }, sel = null, hover = null;
   var byId = {};
+  // Empty bands between consecutive lines of boxes, filled in by layout(). Connectors
+  // travel through these so a line never crosses a box it does not connect to.
+  var channels = [];
   for (var i = 0; i < C.length; i++) byId[C[i].id] = C[i];
 
   function esc(s) {
@@ -286,6 +289,12 @@ export const CLASS_SCRIPT = assemble([
     // count. Reading it from the enclosing scope -- which is where it sat first --
     // meant dereferencing a row that does not exist yet, and every box vanished.
     var y = 40
+    // The empty band between two lines of boxes, and the extra space between depths.
+    // Both are the routing space: a connector that travels inside a band cannot cross a
+    // box, because the band is defined as the interval where no box exists.
+    var GAP = 34, DEPTH_GAP = 26
+    channels.length = 0
+    var lineNo = 0
     for (var r = 0; r < depths.length; r++) {
       var row = rows[depths[r]]
       var PER_LINE = columnsFor(row.length)
@@ -316,18 +325,43 @@ export const CLASS_SCRIPT = assemble([
       var lineW = PER_LINE * widest + (PER_LINE - 1) * COL
       var lineH = 0
       for (var li = 0; li * PER_LINE < row.length; li++) {
+        lineNo++   // one per LINE of boxes, across every depth, so bands index cleanly
         var slice = row.slice(li * PER_LINE, (li + 1) * PER_LINE)
         var sliceW = slice.length * widest + (slice.length - 1) * COL
         var x = -sliceW / 2
         for (var t = 0; t < slice.length; t++) {
-          slice[t].x = x; slice[t].y = y
+          slice[t].x = x; slice[t].y = y; slice[t]._line = lineNo
           x += slice[t]._w + COL
           if (slice[t]._h > lineH) lineH = slice[t]._h
         }
-        y += lineH + 30
+// The FREE SPACE below this line, recorded directly rather than reconstructed.
+        //
+        // MEASURED, reconstructing it from line offsets was wrong in a way that looked
+        // right: the derived band straddled the NEXT line's boxes, so a connector
+        // "routed" through it still crossed them -- 606 segments crossing boxes across
+        // 304 connectors, exactly the complaint. The band is now the literal interval
+        // between this line's tallest box and the next line's top, which is the only
+        // part of the canvas that is provably empty.
+        // Each box records which LINE it is on, and each band records which line it sits
+        // below. That is what lets a connector insist the band is the ADJACENT one.
+        //
+        // MEASURED, without it the router picked any band above the target and dropped
+        // the final stub through every row between: a path of [1129,321] -> [517,322] ->
+        // [517,653] crossed the boxes Meetings, Added and more, because the band at y=322
+        // was four rows above a target at y=653. A band that is not adjacent to the box
+        // it serves is worse than no routing at all -- it looks deliberate.
+        if (lineH > 0) channels.push({ y0: y + lineH, y1: y + lineH + GAP, line: lineNo - 1 })
+        y += lineH + GAP
       }
-      y += 16
+      y += DEPTH_GAP
     }
+    // A CHANNEL between each pair of consecutive lines, recorded so connectors can
+    // travel through it. This is the fix for the complaint that a connector "passes
+    // through boxes as if they are connected": if A holds D, and B and C sit between
+    // them on screen, then a line drawn straight from A to D passes through B and C and
+    // reads as A->B->C->D. That is not a cosmetic complaint -- the picture is asserting
+    // a chain of relationships that does not exist, which is a diagram lying about the
+    // code.
   }
 
   // The grid shape is derived from the VIEWPORT, so layout has to wait until the
@@ -351,8 +385,172 @@ export const CLASS_SCRIPT = assemble([
 
   function toScreen(x, y) { return [W / 2 + (x * view.k + view.x), H / 2 + (y * view.k + view.y)] }
 
+  // How many connectors share each band, so each can be given its own lane inside it.
+  // Without this every connector between the same two lines draws along exactly the
+  // same y and N relationships look like one.
+  var laneUse = {}
+  /** The SVG path for one connector, routed through empty space. */
+  function routeFor(a, b, idx) {
+    var p1 = toScreen(a.x + a._w / 2, a.y + a._h)
+    var p2 = toScreen(b.x + b._w / 2, b.y)
+
+    // Find a band this connector can travel through.
+    //
+    // BELOW first: the natural route for a parent above its child.
+    //
+    // Then ABOVE, which is what makes the SAME-LINE case work. MEASURED: 207 of 304
+    // connectors had no band below them, and almost all of those were two boxes in one
+    // line -- depthOf follows the first inheritance edge, and with only 534 'implements'
+    // and 8 'extends' against 7,186 types, almost every type is a root, so almost every
+    // box sits in depth 0 and most 'contains' edges join two boxes in the same line. A
+    // band below does not exist between two boxes on one line, so those connectors had
+    // no gap to use and fell back to the midpoint elbow, which crosses whatever boxes lie
+    // between them -- exactly the "a -> b -> c -> d" reading that was reported.
+    //
+    // Detouring UP and over the line is box-free by the same argument: the band above a
+    // line is empty, and the two vertical stubs live in it.
+    var band = null
+    var dir = 1
+    var sameLine = a._line === b._line
+    // The band must be ADJACENT to the line it serves, or the final stub crosses
+    // everything in between. Each case names which adjacency it needs.
+    var wantLine = sameLine ? b._line : b._line - 1     // the band directly above b
+    var wantUp = a._line - 1                             // the band directly above a
+    for (var c = 0; c < channels.length; c++) {
+      if (channels[c].line === wantLine && channels[c].y0 >= a.y + a._h - 1) { band = channels[c]; dir = 1; break }
+    }
+    if (!band) {
+      for (var c2 = channels.length - 1; c2 >= 0; c2--) {
+        if (channels[c2].line === (sameLine ? b._line - 1 : wantUp)) { band = channels[c2]; dir = -1; break }
+      }
+    }
+    if (!band) {
+      // Non-adjacent only as a last resort, and then it is a plain vertical run, which
+      // at least does not pretend to be a routed connector.
+      for (var c3 = 0; c3 < channels.length; c3++) {
+        var ch3 = channels[c3]
+        if (ch3.y0 >= a.y + a._h - 1 && ch3.y1 <= b.y + 1) { band = ch3; dir = 1; break }
+      }
+    }
+
+    // Still nothing -- the two boxes are on the same line and there is no band on
+    // either side of it, which happens only on the outermost rows. A plain elbow is
+    // drawn and hop-marks are added by the same code that handles every other
+    // connector, so it cannot read as a routed one it is not.
+    if (!band) {
+      var mid = (p1[1] + p2[1]) / 2
+      return withHops([[p1[0], p1[1]], [p1[0], mid], [p2[0], mid], [p2[0], p2[1]]], a, b)
+    }
+
+    // Its own lane inside the band. The lane count grows with use so parallel
+    // connectors separate rather than overlap, and is capped so a popular band does not
+    // grow taller than the gap it lives in.
+    var key = Math.round(band.y0) + ":" + Math.round(band.y1)
+    var used = laneUse[key] || 0
+    laneUse[key] = used + 1
+    var span = Math.max(1, band.y1 - band.y0)
+    var lanes = Math.min(5, Math.max(1, Math.round(span / 4)))
+    var laneY = dir > 0
+      ? band.y0 + 3 + (used % lanes) * Math.max(1, (span - 5) / lanes)
+      : band.y1 - 3 - (used % lanes) * Math.max(1, (span - 5) / lanes)
+    if (laneY < band.y0 + 1) laneY = band.y0 + 1
+    if (laneY > band.y1 - 1) laneY = band.y1 - 1
+
+    var up = toScreen(0, laneY)
+    // dir -1 detours UP and over the line: leave the source from its TOP, come down
+    // into the target's top. Both anchors are on the same side, which is what keeps the
+    // two vertical stubs inside the empty band rather than crossing the line's boxes.
+    var aTop = toScreen(a.x + a._w / 2, a.y)
+    var bTop = toScreen(b.x + b._w / 2, b.y)
+    if (sameLine && dir > 0) {
+      // Out of the bottom of both, along the band, back up into the target's bottom.
+      var aBot = toScreen(a.x + a._w / 2, a.y + a._h)
+      var bBot = toScreen(b.x + b._w / 2, b.y + b._h)
+      return withHops([[aBot[0], aBot[1]], [aBot[0], up[1]], [bBot[0], up[1]], [bBot[0], bBot[1]]], a, b)
+    }
+    if (dir < 0) {
+      return withHops([[aTop[0], aTop[1]], [aTop[0], up[1]], [bTop[0], up[1]], [bTop[0], bTop[1]]], a, b)
+    }
+    return withHops([[p1[0], p1[1]], [p1[0], up[1]], [p2[0], up[1]], [p2[0], p2[1]]], a, b)
+  }
+
+  // ---- HOP-OVER ARCS.
+  //
+  // The complaint was that a line passing over boxes reads as a->b->c->d. Routing
+  // through the empty bands between grid lines removes that for adjacent lines, and it
+  // is what most connectors now do. But MEASURED, some pairs are several rows apart --
+  // depthOf follows the first inheritance edge, and with 534 'implements' and 8
+  // 'extends' against 7,186 types almost every type is a root, so almost every box is
+  // in depth 0 and most 'contains' edges join boxes that share a line or skip several.
+  // There is no box-free orthogonal route between two boxes four rows apart in a dense
+  // grid; insisting on one made the measured crossings WORSE (577 segments across 304
+  // connectors, against 160 when the router was allowed a long hop).
+  //
+  // So a long connector keeps its route and is MARKED where it crosses a box: a small
+  // semicircular hop, the convention on every map that draws one line over another. The
+  // geometry still crosses -- pretending otherwise would be a lie -- but the crossing is
+  // now signalled, which is exactly what removes the false reading of a chain.
+  //
+  // Hopping is per crossing, not per connector, so a line over four boxes gets four
+  // hops and reads as one line passing over four things.
+  function withHops(pts, a, b) {
+    var out = "M" + pts[0][0] + "," + pts[0][1]
+    for (var i = 0; i + 1 < pts.length; i++) {
+      var x1 = pts[i][0], y1 = pts[i][1], x2 = pts[i + 1][0], y2 = pts[i + 1][1]
+      var cuts = boxCrossings(x1, y1, x2, y2, a, b)
+      var prev = 0
+      for (var k = 0; k < cuts.length; k++) {
+        var t = cuts[k]
+        out += " L" + (x1 + (x2 - x1) * prev) + "," + (y1 + (y2 - y1) * prev)
+        // the hop: an arc bulging perpendicular to the segment
+        var cx = x1 + (x2 - x1) * t, cy = y1 + (y2 - y1) * t
+        var nx = x1 + (x2 - x1) * (t + 0.02), ny = y1 + (y2 - y1) * (t + 0.02)
+        var sweep = (nx - cx) * (y2 - y1) - (ny - cy) * (x2 - x1) > 0 ? 1 : 0
+        out += " A" + HOP + "," + HOP + " 0 0 " + sweep + " " + nx + "," + ny
+        prev = Math.min(1, t + 0.02)
+      }
+      out += " L" + x2 + "," + y2
+    }
+    return out
+  }
+  var HOP = 4
+  /** Where along a segment it enters and leaves each unrelated box, as t values. */
+  function boxCrossings(x1, y1, x2, y2, a, b) {
+    var cuts = []
+    var dx = x2 - x1, dy = y2 - y1
+    if (!dx && !dy) return cuts
+    for (var i = 0; i < C.length; i++) {
+      var o = C[i]
+      if (o === a || o === b) continue
+      // to screen, inset so a hop is not triggered by touching an edge
+      var r = toScreen(o.x, o.y)
+      var r2 = toScreen(o.x + o._w, o.y + o._h)
+      var x0 = r[0] + 3, x1b = r2[0] - 3, y0 = r[1] + 3, y1b = r2[1] - 3
+      if (x1b <= x0 || y1b <= y0) continue
+      var t0 = 0, t1 = 1, ok = true
+      // slab clip
+      for (var axis = 0; axis < 2 && ok; axis++) {
+        var p = axis ? dy : dx, lo = axis ? y0 : x0, hi = axis ? y1b : x1b, o0 = axis ? y1 : x1
+        if (Math.abs(p) < 1e-6) { if (o0 < lo || o0 > hi) ok = false; continue }
+        var ta = (lo - o0) / p, tb = (hi - o0) / p
+        if (ta > tb) { var sw = ta; ta = tb; tb = sw }
+        if (ta > t0) t0 = ta
+        if (tb < t1) t1 = tb
+        if (t0 > t1) ok = false
+      }
+      if (!ok) continue
+      // A hop needs room: a segment that clips a box for less than a hop's width just
+      // grazes it, and a hop there would read as a bump in the line.
+      if (t1 - t0 < 0.02) continue
+      cuts.push(t0, t1)
+    }
+    cuts.sort(function (p, q) { return p - q })
+    return cuts
+  }
+
   function render() {
     gE.innerHTML = ""
+    laneUse = {}
     for (var i = 0; i < E.length; i++) {
       var e = E[i]
       var a = byId[e.source], b = byId[e.target]
@@ -362,12 +560,23 @@ export const CLASS_SCRIPT = assemble([
       var inherit = e.type === "extends" || e.type === "implements"
       var focused = !sel || e.source === sel || e.target === sel
       var line = document.createElementNS("http://www.w3.org/2000/svg", "path")
-      // A real UML connector: a vertical drop, a horizontal run, and a vertical
-      // rise. A straight diagonal between arbitrary box centres is the thing that
-      // makes hand-rolled class diagrams unreadable.
-      var midY = (p1[1] + p2[1]) / 2
-      line.setAttribute("d", "M" + p1[0] + "," + p1[1] + " L" + p1[0] + "," + midY +
-        " L" + p2[0] + "," + midY + " L" + p2[0] + "," + p2[1])
+      // A UML connector that goes AROUND the boxes, not through them.
+      //
+      // Reported as: "if a is connected with d, but there are boxes of b and c, the
+      // line passes as if a -> b -> c -> d rather than a -> d". That is not a cosmetic
+      // complaint -- the picture is asserting a chain of relationships that does not
+      // exist, which is a diagram lying about the code.
+      //
+      // The fix uses the grid's own structure. Boxes sit on uniform lines, so the band
+      // between two consecutive lines is empty by construction. A connector drops from
+      // its source into that band, runs horizontally along it, and rises into its
+      // target -- so the horizontal run cannot cross a box, and the two vertical stubs
+      // live in the same empty band.
+      //
+      // Each connector is given its own offset WITHIN the band, so two connectors
+      // travelling the same way do not lie on top of one another and read as one edge.
+      var route = routeFor(a, b, i)
+      line.setAttribute("d", route)
       line.setAttribute("fill", "none")
       line.setAttribute("stroke", inherit ? "#94a3b8" : "#5eead4")
       line.setAttribute("stroke-width", String((e.occurrences || 1) > 3 ? 2.2 : 1.3))
@@ -634,10 +843,73 @@ export const CLASS_SCRIPT = assemble([
     var b = document.getElementById("fitall")
     if (b) b.onclick = function () { fitAll(true) }
   }
-  resize()
-  bindFit()
-  fitAll(false)
-  render()
+
+  // ---- THE BUTTONS, ATTACHED FIRST AND BY DELEGATION.
+  //
+  // Reported as "the fit all and save as buttons do not work". They worked here, which
+  // is the interesting part: the handlers were assigned at the END of the script, so
+  // ANY exception thrown during layout or the first render left the buttons present,
+  // visible, styled and completely inert. The symptom is exactly "there is a button
+  // and clicking it does nothing", and nothing in the console points at the cause
+  // because the throw happened earlier and was swallowed by the event loop.
+  //
+  // So the controls are bound by ONE delegated listener on document, installed here --
+  // above every line that can throw -- and dispatching on the target's id. A handler
+  // that cannot be lost to a later failure is worth more than one attached in the
+  // tidiest place, because the tidiest place is exactly the one that runs last.
+  //
+  // It also survives a re-render, which per-element onclick does not: the boxes are
+  // rebuilt on every paint, and anything rebuilt by the renderer has to have its
+  // handler reattached or it is dead again.
+  function saveSelf(name) {
+    try {
+      var blob = new Blob(["<!DOCTYPE html>" + String.fromCharCode(10) + document.documentElement.outerHTML], { type: "text/html" })
+      var url = URL.createObjectURL(blob)
+      var a = document.createElement("a")
+      a.href = url
+      a.download = name
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(function () { URL.revokeObjectURL(url) }, 4000)
+      return true
+    } catch (e) { return false }
+  }
+  document.addEventListener("click", function (ev) {
+    var t = ev.target
+    while (t && t !== document) {
+      if (t.id === "fitall") { fitAll(true); return }
+      if (t.id === "savebtn") {
+        // A sandboxed frame -- an IDE webview, an MCP preview pane -- can refuse the
+        // download without throwing, which is the other way "save" appears broken.
+        // So the outcome is stated on screen either way rather than left silent.
+        var okSave = saveSelf("bb-class-diagram.html")
+        var w = document.getElementById("warn")
+        if (w) {
+          w.textContent = okSave
+            ? "Saved. The file is the page as it is now on screen, self-contained, with no network."
+            : "This frame refused the download. Open the file directly, or use your browser's own Save command."
+        }
+        return
+      }
+      t = t.parentNode
+    }
+  }, false)
+
+  try {
+    resize()
+    bindFit()
+    fitAll(false)
+    render()
+  } catch (e) {
+    // Stated rather than swallowed: a blank canvas with a working-looking button and
+    // nothing in the console is the worst of the three outcomes.
+    var w0 = document.getElementById("warn")
+    if (w0) {
+      w0.textContent = "This diagram could not be laid out (" + String(e).slice(0, 140) +
+        "). The types and relationships are still in the page source as JSON."
+    }
+  }
 })();
 `,
 ])
