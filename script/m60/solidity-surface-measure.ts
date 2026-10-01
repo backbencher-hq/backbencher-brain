@@ -159,6 +159,8 @@ let complexitySymbols = 0
 let complexityTotal = 0
 let complexityAboveOne = 0
 let maxComplexity = 0
+let symbolsWithQualifiedCalls = 0
+const qualifiedCallNames = new Set<string>()
 let relationships = 0
 let withLine = 0
 const dupSeen = new Map<string, number>()
@@ -216,6 +218,14 @@ for (const f of files) {
     // fields for the reason the comment below gives: `parseFile` returns every symbol
     // with `metadata: undefined`.
     if (typeof s.ownerKind === "string" && s.ownerKind !== "") ownerKinds[s.ownerKind] = (ownerKinds[s.ownerKind] ?? 0) + 1
+    // SOL-20 — `qualified_calls`. Read under BOTH spellings: the analyzer writes both
+    // and which one a consumer sees depends on which pool-worker builder ran, so the
+    // census must not depend on that accident either.
+    const qc = (s as any).qualified_calls ?? (s as any).qualifiedCalls
+    if (Array.isArray(qc) && qc.length > 0) {
+      symbolsWithQualifiedCalls++
+      for (const q of qc) qualifiedCallNames.add(String(q))
+    }
     if (typeof s.complexity === "number") {
       complexitySymbols++
       complexityTotal += s.complexity
@@ -373,6 +383,11 @@ const out = {
         max: maxComplexity,
         mean: complexitySymbols > 0 ? Number((complexityTotal / complexitySymbols).toFixed(3)) : 0,
         _note: "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live.",
+      },
+      qualifiedCalls: {
+        symbolsWithAValue: symbolsWithQualifiedCalls,
+        distinctQualifiedNames: qualifiedCallNames.size,
+        _note: "SOL-20. The TypeScript lane populates `qualified_calls` and this one left it unset, so a consumer could read which qualified calls a symbol MAKES for every language but this one. Derived from the callee OBJECT the analyzer already reads for SOL-15, accumulated on the frame that owns the code and deduplicated when the frame closes. `abi.` and `type.` are excluded because they are LANGUAGE NAMESPACES, not calls on an object; `super.f()` is kept, because `super.supportsInterface` says something the bare name cannot.",
       },
       overridesEmitted,
       overridesEmittedExternal,

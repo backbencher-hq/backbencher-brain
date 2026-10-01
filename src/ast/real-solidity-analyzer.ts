@@ -413,6 +413,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     let commentsAttached = 0
     let documentedSymbols = 0
     let symbolsWithComplexity = 0
+    let symbolsWithQualifiedCalls = 0
     {
       // RUNS, not single comments — and the first version was wrong in a way that
       // looked correct. `nextNamedSibling` is the documented declaration only for
@@ -533,6 +534,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       /** SOL-18 — branches seen inside THIS frame, and the symbol they belong to. */
       branches: number
       sym: ASTEngine.UniversalSymbol | null
+      /** SOL-20 — qualified calls made from inside THIS frame. */
+      qualifiedCalls: string[]
     }
     const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false }]
     const top = (): Frame => frames[frames.length - 1]
@@ -607,7 +610,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      *                      whose target is located by matching a member name
      *                      inside a base the tree only names (SOL-11).
      */
-    const evidenceClassFor = (type: ASTEngine.RelationshipType, isImport = false): string => {
+    const evidenceClassFor = (
+      type: ASTEngine.RelationshipType,
+      isImport = false,
+      confidence = 1,
+    ): string => {
       if (isImport) return "import_based"
       switch (type) {
         case ASTEngine.RelationshipType.Contains:
@@ -615,6 +622,20 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         case ASTEngine.RelationshipType.Implements:
         case ASTEngine.RelationshipType.Exports:
         case ASTEngine.RelationshipType.Instantiates:
+          // SOL-19 — the tier is a function of the TYPE, and the first attempt made it
+          // a function of CONFIDENCE as well ("below 1.0 is not structural"). That rule
+          // is wrong, and the fixture suite said so within one run: `instantiates` is
+          // emitted at 0.95 for conservatism while being structural evidence — the
+          // `new_expression` states its type — and keying on the number relabelled it
+          // `inferred`.
+          //
+          // So the discriminator is NOT how confident the number is. It is whether a
+          // COMPONENT of the assertion was undecided — and the call site already says
+          // so, in `kindUnresolved`. A conservative score and an undecided claim are
+          // different facts, and conflating them would trade one wrong label for
+          // another. The downgrade therefore stays at the call site, which is where the
+          // knowledge is, and it is pinned by a fixture row and a mutant rather than by
+          // a heuristic here — a heuristic cannot be right for both cases.
           return "structural"
         case ASTEngine.RelationshipType.Overrides:
           return "inferred"
@@ -666,7 +687,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         confidence,
         line_number: line,
         // Caller metadata LAST so an explicit `evidenceClass` at a call site wins.
-        metadata: { evidenceClass: evidenceClassFor(type, isImport), soliditySpecific: true, ...metadata },
+        metadata: { evidenceClass: evidenceClassFor(type, isImport, confidence), soliditySpecific: true, ...metadata },
       })
     }
 
@@ -828,7 +849,19 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         meta.ownerKind = ownerKindName
       }
       if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Interface) {
-        typeKindByName.set(clean, kind === ASTEngine.SymbolKind.Interface ? "interface" : "contract")
+        // SOL-19 — a LIBRARY is not a contract. `declareSymbol` maps both
+        // `contract_declaration` and `library_declaration` to `SymbolKind.Class`, so
+        // deriving ownerKind from the Kind reported every library member as a contract
+        // member — a bug in the first version of SOL-18, caught by reading
+        // `contracts/utils/Strings.sol` back. `declarationKeyword` is already on the
+        // type's own metadata and is the tree's word for it.
+        const kw = typeof meta.declarationKeyword === "string" ? meta.declarationKeyword : ""
+        typeKindByName.set(
+          clean,
+          kind === ASTEngine.SymbolKind.Interface ? "interface"
+            : kw === "library" ? "library"
+              : "contract",
+        )
       }
       const key = `${top().owner}\u0000${clean}\u0000${kind}`
       if (symbolMap.has(key)) return null
@@ -1213,7 +1246,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       yul = false, isType = false, sym: ASTEngine.UniversalSymbol | null = null,
     ) => {
       openedFrames.add(nodeKey(node))
-      frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym })
+      frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym, qualifiedCalls: [] })
     }
     /** SOL-15 — the nearest enclosing TYPE. `top().owner` cannot answer this inside a
      *  function body, because SOL-13 makes a function frame its own owner, so
@@ -1246,6 +1279,25 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             done.sym.metadata.complexity = done.branches
             done.sym.complexity = done.branches
             symbolsWithComplexity++
+            // SOL-20 — `qualified_calls`, the field the TypeScript lane populates and
+            // this one left unset: the qualified call expressions a symbol MAKES, e.g.
+            // `token.transfer`. Collected on the frame and deduplicated on pop, which is
+            // the only point where the frame's call set is final. It is charged to the
+            // frame's OWN symbol, so a call inside a modifier or a Yul helper is
+            // attributed to the code that contains it rather than to whatever
+            // declaration the walk started from.
+            if (done.qualifiedCalls.length > 0) {
+              const uniq = [...new Set(done.qualifiedCalls)].sort()
+              // Set under BOTH spellings: `pool-worker`'s symbol builder and the store
+              // binding read `qualified_calls`, while the TypeScript lane's convention is
+              // the snake name. One of the two is redundant today; which one is an
+              // accident of which file reads it, so both are written rather than
+              // guessing which side moves.
+              done.sym.qualified_calls = uniq
+              ;(done.sym as any).qualifiedCalls = uniq
+              done.sym.metadata.qualifiedCalls = uniq
+              symbolsWithQualifiedCalls++
+            }
           }
           openedFrames.delete(nodeKey(node))
         }
@@ -1352,11 +1404,41 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             } else if (!isInterface && !typeNamesInFile.has(baseName)) {
               extendsUnresolvedAsInterface++
             }
+            // SOL-19 — the confidence and the TIER were the defect, not the edge.
+            //
+            // The inheritance is structural: the tree states that `X` lists `B` in its
+            // heritage, and that much is certain. But the ROW'S KIND is part of what it
+            // asserts, and when `B` is declared in another file the kind was decided by
+            // the ABSENCE of a declaration — the tree does not say whether `B` is an
+            // interface. So `extends B` asserts "B is a contract", which is an
+            // inference, and it was being published at confidence 1.0 with
+            // `evidenceClass: "structural"`.
+            //
+            // That is the same failure class as a doc number that is accurate but
+            // unjustified, and it is worse here: a consumer weighting by tier reads a
+            // guess as a fact, and a consumer filtering `extends` to find contracts
+            // inherits a mis-typed base. 537 corpus rows carried it.
+            //
+            // The edge is still emitted — omitting a TRUE inheritance edge to avoid
+            // annotating an uncertain kind would trade a labelled fact for a silence,
+            // and the label is the whole point. What changes is the claim: 0.9 and
+            // `inferred`, with `kindUnresolved`, the kind that was ASSUMED, and a
+            // reasonCode, so a consumer can select on exactly this population.
+            const kindUnresolved = !isInterface && !typeNamesInFile.has(baseName)
             addRel(name, baseName,
               isInterface ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
-              1.0, (anc ?? spec).startPosition.row + 1, {
+              kindUnresolved ? 0.9 : 1.0, (anc ?? spec).startPosition.row + 1, {
                 isSolidityInheritance: true,
                 interfaceResolvedInFile: isInterface,
+                ...(kindUnresolved
+                  ? {
+                    // The tier, stated at the site that knows the claim is undecided.
+                    evidenceClass: "inferred",
+                    kindUnresolved: true,
+                    assumedKind: ASTEngine.RelationshipType.Extends,
+                    reasonCode: "base-not-declared-in-file",
+                  }
+                  : {}),
                 ...(spec.childForFieldName("ancestor_arguments") ? { hasBaseConstructorArgs: true } : {}),
               })
           }
@@ -1827,6 +1909,23 @@ const meta = modifiersOf(node)
           if (fn) claimedCallees.add(fn.id)
           const got = calleeNameOf(fn)
           if (got && got.name !== "") {
+            // SOL-20 — the qualified form of the callee, recorded on the enclosing
+            // frame so it lands on that symbol. Read here rather than in a post-pass
+            // because `innerCalleeOf` is only in scope at the emit, and a post-pass
+            // would have only the target NAME — which is exactly what cannot distinguish
+            // `token.transfer` from `vault.transfer`, the two calls a reader most needs
+            // told apart.
+            const qObj = got.viaMember ? memberObjectName(innerCalleeOf(fn)) : ""
+            // `abi.encode` and `type(X).y` are LANGUAGE NAMESPACES, not calls on an
+            // object — publishing them as qualified calls would put `abi.encode` beside
+            // `target.call` in the same list, which is the distinction a reader of this
+            // field most needs. `super.f()` and `this.f()` ARE object calls and are
+            // kept: `super.supportsInterface` says something a bare `supportsInterface`
+            // cannot. This reuses the `namespaceBuiltin` split SOL-15 already draws
+            // rather than inventing a second judgement.
+            if (qObj !== "" && qObj !== "abi" && qObj !== "type" && !ENGINE_FUNCTION_NAMES.has(got.name)) {
+              top().qualifiedCalls.push(`${qObj}.${got.name}`)
+            }
             addRel(top().scope, got.name, ASTEngine.RelationshipType.Calls, 0.9, got.line, {
               isSolidityCall: true,
               // The member flag is REPORTED BY THE NAME RESOLVER, never by a second
@@ -1845,7 +1944,7 @@ const meta = modifiersOf(node)
               // the object separates a language builtin from a project member. Read
               // HERE, at the emit, because the post-pass has the callee NAME and
               // nothing else: `encode` alone cannot say which of the two it was.
-              ...(got.viaMember ? { calleeObject: memberObjectName(innerCalleeOf(fn)) } : {}),
+              ...(got.viaMember ? { calleeObject: qObj } : {}),
               // SOL-15 — the enclosing TYPE, captured here because the relationship's
               // SOURCE is the enclosing scope's LEAF name (`everything`, not
               // `Child.everything`), so the owner cannot be recovered from the row
@@ -2312,6 +2411,7 @@ const meta = modifiersOf(node)
         commentsAttached,
         documentedSymbols,
         symbolsWithComplexity,
+        symbolsWithQualifiedCalls,
         callKinds,
         overridesEmitted,
         overridesEmittedExternal,

@@ -112,10 +112,10 @@ const checks: Check[] = [
   { doc: "instantiates` 1", what: "kinds.instantiates", actual: t.kinds.instantiates, expect: (v) => v === 1 },
   { doc: "899 import-annotated", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
   // ── tiers
-  { doc: "structural 6619", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6619 },
+  { doc: "structural 6112", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6112 },
   { doc: "usage_contextual 18867", what: "tiers.usage_contextual", actual: t.tiers.usage_contextual, expect: (v) => v === 18867 },
   { doc: "import_based 899", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
-  { doc: "inferred 422", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 422 },
+  { doc: "inferred 929", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 929 },
   // ── the limitations, each with its measured size
   { doc: "507 edges", what: "implementsCrossFileUnresolved", actual: d.implementsCrossFileUnresolved, expect: (v) => v === 507 },
   { doc: "422/100 emitted/unresolved", what: "overrides emitted/unresolved", actual: `${d.overridesEmitted}/${d.overridesUnresolved}`, expect: (v) => v === "422/100" },
