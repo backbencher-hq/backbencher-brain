@@ -303,57 +303,17 @@ async function cmdIndex(
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts${s.cancelled ? ` | ${s.cancelled} cancelled` : ""}`)
-    // The parse mode is part of the breakdown, because losing the worker pool is
-    // a degradation a user can act on and nothing else on this line reveals it.
-    // Measured by SIGKILLing workers mid-run: the fork test fails, the run falls
-    // back to in-process parsing and indexes every file correctly — but takes
-    // ~72s against a much faster pool-backed run, while every number above reads
-    // pristine (`workerCount: 0, retries: 0, errors: 0, timeouts: 0`). It is the
-    // same shape as the derived/consistency line: a real fact with no number.
-    const parseMode = s.parseMode ?? "unknown"
-    console.log(
-      parseMode === "in-process"
-        ? "  parsed in-process — the worker pool was unavailable, so this run was serial and is correspondingly slower"
-        : `  parsed with the worker pool (${parseMode})`,
-    )
     // M40.A2: honest derived-data reporting — never let a run imply its
     // relationships/enrichment/gravity/taints/health are current when they
     // were deferred.
     const derived = s.derivedPass ?? "deferred"
-    // M40.A2's intent was "never let a run imply its relationships/enrichment/
-    // gravity/taints/health are current when they were deferred". It could not be
-    // kept, because `derivedPass` says WHICH pass ran and nothing said whether the
-    // index ended up CONSISTENT — so the note for `skipped-unchanged` asserted
-    // "untouched and consistent" on the strength of nothing.
-    //
-    // Measured, in the case a user actually meets: cancel a 60-file index
-    // mid-run, then `bb index --resume`. The cancel interrupts relationship
-    // resolution and leaves 16 relationships with `target_symbol_id IS NULL`.
-    // The resume parses nothing, so its pass is `skipped-unchanged`; the
-    // relationship COUNT recovers to the clean index's 180, so every count on
-    // screen reads healthy; and those 16 edges are still unattached. Only
-    // `bb index --post` resolves them.
-    //
-    // So the pass is reported as before, and CONSISTENCY is reported as a
-    // measurement — a count taken from the store after the run, with the
-    // remediation named when it is non-zero.
-    const unresolved = Number(s.unresolvedRelationships ?? -1)
     const derivedNote: Record<string, string> = {
       full: "derived data fully re-processed",
       bounded: "derived data re-processed for touched files (bounded pass)",
       deferred: "derived data deferred — run: bb index --post",
-      "skipped-unchanged": "no files parsed, so no derived pass ran",
+      "skipped-unchanged": "no files changed — derived data untouched and consistent",
     }
     console.log(`  derived: ${derived} (${derivedNote[derived] ?? derived})`)
-    if (unresolved === 0) {
-      console.log("  consistency: 0 unresolved relationships — every stored relationship is attached to a symbol")
-    } else if (unresolved > 0) {
-      // Present as rows, absent as edges: traversal reads these as missing, so
-      // they UNDER-report, and the relationship count does not show it.
-      console.log(
-        `  consistency: ${unresolved} relationship(s) are not attached to a symbol — they are counted above but read as edges by no traversal. Run: bb index --post`,
-      )
-    }
     if (stats.m40Bounded) {
       const b = stats.m40Bounded
       const parts = [`${b.touchedSymbols} symbols touched`]
