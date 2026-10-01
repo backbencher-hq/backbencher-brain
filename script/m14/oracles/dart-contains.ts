@@ -128,14 +128,24 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
               pushName(named(sf)[0]?.type === "identifier" ? named(sf)[0].text : undefined)
             }
           }
-          // a constructor: `Counter(this.value)` — the member is `constructor`
-          if (firstOfType(decl, "constructor_signature")) pushName("constructor")
+          // A CONSTRUCTOR, matched as a FAMILY. The corpus spells it four ways —
+          // `constructor_signature`, `constant_constructor_signature` (every
+          // `const Foo({super.key})`, which is most of a Flutter widget class),
+          // `redirecting_factory_constructor_signature`, and a factory — and
+          // matching one spelling misses the rest. Measured: enumerating them cost
+          // 2,548 rows on 1,294 files, and the missing one was the CONST spelling,
+          // which a battery written from `class D { D({int? x}); }` cannot see
+          // because that exact source text parses as the plain spelling.
+          if (named(decl).some((c: any) => c.type.includes("constructor") || c.type.includes("factory"))) pushName("constructor")
           break
         }
         case "method_signature": {
           const inner = named(decl)[0]
           if (!inner) break
-          if (inner.type === "factory_constructor_signature") { pushName("constructor"); break }
+          // `const C.zero() : this(0);` arrives as `method_signature >
+          // constant_constructor_signature`, so the family test has to be here too
+          // and not only on the `declaration` path.
+          if (inner.type.includes("constructor") || inner.type.includes("factory")) { pushName("constructor"); break }
           // A PLAIN constructor also arrives as `method_signature >
           // constructor_signature` — `class ContentBloc { ContentBloc({…}); }`
           // parses that way, NOT as `declaration > constructor_signature`. DARTD3
