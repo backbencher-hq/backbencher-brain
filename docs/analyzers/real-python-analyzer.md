@@ -154,7 +154,7 @@ two axes — **membership** (is the edge present) and **multiplicity** (is it pr
 *number* of times, which a set comparison cannot see and which is where PY-6's defect class
 lives).
 
-**It derives all nine types this analyzer emits**, on two axes, over 3,270 corpus files:
+**It derives all nine types this analyzer emits**, on two axes, over 3,271 corpus files:
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
