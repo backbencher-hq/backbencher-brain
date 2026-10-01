@@ -614,6 +614,17 @@ export function wrappedBodyAfter(header: Node): Node | null {
 }
 
 /**
+ * #985: the two node types tree-sitter-c uses for a macro in TYPE position.
+ *
+ * `git_array_t(size_t) line_index;` gives a `macro_type_specifier`;
+ * `FOO unsigned x;` (a macro applied to a base type) gives a
+ * `macro_prefixed_type_specifier`. Both hold the macro's OWN name as their first
+ * named child, which is why every list that treats "type node" as "not a
+ * declarator" has to name both -- see the field extractor's skip list.
+ */
+const MACRO_TYPE_NODES = ["macro_type_specifier", "macro_prefixed_type_specifier"]
+
+/**
  * #928: is this `field_declaration` a member the analyzer can NAME?
  *
  * A vendored C family declares fields through a macro:
@@ -3205,6 +3216,40 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   "enum_specifier",
                   ",",
                   "bitfield_clause",
+                  // #985. THE FIX. `git_array_t(size_t) line_index;` parses as
+                  //
+                  //   field_declaration
+                  //     macro_type_specifier   <- the TYPE, whose identifier is the
+                  //                                      MACRO'S OWN NAME
+                  //     field_identifier       <- the real member
+                  //
+                  // and this loop treats every child that is not a type node as a
+                  // DECLARATOR. A macro_type_specifier was in neither list, so it was
+                  // descended for its identifier and published as a member BESIDE the
+                  // real one:
+                  //
+                  //   contains git_blame -> git_array_t   <- phantom, clang has no such member
+                  //   contains git_blame -> line_index    <- correct
+                  //
+                  // #928 fixed the ADJACENT shape -- `BIT(closing);`, where the macro
+                  // owns the name and the declaration has no declarator at all, so
+                  // `fieldDeclarationHasDeclarator` refuses it. This is the shape
+                  // #928's test cannot see, because here a declarator IS present: the
+                  // macro is the TYPE, and a separate declarator names the member.
+                  // Measured over the four declared corpora (3,997 files): 60 phantom
+                  // `contains` edges, 48 of them beside the correct member, across 19
+                  // macro names -- git_array_t x13 (libgit2), ql_elm x11 / ql_head x5 /
+                  // rb_node x5 (jemalloc), STACK_OF (curl), HRESULT and ULONG
+                  // (libgit2's winhttp header), GIT_ALIGN, plus C++-header debris
+                  // (noexcept, decltype, operator) that tree-sitter-c parses out of
+                  // libstdc++/libc++. clang's independent judgement of the libgit2 half
+                  // reports them as PHANTOM members.
+                  //
+                  // This is the #928 defect verbatim -- a member named after a macro,
+                  // a name no C declaration in the file gives to any member. It is NOT
+                  // C-D2: the real member (`line_index`, `sk`, `cols`) is in the parse
+                  // and is already published, so only the duplicate goes.
+                  ...MACRO_TYPE_NODES,
                 ],
                 rawDecl.type,
               )
@@ -3481,6 +3526,40 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   "enum_specifier",
                   ",",
                   "bitfield_clause",
+                  // #985. THE FIX. `git_array_t(size_t) line_index;` parses as
+                  //
+                  //   field_declaration
+                  //     macro_type_specifier   <- the TYPE, whose identifier is the
+                  //                                      MACRO'S OWN NAME
+                  //     field_identifier       <- the real member
+                  //
+                  // and this loop treats every child that is not a type node as a
+                  // DECLARATOR. A macro_type_specifier was in neither list, so it was
+                  // descended for its identifier and published as a member BESIDE the
+                  // real one:
+                  //
+                  //   contains git_blame -> git_array_t   <- phantom, clang has no such member
+                  //   contains git_blame -> line_index    <- correct
+                  //
+                  // #928 fixed the ADJACENT shape -- `BIT(closing);`, where the macro
+                  // owns the name and the declaration has no declarator at all, so
+                  // `fieldDeclarationHasDeclarator` refuses it. This is the shape
+                  // #928's test cannot see, because here a declarator IS present: the
+                  // macro is the TYPE, and a separate declarator names the member.
+                  // Measured over the four declared corpora (3,997 files): 60 phantom
+                  // `contains` edges, 48 of them beside the correct member, across 19
+                  // macro names -- git_array_t x13 (libgit2), ql_elm x11 / ql_head x5 /
+                  // rb_node x5 (jemalloc), STACK_OF (curl), HRESULT and ULONG
+                  // (libgit2's winhttp header), GIT_ALIGN, plus C++-header debris
+                  // (noexcept, decltype, operator) that tree-sitter-c parses out of
+                  // libstdc++/libc++. clang's independent judgement of the libgit2 half
+                  // reports them as PHANTOM members.
+                  //
+                  // This is the #928 defect verbatim -- a member named after a macro,
+                  // a name no C declaration in the file gives to any member. It is NOT
+                  // C-D2: the real member (`line_index`, `sk`, `cols`) is in the parse
+                  // and is already published, so only the duplicate goes.
+                  ...MACRO_TYPE_NODES,
                 ],
                 rawDecl.type,
               )
