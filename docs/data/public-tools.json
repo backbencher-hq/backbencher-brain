@@ -551,6 +551,16 @@
             "type": "boolean",
             "description": "include test/spec sources. Default true: they are ordinary source. When false, test/spec/testdata directories and *_test.* / *spec.* files are excluded and counted"
           },
+          "view": {
+            "type": "string",
+            "enum": [
+              "graph",
+              "codemap",
+              "class"
+            ],
+            "default": "graph",
+            "description": "which picture of the project to draw. `graph` (default) is the force-directed dependency map: nodes are symbols, lines are relationships, sized by stored evidence. `codemap` is a CODE MAP in the spirit of the Sourcegraph Chromium map: a squarified treemap where one rectangle is one SYMBOL, sized by the lines it spans, nested inside its file and its top-level directory — so the shape of a codebase, the density of its definitions, and what each file is made of are all visible at once. IMPORTANT AND EXACT: this is a symbol-level map, not a token-level one. The index stores symbols with line spans and kinds, not tokens, so `codemap` draws symbols and says so in its own legend. `class` is a UML-style class diagram: boxes for classes, interfaces, structs and enums, with inheritance, implementation and containment edges. It is only as complete as the index, and it DECLARES what it could not resolve rather than quietly drawing a partial diagram. The view is independent of `format`, so `view` composes with every output format."
+          },
           "format": {
             "type": "string",
             "enum": [
@@ -605,7 +615,8 @@
         "`declaredAbsent` with an `absenceNote` when the answer is empty, distinguishing what matched nothing from what matched but did not survive the projection",
         "Text, JSON, or genuinely SELF-CONTAINED HTML: one file with no network, no fonts and no build step, carrying its own force-directed layout and canvas renderer, so it renders offline and in an air-gapped editor",
         "In the HTML the evidence is ENCODED rather than decorated: edge opacity is stored confidence, relationship type sets colour and a structural/behavioural dash, a cross-language edge gets its own wide dash and is drawn beneath the local edges, a stale endpoint is a hollow ring, node size is the index's own gravity, and any node or edge can be selected to read its stored facts",
-        "The DEFAULT text format carries the same declared coverage, selection and exclusion as the JSON one, so the reply a caller gets without asking is the reply that can be audited"
+        "The DEFAULT text format carries the same declared coverage, selection and exclusion as the JSON one, so the reply a caller gets without asking is the reply that can be audited",
+        "`view` — an axis INDEPENDENT of `format`, so every view composes with every delivery form. `graph` is the force-directed dependency map; `codemap` is a Sourcegraph-style rectangular code map; `class` is a UML-style class diagram. The chosen view rides the result as `view`, so a caller can tell which picture an answer describes"
       ],
       "errors": [
         "Missing target for a scoped graph",
@@ -622,9 +633,13 @@
         "SCOPE TARGETS ARE VALUES, not patterns. `%` and `_` match themselves and a directory prefix matches on a segment boundary, so `src/util` never reaches `src/utilities`. This matches bb_analyze, whose contract states the same rule; the two tools previously disagreed, and this one was the permissive one (measured: a target of `%` selected every file in the corpus)",
         "LANGUAGE FILTERS ARE APPLIED BEFORE THE LIMIT, not after it. They used to be applied in memory to an already-truncated selection ordered by gravity, so a language whose symbols were not in that slice was cut before the filter ran: measured on cargo, `languages: ['javascript']` returned 0 nodes and declared the project had none, while the index held 56 javascript symbols — and the declared total counted the language in SQL while the returned nodes did not, so one reply contradicted itself. `relationshipTypes` deliberately filters edges rather than nodes, and says so: a caller narrowing edges must not change which nodes exist",
         "`feature` scope matches a symbol NAME or a docstring. The docstring half is thin in practice and the answer does not pretend otherwise: measured on cargo, 70 of 40,595 symbols (0.17%) carry one, so a feature query is usually a name match",
-        "Nodes and links beyond configured budgets are omitted and reported"
+        "Nodes and links beyond configured budgets are omitted and reported",
+        "`view: codemap` is SYMBOL-LEVEL, not token-level, and the artifact says so in its own legend. The index stores symbols with line spans and kinds; it stores no tokens, so a character-level code map would be promising a resolution the data does not have. Directories are named RELATIVE to the scope target, because grouping by the path's top segment gave a scoped call exactly one group — a treemap of a single rectangle",
+        "`view: class` is only as complete as the index, and it SPLITS what it could not draw rather than reporting one number. Relationships to a type this scope did not select (`outside`) and relationships to a selected field, method or enum member (`members`) are different failures: conflating them made the diagram claim a missing class hierarchy where none was missing — MEASURED on cargo's src/compiler, the old single figure read 969 while the index holds 2 `implements` relationships there and 967 of the rest were `contains` links pointing at fields. Members are now DRAWN in each box from those same containment links",
+        "`view: class` ORDERS TYPES BEFORE METHODS, because gravity on a real project belongs to the functions that do the work and the types inheritance connects would otherwise be cut by the query's own LIMIT. MEASURED: with the plain ordering a module scope put 135 types past the limit behind 1,200 methods and drew 1 arrow out of 970; type-like symbols are now ordered first, and where a narrow scope selects types from elsewhere in the project to make an inheritance edge drawable, the count is declared in `considered.nodeSelection`",
+        "A class diagram of many types cannot be legible as an overview. Rows wrap into a grid rather than running off both edges, the initial fit is clamped to a readable scale, and `fit all` overrides that clamp"
       ],
-      "performance": "maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction.",
+      "performance": "maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction. `view` changes the picture, not the budget: codemap and class read the same node and edge sets as graph, and the class view's type-first ordering is a sort on an index-backed column.",
       "safety": "Read-only. HTML output contains the same bounded graph as JSON and does not mutate the project.",
       "evidence": "Nodes and links resolve to canonical indexed entities; links with omitted endpoints are not emitted."
     },
