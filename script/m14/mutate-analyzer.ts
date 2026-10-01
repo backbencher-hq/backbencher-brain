@@ -8489,6 +8489,22 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "rust/import-range-reverts-to-declaration",
+    language: "rust",
+    defectClass: "relationship-line-fabrication",
+    description: "RUST-D27: every row of a MULTI-LINE top-level use group took the range of the whole declaration, so all of them pointed at the `use {` line \u2014 a line bearing none of the paths they name. 56 such records in ripgrep alone, found by the first line audit ever run over the imports channel, which until then had examined ZERO records because imports are not relationships. This mutant reproduces the fault EXACTLY: the three fixture rows sit at lines 22-24 while their `use {` is on line 20, so collapsing an indented row's line onto the nearest earlier `use` line is the pre-fix behaviour, not an approximation of it.",
+    transform: (r: any) => ({
+      ...r,
+      imports: (r.imports ?? []).map((im: any) => {
+        const rg = im.range
+        if (!rg || typeof rg.startLine !== "number") return im
+        const col = typeof rg.startColumn === "number" ? rg.startColumn : 1
+        if (col <= 4) return im                       // a top-level path is already right
+        return { ...im, range: { ...rg, startLine: rg.startLine - 2, endLine: rg.endLine - 2 } }
+      }),
+    }),
+  },
+  {
     id: "rust/absolute-use-path-doubles-segment",
     language: "rust",
     defectClass: "relationship-corruption",
