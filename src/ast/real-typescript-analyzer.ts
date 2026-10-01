@@ -7,7 +7,6 @@ import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
 import { ASTEngine } from "./engine"
 import * as path from "path"
 import * as fs from "fs"
-import { treeContainsNodeType } from "./node-walk"
 
 // ============================================================================
 // BUILTIN FILTER - C#-family contract
@@ -1905,11 +1904,6 @@ class TypeScriptAnalysisRunner {
     // Initialize module resolver with project root
     const projectRoot = this.findProjectRoot(filePath)
     this.moduleResolver = new TypeScriptModuleResolver(projectRoot)
-
-    // PERF: one pre-pass so `inDecoratorPosition` can answer `false` without an
-    // ancestor walk per node. See that method for the measurement — this lane read
-    // `.type` 133.7 times per node before it, the worst ratio in the corpus.
-    this.hasAnyDecoratorNode = treeContainsNodeType(rootNode, "decorator")
 
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -4204,30 +4198,7 @@ class TypeScriptAnalysisRunner {
    * body a decorator position (its decorators are siblings of
    * method_definition, never ancestors of the body).
    */
-  /**
-   * Whether the file being analyzed contains any `decorator` node. Set once per
-   * `analyze`; see the short-circuit in `inDecoratorPosition` for the measurement.
-   */
-  private hasAnyDecoratorNode = false
-
   private inDecoratorPosition(n: Node): boolean {
-    // PERF (2026-09-30, measured). This predicate was copy-pasted from the
-    // JavaScript analyzer, comments and all, and carried the same defect: it can
-    // only return `true` when some ancestor is a `decorator`, and it walked the
-    // ancestor chain once per node to find out. On
-    // `aspnetcore/src/SignalR/clients/ts/signalr/tests/HttpConnection.test.ts`
-    // (12,054 nodes) the TypeScript lane reads `.type` **133.7 times per node** —
-    // the worst ratio in the corpus — and a CPU profile attributed **32.1%** of
-    // samples to this function alone (25.2% `ts_node_child_with_descendant`, 3.9%
-    // `ts_node_symbol`, 3.0% `ts_node_parent`).
-    //
-    // The short-circuit is exactly equivalent: no `decorator` node in the tree
-    // means no decorator ancestor, so the walk below cannot return `true`. One
-    // pre-pass with an early exit decides it. The walk itself is untouched for
-    // files that DO use decorators, including the TS-only
-    // `abstract_class_declaration` boundary, which is per-grammar policy and
-    // stays here rather than in the shared helper.
-    if (!this.hasAnyDecoratorNode) return false
     let p: Node | null = n.parent
     while (p) {
       if (p.type === "decorator") return true

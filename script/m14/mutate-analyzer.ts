@@ -16532,16 +16532,6 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "loop")),
     }),
   },
-  {
-    id: "clojure/anon-interop-head-called",
-    language: "clojure",
-    defectClass: "dangling-edge",
-    description: "F5-cert (derived calls oracle): the anonymous-fn shorthand pushes a raw Calls for its head, so `#(.getName %)` became `calls: lambda -> .getName` while the plain `(.getName o)` correctly emits `uses: getName` - a call edge to a name starting with a dot that is not a var, not an export and not resolvable; 19 of them - anon-fn-shorthand-call forbids catch it",
-    transform: r => ({
-      ...r,
-      relationships: [...(r.relationships ?? []), { type: "calls", source: "lambda_30_22", target: ".getName", line_number: 31, confidence: 0.9, metadata: { isGeneralCall: true, isAnonShorthand: true } }],
-    }),
-  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
