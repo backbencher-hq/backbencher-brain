@@ -280,6 +280,27 @@ CREATE INDEX IF NOT EXISTS brain_sym_proj_file_idx ON brain_symbol(project_id, f
       CREATE INDEX IF NOT EXISTS brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type);
 CREATE INDEX IF NOT EXISTS brain_sym_proj_name_type_idx ON brain_symbol(project_id, name, symbol_type);
 
+-- MEASURED (bb_visualize on cargo: 2,071 files, 40,595 symbols, 164,767
+-- relationships): bb_visualize's project scope orders symbols by gravity_score to
+-- pick the project's busiest core, and SQLite had no index that could supply that
+-- order, so it materialised and sorted ALL 40,595 rows into a temp B-tree on every
+-- single call. Interleaved A/B, min of 6: 570.6 ms without this index, 2.8 ms with
+-- it -- 139x -- and the plan changes from
+--     SCAN f | SEARCH s ... | USE TEMP B-TREE FOR ORDER BY
+-- to
+--     SEARCH s USING INDEX brain_symbol_gravity_idx (project_id=?)
+-- which is a noise-free fact: the sort is gone, not merely faster.
+--
+-- line_start is the tie-breaker so the order is total and a render is reproducible.
+--
+-- Deliberately NOT added, having measured both:
+--   * brain_relationship(project_id, source_symbol_id, target_symbol_id) -- 4.4 s to
+--     build on cargo, and it made the joined edge fetch 38x SLOWER (18.8 ms ->
+--     714.4 ms), because the existing brain_rel_proj_source_idx already answers that
+--     query better. An index that costs four seconds of every index run to lose a
+--     benchmark is not an optimisation.
+CREATE INDEX IF NOT EXISTS brain_symbol_gravity_idx ON brain_symbol(project_id, gravity_score DESC, line_start);
+
 CREATE INDEX IF NOT EXISTS brain_rel_proj_target_idx ON brain_relationship(project_id, target_symbol_id);
 CREATE INDEX IF NOT EXISTS brain_rel_proj_source_idx ON brain_relationship(project_id, source_symbol_id);
 CREATE INDEX IF NOT EXISTS brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type);
@@ -448,6 +469,33 @@ export function ensureEmbeddingBlobColumn(raw: any): void {
  * and 0 identically, so an un-migrated DB keeps the previous resolution order
  * until a re-index writes the real value.
  */
+/** Add the indexes a READ-heavy tool needs to an ALREADY-CREATED database.
+ *
+ *  DDL above only runs for a fresh database, and the database every editor and
+ *  verifier opens is a pre-existing one — the wiring mistake the M22.W2 comment in
+ *  database.ts warns about. So a new index that only exists in the DDL is an index
+ *  nobody has.
+ *
+ *  brain_symbol_gravity_idx is the measured case. MEASURED on cargo (2,071 files,
+ *  40,595 symbols): with it absent, bb_visualize's project scope materialised and
+ *  sorted ALL 40,595 symbols into a temp B-tree on every call, because no index
+ *  supplied the gravity ordering. Interleaved A/B, min of 6: 570.6 ms without,
+ *  2.8 ms with, and the plan loses "USE TEMP B-TREE FOR ORDER BY" entirely.
+ *
+ *  It costs one `CREATE INDEX IF NOT EXISTS` probe per open, which is a catalog
+ *  lookup when the index exists and an O(n log n) build when it does not — the same
+ *  trade every additive migration here already makes. */
+export function ensureQueryShapeIndexes(raw: any): void {
+  try {
+    const names = (raw.prepare("PRAGMA index_list(brain_symbol)").all() as Array<{ name: string }>).map((i) => i.name)
+    if (names.length === 0) return // table absent; fresh DB handled by the DDL
+    if (names.includes("brain_symbol_gravity_idx")) return
+    raw.exec(
+      "CREATE INDEX IF NOT EXISTS brain_symbol_gravity_idx ON brain_symbol(project_id, gravity_score DESC, line_start)",
+    )
+  } catch {}
+}
+
 export function ensureSymbolDeclarationColumn(raw: any): void {
   try {
     const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)

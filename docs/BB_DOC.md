@@ -239,6 +239,58 @@ affects.
 - **Extracted** facts are directly present in indexed source or tables: names,
   signatures, line bounds, imports, exports, relationship types, and measured
   complexity.
+- **A signature reports the arguments the index holds, and claims none it does
+  not.** A signature was rendered `name()` whenever the `parameters` column was
+  empty, which asserts the symbol takes no arguments. Reading the declaration off
+  disk for every sampled callable with an empty column, across six languages:
+  **1 218 of 1 218 have a real parameter list**, excluding declarations whose
+  list is genuinely empty or C's explicit `(void)`. `Malloc(size_t size)` was
+  rendered `Malloc()`; `application(app)` in Ruby was rendered `application()`.
+  14 267 `function` and 2 702 `method` symbols across the eight corpora were
+  affected, and the fixture could not have caught it — it holds one callable with
+  a parameter list and none without.
+  An absent list now renders as an absent list: the parentheses are omitted, and
+  the caveat rides on the signature itself rather than only in `limitations`,
+  because that fact is rendered as this mode's API and as `feature` mode's Entry
+  points and a bare name invites exactly the wrong reading. The caveat is
+  **measured per project, not looked up in a list**: the generator asks the index
+  which symbol kinds it records parameter lists for, and a symbol of such a kind
+  without one is a gap the document names. A hand-written list of "kinds that
+  take arguments" is a guess, and it was wrong in both directions — it excluded
+  `property`, which does carry parameter lists for 343 symbols in the typescript
+  index, and it would have attached a caveat to every field in a project whose
+  index never records them. The measured rule gets `rake` right (209 `method`,
+  3 `function`, so no `property` caveat) and `typescript` right (11 071
+  `function`, 10 856 `method`, 343 `property`, 132 `constructor`), with nothing
+  to maintain as analyzers add symbol kinds.
+
+  **A signature also shows the types the index records.** The `parameters` column
+  holds a JSON list of `{name, type, isOptional}` for **82.8% of the 6 007 entries
+  measured across the eight corpora**, and the renderer read `name` and discarded
+  the rest — so `Join(s S)` was documented as `Join(s)`. A section named Inputs
+  and outputs was reporting the names of the inputs and nothing about their types,
+  from a row it had just read. Discarding evidence you have already loaded is the
+  same defect as asserting something the index does not support, pointed the other
+  way. Three rules, each from what the data holds: a recorded type is shown, an
+  absent one is omitted rather than guessed, and `isOptional` is stated in words
+  because `name?: type` is TypeScript syntax and would be wrong in a Go document
+  (17 entries, so the wording costs nothing and discards nothing).
+
+  **A statement is a sentence about source, not markdown.** Every character
+  markdown would act on is neutralised before rendering, while the citation
+  markers — appended after the statement, and the only links in the document — are
+  left alone. This was already a hazard: a Go return type of `*Server` reached the
+  page unescaped, and a statement quoting `map[string]*Server` would render the
+  middle as italics. Rendering the indexed parameter types multiplied the
+  exposure, since 1 105 of the measured types contain `*`.
+
+  Those kinds cannot be settled by reading source instead, and the attempt is
+  worth recording: scanning one line for a bracket pair after the name reported
+  **100% for every type** — `variable Is(require("./is"))`,
+  `enum_member Key(enum)`, `class Symbol(members/exports/parent)` — because a
+  one-line window cannot tell a declaration's argument list from a call or a cast
+  on the same line. A measurement that returns the same answer for everything is
+  a measurement of nothing.
 - **Inferred** facts are bounded conclusions supported by multiple evidence
   items, such as “this symbol is an entry point because it is exported and has
   incoming route-like references.” They include confidence and citations.
@@ -465,10 +517,55 @@ code was taken for it: D1 is the mode and option contract, D2 citation
 resolution and freshness, and D3 examples and diagrams, so none of the three
 covers statement truth and result self-consistency.
 
+**The gates are mutation-audited.** A gate never shown to fail on a broken tool
+is not evidence, so `script/m31/verify-gate-selftest.ts` plants a defect in the
+doc engine or the MCP handler, requires the gate to go red, and removes the
+checkout. One mutation per failure class, all five detected, every control
+passing:
+
+| entry | mutation reintroduced |
+|---|---|
+| `m20-doc-truth-cap` | the per-section cap measured but not applied |
+| `m20-doc-truth-signature` | `name()` for a symbol with no indexed parameter list |
+| `m20-doc-modes-contract` | the invalid-mode guard removed |
+| `m20-doc-citations-freshness` | every source reporting `fresh` |
+| `m20-doc-examples-honest` | the honest `not-observed` unknown removed |
+
+That work also fixed three defects in the audit itself, which are recorded
+because each one manufactured false confidence: it invoked every gate through a
+runtime that was not installed on the machine it ran on, so the whole audit
+could not execute; it counted a gate that CRASHED on startup as a gate that
+DETECTED the mutation; and the subset filter added for convenience could stamp a
+partial run into the file that records the full audit. A mechanism that reports
+success without checking is worse than no mechanism, because it is believed.
+
 The same predicates run against real repositories by
 `fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
-**382 checks pass, 0 fail, 1 disclosed skip, 56/56 negatives proved able to
-fail**, over `rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`
-and `perl5` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript and Perl. A corpus
-that is absent or too small to be meaningful is recorded as `skipped` with the
-reason, never as `passed`.
+**500 checks pass, 0 fail, 0 skip, 80/80 negatives proved able to fail**, over
+`rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`, `perl5`,
+`openssl` and `cpython` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript, Perl, C
+and Python. A corpus that is absent or too small to be meaningful is recorded as
+`skipped` with the reason, never as `passed`.
+
+There were no skips to declare. The gate's one skip was removed rather than
+disclosed: it derives a directory prefix from the file holding the most symbols,
+and on perl5 that file is `proto.h`, which is top-level, so the prefix-resolution
+check was skipped while 4 069 of the corpus's 4 224 files sat nested and unused.
+Nothing about a prefix depends on how symbol-dense a file is, so the check now
+falls back to a nested file from the index and says so — *"perl5's densest file
+proto.h is top-level; the prefix check uses the nested file Porting/config.sh
+instead"* — and skips only when the corpus genuinely holds no nested file. A
+coverage loss dressed as an honest skip is the worst of both.
+
+The two C-family and Python corpora were added because two languages had no
+coverage at all, and they earned their place immediately — they produced the
+slowest measured corpus, and the timing bound this tool's own gate uses had to be
+re-derived from measurement rather than assumed.
+
+**The wall-clock bound is derived, not chosen.** Feature mode over the ten
+corpora runs in 467 ms (clojure) to 6 135 ms (cpython, 189 518 symbols) warm. The
+bound was 10 s, which left 1.67x headroom over the slowest — and the first cpython
+run failed on it while unrelated indexing saturated the machine, which is a
+measurement of the scheduler, not of the tool. It is now 20 s, which still catches
+a 3.3x regression, and every run prints its own headroom so the margin is never
+invisible. The tightest corpus is zig at 4 265 ms.

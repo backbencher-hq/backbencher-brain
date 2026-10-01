@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64c",
+  "tool": "bb_health",
+  "title": "bb_health completeness: files on disk that the index does not contain, computed with the indexer's own rules",
+  "verifiedState": "verified",
+  "layers": [
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "a complete index reports zero unindexed files",
+      "pass": true,
+      "detail": "unindexedCount=0 (eligible=5 indexed=5)"
+    },
+    {
+      "name": "the clean case still states the population it measured",
+      "pass": true,
+      "detail": "unindexed: none — all 5 indexable file(s) on disk are in the index (excludes files the indexer skips by rule: gitignored, node_mod"
+    },
+    {
+      "name": "and says what it excludes, so the number cannot be over-read",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "files created after the index ran ARE reported as unindexed",
+      "pass": true,
+      "detail": "unindexedCount=4, files=[\"src/new0.ts\",\"src/new1.ts\",\"src/new2.ts\",\"src/new3.ts\"]"
+    },
+    {
+      "name": "and it names them",
+      "pass": true,
+      "detail": "[\"src/new0.ts\",\"src/new1.ts\",\"src/new2.ts\",\"src/new3.ts\"]"
+    },
+    {
+      "name": "the status row did NOT change, so a subtraction would have said '0 unindexed'",
+      "pass": true,
+      "detail": "total_files 5->5, indexed_files 5->5 — the false clean this replaces"
+    },
+    {
+      "name": "the cheap version would have been WRONG by exactly the new files",
+      "pass": true,
+      "detail": "total-indexed = 0; the computed answer is 4"
+    },
+    {
+      "name": "a warning names them and the fix",
+      "pass": true,
+      "detail": "4 file(s) on disk are not in the index: src/new0.ts, src/new1.ts, src/new2.ts, src/new3.ts. The indexer would index these, so it has not run since the"
+    },
+    {
+      "name": "the warning is a warning, not an error",
+      "pass": true,
+      "detail": "unindexed files do not make the index unusable"
+    },
+    {
+      "name": "eligibleOnDisk grew by exactly the new files",
+      "pass": true,
+      "detail": "5 -> 9"
+    },
+    {
+      "name": "indexed count did NOT grow (nothing was indexed)",
+      "pass": true,
+      "detail": "5 -> 5"
+    },
+    {
+      "name": "indexing one of them reduces the gap by exactly one",
+      "pass": true,
+      "detail": "unindexedCount=3 (was 4)"
+    },
+    {
+      "name": "a full refresh closes it entirely",
+      "pass": true,
+      "detail": "unindexedCount=0"
+    },
+    {
+      "name": "node_modules is NOT reported as unindexed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "dist/ is NOT reported (the indexer's compiled-mode filter)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a .png is NOT reported (no supported extension)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a .txt is NOT reported (no supported extension)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a gitignored file is NOT reported (.gitignore is honoured)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a >5MB file is NOT reported (the indexer's size skip)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the one real source file is accounted for as indexed, not unindexed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "so the answer is a clean zero over a noisy tree",
+      "pass": true,
+      "detail": "unindexedCount=0 eligibleOnDisk=1"
+    },
+    {
+      "name": "discoverIndexableFiles returns the same count the report measured",
+      "pass": true,
+      "detail": "direct=1 report=1"
+    },
+    {
+      "name": "and it contains the real source file",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": ".bbignore narrows the walk (the indexer's own rule, honoured here)",
+      "pass": true,
+      "detail": "1 -> 0"
+    },
+    {
+      "name": "and the now-excluded file is NOT reported as unindexed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "without the option, `unindexed` is NULL, not zero",
+      "pass": true,
+      "detail": "unindexed=null"
+    },
+    {
+      "name": "null is distinguishable from a measured zero",
+      "pass": true,
+      "detail": "a caller must be able to tell NOT CHECKED from CHECKED AND CLEAN"
+    },
+    {
+      "name": "and the default output makes no completeness claim at all [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "no unindexed line (correct: the walk was not run)"
+    },
+    {
+      "name": "and no UNINDEXED_FILES warning is invented [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "warnings=[]"
+    },
+    {
+      "name": "a failed walk yields null, never an empty result",
+      "pass": true,
+      "detail": "unindexed=null"
+    },
+    {
+      "name": "and raises UNINDEXED_SCAN_FAILED",
+      "pass": true,
+      "detail": "could not compare the index against disk: ENOENT: no such file or directory, stat '/var/folders/4j/11tssyqj4kj0f8dfz06js"
+    },
+    {
+      "name": "whose message says completeness is UNKNOWN, not verified",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "and the output does not print a clean 'unindexed: none' [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "an empty gap here would be the exact false clean this replaced"
+    },
+    {
+      "name": "it prints UNKNOWN instead",
+      "pass": true,
+      "detail": "unindexed: UNKNOWN — the scan failed, so index completeness is NOT verified"
+    },
+    {
+      "name": "the walk does NOT mutate the index",
+      "pass": true,
+      "detail": "brain_file 3 -> 3 — a read-only tool that pruned rows would be worse than the bug it fixed"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 35,
+    "passed": 35,
+    "failed": 0
+  },
+  "decisions": {
+    "computed": "the gap is computed by walking, never derived from the last run's total_files - indexed_files, which is a false clean",
+    "rules": "the walk is the indexer's own discoverIndexableFiles, extracted as an additive mode — not a second copy of discovery",
+    "optIn": "a stat per eligible file is a real cost, so it is opt-in and its absence is never reported as completeness",
+    "failure": "a failed walk reports UNKNOWN, never an empty gap"
+  },
+  "limitations": [
+    "The >5MB size skip and the shell-shebang gate are properties of the indexer's discovery; this gate proves they are SHARED by asserting a >5MB file is excluded, but does not re-derive the threshold."
+  ],
+  "generatedAt": "2026-10-01T03:23:47.896Z"
+}
