@@ -341,18 +341,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "sym_lit") {
         const name = node.childForFieldName("name")
         const ns = node.childForFieldName("namespace")
-        // CLJ-D54: A QUALIFIED SYMBOL'S PREFIX MAY CARRY METADATA, and the metadata is
-        // not the namespace. metabase/util/yaml.clj requires
-        // `^{:clj-kondo/ignore [:discouraged-namespace]} [clj-yaml.core :as yaml]`, so the
-        // symbol `yaml/YAMLCodec` has a metadata-decorated prefix and this returned
-        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec` as an `implements`
-        // TARGET - a type that is not a type, unresolvable by anything that reads the
-        // graph. The prefix's own `name` field is the bare symbol, so read that instead
-        // of the node text; it costs nothing when there is no metadata.
-        const nsText = ns && (ns.text ?? "").startsWith("^{")
-          ? (ns.childForFieldName("name")?.text ?? ns.text)
-          : (ns?.text ?? "")
-        if (name && nsText) return `${nsText}/${name.text}`
+        if (name && ns) return `${ns.text}/${name.text}`
         if (name) return name.text
         return node.text
       }
