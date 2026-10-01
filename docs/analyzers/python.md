@@ -180,5 +180,5 @@ Filed in the review, not fixed, each with the reason:
   (p50 55 ms, p99 2,497 ms, 8 files = 41% of the time), so the mean describes no file in it.
   Budget on total time and p95 instead.
 - **PY-19** — content over **1 MiB** is truncated before parsing and only a log line records it.
-  1 of 3,270 corpus files is affected (`cython/tests/run/extsubscript.py`, 357 KiB / 25% of it
+  1 of 3,271 corpus files is affected (`cython/tests/run/extsubscript.py`, 357 KiB / 25% of it
   never parsed). Cross-lane, in `engine.ts`.
