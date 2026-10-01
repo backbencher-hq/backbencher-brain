@@ -166,23 +166,35 @@ a corpus data artifact, disclosed).
 
 ## Differential ground truth and evidence
 
-- Truth side: `script/m14/differential.ts` → `deriveClojureEdges`, mirroring CLJ-D1…D29
-  rule for rule. It imports `CLOJURE_CORE_BUILTINS` and `isAnonArgShorthand` **by reference** so
-  the core surface cannot drift between the two sides.
+- Truth side: **`script/m14/clojure-truth.ts`**, read by `script/m14/tmp/clj-full-f5.ts`,
+  which OWNS the derivation rather than importing it. `differential.ts` used to supply
+  `deriveClojureEdges`, and delegating to the derived oracle from there worked twice
+  before a co-agent's commit reverted it — silently turning every measurement back into
+  a measurement of the legacy oracle while the harness printed numbers that looked
+  fine. A truth oracle belongs in a file its owner keeps; one a co-agent's commit can
+  revert is not a gate, it is a report. It imports `CLOJURE_CORE_BUILTINS` and
+  `isAnonArgShorthand` **by reference** so the core surface cannot drift.
 - **F5, four corpora at full extent** (not a 60-file draw), read with
-  `script/m14/tmp/clj-full-f5.ts` — which imports this repo's own `deriveClojureEdges` and
-  `normTarget` and re-implements the harness's comparison semantics, so the number is the
-  same claim `differential.ts` makes over every file instead of 60. (The cross-check has
-  already earned its place: it is what caught a harness defect — a `//` comment that had
-  deleted the `calls` label for 17 lanes — which read as a 19.8% coverage red for this lane
-  while the analyzer was correct. See `reviews/clojure/deep-review-2026-09-28.md`, CLJ-H1.)
+  `script/m14/tmp/clj-full-f5.ts`. Measured 2026-10-01 on the committed tree:
 
-  | corpus | files | tree-truth | covered | MISSING | analyzer edges | unexplained |
-  |---|---|---|---|---|---|---|
-  | `clojure/clojure` | 143 | 6,875 | 6,875 (100%) | 0 | 3,279 | 0 |
-  | `clj-kondo` | 444 | 8,087 | 8,087 (100%) | 0 | 4,456 | 0 |
-  | `core.async` | 46 | 2,108 | 2,108 (100%) | 0 | 1,047 | 0 |
-  | `metabase/metabase` | 4,253 | 239,192 | 239,192 (100%) | 0 | 122,916 | 0 |
+  | corpus | files | truth | covered | MISSING | analyzer edges | unexplained | error nodes |
+  |---|---|---|---|---|---|---|---|
+  | `clojure/clojure` | 143 | 6,397 | 6,392 (99.92%) | 5 | 3,123 | 27 | 0 |
+  | `clj-kondo` | 444 | 7,965 | 7,837 (98.39%) | 128 | 4,433 | 111 | 2 |
+  | `core.async` | 46 | 2,005 | 1,959 (97.71%) | 46 | 1,009 | 28 | 0 |
+  | `metabase/metabase` | 4,253 | 232,780 | 230,831 (99.16%) | 1,949 | 122,500 | 2,261 | 1 |
+
+  **This table used to claim 100% coverage and zero unexplained on all four corpora.**
+  It was written against the legacy hand-rolled oracle, before `calls` was derived at
+  all, and nothing had re-measured it since — a stale number in a documentation table
+  is indistinguishable from a true one, which is the whole reason it has to be
+  measured rather than remembered. The honest reading: `calls` is near-clean on
+  `clojure` (5 missing, 27 unexplained) and has real residuals on the other three,
+  `metabase` most of all. `heuristic=0` everywhere.
+  (The cross-check has already earned its place: it is what caught a harness defect —
+  a `//` comment that had deleted the `calls` label for 17 lanes — which read as a
+  19.8% coverage red for this lane while the analyzer was correct. See
+  `reviews/clojure/deep-review-2026-09-28.md`, CLJ-H1.)
 
 - **F1 at scale**: 35 distinct node types over metabase's 4,253 files, every one classified
   against the spec's handled/silent sets, **0 unclassified**, 0 placeholder names, 0 empty names.
@@ -195,8 +207,9 @@ a corpus data artifact, disclosed).
   `validation/m12/results/clojure-differential.json`; corpus sample
   `validation/m12/results/clojure-corpus-sample.txt`; complexity
   `validation/m12/results/clojure-complexity.json`.
-- Fixtures: `validation/m14/fixtures/clojure/` (42); mutants: `script/m14/mutate-analyzer.ts`
-  (63 clojure mutants, all CAUGHT).
+- Fixtures: `validation/m14/fixtures/clojure/` (**62**); mutants: `script/m14/mutate-analyzer.ts`
+  (**102** clojure mutants, all CAUGHT, 0 survived). Both numbers verified 2026-10-01;
+  the previous values here were 42 and 63.
 
 ## Regex inventory
 
@@ -243,11 +256,35 @@ The rest: **`D32`** static `Class/.member` emitted `calls -> String/.toUpperCase
 
 **Two of the nine were found by the fixtures while being written**, and one of those reversed a rule I had just invented: `CLJ-D34`. I had distinguished a file that *declares* `(in-ns 'user)` from one that merely *falls back* to `user`, and skipped containment for the second. The fixture pair refused it — the export pass's own invariant fired with *"export `undeclared-fn` does not resolve to a top-level symbol (membership rides Contains)"*. Withholding the membership while keeping the export is the one option that cannot be made consistent, and Clojure *does* intern into the ambient namespace, so the simpler rule is also the true one.
 
-### The four classes that are measured but not yet enforced
+### Which classes are enforced, and which are still reported
 
-`references`, `instantiates`, `implements` and `extends` are derived and printed with their residuals, but they do **not** decide the gate's verdict. Their derivations are real and incomplete — `implements` reads 26 truth edges against 444 emitted, which indicts the rule, not the analyzer — and enforcing an incomplete oracle produces a gate that fails on correct output, and a gate that cries wolf gets muted and then catches nothing. `--strict` enforces them for whoever works on them.
+**Enforced** — these decide the gate's verdict and currently measure 100.00% with
+zero missed and zero fabricated:
 
-`calls` is the one label this gate does not touch: it has its own F5 differential, whose truth lives in the **shared** harness.
+| class | truth | emitted | covered |
+|---|---|---|---|
+| `uses` | 2,685 | 2,685 | **100.00%** |
+| `contains` | 6,145 min | 7,762 | **100.00%**, 0 line-mismatch |
+| `implements` | 444 | 444 | **100.00%** |
+| `extends` | 39 | 39 | **100.00%** |
+
+**Reported** — derived and printed with their residuals, but not yet deciding the
+verdict:
+
+| class | truth | emitted | covered | residual |
+|---|---|---|---|---|
+| `references` | 6,098 | 6,183 | 96.23% | 230 missed / 315 fabricated |
+| `instantiates` | 1,044 | 1,081 | 99.62% | 4 missed / 41 fabricated |
+
+`implements` and `extends` were in this list until CLJ-D48/D51 and are now enforced:
+they started at 72.52% and 82.05% and the last six edges each were a *source*
+attribution question with the same answer. Leaving a class that measures 100.00% in
+the reported set is leaving a checked class unchecked, which is the one thing a gate
+should not do with work it has already finished.
+
+`--strict` enforces the reported two as well, for whoever is working on them.
+
+`calls` is the one label this gate does not touch: it has its own F5 differential.
 
 ## CLJ-D39 / CLJ-D40 — the derived `calls` oracle
 
@@ -364,13 +401,81 @@ and the newly-exposed `references` residual is recorded instead. 471 misses now 
 CLJ-D40 taught the `calls` derivation and not this one) and
 `clojure.core.reducers/reduce` — both alias gaps of the same family, both next.
 
+**`references` reads the alias timeline, and a file with no `ns` still has a source
+(CLJ-D50).** This derivation read aliases from the `ns` form's clauses only, so a
+top-level `(require '[clojure.java.io :as jio])` was invisible and `core.clj:7267`
+published the bare `clojure.core -> jio` — CLJ-D40's defect in a derivation CLJ-D40
+never reached. It was **invisible** while the shared alias table was also wrong about
+prefix lists: two errors in the same direction cancel in a diff. And `nsAt` returns `""`
+for a file with no `ns` form, so 70 edges were published as `references||…` — a
+relationship with only one end. CLJ-D47 taught that fallback to `calls`; the halves
+drifting apart is the same lesson as the alias tables: **one language fact re-derived
+in four places, each copy drifting differently.**
+
 ## Where the derived `calls` oracle stands
 
-On the 143-file clojure corpus the derivation reports 6,251 truth edges with
-**4 missing and 91 unexplained**, against the hand-rolled implementation's
-4,693 with 38 missing and 221 unexplained. The 4 missing and 91 unexplained are
-now a single question about the *analyzer*, and every remaining unexplained edge
-is an edge the analyzer emits that Clojure does not support: `fn*` and `loop`
-(it stays silent for `fn` but not `fn*`), `..` and instance-interop targets like
-`.toLowerCase`, and one resolved refer (`clojure.set/subset?`) that the truth's
-alias timeline does not yet reach.
+On the 143-file clojure corpus the derivation reports **6,397 truth edges with 5
+missing and 27 unexplained**, against the 4,693 / 38 / 221 the hand-rolled
+implementation started from. Five missing and 27 unexplained across 6,397 edges.
+
+The residual is now a single question about the *analyzer*, and it is mostly
+interop routing: `Integer/valueOf`-style heads where "is this qualifier a
+namespace or a class?" is not decidable from one file, instance-interop targets
+like `.toLowerCase`, and a handful of resolved refers. `references` and
+`instantiates` are open for reasons of their own, written down below.
+
+### The residual classes, and what each one turned out to be
+
+Every one of these was a question asked in the wrong ORDER, which is why none of
+them was visible by reading the code:
+
+| ruling | the question | what it outranked | edges |
+|---|---|---|---|
+| CLJ-D39 | is this name shadowed? | the core list | 401 |
+| CLJ-D41 | is this a special form? | the shadow table | 212 |
+| CLJ-D43 | is this name shadowed? | the macro/def/libspec lists | 24 |
+| CLJ-D42 | is this `recur`? | nothing — a fabricated self-edge | 85 |
+| CLJ-D45 | is `#(f …)` a call? | nothing — the walk never visited it | 55 |
+| CLJ-D46 | does the shorthand route interop? | the list path's own routing | 19 |
+| CLJ-D47 | is a call with no owner a call? | the sink's "needs two ends" | 43 |
+| CLJ-D48/D51 | what is the source of a type relation? | `walk`'s owner | 299 |
+
+Three of them were **silent discards** — an edge derived and then thrown away, or
+a table consulted and then ignored. That is the expensive shape: a loud failure is
+a bug report, and a silent one is an apparent coverage gap that survives any amount
+of staring at the numbers. `push` dropping an empty `from` (CLJ-D47) and `??` not
+falling back on `""` (CLJ-D51) are the same defect three times in one file.
+
+### The `references` residual, diagnosed rather than measured
+
+`references` is the one class still open with a known shape, and it is worth
+recording why three fixes all made it worse.
+
+Diffing each attempt's residual against the baseline edge by edge:
+
+| attempt | fixed | broken |
+|---|---|---|
+| prefix-list alias reader | **167** | **563** |
+| …plus unaliased required libs | 167 | 869 |
+
+The broken set is almost entirely **mirror pairs at equal counts on equal sites** —
+`clj-kondo.impl.utils` 158 ↔ `utils` 158, `cljs.core.async` 69 ↔ `async` 69. That
+is the signature of the analyzer emitting **both forms**, the written lib name at
+some sites and the resolved namespace at others, and of the change resolving every
+site to the long form.
+
+So the rule is not "resolve the prefix". It is **which form this site wants**, and
+the two sites are two different derivations: a qualified *head* resolves to the
+namespace it actually reaches, while an `:require` *clause* is a statement about
+the written lib. Changing the one shared table leaked the resolution from the first
+into the second. Until those two read different tables, further tuning of the shared
+one cannot move this class.
+
+### `instantiates`: one residual that is underivable, not unsolved
+
+`RecordToTestStatics1/create` is an `instantiates` edge because `create` is that
+record's factory; `Integer/parseInt` is not, because it is an ordinary static
+method. Telling them apart requires knowing that `RecordToTestStatics1` **is** a
+record — cross-file type knowledge a per-file derivation cannot have. Adding the
+shape unconditionally measured 99.62% → 66.67% with 520 fabrications, which is the
+measurement that settles it. Recorded as CLJ-D52 rather than guessed.
