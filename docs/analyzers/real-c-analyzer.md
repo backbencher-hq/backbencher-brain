@@ -702,6 +702,49 @@ of regex syntax are in comments recording earlier replacements.
 M12 truth drift 92 facts, 85 still-produced, 7 produced-under-another-type,
 **0 not-produced**.
 
+### #983: the analyzer references file scope ONLY — parameters and locals are invisible to `uses`
+
+#982's surviving lead turned out to be much larger than one row. Measured:
+
+    int G;
+    int add(int a, int b)
+    { int loc = a + b; if (loc > G) return loc; return b - a; }
+
+    rels: uses:add->G
+    syms: variable:G   function:add(params=2)
+
+`uses:add->G` is emitted for the file-scope global. There is NO use for `a`, no use
+for `b`, and no use for `loc` — the LOCAL either. Params are parsed and stored
+(`params=2`, matching docs line 39) and then never surfaced. So `uses` resolves
+against FILE SCOPE and nothing else: not parameters, not locals.
+
+**Size, measured on 40 curl/lib files, 713 functions:**
+
+    uses EMITTED (file-scope only):        2,844
+    distinct parameters referenced:         1,989
+    distinct locals referenced:             1,752
+    would add:                              3,741   (+131%)
+
+Extrapolated across the census this would roughly DOUBLE the C `uses` count, from
+86,948 to something near 200,000. It moves every relationship total, the census,
+the performance figures and the oracle comparison at once.
+
+**Two sub-decisions, and the second is the interesting one.**
+
+1. *Should* params and locals be referenced? Semantically yes — `uses:add->loc` has
+   exactly the shape of the global case that already works. Low risk.
+2. *What is the source name?* The oracle writes `(expr) -> s1`, i.e. it does not
+   track the owning function and falls back to a generic bucket. The analyzer's
+   existing convention is the FUNCTION NAME (`uses:add->G`), which is strictly more
+   informative. If this is adopted, the analyzer should keep `add` as the source and
+   the oracle's `(expr)` rows are the weaker claim — adopting them as written would
+   move the payload toward a LESS precise form to gain agreement, which is the wrong
+   direction.
+
+**Not taken here.** A change that doubles a published relationship count is a ruling
+for the lane owner, not a patch for an agent, and sub-decision 2 has a real tradeoff
+either way. Recorded with numbers so the choice can be made deliberately.
+
 ### #982 CORRECTION: the inactive-code thesis was wrong in both directions
 
 The first version of this section claimed the oracle has no notion of inactive
