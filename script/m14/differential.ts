@@ -6834,7 +6834,22 @@ export function deriveCSharpBareUses(
       }
       return false
     }
-    if (p.type === "attribute_argument" || p.type === "assignment_expression" && false) {
+    // CS-D13. A NAMED attribute argument has a designator — `[Parameter(ParameterSetName = MySet)]`
+    // names the parameter and `MySet` is its value. A POSITIONAL one has none:
+    // `[DllImport(LocalizationDllName)]` is a bare value that READS the const it names, and treating
+    // its first identifier as a designator deleted the read.
+    //
+    // The grammar distinguishes them exactly: a named `attribute_argument` carries a `name` FIELD, a
+    // positional one has `name == null` and a single identifier child. Asking the node is exact;
+    // sniffing for an `=` in its text would also fire on a string literal containing one.
+    //
+    // 24 of powershell's 27 unexplained edges over the WHOLE corpus, exhaustively counted: DllImport,
+    // LibraryImport, Alias, FormatMessage, EventRegister, EvtQuery — every target a real declared
+    // const. The analyzer was right in every case; the truth was silent.
+    if (p.type === "attribute_argument") {
+      return p.childForFieldName?.("name") != null && same(firstIdent(p), n)
+    }
+    if (p.type === "assignment_expression" && false) {
       return same(firstIdent(p), n)
     }
     if (p.type === "with_initializer" || p.type === "subpattern") return same(firstIdent(p), n)
