@@ -1666,16 +1666,67 @@ const handlers: Record<string, ToolHandler> = {
     // enrichment, gravity, taints, health) WITHOUT re-parsing. The remediation
     // for stale derived data after agent edits or incremental indexing.
     if (mode === "post") {
+      // `path` is REQUIRED by the schema and the registry describes it as "the
+      // project whose derived phases should be re-run". It was then ignored
+      // entirely: `mode=post` with `path: "no/such/path/at/all"` re-derived all
+      // eight phases and reported success. A required parameter that is not
+      // read is a requirement that teaches a caller the wrong lesson.
+      const postAbs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
+      if (!existsSync(postAbs)) {
+        return textResult(`bb_index mode=post: no such path: ${postAbs} — mode=post re-derives the phases of THIS project, and the required \`path\` must name it.`, true)
+      }
       const { runPostProcessing } = await import("../ast/parallel-indexer")
       try {
         const post = await runPostProcessing(projectId as any, { logger: { log: () => {}, write: () => {} } })
-        return textResult(JSON.stringify({ mode: "post", phases: post.phases, totalMs: post.totalMs, integrityHealth: post.integrityHealth }, null, 2))
+        return textResult(JSON.stringify({ mode: "post", path: raw, phases: post.phases, totalMs: post.totalMs, integrityHealth: post.integrityHealth }, null, 2))
       } catch (e: any) {
         return textResult(`bb_index mode=post failed: ${e?.message}`, true)
       }
     }
     const abs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
     if (!existsSync(abs)) return textResult(`bb_index: no such path: ${abs}`, true)
+    // The path must be INSIDE the project.
+    //
+    // `path.resolve(projectPath, raw)` happily walks out: `bb_index path: "../x.ts"`
+    // and an absolute path to any file on the machine both resolved and indexed.
+    // Measured on a scratch project, all three of these were accepted with
+    // `indexed: 1`:
+    //
+    //   an absolute path to a file in another directory
+    //   a relative `../other-dir/file.ts`
+    //   `mode: "dir"` on a whole directory OUTSIDE the project
+    //
+    // and the row it wrote has a "project-relative" path that is not one — the
+    // absolute path with its leading `/` stripped:
+    //
+    //   Users/…/secrets-cOJXSq/credentials.ts
+    //
+    // `relative_path` is the key for `bb_analyze filePath` scoping, for every
+    // file the graph modes name, and for freshness resolution by path, so those
+    // rows are invisible to scoped queries while still counted in `stats.files`
+    // (measured: a 2-file project reporting 3). It is a write tool, so the
+    // pollution persists. And the file is then discoverable by name through the
+    // read tools, with its out-of-tree location printed.
+    //
+    // The registry already says "Project-relative file (reindex only that
+    // file)"; this is the check that makes that sentence true. Both sides are
+    // resolved through `realpath` so a symlink inside the project pointing out
+    // of it is refused too — a lexical check alone would wave it through.
+    const rootReal = realpathSync(projectPath)
+    const absReal = realpathSync(abs)
+    const relToRoot = path.relative(rootReal, absReal)
+    // `relToRoot === ""` is the project root ITSELF, which is in bounds and is
+    // the documented way to reindex a whole project — `mode: auto` on a
+    // directory runs a dir index. Refusing it was my own bug on the first
+    // version of this guard, caught by the suite immediately.
+    const outsideRoot = relToRoot === "" ? false : relToRoot.startsWith("..") || path.isAbsolute(relToRoot)
+    if (outsideRoot) {
+      return textResult(
+        `bb_index: refusing a path outside the project. "${raw}" resolves to ${absReal}, which is not inside ${rootReal}. ` +
+          `bb_index indexes THIS project's files; an out-of-tree path would be stored with a "project-relative" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.`,
+        true,
+      )
+    }
     const isDir = statSync(abs).isDirectory()
     const effective = mode === "auto" ? (isDir ? "dir" : "file") : mode
     if (effective === "file" && isDir) return textResult("bb_index mode=file requires a file path", true)
@@ -1686,7 +1737,42 @@ const handlers: Record<string, ToolHandler> = {
         // M40.A3: derived-data telemetry surfaced — an agent can see whether
         // relationships/gravity were re-derived for the touched file, and how
         // many caller edges were repaired, without inspecting logs.
-        return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors, derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 } }, null, 2))
+        // `indexed: 0, deleted: 0, errors: 0` reads as "nothing happened and
+        // nothing failed", and those are three different situations: the file
+        // was already current, the file is not indexable (a binary, say), or
+        // the indexer declined it for some other reason. Measured on a binary
+        // file: exactly that answer, with no way to tell it from a no-op.
+        // So when nothing happened, say which of the two it was.
+        const didNothing = r.indexed === 0 && r.deleted === 0 && r.errors === 0
+        const note = didNothing
+          ? {
+              outcome: "no-op",
+              skipped: r.skipped ?? 0,
+              reason:
+                r.skippedReason ??
+                (r.skipped
+                  ? `${r.skipped} file(s) hold nothing the indexer extracts`
+                  : "nothing changed: the file's content already matches the index"),
+            }
+          : { outcome: r.errors > 0 ? "partial" : "indexed" }
+        return textResult(
+          JSON.stringify(
+            {
+              mode: "file",
+              path: raw,
+              indexed: r.indexed,
+              deleted: r.deleted,
+              errors: r.errors,
+              // Which files failed and why, when any did. `errors` alone is a
+              // count, and a count is not something a caller can act on.
+              ...(r.errors > 0 ? { errorDetail: r.errorDetail ?? [] } : {}),
+              ...note,
+              derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 },
+            },
+            null,
+            2,
+          ),
+        )
       } catch (e: any) {
         // M43.P1: another indexer holds the project lock — declared refusal,
         // never a thrown handler crash.
@@ -1700,10 +1786,25 @@ const handlers: Record<string, ToolHandler> = {
       const { collectDirChanges } = await import("../ast/parallel-indexer")
       const changes = await collectDirChanges(projectId as any, projectPath, abs)
       if (changes.length === 0) {
-        return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: 0, processed: 0, deleted: 0, errors: 0, unchanged: true }, null, 2))
+        return textResult(JSON.stringify({ mode: "dir", path: raw, candidates: 0, processed: 0, deleted: 0, errors: 0, unchanged: true }, null, 2))
       }
       const r = await reindexFilesParallel(projectId as any, projectPath, changes)
-      return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: changes.length, processed: r.indexed, deleted: r.deleted, errors: r.errors }, null, 2))
+      return textResult(
+        JSON.stringify(
+          {
+            mode: "dir",
+            path: raw,
+            candidates: changes.length,
+            processed: r.indexed,
+            deleted: r.deleted,
+            errors: r.errors,
+            ...(r.errors > 0 ? { errorDetail: r.errorDetail ?? [] } : {}),
+            skipped: r.skipped ?? 0,
+          },
+          null,
+          2,
+        ),
+      )
     } catch (e: any) {
       return textResult(`bb_index mode=dir refused: ${e?.message}`, true)
     }
@@ -2181,6 +2282,18 @@ const handlers: Record<string, ToolHandler> = {
       languages: result.languages,
       copies: result.copies,
       copyCount: result.copyCount,
+      // M63.CL5: `limit` governs FACTS. It said nothing about the copy list, which
+      // was as long as the index says the name is ambiguous — measured at 844KB for
+      // a name with 5,000 copies and a single cross-language row, at both `limit: 1`
+      // and `limit: 200`, with `truncated: false` saying nothing had been dropped.
+      // The response was not bounded. It is now, and the cap is declared rather
+      // than applied quietly: an answer that hides its own bound is the defect this
+      // fixes, repeated one field over.
+      copiesTruncated: result.copiesTruncated,
+      copiesCap: result.copiesCap,
+      copiesNote: result.copiesTruncated
+        ? `copies is the first ${result.copies.length} of ${result.copyCount} indexed symbols named '${symbol}' (cap ${result.copiesCap}); the EDGES are unaffected, because every copy holding a cross-language row is reported in facts regardless of where it sits in that list`
+        : null,
       ambiguous: result.ambiguous,
       ambiguityNote: result.ambiguous
         ? `${result.copyCount} indexed symbols are named '${symbol}' across ${new Set(result.copies.map((c) => c.file)).size} file(s); the facts below are the union over all of them, and every fact names the copy it came from`
@@ -2229,8 +2342,28 @@ const handlers: Record<string, ToolHandler> = {
       // checking, so an overclaim here is worse than an overclaim in a count.
       // Absence for THIS project is still correct and still declared; only the
       // universality was wrong.
+      // M63.CL5: this note is only true about the name and its DIRECT members, and
+      // it used to read as though it were true about the symbol. Measured: 141
+      // cross-language rows sit on grandchildren on the JVM corpus (19 owners) and
+      // 27 on elixir (4), with nesting reaching depth 4 and 6 — and for those owners
+      // this tool answered `declaredAbsent: true` with nothing in `facts`.
+      //
+      // `declaredAbsent` stays TRUE, because it remains exactly what CL2 made it
+      // mean: the name and its direct members hold no stored row. What changes is
+      // that the note no longer implies the index holds nothing, and the count is
+      // given so a caller can tell this apart from a genuinely unconnected symbol
+      // rather than having to ask bb_graph and hope.
+      //
+      // The rows are COUNTED and not emitted: they are the descendants' edges, and
+      // CL2 ruled they are reported as the member's, never absorbed into the owner.
+      deeperDescendantRowCount: result.deeperDescendantRowCount,
+      deeperDescendantNote: result.deeperDescendantRowCount > 0
+        ? `${result.deeperDescendantRowCount} stored cross-language row(s) sit on members-of-members and deeper below '${symbol}'. They are NOT cascaded into the facts above — they are the descendants' edges, not '${symbol}'s — and bb_graph reports none of them either, so both doors are silent about them. Ask about the member directly to see them.`
+        : null,
       absenceNote: shownCount === 0
-        ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its members — absence declared, never guessed`
+        ? (result.deeperDescendantRowCount > 0
+            ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its DIRECT members — but ${result.deeperDescendantRowCount} row(s) sit on members-of-members and deeper (deeperDescendantRowCount), which are the descendants' edges and are deliberately not cascaded. Absence at this level declared, never guessed; this is not the same as the symbol being unconnected.`
+            : `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}', for any of its members, or on any member-of-member and deeper — absence declared, never guessed`)
         : null,
       // The symptom that produced this change, stated in the answer itself: the
       // symbol is silent and its members are not. A caller reading only
