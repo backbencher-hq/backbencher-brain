@@ -5,28 +5,28 @@
   "purpose": "attribute WITHIN-analyzer cost for the php lane; NOT the end-to-end throughput record",
   "repo": "$HOME/fixtures/repositories/phpunit",
   "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
-  "generatedAt": "2026-09-30T03:03:37.254Z",
+  "generatedAt": "2026-09-30T08:26:48.253Z",
   "sample": "200 tracked .php files, deterministic strided slice of 3231",
   "bytes": 310036,
   "bytesPerFile": 1550,
   "totals": {
-    "parseMs": 407.8,
-    "analyzeMs": 3434.6,
-    "endToEndMs": 3842.4,
-    "msPerFile": 19.21,
-    "analyzerMsPerFile": 17.17,
-    "parseSharePct": 10.61
+    "parseMs": 253.3,
+    "analyzeMs": 3936.5,
+    "endToEndMs": 4189.8,
+    "msPerFile": 20.95,
+    "analyzerMsPerFile": 19.68,
+    "parseSharePct": 6.05
   },
   "phases": {
-    "parse": 407.8,
-    "collectPhpFileScope": 182.4,
-    "mainWalk": 3251.9,
-    "postPasses": 0.2
+    "parse": 253.3,
+    "collectPhpFileScope": 73.3,
+    "mainWalk": 3863,
+    "postPasses": 0.3
   },
   "phaseSharePct": {
-    "parse": 10.61,
-    "collectPhpFileScope": 4.75,
-    "mainWalk": 84.63,
+    "parse": 6.05,
+    "collectPhpFileScope": 1.75,
+    "mainWalk": 92.2,
     "postPasses": 0.01
   },
   "symbols": 6,
