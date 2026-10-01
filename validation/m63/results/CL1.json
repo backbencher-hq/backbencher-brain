@@ -107,143 +107,143 @@
     }
   ],
   "failures": [],
-  "currentCommit": "06bae005d83c09573d7659a779200d89d6f44518",
+  "currentCommit": "a1c4085d4a5f3c737b4f8a46d635613c52248a8d",
   "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
   "evidenceFile": "CL1.json",
   "corpus": {
     "path": "(reused index)",
-    "projectId": "06fee2bfd6b7e3733bfacf182ef927498939dbad",
-    "crossLanguageRows": 1642
+    "projectId": "e1d30b9ecf32af1f97a91ab1698ced6aa2a63bb4",
+    "crossLanguageRows": 1168
   },
   "samples": [
     {
-      "name": "Method",
+      "name": "elixir",
       "copies": 4,
-      "storedRows": 242,
-      "toolFacts": 242,
-      "pairableRows": 242
+      "storedRows": 342,
+      "toolFacts": 342,
+      "pairableRows": 342
     },
     {
-      "name": "generate-class",
-      "copies": 1,
-      "storedRows": 127,
-      "toolFacts": 127,
-      "pairableRows": 127
+      "name": "format",
+      "copies": 25,
+      "storedRows": 201,
+      "toolFacts": 201,
+      "pairableRows": 201
     },
     {
-      "name": "f",
-      "copies": 6,
-      "storedRows": 109,
-      "toolFacts": 109,
-      "pairableRows": 109
-    },
-    {
-      "name": "generate-proxy",
-      "copies": 1,
-      "storedRows": 108,
-      "toolFacts": 108,
-      "pairableRows": 108
-    },
-    {
-      "name": "byte",
-      "copies": 1,
-      "storedRows": 74,
-      "toolFacts": 74,
-      "pairableRows": 74
-    },
-    {
-      "name": "char",
-      "copies": 1,
-      "storedRows": 65,
-      "toolFacts": 65,
-      "pairableRows": 65
-    },
-    {
-      "name": "parse",
-      "copies": 30,
-      "storedRows": 56,
-      "toolFacts": 56,
-      "pairableRows": 56
-    },
-    {
-      "name": "getName",
-      "copies": 8,
+      "name": "to_string",
+      "copies": 22,
       "storedRows": 51,
       "toolFacts": 51,
       "pairableRows": 51
     },
     {
-      "name": "ArrayChunk",
+      "name": "reverse",
       "copies": 5,
-      "storedRows": 6,
-      "toolFacts": 6,
-      "pairableRows": 6
+      "storedRows": 46,
+      "toolFacts": 46,
+      "pairableRows": 46
     },
     {
-      "name": "ByteVector",
-      "copies": 4,
-      "storedRows": 53,
-      "toolFacts": 53,
-      "pairableRows": 53
+      "name": "keyfind",
+      "copies": 2,
+      "storedRows": 40,
+      "toolFacts": 40,
+      "pairableRows": 40
     },
     {
-      "name": "ChunkedSeq",
-      "copies": 4,
+      "name": "MixTest",
+      "copies": 1,
+      "storedRows": 36,
+      "toolFacts": 36,
+      "pairableRows": 36
+    },
+    {
+      "name": "install",
+      "copies": 5,
+      "storedRows": 34,
+      "toolFacts": 34,
+      "pairableRows": 34
+    },
+    {
+      "name": "Example",
+      "copies": 28,
+      "storedRows": 26,
+      "toolFacts": 26,
+      "pairableRows": 26
+    },
+    {
+      "name": "Additional remarks",
+      "copies": 7,
       "storedRows": 0,
       "toolFacts": 0,
       "pairableRows": 0
     },
     {
-      "name": "ClassReader",
-      "copies": 6,
-      "storedRows": 32,
-      "toolFacts": 32,
-      "pairableRows": 32
+      "name": "Any",
+      "copies": 5,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
     },
     {
-      "name": "CompilerException",
+      "name": "Atom",
+      "copies": 7,
+      "storedRows": 51,
+      "toolFacts": 51,
+      "pairableRows": 51
+    },
+    {
+      "name": "Atoms",
       "copies": 4,
       "storedRows": 1,
       "toolFacts": 1,
       "pairableRows": 1
     },
     {
-      "name": "EMPTY",
-      "copies": 11,
+      "name": "BitString",
+      "copies": 7,
       "storedRows": 0,
       "toolFacts": 0,
       "pairableRows": 0
     },
     {
-      "name": "Entry",
-      "copies": 8,
-      "storedRows": 2,
-      "toolFacts": 2,
-      "pairableRows": 2
+      "name": "Date",
+      "copies": 7,
+      "storedRows": 3,
+      "toolFacts": 3,
+      "pairableRows": 3
     },
     {
-      "name": "Frame",
+      "name": "Date.Range",
       "copies": 4,
-      "storedRows": 13,
-      "toolFacts": 13,
-      "pairableRows": 13
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
     },
     {
-      "name": "clojure.repl",
+      "name": "DateTime",
+      "copies": 6,
+      "storedRows": 0,
+      "toolFacts": 0,
+      "pairableRows": 0
+    },
+    {
+      "name": "ELIXIRC",
       "copies": 1,
-      "storedRows": 8,
-      "toolFacts": 8,
-      "pairableRows": 8
+      "storedRows": 1,
+      "toolFacts": 1,
+      "pairableRows": 1
     },
     {
-      "name": "ISeq",
+      "name": "write!",
       "copies": 1,
       "storedRows": 0,
       "toolFacts": 0,
       "pairableRows": 0
     }
   ],
-  "generatedAt": "2026-09-30T22:47:30.670Z",
+  "generatedAt": "2026-09-30T23:41:32.394Z",
   "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
   "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
   "limitations": [
@@ -253,7 +253,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-30T22:47:30.675Z",
-    "contentSha256": "f867e5b2980c9d9691e761a70c06a02d81624a76f186cfc7a450b875f74893b5"
+    "sealedAt": "2026-09-30T23:41:32.397Z",
+    "contentSha256": "a3ec26f5bd5ae39038401b54deb38fbe27ebb9a8ea03ec11bf9d03b427a862c1"
   }
 }
