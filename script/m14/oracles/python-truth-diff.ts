@@ -83,6 +83,17 @@ const key = (t: string, f: string, to: string, line?: number) =>
  * emitted it and the tree does not support it), so the two populations stay separable
  * even after they are in one file.
  */
+/**
+ * Rows in the DUMP carry the file's FULL PATH, not its basename.
+ *
+ * The console lists use the basename because a human reads them, but three different
+ * `test_datatag.py` files exist in this corpus and a basename-keyed dump silently merges their
+ * disagreements — which is how an edge attributed to `container_test_cases` turned out to come
+ * from a file that does not contain that method at all. An instrument whose output cannot say
+ * which file a row came from makes triage guesswork, and triage is where the real defects have
+ * been coming from in this review.
+ */
+
 /** The engine's own limit, mirrored so both sides of the comparison see identical bytes. */
 const PARSE_LIMIT = 1024 * 1024
 const truncatedFiles: string[] = []
@@ -202,7 +213,7 @@ for (const f of files) {
     const label = `${path.basename(f)} ${from} -> ${to}${line ? ` @L${line}` : ""}`
     if (analyzerKeys.has(k) || guessKeys.has(k)) count(agreed, t, 1)
     else { count(missingN, t, 1); sample(missing, t, label)
-      if (DUMP) dumpRows.push({ side: "missing", type: t, file: path.basename(f), from, to, line: line ? Number(line) : null }) }
+      if (DUMP) dumpRows.push({ side: "missing", type: t, file: f, from, to, line: line ? Number(line) : null }) }
   }
   for (const k of guessKeys) {
     if (truthKeys.has(k)) guessOk++
@@ -245,7 +256,7 @@ for (const f of files) {
     if (truthKeys.has(k)) continue
     const [t, from, to] = k.split("\u0000")
     { count(unexplainedN, t, 1); sample(unexplained, t, `${path.basename(f)} ${from} -> ${to}`)
-      if (DUMP) dumpRows.push({ side: "unexplained", type: t, file: path.basename(f), from, to, line: null }) }
+      if (DUMP) dumpRows.push({ side: "unexplained", type: t, file: f, from, to, line: null }) }
   }
 }
 

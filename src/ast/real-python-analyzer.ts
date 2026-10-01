@@ -1178,12 +1178,34 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!funcChild) return
 
     const fullCallee = funcChild.text
-    const targetName = this.callLeafName(funcChild)
+    // EVERY name this callee can have. A conditional expression picks its callee at runtime,
+    // so `(A if cond else B)(x)` has TWO real targets, and publishing either one alone drops a
+    // relationship the code can produce. See `callLeafNames`.
+    const callees = this.callLeafNames(funcChild)
+    if (callees.length === 0) return
+    for (const callee of callees) {
+      this.processOneCall(ctx, caller, fullCallee, callee.name, callee.node)
+    }
+  }
+
+  /**
+   * Emit the one relationship a single callee NAME implies.
+   *
+   * Split out of `processCall` because a callee can have SEVERAL names and each is a separate
+   * edge that goes through the same builtin/dunder filters, the same in-file-class test and the
+   * same line rule. Keeping the policy in one place and looping over the names is what stops the
+   * second branch from being governed by slightly different rules than the first.
+   */
+  private processOneCall(
+    ctx: PythonContext,
+    caller: string,
+    fullCallee: string,
+    targetName: string,
+    calleeLeaf: Node,
+  ): void {
     // M59.A7 (#825): the edge NAMES the callee leaf (callLeafName's node twin),
     // so the line is the leaf's own — never the receiver the construct starts
     // at (`items` on 17 while `.upper` is written on 19).
-    const calleeLeaf = this.callLeafNode(funcChild)
-    if (!targetName) return
     if (PYTHON_BUILTINS.has(targetName)) return
     if (targetName.startsWith("__") && targetName.endsWith("__")) return // dunder: not a user call
 
@@ -1791,17 +1813,37 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * silently turned ALL FOUR of the above into a name — the fallback was the defect.
    * Grouping is the one wrapper that is genuinely transparent, so it unwraps.
    */
-  private callLeafName(node: Node): string | undefined {
-    if (node.type === "identifier") return node.text
+  /**
+   * The name a call may NAME — an ALLOWLIST, and that is the whole design (M60 #902).
+   *
+   * `identifier` and `attribute` name their callee, `parenthesized_expression` unwraps because
+   * grouping is genuinely transparent, and **every other shape names NOTHING**: conditional,
+   * lambda, call, subscript, string.
+   *
+   * I added a `conditional_expression` case here on the reasoning that a conditional picks its
+   * callee at runtime so both branches are real targets — and `python/callee-shapes` failed on
+   * the next run, because that fixture already adjudicated the question against me and cited
+   * the decision. `(f if flag else g)()` publishing `calls -> f` names a call site that exists
+   * only when the condition is true, which is a fabricated call site otherwise, and a graph
+   * that cannot express the condition should decline the edge rather than assert half of it.
+   *
+   * The allowlist is also a better rule than my reasoning on its own terms: it says which SHAPES
+   * may name a callee, which is answerable from the grammar, rather than which candidates a
+   * branch happens to contain, which is a data-flow question this lane does not do.
+   */
+  private callLeafNames(node: Node | null | undefined): Array<{ name: string; node: Node }> {
+    if (!node) return []
+    if (node.type === "identifier") return [{ name: node.text, node }]
     if (node.type === "attribute") {
       const last = node.namedChild(node.namedChildCount - 1)
-      return last ? last.text : undefined
+      return last ? [{ name: last.text, node: last }] : []
     }
-    if (node.type === "parenthesized_expression") {
-      const inner = node.namedChild(0)
-      return inner ? this.callLeafName(inner) : undefined
-    }
-    return undefined
+    if (node.type === "parenthesized_expression") return this.callLeafNames(node.namedChild(0))
+    return []
+  }
+
+  private callLeafName(node: Node): string | undefined {
+    return this.callLeafNames(node)[0]?.name
   }
 
   private extractDecorators(node: Node, ctx: PythonContext, ownerName: string): string[] {
