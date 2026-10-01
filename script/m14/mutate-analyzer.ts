@@ -16635,6 +16635,46 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter(x => !String(x.target).includes("typerel.base.")),
     }),
   },
+  {
+    id: "clojure/ownerless-reference-dropped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert: a file with no `ns` form has no namespace in force, so its references are attributed to `user`; dropping them leaves a dependency edge with only one end - 70 across the corpus - references-user-ns pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "references" && x.source === "user")),
+    }),
+  },
+  {
+    id: "clojure/def-sourced-as-active-function",
+    language: "clojure",
+    defectClass: "attribution",
+    description: "F5-cert: a `def` creates a VAR and not a function, so a constructor in a def initializer is attributed to the NAMESPACE - `(def via-def (delay (java.io.StringReader. ...)))` publishes `clj.fixture.activefn -> java.io.StringReader` - and treating the def as the active function misattributes every one - active-function-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => (x.type === "instantiates" && x.source === "clj.fixture.activefn" && x.target === "java.io.StringReader" ? { ...x, source: "via-def" } : x)),
+    }),
+  },
+  {
+    id: "clojure/anon-fn-owned-by-form-name",
+    language: "clojure",
+    defectClass: "attribution",
+    description: "F5-cert: an anonymous function is owned by its GENERATED name `lambda_<row>_<col>`, which the analyzer publishes for both `(fn ...)` and the `#(...)` shorthand; using the form name `fn` instead was inferred from one core.clj sample and refuted by a fixture on its first run - active-function-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => (x.type === "instantiates" && x.source === "lambda_17_12" ? { ...x, source: "fn" } : x)),
+    }),
+  },
+  {
+    id: "clojure/proxy-method-not-a-function",
+    language: "clojure",
+    defectClass: "attribution",
+    description: "F5-cert: a proxy or deftype METHOD is a function form and owns its own body, so `(run [] (java.util.concurrent.atomic.AtomicLong.))` publishes `run -> AtomicLong` and not the enclosing def or the namespace - active-function-source pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map(x => (x.type === "instantiates" && x.source === "run" ? { ...x, source: "clj.fixture.activefn" } : x)),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
