@@ -1204,7 +1204,49 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const anonHead = node.namedChild(0)
         if (anonHead && anonHead.type === "sym_lit") {
           const hName = symName(anonHead)
-          if (hName && !isAnonArgShorthand(hName) && !isCoreCallSuppressed(hName, anonHead.startIndex)) {
+          // CLJ-D46: THE SHORTHAND MUST ROUTE INTEROP HEADS THE WAY THE LIST PATH
+          // DOES. It did not, and that was 20 of the residual edges.
+          //
+          // `(.getName o)` on its own is a MEMBER ACCESS and correctly emits
+          // `uses: getName` (see the `.`-prefix branch on a list). Written as
+          // `#(.getName %)`, the same expression took this path instead, and this
+          // path pushed `calls: lambda_1_18 -> .getName` — a call edge to a name
+          // that starts with a dot, is not a var in the file, and is not an export.
+          // A dangling relationship, which is the one thing the "all extracted,
+          // resolved and emitted" contract exists to prevent, and it was invisible
+          // to the differential because the truth ALSO files these under `uses`:
+          // the two agreed on the ontology and disagreed only on whether the
+          // shorthand was analysed at all.
+          //
+          // So this was never the "where does a Java method invocation belong"
+          // question it looked like. The analyzer's own convention is already
+          // settled and already implemented 600 lines below; the shorthand simply
+          // skipped it. Same shape as CLJ-D45 on the truth side, in the same wave.
+          const anonMember =
+            hName && hName.startsWith(".") && hName !== ".."
+              ? (hName.startsWith(".-") ? hName.slice(2) : hName.slice(1))
+              : null
+          const anonStatic = hName ? staticInteropMember(hName) : null
+          if (anonMember) {
+            const mLine = anonHead.startPosition.row + 1
+            pushRel(name, anonMember, ASTEngine.RelationshipType.Uses, 0.7,
+              { clojureSpecific: true, isFieldAccess: true, isAnonShorthand: true },
+              mLine, Math.max(0, node.namedChildCount - 1), anonHead.startIndex)
+            patterns["Java Interoperability"] = true
+          } else if (anonStatic !== null) {
+            const mLine = anonHead.startPosition.row + 1
+            const mArity = Math.max(0, node.namedChildCount - 1)
+            pushRel(name, anonStatic, ASTEngine.RelationshipType.Uses, 0.7,
+              { clojureSpecific: true, isFieldAccess: true, isAnonShorthand: true },
+              mLine, mArity, anonHead.startIndex)
+            const anonCls = staticInteropClass(hName)
+            if (anonCls) {
+              pushRel(name, resolveQualified(anonCls), ASTEngine.RelationshipType.Uses, 0.8,
+                { clojureSpecific: true, isClassReference: true, isAnonShorthand: true },
+                mLine, 0, anonHead.startIndex)
+            }
+            patterns["Java Interoperability"] = true
+          } else if (hName && !isAnonArgShorthand(hName) && !isCoreCallSuppressed(hName, anonHead.startIndex)) {
             const line = anonHead.startPosition.row + 1
             const arity = Math.max(0, node.namedChildCount - 1)
             const q = resolveCallee(anonHead, hName)   // CLJ-D28
