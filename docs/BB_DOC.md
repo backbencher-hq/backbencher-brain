@@ -541,13 +541,21 @@ success without checking is worse than no mechanism, because it is believed.
 
 The same predicates run against real repositories by
 `fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
-**498 checks pass, 0 fail, 1 disclosed skip, 80/80 negatives proved able to
-fail**, over `rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`,
-`perl5`, `openssl` and `cpython` — Ruby, Erlang, Clojure, Zig, Lua, Go,
-TypeScript, Perl, C and Python. A corpus that is absent or too small to be
-meaningful is recorded as `skipped` with the reason, never as `passed`. The one
-skip is a check that cannot apply: perl5's selected file is top-level, so it has
-no directory prefix for the prefix-resolution test to exercise.
+**500 checks pass, 0 fail, 0 skip, 80/80 negatives proved able to fail**, over
+`rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`, `perl5`,
+`openssl` and `cpython` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript, Perl, C
+and Python. A corpus that is absent or too small to be meaningful is recorded as
+`skipped` with the reason, never as `passed`.
+
+There were no skips to declare. The gate's one skip was removed rather than
+disclosed: it derives a directory prefix from the file holding the most symbols,
+and on perl5 that file is `proto.h`, which is top-level, so the prefix-resolution
+check was skipped while 4 069 of the corpus's 4 224 files sat nested and unused.
+Nothing about a prefix depends on how symbol-dense a file is, so the check now
+falls back to a nested file from the index and says so — *"perl5's densest file
+proto.h is top-level; the prefix check uses the nested file Porting/config.sh
+instead"* — and skips only when the corpus genuinely holds no nested file. A
+coverage loss dressed as an honest skip is the worst of both.
 
 The two C-family and Python corpora were added because two languages had no
 coverage at all, and they earned their place immediately — they produced the
