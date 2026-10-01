@@ -129,11 +129,26 @@ oracle does. It is the analyzer-side counterpart of the collection-expression pr
 oracle side as CS-D12, which is consistent rather than coincidental: that round established the
 collection expression is a shape the two sides walked differently.
 
-**Not fixed.** Four edges in 631,892 is 0.0006%, and closing it means matching the oracle's implicit-
-`new` resolution across a property-declarator-in-collection-expression path — a real change to the
-analyzer's resolution logic, not a one-line filter, and therefore not something to attempt at the end
-of a session without the differential pinned to prove it. It is named, located to a file and a shape,
-and left.
+**Four attempts to reproduce it minimally all reconcile**, which is worth recording because it says
+the shape above is *not* sufficient to trigger it:
+
+| minimal case | analyzer | oracle |
+| --- | --- | --- |
+| `new Root { Items = [new() { … }] }`, `Item[]` property | `Item`, `Root` | `Item`, `Root` |
+| `new Root { Items = [new()] }`, `string[]` property | `Root`, `string` | `Root`, `string` |
+| `Item[] xs = [new()]` (local) | `Item` | `Item` |
+| `private Item[] _xs = [new()]` (field) | `Item` | `Item` |
+
+The resolution path itself handles the shape: `csharpTargetTypedNewSite` does return
+`{kind:"assignment", memberName}` for an initialiser assignment, and `csharpResolveTargetTypedNew`
+falls through to `memberTypes.get(memberName)` for every kind except `declaration`. So the site
+resolver is not the gap, and the remaining difference is something in the real file that none of these
+four captures.
+
+**Not fixed, and honestly so.** Four edges in 631,892 is 0.0006%. It is named, located to a file,
+characterised as a target-typed `new()` in an object initialiser, and shown *not* to be reproduced by
+four plausible minimal shapes. Closing it needs the actual file and a bisect, not another guess from
+the census row — and the census row is one line long while the file is 400 lines.
 
 ## Field-level gates (2026-09-29)
 
