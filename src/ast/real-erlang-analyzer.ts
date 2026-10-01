@@ -185,6 +185,8 @@ interface ErlangContext {
   moduleSymbol: ASTEngine.UniversalSymbol | undefined
   /** Counts kept for the review's accounting, never for behaviour. */
   stats: { dynamicRemote: number; unresolvedNifs: number; macroHeadDecls: number }
+  /** Whole-file grammar damage: no declaration of any kind survived the parse. */
+  grammarDamaged: boolean
 }
 
 export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -216,6 +218,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       optionalCallbacks: [],
       moduleSymbol: undefined,
       stats: { dynamicRemote: 0, unresolvedNifs: 0, macroHeadDecls: 0 },
+      grammarDamaged: false,
     }
 
     // ---- pre-pass: every fact the main walk cannot derive in document order —
@@ -225,6 +228,43 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     // attributes annotate a declared function rather than minting a duplicate
     // symbol — ER-D22). ----
     this.collectPrePass(rootNode, ctx)
+
+    // WHOLE-FILE GRAMMAR DAMAGE. Some Erlang files are not Erlang to this grammar:
+    // wx's `api_gen` sources are code-GENERATION TEMPLATES whose body is markup
+    // (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`), and OTP's abstract-format
+    // `-record #r{...}` is likewise unparseable. After such a construct the top level
+    // comes back as a run of ERROR nodes with loose `call`/`atom`/`ann_type`
+    // fragments between them — 32 top-level ERRORs in `wxListCtrl.erl`, and not one
+    // `fun_decl` in the file.
+    //
+    // Every edge recoverable from those fragments is FABRICATED: the line numbers and
+    // the nesting are whatever error recovery happened to produce, so
+    // `wxe_util:get_cbId@31` points at a structure the source does not have. With the
+    // ER-D32 file-path fallback in place the analyzer will happily derive them —
+    // `currentSource` no longer returns undefined, so there is nothing left to stop
+    // it. So the boundary is stated here, explicitly, and it is the same boundary the
+    // independent oracle applies: a file with NO recoverable declaration of any kind
+    // yields no symbols and no relationships, and says why through its error count.
+    //
+    // The guard is narrow on purpose. `epp_SUITE_data/mac2.erl` has no functions and
+    // no `-module`, but its four `-define` blocks ARE declarations, so it is derived
+    // normally — including the four file-scope macro references that ER-D32's edge
+    // fallback exists to publish. 12 files corpus-wide are in the damaged state.
+    const DECLARATION_FORMS = new Set([
+      "fun_decl",
+      "module_attribute",
+      "pp_define",
+      "record_decl",
+      "type_alias",
+      "opaque",
+      "nominal",
+      "import_attribute",
+      "export_attribute",
+      "export_type_attribute",
+    ])
+    if (!this.prePassForms(rootNode).some((f) => DECLARATION_FORMS.has(f.type))) {
+      ctx.grammarDamaged = true
+    }
 
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
 
@@ -412,6 +452,27 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (sym) sym.complexity = 1 + branches
     }
     this.annotateNativeFunctions(ctx)
+    if (ctx.grammarDamaged) {
+      // Errors still travel: the file's own diagnostic is the honest output.
+      return {
+        language: "erlang",
+        symbols: [],
+        relationships: [],
+        imports: [],
+        exports: [],
+        errors: ctx.errors,
+        metadata: {
+          complexity: 0,
+          linesOfCode: content.split("\n").length,
+          patterns: [],
+          framework: "Erlang",
+          hasFrameworkIntelligence: false,
+          hasTypeInference: false,
+          grammarDamaged: true,
+        },
+      } as ASTEngine.ParseResult
+    }
+
     this.emitOwnership(ctx)
 
     if (ctx.moduleName) {
