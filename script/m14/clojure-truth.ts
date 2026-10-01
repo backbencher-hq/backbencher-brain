@@ -1786,12 +1786,33 @@ export function deriveClojureCallsTruth(
     // The minimal reproduction that found it is four lines: `(defn first [x] x)`
     // then `(first x)`. The analyzer publishes it; this did not.
     if (SPECIAL_FORM_HEADS.has(form)) return
+    // CLJ-D47: AN EDGE WITH NO ATTRIBUTABLE OWNER IS STILL A REAL CALL.
+    //
+    // `push` drops any edge whose `from` is empty, on the reasonable-sounding
+    // grounds that a relationship needs two ends. That silently deleted 43 calls
+    // across the corpus — every one of them an ownerless form in a test file, e.g.
+    // `(foo 3.14159)` at test_cl_format.clj:611, inside a `(simple-tests …)` block
+    // whose owner chain ran out before reaching it. `owner` is "" at every one of
+    // those sites, so the edge was built and then thrown away, and because the
+    // throw-away is silent the file simply looked like a coverage gap.
+    //
+    // The analyzer already has a rule for exactly this, and it is C8: a call OUTSIDE
+    // any function — a def initializer, a top-level side effect — attributes to the
+    // NAMESPACE IN FORCE, which is the load-time context that actually invokes it.
+    // So the fallback is not an invention here; it is the analyzer's own convention,
+    // and leaving it out made this truth lose edges it had already derived.
+    // …and when there is no `ns` form either, the load-time context is Clojure's own
+    // default namespace. The analyzer attributes it to `user` — visible in this
+    // fixture as `calls: user -> before-ns` — so a truth that stops one step short
+    // still drops every call in a file that has no `ns`, which is the smallest
+    // possible reproduction of the bug this ruling exists to fix.
+    const src = owner !== "" ? owner : (nsAt(nsTl, pos) || "user")
     const shadowed = isShadowedAt(form, pos)
-    if (shadowed) { push(owner, form); return }
+    if (shadowed) { push(src, form); return }
     const ref = referAt(referSegs, form, pos)
-    if (ref) { push(owner, ref.includes("/") ? ref : `${ref}/${form}`); return }
+    if (ref) { push(src, ref.includes("/") ? ref : `${ref}/${form}`); return }
     if (isCore(form)) return
-    push(owner, form)
+    push(src, form)
   })
   return edges
 }

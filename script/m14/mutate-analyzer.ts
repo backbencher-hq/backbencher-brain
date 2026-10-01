@@ -16542,6 +16542,16 @@ export const MUTANTS: Mutant[] = [
       relationships: [...(r.relationships ?? []), { type: "calls", source: "lambda_30_22", target: ".getName", line_number: 31, confidence: 0.9, metadata: { isGeneralCall: true, isAnonShorthand: true } }],
     }),
   },
+  {
+    id: "clojure/ownerless-call-dropped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert (derived calls oracle): a call with no attributable owner - a file with no `ns`, or a top-level form before one - is dropped instead of attributed to the namespace in force and then to `user`; 43 calls across the corpus, silently, so each affected file read as a coverage gap rather than a bug - ownerless-call pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "calls" && x.target === "before-ns")),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {
