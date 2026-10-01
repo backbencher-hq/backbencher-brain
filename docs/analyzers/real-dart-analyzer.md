@@ -311,3 +311,43 @@ load-bearing rather than cosmetic:
 
 Reading a bare `==` off an `operator_signature` is therefore a bug in either
 implementation, and the fixture battery pins the contract in both directions.
+
+## Final measured state (2026-10-01)
+
+Both differential lanes, `--dart-deps=direct`, freshly measured (each run reports
+`files=`, not `RESUMED from journal`):
+
+| lane | coverage | MISSING | unexplained |
+|---|---|---|---|
+| proxicall:dart | 100% | 0 | 3–7 (rotation-dependent) |
+| dart-http:dart | 100% | 0 | 37 |
+
+Fixtures 12/12, mutants 42/42, parse 0 errors on 1,294 `lib` files, 202.5 s.
+
+| dependency index | types | proxicall unexplained |
+|---|---|---|
+| `--dart-deps=none` (default) | 4,465 | 40 |
+| `--dart-deps=direct` | 11,312 | 3–7 |
+| `--dart-deps=all` | 27,784 | 4 |
+
+The residual rows are `overrides` claims at **confidence 0.8** against bases that no
+mode indexes — a first-parent guess, labelled as one. They are not fabrications:
+`a1c4a9d7a` removed the class where the file itself refutes the claim, and these
+are the ones nothing in reach can refute.
+
+### Two rulings made here rather than deferred
+
+**`part of` stays in `imports`.** A `part of 'b.dart';` names the file's PARENT, so
+`imports:this->b.dart:*` states the dependency backwards — the file does not reach
+*b.dart*, it IS part of it. It is kept because every module-level URI is then one
+edge class, and a consumer asking "what does this file depend on" gets one answer
+instead of three, and because 24 rows is too small to justify a second class a
+consumer must learn. The alternative is a `partOf` class, which is more precise and
+strictly more work for every reader. If a family ruling goes the other way this is
+a one-line change in the oracle plus the analyzer.
+
+**Record literals are not symbols.** `Point(1, 2)` is a CONSTRUCTOR CALL, so its
+positional fields are not member reads and there is nothing to contain. Treating the
+field names as declarations would publish a `contains` edge for a type the file does
+not declare, which is the class of error this lane has spent its whole life removing.
+The 249 live occurrences stay unread rather than be read as declarations.
