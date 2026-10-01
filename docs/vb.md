@@ -769,7 +769,7 @@ has not finished:
 export PATH="$HOME/.local/bin:$HOME/fixtures/bin:$PATH"
 
 # grammar: rebuild, run the 27 repro cases, run the corpus differential
-$HOME/fixtures/grammar-repro/grammar-gate.sh
+grammars/_vendored/vbnet/grammar-gate.sh
 
 # the pin, and the proof that the pin gate can fail
 bun run script/m14/verify-grammar-pins.ts
@@ -786,7 +786,7 @@ BB_F5_FREEZE_POOL=1 bun run script/m14/differential.ts --lang vb --repo DISMTool
 BB_F5_SHOW_SAMPLES=1 BB_F5_FREEZE_POOL=1 bun run script/m14/differential.ts --lang vb --repo P3D-Legacy --sample 60
 
 # the analyzer, through the product's own entry
-./node_modules/.bin/tsx $HOME/fixtures/probes/vb-analyzer-e2e.ts
+./node_modules/.bin/tsx script/m14/tmp/vb-analyzer-e2e.ts
 ```
 
 ## Why the grammar is a local rebuild and not a pin of a release
