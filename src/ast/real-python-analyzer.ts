@@ -79,6 +79,15 @@ interface PythonContext {
 // Exported: the differential oracle imports this EXACT set (never a
 // hand-duplicated copy — a drift would fabricate or hide call edges).
 export const PYTHON_BUILTINS = new Set([
+  // `aiter`/`anext` are the ASYNC-ITERATOR builtins added in python 3.10, and they were
+  // missing while `next` and `iter` were present — the filter is otherwise complete for its
+  // own rule, which is that a builtin is a call into the interpreter and not a graph node.
+  // The independent oracle found it by deriving from `sys.stdlib_module_names`-equivalent
+  // knowledge rather than from this list: it filtered both names, so `anext(x)` appeared as a
+  // relationship the tree did not support. Two edges in the corpus, and the interesting part is
+  // the direction — the oracle was right and the lane was wrong, which is the opposite of most
+  // of the disagreements in this review.
+  "aiter", "anext",
   "abs", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
   "callable", "chr", "classmethod", "compile", "complex", "delattr", "dict",
   "dir", "divmod", "enumerate", "eval", "exec", "filter", "float", "format",
