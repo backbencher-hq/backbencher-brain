@@ -42,9 +42,41 @@ export interface MigrationMethodology {
   relationshipCount: number
   missingMappingHours: number
   missingMappingCount: number
+  /**
+   * The constants the totals above are computed from, in one place and as data.
+   *
+   * These were previously bare literals at four call sites — `plans.length * 4`,
+   * `relationshipIds.size * 2`, `missingMappingCount * 6`, and a literal `2` inside
+   * `totalHours` — so the only way to check the arithmetic was to read the code. They
+   * remain uncalibrated: nothing here is fitted against a completed migration, and
+   * publishing them as data is not a claim that they are right. It is a claim that
+   * they are the only inputs, so a reader can substitute their own.
+   */
+  rates: {
+    baseHoursPerComponent: number
+    relationshipHoursPerEdge: number
+    hoursPerUnmappedLibrary: number
+  }
+  /**
+   * The charged edge set split by relationship kind, over the SAME deduplicated set
+   * the total is computed from — so the hours always sum to `relationshipHours`.
+   */
+  relationshipByKind: Array<{ kind: string; edges: number; hours: number; shareOfRelationshipHours: number }>
+  /** Why the rate is one number, and what that costs the reader. */
+  relationshipRateNote: string
   ordering: "dependency-first"
   deduplication: "relationship-id-or-structural-identity"
 }
+
+/**
+ * Declared methodology, never a measurement. Kept as one frozen object so the
+ * reported rates and the computed totals cannot drift apart.
+ */
+const RATES = Object.freeze({
+  baseHoursPerComponent: 4,
+  relationshipHoursPerEdge: 2,
+  hoursPerUnmappedLibrary: 6,
+})
 
 export type MigrationBatchUnsupportedReason =
   | "missing-symbol"
@@ -208,6 +240,7 @@ export function calculateMigrationMethodology(plans: Array<{
   dependencyProvenance?: { imports?: { unmapped?: number; unmappedLibraries?: string[] } }
 }>): MigrationMethodology {
   const relationshipIds = new Set<string>()
+  const chargedByKind = new Map<string, Set<string>>()
   let missingMappingCount = 0
   for (const plan of plans) {
     for (const relationship of plan.relationshipEvidence ?? []) {
@@ -226,6 +259,12 @@ export function calculateMigrationMethodology(plans: Array<{
       if (relationship.isIntegrationPoint === false) continue
       const identity = relationship.id || [relationship.sourceSymbolId ?? "", relationship.targetSymbolId ?? "", relationship.relationshipType].join("|")
       relationshipIds.add(identity)
+      // Per-KIND, over the SAME deduplicated edge set the total is computed from, so
+      // the breakdown always sums to `relationshipHours`.
+      const kind = relationship.relationshipType || "unknown"
+      const bucket = chargedByKind.get(kind) ?? new Set<string>()
+      bucket.add(identity)
+      chargedByKind.set(kind, bucket)
     }
     // Counted from the MEASURED import split, not from `dependencies`. A plan with
     // no registered mapping and no uncertain guess previously contributed zero,
@@ -244,12 +283,44 @@ export function calculateMigrationMethodology(plans: Array<{
       missingMappingCount += (plan.dependencies ?? []).filter((dependency) => (dependency.confidence ?? 0) < 0.5).length
     }
   }
+  const relationshipHours = relationshipIds.size * RATES.relationshipHoursPerEdge
+  const relationshipByKind = [...chargedByKind.entries()]
+    .map(([kind, ids]) => ({
+      kind,
+      edges: ids.size,
+      hours: ids.size * RATES.relationshipHoursPerEdge,
+      // Share of the relationship budget, so a reader sees how much of the number
+      // rests on this kind rather than having to divide it out themselves.
+      shareOfRelationshipHours: relationshipHours ? (ids.size * RATES.relationshipHoursPerEdge) / relationshipHours : 0,
+    }))
+    .sort((a, b) => b.hours - a.hours || a.kind.localeCompare(b.kind))
   return {
-    baseHours: plans.length * 4,
-    relationshipHours: relationshipIds.size * 2,
+    baseHours: plans.length * RATES.baseHoursPerComponent,
+    relationshipHours,
     relationshipCount: relationshipIds.size,
-    missingMappingHours: missingMappingCount * 6,
+    missingMappingHours: missingMappingCount * RATES.hoursPerUnmappedLibrary,
     missingMappingCount,
+    /**
+     * The constants, as numbers with units, so the total is arithmetic a reader can
+     * check rather than prose they must trust. They are declared METHODOLOGY and are
+     * not fitted against any completed migration.
+     */
+    rates: RATES,
+    relationshipByKind,
+    /**
+     * The rate is FLAT across edge kinds, which is an assumption and not a
+     * measurement: porting a `calls` edge means rewriting an invocation and its
+     * arguments, while porting a `references` edge usually means changing a type
+     * annotation or an import. Those are materially different amounts of work and
+     * nothing here can say by how much, because the 2h is uncalibrated.
+     *
+     * What CAN be said — and is, because it is measured — is how much of the
+     * relationship budget rests on that equivalence. On cobra's `command.go` cohort
+     * the answer inverts the intuition: `references` is the largest single share and
+     * `calls` is a minority of it.
+     */
+    relationshipRateNote:
+      "One flat rate is applied to every charged edge kind. Porting a `calls` edge is not the same work as porting a `references` edge, so the split by kind below is how much of this total rests on that equivalence. The rate itself is uncalibrated methodology, not a measurement.",
     ordering: "dependency-first",
     deduplication: "relationship-id-or-structural-identity",
   }
@@ -836,6 +907,23 @@ export function formatMigrationPlans(result: MigrationPlanResult, format: "text"
       (result.methodology.missingMappingCount > 0
         ? `  (${result.methodology.missingMappingCount} third-party librar${result.methodology.missingMappingCount === 1 ? "y has" : "ies have"} no registered mapping; each needs a target-language equivalent chosen by a human)`
         : ""),
+    // The rate is one number, so which edges it is being applied to is part of the
+    // number. Printing only the total let a reader assume it was mostly call sites
+    // to port, and measured, it usually is not.
+    ...(result.methodology.relationshipByKind.length > 0
+      ? [
+          `  charged edges by kind (one flat ${result.methodology.rates.relationshipHoursPerEdge}h rate, uncalibrated): ` +
+            result.methodology.relationshipByKind
+              .map((k) => `${k.kind} ${k.edges}=${k.hours}h (${(k.shareOfRelationshipHours * 100).toFixed(0)}%)`)
+              .join(", "),
+          ...(() => {
+            const top = result.methodology.relationshipByKind[0]
+            return top && top.kind !== "calls" && top.shareOfRelationshipHours > 0.25
+              ? [`  note: the largest share is \`${top.kind}\`, not \`calls\`. Porting a \`references\` edge is usually an import or a type annotation, not an invocation — the same rate is applied to both and nothing here can say by how much they differ.`]
+              : []
+          })(),
+        ]
+      : []),
     // The authoritative figure, with the arithmetic that reconciles it against
     // the per-plan numbers printed below. Previously the header and the per-plan
     // `effort=` lines were both presented as totals and differed by 8h on a
