@@ -50,22 +50,72 @@ build artefact of the rejected patch, and this repository gitignores
 | file | was at | bytes |
 |---|---|---|
 | `grammar-gate.sh` | `fixtures/grammar-repro/` | 2,598 |
+| `repair-loop.sh` | `fixtures/grammar-repro/` | 2,215 |
+| `grammar-floor.json` | `fixtures/validation/` | 2,367 |
 | `repro-cases/*.vb` (27) | `fixtures/grammar-repro/cases/` | 112 KB |
 
-**The gate will not run from this repository as vendored.** It hardcodes
-`$HOME/fixtures/bin`, `…/probes` and `…/validation`, and its build step
-invokes a sibling `repair-loop.sh` that is not vendored. It is committed as the
-documented instrument — its two halves (27 repro cases, then the corpus sweep) are
-what the VB lane's "no 32 % regression" claim rests on, and the script is the
-record of that claim — not as something to invoke from here. The 27 cases *are*
-self-contained and readable, and several reproduce constructs the VB grammar is
-known to get wrong.
+**These now run from the repository.** They did not when first vendored: all four
+resolved paths from `$HOME/…`, so a clone could not execute them at
+all. They now derive `ROOT` from their own location, and every remaining absolute
+path is an `env`-overridable default (`BB_REPO`, `BB_VB_CORPUS`, `BB_VB_BIN`,
+`BB_CORE_WASM`, `VB_WASM`, `OUT`, `BB_VB_CANDIDATE`, `BB_VB_BUILDLOG`).
+
+Verified on 2026-10-01:
+
+```
+./grammar-gate.sh --no-build     → 1,185 files over 4 corpora, aggregate 90.89% clean
+./repair-loop.sh  --no-build     → cases: 27 pass / 0 fail  (of 27)
+```
+
+**Read the gate's exit code before wiring it into anything — it is a RATCHET,
+not a pass/fail check.** `gate-compare.py` returns:
+
+| code | meaning |
+|---|---|
+| **0** | the corpus aggregate IMPROVED above the recorded floor |
+| **1** | **GATE FAILED** — clean% fell below the floor, or crash files rose. This is the one that must break a build. |
+| **2** | **NO MOVEMENT** — the corpus is exactly at the floor |
+
+So running it on an unchanged tree gives **2**, not 0, and that is correct rather
+than broken: the gate exists to judge a *repair attempt*, and "no movement" is the
+verdict on a repair that did not reach the corpus. `deliberately exits 2` is also
+the right answer for a CI job, because wiring "did not fail" into a pipeline
+would silently accept a repair that changed nothing. Crash files are a floor of
+their own and fail at any count above the recorded one, so a clean% improvement
+can never buy a grammar that throws.
+
+So the differential half — the one the VB lane's "no 32 % regression" claim
+actually rests on — is executable here with **no prerequisites at all**, and the
+27 repro cases run through the real analyzer.
+
+**The build half needs one thing that is deliberately not vendored:** the
+`tree-sitter` CLI, an 18.8 MB ELF binary. This repository installs tooling rather
+than committing it. `--no-build` never needs it, and `repair-loop.sh` now
+**refuses before touching anything** if the CLI is absent.
+
+That last point is a fix to a real hazard, found by running the thing:
+
+> `repair-loop.sh` does `rm -rf src` before generating, which is correct and must
+> stay — removing it reintroduces #841, where a failed generate leaves the
+> previous grammar in place and the build emits a wasm of the OLD grammar. But it
+> makes the CLI a hard prerequisite, because once `src/` is gone a generate that
+> cannot run is unrecoverable from inside the script. Running the build half here
+> on a machine without the CLI **deleted `tree-sitter-vbnet/src/grammar.json` and
+> `src/node-types.json` — two tracked pin files — and then failed with rc=127.**
+> They were restored from git, and a `command -v tree-sitter` preflight now runs
+> before the destructive step.
+
+`grammar-floor.json` is tracked and is the recorded baseline the gate compares
+against: 1,185 files, 90.89% clean, carrying the `grammarWasmSha256` it was taken
+against. That hash still matches the wired `wasm/tree-sitter-vbnet.wasm`
+(`c6182994f4353cdd`), so the floor describes the grammar that is wired right now.
+`grammar-candidate.json` is what every run WRITES, so it is gitignored.
 
 ## `script/m14/tmp/` — seven probes (in the repo's existing probe directory)
 
 `boundary-truncate.ts`, `defect-census.ts`, `gate-compare.py`,
-`grammar-bakeoff.ts`, `grammar-baseline.ts`, `vb-analyzer-e2e.ts`,
-`vb-source.ts` — from `fixtures/probes/`, 46 KB total. These are the instruments
+`grammar-bakeoff.ts`, `grammar-baseline.ts`, `grammar-cases.ts`,
+`vb-analyzer-e2e.ts`, `vb-source.ts` — from `fixtures/probes/`, 49 KB total. These are the instruments
 that produced the VB lane's numbers, and `reviews/vb/master-review.md` cites them
 as the evidence for specific claims (the defect-class ranking, the end-to-end pass
 through the production entry point, the bakeoff against other grammars). They are
