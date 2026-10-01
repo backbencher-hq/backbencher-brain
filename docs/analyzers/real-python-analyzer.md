@@ -149,49 +149,68 @@ the setter was unreachable from its class. 6 missing `contains` over 120 files b
 analyzer — it was written by reading the same source the analyzer reads.
 
 An **independent** oracle derives truth from the tree without importing the analyzer:
-`script/m14/oracles/python-truth.ts` (`contains`, `extends`, `overrides`, `calls`,
-`instantiates`) with a runnable comparator in `python-truth-diff.ts`, on two axes:
+`script/m14/oracles/python-truth.ts`, with a runnable comparator in `python-truth-diff.ts` on
+two axes — **membership** (is the edge present) and **multiplicity** (is it present the same
+*number* of times, which a set comparison cannot see and which is where PY-6's defect class
+lives).
 
-- **membership** — is the edge present on each side;
-- **multiplicity** — is it present the *same number of times*, which a set comparison cannot see
-  and which is the axis PY-6's defect class lives on.
-
-Over 3,271 corpus files:
+**It derives all nine types this analyzer emits**, on two axes, over 3,270 corpus files:
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
-| `contains` | 28,213 | 6 | 18 |
-| `extends` | 3,505 | **0** | **0** |
-| `overrides` | 1,883 | 6 | 26 |
 | `calls` | 59,197 | 15 | 14 |
+| `uses` | 39,085 | **0** | **0** |
+| `contains` | 28,213 | 6 | 18 |
+| `imports` | 15,160 | **0** | **0** |
+| `references` | 12,280 | **0** | **0** |
+| `extends` | 3,505 | **0** | **0** |
 | `instantiates` | 1,640 | **0** | 5 |
+| `overrides` | 1,883 | 6 | 26 |
+| `exports` | 96 | **0** | **0** |
 
-**90 disagreements, from 6,048 when this was first run.** Three of those were real analyzer
-defects and are now fixed; the other ~6,000 were the instrument's own, and the sequence is worth
-recording because it is the argument for building one:
+**161,059 edges agreed by two derivations that share no helper; 90 disagreements, 99.94%.**
+The four types added last (`uses`, `references`, `imports`, `exports`) came back perfect on their
+first full run — 66,621 edges that had been verified by nothing until then.
 
-- it fed its own truth derivation the analyzer's **truncated bytes** (619 false "missing" from a
-  file the analyzer never finished reading — see the 1 MiB note above);
-- it gave every nested `def` its **own scope**, contradicting this lane's declared contract, and
-  counted the same edge on both sides (282 from one drifted branch);
-- it cut a callee's **text** at the first `(`, so `url.lower().startswith("x")` yielded `lower`
-  — the inner call's name — losing 1,858 outer calls;
-- it named a **subscript expression** as a callee (`PKG_MANAGERS[pkgmgr]`), where this lane emits
-  nothing because `d[k]()` calls an unnamed value;
-- it spelled the **module scope** two ways (146 edges from hyphenated scripts);
-- it applied the constructor convention in four places but not the fifth (282 more).
+Three details in those derivations are why they came back clean, and each was wrong first:
 
-The real defects had to **survive all of that** before they could be read as what they were.
+- **`uses` excludes four shapes**, each because something else already carries the fact: an
+  assignment LHS is a *write* (`extractAssignment` emits it), a call's function child is a *call*,
+  a member-call receiver is *traversal*, and an augmented-assignment LHS is also a write.
+- **`references` is sourced to whoever WROTE the annotation**, not to whoever is mentioned —
+  python keeps type information in annotations, so `x: T` inside a function belongs to that
+  function. It dedupes per `(source, target, kind)`, so one identifier serving as both a
+  parameter annotation and a return annotation publishes two edges naming the same node; keying
+  the derivation on the LINE collapses them, which is why `addByKind` exists.
+- **`exports` reads a `string` node's CONTENT**, not its text — `.text` is `"User"` *with the
+  quotes* — and handles `augmented_assignment`, since `__all__ += [...]` is how a module extends
+  its own surface.
 
-**Three limits are stated rather than absorbed**, because a differential that reports agreement
-it has not earned is the failure this exists to prevent:
+**The 90 that remain** are not claimed to be clean. `contains` 24, `overrides` 32, `calls` 29,
+`instantiates` 5, concentrated in Cython (`PyrexTypes.py` 20, `test_dataclasses.py` 9,
+`Nodes.py` 7). Traced to three limits of the ORACLE, each documented where it lives: degenerate
+trees for chained calls written with a line continuation; `cdef class` bases the python grammar
+does not model; and base names that are both imported and locally declared, which needs the
+module's imports to settle.
 
-- **Chained calls across line continuations** — membership agrees, multiplicity does not.
-  tree-sitter produces a degenerate node for the continuation form (the inner `call` has no
-  children), so the oracle cannot see the extra edges at all. See the implementation note below.
-- **Override bases that are both imported and locally declared** — needs the module's imports,
-  which the derivation does not read.
-- **Multiplicity** — all 11,670 rows are the line-continuation shape.
+**The harness also reports, permanently:** 6,787 declared guesses confirmed by the tree **0**
+times, and 1 file truncated at the 1 MiB parse limit whose unread tail is a PY-19 coverage
+concern rather than an analyzer error. Multiplicity disagreement is **7**, all the
+line-continuation shape.
+
+### Three defects the differential found in this analyzer
+
+| Defect | Kind | Effect |
+| --- | --- | --- |
+| A class nested in a **class body** had no `ownerName`, so no `contains` | loss | 60 edges recovered |
+| A name bound in a **lambda or comprehension** was published as a class member | fabrication | 20 edges removed |
+| Override bases keyed by class **name**, merging same-named classes | misattribution | 32 edges corrected |
+
+Each was settled by asking **CPython** — `vars()` and `ast.walk` — rather than by argument. The
+third is the one worth remembering: it neither added nor removed an edge, it pointed a
+*correct-looking* edge at the wrong class, which is the failure mode neither a count nor a set
+comparison can see. That is the whole argument for having built the instrument: a reviewer reading
+`basesByClass.get(s.ownerName)` would have seen a Map lookup and called it correct.
 
 ## Evidence pointers
 
