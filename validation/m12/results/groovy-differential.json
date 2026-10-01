@@ -168,8 +168,8 @@
         "bytes": 78748
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "a4d69495f5622944a77f2f6dc856885d17154d25a4fe41b28e91739720dfaddf",
-        "bytes": 88865
+        "sha256": "9017e7f1ba60cf42de647f732ff38a6a1a8f68aef3fdad73d001a72ff1042acb",
+        "bytes": 89883
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "1394f4fa5b091691e69c558d135de69b563750b15cefda7281873623f80e9079",
@@ -216,8 +216,8 @@
         "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
-        "sha256": "a06dc65556f7ff9d14dddd47c550ffabfd3ae29c9e365752e153b50ab3d7acff",
-        "bytes": 96057
+        "sha256": "15cf16d3b5e8dc14b82ff9bb37b0ced9463f63f16a03b12b7849a9a5dabbacdd",
+        "bytes": 97470
       },
       "src/ast/real-php-analyzer.ts": {
         "sha256": "5088062a5b884200818504337baaa239b8071c90f7b0960b91c41dc712f16a86",
@@ -280,8 +280,8 @@
         "bytes": 76833
       },
       "src/ast/real-vue-analyzer.ts": {
-        "sha256": "476799bfbe73613a698058387d436f2d577475957d828c4b6c368c3c36038815",
-        "bytes": 82742
+        "sha256": "162fc7b5cdb244086b23402bc2c9f41a626f1b27128e0b387c96a25831d2e613",
+        "bytes": 82760
       },
       "src/ast/real-xml-analyzer.ts": {
         "sha256": "dd9b0eac9cac040b5f8ec73a35c9833d541bf6bd84fb376a4ba0168aacdc0069",
@@ -511,11 +511,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:groovy",
-      "wallTimeMs": 165.606697,
-      "userCpuMs": 309.762,
-      "systemCpuMs": 8.121,
-      "peakRssBytes": 272162816,
-      "rssDeltaBytes": 1703936,
+      "wallTimeMs": 365.954006,
+      "userCpuMs": 221.146,
+      "systemCpuMs": 15.981,
+      "peakRssBytes": 296570880,
+      "rssDeltaBytes": 3276800,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
