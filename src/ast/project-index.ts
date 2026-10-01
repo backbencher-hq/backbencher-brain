@@ -53,6 +53,13 @@ export type DeclarationKind =
   // "unknown" would read as "we looked and could not tell" — which is a different and worse
   // claim than "this is a class".
   | "class"
+  // Dart's declaration kinds. Added to the union for the reason "class" was: a
+  // shared type is not the place to pretend one language's mixin is another's
+  // class, and "unknown" would read as "we looked and could not tell", which is a
+  // different and worse claim than "this is a mixin".
+  | "mixin"
+  | "extension"
+  | "extension_type"
   | "unknown"
 
 export interface ProjectIndex {
@@ -164,6 +171,89 @@ export const PYTHON_DECLARATION_SPEC: DeclarationSpec = {
         const leaf = c.childForFieldName("attribute") ?? c.namedChild(c.namedChildCount - 1)
         if (leaf && leaf.text) out.push(leaf.text)
       }
+    }
+    return out
+  },
+}
+
+/**
+ * The Dart declaration shapes, as the GRAMMAR names them.
+ *
+ * PY-7's finding applies to dart verbatim and harder: the `overrideCompanion` tier
+ * that DARTD16's cross-file pass reads was populated by nobody, so the 0.8
+ * first-parent guess absorbed 100% of dart's external overrides. freezed made that
+ * expensive — it emits `@override` on every generated `props`/`hashCode`/`toString`
+ * against `Equatable`, so the guess fired on 81 rows in ProxiCall/lib alone and
+ * named a base that does not declare the member.
+ *
+ * Three things the grammar does not group, which is why this needs a `baseResolver`
+ * rather than a `baseNodes` list:
+ *
+ *   1. `extends X` is a `superclass` node; a mixin's `on X` is a BARE
+ *      `type_identifier` DIRECT child of the declaration with nothing around it; and
+ *      `with` lives INSIDE the `superclass` node beside `extends`, not beside the
+ *      declaration. Reading direct children for all three silently loses every mixin
+ *      on a class that also extends something.
+ *   2. An IMPORT ALIAS is a SIBLING, not a dotted name: `extends _i2.A2` parses as
+ *      `superclass > type_identifier(_i2), type_identifier(A2)`. Keying the first
+ *      identifier files the class under its alias. Only a `type_identifier` that is
+ *      the LAST in its group is the real name.
+ *   3. A member is only inheritable if it is CALLABLE. Dart fields cannot be
+ *      overridden, and indexing them made a base's field satisfy "this base declares
+ *      the name" — the same defect PY-21 defect 4 records for python, and the reason
+ *      `memberNodesCallable` is deliberately left unset here too.
+ */
+export const DART_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_definition: "class",
+    mixin_declaration: "mixin",
+    extension_declaration: "extension",
+    extension_type_declaration: "extension_type",
+    enum_declaration: "enum",
+  },
+  // Methods and accessors only. `getter_signature` and `setter_signature` count
+  // (Dart overrides both); constructors and fields do not.
+  memberNodes: [
+    "method_signature",
+    "function_signature",
+    "getter_signature",
+    "setter_signature",
+    "operator_signature",
+  ],
+  // NOT the class body. `typeNodes` already resets the member scope when it enters a
+  // declaration, so listing `class_body` here would put every direct member one scope
+  // deep and exclude precisely the members the index exists to record — measured: a
+  // Dart spec with `class_body` in scopeNodes indexed 9 types and ZERO members.
+  // What must be scopes are the BODIES a local function can hide inside, or a local
+  // `function_signature` would be indexed as a member of the enclosing class.
+  scopeNodes: ["function_body", "function_expression_body", "block"],
+  baseResolver: (node: Node): string[] => {
+    const out: string[] = []
+    const pushLeaf = (group: any): void => {
+      if (!group) return
+      // the LAST type_identifier in a group is the real type name; earlier ones in
+      // the same group are an import alias (`_i2` in `extends _i2.A2`).
+      let last: Node | null = null
+      for (let i = 0; i < group.namedChildCount; i++) {
+        const c = group.namedChild(i)
+        if (c && c.type === "type_identifier") last = c
+      }
+      if (last && last.text) out.push(last.text)
+    }
+    for (const c of node.namedChildren) {
+      if (!c) continue
+      if (c.type === "superclass") {
+        // `extends A with B` — BOTH live inside this node
+        for (const g of c.namedChildren) {
+          if (!g) continue
+          if (g.type === "type_identifier") out.push(g.text)
+          else if (g.type === "superclass" || g.type === "mixin" || g.type === "interfaces") pushLeaf(g)
+        }
+        continue
+      }
+      // a mixin's `on X` is a bare type_identifier DIRECT child, with no wrapper
+      if (c.type === "type_identifier") { out.push(c.text); continue }
+      if (c.type === "interfaces" || c.type === "mixin_on_clause") pushLeaf(c)
     }
     return out
   },
