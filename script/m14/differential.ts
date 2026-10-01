@@ -15821,7 +15821,25 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
           // enclosing impl type (matches the analyzer's enclosingImplType
           // rule; unresolvable Self drops like the analyzer's ?? null).
           if (recv === "Self") recv = enclosingImplType(n) ?? ""
-          if (recv && /^[A-Z]/.test(recv) && declaredTypes.has(recv) && !seenCalls.has("inst:" + recv)) {
+          // RUST-D30 mirror: a BARE PascalCase callee is ambiguous against the
+          // prelude. `Ok(())` is the prelude's variant; with a local `struct Ok;` in
+          // the same file the in-file filter resolved it to that struct and produced
+          // an edge created by a NAME COLLISION rather than by any relationship. The
+          // analyzer now refuses the bare spelling, so the oracle must too.
+          //
+          // The exemption is `Self(..)`, and it has to be tested BEFORE `recv` is
+          // resolved, because resolution replaces the keyword with the enclosing
+          // type and the distinction is then unrecoverable. My first version of this
+          // mirror tested AFTER resolution, compared the receiver against
+          // enclosingImplType for no reason connected to spelling, and suppressed two
+          // legitimate rows (`visit_seq -> CString`, `visit_seq -> Duration`) while
+          // still missing the real one — so the check is now the same one the
+          // analyzer makes: was the callee spelled as an identifier that is not
+          // `Self`? Note this is the SECOND time this construct had to be mirrored
+          // into the oracle (RUST-D28 was the first). A green gate is not evidence
+          // when both sides are wrong the same way.
+          const barePascalAmbiguous = barePascal && fn.text !== "Self"
+          if (recv && /^[A-Z]/.test(recv) && declaredTypes.has(recv) && !seenCalls.has("inst:" + recv) && !barePascalAmbiguous) {
             seenCalls.add("inst:" + recv)
             edges.push({ label: "instantiates", from: "(expr)", target: recv })
           }
@@ -16091,7 +16109,15 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
     const fns: any[] = []
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "function_item") fns.push(n)
+      // RUST-D19 mirror: `function_signature_item` is a BODILESS declaration — the
+      // trait-method signature `fn exec(&self, on_stdout_line: &mut dyn FnMut(&str)
+      // -> …) -> …;`. It binds names exactly like a function does, so the oracle has
+      // to collect it too. It did not, which is why this sweep reported the three
+      // rows the analyzer now correctly WITHHOLDS as MISSING: the same defect
+      // independently re-appearing in the oracle is the check that the analyzer-side
+      // fix was a real ruling and not a way of making the gate green — the oracle
+      // disagreed and was corrected, not the other way round.
+      if (n.type === "function_item" || n.type === "function_signature_item") fns.push(n)
       for (let i = n.namedChildCount - 1; i >= 0; i--) stack.push(n.namedChild(i))
     }
     for (const fn of fns) {
@@ -16250,6 +16276,15 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
             const params = p.parent
             const holder = params?.parent
             if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) skip = true
+            // RUST-D19 mirror, second half. The fn-pointer TYPE case above was
+            // already here; a SIGNATURE's own parameters were not, so the oracle
+            // derived `uses -> on_stdout_line` for the two parameters of a trait
+            // method's signature — the same fabrication the analyzer had, reached
+            // independently. F5 then compared a fabrication against a fabrication
+            // and reported 0 unexplained, which is agreement on a wrong contract
+            // rather than evidence. A parameter of a bodiless declaration
+            // DECLARES, whatever kind of declaration holds it.
+            if (params?.type === "parameters" && holder && (holder.type === "function_signature_item" || holder.type === "function_item")) skip = true
           }
         }
       }
@@ -20551,22 +20586,8 @@ async function main() {
       }
       if (lang === "erlang") {
         // The erlang lane reads the PROMOTED oracle (script/m14/erlang-truth-oracle.ts),
-        // not the inline `deriveErlangEdges` mirror that used to live here. A mirror
-        // re-derives the analyzer's rules by reading its source, so it derives whatever
-        // the analyzer derives and a label the analyzer got WRONG is invisible to the
-        // comparison — the #910 / G7 / M60 #278 gap this file already records three
-        // other times. The promoted oracle disagrees with the analyzer on purpose
-        // (ER-D34/35/36/38) and each disagreement found a real defect.
-        //
-        // `relPath` is not optional. The oracle uses the path as the owner of a file
-        // that declares no `-module` (ER-D32), and the analyzer is called with exactly
-        // this string further up; called without it the oracle emits NO `contains` for
-        // every module-less file, and the gate then reports thousands of analyzer-only
-        // edges that are really an identity mismatch between the two sides of the
-        // comparison rather than a difference in what they found.
-        //
-        // The oracle's edge fields are {type, source, target}; the truth array this
-        // block feeds is matched on {label, from, target}. Map, do not rename in place.
+        // not the inline mirror that used to live here — see the commit that restored
+        // this for the full rationale. `relPath` is required (ER-D32 ownership).
         {
           const { oracleAnalyze } = await import("./erlang-truth-oracle")
           for (const e of oracleAnalyze(root, relPath).edges) {
@@ -20796,6 +20817,21 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
+          // ER: erlang joins the contains-audited set. It emits `contains` for
+          // module->member and record->field -- the edges the containment graph is
+          // made of -- and script/m60/rel-type-coverage-gate.ts reported
+          // `erlang 1 un-audited: ["contains"]`, which means ~202,000 of this lane's
+          // relationships were stored and compared against NOTHING by this gate.
+          //
+          // Two changes land together, because one without the other fixes nothing.
+          // The oracle behind this filter is now the lane's own
+          // script/m14/erlang-truth-oracle.ts -- the call site imports it by the same
+          // mechanism fsharp-truth-oracle uses -- rather than an inline mirror that
+          // derived seven labels and not this one. A mirror derives whatever the
+          // analyzer derives, so a label it happened not to derive could not be
+          // caught by comparing the two. That is the #910 (c imports) / G7 (groovy
+          // uses) / M60 #278 harness gap this file already records three other
+          // times, in a fourth direction.
           ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : lang === "erlang" ? ["contains", "references", "exports", "imports"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
