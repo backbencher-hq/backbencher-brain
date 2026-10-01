@@ -3955,6 +3955,45 @@ export async function indexProjectParallel(
       }
     }, poolTelemetry, signal)
     if (signal?.aborted) stats.cancelled = true
+
+    // PERL-MR15. Populate the cross-file override companion from the symbols this
+    // run already holds, then re-analyze the files whose `overrides` edges depend
+    // on a base declared in ANOTHER file.
+    //
+    // It has to run HERE, between the parse and the store: `FileResult.symbols`
+    // is the project's method-name space and it is only in memory inside this
+    // function. Running it later would mean a second parse of every file to
+    // rebuild an index this run already computed.
+    //
+    // 75.6% of perl's `overrides` edges are false -- measured over 5,774 corpus
+    // files, the base is in the project and does not declare the method. The
+    // differential cannot see that class of defect, so nothing else in the run
+    // will ever correct it.
+    //
+    // Failures are swallowed on purpose: a re-analysis that throws leaves the
+    // first run's result in place, which is the pre-MR15 behaviour. A companion
+    // that cannot be built must never turn a completed index into a failed one.
+    {
+      const { populateOverrideCompanion } = await import("./override-companion-pass")
+      const poolWorker = (await import("./pool-worker")) as any
+      const reparse = poolWorker.parseFile
+      if (reparse) {
+        const passStats = await populateOverrideCompanion({
+          projectPath,
+          results,
+          language: "perl",
+          reparse: (f, p, ctx) => reparse(f, p, ctx),
+        })
+        if (passStats.owners > 0) {
+          log.info(
+            `override companion (perl): ${passStats.owners} owners, ${passStats.refiles} file(s) re-analyzed, ` +
+              `${passStats.reapplied} reapplied, ${passStats.confirmed} confirmed, ${passStats.stillGuess} still guessed, ` +
+              `${passStats.failed} failed`,
+          )
+        }
+      }
+    }
+
     phases.parseMs = Date.now() - parseStart
     phases.dbFlushMs = poolTelemetry.dbFlushMs
     phases.retries = poolTelemetry.retries
