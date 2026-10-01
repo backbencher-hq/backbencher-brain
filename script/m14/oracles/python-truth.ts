@@ -791,9 +791,23 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const inner = fnOwner ?? nm
       const body = n.childForFieldName("body")
       if (body) walkBody(body, inner, ownerClass, inner)
+      // THE PARAMETER LIST IS CODE TOO. A default value is an expression that runs when the
+      // `def` executes, so `dpkg_options=expand_dpkg_options(DPKG_OPTIONS)` in
+      // `ansible/modules/apt.py` is a real call the analyzer records — and this derivation
+      // missed it, because `parameters` is a child of `function_definition` but NOT of its
+      // `body`, so it went down the `walkScopes` path below, which derives definitions and not
+      // calls. Four rows of the corpus's `unexplained calls` were that one clause.
+      //
+      // The scope is the function itself, matching the lane: the call is written in this
+      // function's signature. Whether the MODULE scope would be more truthful is arguable —
+      // python evaluates a default once, at `def` time, so `install` itself never calls
+      // `expand_dpkg_options` — and that is a question about the lane's convention rather than
+      // a missing relationship, so it is mirrored rather than silently changed.
+      const params = n.childForFieldName("parameters")
+      if (params) walkBody(params, inner, ownerClass, inner)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c !== body) walkScopes(c, inner, ownerClass, inner)
+        if (c !== body && c !== params) walkScopes(c, inner, ownerClass, inner)
       }
       return
     }
