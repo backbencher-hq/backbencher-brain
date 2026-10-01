@@ -645,7 +645,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // is read only when it is an identifier and the search is the fallback.
         const nameField = node.childForFieldName?.("name")
         const nameNode =
-          nameField && (nameField.type === "identifier" || nameField.type === "field_identifier")
+          // Z45, restored: `field_identifier` is DEAD. This grammar has no such node
+          // type -- a field's name is an `identifier` (probe-verified against the
+          // pinned wasm by zigw-dead-branches.ts) -- and the dead disjunct was
+          // REINTRODUCED by a concurrent commit in another lane (86345f38), which
+          // put F1 back to `FAIL refs=52 unknown=2`. Seventh time this lane's work
+          // has been reverted by a commit elsewhere; the grammar audit caught it,
+          // which is the only reason it was caught rather than shipped.
+          nameField && nameField.type === "identifier"
             ? nameField
             : this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
@@ -1255,7 +1262,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           push(enclosingName(n), String(callee.text), this.nodeLine(callee) ?? 0, { isGenericTypeApplication: true })
         }
       }
-      if (n.type === "struct_initializer" || n.type === "struct_literal") {
+      // Z45, restored: `struct_literal` is DEAD for the same reason and the same
+      // grammar rename -- a construction parses as `struct_initializer` (or
+      // `anonymous_struct_initializer`) and there is no `struct_literal` node to
+      // match. Reintroduced by the same concurrent commit.
+      if (n.type === "struct_initializer") {
         const first = n.namedChildCount > 0 ? n.namedChild(0) : null
         if (first) {
           const raw = String(first.text ?? "")
