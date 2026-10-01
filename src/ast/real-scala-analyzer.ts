@@ -20,40 +20,6 @@ const COMPOUND_ASSIGN_OPS = new Set(["+=", "-=", "*=", "/=", "%=", "&=", "|=", "
  * args (`List[A]` → "(List[A])") never registered as type variables and the
  * generic-substitution override fallback never fired for them.
  */
-/**
- * M60 (#924, scala half): quoting syntax is not part of an identifier's NAME.
- * `@Test def `object` =` declares the identifier `object`, and the corpus's
- * own references spell it WITHOUT the backticks — a published name that keeps the
- * syntax is a name no reference can spell. Same remedy as the swift half
- * (real-swift-analyzer.ts stripNameQuoting), with kotlin's semantics: the strings
- * this file publishes are also ids and qualified names ("A.`object`"), so every
- * COMPLETE backtick run is quoting, wherever it sits in the string; an unmatched
- * backtick is not a run and is kept verbatim. Measured before the fix on the
- * census's own samples: 104 occurrences / 52 distinct names, and 52 of those
- * names were invisible to the register's whitespace-keyed routing
- * (script/m14/tmp/c924-name-surface-probe.ts).
- */
-function stripScalaQuoting(text: string): string {
-  if (!text.includes("`")) return text
-  let out = ""
-  let i = 0
-  while (i < text.length) {
-    if (text.charCodeAt(i) === 96) {
-      const close = text.indexOf("`", i + 1)
-      if (close === -1) {
-        out += text.slice(i)
-        break
-      }
-      out += text.slice(i + 1, close)
-      i = close + 1
-    } else {
-      out += text[i]
-      i++
-    }
-  }
-  return out
-}
-
 function sigHasTypeVar(sig: string): boolean {
   const n = sig.length
   let i = 0
@@ -400,8 +366,8 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         const templateBody = this.findChild(node, "template_body")
         if (templateBody) {
           const typeNode = node.namedChild(0)
-          // M60 (#924, scala E): a SYNTHETIC name must be canonical — never source text.
-          let superName = typeNode ? this.scalaTypeHeadName(typeNode) : ""
+          let superName = typeNode?.text ?? ""
+          if (typeNode?.type === "generic_type") superName = typeNode.namedChild(0)?.text ?? superName
           superName = this.stripTypeArgs(superName)
           const anonName = superName ? `anonymous_${superName}` : "anonymous_object"
           const anonSym: ASTEngine.UniversalSymbol = {
@@ -1500,16 +1466,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     parent: ASTEngine.UniversalSymbol | null,
     extraMetadata: any = {},
   ): ASTEngine.UniversalSymbol {
-    // M60 (#924, scala half): quoting syntax is not part of a NAME — and this
-    // factory is the one place every published scala name is built. id,
-    // ownerName and every `contains` target are derived FROM this string, so
-    // stripping here keeps the whole surface consistent; it cannot break
-    // resolution, because the analysis resolves references against the SOURCE's
-    // own spellings (a reference to a backticked name is itself backticked)
-    // long before anything is published. Backticked CALLS need nothing here:
-    // handleCall and the oracle both refuse a backticked callee in lockstep, so
-    // no call target can carry the syntax.
-    name = stripScalaQuoting(name)
     const decorators = this.collectAnnotations(node)
     const kdoc = this.extractScalaDoc(node)
     // M59 (#825): the DECLARATION's own line (annotations skipped), so the
@@ -1621,29 +1577,6 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       out += s[i]
     }
     return out
-  }
-
-  /**
-   * M60 (#924, scala E): the HEAD TYPE NAME of a type node — never the node's source
-   * text. `new ScalaRandom[F](Applicative[F].pure(new JavaSecureRandom())) with
-   * SecureRandom[F] {}` is an instance_expression whose type is a compound_type: a
-   * whole EXPRESSION (constructor arguments included) whose NAME is the head type
-   * constructor. The generic_type path already collapsed to the head; this applies the
-   * same collapse to every type shape, descending the head position (compound base →
-   * applied constructor → generic type) and falling back to the old text behaviour only
-   * when the shape is none of those. Measured: SecureRandomCompanionPlatform.scala:70,
-   * node shape in script/m14/tmp/c924-scala-val-shape.ts.
-   */
-  private scalaTypeHeadName(typeNode: Node): string {
-    let n: Node | null = typeNode
-    for (let guard = 0; n && guard < 8; guard++) {
-      if (n.type === "type_identifier") return n.text
-      if (n.type === "compound_type") n = n.childForFieldName("base") ?? n.namedChild(0)
-      else if (n.type === "applied_constructor_type") n = n.namedChild(0)
-      else if (n.type === "generic_type") n = n.namedChild(0)
-      else break
-    }
-    return this.stripTypeArgs(typeNode.text)
   }
 
   private stripTypeArgs(s: string): string {
@@ -2409,34 +2342,19 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // expression collectors (the identifiers are ordinary reads).
     if (patternNode.type === "tuple_pattern") return
 
-    // M60 (#924, scala E): `val A, B = Value` declares TWO constants — the grammar
-    // carries them as an `identifiers` node, and publishing its source text made
-    // `A, B` one name that no reference can spell (measured: EnumerationTests.scala:3,
-    // node shape in script/m14/tmp/c924-scala-val-shape.ts). Unlike the tuple_pattern
-    // refused above (a run-time VALUE shape, S1.19), every child here IS a declared
-    // name, so each is published as its own symbol over the definition's own range.
+    const name = patternNode.text
     const kind = node.type === "val_definition" || node.type === "val_declaration"
       ? ASTEngine.SymbolKind.Constant
       : ASTEngine.SymbolKind.Variable
-    const declared: string[] = []
-    if (patternNode.type === "identifiers") {
-      for (let i = 0; i < patternNode.childCount; i++) {
-        const child = patternNode.child(i)
-        if (child && child.isNamed && child.type === "identifier") declared.push(child.text)
-      }
-    }
-    if (declared.length === 0) declared.push(patternNode.text)
-    for (const name of declared) {
-      const symbol = this.createSymbol(name, kind, node, parent, { type: node.type, isAbstract: node.type === "val_declaration" || node.type === "var_declaration" })
-      symbols.push(symbol)
+    const symbol = this.createSymbol(name, kind, node, parent, { type: node.type, isAbstract: node.type === "val_declaration" || node.type === "var_declaration" })
+    symbols.push(symbol)
 
-      if (this.isPublic(node) && !parent) {
-        exports.push({
-          name,
-          kind: kind,
-          range: symbol.range,
-        })
-      }
+    if (this.isPublic(node) && !parent) {
+      exports.push({
+        name,
+        kind: kind,
+        range: symbol.range,
+      })
     }
   }
 
@@ -2452,9 +2370,10 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     const sourceName = parent?.name ?? "(script)"
     const typeNode = node.namedChild(0)
     if (!typeNode) return
-    // M60 (#924, scala E): the instantiated NAME is the head type — a compound_type's
-    // text carries the constructor ARGUMENTS, which are syntax, not a name.
-    let typeName = this.scalaTypeHeadName(typeNode)
+    let typeName = typeNode.text
+    if (typeNode.type === "generic_type") {
+      typeName = this.extractSupertypes(typeNode)[0]?.name || typeNode.text
+    }
     // Scala renders type arguments with SQUARE brackets: List[(A, B)](args)
     // — targets must be clean base names, so strip bracketed type args in
     // both syntaxes iteratively (nested args List[(A[B], C)] need repeated

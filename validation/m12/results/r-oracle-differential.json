@@ -6,17 +6,17 @@
     "method": "R parse() builds the AST; a walk over R's own AST collects file-level bindings (no evaluation, so no stubs and no unevaluated files)",
     "entry": "validation/m12/oracle/r-globals-oracle.R",
     "script": "validation/m12/oracle/r-globals-oracle.R",
-    "scriptSha256": "b695ccc7200ffc00237abcea8aef267c97ec085c0b309877f8bf3ad67ec830e4"
+    "scriptSha256": "9940708789a9cc51e5ef8fb08338c4fd0663a7901a7ec0884ad40a0649e1d18a"
   },
   "present": true,
   "totals": {
     "filesConsidered": 1174,
-    "compared": 993,
-    "bindings": 8707,
-    "agreed": 8707,
+    "compared": 997,
+    "bindings": 8798,
+    "agreed": 8798,
     "phantom": 0,
     "missed": 0,
-    "declarationsNotBindings": 831,
+    "declarationsNotBindings": 1009,
     "precision": 1,
     "recall": 1,
     "rejectedByR": 1
@@ -24,9 +24,9 @@
   "repos": [
     {
       "repo": "Matrix",
-      "compared": 64,
-      "bindings": 2004,
-      "agreed": 2004,
+      "compared": 68,
+      "bindings": 2094,
+      "agreed": 2094,
       "phantom": 0,
       "missed": 0
     },
@@ -41,16 +41,16 @@
     {
       "repo": "ggplot2",
       "compared": 340,
-      "bindings": 2532,
-      "agreed": 2532,
+      "bindings": 2530,
+      "agreed": 2530,
       "phantom": 0,
       "missed": 0
     },
     {
       "repo": "shiny",
       "compared": 235,
-      "bindings": 1682,
-      "agreed": 1682,
+      "bindings": 1685,
+      "agreed": 1685,
       "phantom": 0,
       "missed": 0
     },
@@ -65,10 +65,10 @@
   ],
   "disagreements": [],
   "note": "R's own parser and AST decide which names a file binds; the analyzer decides the same question with tree-sitter-r; the answers are compared. Precision 1.0 / recall 1.0 means every binding R reports is published and no binding is published that R does not make. `declarationsNotBindings` counts S4/S7 registrations, which declare a class or generic without binding a variable of that name - a different fact from a variable binding, so it is reported rather than scored. ",
-  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
+  "currentCommit": "b1947d3e2e4fd500ad8f9e78aa5520c99965b920",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T22:00:48.798Z",
-    "contentSha256": "c0337a3c503457c6813652a3e2864e65d89c15321ea58e6c9c8f5785f2df0303"
+    "sealedAt": "2026-09-27T22:29:07.934Z",
+    "contentSha256": "1fe6e2f44d43cc48d3068adc4b86d5268dea8ce3ebd1699ad53d11215ff4d84d"
   }
 }

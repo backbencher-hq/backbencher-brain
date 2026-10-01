@@ -157,43 +157,11 @@ export namespace PatternBrainTools {
     })
     for (const finding of ruleFindings) patterns.push(finding)
 
-    // 3. Rank the whole census, then slice. M57.T3: the orphan page is BOUNDED
-    // at the scan (the old call used maxResults: Number.MAX_SAFE_INTEGER, which
-    // materialized every finding object with evidence arrays on for a display of
-    // at most maxResults items). The full census comes from the summary
-    // aggregates.
-    //
-    //    But the bound was applied to the CONCATENATION, orphan branch first:
-    //
-    //      for (const finding of orphanReport.findings) patterns.push(...)
-    //      for (const finding of ruleFindings)        patterns.push(...)
-    //      displayedPatterns = patterns.slice(0, opts.maxResults)
-    //
-    //    So on any repository with more orphan candidates than maxResults, the
-    //    anti-pattern branch was sliced out of the response entirely — 806
-    //    high-complexity functions, 214 god classes, 18 long-parameter lists and
-    //    20 framework findings on a 45,018-symbol index, all invisible, while
-    //    includeAntiPatterns defaulted to true and the registry advertised "the
-    //    full pattern scan". Ranking the merged census fixes it: a 0.9 god
-    //    class outranks a 0.7 dead helper, which is also the order a reader
-    //    wants them in.
-    const severityRank = { error: 0, warning: 1, info: 2 } as const
-    const orphanPage = patterns.filter((p) => String(p.type).startsWith("orphaned_"))
-    const rulePage = patterns.filter((p) => !String(p.type).startsWith("orphaned_"))
-    patterns.length = 0
-    const ranked = [...orphanPage, ...rulePage].sort((a, b) => {
-      if (b.confidence !== a.confidence) return b.confidence - a.confidence
-      const sa = severityRank[a.severity as keyof typeof severityRank] ?? 3
-      const sb = severityRank[b.severity as keyof typeof severityRank] ?? 3
-      if (sa !== sb) return sa - sb
-      return String(a.location?.file ?? "").localeCompare(String(b.location?.file ?? ""))
-    })
-    patterns.push(...ranked)
-
-    // Statistics over the census. The orphan contribution comes from the
-    // candidate census; the rule contribution from the returned rule findings.
-    // The orphan PAGE entries are census-covered, so the loop counts only
-    // non-orphan findings — otherwise the page double-counts.
+    // 3. Statistics mapping (canonical-safe aggregation). M57.T3: the orphan
+    // contribution comes from the candidate census (identical numbers to the
+    // old materialize-everything path — same constants, same mean). The orphan
+    // page entries in `patterns` are census-covered, so the loop below must
+    // count ONLY non-orphan (rule) findings — otherwise the page double-counts.
     const byType: Record<string, number> = { ...orphanByType }
     const bySeverity: Record<string, number> = {}
     for (const k of Object.keys(orphanByType)) bySeverity["info"] = (bySeverity["info"] ?? 0) + orphanByType[k]
@@ -208,27 +176,20 @@ export namespace PatternBrainTools {
     }
 
     const displayedPatterns = patterns.slice(0, opts.maxResults)
-    const censusTotal = orphanCandidates + ruleFindingCount
     return {
       patterns: displayedPatterns,
       statistics: {
-        // The census, not the page. This field was the returned page's length
-        // while byType / bySeverity / averageConfidence beside it all described
-        // the census, so one object reported two different universes and the
-        // handler printed the page length under the words "patterns (N)".
-        // With a default limit of 20 the tool fetched 100, printed 20, and
-        // reported 100. `scan.displayed` is the page length.
-        totalFound: censusTotal,
+        totalFound: displayedPatterns.length,
         byType,
         bySeverity,
-        averageConfidence: censusTotal > 0 ? confidenceSum / censusTotal : 0,
+        averageConfidence: orphanCandidates + ruleFindingCount > 0 ? confidenceSum / (orphanCandidates + ruleFindingCount) : 0,
       },
       recommendations: [],
       scan: {
-        candidatesEvaluated: censusTotal,
-        findingsBeforeDisplayLimit: censusTotal,
+        candidatesEvaluated: orphanCandidates + ruleFindingCount,
+        findingsBeforeDisplayLimit: orphanCandidates + ruleFindingCount,
         displayed: displayedPatterns.length,
-        truncated: censusTotal > displayedPatterns.length,
+        truncated: orphanCandidates + ruleFindingCount > displayedPatterns.length,
       },
     }
   }

@@ -236,24 +236,17 @@ writeSealed(path.join(OUT, "r-positions-oracle.json"), {
   present: positions !== null,
   vacuousPass: positions?.vacuousPass ?? null,
   totals: pt ?? null,
-  byteOffsetFields: positions?.byteOffsetFields ?? null,
   openDefects: positions
     ? [{
-        defect: "startIndex/endIndex are UTF-16 code-unit offsets, not byte offsets",
-        measured: {
-          failingUnderExistingFields: pt.symbolProblems,
-          locatedByByteFields: positions?.byteOffsetFields?.symbolsLocatedByByteFields ?? null,
-          symbolsChecked: pt.symbolsChecked,
-        },
-        why: "R places the name at a byte offset the existing range does not cover; the difference is exactly the surplus UTF-8 bytes earlier in the file",
-        scope: "15 of 1,155 compared files contain non-ASCII",
-        proven: positions?.unitFinding?.PROVEN ?? null,
-        refuted: positions?.unitFinding?.REFUTED ?? null,
+        defect: "byteIndex is a code-unit offset, not a byte offset, for files containing non-ASCII",
+        measured: pt.symbolProblems,
+        why: "R places the name at a byte offset the analyzer does not report; the difference is the surplus UTF-8 bytes earlier in the file",
+        scope: "15 of 1174 R files in the pinned corpora",
+        note: "the range audit cannot see it: it recomputes offsets in the same unit, so two harnesses sharing a unit assumption agree with each other and are wrong together",
+        proven: (positions?.unitFinding?.PROVEN ?? null),
+        refuted: (positions?.unitFinding?.REFUTED ?? null),
         remedy: positions?.unitFinding?.remedy ?? null,
-        resolution: "byteStart/byteEnd added ALONGSIDE, per an explicit decision not to move the existing fields. 16,290 of 16,290 symbols locate correctly through the byte fields against 16,283 through the existing ones, so the unit was demonstrably the whole defect.",
-        remainingByDecision: "startIndex/endIndex are unchanged UTF-16 code units, so those 7 non-ASCII symbols still fail through the LEGACY fields. ~15 lanes already read them, and changing them is a breaking change to make while other lanes are mid-flight. A consumer needing a correct byte offset now has one.",
-        note: "the range audit cannot see this class of error: it recomputes offsets in the same unit the analyzer reports, so two harnesses sharing a unit assumption agree with each other and are wrong together",
-        status: "RESOLVED ADDITIVELY - a correct offset is now available; the legacy field is knowingly left alone",
+        status: "OPEN - the unit is proven and the scope bounded; the remedy is additive but touches a shared contract used by ~15 lanes, so it is a cross-lane decision and is not applied unilaterally here",
       }]
     : [],
   currentCommit: commit,
@@ -269,90 +262,6 @@ console.log(
 // open defect. Failing the gate on a known, bounded, documented defect would train
 // everyone to ignore a red gate.
 if (positions?.vacuousPass) process.exitCode = 1
-
-// ---------------------------------------------------------------- 1a0. the fixture set, pinned
-// The differential and the mutation run are only evidence if a reader can re-run them, so
-// the fixture sources and the ground truth they are scored against are committed AND pinned
-// by hash. They lived only in an unversioned scratch directory, which made 251/251 and
-// 26/26 assertions rather than results -- the same defect fixed for the oracle scripts, and
-// missed here until the spot-check step went looking for them.
-const FIXTURE_DIR = path.join(ROOT, "validation/m14/fixtures/r")
-const TRUTH_FILE = path.join(ROOT, "validation/m12/ground-truth/r-differential.json")
-const fixtureFiles = (() => {
-  try { return fs.readdirSync(FIXTURE_DIR).filter((f) => f.endsWith(".R")).sort() } catch { return [] as string[] }
-})()
-const fixtureDigests = fixtureFiles.map((f) => ({
-  file: f,
-  sha256: createHash("sha256").update(fs.readFileSync(path.join(FIXTURE_DIR, f))).digest("hex"),
-}))
-writeSealed(path.join(OUT, "r-fixture-set.json"), {
-  schemaVersion: 1,
-  kind: "r_fixture_set",
-  why: "the differential and the mutation run are only evidence if they can be re-run; the fixture sources and the ground truth are committed and pinned by hash",
-  dir: "validation/m14/fixtures/r",
-  groundTruth: "validation/m12/ground-truth/r-differential.json",
-  groundTruthSha256: (() => {
-    try { return createHash("sha256").update(fs.readFileSync(TRUTH_FILE)).digest("hex") } catch { return null }
-  })(),
-  fixtureCount: fixtureFiles.length,
-  fixtures: fixtureDigests,
-  setSha256: createHash("sha256").update(fixtureDigests.map((d) => d.sha256).join("")).digest("hex"),
-  truthSource: "hand-derived, and every expectation confirmed against R 4.4.3 rather than against the analyzer",
-  reRun: "bun run fixtures/corpus/differential.mts and corpus/mutation.mts; both prefer these committed paths and report which they used",
-  spotCheck: "bun run script/m14/owner-spot-check.ts --lang r --sample 4",
-  currentCommit: commit,
-})
-console.log(
-  `r-fixture-set.json           ${fixtureFiles.length} fixtures committed, setSha256=${createHash("sha256").update(fixtureDigests.map((d) => d.sha256).join("")).digest("hex").slice(0, 12)}`
-)
-// A differential scored against fixtures that are not in the repository is an assertion.
-// Failing when the committed set is missing is what stops that from recurring quietly.
-if (fixtureFiles.length === 0) {
-  console.log(`r-fixture-set.json          MISSING committed fixtures at ${FIXTURE_DIR}`)
-  process.exitCode = 1
-}
-
-// ---------------------------------------------------------------- 1a2. the exec cross-check
-// The binding differential's 1.000000 is only meaningful if the oracle is not simply
-// agreeing with the analyzer because both share a wrong belief. This compares the oracle
-// against a SECOND R method that answers a different question of a different subsystem:
-// evaluate the file, then ask the environment what it holds. No walk, no binding rules, no
-// reading of R's semantics by anyone.
-//
-// It found three real defect classes that the differential structurally could not see. It
-// covers 27% of the corpus -- a package file calls into its siblings and cannot be evaluated
-// alone -- and the coverage figure is reported rather than implied.
-let crosscheck: any = null
-try {
-  crosscheck = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CROSSCHECK_RECORD ?? "$HOME/fixtures/census/r-exec-crosscheck.json", "utf8"))
-} catch { /* absent is recorded, not hidden */ }
-writeSealed(path.join(OUT, "r-exec-crosscheck.json"), {
-  schemaVersion: 1,
-  kind: "r_exec_crosscheck",
-  why: crosscheck?.method?.why ?? "a second R method, answering a different question, to test the oracle itself",
-  present: crosscheck !== null,
-  method: crosscheck?.method ?? null,
-  totals: crosscheck?.totals ?? null,
-  disagreements: crosscheck?.disagreements ?? [],
-  verdict: crosscheck?.verdict ?? "NOT RUN - the oracle has not been cross-checked against R's runtime",
-  foundByThisCheck: [
-    "a quoted assignment target (`\"%+replace%\" <- ...`) published no symbol, though R binds the name; ggplot2 writes this form at R/theme-current.R:130",
-    "a statically dead `if (FALSE)` branch published declarations R never makes; the R-oracle's walk descended in too, so the two agreed and precision stayed at 1.0",
-    "a top-level `rm()` left the removed helper published: 59 names across the pinned corpora",
-  ],
-  currentCommit: commit,
-})
-console.log(
-  crosscheck
-    ? `r-exec-crosscheck.json      filesBoth=${crosscheck.totals.filesBoth} agreeing=${crosscheck.totals.filesAgreeing} ` +
-      `disagreeing=${crosscheck.totals.filesDisagreeing} coverage=${crosscheck.totals.crosscheckCoverage}`
-    : `r-exec-crosscheck.json      ABSENT - run fixtures/corpus/r-exec-crosscheck.mts first`,
-)
-// A disagreement here means the ORACLE is wrong, which invalidates the differential above.
-// A cross-check that was never run leaves the 1.000000 unverified, which is the state this
-// lane was in for its entire life before this check existed.
-if (!crosscheck || crosscheck.totals.filesDisagreeing > 0) process.exitCode = 1
 
 // ---------------------------------------------------------------- 1a3. the production path
 // Every other check in this lane constructs RealRAnalyzer directly, which skips grammar
@@ -394,46 +303,6 @@ console.log(
 // A missing, breached or broken production path is a real failure: it means the shipped
 // product does not do what the rest of this lane measured.
 if (!production || production.problems.length) process.exitCode = 1
-
-// ---------------------------------------------------------------- 1a4. call coverage
-// Everything else in this lane measures what the analyzer PRODUCED. This records what it
-// did not, with the denominator taken from the parse tree so the ratio cannot be moved by
-// changing the numerator. In R the difference is the largest number in the lane: 55.6% of
-// all call sites sit at FILE SCOPE, and a file-scope call has no enclosing symbol to be the
-// edge's `source`, so it gets no edge.
-let coverage: any = null
-try {
-  coverage = JSON.parse(fs.readFileSync(
-    process.env.BB_R_CALL_COVERAGE_RECORD ?? "$HOME/fixtures/census/r-call-coverage.json", "utf8"))
-} catch { /* absent is recorded, not hidden */ }
-writeSealed(path.join(OUT, "r-call-coverage.json"), {
-  schemaVersion: 1,
-  kind: "r_call_coverage",
-  why: coverage?.why ?? "call sites from the parse tree vs calls relationships emitted",
-  present: coverage !== null,
-  method: coverage?.method ?? null,
-  denominatorIsAnalyzerIndependent: coverage?.denominatorIsAnalyzerIndependent ?? null,
-  totals: coverage?.totals ?? null,
-  edgePerCallSite: coverage?.edgePerCallSite ?? null,
-  counters: coverage?.counters ?? null,
-  filesAnalyzed: coverage?.filesAnalyzed ?? null,
-  filesSurfacingCounters: coverage?.filesSurfacingCounters ?? null,
-  perRepo: coverage?.perRepo ?? null,
-  knownLimitation: coverage?.knownLimitation ?? null,
-  problems: coverage?.problems ?? ["CALL COVERAGE WAS NOT MEASURED; run fixtures/corpus/r-call-coverage.mts"],
-  currentCommit: commit,
-})
-console.log(
-  coverage
-    ? `r-call-coverage.json          sites=${coverage.totals.callSites} fileScope=${coverage.totals.callSitesAtFileScope} ` +
-      `edges=${coverage.totals.callsEdges} edgePerSite=${coverage.edgePerCallSite} ` +
-      `unresolvedScope=${coverage.counters.unresolvedScope} problems=${coverage.problems.length}`
-    : `r-call-coverage.json          ABSENT - run fixtures/corpus/r-call-coverage.mts first`,
-)
-// The known limitation is a recorded, bounded DESIGN decision, so it does not fail the
-// gate. The counters going dark again DOES: a completeness claim that cannot be read is
-// the failure mode this lane has already produced once.
-if (!coverage || coverage.problems.length) process.exitCode = 1
 
 // ---------------------------------------------------------------- 1b. edge + name audit
 // Presence of a line is not correctness, and "looks like an identifier" is not

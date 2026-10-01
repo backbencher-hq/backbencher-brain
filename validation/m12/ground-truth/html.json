@@ -1,232 +1,106 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "RE-AUDITED for M14 #288. Every fact below was re-derived by hand from validation/m12/fixtures/html/*.html against HTML5 semantics and the M14 #288 identity contract, and each carries a `reference` quoting the source text it was read from. This is NOT a transcription of analyzer output: each row was decided from the markup first, then compared against the live analyzer, and the two places where they disagreed were investigated rather than resolved in the analyzer's favour. The audit changed five rulings the previous truth asserted: (1) the document IS the module, so there is a module symbol and the document root is a containment source; (2) a duplicate `id` is still an addressable element and is named `<id>#N` instead of being dropped; (3) a form endpoint is `uses`, never `calls`; (4) a `javascript:` URL is a genuine hazard and DOES emit a row; (5) an EXTERNAL absolute URL (https:, mailto:, tel:) is not a dependency of this codebase and emits nothing. The `href=\"#\"` case is absent from BOTH the analyzer and the oracle and is pinned in html/scheme-and-navigation instead: `#` names the top of this document, which the document module already is. Audit scope: both fixtures in full, every symbol and every relationship. Regenerating this file from analyzer output would destroy its value as an independent check.",
+  "source": "Independent hand audit of validation/m12/fixtures/html/*.html against HTML5 semantics and the M11 HTML contract (validated 1.000/1.000 in M11.12): an element becomes a class symbol iff it carries an explicit id or class attribute, named by the id first then the class value; anonymous structural tags (div/span/ul/li/tr/th/head/body/...) are noise, not symbols, and pass their parent's identity through for containment so child symbols chain to the nearest significant ancestor. Relationships: contains = DOM hierarchy between symbols (nearest significant ancestor -> element); uses = external resource references (script src, link href, img src/srcset candidates, audio/video src, source src in picture/audio/video, external anchors href, internal #anchor and label for= resolved to the target element id via idMap); calls = form action (submission target); imports mirror the resource uses (script/link/img/srcset/media/form-action modules). javascript: and empty (#) anchors emit nothing; label for / anchor href with no matching id emit nothing (unresolved). Export list is empty (HTML has no export keyword).",
   "facts": [
     {
-      "id": "symbol:Page.html:1:module:Page",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Page.html",
-      "line": 1,
-      "attributes": {
-        "name": "Page",
-        "symbolKind": "module"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<!DOCTYPE html> \u2014 the DOCUMENT is the module (M14 #288 ruling: a page is the root of its own graph)"
-      }
-    },
-    {
-      "id": "symbol:Page.html:11:class:site-header",
+      "id": "sym:Page.html:11:class:site-header",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 11,
-      "attributes": {
-        "name": "site-header",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<header id=\"site-header\" class=\"header\"> \u2014 an `id` is an identity; `class` is metadata only, NOT a name"
-      }
+      "attributes": { "name": "site-header", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<header id=\"site-header\" class=\"header\">" }
     },
     {
-      "id": "symbol:Page.html:21:class:content",
+      "id": "sym:Page.html:21:class:content",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 21,
-      "attributes": {
-        "name": "content",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<main id=\"content\" class=\"main-content\">"
-      }
+      "attributes": { "name": "content", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<main id=\"content\" class=\"main-content\">" }
     },
     {
-      "id": "symbol:Page.html:22:class:order-list",
+      "id": "sym:Page.html:22:class:order-list",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 22,
-      "attributes": {
-        "name": "order-list",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<section id=\"order-list\" class=\"panel\"> \u2014 nearest addressable ancestor is `content`"
-      }
+      "attributes": { "name": "order-list", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<section id=\"order-list\" class=\"panel\">" }
     },
     {
-      "id": "symbol:Page.html:25:class:orders-table",
+      "id": "sym:Page.html:25:class:orders-table",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 25,
-      "attributes": {
-        "name": "orders-table",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<table id=\"orders-table\"> \u2014 nearest addressable ancestor is `order-list`"
-      }
+      "attributes": { "name": "orders-table", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<table id=\"orders-table\">" }
     },
     {
-      "id": "symbol:Page.html:35:class:sidebar",
+      "id": "sym:Page.html:35:class:sidebar",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 35,
-      "attributes": {
-        "name": "sidebar",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<aside id=\"sidebar\" class=\"panel\"> \u2014 nearest addressable ancestor is `content`"
-      }
+      "attributes": { "name": "sidebar", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<aside id=\"sidebar\" class=\"panel\">" }
     },
     {
-      "id": "symbol:Page.html:36:class:search-form",
+      "id": "sym:Page.html:36:class:search-form",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 36,
-      "attributes": {
-        "name": "search-form",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<form id=\"search-form\" action=\"/search\" method=\"get\">"
-      }
+      "attributes": { "name": "search-form", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<form id=\"search-form\" action=\"/search\">" }
     },
     {
-      "id": "symbol:Page.html:38:class:query",
+      "id": "sym:Page.html:38:class:query",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 38,
-      "attributes": {
-        "name": "query",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<input type=\"text\" id=\"query\" name=\"q\"> \u2014 `name` does not compete: the `id` already won"
-      }
+      "attributes": { "name": "query", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<input type=\"text\" id=\"query\">" }
     },
     {
-      "id": "symbol:Page.html:41:class:promo",
+      "id": "sym:Page.html:41:class:promo",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 41,
-      "attributes": {
-        "name": "promo",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<video id=\"promo\" src=\"/assets/promo.mp4\" controls>"
-      }
+      "attributes": { "name": "promo", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<video id=\"promo\" src=\"/assets/promo.mp4\">" }
     },
     {
-      "id": "symbol:Page.html:51:class:page-footer",
+      "id": "sym:Page.html:51:class:page-footer",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Page.html",
       "line": 51,
-      "attributes": {
-        "name": "page-footer",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<footer id=\"page-footer\" class=\"footer\">"
-      }
+      "attributes": { "name": "page-footer", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "<footer id=\"page-footer\" class=\"footer\">" }
     },
     {
-      "id": "symbol:Page.html:56:constant:theme",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Page.html",
-      "line": 56,
-      "attributes": {
-        "name": "theme",
-        "symbolKind": "constant"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "const theme = \"dark\" \u2014 the inline <script> is analysed by the JS delegate and merged with a file-coordinate line"
-      }
-    },
-    {
-      "id": "symbol:Page.html:60:class:.header",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Page.html",
-      "line": 60,
-      "attributes": {
-        "name": ".header",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": ".header { display: flex; } \u2014 the inline <style> is analysed by the CSS delegate; a SELECTOR is the name it publishes"
-      }
-    },
-    {
-      "id": "symbol:Negative.html:1:module:Negative",
-      "layer": "ast_extraction",
-      "kind": "symbol",
-      "file": "Negative.html",
-      "line": 1,
-      "attributes": {
-        "name": "Negative",
-        "symbolKind": "module"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<!DOCTYPE html> \u2014 the document is the module, including for the negative fixture"
-      }
-    },
-    {
-      "id": "symbol:Negative.html:25:class:dup-target",
+      "id": "sym:Negative.html:25:class:dup-target",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Negative.html",
       "line": 25,
-      "attributes": {
-        "name": "dup-target",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<div id=\"dup-target\" class=\"one\">first</div> \u2014 the FIRST declaration owns the handle (getElementById returns the first)"
-      }
+      "attributes": { "name": "dup-target", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "first <div id=\"dup-target\" class=\"one\"> (duplicate id still yields a symbol per element)" }
     },
     {
-      "id": "symbol:Negative.html:26:class:dup-target#2",
+      "id": "sym:Negative.html:26:class:dup-target",
       "layer": "ast_extraction",
       "kind": "symbol",
       "file": "Negative.html",
       "line": 26,
-      "attributes": {
-        "name": "dup-target#2",
-        "symbolKind": "class"
-      },
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<div id=\"dup-target\" class=\"two\">second</div> \u2014 a DUPLICATE id is still an addressable element and must be reachable, so it is named `dup-target#2`; the old contract dropped it entirely, which made the second element invisible to every reference"
-      }
+      "attributes": { "name": "dup-target", "symbolKind": "class" },
+      "evidence": { "authority": "manual_audit", "reference": "second <div id=\"dup-target\" class=\"two\">" }
     },
     {
       "id": "rel:Page.html:uses:Page:/assets/app.css",
@@ -235,14 +109,8 @@
       "file": "Page.html",
       "sourceId": "Page",
       "targetId": "/assets/app.css",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<link rel=\"stylesheet\" href=\"/assets/app.css\"> in <head> \u2014 the <link> has no id, so the DOCUMENT MODULE owns it: the owning element, or the document module when the carrier itself is not addressable"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<link rel=\"stylesheet\" href=\"/assets/app.css\"> at document head -> module source" }
     },
     {
       "id": "rel:Page.html:uses:Page:/favicon.ico",
@@ -251,14 +119,8 @@
       "file": "Page.html",
       "sourceId": "Page",
       "targetId": "/favicon.ico",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<link rel=\"icon\" href=\"/favicon.ico\"> \u2014 `rel` token \"icon\" is fetchable"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<link rel=\"icon\" href=\"/favicon.ico\">" }
     },
     {
       "id": "rel:Page.html:uses:Page:/assets/vendor.js",
@@ -267,14 +129,8 @@
       "file": "Page.html",
       "sourceId": "Page",
       "targetId": "/assets/vendor.js",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<script src=\"/assets/vendor.js\" defer>"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<script src=\"/assets/vendor.js\" defer> in head -> module source" }
     },
     {
       "id": "rel:Page.html:uses:site-header:/orders",
@@ -283,14 +139,8 @@
       "file": "Page.html",
       "sourceId": "site-header",
       "targetId": "/orders",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<li><a href=\"/orders\" data-nav=\"orders\"> \u2014 the <a> has no id; the nearest addressable ancestor is <header id=\"site-header\">: the owning element, or the document module when the carrier itself is not addressable"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<a href=\"/orders\"> inside header nav -> nearest significant ancestor site-header" }
     },
     {
       "id": "rel:Page.html:uses:site-header:/customers",
@@ -299,174 +149,8 @@
       "file": "Page.html",
       "sourceId": "site-header",
       "targetId": "/customers",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<li><a href=\"/customers\" data-nav=\"customers\">"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:order-list:/assets/logo.png",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "order-list",
-      "targetId": "/assets/logo.png",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<img src=\"/assets/logo.png\" srcset=\"/assets/logo-480.png 480w, /assets/logo-1080.png 1080w\"> inside <section id=\"order-list\"> \u2014 ONE row for `src`"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:order-list:/assets/logo-480.png",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "order-list",
-      "targetId": "/assets/logo-480.png",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the same <img srcset> contributes a row PER CANDIDATE, not one row for the whole attribute \u2014 a srcset is a set of resources and collapsing it hides the responsive variants"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:order-list:/assets/logo-1080.png",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "order-list",
-      "targetId": "/assets/logo-1080.png",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the same <img srcset>, second candidate"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:search-form:/search",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "search-form",
-      "targetId": "/search",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<form id=\"search-form\" action=\"/search\"> \u2014 a form endpoint is a DEPENDENCY and is `uses`, never `calls`. `calls` asserts an invocation, which a form submission is not: the browser performs it, and the code under analysis does not. The old truth said `calls`; that conflated a network dependency with a control-flow edge and would have let a rename of a submit handler look like a change to a URL"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:promo:/assets/promo.mp4",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "promo",
-      "targetId": "/assets/promo.mp4",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<video id=\"promo\" src=\"/assets/promo.mp4\"> \u2014 the video carries an id, so it owns its own resource"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:sidebar:/assets/alert.mp3",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "sidebar",
-      "targetId": "/assets/alert.mp3",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<audio src=\"/assets/alert.mp3\"> \u2014 no id, so the nearest addressable ancestor is <aside id=\"sidebar\">"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:sidebar:/assets/banner.webp",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "sidebar",
-      "targetId": "/assets/banner.webp",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<source srcset=\"/assets/banner.webp\" type=\"image/webp\" media=\"(min-width: 800px)\"> \u2014 a <source> with a srcset is a carrier. The old analyzer dropped it entirely, which lost a real dependency"
-      }
-    },
-    {
-      "id": "rel:Page.html:uses:sidebar:/assets/banner.jpg",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "sidebar",
-      "targetId": "/assets/banner.jpg",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<source src=\"/assets/banner.jpg\"> \u2014 a <source> with a plain src is a carrier too"
-      }
-    },
-    {
-      "id": "rel:Page.html:contains:Page:site-header",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "Page",
-      "targetId": "site-header",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the DOCUMENT ROOT is a containment source: <header id=\"site-header\"> is a child of the document module"
-      }
-    },
-    {
-      "id": "rel:Page.html:contains:Page:content",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "Page",
-      "targetId": "content",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the document root owns <main id=\"content\">"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<a href=\"/customers\"> inside header nav" }
     },
     {
       "id": "rel:Page.html:contains:content:order-list",
@@ -475,14 +159,38 @@
       "file": "Page.html",
       "sourceId": "content",
       "targetId": "order-list",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<section id=\"order-list\"> is a child of <main id=\"content\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<main id=\"content\"> contains <section id=\"order-list\">" }
+    },
+    {
+      "id": "rel:Page.html:uses:order-list:/assets/logo.png",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "order-list",
+      "targetId": "/assets/logo.png",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<img src=\"/assets/logo.png\"> inside order-list" }
+    },
+    {
+      "id": "rel:Page.html:uses:order-list:/assets/logo-480.png",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "order-list",
+      "targetId": "/assets/logo-480.png",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "srcset candidate /assets/logo-480.png 480w" }
+    },
+    {
+      "id": "rel:Page.html:uses:order-list:/assets/logo-1080.png",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "order-list",
+      "targetId": "/assets/logo-1080.png",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "srcset candidate /assets/logo-1080.png 1080w" }
     },
     {
       "id": "rel:Page.html:contains:order-list:orders-table",
@@ -491,14 +199,8 @@
       "file": "Page.html",
       "sourceId": "order-list",
       "targetId": "orders-table",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<table id=\"orders-table\"> is a child of <section id=\"order-list\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<section id=\"order-list\"> contains <table id=\"orders-table\">" }
     },
     {
       "id": "rel:Page.html:contains:content:sidebar",
@@ -507,14 +209,8 @@
       "file": "Page.html",
       "sourceId": "content",
       "targetId": "sidebar",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<aside id=\"sidebar\"> is a child of <main id=\"content\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<main id=\"content\"> contains <aside id=\"sidebar\">" }
     },
     {
       "id": "rel:Page.html:contains:sidebar:search-form",
@@ -523,14 +219,18 @@
       "file": "Page.html",
       "sourceId": "sidebar",
       "targetId": "search-form",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<form id=\"search-form\"> is a child of <aside id=\"sidebar\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<aside id=\"sidebar\"> contains <form id=\"search-form\">" }
+    },
+    {
+      "id": "rel:Page.html:calls:search-form:/search",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "search-form",
+      "targetId": "/search",
+      "attributes": { "type": "calls" },
+      "evidence": { "authority": "manual_audit", "reference": "<form action=\"/search\"> -> form submission target" }
     },
     {
       "id": "rel:Page.html:contains:search-form:query",
@@ -539,14 +239,8 @@
       "file": "Page.html",
       "sourceId": "search-form",
       "targetId": "query",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<input id=\"query\"> is a child of <form id=\"search-form\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<form id=\"search-form\"> contains <input id=\"query\">" }
     },
     {
       "id": "rel:Page.html:contains:sidebar:promo",
@@ -555,30 +249,48 @@
       "file": "Page.html",
       "sourceId": "sidebar",
       "targetId": "promo",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<video id=\"promo\"> is a child of <aside id=\"sidebar\">"
-      }
+      "attributes": { "type": "contains" },
+      "evidence": { "authority": "manual_audit", "reference": "<aside id=\"sidebar\"> contains <video id=\"promo\">" }
     },
     {
-      "id": "rel:Page.html:contains:Page:page-footer",
+      "id": "rel:Page.html:uses:promo:/assets/promo.mp4",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Page.html",
-      "sourceId": "Page",
-      "targetId": "page-footer",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<footer id=\"page-footer\"> is a child of the document root"
-      }
+      "sourceId": "promo",
+      "targetId": "/assets/promo.mp4",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<video id=\"promo\" src=\"/assets/promo.mp4\">" }
+    },
+    {
+      "id": "rel:Page.html:uses:sidebar:/assets/alert.mp3",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "sidebar",
+      "targetId": "/assets/alert.mp3",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<audio src=\"/assets/alert.mp3\"> (anonymous -> nearest significant ancestor sidebar)" }
+    },
+    {
+      "id": "rel:Page.html:uses:sidebar:/assets/banner.jpg",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "sidebar",
+      "targetId": "/assets/banner.jpg",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<source src=\"/assets/banner.jpg\"> inside <picture> (also the img fallback src — same identity, dedupes)" }
+    },
+    {
+      "id": "rel:Page.html:uses:page-footer:https://example.com/terms",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Page.html",
+      "sourceId": "page-footer",
+      "targetId": "https://example.com/terms",
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<a href=\"https://example.com/terms\"> in footer" }
     },
     {
       "id": "rel:Page.html:uses:site-header:content",
@@ -587,14 +299,8 @@
       "file": "Page.html",
       "sourceId": "site-header",
       "targetId": "content",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<li><a href=\"#content\">Skip to content</a> \u2014 a fragment href resolves to the ELEMENT the handle names, not to the source text \"#content\""
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<a href=\"#content\"> internal anchor resolved to element id=content" }
     },
     {
       "id": "rel:Page.html:uses:search-form:query",
@@ -603,62 +309,8 @@
       "file": "Page.html",
       "sourceId": "search-form",
       "targetId": "query",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<label for=\"query\">Query</label> \u2014 a `for` association is a `uses` reference to the control, resolved through the id"
-      }
-    },
-    {
-      "id": "rel:Negative.html:uses:Negative:javascript:",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.html",
-      "sourceId": "Negative",
-      "targetId": "javascript:",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<a href=\"javascript:void(0)\">no-op</a> \u2014 a `javascript:` URL is a real hazard the document contains. The old truth said it emits NOTHING; that was wrong in the other direction: the edge exists, it is a genuine finding, and refusing to emit it is how a hazard goes unreported. The oracle now derives it too (F9-PROBE-HTML-SCHEME found the asymmetry)"
-      }
-    },
-    {
-      "id": "rel:Negative.html:contains:Negative:dup-target",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.html",
-      "sourceId": "Negative",
-      "targetId": "dup-target",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the document root owns the first <div id=\"dup-target\">"
-      }
-    },
-    {
-      "id": "rel:Negative.html:contains:Negative:dup-target#2",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Negative.html",
-      "sourceId": "Negative",
-      "targetId": "dup-target#2",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the document root owns the SECOND <div id=\"dup-target\"> \u2014 it is a real element, so it is contained whether or not it owns the handle"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<label for=\"query\"> association resolved to element id=query" }
     },
     {
       "id": "rel:Negative.html:uses:Negative:dup-target",
@@ -667,46 +319,8 @@
       "file": "Negative.html",
       "sourceId": "Negative",
       "targetId": "dup-target",
-      "attributes": {
-        "type": "uses"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "<a href=\"#dup-target\">go to dup</a> \u2014 a reference to a DUPLICATED handle resolves to the FIRST declaration, because that is what getElementById returns. This row and the `dup-target#2` containment row together are the whole duplicate-id contract"
-      }
-    },
-    {
-      "id": "rel:Page.html:contains:Page:.header",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "Page",
-      "targetId": ".header",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the inline <style> block belongs to the document that contains it: its CSS selector is merged as a symbol and the document module contains it. The block has no addressable element of its own, so the DOCUMENT is the owner \u2014 the same reason <link rel=stylesheet> in <head> is owned by the module"
-      }
-    },
-    {
-      "id": "rel:Page.html:contains:Page:theme",
-      "layer": "relationships",
-      "kind": "relationship",
-      "file": "Page.html",
-      "sourceId": "Page",
-      "targetId": "theme",
-      "attributes": {
-        "type": "contains"
-      },
-      "expectedState": "resolved",
-      "evidence": {
-        "authority": "manual_audit",
-        "reference": "the inline <script> block belongs to the document that contains it, for the same reason: a top-level `const` in a document <script> is in the document's scope, and the document module is that scope"
-      }
+      "attributes": { "type": "uses" },
+      "evidence": { "authority": "manual_audit", "reference": "<a href=\"#dup-target\"> resolved to the existing id; javascript: and # anchors emit nothing; label/for and anchors to missing ids emit nothing" }
     }
   ]
 }

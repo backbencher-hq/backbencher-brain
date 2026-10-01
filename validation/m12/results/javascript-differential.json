@@ -1,282 +1,6 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:javascript",
-  "inputs": {
-    "files": {
-      "src/ast/analysis-exclusions.ts": {
-        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
-        "bytes": 9702
-      },
-      "src/ast/engine.ts": {
-        "sha256": "0ebe76da6ea322d268e09fd91fad20feb5b51cd20c302820d6d484c2dd1ca8d6",
-        "bytes": 84243
-      },
-      "src/ast/fingerprint.ts": {
-        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
-        "bytes": 8903
-      },
-      "src/ast/framework-detectors.ts": {
-        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
-        "bytes": 23350
-      },
-      "src/ast/framework-intelligence.ts": {
-        "sha256": "4de0e1a8c8f1a98491ffc3349515e841f624369ec9990e75ab9bfdf8393d7dea",
-        "bytes": 48440
-      },
-      "src/ast/language-detection.ts": {
-        "sha256": "5a9e8e0d159f501f694e12650543b805a7e476f17926c4f6a210071ae1831f8d",
-        "bytes": 10154
-      },
-      "src/ast/override-context.ts": {
-        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
-        "bytes": 7047
-      },
-      "src/ast/real-javascript-analyzer.ts": {
-        "sha256": "a1a0e79652c9f228e69aa99822222fd1be5ad7dfe20bf4269cff3a33f45d7632",
-        "bytes": 136593
-      },
-      "src/ast/test-classification.ts": {
-        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
-        "bytes": 3145
-      },
-      "src/ast/type-inference.ts": {
-        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
-        "bytes": 31754
-      },
-      "src/brain/brain.sql.ts": {
-        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
-        "bytes": 18451
-      },
-      "src/brain/database.ts": {
-        "sha256": "576eaa832a01d4bc066916b88e5cc27f5d1202ea995eda7746917ac336964e29",
-        "bytes": 18198
-      },
-      "src/brain/schema-ddl.ts": {
-        "sha256": "4d90512e4d46192f740400127ca5d1644a2a03cccd8d98ff7ac41e238f035d98",
-        "bytes": 31432
-      },
-      "src/project/project.sql.ts": {
-        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
-        "bytes": 328
-      },
-      "src/project/schema.ts": {
-        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
-        "bytes": 63
-      },
-      "src/tool/brain-log.ts": {
-        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
-        "bytes": 564
-      },
-      "src/util/bb-data-dir.ts": {
-        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
-        "bytes": 1781
-      },
-      "src/util/lazy.ts": {
-        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
-        "bytes": 333
-      },
-      "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
-      },
-      "validation/m12/fixtures/javascript/Domain.js": {
-        "sha256": "dd335ee8848707b3b76d0e95dbc51103a60f653c2a4bde6b81e9195f044486a4",
-        "bytes": 813
-      },
-      "validation/m12/fixtures/javascript/Features.js": {
-        "sha256": "af7bab221a231a7d2257096d2e6a2c01d9bcf8fda4d3201a18cf3e6983742421",
-        "bytes": 795
-      },
-      "validation/m12/fixtures/javascript/Negative.js": {
-        "sha256": "1ed5654f1f3e011838e4416669dc08225def490db50017ab25da998397248600",
-        "bytes": 991
-      },
-      "validation/m12/fixtures/javascript/Services.js": {
-        "sha256": "a932aed2565052e594971d03046dee5a287f78d455036c531e0e8774d5e8af74",
-        "bytes": 784
-      },
-      "validation/m12/fixtures/javascript/base.js": {
-        "sha256": "42060f3f083fe64ea39b2cd2aa52f7725747bf96f2f42502675c70d6a97db541",
-        "bytes": 269
-      },
-      "validation/m12/ground-truth/javascript.json": {
-        "sha256": "09d2918e1d74dbbd995b9090d8dd2a6b98e76fca840a85e4953153f2b895893a",
-        "bytes": 38114
-      }
-    },
-    "digest": "519cfc33054a5a9a4772d0ea37aac8abbabacfd23b77bea6831e90f1eb8aa3d3",
-    "parser": null,
-    "siblings": {
-      "src/ast/real-bash-analyzer.ts": {
-        "sha256": "b3ff03aeddbffcab9f68e6ede62587b382bba4b0f4846b03f3bd9c839e1a31e8",
-        "bytes": 73496
-      },
-      "src/ast/real-c-analyzer.ts": {
-        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
-        "bytes": 185825
-      },
-      "src/ast/real-clean-analyzer.ts": {
-        "sha256": "1e14aec9a5b1cee1ff27ec65c02c13ee3c245e011c6757d20f8ce3c3af463bb3",
-        "bytes": 158335
-      },
-      "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
-        "bytes": 89802
-      },
-      "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
-        "bytes": 134291
-      },
-      "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
-        "bytes": 190596
-      },
-      "src/ast/real-css-analyzer.ts": {
-        "sha256": "ccf4f113549745d0f8309a87d01d51a2d69732eeafab9bb7d599bd5b36cbdb64",
-        "bytes": 140933
-      },
-      "src/ast/real-dart-analyzer.ts": {
-        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
-        "bytes": 119919
-      },
-      "src/ast/real-elixir-analyzer.ts": {
-        "sha256": "22ead3e4a8b7601e45961d889467626db847e91df261d03579de6f70f2d80ad6",
-        "bytes": 86724
-      },
-      "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "51c0f2aa252f77354109925275952bc670255af7e92153d52b816931da99d296",
-        "bytes": 41969
-      },
-      "src/ast/real-fsharp-analyzer.ts": {
-        "sha256": "ffb794762aa3f5c0ca8bfa36b3978568607f2baeeb509c6668dd6552c208819f",
-        "bytes": 36482
-      },
-      "src/ast/real-go-analyzer.ts": {
-        "sha256": "ad8cdd4a79651a4402a3f24b584b41c8b32d43a0e3fd8cd0d25eb3e318efe932",
-        "bytes": 170963
-      },
-      "src/ast/real-graphql-analyzer.ts": {
-        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
-        "bytes": 21325
-      },
-      "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
-        "bytes": 126319
-      },
-      "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "943f0ce6d7b497f19ba0d77638a76ea5ff88a88b94fa90f6f1f7865adcfeb032",
-        "bytes": 71471
-      },
-      "src/ast/real-hcl-analyzer.ts": {
-        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
-        "bytes": 14474
-      },
-      "src/ast/real-html-analyzer.ts": {
-        "sha256": "8cf208df8d81e20cf3ce6bc52ff1a970171c3a22648a1b6ae710fa97ea4d5717",
-        "bytes": 94338
-      },
-      "src/ast/real-java-analyzer.ts": {
-        "sha256": "6062af27f561c416b9629667121bfcca1e8d81e54d0cee46b9609ad1c5ac142a",
-        "bytes": 152024
-      },
-      "src/ast/real-json-analyzer.ts": {
-        "sha256": "bf0f4f7ca0ce7709f0722af840634cfaf367b6c78cdbd0e60d6c8cea08161a1a",
-        "bytes": 33146
-      },
-      "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "67baabc66c2f02ea1e722ab7676781e2bbfe78825ed0d35e1fc2f9f36576378e",
-        "bytes": 170560
-      },
-      "src/ast/real-lua-analyzer.ts": {
-        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
-        "bytes": 20172
-      },
-      "src/ast/real-makefile-analyzer.ts": {
-        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
-        "bytes": 15750
-      },
-      "src/ast/real-markdown-analyzer.ts": {
-        "sha256": "ee5501ff69713e30385b5344d7d7210c39314def0684338ee6ad80536a30c60f",
-        "bytes": 49081
-      },
-      "src/ast/real-objective-c-analyzer.ts": {
-        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
-        "bytes": 74340
-      },
-      "src/ast/real-perl-analyzer.ts": {
-        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
-        "bytes": 26379
-      },
-      "src/ast/real-php-analyzer.ts": {
-        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
-        "bytes": 114562
-      },
-      "src/ast/real-powershell-analyzer.ts": {
-        "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
-        "bytes": 126264
-      },
-      "src/ast/real-python-analyzer.ts": {
-        "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
-        "bytes": 70460
-      },
-      "src/ast/real-r-analyzer.ts": {
-        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
-        "bytes": 39112
-      },
-      "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
-        "bytes": 88887
-      },
-      "src/ast/real-rust-analyzer.ts": {
-        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
-        "bytes": 107870
-      },
-      "src/ast/real-scala-analyzer.ts": {
-        "sha256": "8e5065ddde8ea25e1179debcf3c62e9b67c5acaafa2ff8ad5c9949013a32deea",
-        "bytes": 127225
-      },
-      "src/ast/real-scss-analyzer.ts": {
-        "sha256": "63d9dcf8228abbc0739eac066115dbbc91ff721d02d18a375e9c32dc67849c59",
-        "bytes": 49130
-      },
-      "src/ast/real-sql-analyzer.ts": {
-        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
-        "bytes": 29215
-      },
-      "src/ast/real-svelte-analyzer.ts": {
-        "sha256": "9628a39c8076741df933509f973682f44a175f6719ce693c0af0370f0071d5fa",
-        "bytes": 87277
-      },
-      "src/ast/real-swift-analyzer.ts": {
-        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
-        "bytes": 107709
-      },
-      "src/ast/real-toml-analyzer.ts": {
-        "sha256": "ec7bd9bc571a46f596c447cb84ca81680bb2c74d37218ddb4db9ec20488eb1ff",
-        "bytes": 25734
-      },
-      "src/ast/real-typescript-analyzer.ts": {
-        "sha256": "5491d50902ab6aa097ed6df2efa63660a8232e0788a274e96f5d33b84fae814e",
-        "bytes": 279404
-      },
-      "src/ast/real-vue-analyzer.ts": {
-        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
-        "bytes": 58931
-      },
-      "src/ast/real-xml-analyzer.ts": {
-        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
-        "bytes": 11842
-      },
-      "src/ast/real-yaml-analyzer.ts": {
-        "sha256": "9a60b05ca1802407760ed06a938c8d15e76769516cde6461193583dd538cd5a1",
-        "bytes": 88139
-      },
-      "src/ast/real-zig-analyzer.ts": {
-        "sha256": "f327c176c4466a03e6e14c7ee91de912fa81744b0d8a9d3695908b0c5f5baca8",
-        "bytes": 64750
-      }
-    }
-  },
   "truthSource": "manual_audit",
   "truthReference": "validation/m12/fixtures/javascript/ (5 fixtures) — manually audited against fixture source and the C#/Java/F#/TS family contract",
   "fixtureDir": "validation/m12/fixtures/javascript",
@@ -290,45 +14,45 @@
   "perFile": {
     "Domain.js": {
       "symbols": 13,
-      "relationships": 33
+      "relationships": 18
     },
     "Features.js": {
-      "symbols": 12,
-      "relationships": 35
+      "symbols": 11,
+      "relationships": 18
     },
     "Negative.js": {
       "symbols": 9,
-      "relationships": 27
+      "relationships": 12
     },
     "Services.js": {
-      "symbols": 8,
-      "relationships": 31
+      "symbols": 7,
+      "relationships": 14
     },
     "base.js": {
       "symbols": 4,
-      "relationships": 10
+      "relationships": 6
     }
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": false,
+    "passed": true,
     "metrics": {
       "expected": 112,
       "observedResolved": 112,
-      "truePositive": 109,
-      "falsePositive": 3,
-      "falseNegative": 3,
-      "unknown": 69,
+      "truePositive": 112,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "unknown": 0,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 0.9732142857142857,
-      "recall": 0.9732142857142857,
-      "falsePositiveRate": 0.026785714285714284,
-      "falseNegativeRate": 0.026785714285714284,
-      "unknownRate": 0.6160714285714286
+      "precision": 1,
+      "recall": 1,
+      "falsePositiveRate": 0,
+      "falseNegativeRate": 0,
+      "unknownRate": 0
     },
-    "earliestFailingLayer": "ast_extraction",
+    "earliestFailingLayer": null,
     "truePositiveIds": [
       "rel:Domain.js:calls:findAll:values",
       "rel:Domain.js:calls:findById:findById",
@@ -389,6 +113,9 @@
       "rel:Services.js:exports:Services:CompositeLogger",
       "rel:Services.js:exports:Services:FileLogger",
       "rel:Services.js:exports:Services:Service",
+      "rel:Services.js:imports:Services:node:events:*",
+      "rel:Services.js:imports:Services:node:fs:*",
+      "rel:Services.js:imports:Services:node:path:*",
       "rel:base.js:calls:format:String",
       "rel:base.js:calls:helper:trim",
       "rel:base.js:contains:BaseService:constructor",
@@ -440,115 +167,21 @@
       "symbol:base.js:4:constructor:constructor",
       "symbol:base.js:8:method:format"
     ],
-    "falsePositiveIds": [
-      "rel:Negative.js:uses:TemplateStringsAreNotCallTargets:value",
-      "symbol:Features.js:16:property:current",
-      "symbol:Services.js:4:constant:EventEmitter"
-    ],
-    "falseNegativeIds": [
-      "rel:Services.js:imports:Services:node:events:*",
-      "rel:Services.js:imports:Services:node:fs:*",
-      "rel:Services.js:imports:Services:node:path:*"
-    ],
-    "unknownIds": [
-      "rel:Domain.js:uses:constructor:id",
-      "rel:Domain.js:uses:constructor:name",
-      "rel:Domain.js:uses:constructor:store",
-      "rel:Domain.js:uses:constructor:value",
-      "rel:Domain.js:uses:describe:id",
-      "rel:Domain.js:uses:describe:name",
-      "rel:Domain.js:uses:findAll:repo",
-      "rel:Domain.js:uses:findAll:store",
-      "rel:Domain.js:uses:findById:id",
-      "rel:Domain.js:uses:findById:repo",
-      "rel:Domain.js:uses:findById:store",
-      "rel:Domain.js:uses:save:customer",
-      "rel:Domain.js:uses:save:id",
-      "rel:Domain.js:uses:save:store",
-      "rel:Domain.js:uses:toString:value",
-      "rel:Features.js:uses:User:BaseService",
-      "rel:Features.js:uses:constructor:name",
-      "rel:Features.js:uses:create:User",
-      "rel:Features.js:uses:create:name",
-      "rel:Features.js:uses:createService:User",
-      "rel:Features.js:uses:createService:name",
-      "rel:Features.js:uses:current:name",
-      "rel:Features.js:uses:current:value",
-      "rel:Features.js:uses:entries:name",
-      "rel:Features.js:uses:format:value",
-      "rel:Features.js:uses:helper:value",
-      "rel:Features.js:uses:normalize:value",
-      "rel:Features.js:uses:save:normalized",
-      "rel:Features.js:uses:save:payload",
-      "rel:Features.js:uses:save:result",
-      "rel:Features.js:uses:save:store",
-      "rel:Negative.js:uses:BuiltinsAreFiltered:console",
-      "rel:Negative.js:uses:DestructuredParamsAreNotSymbols:first",
-      "rel:Negative.js:uses:DestructuredParamsAreNotSymbols:id",
-      "rel:Negative.js:uses:DestructuredParamsAreNotSymbols:name",
-      "rel:Negative.js:uses:DestructuredParamsAreNotSymbols:second",
-      "rel:Negative.js:uses:LambdaParamsAreNotSymbols:item",
-      "rel:Negative.js:uses:LambdaParamsAreNotSymbols:items",
-      "rel:Negative.js:uses:LocalsAreNotSymbols:local",
-      "rel:Negative.js:uses:LocalsAreNotSymbols:mutable",
-      "rel:Negative.js:uses:ParamsAreNotSymbols:a",
-      "rel:Negative.js:uses:ParamsAreNotSymbols:b",
-      "rel:Negative.js:uses:TemplateStringsAreNotCallTargets:LocalsAreNotSymbols",
-      "rel:Negative.js:uses:TemplateStringsAreNotCallTargets:key",
-      "rel:Negative.js:uses:increment:value",
-      "rel:Services.js:imports:Services:node:events:*",
-      "rel:Services.js:imports:Services:node:fs:*",
-      "rel:Services.js:imports:Services:node:path:*",
-      "rel:Services.js:uses:CompositeLogger:loggers",
-      "rel:Services.js:uses:FileLogger:file",
-      "rel:Services.js:uses:Service:repo",
-      "rel:Services.js:uses:Services:CompositeLogger",
-      "rel:Services.js:uses:Services:FileLogger",
-      "rel:Services.js:uses:Services:Service",
-      "rel:Services.js:uses:Services:prototype",
-      "rel:Services.js:uses:get:id",
-      "rel:Services.js:uses:get:repo",
-      "rel:Services.js:uses:log:file",
-      "rel:Services.js:uses:log:fs",
-      "rel:Services.js:uses:log:logger",
-      "rel:Services.js:uses:log:loggers",
-      "rel:Services.js:uses:log:message",
-      "rel:Services.js:uses:set:id",
-      "rel:Services.js:uses:set:repo",
-      "rel:Services.js:uses:set:value",
-      "rel:base.js:uses:constructor:prefix",
-      "rel:base.js:uses:format:prefix",
-      "rel:base.js:uses:format:value",
-      "rel:base.js:uses:helper:value"
-    ],
+    "falsePositiveIds": [],
+    "falseNegativeIds": [],
+    "unknownIds": [],
     "unsupportedIds": [],
-    "minimizedFailure": {
-      "expected": [],
-      "observed": [
-        {
-          "id": "symbol:Features.js:16:property:current",
-          "layer": "ast_extraction",
-          "kind": "symbol",
-          "file": "Features.js",
-          "line": 16,
-          "attributes": {
-            "name": "current",
-            "symbolKind": "property"
-          },
-          "state": "resolved"
-        }
-      ]
-    }
+    "minimizedFailure": null
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:javascript",
-      "wallTimeMs": 169.822742,
-      "userCpuMs": 387.18,
-      "systemCpuMs": 25.304,
-      "peakRssBytes": 257720320,
-      "rssDeltaBytes": 7008256,
+      "wallTimeMs": 58.132372,
+      "userCpuMs": 97.786,
+      "systemCpuMs": 10.315,
+      "peakRssBytes": 250605568,
+      "rssDeltaBytes": 7684096,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -558,5 +191,10 @@
       "relationshipsPerSecond": null
     }
   ],
-  "note": "M12 per-analyzer differential for javascript. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise."
+  "note": "M12 per-analyzer differential for javascript. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.913Z",
+    "contentSha256": "7c62690c50c6fa8feff2c86f000334bc0e3dd342177b5cda231337ef9887bb47"
+  }
 }

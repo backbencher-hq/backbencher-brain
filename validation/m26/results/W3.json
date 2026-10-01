@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "564eacb42247e10642feb0fb2e1b409deafc1a62",
+  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-29T04:36:15.487Z",
+  "generatedAt": "2026-09-20T02:23:15.224Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -32,8 +32,8 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 4,
-    "skipped": 0
+    "scanned": 125,
+    "skipped": 3
   },
   "storedPairs": [
     {
@@ -51,369 +51,54 @@
       "origin": "fixture (W3 suite, seeded)"
     },
     {
-      "source": "bash",
-      "target": "typescript",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "c",
-      "target": "typescript",
-      "edgeCount": 11,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "c",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
+      "source": "typescript",
       "target": "json",
-      "edgeCount": 102,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "typescript",
-      "edgeCount": 177,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "javascript",
-      "target": "yaml",
-      "edgeCount": 7,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "json",
-      "target": "javascript",
-      "edgeCount": 3,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "json",
-      "target": "lua",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af",
       "origin": "real project index"
     },
     {
       "source": "json",
       "target": "typescript",
-      "edgeCount": 71,
+      "edgeCount": 246,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     },
     {
-      "source": "lua",
-      "target": "typescript",
-      "edgeCount": 10,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "javascript",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "json",
-      "edgeCount": 184,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "typescript",
-      "edgeCount": 167,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "markdown",
-      "target": "yaml",
-      "edgeCount": 7,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
+      "source": "typescript",
       "target": "json",
       "edgeCount": 3,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "python",
-      "target": "typescript",
-      "edgeCount": 9,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "bash",
-      "edgeCount": 9,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "javascript",
-      "edgeCount": 52,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "json",
-      "edgeCount": 3355,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "lua",
-      "edgeCount": 10,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "markdown",
-      "edgeCount": 20,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "python",
-      "edgeCount": 30,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
-      "origin": "real project index"
-    },
-    {
-      "source": "typescript",
-      "target": "yaml",
-      "edgeCount": 5349,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c",
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6",
       "origin": "real project index"
     }
   ],
   "realPairRows": [
     {
-      "source": "bash",
-      "target": "typescript",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "c",
-      "target": "typescript",
-      "edgeCount": 11,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "javascript",
-      "target": "c",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "javascript",
+      "source": "typescript",
       "target": "json",
-      "edgeCount": 102,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "javascript",
-      "target": "markdown",
-      "edgeCount": 2,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "javascript",
-      "target": "typescript",
-      "edgeCount": 177,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "javascript",
-      "target": "yaml",
-      "edgeCount": 7,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "json",
-      "target": "javascript",
-      "edgeCount": 3,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "json",
-      "target": "lua",
       "edgeCount": 1,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
+      "database": "693ac0d258eee9282c48710e76362d6ba159c7af"
     },
     {
       "source": "json",
       "target": "typescript",
-      "edgeCount": 71,
+      "edgeCount": 246,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
     },
     {
-      "source": "lua",
-      "target": "typescript",
-      "edgeCount": 10,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "markdown",
-      "target": "javascript",
-      "edgeCount": 1,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "markdown",
-      "target": "json",
-      "edgeCount": 184,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "markdown",
-      "target": "typescript",
-      "edgeCount": 167,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "markdown",
-      "target": "yaml",
-      "edgeCount": 7,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "python",
+      "source": "typescript",
       "target": "json",
       "edgeCount": 3,
       "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "python",
-      "target": "typescript",
-      "edgeCount": 9,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "bash",
-      "edgeCount": 9,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "javascript",
-      "edgeCount": 52,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "json",
-      "edgeCount": 3355,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "lua",
-      "edgeCount": 10,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "markdown",
-      "edgeCount": 20,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "python",
-      "edgeCount": 30,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
-    },
-    {
-      "source": "typescript",
-      "target": "yaml",
-      "edgeCount": 5349,
-      "sampleBridge": "name-resolution",
-      "database": "818db37d8f54173ad1357ab24627373da2e9418c"
+      "database": "df252c3403ceb6cb0e801fc4890ec30260fa41d6"
     }
   ],
-  "realDbsScanned": 4,
+  "realDbsScanned": 125,
   "limitations": [
     "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
     "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
@@ -421,7 +106,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:36:15.489Z",
-    "contentSha256": "beedefc9245c790c7f68e4ad33072671c0f7c1bbb875f4542e298a915b2ffede"
+    "sealedAt": "2026-09-20T02:23:15.224Z",
+    "contentSha256": "96ce1bb644912e4969ca4a147dd3676809f5d1f6cf0505246a5a6db640430fbe"
   }
 }

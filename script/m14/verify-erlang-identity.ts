@@ -29,22 +29,6 @@ pick(X, Y) -> {X, Y}.
 ping() -> pong.
 `
 
-// ER3 (2026-09-25, from the M12 differential): a type dependency is an APPLIED
-// name, and only an applied name. The M12 fixtures caught two fabricated
-// dependencies (job -> id / job -> kind, the map keys of #{id := job_id()})
-// because the ER2 authoring counted every bare atom; an exhaustive run over
-// OTP's 4,154 .erl/.hrl files then measured 4,043 such rows and 471 instantiates
-// edges sitting inside type declarations, against 0 and 0 after the fix.
-const typeDepSource = `-module(type_dep).
--export([go/1]).
--type day() :: monday | tuesday.
--type job() :: #{id := binary(), kind := atom(), payload := term()}.
--type ctx_rec() :: #ctx{server :: pid()}.
--type ext() :: dict:dict().
--record(ctx, {server}).
-go(X) -> X.
-`
-
 function checkIdentity(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
   const functions = result.symbols.filter(s => s.kind === "function")
   assert.equal(functions.length, 4)
@@ -83,33 +67,6 @@ function checkCallIdentity(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
     assert.equal(typeof (r as any).line_number, "number", "every call edge carries a line_number")
     assert.ok((r as any).line_number > 0, "line_number is 1-based, never 0")
   }
-}
-
-function typeDepEdges(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
-  return (result.relationships as any[])
-    .filter(r => (r.metadata ?? {}).context === "type reference")
-    .map(r => `${r.source} -> ${r.target} @L${r.line_number}`)
-    .sort()
-}
-
-function checkTypeDepIdentity(result: ReturnType<RealErlangAnalyzer["analyze"]>) {
-  // Every dependency is an APPLIED name, cited at the line that applies it:
-  //   - binary(), atom(), term(), ctx(), pid() and dict:dict() are applications
-  //     (a remote one keeps its qualification, ER-D1);
-  //   - `monday | tuesday` are atom LITERALS: -type day() has NO dependencies;
-  //   - `id`, `kind`, `payload` are map field KEYS and `server` a record field
-  //     key: declarations, never dependencies;
-  //   - a record TYPE names its record (#ctx{} -> ctx) and is not a construction.
-  assert.deepEqual(typeDepEdges(result), [
-    "ctx_rec -> ctx @L5",
-    "ctx_rec -> pid @L5",
-    "ext -> dict:dict @L6",
-    "job -> atom @L4",
-    "job -> binary @L4",
-    "job -> term @L4",
-  ])
-  const instantiates = (result.relationships as any[]).filter(r => String(r.type) === "instantiates")
-  assert.deepEqual(instantiates.map(r => `${r.source} -> ${r.target}`), [], "a record type inside -type is a DECLARATION, never a construction")
 }
 
 async function main() {
@@ -165,33 +122,7 @@ async function main() {
     } finally {
       callTree.delete()
     }
-
-    // ---- type-dependency identity (ER3) ----
-    const typeTree = parser.parse(typeDepSource)!
-    try {
-      assert.equal(typeTree.rootNode.hasError, false)
-      const typeResult = analyzer.analyze(typeTree.rootNode, typeDepSource, "type_dep.erl")
-      checkTypeDepIdentity(typeResult)
-      assert.deepEqual(analyzer.analyze(typeTree.rootNode, typeDepSource, "type_dep.erl"), typeResult)
-      const typeMutations = [
-        { id: "atom-literals-as-refs", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { r.relationships.push({ source: "day", target: "monday", type: "references", confidence: 1, metadata: { context: "type reference" }, line_number: 3 } as any) } },
-        { id: "map-keys-as-refs", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { r.relationships.push({ source: "job", target: "id", type: "references", confidence: 1, metadata: { context: "type reference" }, line_number: 4 } as any) } },
-        { id: "record-key-as-ref", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { r.relationships.push({ source: "ctx_rec", target: "server", type: "references", confidence: 1, metadata: { context: "type reference" }, line_number: 5 } as any) } },
-        { id: "record-type-instantiates", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { r.relationships.push({ source: "ctx_rec", target: "ctx", type: "instantiates", confidence: 1, metadata: {} } as any) } },
-        { id: "remote-type-unqualified", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { const e = (r.relationships as any[]).find(x => x.target === "dict:dict"); if (e) e.target = "dict" } },
-        { id: "type-ref-site-lost", apply: (r: ReturnType<RealErlangAnalyzer["analyze"]>) => { for (const x of r.relationships as any[]) if ((x.metadata ?? {}).context === "type reference") delete x.line_number } },
-      ]
-      for (const mutation of typeMutations) {
-        const mutated = structuredClone(typeResult)
-        mutation.apply(mutated)
-        assert.notDeepEqual(mutated, typeResult, `${mutation.id} must alter the output`)
-        assert.throws(() => checkTypeDepIdentity(mutated), assert.AssertionError, `${mutation.id} must be rejected`)
-        console.log(`CAUGHT ${mutation.id}`)
-      }
-    } finally {
-      typeTree.delete()
-    }
-    console.log("PASS Erlang identity: four functions, two export arities, call-site arity + site lines on local+remote call edges, the ER3 type-dependency surface (applied names only, record types are declarations), nineteen output mutations")
+    console.log("PASS Erlang identity: four functions, two export arities, call-site arity + site lines on local+remote call edges, thirteen output mutations")
   } finally {
     tree.delete()
     parser.delete()

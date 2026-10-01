@@ -8,7 +8,7 @@
     },
     {
       "description": "javascript adversarial fixtures",
-      "detail": "67/67 fixtures pass",
+      "detail": "61/61 fixtures pass",
       "id": "fixtures-javascript",
       "status": "pass"
     },
@@ -20,31 +20,31 @@
     },
     {
       "description": "svelte adversarial fixtures",
-      "detail": "37/37 fixtures pass",
+      "detail": "32/32 fixtures pass",
       "id": "fixtures-svelte",
       "status": "pass"
     },
     {
       "description": "typescript adversarial fixtures",
-      "detail": "85/85 fixtures pass",
+      "detail": "71/71 fixtures pass",
       "id": "fixtures-typescript",
       "status": "pass"
     },
     {
       "description": "java adversarial fixtures",
-      "detail": "48/48 fixtures pass",
+      "detail": "46/46 fixtures pass",
       "id": "fixtures-java",
       "status": "pass"
     },
     {
       "description": "groovy adversarial fixtures",
-      "detail": "73/73 fixtures pass",
+      "detail": "71/71 fixtures pass",
       "id": "fixtures-groovy",
       "status": "pass"
     },
     {
       "description": "kotlin adversarial fixtures",
-      "detail": "46/46 fixtures pass",
+      "detail": "43/43 fixtures pass",
       "id": "fixtures-kotlin",
       "status": "pass"
     },
@@ -62,31 +62,31 @@
     },
     {
       "description": "cpp adversarial fixtures",
-      "detail": "22/22 fixtures pass",
+      "detail": "19/19 fixtures pass",
       "id": "fixtures-cpp",
       "status": "pass"
     },
     {
       "description": "rust adversarial fixtures",
-      "detail": "18/18 fixtures pass",
+      "detail": "14/14 fixtures pass",
       "id": "fixtures-rust",
       "status": "pass"
     },
     {
       "description": "python adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "5/5 fixtures pass",
       "id": "fixtures-python",
       "status": "pass"
     },
     {
       "description": "go adversarial fixtures",
-      "detail": "12/12 fixtures pass",
+      "detail": "8/8 fixtures pass",
       "id": "fixtures-go",
       "status": "pass"
     },
     {
       "description": "zig adversarial fixtures",
-      "detail": "4/4 fixtures pass",
+      "detail": "3/3 fixtures pass",
       "id": "fixtures-zig",
       "status": "pass"
     },
@@ -98,25 +98,25 @@
     },
     {
       "description": "dart adversarial fixtures",
-      "detail": "11/11 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-dart",
       "status": "pass"
     },
     {
       "description": "swift adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "11/11 fixtures pass",
       "id": "fixtures-swift",
       "status": "pass"
     },
     {
       "description": "objc adversarial fixtures",
-      "detail": "8/8 fixtures pass",
+      "detail": "7/7 fixtures pass",
       "id": "fixtures-objc",
       "status": "pass"
     },
     {
       "description": "php adversarial fixtures",
-      "detail": "16/16 fixtures pass",
+      "detail": "12/12 fixtures pass",
       "id": "fixtures-php",
       "status": "pass"
     },
@@ -139,12 +139,6 @@
       "status": "pass"
     },
     {
-      "description": "yaml adversarial fixtures",
-      "detail": "28/28 fixtures pass",
-      "id": "fixtures-yaml",
-      "status": "pass"
-    },
-    {
       "description": "xml adversarial fixtures",
       "detail": "1/1 fixtures pass",
       "id": "fixtures-xml",
@@ -152,68 +146,14 @@
     },
     {
       "description": "erlang adversarial fixtures",
-      "detail": "10/10 fixtures pass",
+      "detail": "0/9 fixtures pass",
       "id": "fixtures-erlang",
-      "status": "pass"
-    },
-    {
-      "description": "clean adversarial fixtures",
-      "detail": "8/8 fixtures pass",
-      "id": "fixtures-clean",
-      "status": "pass"
-    },
-    {
-      "description": "html adversarial fixtures",
-      "detail": "12/12 fixtures pass",
-      "id": "fixtures-html",
-      "status": "pass"
-    },
-    {
-      "description": "toml adversarial fixtures",
-      "detail": "6/6 fixtures pass",
-      "id": "fixtures-toml",
-      "status": "pass"
-    },
-    {
-      "description": "css adversarial fixtures",
-      "detail": "10/10 fixtures pass",
-      "id": "fixtures-css",
-      "status": "pass"
-    },
-    {
-      "description": "markdown adversarial fixtures",
-      "detail": "8/8 fixtures pass",
-      "id": "fixtures-markdown",
-      "status": "pass"
-    },
-    {
-      "description": "scss adversarial fixtures",
-      "detail": "9/9 fixtures pass",
-      "id": "fixtures-scss",
-      "status": "pass"
-    },
-    {
-      "description": "bash adversarial fixtures",
-      "detail": "17/17 fixtures pass",
-      "id": "fixtures-bash",
-      "status": "pass"
-    },
-    {
-      "description": "json adversarial fixtures",
-      "detail": "7/7 fixtures pass",
-      "id": "fixtures-json",
-      "status": "pass"
-    },
-    {
-      "description": "powershell adversarial fixtures",
-      "detail": "12/12 fixtures pass",
-      "id": "fixtures-powershell",
-      "status": "pass"
+      "status": "fail"
     }
   ],
   "claimLevel": "L1",
-  "commit": "1d116064bda4f8642f55974484ccb393fde1ca17",
-  "committedAt": "2026-09-28T23:25:59-04:00",
+  "commit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
+  "committedAt": "2026-09-23T17:47:16-04:00",
   "data": {
     "details": [
       {
@@ -447,16 +387,6 @@
         "problems": []
       },
       {
-        "fixture": "javascript/cjs-export-methods",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "javascript/class-expression-heritage",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "javascript/class-expression-member-identity",
         "ok": true,
         "problems": []
@@ -487,16 +417,6 @@
         "problems": []
       },
       {
-        "fixture": "javascript/dead-span-edge-leak",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "javascript/dead-span-index-shift",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "javascript/decorator-capture",
         "ok": true,
         "problems": []
@@ -518,11 +438,6 @@
       },
       {
         "fixture": "javascript/deep-cjs-exports",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "javascript/default-export-declaration-name",
         "ok": true,
         "problems": []
       },
@@ -628,11 +543,6 @@
       },
       {
         "fixture": "javascript/jsx-usage",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "javascript/member-owner-containment",
         "ok": true,
         "problems": []
       },
@@ -917,22 +827,12 @@
         "problems": []
       },
       {
-        "fixture": "svelte/directive-carriers",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "svelte/each-block",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "svelte/each-shadow-collision",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "svelte/error-recovery",
         "ok": true,
         "problems": []
       },
@@ -987,22 +887,7 @@
         "problems": []
       },
       {
-        "fixture": "svelte/reserved-svelte-namespace",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "svelte/rune-call-filter",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "svelte/rune-filter-coverage",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "svelte/rune-invocations",
         "ok": true,
         "problems": []
       },
@@ -1087,22 +972,12 @@
         "problems": []
       },
       {
-        "fixture": "typescript/ambient-function-signature",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "typescript/ambient-global",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/api-contract-bare-path",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/arrow-contracts-and-exports",
         "ok": true,
         "problems": []
       },
@@ -1117,27 +992,12 @@
         "problems": []
       },
       {
-        "fixture": "typescript/class-expression-members",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/class-extends-overrides",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "typescript/class-implements-interface-overrides",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "typescript/comment-boundary",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/commonjs-require-module-graph",
         "ok": true,
         "problems": []
       },
@@ -1168,11 +1028,6 @@
       },
       {
         "fixture": "typescript/ctor-param-property-lines",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/declaration-in-body-is-local",
         "ok": true,
         "problems": []
       },
@@ -1327,22 +1182,7 @@
         "problems": []
       },
       {
-        "fixture": "typescript/named-class-expression-is-declaration",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "typescript/namespace-member-export-boundary",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/node-builtin-subpaths",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/object-literal-accessor-pair",
         "ok": true,
         "problems": []
       },
@@ -1377,11 +1217,6 @@
         "problems": []
       },
       {
-        "fixture": "typescript/parameter-shadows-file-symbol",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "typescript/parameters-payload",
         "ok": true,
         "problems": []
@@ -1403,11 +1238,6 @@
       },
       {
         "fixture": "typescript/qualified-call-path",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/qualified-calls-nested-scope",
         "ok": true,
         "problems": []
       },
@@ -1438,21 +1268,6 @@
       },
       {
         "fixture": "typescript/taint-leaf",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/taint-sink-receiver",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/taint-sink-require-child-process",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "typescript/taint-sink-require-not-loader",
         "ok": true,
         "problems": []
       },
@@ -1652,11 +1467,6 @@
         "problems": []
       },
       {
-        "fixture": "java/modern-pattern-rules",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "java/multi-interface-extends",
         "ok": true,
         "problems": []
@@ -1668,11 +1478,6 @@
       },
       {
         "fixture": "java/overload-arity-varargs-multicatch",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "java/override-guess-tier",
         "ok": true,
         "problems": []
       },
@@ -1748,11 +1553,6 @@
       },
       {
         "fixture": "groovy/anon-exports",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/anonymous-body-overrides",
         "ok": true,
         "problems": []
       },
@@ -1958,11 +1758,6 @@
       },
       {
         "fixture": "groovy/keyword-named-args-841",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "groovy/lambda-expression",
         "ok": true,
         "problems": []
       },
@@ -2257,11 +2052,6 @@
         "problems": []
       },
       {
-        "fixture": "kotlin/override-declaring-ancestor-949",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "kotlin/override-fallback-confidence",
         "ok": true,
         "problems": []
@@ -2292,11 +2082,6 @@
         "problems": []
       },
       {
-        "fixture": "kotlin/quoted-name-surface-924",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "kotlin/safe-nav-chain",
         "ok": true,
         "problems": []
@@ -2318,11 +2103,6 @@
       },
       {
         "fixture": "kotlin/type-usage-graph",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "kotlin/uses-gates",
         "ok": true,
         "problems": []
       },
@@ -2727,11 +2507,6 @@
         "problems": []
       },
       {
-        "fixture": "cpp/declaration-vs-definition-612",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "cpp/include-name-924",
         "ok": true,
         "problems": []
@@ -2792,17 +2567,7 @@
         "problems": []
       },
       {
-        "fixture": "cpp/template-declarator-name-612",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "cpp/virtual-override-resolution",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "cpp/wrapped-declarator-names-612",
         "ok": true,
         "problems": []
       },
@@ -2827,22 +2592,12 @@
         "problems": []
       },
       {
-        "fixture": "rust/declaration-vs-definition-612",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "rust/declared-type-refs",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "rust/error-file-payload",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "rust/impl-target-name-surface-798",
         "ok": true,
         "problems": []
       },
@@ -2877,11 +2632,6 @@
         "problems": []
       },
       {
-        "fixture": "rust/tuple-struct-field-types",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "rust/union-and-associated-type",
         "ok": true,
         "problems": []
@@ -2892,27 +2642,7 @@
         "problems": []
       },
       {
-        "fixture": "rust/where-clause-bounds-798",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "python/base-shapes",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "python/callee-shapes",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "python/decorator-column-lines",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "python/dupdef-last-wins",
         "ok": true,
         "problems": []
       },
@@ -2952,11 +2682,6 @@
         "problems": []
       },
       {
-        "fixture": "go/error-region-callee-descend-799",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "go/framework-detection",
         "ok": true,
         "problems": []
@@ -2967,22 +2692,7 @@
         "problems": []
       },
       {
-        "fixture": "go/grammar-error-not-a-construction-889",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "go/grouped-and-embedded-fields-889",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "go/implements-params",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "go/implements-signature-914",
         "ok": true,
         "problems": []
       },
@@ -3008,11 +2718,6 @@
       },
       {
         "fixture": "zig/callsite-lines-825",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "zig/declaration-vs-definition-612",
         "ok": true,
         "problems": []
       },
@@ -3097,27 +2802,7 @@
         "problems": []
       },
       {
-        "fixture": "dart/callsite-lines-825",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "dart/dedup-and-attribution",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "dart/dup-decl-last-wins",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "dart/enum-constant-decls",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "dart/extension-type",
         "ok": true,
         "problems": []
       },
@@ -3147,32 +2832,12 @@
         "problems": []
       },
       {
-        "fixture": "swift/attributed-enum-case",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "swift/bare-member-read-uses",
         "ok": true,
         "problems": []
       },
       {
-        "fixture": "swift/case-pattern-recovery",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "swift/edges-and-patterns",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "swift/enum-construction-splice",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "swift/error-recovery-nominal",
         "ok": true,
         "problems": []
       },
@@ -3217,11 +2882,6 @@
         "problems": []
       },
       {
-        "fixture": "swift/unwrap-write-gate",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "swift/write-gate",
         "ok": true,
         "problems": []
@@ -3238,11 +2898,6 @@
       },
       {
         "fixture": "objc/framework-surface-pins",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "objc/macro-prefixed-declaration",
         "ok": true,
         "problems": []
       },
@@ -3292,32 +2947,12 @@
         "problems": []
       },
       {
-        "fixture": "php/framework-app-root",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "php/framework-order",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "php/framework-surface-pins",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "php/header-reads",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "php/include-paths",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "php/line-contract",
         "ok": true,
         "problems": []
       },
@@ -3672,658 +3307,156 @@
         "problems": []
       },
       {
-        "fixture": "yaml/anchor-document-scope-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/anchor-document-scope",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/comment-attribution-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/comment-attribution",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/compose-depends-on",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/directive-reserved",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/directive-tag-handle",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/directive-version",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/duplicate-key-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/error-recovery-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/framework-shape-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/framework-shape",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/json-pointer-resolve-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/json-pointer-resolve",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/k8s-resource-ref",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/k8s-volume-source-not-a-name",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/merge-sequence",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/openapi-contract",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/payload-complexity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/payload-lines-evidence",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/secret-document",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/secret-structural",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/tag-declared-type-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/tag-declared-type",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/tag-file-include-negative",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/tag-file-include",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/tag-include-inc-spelling",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "yaml/value-vocabulary",
-        "ok": true,
-        "problems": []
-      },
-      {
         "fixture": "xml/lines-825",
         "ok": true,
         "problems": []
       },
       {
         "fixture": "erlang/arity-distinct-calls",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"go\",\"kind\":\"function\",\"ownerName\":\"arity_distinct_calls\",\"meta.arity\":0}; got: arity_distinct_calls:module, go:function, pick:function, fold:function",
+          "expected symbol not found: {\"name\":\"pick\",\"kind\":\"function\",\"ownerName\":\"arity_distinct_calls\",\"meta.arity\":1}; got: arity_distinct_calls:module, go:function, pick:function, fold:function",
+          "expected symbol not found: {\"name\":\"pick\",\"kind\":\"function\",\"ownerName\":\"arity_distinct_calls\",\"meta.arity\":2}; got: arity_distinct_calls:module, go:function, pick:function, fold:function",
+          "expected symbol not found: {\"name\":\"fold\",\"kind\":\"function\",\"ownerName\":\"arity_distinct_calls\",\"meta.arity\":2}; got: arity_distinct_calls:module, go:function, pick:function, fold:function",
+          "expected symbol not found: {\"name\":\"fold\",\"kind\":\"function\",\"ownerName\":\"arity_distinct_calls\",\"meta.arity\":3}; got: arity_distinct_calls:module, go:function, pick:function, fold:function",
+          "expected 2 symbol(s) named \"pick\" kind=function; got 1",
+          "expected 2 symbol(s) named \"fold\" kind=function; got 1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"pick\",\"meta.context\":\"local function call\",\"meta.callArity\":1}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"pick\",\"meta.context\":\"local function call\",\"meta.callArity\":2}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"io:format\",\"meta.context\":\"remote function call\",\"meta.callArity\":1}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"io:format\",\"meta.context\":\"remote function call\",\"meta.callArity\":2}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"fold\",\"meta.context\":\"local function call\",\"meta.callArity\":2}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"fold\",\"target\":\"fold\",\"meta.context\":\"local function call\",\"meta.callArity\":3}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"fold\",\"target\":\"lists:foldl\",\"meta.context\":\"remote function call\",\"meta.callArity\":3}; got: calls[go->pick]@0.9; calls[go->io:format]@0.9; calls[go->fold]@0.9; calls[fold->fold]@0.9; calls[fold->lists:foldl]@0.9; contains[arity_distinct_calls->go]@1; contains[arity_distinct_calls->pick]@1; contains[arity_distinct_calls->fold]@1"
+        ]
       },
       {
         "fixture": "erlang/arity-exports",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"pick\",\"kind\":\"function\",\"ownerName\":\"arity_exports\",\"meta.arity\":0,\"meta.clauseCount\":1}; got: arity_exports:module, pick:function",
+          "expected symbol not found: {\"name\":\"pick\",\"kind\":\"function\",\"ownerName\":\"arity_exports\",\"meta.arity\":1,\"meta.clauseCount\":2}; got: arity_exports:module, pick:function",
+          "expected 2 symbol(s) named \"pick\" kind=function; got 1"
+        ]
       },
       {
         "fixture": "erlang/behaviour-otp",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"init\",\"kind\":\"function\",\"ownerName\":\"behaviour_otp\",\"meta.arity\":1}; got: behaviour_otp:module, init:function, handle_req:function, helper:function",
+          "expected symbol not found: {\"name\":\"handle_req\",\"kind\":\"function\",\"ownerName\":\"behaviour_otp\",\"meta.arity\":2,\"meta.clauseCount\":2}; got: behaviour_otp:module, init:function, handle_req:function, helper:function",
+          "expected symbol not found: {\"name\":\"helper\",\"kind\":\"function\",\"ownerName\":\"behaviour_otp\",\"meta.arity\":0}; got: behaviour_otp:module, init:function, handle_req:function, helper:function"
+        ]
       },
       {
         "fixture": "erlang/call-resolution",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"run\",\"kind\":\"function\",\"ownerName\":\"call_resolution\",\"meta.arity\":0}; got: call_resolution:module, run:function, step_one:function, step_two:function",
+          "expected symbol not found: {\"name\":\"step_one\",\"kind\":\"function\",\"ownerName\":\"call_resolution\",\"meta.arity\":0}; got: call_resolution:module, run:function, step_one:function, step_two:function",
+          "expected symbol not found: {\"name\":\"step_two\",\"kind\":\"function\",\"ownerName\":\"call_resolution\",\"meta.arity\":1}; got: call_resolution:module, run:function, step_one:function, step_two:function"
+        ]
       },
       {
         "fixture": "erlang/callsite-lines-825",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "erlang/imports-and-try",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"run\",\"kind\":\"function\",\"ownerName\":\"callsite_lines\",\"meta.arity\":0}; got: callsite_lines:module, count:property, label:property, state:struct, run:function, target:function, handle_call:function",
+          "expected symbol not found: {\"name\":\"target\",\"kind\":\"function\",\"ownerName\":\"callsite_lines\",\"meta.arity\":0}; got: callsite_lines:module, count:property, label:property, state:struct, run:function, target:function, handle_call:function",
+          "expected symbol not found: {\"name\":\"handle_call\",\"kind\":\"function\",\"ownerName\":\"callsite_lines\",\"meta.arity\":3}; got: callsite_lines:module, count:property, label:property, state:struct, run:function, target:function, handle_call:function",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"callsite_lines\",\"target\":\"path.hrl\",\"line_number\":9,\"note\":\"the include path STRING's line; the -include keyword is on 8\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"implements\",\"from\":\"callsite_lines\",\"target\":\"gen_server\",\"line_number\":12,\"note\":\"the behaviour ATOM's line; -behaviour( opens on 11\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"run\",\"target\":\"target\",\"meta.callArity\":0,\"line_number\":22,\"note\":\"site 1 of 4 - per-site edges since the M59 round\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"run\",\"target\":\"target\",\"meta.callArity\":0,\"line_number\":23,\"note\":\"site 2 of 4\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"run\",\"target\":\"target\",\"meta.callArity\":0,\"line_number\":24,\"note\":\"site 3 of 4\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"run\",\"target\":\"target\",\"meta.callArity\":0,\"line_number\":25,\"note\":\"site 4 of 4\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"run\",\"target\":\"gen_server:reply\",\"meta.callArity\":2,\"line_number\":26,\"note\":\"the remote callee LEAF (reply) - qualified target per ER-D1\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"instantiates\",\"from\":\"run\",\"target\":\"state\",\"line_number\":29,\"note\":\"the record NAME's line (#state{), not the fields' lines\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"callsite_lines\",\"target\":\"run\",\"line_number\":21,\"note\":\"symbol lines pinned through contains (web-round convention)\"}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"callsite_lines\",\"target\":\"target\",\"line_number\":35}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"callsite_lines\",\"target\":\"handle_call\",\"line_number\":37}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"callsite_lines\",\"target\":\"state\",\"line_number\":16}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"state\",\"target\":\"count\",\"line_number\":17}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"state\",\"target\":\"label\",\"line_number\":18}; got: references[callsite_lines->path.hrl]@0.9; implements[callsite_lines->gen_server]@1; calls[run->target]@0.9; calls[run->gen_server:reply]@0.9; instantiates[run->state]@1; contains[state->count]@1; contains[state->label]@1; contains[callsite_lines->state]@1; contains[callsite_lines->run]@1; contains[callsite_lines->target]@1; contains[callsite_lines->handle_call]@1"
+        ]
       },
       {
         "fixture": "erlang/negative-noise",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"run\",\"kind\":\"function\",\"ownerName\":\"negative_noise\",\"meta.arity\":1}; got: negative_noise:module, run:function, worker:function",
+          "expected symbol not found: {\"name\":\"worker\",\"kind\":\"function\",\"ownerName\":\"negative_noise\",\"meta.arity\":1}; got: negative_noise:module, run:function, worker:function"
+        ]
       },
       {
         "fixture": "erlang/record-ops-er2",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"transitions\",\"kind\":\"function\",\"ownerName\":\"record_ops_er2\",\"meta.arity\":1}; got: record_ops_er2:module, timer:property, count:property, label:property, state:struct, transitions:function, guarded:function, heady:function, get_count:function, idx:function",
+          "expected symbol not found: {\"name\":\"guarded\",\"kind\":\"function\",\"ownerName\":\"record_ops_er2\",\"meta.arity\":1}; got: record_ops_er2:module, timer:property, count:property, label:property, state:struct, transitions:function, guarded:function, heady:function, get_count:function, idx:function",
+          "expected symbol not found: {\"name\":\"heady\",\"kind\":\"function\",\"ownerName\":\"record_ops_er2\",\"meta.arity\":1}; got: record_ops_er2:module, timer:property, count:property, label:property, state:struct, transitions:function, guarded:function, heady:function, get_count:function, idx:function",
+          "expected symbol not found: {\"name\":\"get_count\",\"kind\":\"function\",\"ownerName\":\"record_ops_er2\",\"meta.arity\":1}; got: record_ops_er2:module, timer:property, count:property, label:property, state:struct, transitions:function, guarded:function, heady:function, get_count:function, idx:function",
+          "expected symbol not found: {\"name\":\"idx\",\"kind\":\"function\",\"ownerName\":\"record_ops_er2\",\"meta.arity\":0}; got: record_ops_er2:module, timer:property, count:property, label:property, state:struct, transitions:function, guarded:function, heady:function, get_count:function, idx:function",
+          "expected transitions complexity 7; got undefined",
+          "expected guarded complexity 4; got undefined",
+          "expected heady complexity 1; got undefined",
+          "expected get_count complexity 1; got undefined",
+          "expected idx complexity 1; got undefined",
+          "expected transitions complexity 7; got undefined",
+          "expected guarded complexity 4; got undefined",
+          "expected heady complexity 1; got undefined",
+          "expected get_count complexity 1; got undefined",
+          "expected idx complexity 1; got undefined",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"state\",\"target\":\"erlang:make_ref\",\"meta.context\":\"remote function call\",\"meta.callArity\":0,\"line_number\":13,\"note\":\"record field DEFAULT (ER-D12): the call inside -record's default value attributes to the RECORD symbol\"}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"transitions\",\"target\":\"state\",\"meta.context\":\"record member read\",\"line_number\":16,\"note\":\"the case scrutinee read: uses -> record at the #state name's line\"}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"transitions\",\"target\":\"count\",\"meta.context\":\"record member read\",\"line_number\":16}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"transitions\",\"target\":\"state\",\"meta.context\":\"record field update\",\"line_number\":22,\"note\":\"the OTP state-transition idiom - uses -> record AND -> each assigned field\"}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"transitions\",\"target\":\"count\",\"meta.context\":\"record field update\",\"line_number\":22}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"transitions\",\"target\":\"transitions\",\"meta.context\":\"local function call\",\"meta.callArity\":1,\"line_number\":22,\"note\":\"self-recursion inside the receive arm - evaluation context, emitted\"}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"get_count\",\"target\":\"state\",\"meta.context\":\"record member read\",\"line_number\":36}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"get_count\",\"target\":\"count\",\"meta.context\":\"record member read\",\"line_number\":36}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"idx\",\"target\":\"state\",\"meta.context\":\"record member read\",\"line_number\":38,\"note\":\"#state.label index read - same contract as dot reads\"}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1",
+          "expected relationship not found: {\"type\":\"uses\",\"from\":\"idx\",\"target\":\"label\",\"meta.context\":\"record member read\",\"line_number\":38}; got: calls[transitions->transitions]@0.9; contains[state->timer]@1; contains[state->count]@1; contains[state->label]@1; contains[record_ops_er2->state]@1; contains[record_ops_er2->transitions]@1; contains[record_ops_er2->guarded]@1; contains[record_ops_er2->heady]@1; contains[record_ops_er2->get_count]@1; contains[record_ops_er2->idx]@1"
+        ]
       },
       {
         "fixture": "erlang/record-ops",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"make\",\"kind\":\"function\",\"ownerName\":\"record_ops\",\"meta.arity\":0}; got: record_ops:module, id:property, count:property, label:property, state:struct, make:function, bump:function, read_id:function",
+          "expected symbol not found: {\"name\":\"bump\",\"kind\":\"function\",\"ownerName\":\"record_ops\",\"meta.arity\":1}; got: record_ops:module, id:property, count:property, label:property, state:struct, make:function, bump:function, read_id:function",
+          "expected symbol not found: {\"name\":\"read_id\",\"kind\":\"function\",\"ownerName\":\"record_ops\",\"meta.arity\":1}; got: record_ops:module, id:property, count:property, label:property, state:struct, make:function, bump:function, read_id:function"
+        ]
       },
       {
         "fixture": "erlang/refs-er2",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/declaration-forms",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/definition-module-interface",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/expression-shapes",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/import-modules-alias-884",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/instance-target-name-collision",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/qualified-names",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/signature-definition-merge",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "clean/type-and-expression-shapes",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/attribute-case-and-srcset",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/element-forms",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/error-budget-broken",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/error-budget",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/error-recovery",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/framework-and-scores",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/identity-addressable",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/inline-embedded-code",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/resource-carriers",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/scheme-and-navigation",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/scope-barriers-and-references",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "html/undiscovered-carriers",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/arrays-and-values",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/dotted-and-quoted-paths",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/identity-and-paths",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/malformed-and-rejected",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/module-name-collision",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "toml/store-seam-probe",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/complexity-matrix",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/declarations-the-corpus-never-uses",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/error-recovery-is-reported",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/font-faces-and-registered-properties",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/ie-filter-arguments",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/keyframes-and-animation-uses",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/layer-ordering-and-font-families",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/repeated-selectors-are-one-symbol",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/scope-conditions-and-custom-properties",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "css/selector-chains-and-nesting",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/code-block-site-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/heading-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/heading-parent-name-collision",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/indented-code-block",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/internal-anchor-links",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/payload-lines-evidence",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/reference-links",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "markdown/table-structure",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/control-flow-and-extend",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/error-recovery-is-reported",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/functions-return-and-undeclared-uses",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/identically-named-scopes-are-distinct",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/module-system-and-mixins",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/reads-recovered-from-error-regions",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/scope-containment-and-complexity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/self-referential-assignment-reads-itself",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "scss/variables-flags-and-identity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/arithmetic-reads-gap-closure",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/array-declaration-shape",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/assigned-in-file",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/call-identity-bd10",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/case-arm-calls-bd8",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/contains-name-line-921",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/dynamic-command-bd4",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/export-edges-bd7",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/module-owner-bd2",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/payload-and-complexity",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/per-site-lines-821",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/recovered-region-guard-bd5",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/redefinition-overrides",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/shell-defined-vars",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/source-path-resolution-bd9",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/trap-handler-bd3",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "bash/unset-ruled-bd6",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Arrays",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Dotted.name",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Imports",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Invalid",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Lines",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/OpenApi",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "json/Refs",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/class-inherit-psa2",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/data-shapes-psb10",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/file-owner-psa1",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/member-reads-psb5",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/method-scope-psb3",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/module-surface-psb9",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/new-object-psa3",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/payload-psb11",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/per-site-lines-psb2",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/reserved-words-psb4",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/suppression-and-params-psb7",
-        "ok": true,
-        "problems": []
-      },
-      {
-        "fixture": "powershell/variable-reads-psa4",
-        "ok": true,
-        "problems": []
+        "ok": false,
+        "problems": [
+          "expected symbol not found: {\"name\":\"handle\",\"kind\":\"method\",\"ownerName\":\"refs_er2\",\"meta.arity\":1,\"meta.isCallback\":true}; got: refs_er2:module, TIMEOUT:constant, maybe:type, server:property, ctx:struct, go:function, run:function",
+          "expected symbol not found: {\"name\":\"token\",\"kind\":\"type\",\"ownerName\":\"refs_er2\",\"meta.isOpaque\":true}; got: refs_er2:module, TIMEOUT:constant, maybe:type, server:property, ctx:struct, go:function, run:function",
+          "expected symbol not found: {\"name\":\"go\",\"kind\":\"function\",\"ownerName\":\"refs_er2\",\"meta.arity\":1}; got: refs_er2:module, TIMEOUT:constant, maybe:type, server:property, ctx:struct, go:function, run:function",
+          "expected symbol not found: {\"name\":\"run\",\"kind\":\"function\",\"ownerName\":\"refs_er2\",\"meta.arity\":1}; got: refs_er2:module, TIMEOUT:constant, maybe:type, server:property, ctx:struct, go:function, run:function",
+          "expected relationship not found: {\"type\":\"implements\",\"from\":\"refs_er2\",\"target\":\"gen_server\",\"line_number\":8}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"refs_er2\",\"target\":\"handle\",\"line_number\":9,\"note\":\"the callback Method is a module member like any function\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"maybe\",\"target\":\"undefined\",\"meta.context\":\"type reference\",\"line_number\":11,\"note\":\"the type dependency graph exists (user finding #6): maybe depends on undefined\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"token\",\"target\":\"binary\",\"meta.context\":\"type reference\",\"line_number\":12,\"note\":\"-opaque closes ER-G5: the same declaration surface as -type\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"contains\",\"from\":\"ctx\",\"target\":\"server\",\"line_number\":13}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"run\",\"meta.context\":\"fun value reference\",\"line_number\":17,\"note\":\"fun run/1 is a reference, not a call\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"lists:map\",\"meta.context\":\"fun value reference\",\"line_number\":18,\"note\":\"qualified per ER-D1\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"MODULE\",\"meta.context\":\"macro use\",\"line_number\":19,\"note\":\"the ?MODULE use itself is a macro reference\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"refs_er2:run\",\"meta.context\":\"remote function call\",\"meta.callArity\":1,\"meta.macroModule\":true,\"line_number\":19,\"note\":\"?MODULE:run expands - ER-D14: the module is known, so the call resolves to the in-file function\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"TIMEOUT\",\"meta.context\":\"macro use\",\"line_number\":20}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"calls\",\"from\":\"go\",\"target\":\"lists:foreach\",\"meta.context\":\"remote function call\",\"meta.callArity\":2,\"line_number\":21}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"go\",\"target\":\"SERVER_HEADER\",\"meta.context\":\"macro use\",\"line_number\":22,\"note\":\"undefined macro: the use is still emitted; unresolved targets land as externals - honest\"}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1",
+          "expected relationship not found: {\"type\":\"references\",\"from\":\"run\",\"target\":\"TIMEOUT\",\"meta.context\":\"macro use\",\"line_number\":24}; got: implements[refs_er2->gen_server]@1; calls[go->lists:foreach]@0.9; contains[refs_er2->TIMEOUT]@1; contains[refs_er2->maybe]@1; contains[ctx->server]@1; contains[refs_er2->ctx]@1; contains[refs_er2->go]@1; contains[refs_er2->run]@1"
+        ]
       }
     ],
     "summary": {
-      "bash": {
-        "fail": 0,
-        "pass": 17
-      },
       "c": {
         "fail": 0,
         "pass": 18
-      },
-      "clean": {
-        "fail": 0,
-        "pass": 8
       },
       "clojure": {
         "fail": 0,
@@ -4331,79 +3464,59 @@
       },
       "cpp": {
         "fail": 0,
-        "pass": 22
+        "pass": 19
       },
       "csharp": {
         "fail": 0,
         "pass": 15
       },
-      "css": {
-        "fail": 0,
-        "pass": 10
-      },
       "dart": {
         "fail": 0,
-        "pass": 11
+        "pass": 7
       },
       "elixir": {
         "fail": 0,
         "pass": 56
       },
       "erlang": {
-        "fail": 0,
-        "pass": 10
+        "fail": 9,
+        "pass": 0
       },
       "go": {
         "fail": 0,
-        "pass": 12
+        "pass": 8
       },
       "groovy": {
         "fail": 0,
-        "pass": 73
+        "pass": 71
       },
       "haskell": {
         "fail": 0,
         "pass": 1
       },
-      "html": {
-        "fail": 0,
-        "pass": 12
-      },
       "java": {
-        "fail": 0,
-        "pass": 48
-      },
-      "javascript": {
-        "fail": 0,
-        "pass": 67
-      },
-      "json": {
-        "fail": 0,
-        "pass": 7
-      },
-      "kotlin": {
         "fail": 0,
         "pass": 46
       },
-      "markdown": {
+      "javascript": {
         "fail": 0,
-        "pass": 8
+        "pass": 61
+      },
+      "kotlin": {
+        "fail": 0,
+        "pass": 43
       },
       "objc": {
         "fail": 0,
-        "pass": 8
+        "pass": 7
       },
       "php": {
-        "fail": 0,
-        "pass": 16
-      },
-      "powershell": {
         "fail": 0,
         "pass": 12
       },
       "python": {
         "fail": 0,
-        "pass": 8
+        "pass": 5
       },
       "ruby": {
         "fail": 0,
@@ -4411,31 +3524,23 @@
       },
       "rust": {
         "fail": 0,
-        "pass": 18
+        "pass": 14
       },
       "scala": {
         "fail": 0,
         "pass": 54
       },
-      "scss": {
-        "fail": 0,
-        "pass": 9
-      },
       "svelte": {
         "fail": 0,
-        "pass": 37
+        "pass": 32
       },
       "swift": {
         "fail": 0,
-        "pass": 16
-      },
-      "toml": {
-        "fail": 0,
-        "pass": 6
+        "pass": 11
       },
       "typescript": {
         "fail": 0,
-        "pass": 85
+        "pass": 71
       },
       "vue": {
         "fail": 0,
@@ -4445,13 +3550,9 @@
         "fail": 0,
         "pass": 1
       },
-      "yaml": {
-        "fail": 0,
-        "pass": 28
-      },
       "zig": {
         "fail": 0,
-        "pass": 4
+        "pass": 3
       }
     }
   },
@@ -4468,9 +3569,14 @@
       "description": "fixture failures document CURRENT analyzer defects honestly; they convert to passes during wave fixes, never by editing expectations to match buggy output"
     }
   ],
-  "regeneratedAt": "2026-09-29T03:33:29.730Z",
-  "regeneratedAtCommit": "1d116064bda4f8642f55974484ccb393fde1ca17",
+  "regeneratedAt": "2026-09-23T22:03:49.845Z",
+  "regeneratedAtCommit": "43d4127bd897866af9dd7653bec3137fd7f9caa2",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
-  "title": "Adversarial fixture corpus"
+  "title": "Adversarial fixture corpus",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.305Z",
+    "contentSha256": "65c5b78a567f49680a5a27e4df4fd669ba725f8904098135c75a016a6c781a16"
+  }
 }

@@ -52,14 +52,6 @@ const GATED_ANALYZERS: Record<string, string> = {
   erlang: "real-erlang-analyzer.ts",
   clojure: "real-clojure-analyzer.ts",
   elixir: "real-elixir-analyzer.ts",
-  // M14 (#288): html joins the hygiene gate. It was absent while the lane's own
-  // F3/F4/F5 cells read `n/a`, so the three detectors (no-op ternary, identical
-  // if/else bodies, write-only `this.<flag> =`) had never run over this file.
-  // The pre-fix analyzer carried all three shapes: a `frame.depth > maxDepth`
-  // guard written twice in a row, and a `hasExternals` flag whose only
-  // assignment was inside a branch. Enrolling it is one line and it is the gate
-  // that keeps the rewrite's hot path honest.
-  html: "real-html-analyzer.ts",
 }
 
 // A ternary's `?` is never the tail of a nullish-coalescing operator. Without

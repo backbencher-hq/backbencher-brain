@@ -2,94 +2,21 @@
   "schemaVersion": 1,
   "milestone": "M12",
   "purpose": "ast_driven_regex_census_across_wired_analyzers",
-  "generatedAt": "2026-09-28T20:15:19.702Z",
-  "describes": "the working tree (a preview; run with --head to anchor it to a commit)",
+  "generatedAt": "2026-09-28T01:08:49.345Z",
   "parser": "tree-sitter-typescript (project WASM pipeline)",
   "methodology": "parse analyzer source with tree-sitter; walk for regex literal nodes and RegExp constructors; record location, operation, receiver category, and preliminary classification",
-  "totalRegexUsages": 26,
+  "totalRegexUsages": 28,
   "analyzersScanned": 43,
   "byClassification": {
-    "needs_review": 17,
-    "normalization": 9
+    "normalization": 11,
+    "needs_review": 17
   },
   "byReceiverCategory": {
+    "node_text": 11,
     "identifier": 14,
-    "other": 3,
-    "node_text": 9
+    "other": 3
   },
   "perFile": [
-    {
-      "file": "real-fsharp-analyzer.ts",
-      "count": 6,
-      "usages": [
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
-          "column": 20,
-          "source": "/[()<]/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
-          "column": 43,
-          "source": "/\\s:/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1050,
-          "column": 63,
-          "source": "/^[A-Za-z_][A-Za-z0-9_']*$/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1288,
-          "column": 11,
-          "source": "/^['^]/",
-          "operation": "test",
-          "receiver": "text",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1290,
-          "column": 36,
-          "source": "/^['^]/",
-          "operation": "test",
-          "receiver": "leaf",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        },
-        {
-          "file": "real-fsharp-analyzer.ts",
-          "line": 1292,
-          "column": 12,
-          "source": "/^[A-Za-z_][A-Za-z0-9_']*$/",
-          "operation": "test",
-          "receiver": "leaf",
-          "receiverCategory": "identifier",
-          "classification": "needs_review",
-          "justification": ""
-        }
-      ]
-    },
     {
       "file": "real-vue-analyzer.ts",
       "count": 6,
@@ -274,6 +201,34 @@
       ]
     },
     {
+      "file": "real-c-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-c-analyzer.ts",
+          "line": 368,
+          "column": 5,
+          "source": "/^[0-9][0-9A-Za-z_]*$/",
+          "operation": "test",
+          "receiver": "beforeName.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        },
+        {
+          "file": "real-c-analyzer.ts",
+          "line": 2656,
+          "column": 21,
+          "source": "/^([A-Za-z_][A-Za-z0-9_]*)\\s*(=|\\()/",
+          "operation": "test",
+          "receiver": "next.text",
+          "receiverCategory": "node_text",
+          "classification": "normalization",
+          "justification": ""
+        }
+      ]
+    },
+    {
       "file": "real-clean-analyzer.ts",
       "count": 2,
       "usages": [
@@ -295,6 +250,34 @@
           "source": "/[,{}]/",
           "operation": "test",
           "receiver": "inner",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-cpp-analyzer.ts",
+      "count": 2,
+      "usages": [
+        {
+          "file": "real-cpp-analyzer.ts",
+          "line": 1220,
+          "column": 43,
+          "source": "/::|\\s+/",
+          "operation": "split",
+          "receiver": "rawText",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        },
+        {
+          "file": "real-cpp-analyzer.ts",
+          "line": 1242,
+          "column": 35,
+          "source": "/::|\\s+/",
+          "operation": "split",
+          "receiver": "t",
           "receiverCategory": "identifier",
           "classification": "needs_review",
           "justification": ""
@@ -330,6 +313,57 @@
       ]
     },
     {
+      "file": "real-clojure-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-clojure-analyzer.ts",
+          "line": 724,
+          "column": 25,
+          "source": "/^%(\\d+|&)?$/",
+          "operation": "test",
+          "receiver": "hName",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-go-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-go-analyzer.ts",
+          "line": 774,
+          "column": 12,
+          "source": "/^[A-Za-z_][A-Za-z0-9_]*$/",
+          "operation": "test",
+          "receiver": "leaf",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-makefile-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-makefile-analyzer.ts",
+          "line": 643,
+          "column": 34,
+          "source": "/[\\\\/]/",
+          "operation": "split",
+          "receiver": "filePath",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
+          "justification": ""
+        }
+      ]
+    },
+    {
       "file": "real-python-analyzer.ts",
       "count": 1,
       "usages": [
@@ -342,6 +376,23 @@
           "receiver": "c.text",
           "receiverCategory": "node_text",
           "classification": "normalization",
+          "justification": ""
+        }
+      ]
+    },
+    {
+      "file": "real-zig-analyzer.ts",
+      "count": 1,
+      "usages": [
+        {
+          "file": "real-zig-analyzer.ts",
+          "line": 1016,
+          "column": 33,
+          "source": "/[!*\\s\\[\\]\\{\\}]+/g",
+          "operation": "replace",
+          "receiver": "leaf",
+          "receiverCategory": "identifier",
+          "classification": "needs_review",
           "justification": ""
         }
       ]

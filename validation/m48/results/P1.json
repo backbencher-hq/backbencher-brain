@@ -1,13 +1,18 @@
 {
   "status": "verified",
-  "currentCommit": "40b4324f841ff25835ec56b5078c30083d4564d0",
+  "currentCommit": "20cfa8b7769a3dfa21a866331a94c428d102cae5",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-p1-impact-unity.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-30T00:24:16.255Z",
+  "generatedAt": "2026-09-08T19:58:52.895Z",
   "passed": 28,
   "failed": 0,
   "negativeCases": 3,
   "failures": [],
-  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)"
+  "fixtureNote": "chain leaf<-b1/b2<-c1<-d1<-e1<-f1 + Service.run + 250 direct callers of leafB (budget truncation)",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.570Z",
+    "contentSha256": "0555866796ab3b116d0521e19213be805f5d440374b35f16f98fac5e1be269aa"
+  }
 }

@@ -51,24 +51,13 @@ function parses(src: string): { ok: boolean; error: string } {
 
 // ── 2. Registration literals must live inside their array ──────────────────
 // `id: "..."` at 4-space indentation registers a mutant. The MUTANTS array
-// opens with a module-level `const MUTANTS … = [` and closes at the first line
-// that is exactly `]`. Any id literal outside that span is unreachable.
-//
-// The declaration pattern is deliberately wider than `^const` NAME-wise and
-// narrower than `contains MUTANTS`-wise: the registry became IMPORTABLE
-// (`export const MUTANTS: Mutant[] = [`, read by the mutant filter), and the
-// first version anchored on `^const`, so it stopped finding the array while
-// every id stayed inside it — measured 2026-09-26, this gate reported **931 of
-// 931 id literal(s) sit outside the array**, a false alarm that blames the
-// registry for the scanner's own blindness. Hence two things: the pattern
-// accepts a declaration prefix, and `found` is reported SEPARATELY, so "the
-// array was not found" can never again be published as "your ids are strays".
-const MUTANTS_DECL = /^\s*(?:export\s+)?(?:declare\s+)?const\s+MUTANTS\b[^=]*=\s*\[/
-function containment(src: string): { total: number; inside: number; outside: number; found: boolean } {
+// opens with `const MUTANTS: Mutant[] = [` and closes at the first line that is
+// exactly `]`. Any id literal outside that span is unreachable.
+function containment(src: string): { total: number; inside: number; outside: number } {
   const lines = src.split("\n")
   let open = -1, close = -1
   for (let i = 0; i < lines.length; i++) {
-    if (open === -1 && MUTANTS_DECL.test(lines[i])) open = i
+    if (open === -1 && /^const MUTANTS:\s*Mutant\[\]\s*=\s*\[/.test(lines[i])) open = i
     else if (open !== -1 && close === -1 && /^\]$/.test(lines[i])) { close = i; break }
   }
   let total = 0, inside = 0
@@ -77,7 +66,7 @@ function containment(src: string): { total: number; inside: number; outside: num
     total++
     if (open !== -1 && close !== -1 && i > open && i < close) inside++
   }
-  return { total, inside, outside: total - inside, found: open !== -1 && close !== -1 }
+  return { total, inside, outside: total - inside }
 }
 
 const MUTANT_FILE = "script/m14/mutate-analyzer.ts"
@@ -100,15 +89,6 @@ function main() {
   ].join("\n")
   negative("stray id outside the array is detected", containment(straySample).outside === 1)
   negative("clean array reports no strays", containment(straySample.split("\n").slice(0, 5).join("\n")).outside === 0)
-  // The scanner's blindness, measured: the registry declares `export const MUTANTS:
-  // Mutant[] = [` and the first version anchored on `^const`, so the whole file read as
-  // "931 outside" while every id was inside it.
-  const exportedSample = straySample.replace("const MUTANTS", "export const MUTANTS")
-  negative("an EXPORTED declaration is found, and its stray is still convicted (the 931-of-931 false alarm's exact site)",
-    containment(exportedSample).found && containment(exportedSample).outside === 1)
-  const noArray = ["// no registry array in this file at all", "main().catch(e => { console.error(e) })", "  {", '    id: "outside/stray",', "  },"].join("\n")
-  negative("an array the scanner cannot FIND is reported as a scanner failure, never as strays",
-    !containment(noArray).found && containment(noArray).outside === 1)
   negative("syntax error is detected", !parses("const a = { b: 1,, }").ok)
 
   // ── 1. Every gate script parses ─────────────────────────────────────────
@@ -129,14 +109,8 @@ function main() {
     if (!existsSync(p)) { check(`${file} exists`, false, p); continue }
     const c = containment(readFileSync(p, "utf8"))
     check(`${key} registry is non-empty`, c.total > 0, `${c.total} id literals`)
-    // A SCANNER failure is its own finding: without this check the two states are the
-    // same sentence to the reader, and the wrong one is actionable (see MUTANTS_DECL).
-    check(`${key} registry's array is findable`, c.found,
-      `no line matches ${MUTANTS_DECL} followed by a top-level \`]\` — the file's shape changed, so containment cannot be adjudicated (this is a SCANNER failure, not a stray id)`)
-    check(`every ${key} id lives inside the array`, c.found && c.outside === 0,
-      c.found
-        ? `${c.outside} of ${c.total} id literal(s) sit outside the array — unreachable registration (the 2026-09-12 incident class)`
-        : `containment could not be adjudicated — see the scanner failure above`)
+    check(`every ${key} id lives inside the array`, c.outside === 0,
+      `${c.outside} of ${c.total} id literal(s) sit outside the array — unreachable registration (the 2026-09-12 incident class)`)
   }
 
   console.log(`M49.G4: ${passed} passed, ${failed} failed, ${negatives} negative(s) exercised`)

@@ -62,35 +62,8 @@ const RAILS_FRAMEWORK = "Ruby on Rails"
  */
 const VARIABLE_RECEIVER_TYPES = new Set(["instance_variable", "class_variable", "global_variable"])
 
-/**
- * Ruby's three bare visibility keywords. A DECLARATION, never a call — the same
- * rule the top-level walk applies to an `identifier` node and the differential
- * oracle applies as `isVisibilityDirective`. Named once so the two analyzer
- * sites cannot drift apart again.
- */
-function isRubyVisibilityDirectiveName(name: string): boolean {
-  return name === "private" || name === "protected" || name === "public"
-}
-
 const BARE_CALL_SKIP_PARENTS = new Set([
-  // `call` — the METHOD NAME of a call node is part of the call, not a bare
-  // read: `Mutex.new` must not also read as a bare `new`. The pinned grammar
-  // folds every call shape — paren'd (`foo(1)`), paren-less command (`foo 1`),
-  // and command-with-block (`foo 1 do ... end`) — into `call` nodes, and
-  // `command` / `command_call` are not node types it can produce. This set USED
-  // to carry those two as "grammar-version drift" insurance, which cost two
-  // dead branches (a skip entry that can never match, and a `type ===` arm
-  // that can never fire) and made the file cite a grammar audit as proof of a
-  // claim the audit could not see.
-  //
-  // Removing the two dead entries is a one-token edit with a real failure mode
-  // and the rack-wave fixture caught it immediately: the same edit dropped
-  // `call` itself, and every constructor call in a default argument
-  // (`def initialize(app, mutex = Mutex.new)`) began reading its `new` as a
-  // bare call as well — `calls initialize->new`, a fabricated edge the RB-A
-  // fixture has forbidden since the rack wave. A cleanup of two provably dead
-  // strings was never a safe place to be casual about the live one beside them.
-  "call",
+  "call", "command", "command_call",
   // NOTE: `method`/`singleton_method` are deliberately ABSENT — an endless
   // `def label = name` body is a DIRECT identifier child of the def node,
   // and only the FIRST named child is the def name (second review: the set
@@ -176,70 +149,6 @@ export const RUBY_BUILTINS = new Set([
  * and the differential oracle share ONE source of truth — a duplicated
  * regex literal previously drifted into junk targets on the oracle side.
  */
-/**
- * Is this instance_variable node a WRITE target rather than a READ?
- *
- * RUBD1/RUBD5/SCD1 already say the answer for the single-target forms: both
- * `assignment` (@x = v) and `operator_assignment` (@x += / -= / ||= v) put a
- * write on the left, and the family contract gates compound assignment too. The
- * MULTIPLE form escaped, and it escaped on BOTH sides of the differential — the
- * analyzer and the oracle carry the same two-line predicate — so the read
- * oracle agreed with the analyzer and the lane measured 100%/0% while false
- * edges sat in the payload.
- *
- * `@height, @width = h, w` parses as
- *
- *   assignment
- *     left_assignment_list      <- the two instance_variables: WRITES
- *     right_assignment_list     <- `h, w`: the values
- *
- * so a write target's parent is the LIST, never the `assignment`, and a test
- * that requires `parent.type === "assignment"` is simply false for it.
- *
- * Two shapes must NOT be swept in with it, and the reason is that they genuinely
- * READ: you cannot assign through a receiver without reading it.
- *
- *   @cfg.limit = x      left is a `call`;            @cfg is read
- *   @list[i] = v        left is an `element_reference`; @list is read
- *
- * A first draft of the fix took "anything in the LHS subtree" and reported 426
- * false reads on the rails stride — 7x the true count, because it caught those
- * two. See reviews/ruby/m60-deep-round.md §9a.
- *
- * Measured once fixed: rails 59, rubocop 3, mastodon 4 — 66 edges in 23 files
- * per 1,200 sampled.
- */
-export function isRubyInstanceVariableWrite(node: Node): boolean {
-  const parent = node.parent
-  if (!parent) return false
-
-  // FORM 1 — the node IS the assignment's `left`: `@x = v`, `@x += v`.
-  if (parent.type === "assignment" || parent.type === "operator_assignment") {
-    const left = parent.childForFieldName("left")
-    if (!left || left.id !== node.id) return false
-    // A receiver is READ even when the assignment writes through it, so
-    // `@cfg.limit = x` and `@list[i] = v` must stay reads.
-    return left.type !== "call" && left.type !== "element_reference"
-  }
-
-  // FORM 2 — the node is a BARE target inside the `left` LIST of a multiple
-  // assignment: `@a, @b = …`, `@a, * = …`. The list is `assignment.left`, and
-  // a list has no `left` field of its own, so the check has to go UP one level
-  // and confirm the list really is the target side.
-  if (parent.type === "left_assignment_list") {
-    const grand = parent.parent
-    if (!grand || (grand.type !== "assignment" && grand.type !== "operator_assignment")) return false
-    const left = grand.childForFieldName("left")
-    if (!left || left.id !== parent.id) return false
-    for (let i = 0; i < parent.namedChildCount; i++) {
-      const c = parent.namedChild(i)
-      if (c && c.id === node.id) return c.type !== "call" && c.type !== "element_reference"
-    }
-  }
-
-  return false
-}
-
 export function isRubyStaticSuperclassName(text: string): boolean {
   if (!text) return false
   const t = text.trim()
@@ -355,9 +264,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       ownerKind: string | undefined
       visibility: string
       isSingleton: boolean
-      // Set when this frame is INSIDE the block of an anonymous dynamic class
-      // (`anon = Class.new(Base) do ... end`). See the assignment branch.
-      anonBinding?: string
     }[] = [{
       node: rootNode,
       owner: undefined,
@@ -368,7 +274,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     while (stack.length > 0) {
       const frame = stack.pop()!
-      const { node, owner, ownerKind, visibility, isSingleton, anonBinding } = frame
+      const { node, owner, ownerKind, visibility, isSingleton } = frame
       const type = node.type
 
       // --- Class ---
@@ -384,24 +290,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // scope is kept verbatim (`A::B`) — identical reopen spellings merge,
         // matching how nested owners are compared by string elsewhere.
         const rawName = nameNode.text
-        // LAST `::`, not the first. RUBD13 promised that a reopen and the nested
-        // spelling are ONE identity, and for `class M::Inner` the first and last
-        // separator coincide, so the ruling held by accident. For three or more
-        // segments they do not: `class Admin::Announcements::DistributionsController`
-        // split on the FIRST `::` produced a symbol NAMED
-        // `Announcements::DistributionsController` owned by `Admin`, while the
-        // nested spelling `module Admin; module Announcements; class
-        // DistributionsController` produces name `DistributionsController` under
-        // the chain Admin > Announcements. The two spellings therefore never
-        // unified, which is the exact failure RUBD13 was filed to prevent — and
-        // the file's OWN `leafName` helper splits on lastIndexOf, so the
-        // analyzer carried two rules that disagreed.
-        // Measured over 1,200 files: 58 non-leaf class/module names
-        // (mastodon 32, rails 26, rubocop 0).
-        const sepIdx = rawName.lastIndexOf("::")
+        const sepIdx = rawName.indexOf("::")
         const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
         const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
+        const effOwner = scopeOwner ?? owner
 
         const superClass = this.extractSuperclass(node)
         const isRailsModel = this.isRailsModelName(superClass)
@@ -462,10 +354,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerKind: "class",
               visibility: bodyVisibility,
               isSingleton: false,
-              // A named class declared inside an anonymous block is a REAL
-              // class with a real name, so the anonymous binding does not
-              // carry into it.
-              anonBinding: undefined,
             })
             if (this.isNoArgumentVisibilityMarker(child)) {
               bodyVisibility = child.text
@@ -483,8 +371,8 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           for (let i = 0; i < superNode.namedChildCount; i++) {
             const sc = superNode.namedChild(i)
             // The pinned grammar folds every paren-less/paren'd call into
-            // `call`, so only that type is matched here (`command` /
-            // `command_call` are not node types it can produce).
+            // `call`, so only that type is matched here (command types are
+            // never produced — F6 dead-literal guard).
             if (sc && sc.type === "call") {
               stack.push({ node: sc, owner, ownerKind, visibility, isSingleton: false })
             }
@@ -500,19 +388,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Same reopen normalization as class (`module A::B` ≡ nested
         // `module A; module B`) — RUBD13, master-review 2026-09.
         const rawName = nameNode.text
-        // Same LAST-separator rule as the class branch above, for the same
-        // reason: `module A::B::C` must be the same identity as
-        // `module A; module B; module C`.
-        const sepIdx = rawName.lastIndexOf("::")
+        const sepIdx = rawName.indexOf("::")
         const name = sepIdx >= 0 ? rawName.substring(sepIdx + 2) : rawName
         const scopeOwner = sepIdx >= 0 ? rawName.substring(0, sepIdx) : undefined
-        // The prefix is a path RELATIVE TO THE CURRENT SCOPE, so it resolves
-        // against the enclosing owner rather than replacing it.
-        // `module Outer; module Inner::Deep` names `Outer::Inner::Deep`, and
-        // `scopeOwner ?? owner` produced the bare `Inner` — an owner that looks
-        // top-level for a module three levels down, which is how the two
-        // spellings still failed to unify even after the leaf fix.
-        const effOwner = scopeOwner ? (owner ? `${owner}::${scopeOwner}` : scopeOwner) : owner
+        const effOwner = scopeOwner ?? owner
 
         const sym: ASTEngine.UniversalSymbol = {
           name,
@@ -535,7 +414,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerKind: "module",
               visibility: bodyVisibility,
               isSingleton: false,
-              anonBinding: undefined,
             })
             if (this.isNoArgumentVisibilityMarker(child)) {
               bodyVisibility = child.text
@@ -568,31 +446,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // node set (if/unless/while/until/case/rescue/elsif), scoped to
           // this method's subtree; base 1.
           complexity: this.calculateNodeComplexity(node),
-          metadata: {
-            ...(isSingleton ? { isSingleton: true } : {}),
-            // Declares that `ownerName` is the LEXICAL owner, not the class
-            // this method actually belongs to: the method is defined in the
-            // block of an anonymous dynamic class bound to `anonBinding`.
-            ...(anonBinding ? { anonymousScopeBinding: anonBinding } : {}),
-          },
+          metadata: isSingleton ? { isSingleton: true } : {},
         }
         symbols.push(sym)
 
         const enclosingMethod = name
-
-        // The method's own local set: parameter NAMES plus every name a
-        // parameter DEFAULT assigns. Ruby evaluates a default in the method's
-        // own scope, so `def all(all_queries: (seen = true))` makes `seen` a
-        // local of `all` and `return nil if seen` is a LOCAL READ, not a call.
-        // walkBody's pre-scan only ever saw the body subtree, so those names
-        // were unbound there and every read of one became a fabricated
-        // `calls` edge (measured on rails:
-        // activerecord/lib/active_record/scoping/named.rb:23 emitted
-        // `calls all -> all_queries_not_set` for a name the very signature
-        // binds). One set feeds the body AND the default walk, so a default
-        // that reads a sibling default's binding also resolves as a local.
-        const locals = new Set<string>((params ?? []).map((p) => p.name))
-        for (const bound of this.extractParamDefaultBindings(node)) locals.add(bound)
 
         // Walk body (endless `def f = expr` has no body_statement — the
         // body is a direct expression child; without this the whole body
@@ -600,14 +458,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // nothing while the oracle derives calls->get).
         this.walkMethodBody(node, this.findChild(node, "body_statement"), symbols, relationships, imports, metadata,
           owner, ownerKind, enclosingMethod, visibilityOverrides,
-          new Set(locals))
+          new Set((params ?? []).map((p) => p.name)))
         // Default-argument VALUE expressions run in this method's scope at
         // call time (`mutex = Mutex.new`, `params = Rack::Utils.…`) — surface
         // their calls/reads too (RB-B, rack wave; the oracle truth walks
         // parameter values).
         this.walkParamDefaults(node, symbols, relationships, imports, metadata,
           owner, ownerKind, enclosingMethod, visibilityOverrides,
-          new Set(locals))
+          new Set((params ?? []).map((p) => p.name)))
 
         continue
       }
@@ -630,7 +488,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
               ownerKind: "class",
               visibility: bodyVisibility,
               isSingleton: true,
-              anonBinding: undefined,
             })
             if (this.isNoArgumentVisibilityMarker(child)) bodyVisibility = child.text
           }
@@ -660,22 +517,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           // csharp #264 wave precedent). Same node set as the file-level
           // counter, scoped to this method's subtree; base 1.
           complexity: this.calculateNodeComplexity(node),
-          metadata: {
-            isSingleton: true,
-            ...(anonBinding ? { anonymousScopeBinding: anonBinding } : {}),
-          },
+          metadata: { isSingleton: true },
         }
         symbols.push(sym)
 
         // Walk body (endless bodies included — see walkMethodBody).
-        // Locals = parameter names PLUS the names a parameter DEFAULT assigns
-        // (Ruby evaluates a default in the method's scope) — same rule and
-        // same reason as the `method` branch above.
-        const locals = new Set<string>((params ?? []).map((p) => p.name))
-        for (const bound of this.extractParamDefaultBindings(node)) locals.add(bound)
         this.walkMethodBody(node, this.findChild(node, "body_statement"), symbols, relationships, imports, metadata,
           owner, ownerKind, name, visibilityOverrides,
-          new Set(locals))
+          new Set((params ?? []).map((p) => p.name)))
         // Singleton-def receiver (`def @rio.check?`): the receiver object
         // is evaluated at definition time, so an instance-variable
         // receiver reads (`uses->@rio`, matching the oracle). ONLY ivars:
@@ -703,7 +552,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // RB-B default-argument values (see walkParamDefaults above).
         this.walkParamDefaults(node, symbols, relationships, imports, metadata,
           owner, ownerKind, name, visibilityOverrides,
-          new Set(locals))
+          new Set((params ?? []).map((p) => p.name)))
 
         continue
       }
@@ -741,8 +590,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       // --- Visibility markers (private, protected, public) ---
       // Ruby's grammar represents these bare keywords as named identifiers.
-      if (type === "identifier" && isRubyVisibilityDirectiveName(node.text)) {
-        continue
+      if (type === "identifier") {
+        const text = node.text
+        if (text === "private" || text === "protected" || text === "public") {
+          continue
+        }
       }
 
       // --- Calls in top-level/module/class bodies ---
@@ -752,10 +604,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // calls (`require File.expand_path(...)`) which must still surface.
       if (type === "call") {
         this.processCall(node, symbols, relationships, imports, metadata,
-          owner, undefined, visibilityOverrides, anonBinding)
+          owner, undefined, visibilityOverrides)
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding })
+          if (child) stack.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
         }
         continue
       }
@@ -788,18 +640,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the factory already knows the name, so the body frames inherit it
         // rather than falling through to the file-scope owner.
         let factoryOwner: string | undefined
-        // An ANONYMOUS dynamic class: the LHS is a local, not a constant, so
-        // there is no name to declare — but the block still opens a class
-        // scope, and every member written inside it belongs to THAT class, not
-        // to the named class that lexically encloses the assignment. The frame
-        // keeps the enclosing owner (reparenting onto a name that has no symbol
-        // would trade one false edge for a dangling one, and the differential
-        // has no truth for an anonymous scope to check either reparenting
-        // against), and the binding is recorded on each member SYMBOL so the
-        // misattribution is declared rather than silent. Measured on rails:
-        // 24 association edges in activerecord/test/cases/associations alone
-        // were written against a class that provably does not own them.
-        let anonBindingForFrames: string | undefined = anonBinding
         if (left) {
           const leftType = left.type
           if (leftType === "constant") {
@@ -836,14 +676,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 metadata: { variableType: "constant" },
               })
             }
-          } else if (leftType === "identifier") {
-            const right = node.childForFieldName("right")
-            if (right && this.dynamicClassFactoryKind(right)) {
-              // `anon = Class.new(Base) do ... end` — the ANONYMOUS form. No
-              // symbol is declared (a local is not a type), and the block's
-              // members are marked instead.
-              anonBindingForFrames = left.text
-            }
           }
           // Instance/class/global variables at class level: skip (noise)
         }
@@ -852,7 +684,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // are still surfaced. The assignment node was not otherwise recursed.
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          if (child) stack.push({ node: child, owner: factoryOwner ?? owner, ownerKind, visibility, isSingleton: false, anonBinding: anonBindingForFrames })
+          if (child) stack.push({ node: child, owner: factoryOwner ?? owner, ownerKind, visibility, isSingleton: false })
         }
         continue
       }
@@ -865,7 +697,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // use, so analyzer and truth stay in parity on spec/DSL-heavy corpora
       // (rack wave: @content_type/@app reads in minitest specs).
       if (type === "instance_variable") {
-        if (!isRubyInstanceVariableWrite(node)) {
+        const parentType = node.parent?.type
+        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
+          node.parent?.childForFieldName("left")?.id === node.id
+        if (!isLhsOfAssign) {
           relationships.push({
             source: owner || FILE_SCOPE_OWNER,
             target: node.text,
@@ -888,12 +723,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         const childFrames: typeof stack = []
         for (let i = node.namedChildCount - 1; i >= 0; i--) {
           const child = node.namedChild(i)
-          // `anonBinding` is CARRIED here. Omitting it dropped the binding at
-          // the first level of descent, so every member two or more levels
-          // inside an anonymous block — which is to say, every member, since
-          // the block body is itself a level — went out unmarked and the first
-          // implementation of this marker marked nothing at all.
-          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false, anonBinding })
+          if (child) childFrames.push({ node: child, owner, ownerKind, visibility, isSingleton: false })
         }
         for (const cf of childFrames) stack.push(cf)
       }
@@ -1127,23 +957,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           } else if (c.type === "destructured_parameter") {
             // tree-sitter-ruby has no `block_var`/`destructured_left`/`pattern_list`:
             // `|(x, y)|` parses as block_parameters > destructured_parameter,
-            // whose children are the bound identifiers directly. The bound name
-            // is NOT always a direct child: `|(head, *body)|` puts `body` under
-            // a `splat_parameter`, and this branch used to read direct children
-            // only, so `body` stayed unbound and every use of it became a
-            // fabricated bare call — measured on rubocop
-            // lib/rubocop/cop/cop_documentation.rb:65, which published
-            // `calls tagged_sections -> body` for a block parameter. The
-            // generic form-recursion the `else` branch uses is the right rule
-            // here too, so both share one implementation.
-            const inner: Node[] = [c]
-            while (inner.length > 0) {
-              const q = inner.pop()!
-              if (q.type === "identifier") localNames.add(q.text)
-              for (let j = 0; j < q.namedChildCount; j++) {
-                const d = q.namedChild(j)
-                if (d) inner.push(d)
-              }
+            // whose children are the bound identifiers directly.
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const d = c.namedChild(j)
+              if (d?.type === "identifier") localNames.add(d.text)
             }
           } else {
             // Splat/keyword/block parameter forms wrap the bound name in a
@@ -1217,58 +1034,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // ANONYMOUS dynamic classes inside this body: `anon = Class.new(Base) do
-    // ... end` binds a LOCAL, so everything the block declares belongs to an
-    // unnamed class — NOT to the method's owner. The top-level walk records
-    // this on the frame; a method body has no frame stack, so the same fact is
-    // recovered here as a node-id -> binding map and looked up at the one place
-    // that publishes a member (the association branch of processCall). This is
-    // where the measured damage is: rails writes these inside test METHODS
-    // (activerecord/test/cases/associations — 24 association edges in one
-    // directory), not at class-body scope.
-    // Every anonymous factory assignment in the body, at ANY depth — a nested
-    // `x = Class.new { y = Class.new { ... } }` puts the inner assignment
-    // inside the outer block, so collecting only the body's direct children
-    // found the outer one and missed the inner one entirely.
-    const anonRanges: Array<{ lo: number; hi: number; binding: string }> = []
-    {
-      const scan: Node[] = [node]
-      while (scan.length > 0) {
-        const c = scan.pop()!
-        if (c.type === "assignment") {
-          const left = c.childForFieldName("left")
-          const right = c.childForFieldName("right")
-          if (left && left.type === "identifier" && right && this.dynamicClassFactoryKind(right)) {
-            anonRanges.push({ lo: right.startIndex, hi: right.endIndex, binding: left.text })
-          }
-        }
-        for (let j = 0; j < c.namedChildCount; j++) {
-          const d = c.namedChild(j)
-          if (d) scan.push(d)
-        }
-      }
-    }
-    // Nested anonymous classes resolve to the INNERMOST one. rails writes them
-    // nested in the same statement —
-    //   developer = Class.new(Base) {           # outer, binding `developer`
-    //     developer_project = Class.new(Base) { # inner, binding `developer_project`
-    //       belongs_to :developer               # belongs to the INNER one
-    //     }
-    //     has_many :developer_projects          # belongs to the OUTER one
-    //   }
-    // — and registering subtree membership in document order left the outer
-    // assignment overwriting the inner one, so `belongs_to :developer` was
-    // declared as a member of `developer` when it is a member of
-    // `developer_project`. Narrowest containing range wins, and the list is
-    // sorted once by width so the lookup is a first-hit scan.
-    anonRanges.sort((a, b) => (a.hi - a.lo) - (b.hi - b.lo))
-    const anonBindingAt = (startIndex: number): string | undefined => {
-      for (const r of anonRanges) {
-        if (startIndex >= r.lo && startIndex <= r.hi) return r.binding
-      }
-      return undefined
-    }
-
     // Iterative DFS
     const stack: Node[] = [node]
     while (stack.length > 0) {
@@ -1286,20 +1051,11 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
 
       // --- Call (method(), obj.method(), command-style) ---
-      // `call` ALONE. The grammar has no `command` / `command_call` node type:
-      // its 353 node types (enumerated from the pinned wasm at
-      // wasm/tree-sitter-ruby.wasm) contain `call` and neither of the other
-      // two, and a corpus sweep of 8,528 .rb files (4,024,840 named nodes,
-      // rails + rubocop + mastodon) produced zero of either. The two dead arms
-      // this replaces were invisible to M14.0.F1: the audit's `isTypeComparison`
-      // only recognises `x.type === "lit"` (a member_expression ending in
-      // `type`), and this file dispatches on a DESTRUCTURED LOCAL (`const
-      // { type } = frame`), so F1 collected 38 of the file's 60 node-type
-      // comparisons and could never have reported these two. Measured by
-      // script/m14/tmp/rb-f1-vacuity-probe.ts.
-      if (type === "call") {
+      // `command`/`command_call` guard against grammar-version drift where
+      // paren-less calls may not be folded into `call` nodes.
+      if (type === "call" || type === "command" || type === "command_call") {
         this.processCall(n, symbols, relationships, imports, metadata,
-          owner, enclosingMethod, visibilityOverrides, anonBindingAt(n.startIndex))
+          owner, enclosingMethod, visibilityOverrides)
       }
 
       // --- Bare identifier in expression position: method call unless local ---
@@ -1342,7 +1098,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       // mentions, matching every other family member.
       // tree-sitter-ruby node type is `instance_variable`.
       if (type === "instance_variable") {
-        if (!isRubyInstanceVariableWrite(n)) {
+        const parentType = n.parent?.type
+        const isLhsOfAssign = (parentType === "assignment" || parentType === "operator_assignment") &&
+          n.parent?.childForFieldName("left")?.id === n.id
+        if (!isLhsOfAssign) {
           const src = enclosingMethod || owner || FILE_SCOPE_OWNER
           relationships.push({
             source: src,
@@ -1387,70 +1146,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (child) stack.push(child)
       }
     }
-  }
-
-  /**
-   * Names a method's PARAMETER DEFAULTS assign, which are locals of the method
-   * scope because Ruby evaluates a default expression in that scope.
-   *
-   * `def all(all_queries: (seen = true))` binds `seen`; a later
-   * `return nil if seen` reads a local, not a method. walkBody's pre-scan only
-   * ever saw the BODY subtree, so these names were unbound and every read of
-   * one became a fabricated bare call — measured on rails in
-   * activerecord/lib/active_record/scoping/named.rb:23, where the analyzer
-   * published `calls all -> all_queries_not_set` for a name the signature on
-   * line 22 itself binds.
-   *
-   * Only ASSIGNMENT targets are collected, and only from the VALUE position of
-   * an `optional_parameter` / `keyword_parameter` — a bare call in a default
-   * (`def f(lock = Mutex.new)`) is a real call and must stay one, so the value
-   * is scanned for what it BINDS and the call walk is left to walkParamDefaults.
-   * The left-hand side forms mirror the body pre-scan's: a plain identifier, and
-   * the identifiers under a `left_assignment_list` (tree-sitter-ruby has no
-   * `multiple_assignment` node, so `a, b = 1, 2` is one assignment whose left
-   * is a list).
-   */
-  private extractParamDefaultBindings(node: Node): Set<string> {
-    const names = new Set<string>()
-    const paramsNode = this.findChild(node, "method_parameters") ||
-                       this.findChild(node, "parameters")
-    if (!paramsNode) return names
-    for (let i = 0; i < paramsNode.namedChildCount; i++) {
-      const pc = paramsNode.namedChild(i)
-      if (!pc) continue
-      if (pc.type !== "optional_parameter" && pc.type !== "keyword_parameter") continue
-      if (pc.namedChildCount < 2) continue
-      // Children are [name, value]; scan the value subtree, skipping child 0.
-      const stack: Node[] = []
-      for (let j = 1; j < pc.namedChildCount; j++) {
-        const c = pc.namedChild(j)
-        if (c) stack.push(c)
-      }
-      while (stack.length > 0) {
-        const n = stack.pop()!
-        if (n.type === "assignment" || n.type === "operator_assignment") {
-          const left = n.childForFieldName("left") ?? n.namedChild(0)
-          if (left) {
-            if (left.type === "identifier") {
-              names.add(left.text)
-            } else {
-              for (let j = 0; j < left.namedChildCount; j++) {
-                const s = left.namedChild(j)
-                if (s && s.type === "identifier") names.add(s.text)
-              }
-            }
-          }
-        }
-        // A block inside a default has its own scope: `def f(cb = -> { x = 1 })`
-        // binds `x` inside the lambda, not in the method.
-        if (n.type === "do_block" || n.type === "block") continue
-        for (let j = 0; j < n.namedChildCount; j++) {
-          const c = n.namedChild(j)
-          if (c) stack.push(c)
-        }
-      }
-    }
-    return names
   }
 
   /**
@@ -1505,10 +1200,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     owner: string | undefined,
     enclosingMethod: string | undefined,
     visibilityOverrides: Map<string, string>,
-    // The local an anonymous dynamic class is bound to, for a call that sits
-    // inside such a block. Resolved by the caller: the top-level walk carries
-    // it on the frame, walkBody resolves it through `anonBindingAt`.
-    anonBinding?: string,
   ): void {
     const methodNode = node.childForFieldName("method")
     if (!methodNode) return
@@ -1550,13 +1241,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         // call, while no class name is claimed.
         receiver = child.text
         receiverNode = child
-      } else if (child.type === "self") {
-        // `self` is a NAMED node in this grammar, so without this it fell into
-        // the expression-receiver branch and `self.new` — which constructs the
-        // ENCLOSING instance — would be suppressed along with `X.new(...).new`.
-        // It names no class and no anonymous scope, so it is neither: the
-        // receiverless branch below resolves it to the enclosing class, which is
-        // the shape the callsite-lines-825 fixture pins.
       } else {
         hasExpressionReceiver = true
       }
@@ -1580,38 +1264,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // --- require / require_relative / load ---
-    //
-    // RECEIVERLESS ONLY, and that qualifier is the whole rule. `require`,
-    // `require_relative` and `load` are Kernel/private methods invoked without a
-    // receiver, so `require "x"` is a load and `coder.load("--- ")` is some
-    // object's method that happens to share the name. The branch used to match
-    // on the method NAME alone, so every `YAMLColumn.new("attr_name").load "--- "`
-    // and `@serializer.load "hey there"` in a real corpus published a
-    // `references` edge naming a document fragment. Found by the payload
-    // hygiene sweep, which looks for names that cannot be a name.
-    // `!hasExpressionReceiver` as well as `!receiver`: `serializer(format).load("")`
-    // leaves `receiver` UNSET (the receiver is a call, which takes the expression
-    // branch) and so passed a receiver-only guard, still publishing a
-    // `references` edge with an empty target.
-    if ((methodName === "require" || methodName === "require_relative" || methodName === "load") &&
-        !receiver && receiverNode === null && !hasExpressionReceiver) {
+    if (methodName === "require" || methodName === "require_relative" || methodName === "load") {
       const args = this.findChild(node, "argument_list")
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
           const arg = args.child(i)
           if (arg && arg.type === "string") {
             const cleanText = this.stripQuotes(arg.text)
-            // An INTERPOLATED path is a TEMPLATE, not a path:
-            // `require "#{__dir__}/mixin/x"` names no file on disk, so both the
-            // import record and the `references` edge would carry a target that
-            // resolves to nothing. The autoload branch below has said since it
-            // was written that it takes "string paths only (dynamic paths are
-            // unresolvable, mirroring require)" -- the intent was documented and
-            // never implemented, because the check was only `type === "string"`
-            // and an interpolated path IS a string.
-            // Measured: 217 sites (rails 208, rubocop 9, mastodon 0) per
-            // fixtures/repositories.
-            if (cleanText.indexOf("#{") >= 0) continue
             imports.push({
               module: cleanText,
               names: [],
@@ -1647,16 +1306,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (probe: previously recorded nothing at all). String paths only
     // (dynamic paths are unresolvable, mirroring require); the const name
     // itself declares nothing here (defined in the loaded file).
-    if (methodName === "autoload" && !receiver && receiverNode === null && !hasExpressionReceiver) {
+    if (methodName === "autoload") {
       const args = this.findChild(node, "argument_list")
       if (args) {
         for (let i = 0; i < args.childCount; i++) {
           const arg = args.child(i)
           if (arg && arg.type === "string") {
             const cleanText = this.stripQuotes(arg.text)
-            // Same rule as the require family above, and this is the branch whose
-            // comment claimed the rule already existed.
-            if (cleanText.indexOf("#{") >= 0) continue
             imports.push({
               module: cleanText,
               names: [],
@@ -1712,18 +1368,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
       return
     }
 
-    // #825, applied to the member SYMBOL and not only to the edge: the node that
-    // NAMES a macro member is its ARGUMENT, not the call that wraps it. A
-    // multi-line `attr_accessor :a, :b, :c` gave every property the line the call
-    // starts on, so `contains -> c` claimed a line that does not contain `c`.
-    // Found by the M59 line oracle on 3,000 real files: 49 inconsistent
-    // `contains` in 4 files, every one a macro whose argument list wraps. The
-    // call node's range is right for the CALL; it was only ever the wrong anchor
-    // for a member. All four macro member kinds are fixed together — `attr_*`,
-    // the associations, `scope`/`default_scope`, and `define_method` — because a
-    // fix that handled only the one the sample happened to contain would leave
-    // the same defect in the other three.
-    //
     // --- attr_reader / attr_writer / attr_accessor ---
     if (methodName === "attr_reader" || methodName === "attr_writer" || methodName === "attr_accessor") {
       const args = this.findChild(node, "argument_list")
@@ -1738,7 +1382,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: propName,
               kind: ASTEngine.SymbolKind.Property,
-              range: this.nodeToRange(arg),
+              range: this.nodeToRange(node),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { accessorType: methodName },
@@ -1758,18 +1402,10 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (arg && (arg.type === "simple_symbol" || arg.type === "string")) {
             let name = this.stripSymbolColon(arg.text)
             if (arg.type === "string") name = this.stripQuotes(arg.text)
-            // `define_method("#{sym}?")` names a method only at RUNTIME — the
-            // argument is a TEMPLATE, not a name, and the graph gained a symbol
-            // literally called `#{sym}?` that resolves to no method in any file.
-            // R7's placeholder-name doctrine: a symbol name must name something.
-            // The method is unknowable statically, so nothing is emitted, which
-            // is the same silence `define_method(some_var)` already gets.
-            // Measured: 7 symbols in 4 files per 1,200 (rails).
-            if (name.indexOf("#{") >= 0) break
             symbols.push({
               name,
               kind: ASTEngine.SymbolKind.Method,
-              range: this.nodeToRange(arg),
+              range: this.nodeToRange(node),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { isDynamicMethod: true },
@@ -1836,24 +1472,13 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (arg && (arg.type === "simple_symbol" || arg.type === "string" || arg.type === "identifier")) {
               let name = this.stripSymbolColon(arg.text)
               if (arg.type === "string") name = this.stripQuotes(arg.text)
-              // `anonBinding` set => this macro is written inside the block of
-              // an anonymous dynamic class, so the association belongs to a
-              // class with NO name — not to `owner`, which is only the lexical
-              // enclosing class. The edge keeps `owner` (reparenting onto a
-              // local that has no symbol would trade a false edge for a
-              // dangling one) and both the symbol and the edge now DECLARE the
-              // real binding, so a consumer can tell an owned association from
-              // a lexically-placed one. Measured on rails: 24 such edges in
-              // activerecord/test/cases/associations alone, all written inside
-              // test methods against classes that provably do not own them.
-              const anonMd = anonBinding ? { anonymousScopeBinding: anonBinding } : {}
               symbols.push({
                 name,
                 kind: ASTEngine.SymbolKind.Property,
-                range: this.nodeToRange(arg),
+                range: this.nodeToRange(node),
                 ownerName: owner,
                 visibility: "public" as any,
-                metadata: { associationType: methodName, ...anonMd },
+                metadata: { associationType: methodName },
               })
               relationships.push({
                 source: owner || FILE_SCOPE_OWNER,
@@ -1862,7 +1487,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 0.8,
                 // #825: the association's own argument node names the edge.
                 line_number: this.nodeLine(arg),
-                metadata: { activerecordMacro: methodName, ...anonMd },
+                metadata: { activerecordMacro: methodName },
               })
             }
           }
@@ -1876,7 +1501,7 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: scopeName,
               kind: ASTEngine.SymbolKind.Method,
-              range: this.nodeToRange(firstArg),
+              range: this.nodeToRange(node),
               ownerName: owner,
               visibility: "public" as any,
               metadata: { scopeType: methodName },
@@ -1899,25 +1524,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `Class.new(...)` is a constructor expression, not an ordinary call.
     // A bare `new(...)` inside a class method constructs the owning class.
     if (methodName === "new") {
-      // RB-A FIRST, before anything is emitted.
-      //
-      // The expression-receiver guard used to sit BELOW the emit, which made it
-      // unreachable in practice: `target` falls back to `owner`, and `owner` is
-      // truthy for any capitalized class, so `X.new(...).new` inside a class
-      // emitted `instantiates <EnclosingClass> -> <EnclosingClass>` — an edge
-      // claiming the enclosing class constructs itself, on a line that does not
-      // contain its name. Found by the M59 line oracle on 3,000 real files: 118
-      // inconsistent `instantiates` edges in 43 files, every one of this shape
-      // (`Class.new(Configuration).new`, `Encoding.json_encoder.new(options)`,
-      // `retrieve_store_class(store).new(...)`, `default_scope Struct.new(:call).new(...)`).
-      //
-      // An expression receiver constructs an ANONYMOUS class, so there is no
-      // nameable target and nothing is emitted. `self.new` is unaffected: `self`
-      // is an anonymous token, so it never appears in `namedChild`, which means
-      // `hasExpressionReceiver` stays false and the receiverless branch below
-      // still resolves `self.new` to the enclosing class with its declared
-      // `resolvedTarget: "enclosing-class"` marker.
-      if (hasExpressionReceiver) return
       const target = receiverLeaf || (!receiver ? owner : undefined)
       const firstChar = target?.charCodeAt(0) ?? 0
       if (target && (!receiverLeaf || (firstChar >= 65 && firstChar <= 90))) {
@@ -1942,11 +1548,14 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
         })
         return
       }
-      // Not a constant instantiation. The expression-receiver half of this rule
-      // moved ABOVE the emit (see the RB-A note there); what remains is a
-      // receiverless `new` at top level, which has no owning class either.
+      // RB-A (rack wave): not a constant instantiation. Two shapes must NOT
+      // fall through to a generic `calls:new`:
+      //  1. expression receivers (`Class.new { ... }.new`) instantiate an
+      //     anonymous class — no nameable target exists;
+      //  2. a receiverless `new` at top level has no owning class either.
       // Lowercase receivers (`task_class.new`) still fall through — that is a
       // genuine member call (truth parity: deriveRubyEdges pushes calls:new).
+      if (hasExpressionReceiver) return
       if (!receiver && !owner) return
     }
 
@@ -1981,20 +1590,6 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): void {
     if (RUBY_BUILTINS.has(name)) return
     if (name === "self" || name === "nil" || name === "true" || name === "false") return
-    // A BARE `private` / `protected` / `public` is a visibility directive, not a
-    // call. The parenthesised/symbol-list form (`private :helper`) reaches
-    // processCall and is already handled there; the bare keyword parses as a
-    // plain `identifier`, and the top-level walk has skipped it since the
-    // first version of this file — but pushBareCall, which serves METHOD
-    // bodies, never had the rule, so a bare `private` inside a method or block
-    // was published as `calls <method> -> private`. Measured on three corpora:
-    // 3 occurrences in a 1,200-file stride sample (rails
-    // activerecord/test/cases/timestamp_test.rb:229, rails
-    // activesupport/test/core_ext/object/try_test.rb:80, mastodon
-    // spec/requests/api/v1/csp_spec.rb:33). The differential oracle already
-    // filtered these via `isVisibilityDirective`, so the analyzer was the only
-    // side that published them.
-    if (isRubyVisibilityDirectiveName(name)) return
     // Constants are a distinct node type, but guard anyway.
     const firstChar = name.charCodeAt(0)
     if (firstChar >= 65 && firstChar <= 90) return
@@ -2029,15 +1624,9 @@ export class RealRubyAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      // Only `call`: the pinned grammar folds every call shape (paren'd,
-      // paren-less, with-block) into `call` nodes — `command` and
-      // `command_call` are not node types it can produce. NOTE: this comment
-      // used to end "(grammar-audit proven)". That was an overclaim, and the
-      // grammar audit is what caught it: M14.0.F1 validates node-type literals
-      // only where a comparison reads `x.type`, and this file compares a
-      // DESTRUCTURED LOCAL named `type`, so F1 never collected this file's
-      // dispatch at all (38 of 60 comparisons). The proof is the grammar's own
-      // node-type enumeration plus a 4,024,840-node corpus sweep, not F1.
+      // Only `call`: the pinned grammar folds every call shape (paren,
+      // paren-less command, command_call) into `call` nodes — the other
+      // two names do not exist in it (grammar-audit proven).
       if (c.type === "call") {
         if (this.dynamicClassFactoryKind(c)) return true
       }

@@ -300,25 +300,16 @@ function siteNodeType(src: string, line: number, callers: Map<string, Array<{ me
   //    the node precisely while a caller's dispatch context only names the node
   //    the helper was ENTERED with — a different thing whenever the helper
   //    re-narrows, which is precisely the LUA-09 shape.
-      const literalSrc = lines[line - 1] ?? ""
-      if (methodIdx >= 0) {
-        for (let i = line - 2; i >= 0; i--) {
-          if (i < methodIdx) break
-          const d = depthAt(i)
-          // `d < here - 1`, NOT `d < here`. A type guard is almost always written
-          // on the line that OPENS its block — `if (target.type === "function_call")
-          // // {` — and that line is one `{` shallower than the literal it guards,
-          // because depthAt() counts braces from lines ABOVE i and the opening brace
-          // is on i itself. The original `d < here` therefore broke out of the walk
-          // before ever testing the guard, and LUA-35's `target.childForFieldName
-          // ("name")` was misattributed to the enclosing `case "return_statement"`.
-          // The gate was reporting a false positive against code that had already
-          // been checked against the grammar by hand.
-          if (d < here - 1) break
-          const g = lines[i].match(/(\w+)\.type\s*[!=]==?\s*"([a-z_]+)"/)
-          if (g && new RegExp(`\\b${g[1]}\\.childForFieldName\\b`).test(literalSrc)) return [g[2]]
-        }
-      }
+  const literalSrc = lines[line - 1] ?? ""
+  if (methodIdx >= 0) {
+    for (let i = line - 2; i >= 0; i--) {
+      if (i < methodIdx) break
+      const d = depthAt(i)
+      if (d < here) break
+      const g = lines[i].match(/(\w+)\.type\s*[!=]==?\s*"([a-z_]+)"/)
+      if (g && new RegExp(`\\b${g[1]}\\.childForFieldName\\b`).test(literalSrc)) return [g[2]]
+    }
+  }
   // 3. otherwise the literal sits in a helper: type it by that helper's
   //    callers. Checked AFTER the guard above on purpose — see the note there.
   if (method) {

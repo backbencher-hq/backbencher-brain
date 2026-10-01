@@ -1,138 +1,89 @@
 {
- "analyzer": "yaml",
- "issue": "#175",
- "at": "2026-09-29T03:03:56.531Z",
- "entry": "ASTEngine.parseFile (the production entry, not analyze() directly)",
- "fixtures": "validation/m14/fixtures/yaml (25 fixtures; this probe reads 9 of them)",
- "checks": [
-  {
-   "name": "a mapping key becomes a symbol",
-   "passed": true,
-   "detail": "5 symbols"
-  },
-  {
-   "name": "identity is the qualified path",
-   "passed": true,
-   "detail": "tag-declared-type.tagged"
-  },
-  {
-   "name": "owner is the containing mapping",
-   "passed": true,
-   "detail": "tag-declared-type"
-  },
-  {
-   "name": "owner kind is recorded",
-   "passed": true,
-   "detail": "module"
-  },
-  {
-   "name": "range is 1-based and non-degenerate",
-   "passed": true,
-   "detail": "{\"startLine\":4,\"startColumn\":1,\"endLine\":4,\"endColumn\":7,\"startIndex\":230,\"endIndex\":236}"
-  },
-  {
-   "name": "scalar-valued key is a property",
-   "passed": true,
-   "detail": "property"
-  },
-  {
-   "name": "a tag overrides the value's resolved type",
-   "passed": true,
-   "detail": "tagged=string plain=integer"
-  },
-  {
-   "name": "the override is attributed to the tag",
-   "passed": true,
-   "detail": "tag"
-  },
-  {
-   "name": "the resolved type is a closed vocabulary member",
-   "passed": true,
-   "detail": "grammar"
-  },
-  {
-   "name": "document contains its top-level keys",
-   "passed": true
-  },
-  {
-   "name": "a tag produces a declared_type reference",
-   "passed": true
-  },
-  {
-   "name": "every relationship carries a 1-based line",
-   "passed": true,
-   "detail": "7/7"
-  },
-  {
-   "name": "every relationship carries an evidence tier",
-   "passed": true,
-   "detail": "[\"structural\",\"reference_qualified\"]"
-  },
-  {
-   "name": "no symbol metadata carries the placeholder `unknown`",
-   "passed": true
-  },
-  {
-   "name": "an include tag produces an import",
-   "passed": true,
-   "detail": "[\"other.yml\",\"sub/tasks.yml\"]"
-  },
-  {
-   "name": "the import is marked external",
-   "passed": true
-  },
-  {
-   "name": "an import is an import_based edge",
-   "passed": true
-  },
-  {
-   "name": "a resolvable $ref names the symbol it points at",
-   "passed": true
-  },
-  {
-   "name": "an unresolvable $ref says so, with a reason and a sub-1.0 confidence",
-   "passed": true
-  },
-  {
-   "name": "a cross-document alias is NOT resolved, and says why",
-   "passed": true
-  },
-  {
-   "name": "the R8 framework contract keys are all present",
-   "passed": true,
-   "detail": "{\"framework\":\"GitHub Actions\",\"detected\":[\"GitHub Actions\"]}"
-  },
-  {
-   "name": "a file with the right key NAMES at the wrong depth claims nothing",
-   "passed": true,
-   "detail": "[]"
-  },
-  {
-   "name": "every symbol carries a per-symbol complexity",
-   "passed": true
-  },
-  {
-   "name": "a wide node scores above a leaf",
-   "passed": true,
-   "detail": "wide=4 leaf=1"
-  },
-  {
-   "name": "a comment becomes the key's docstring",
-   "passed": true,
-   "detail": "\"the port to bind\""
-  },
-  {
-   "name": "an OpenAPI operation carries an apiContractPath",
-   "passed": true,
-   "detail": "GET /tasks"
-  },
-  {
-   "name": "a YAML key that is not a contract carries none",
-   "passed": true
+  "analyzer": "yaml",
+  "checks": [
+    {
+      "name": "multi-document stream creates two modules",
+      "passed": true
+    },
+    {
+      "name": "anchors are emitted once",
+      "passed": true
+    },
+    {
+      "name": "anchor has a qualified identity",
+      "passed": true
+    },
+    {
+      "name": "merge key is a property",
+      "passed": true
+    },
+    {
+      "name": "merge resolves to extends",
+      "passed": true
+    },
+    {
+      "name": "sequence object paths are indexed",
+      "passed": true
+    },
+    {
+      "name": "sequence item paths are unique",
+      "passed": true
+    },
+    {
+      "name": "template metadata is detected",
+      "passed": true
+    },
+    {
+      "name": "Kubernetes framework is detected",
+      "passed": true
+    },
+    {
+      "name": "qualified ranges carry byte offsets",
+      "passed": true
+    },
+    {
+      "name": "boolean scalar is typed from AST",
+      "passed": true
+    },
+    {
+      "name": "integer scalar is typed from AST",
+      "passed": true
+    },
+    {
+      "name": "float scalar is typed from AST",
+      "passed": true
+    },
+    {
+      "name": "null scalar is typed from AST",
+      "passed": true
+    },
+    {
+      "name": "flow sequence remains a variable",
+      "passed": true
+    },
+    {
+      "name": "ordinary alias resolves to uses",
+      "passed": true
+    },
+    {
+      "name": "flow document has no syntax errors",
+      "passed": true
+    },
+    {
+      "name": "malformed YAML reports syntax errors",
+      "passed": true
+    },
+    {
+      "name": "malformed recovery emits only valid key",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "count": 19,
+  "passedCount": 19,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.118Z",
+    "contentSha256": "6ed819426c19cd2d0e692b3b08778f6e284c2f745a33b99a1422b69a0b5f3331"
   }
- ],
- "passed": true,
- "count": 27,
- "passedCount": 27,
- "note": "This file previously existed with no producer in the tree — script/m12/ had no yaml-* script, so the doc's '19/19' was unreproducible. Re-runnable: bun run script/m12/yaml-contract-probe.ts"
 }

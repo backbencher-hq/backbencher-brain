@@ -1,6 +1,6 @@
 {
   "at": "2026-09-25T18:59:53.498Z",
-  "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) \u2014 the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
+  "method": "scoped probe runs of script/m14/differential.ts (--repo X --sample 200) — the canonical M14.0.F5 draw is 60 files/lane and these are deeper draws on the same pinned repos. The 200-file draws ROTATE (the harness logs `rot 8`, `rot 9`), so a lane is clean at depth only if every draw it has been put through is clean; a red draw is a defect that reproduced. Draws whose defect has since been fixed are kept here as history and marked `supersededBy`, because deleting them would erase the evidence the fix answers.",
   "draws": [
     {
       "repo": "svelte",
@@ -102,7 +102,7 @@
       "covered": 2105,
       "missing": 0,
       "unexplained": 1,
-      "note": "draw 1 \u2014 the self-named extension (object Position extends Position)",
+      "note": "draw 1 — the self-named extension (object Position extends Position)",
       "supersededBy": "scala3:scala post-fix draw (2026-09-20)"
     },
     {
@@ -132,7 +132,7 @@
       "covered": 21646,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 1 (2026-09-21, #908 ruling live) \u2014 the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
+      "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
     },
     {
       "repo": "jq",
@@ -142,7 +142,7 @@
       "covered": 2930,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 2 (2026-09-21) \u2014 the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
+      "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
     },
     {
       "repo": "zig",
@@ -152,7 +152,7 @@
       "covered": 1599,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (2026-09-21) \u2014 an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
+      "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
     },
     {
       "repo": "rake",
@@ -162,7 +162,7 @@
       "covered": 1872,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 1 (2026-09-21) \u2014 FULL EXTENT: rake's 95 ruby files, i.e. the whole ruby corpus in the lane's first pinned repo (deeper than the canonical 60-file draw). POST-FIX: measured with the line round, the variable-receiver ruling and the static-superclass gate live, so this draw exercises all three on real code. hash 0fbb6654cea56068, heuristic 728 (first-parent override guesses, the disclosed class \u2014 the differential counts heuristic distrust as honest suspicion, not fabrication)."
+      "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, i.e. the whole ruby corpus in the lane's first pinned repo (deeper than the canonical 60-file draw). POST-FIX: measured with the line round, the variable-receiver ruling and the static-superclass gate live, so this draw exercises all three on real code. hash 0fbb6654cea56068, heuristic 728 (first-parent override guesses, the disclosed class — the differential counts heuristic distrust as honest suspicion, not fabrication)."
     },
     {
       "repo": "rack",
@@ -172,7 +172,7 @@
       "covered": 2482,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 2 (2026-09-21) \u2014 FULL EXTENT: rack's 94 ruby files, whole corpus in the lane's second pinned repo. POST-FIX, and it is the corpus that CONTAINS the measured defect sites this round fixed (`@params_class.new` in query_parser.rb, `self.class.new` in headers.rb, the `Struct.new(...)` bases in directory.rb/multipart), so the clean row is evidence about the fixes rather than about code that lacks the shapes. hash e763e8da76c183e7, heuristic 112."
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus in the lane's second pinned repo. POST-FIX, and it is the corpus that CONTAINS the measured defect sites this round fixed (`@params_class.new` in query_parser.rb, `self.class.new` in headers.rb, the `Struct.new(...)` bases in directory.rb/multipart), so the clean row is evidence about the fixes rather than about code that lacks the shapes. hash e763e8da76c183e7, heuristic 112."
     },
     {
       "repo": "powershell",
@@ -192,7 +192,7 @@
       "covered": 4679,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f \u2014 IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
+      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
     },
     {
       "repo": "powershell",
@@ -202,7 +202,7 @@
       "covered": 25078,
       "missing": 0,
       "unexplained": 1,
-      "note": "draw 2 (900 files, 15x canonical) \u2014 THE DRAW THAT FOUND THE LITERAL-CALLEE FABRICATION: `calls StartSSHProcess -> false` at engine/remoting/common/RunspaceConnectionInfo.cs:2331, where one missing semicolon makes the grammar's error recovery parse a boolean_literal as the callee. hash c155451109f66434. Fixed (a call's callee must be a naming node) and pinned by csharp/literal-callee-recovery.",
+      "note": "draw 2 (900 files, 15x canonical) — THE DRAW THAT FOUND THE LITERAL-CALLEE FABRICATION: `calls StartSSHProcess -> false` at engine/remoting/common/RunspaceConnectionInfo.cs:2331, where one missing semicolon makes the grammar's error recovery parse a boolean_literal as the callee. hash c155451109f66434. Fixed (a call's callee must be a naming node) and pinned by csharp/literal-callee-recovery.",
       "supersededBy": "powershell:csharp post-fix 900-file draw (2026-09-22)"
     },
     {
@@ -213,7 +213,7 @@
       "covered": 25113,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (900 files, fresh rotation \u2014 a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
+      "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
     },
     {
       "repo": "powershell",
@@ -223,7 +223,7 @@
       "covered": 5166,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 4 (2026-09-22, rotation 11 \u2014 a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
+      "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
     },
     {
       "repo": "fsharp",
@@ -233,7 +233,7 @@
       "covered": 4679,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 5 (2026-09-22) \u2014 FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+      "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
     },
     {
       "repo": "powershell",
@@ -243,7 +243,7 @@
       "covered": 5134,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 6 (2026-09-22) \u2014 the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
+      "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
     },
     {
       "repo": "powershell",
@@ -253,7 +253,7 @@
       "covered": 4379,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 7 (2026-09-22) \u2014 the CANONICAL sample size, first draw with the R9 declared-type graph live (rotation 14). Truth 4,379 vs the canonical 60-file row's 4,069: the +310 are the graph itself, every one CONFIRMED (coverage 100%). analyzer-edges 2,624. hash 3d802b32f8b440b7."
+      "note": "draw 7 (2026-09-22) — the CANONICAL sample size, first draw with the R9 declared-type graph live (rotation 14). Truth 4,379 vs the canonical 60-file row's 4,069: the +310 are the graph itself, every one CONFIRMED (coverage 100%). analyzer-edges 2,624. hash 3d802b32f8b440b7."
     },
     {
       "repo": "powershell",
@@ -263,7 +263,7 @@
       "covered": 14433,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 8 (2026-09-22) \u2014 200 files (rotation 15, a fresh rotation) with the R9 graph live. Truth 14,433 is far above the pre-R9 rows on this corpus (5,134-5,166 at rotation 11, 4,508 at draw 1): a declared-type graph adds roughly 45 confirmed edges per file. MISSING=0, unexplained=0, heuristic=0. analyzer-edges 8,236. hash c156578cc09f905b."
+      "note": "draw 8 (2026-09-22) — 200 files (rotation 15, a fresh rotation) with the R9 graph live. Truth 14,433 is far above the pre-R9 rows on this corpus (5,134-5,166 at rotation 11, 4,508 at draw 1): a declared-type graph adds roughly 45 confirmed edges per file. MISSING=0, unexplained=0, heuristic=0. analyzer-edges 8,236. hash c156578cc09f905b."
     },
     {
       "repo": "fsharp",
@@ -273,7 +273,7 @@
       "covered": 12886,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 9 (2026-09-22) \u2014 FULL EXTENT (243/243 .cs files) with the R9 graph live, and hash 4d0e5ba230a7b27f is IDENTICAL to draws 4/5 above, so this is a strict same-files before/after: truth 4,679 -> 12,886 with 100% coverage and NO fabrication. Every one of the 8,207 new edges is confirmed by the oracle, which derives them from the analyzer's own csharpDeclaredTypeRefs (never a second implementation). analyzer-edges 8,976."
+      "note": "draw 9 (2026-09-22) — FULL EXTENT (243/243 .cs files) with the R9 graph live, and hash 4d0e5ba230a7b27f is IDENTICAL to draws 4/5 above, so this is a strict same-files before/after: truth 4,679 -> 12,886 with 100% coverage and NO fabrication. Every one of the 8,207 new edges is confirmed by the oracle, which derives them from the analyzer's own csharpDeclaredTypeRefs (never a second implementation). analyzer-edges 8,976."
     },
     {
       "repo": "phpunit",
@@ -283,7 +283,7 @@
       "covered": 29064,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (2,907/2,907 .php files \u2014 the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca \u2014 the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (\u221211 fabricated, +1 header read) on identical truth."
+      "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
     },
     {
       "repo": "phpmyadmin",
@@ -293,7 +293,7 @@
       "covered": 42558,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 \u2014 the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
     },
     {
       "repo": "phpunit",
@@ -303,7 +303,7 @@
       "covered": 29046,
       "missing": 0,
       "unexplained": 0,
-      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca \u2014 identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion \u2014 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
     },
     {
       "repo": "phpmyadmin",
@@ -313,7 +313,7 @@
       "covered": 42377,
       "missing": 0,
       "unexplained": 0,
-      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 \u2014 identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` \u2014 `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
+      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
     },
     {
       "repo": "ripgrep",
@@ -323,7 +323,7 @@
       "covered": 6309,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (110/110 .rs \u2014 the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
+      "note": "FULL EXTENT (110/110 .rs — the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
     },
     {
       "repo": "cargo",
@@ -343,7 +343,7 @@
       "covered": 6315,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 \u2014 why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
+      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 — why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
     },
     {
       "repo": "go-tools",
@@ -353,8 +353,8 @@
       "covered": 30690,
       "missing": 10,
       "unexplained": 2,
-      "note": "FULL EXTENT (1,931/1,931 .go \u2014 the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class).",
-      "supersededBy": "#914 (round 4, 2026-09-25) \u2014 the 10 MISSING + 2 UNEXPLAINED rows were the name-only `implements` oracle class; both are 0 now. Kept as the evidence the fix answers."
+      "note": "FULL EXTENT (1,931/1,931 .go — the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class).",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 10 MISSING + 2 UNEXPLAINED rows were the name-only `implements` oracle class; both are 0 now. Kept as the evidence the fix answers."
     },
     {
       "repo": "terraform",
@@ -364,7 +364,7 @@
       "covered": 4171,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw (3.3x the canonical 60) on the pinned SECOND corpus \u2014 harness-verbatim: `bun script/m14/differential.ts --repo terraform --sample 200 --no-batch`. analyzer-edges 4148, heuristic 0, hash 0e42b8e4951e2e31. CLEAN."
+      "note": "draw (3.3x the canonical 60) on the pinned SECOND corpus — harness-verbatim: `bun script/m14/differential.ts --repo terraform --sample 200 --no-batch`. analyzer-edges 4148, heuristic 0, hash 0e42b8e4951e2e31. CLEAN."
     },
     {
       "repo": "terraform",
@@ -374,8 +374,8 @@
       "covered": 4176,
       "missing": 2,
       "unexplained": 0,
-      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 \u2014 why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate.",
-      "supersededBy": "#914 (round 4, 2026-09-25) \u2014 the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
+      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 — why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate.",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
     },
     {
       "repo": "terraform",
@@ -385,8 +385,8 @@
       "covered": 8352,
       "missing": 2,
       "unexplained": 0,
-      "note": "2x the draw, same rotation family \u2014 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication.",
-      "supersededBy": "#914 (round 4, 2026-09-25) \u2014 the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
+      "note": "2x the draw, same rotation family — 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication.",
+      "supersededBy": "#914 (round 4, 2026-09-25) — the 2 MISSING rows were part of the same implements class (the oracle over-claimed `InitJSON/InitHuman -> Init`, `StateMigrateHuman -> StateMigrate`, `Diff -> DiffRenderer`, `ReferenceMap -> GraphNodeReferencer`, `graphTransformerMulti -> GraphVertexTransformer` and every `UnimplementedXServer -> XClient`). 0 now."
     },
     {
       "repo": "cython",
@@ -396,7 +396,7 @@
       "covered": 6164,
       "missing": 0,
       "unexplained": 0,
-      "note": "3.3x the canonical 60-file draw, on the pinned primary corpus. analyzer-edges 7155, heuristic-class 835, hash 08f3b66b57991f0e (rot 6: drawn AFTER the round's two full-extent runs had emptied the cold pool, so it is a different 200 files than this round's first 200-file reading at hash 486ebb45a96e61ca / truth 6138 \u2014 that draw was clean as well). CLEAN."
+      "note": "3.3x the canonical 60-file draw, on the pinned primary corpus. analyzer-edges 7155, heuristic-class 835, hash 08f3b66b57991f0e (rot 6: drawn AFTER the round's two full-extent runs had emptied the cold pool, so it is a different 200 files than this round's first 200-file reading at hash 486ebb45a96e61ca / truth 6138 — that draw was clean as well). CLEAN."
     },
     {
       "repo": "cython",
@@ -406,7 +406,7 @@
       "covered": 16218,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (475/475 .py \u2014 the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side \u2014 the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
+      "note": "FULL EXTENT (475/475 .py — the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side — the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
     },
     {
       "repo": "dart-http",
@@ -416,7 +416,7 @@
       "covered": 13654,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (335/335 .dart files \u2014 the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) \u2014 the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
+      "note": "FULL EXTENT (335/335 .dart files — the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) — the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
     },
     {
       "repo": "proxicall",
@@ -426,7 +426,7 @@
       "covered": 37584,
       "missing": 0,
       "unexplained": 0,
-      "note": "chunk 1/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash fa4d51dff25f6af7, analyzer-edges 33826, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified \u2014 2,211/2,211, undrawn 0 \u2014 by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured \u2014 found live, in this round)."
+      "note": "chunk 1/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash fa4d51dff25f6af7, analyzer-edges 33826, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
     },
     {
       "repo": "proxicall",
@@ -436,7 +436,7 @@
       "covered": 35634,
       "missing": 0,
       "unexplained": 0,
-      "note": "chunk 2/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 91b64a06de1ca8dd, analyzer-edges 32411, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified \u2014 2,211/2,211, undrawn 0 \u2014 by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured \u2014 found live, in this round)."
+      "note": "chunk 2/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 91b64a06de1ca8dd, analyzer-edges 32411, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
     },
     {
       "repo": "proxicall",
@@ -446,7 +446,7 @@
       "covered": 36188,
       "missing": 0,
       "unexplained": 0,
-      "note": "chunk 3/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash dbb1252d0c54dabe, analyzer-edges 32561, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified \u2014 2,211/2,211, undrawn 0 \u2014 by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured \u2014 found live, in this round)."
+      "note": "chunk 3/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash dbb1252d0c54dabe, analyzer-edges 32561, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
     },
     {
       "repo": "proxicall",
@@ -456,7 +456,7 @@
       "covered": 35032,
       "missing": 0,
       "unexplained": 0,
-      "note": "chunk 4/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash c97214c6867ae3d2, analyzer-edges 31643, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified \u2014 2,211/2,211, undrawn 0 \u2014 by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured \u2014 found live, in this round)."
+      "note": "chunk 4/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash c97214c6867ae3d2, analyzer-edges 31643, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
     },
     {
       "repo": "proxicall",
@@ -466,7 +466,7 @@
       "covered": 35159,
       "missing": 0,
       "unexplained": 0,
-      "note": "chunk 5/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 49a08d94a7375873, analyzer-edges 31587, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified \u2014 2,211/2,211, undrawn 0 \u2014 by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured \u2014 found live, in this round)."
+      "note": "chunk 5/5 of the FULL EXTENT (2,211 pinned .dart files; corpus 2,211). hash 49a08d94a7375873, analyzer-edges 31587, coverage 100%, fabrication 0%. Drawn over a PRIVATE cold pool (BB_M14_WORK=/tmp/dt-depth-work) so the chunks are DISJOINT: chunks 1-4 drew 2,000 never-sampled files, chunk 5 drew the remaining 211 + 289 warm. Every drawn path is printed under BB_F5_SHOW_FILES and the union is verified — 2,211/2,211, undrawn 0 — by script/m14/tmp/dt-depth-coverage.ts --logs. Runner: script/m14/tmp/dt-proxicall-extent.sh (it deletes the lane-journal row between chunks; --lane-batch turns the journal ON, so without that the later chunks RESUMED chunk 1 and only one chunk was ever measured — found live, in this round)."
     },
     {
       "repo": "proxicall",
@@ -476,7 +476,7 @@
       "covered": 4408,
       "missing": 0,
       "unexplained": 0,
-      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 \u2014 IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
+      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 — IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
     },
     {
       "repo": "dart-http",
@@ -506,7 +506,7 @@
       "covered": 40913,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT, POST-#914 (1,993/1,993 .go). Same enumerator: filesRead 1993, skips 0, truthTotal 40913, analyzer-edges 40702, MISSING 0, UNEXPLAINED 0 (implements truth 295). The 18 MISSING implements rows the 200/400-file draws carried were 8 real analyzer gaps (variadic interface params, receiver-only implementors) and 16 oracle over-claims in the SAME class \u2014 a deeper draw of a 60-file floor found them, a full-extent read named them."
+      "note": "FULL EXTENT, POST-#914 (1,993/1,993 .go). Same enumerator: filesRead 1993, skips 0, truthTotal 40913, analyzer-edges 40702, MISSING 0, UNEXPLAINED 0 (implements truth 295). The 18 MISSING implements rows the 200/400-file draws carried were 8 real analyzer gaps (variadic interface params, receiver-only implementors) and 16 oracle over-claims in the SAME class — a deeper draw of a 60-file floor found them, a full-extent read named them."
     },
     {
       "repo": "terraform",
@@ -526,7 +526,7 @@
       "covered": 2329,
       "missing": 0,
       "unexplained": 0,
-      "note": "canonical 60-file draw, RE-DERIVED at this closure over a private cold pool (BB_M14_WORK=/tmp/sw-canon-work): hash ea2ac2a489ca0853, truth 2,329, covered 2,329 (100%), analyzer-edges 2,312, MISSING=0 unexplained=0. It is byte-identical to the committed M14.0.F5 row (same hash, same 2,329 / 2,312), which is the point: the canonical draw is a same-files before/after, and it is untouched by this round \u2014 the six findings live outside it."
+      "note": "canonical 60-file draw, RE-DERIVED at this closure over a private cold pool (BB_M14_WORK=/tmp/sw-canon-work): hash ea2ac2a489ca0853, truth 2,329, covered 2,329 (100%), analyzer-edges 2,312, MISSING=0 unexplained=0. It is byte-identical to the committed M14.0.F5 row (same hash, same 2,329 / 2,312), which is the point: the canonical draw is a same-files before/after, and it is untouched by this round — the six findings live outside it."
     },
     {
       "repo": "alamofire",
@@ -546,7 +546,7 @@
       "covered": 20465,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (554/554 .swift files \u2014 the whole pinned canonical corpus). hash deccd8b0fd305b6d, analyzer-edges 20,288, coverage 100%, fabrication 0%. This is the draw that FOUND the round: on the pre-fix code the same drawn set read MISSING=1 unexplained=5 (the six findings triaged in script/m14/tmp/sw-full-extent-triage.ts), and the canonical 60-file draw \u2014 hash ea2ac2a489ca0853 \u2014 never touched any of them, because the corpus is 554 files and the canonical draw is 60. The pre-round full-extent reading was truth 20,471 / analyzer 20,293; both sides lost exactly the fabricated targets this round's two name-surface rules refuse (keyword-escaped names published WITH their backticks, tuple positions published as targets), which is why the movement is a before/after rather than a coverage loss: covered == truth at both ends."
+      "note": "FULL EXTENT (554/554 .swift files — the whole pinned canonical corpus). hash deccd8b0fd305b6d, analyzer-edges 20,288, coverage 100%, fabrication 0%. This is the draw that FOUND the round: on the pre-fix code the same drawn set read MISSING=1 unexplained=5 (the six findings triaged in script/m14/tmp/sw-full-extent-triage.ts), and the canonical 60-file draw — hash ea2ac2a489ca0853 — never touched any of them, because the corpus is 554 files and the canonical draw is 60. The pre-round full-extent reading was truth 20,471 / analyzer 20,293; both sides lost exactly the fabricated targets this round's two name-surface rules refuse (keyword-escaped names published WITH their backticks, tuple positions published as targets), which is why the movement is a before/after rather than a coverage loss: covered == truth at both ends."
     },
     {
       "repo": "alamofire",
@@ -566,7 +566,7 @@
       "covered": 5916,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus at FULL EXTENT \u2014 clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
+      "note": "PRIMARY corpus at FULL EXTENT — clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
     },
     {
       "repo": "clj-kondo",
@@ -576,7 +576,7 @@
       "covered": 5024,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
+      "note": "SECOND corpus (M37.16) — clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
     },
     {
       "repo": "elixir",
@@ -586,7 +586,7 @@
       "covered": 8163,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean \u2014 the elixir checkout carries .erl sources too."
+      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean — the elixir checkout carries .erl sources too."
     },
     {
       "repo": "phoenix",
@@ -606,7 +606,7 @@
       "covered": 10692,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN \u2014 and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
+      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN — and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
     },
     {
       "repo": "otp",
@@ -616,7 +616,7 @@
       "covered": 15219,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
+      "note": "SECOND corpus (M37.16) — the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
     },
     {
       "repo": "cabal",
@@ -626,7 +626,7 @@
       "covered": 2730,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix \u2014 the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
+      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix — the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
     },
     {
       "repo": "cabal",
@@ -636,7 +636,7 @@
       "covered": 2222,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 \u2014 why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
+      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 — why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
     },
     {
       "repo": "hledger",
@@ -647,7 +647,7 @@
       "missing": 1,
       "unexplained": 0,
       "supersededBy": "the same draw re-measured after the #872 analyzer fix (below)",
-      "note": "THE RED DRAW. FULL EXTENT \u2014 hledger carries 186 .hs files, so the cap is the whole corpus (`186/186 fresh, rot 1, corpus 186`). analyzer-edges 3422, hash db22c7f9c7941008. MISSING 1, named: `hledger-lib/Hledger/Write/Html/HtmlCommon.hs :: extends Lines -> Spr.Lines` \u2014 `class (Spr.Lines border) => Lines border where`. Every list-context and every qualified superclass was dropped by the analyzer (#872's analyzer half never landed); the oracle derived it, which is what made it visible. PRE-FIX state, kept for the record."
+      "note": "THE RED DRAW. FULL EXTENT — hledger carries 186 .hs files, so the cap is the whole corpus (`186/186 fresh, rot 1, corpus 186`). analyzer-edges 3422, hash db22c7f9c7941008. MISSING 1, named: `hledger-lib/Hledger/Write/Html/HtmlCommon.hs :: extends Lines -> Spr.Lines` — `class (Spr.Lines border) => Lines border where`. Every list-context and every qualified superclass was dropped by the analyzer (#872's analyzer half never landed); the oracle derived it, which is what made it visible. PRE-FIX state, kept for the record."
     },
     {
       "repo": "hledger",
@@ -657,7 +657,7 @@
       "covered": 6107,
       "missing": 0,
       "unexplained": 0,
-      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash \u2014 the strongest form this evidence takes, which is why the hash is recorded per row."
+      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash — the strongest form this evidence takes, which is why the hash is recorded per row."
     },
     {
       "repo": "zig",
@@ -677,7 +677,7 @@
       "covered": 6154,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
+      "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     },
     {
       "repo": "fmt",
@@ -687,8 +687,8 @@
       "covered": 5372,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 2 (2026-09-21) \u2014 FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0.",
-      "supersededBy": "the same draw (73 files) re-measured this round: HEAD's oracle derives 5335 (this row's 5372 does not reproduce at HEAD, so the row predates the oracle revisions that removed the false template-declaration uses), and the round's fix takes it to 5328 \u2014 see the appended row"
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: fmt's 73 cpp files, i.e. deeper than the canonical 60-file draw. This is the lane that carried #870's unexplained row; it reads 0/0 with the round live, heuristic 0.",
+      "supersededBy": "the same draw (73 files) re-measured this round: HEAD's oracle derives 5335 (this row's 5372 does not reproduce at HEAD, so the row predates the oracle revisions that removed the false template-declaration uses), and the round's fix takes it to 5328 — see the appended row"
     },
     {
       "repo": "nlohmann-json",
@@ -698,7 +698,7 @@
       "covered": 1016,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 1 (2026-09-21, the #825/#870 line round live) \u2014 FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0.",
+      "note": "draw 1 (2026-09-21, the #825/#870 line round live) — FULL EXTENT: nlohmann-json carries 17 cpp files and all 17 are drawn, so a 200 cap cannot add anything here. Clean, heuristic 0.",
       "supersededBy": "the same repo at FULL EXTENT under the corrected sampling universe (496 files, appended below); this 17-file row is what the OLD universe (`ext: \"cc,h\"`) could draw, and its 1016 truth does not reproduce at HEAD (1001 on the same 17 files) for the same reason"
     },
     {
@@ -709,7 +709,7 @@
       "covered": 28,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (2026-09-21) \u2014 FULL EXTENT: sqlite's 42 cpp files. Clean."
+      "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
     },
     {
       "repo": "fmt",
@@ -719,7 +719,7 @@
       "covered": 5328,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus at FULL EXTENT (`73/73 fresh`, hash 7721a6a798592379) under the corrected universe \u2014 fmt carries 73 files there (47 .cc + 26 .h; it has no .cpp/.hpp, so the universe correction does not change its file set, which is why its hash is identical before and after and every number here is a controlled comparison). FINAL: analyzed-edges 5117, uncovered 0, unexplained 0. Two defects were found and closed by this draw: (1) the lane's ORACLE derived 7 false `uses` (one per explicit specialization, `template <> constexpr auto num_bits<native_int128>() -> int` reading its own declared name \u2014 format.h num_bits/digits10, printf.h find, gtest.h GenerateNamesRecursively, one-arg.cc from_repr, fuzzer-common.h assign_from_buf, format-impl-test.cc run_double_tests); the analyzer emitted the matching 7 by the same rule gap, so the two sides agreed on a wrong answer and the row read 100%/0/0 over them. Truth 5335 -> 5328 and analyzer-edges 5123 -> 5117 as both sides stopped reading declared names. (2) the same round's wrapped-declarator fix added one covered edge (5116 -> 5117)."
+      "note": "PRIMARY corpus at FULL EXTENT (`73/73 fresh`, hash 7721a6a798592379) under the corrected universe — fmt carries 73 files there (47 .cc + 26 .h; it has no .cpp/.hpp, so the universe correction does not change its file set, which is why its hash is identical before and after and every number here is a controlled comparison). FINAL: analyzed-edges 5117, uncovered 0, unexplained 0. Two defects were found and closed by this draw: (1) the lane's ORACLE derived 7 false `uses` (one per explicit specialization, `template <> constexpr auto num_bits<native_int128>() -> int` reading its own declared name — format.h num_bits/digits10, printf.h find, gtest.h GenerateNamesRecursively, one-arg.cc from_repr, fuzzer-common.h assign_from_buf, format-impl-test.cc run_double_tests); the analyzer emitted the matching 7 by the same rule gap, so the two sides agreed on a wrong answer and the row read 100%/0/0 over them. Truth 5335 -> 5328 and analyzer-edges 5123 -> 5117 as both sides stopped reading declared names. (2) the same round's wrapped-declarator fix added one covered edge (5116 -> 5117)."
     },
     {
       "repo": "nlohmann-json",
@@ -729,7 +729,7 @@
       "covered": 6887,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn \u2014 the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` \u2014 the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` \u2014 a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
+      "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn — the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` — the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` — a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
     },
     {
       "repo": "sdwebimage",
@@ -739,7 +739,7 @@
       "covered": 6580,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits \u2014 the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
+      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits — the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
     },
     {
       "repo": "afnetworking",
@@ -749,7 +749,7 @@
       "covered": 2957,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers \u2014 the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 \u2014 the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
+      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
     },
     {
       "repo": "grails-core",
@@ -759,7 +759,7 @@
       "covered": 94659,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden \u2014 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 \u2014 the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
+      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden — 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 — the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
     },
     {
       "repo": "geb",
@@ -769,7 +769,7 @@
       "covered": 7556,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 \u2014 reported by the differential as heuristic, never as unexplained."
+      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 — reported by the differential as heuristic, never as unexplained."
     }
   ],
   "current": [
@@ -791,7 +791,7 @@
       "covered": 1799,
       "missing": 1,
       "unexplained": 0,
-      "note": "post-fix draw (2026-09-20) \u2014 the one uncovered edge is Transformation.submitWithValue -> DefaultPromise.submitWithValue, adjudicated ORACLE-side (#905: the base member is `private final def` and Scala does not inherit private members; the analyzer's refusal is correct). The self-override that this same draw previously showed is gone."
+      "note": "post-fix draw (2026-09-20) — the one uncovered edge is Transformation.submitWithValue -> DefaultPromise.submitWithValue, adjudicated ORACLE-side (#905: the base member is `private final def` and Scala does not inherit private members; the analyzer's refusal is correct). The self-override that this same draw previously showed is gone."
     },
     {
       "repo": "scala3",
@@ -801,7 +801,7 @@
       "covered": 441,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3, POST-FIX \u2014 this is the draw that first reported anonymous_Inner.foo -> Inner.foo as MISSING (#904). After the generic-substitution pairing: covered 441/441."
+      "note": "draw 3, POST-FIX — this is the draw that first reported anonymous_Inner.foo -> Inner.foo as MISSING (#904). After the generic-substitution pairing: covered 441/441."
     },
     {
       "repo": "scala3",
@@ -851,7 +851,7 @@
       "covered": 1276,
       "missing": 6,
       "unexplained": 8,
-      "note": "post-fix draw 3 \u2014 every remaining row is ORACLE-side (#906): truth derives calls to the keywords `return`/`if`/`string`/`key` from a JSX `return (` statement and an `if (el) {` condition, and does not derive real script-setup calls such as `generateColumns(10)` at line 79. The `dayjs` class that #903 opened with is GONE (the tsx grammar fix)."
+      "note": "post-fix draw 3 — every remaining row is ORACLE-side (#906): truth derives calls to the keywords `return`/`if`/`string`/`key` from a JSX `return (` statement and an `if (el) {` condition, and does not derive real script-setup calls such as `generateColumns(10)` at line 79. The `dayjs` class that #903 opened with is GONE (the tsx grammar fix)."
     },
     {
       "repo": "element-plus",
@@ -861,7 +861,7 @@
       "covered": 1241,
       "missing": 2,
       "unexplained": 4,
-      "note": "post-fix draw 4 \u2014 same oracle-side shapes only (`calls (expr) -> key`/`-> return`; `generateColumns -> map`/`from`; `inline-editing -> generateColumns`/`generateData`)."
+      "note": "post-fix draw 4 — same oracle-side shapes only (`calls (expr) -> key`/`-> return`; `generateColumns -> map`/`from`; `inline-editing -> generateColumns`/`generateData`)."
     },
     {
       "repo": "sqlite",
@@ -871,7 +871,7 @@
       "covered": 21646,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 1 (2026-09-21, #908 ruling live) \u2014 the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
+      "note": "draw 1 (2026-09-21, #908 ruling live) — the first depth draw this lane has ever had. The corpus is 61.9% error-node files (median 3 damaged lines, max 25,681), so this is the draw that would expose silent under-counting in the damaged tail; it does not: heuristic-class 0, analyzer-edges 21,646 = truth."
     },
     {
       "repo": "jq",
@@ -881,7 +881,7 @@
       "covered": 2930,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 2 (2026-09-21) \u2014 the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
+      "note": "draw 2 (2026-09-21) — the WHOLE jq corpus (45 of 45 .c files; the --sample 200 cap cannot exceed it), i.e. the lane with the highest damaged-line median (30). Clean at full extent."
     },
     {
       "repo": "zig",
@@ -891,7 +891,7 @@
       "covered": 1599,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (2026-09-21) \u2014 an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
+      "note": "draw 3 (2026-09-21) — an independent third C corpus (zig's vendored/embedded .c), drawn for the first time. Clean."
     },
     {
       "repo": "rake",
@@ -901,7 +901,7 @@
       "covered": 1872,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 1 (2026-09-21) \u2014 FULL EXTENT: rake's 95 ruby files, whole corpus. POST-FIX (line round + variable-receiver ruling + static-superclass gate). hash 0fbb6654cea56068."
+      "note": "draw 1 (2026-09-21) — FULL EXTENT: rake's 95 ruby files, whole corpus. POST-FIX (line round + variable-receiver ruling + static-superclass gate). hash 0fbb6654cea56068."
     },
     {
       "repo": "rack",
@@ -911,7 +911,7 @@
       "covered": 2482,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 2 (2026-09-21) \u2014 FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
+      "note": "draw 2 (2026-09-21) — FULL EXTENT: rack's 94 ruby files, whole corpus, and the one that carries this round's fixed defect sites. POST-FIX. hash e763e8da76c183e7."
     },
     {
       "repo": "powershell",
@@ -931,7 +931,7 @@
       "covered": 4679,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f \u2014 IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
+      "note": "FULL EXTENT (243/243 .cs files, whole second pinned corpus). hash 4d0e5ba230a7b27f — IDENTICAL to the pre-round measurement of the same sample, so this is a same-files before/after: the line round and the canonicalisation changed no edge."
     },
     {
       "repo": "powershell",
@@ -941,7 +941,7 @@
       "covered": 25113,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (900 files, fresh rotation \u2014 a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
+      "note": "draw 3 (900 files, fresh rotation — a DIFFERENT sample than draw 2: truth 25,113 vs 25,078). Post-fix: MISSING=0, unexplained=0. hash 002a48bf5eb5d1ac."
     },
     {
       "repo": "powershell",
@@ -951,7 +951,7 @@
       "covered": 5166,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 4 (2026-09-22, rotation 11 \u2014 a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
+      "note": "draw 4 (2026-09-22, rotation 11 — a THIRD distinct sample, 5,166 truth edges) taken with the lane's FINAL code: the line round, the target canonicalisation, the params recovery and the parameter-honesty paydown all live. MISSING=0, unexplained=0. hash d314e70f6df0a577, analyzer-edges 5,041."
     },
     {
       "repo": "fsharp",
@@ -961,7 +961,7 @@
       "covered": 4679,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 5 (2026-09-22) \u2014 FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
+      "note": "draw 5 (2026-09-22) — FULL EXTENT re-measured with the FINAL code (243/243 .cs files). It is the SAME sample as the 243-file row above (same hash 4d0e5ba230a7b27f, same truth) and it is clean both times, so this is a same-files before/after: the line round, the canonicalisation, the params recovery and the parameter-honesty paydown changed no edge on a full corpus. analyzer-edges 4,641."
     },
     {
       "repo": "powershell",
@@ -971,7 +971,7 @@
       "covered": 5134,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 6 (2026-09-22) \u2014 the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
+      "note": "draw 6 (2026-09-22) — the R1 round's re-measure (rotation 11's sample differs from draw 4's, hence truth 5,134 vs 5,166: the harness rotates rather than pinning a sample, which is why every row records its hash). With csharp zero-regex live (alias target extraction, conversion-operator identity from the grammar, the separator-set canonicaliser): MISSING=0, unexplained=0. hash 529680631a91287d, analyzer-edges 5,009."
     },
     {
       "repo": "phpunit",
@@ -981,7 +981,7 @@
       "covered": 29064,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (2,907/2,907 .php files \u2014 the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca \u2014 the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (\u221211 fabricated, +1 header read) on identical truth."
+      "note": "FULL EXTENT (2,907/2,907 .php files — the whole pinned corpus, not a sample). First measurement of the lane's depth cell. hash 7feec2ffa6626bca — the SAME drawn set as the draw that found the round's defects (MISSING=2 / unexplained=13), so this is a strict same-files before/after: the 11 fabricated `calls -> \\builtin` edges are gone and the header-argument read is in. analyzer-edges 33,832 -> 33,821 (−11 fabricated, +1 header read) on identical truth."
     },
     {
       "repo": "phpmyadmin",
@@ -991,7 +991,7 @@
       "covered": 42558,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 \u2014 the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
+      "note": "FULL EXTENT (1,232/1,232 .php files, the whole second pinned corpus). hash ef6aa3cce6f906d4 — the same set as the draw that read MISSING=4, so strict before/after. Those 4 were the oracle publishing the raw name-field text as a target (`uses -> $param`, `uses -> $key`) where the analyzer emitted nothing, while `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as member names on BOTH sides; truth 42,562 -> 42,558. One rule, both sides (script/m14/tmp/php-dynamic-member-shapes.ts)."
     },
     {
       "repo": "phpunit",
@@ -1001,7 +1001,7 @@
       "covered": 29046,
       "missing": 0,
       "unexplained": 0,
-      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca \u2014 identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion \u2014 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
+      "note": "R10 round, FULL EXTENT (2,907/2,907 .php files). hash 7feec2ffa6626bca — identical to the previous round's draw, so same files. truth 29,064 -> 29,046 and analyzer 33,821 -> 33,803: BOTH sides moved by exactly -18, reconciling with a measurement of the two narrowed classes rather than an assertion — 17 per-file distinct call targets dropped by the dynamic-callee rule (script/m14/tmp/php-dynamic-callee-pairs.ts: 77 syntactic sites, 72 (owner,target) pairs, 17 distinct (label,target) per file, which is the key the harness dedupes on) plus 1 dynamic include path (script/m14/tmp/php-include-dropped-classes.ts: 112 include expressions across both corpora, 99 kept, 3 dropped, each classified by operand shape). 0 MISSING, 0 unexplained, 100% coverage."
     },
     {
       "repo": "phpmyadmin",
@@ -1011,7 +1011,7 @@
       "covered": 42377,
       "missing": 0,
       "unexplained": 0,
-      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 \u2014 identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` \u2014 `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
+      "note": "R10 round, FULL EXTENT (1,232/1,232 .php files, whole second pinned corpus). hash ef6aa3cce6f906d4 — identical to the pre-fix draw. truth 42,558 -> 42,377 and analyzer moving with it: the -181 reconciles exactly as 179 per-file distinct dropped call targets (240 syntactic dynamic-callee sites, 177 distinct (owner,target) pairs, of which 125 are `variable_name` and 112 `parenthesized_expression` — `(self::$getAllHeaders)()` and friends) plus 2 dropped dynamic include paths (`$this->baseDir.'/revision-info.php'` at src/Git.php:551 and `ROOT_PATH.UrlParams::$goto` at src/Controllers/Import/ImportController.php:724). 0 MISSING, 0 unexplained, 100% coverage."
     },
     {
       "repo": "ripgrep",
@@ -1021,7 +1021,7 @@
       "covered": 6309,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (110/110 .rs \u2014 the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
+      "note": "FULL EXTENT (110/110 .rs — the whole pinned primary corpus; a 200 cap cannot exceed it). `uses` + `references` now COMPARED (both were outside the allowlist before #798), so truth reads 6309 vs the pre-round 4156 for the same hash. analyzer-edges 6115, heuristic 0, hash 781671e47d4a8a2d."
     },
     {
       "repo": "cargo",
@@ -1041,7 +1041,7 @@
       "covered": 6315,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 \u2014 why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
+      "note": "draw on a DIFFERENT rotation (truth 6315 vs 7607 — why every row records its hash). analyzer-edges 6198, heuristic 0, hash 69b8d81d7c4de43b."
     },
     {
       "repo": "go-tools",
@@ -1051,7 +1051,7 @@
       "covered": 30690,
       "missing": 10,
       "unexplained": 2,
-      "note": "FULL EXTENT (1,931/1,931 .go \u2014 the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class)."
+      "note": "FULL EXTENT (1,931/1,931 .go — the whole pinned PRIMARY corpus, not a sample) via the lane's full-lane enumerator script/m14/tmp/go-799-surface.ts, because `--repo go-tools` cannot complete: repo-probe mode runs every lane against the repo and the repo carries 1 stray .cpp file whose oracle derives zero truth edges, which the harness refuses as a fabricated pass and aborts on. analyzer-edges 30361, heuristic 0. All 10 MISSING are `implements` and both unexplained are `implements -> A/T` (internal/gcimporter/testdata/issue25301.go): ONE class, the name-only oracle (#914), untouched by this round and unchanged by it (the same enumerator read missing 12/unexplained 2 before the round's two fixes, the 2 extra rows being the fabricated `instantiates -> s` of the grammar-gap class)."
     },
     {
       "repo": "terraform",
@@ -1061,7 +1061,7 @@
       "covered": 4171,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw (3.3x the canonical 60) on the pinned SECOND corpus \u2014 harness-verbatim: `bun script/m14/differential.ts --repo terraform --sample 200 --no-batch`. analyzer-edges 4148, heuristic 0, hash 0e42b8e4951e2e31. CLEAN."
+      "note": "draw (3.3x the canonical 60) on the pinned SECOND corpus — harness-verbatim: `bun script/m14/differential.ts --repo terraform --sample 200 --no-batch`. analyzer-edges 4148, heuristic 0, hash 0e42b8e4951e2e31. CLEAN."
     },
     {
       "repo": "terraform",
@@ -1071,7 +1071,7 @@
       "covered": 4176,
       "missing": 2,
       "unexplained": 0,
-      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 \u2014 why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate."
+      "note": "a DIFFERENT rotation of the same 200-file draw (truth 4178 vs 4171 — why every row records its hash). analyzer-edges 4161, heuristic 0, hash c2469defc5d9fed6. The rotation surfaces 2 of the 22 `implements`-class rows the full extent carries (the name-only oracle, #914): the deeper draw finds what the previous one could not, which is the whole point of keeping rotations separate."
     },
     {
       "repo": "terraform",
@@ -1081,7 +1081,7 @@
       "covered": 8352,
       "missing": 2,
       "unexplained": 0,
-      "note": "2x the draw, same rotation family \u2014 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication."
+      "note": "2x the draw, same rotation family — 400/1,993 files. analyzer-edges 8297, heuristic 0, hash 5f5380809634b67f. MISSING=2: the same implements-class rows, no new defect class, no fabrication."
     },
     {
       "repo": "cython",
@@ -1091,7 +1091,7 @@
       "covered": 6164,
       "missing": 0,
       "unexplained": 0,
-      "note": "3.3x the canonical 60-file draw, on the pinned primary corpus. analyzer-edges 7155, heuristic-class 835, hash 08f3b66b57991f0e (rot 6: drawn AFTER the round's two full-extent runs had emptied the cold pool, so it is a different 200 files than this round's first 200-file reading at hash 486ebb45a96e61ca / truth 6138 \u2014 that draw was clean as well). CLEAN."
+      "note": "3.3x the canonical 60-file draw, on the pinned primary corpus. analyzer-edges 7155, heuristic-class 835, hash 08f3b66b57991f0e (rot 6: drawn AFTER the round's two full-extent runs had emptied the cold pool, so it is a different 200 files than this round's first 200-file reading at hash 486ebb45a96e61ca / truth 6138 — that draw was clean as well). CLEAN."
     },
     {
       "repo": "cython",
@@ -1101,7 +1101,7 @@
       "covered": 16218,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (475/475 .py \u2014 the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side \u2014 the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
+      "note": "FULL EXTENT (475/475 .py — the whole pinned primary corpus, not a sample). hash 8e2340b6bbdeb581, analyzer-edges 20085, heuristic-class 3339. CLEAN, and the same-files record of this lane's whole round: the identical hash read 20093 analyzer edges / 15 unexplained at 0b348cd4 (the #902 round's 4 fabricated `calls` + 1 fabricated `extends`, split out as #927), then 20085 / 10 with those removed and #928's ten override edges still Unexplained, and now 20085 / 0 with #928 fixed ORACLE-side — the analyzer's edge count never moved for #928, only the truth's ability to explain it (truth 16208 -> 16218, exactly the ten chained class-attribute members of PyrexTypes.py 457-460)."
     },
     {
       "repo": "dart-http",
@@ -1111,7 +1111,7 @@
       "covered": 13654,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (335/335 .dart files \u2014 the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) \u2014 the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
+      "note": "FULL EXTENT (335/335 .dart files — the whole pinned second corpus). hash 2dee60fd89aee7be, analyzer-edges 12708. It is the SAME drawn set as the draw that found this round's two ORACLE-side defects, so it is a strict same-files before/after: tree-truth 13628 -> 13654 and unexplained 27 -> 0 with the analyzer's edge count UNMOVED (12708 both times) — the truth learned to explain edges the analyzer had been emitting correctly all along (27 named-constructor `instantiates` inside `extension type` containers, +1 keyword `calls -> as` removed; #937)."
     },
     {
       "repo": "proxicall",
@@ -1121,7 +1121,7 @@
       "covered": 4408,
       "missing": 0,
       "unexplained": 0,
-      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 \u2014 IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
+      "note": "canonical 60-file draw at this closure, re-derived on the final code: hash 5d521eb201148639 — IDENTICAL to the round's earlier canonical draw, so this is a strict same-files before/after. analyzer-edges 4009, MISSING=0 unexplained=0. Truth 4427 -> 4408 because the DARTD22 rule removed enum-constant declaration reads from BOTH sides at once (the analyzer stopped emitting them, the oracle's bare-uses mirror stopped deriving them), which is why the drop is not a coverage loss: covered = truth, 100%."
     },
     {
       "repo": "dart-http",
@@ -1141,7 +1141,7 @@
       "covered": 2329,
       "missing": 0,
       "unexplained": 0,
-      "note": "canonical 60-file draw, RE-DERIVED at this closure over a private cold pool (BB_M14_WORK=/tmp/sw-canon-work): hash ea2ac2a489ca0853, truth 2,329, covered 2,329 (100%), analyzer-edges 2,312, MISSING=0 unexplained=0. It is byte-identical to the committed M14.0.F5 row (same hash, same 2,329 / 2,312), which is the point: the canonical draw is a same-files before/after, and it is untouched by this round \u2014 the six findings live outside it."
+      "note": "canonical 60-file draw, RE-DERIVED at this closure over a private cold pool (BB_M14_WORK=/tmp/sw-canon-work): hash ea2ac2a489ca0853, truth 2,329, covered 2,329 (100%), analyzer-edges 2,312, MISSING=0 unexplained=0. It is byte-identical to the committed M14.0.F5 row (same hash, same 2,329 / 2,312), which is the point: the canonical draw is a same-files before/after, and it is untouched by this round — the six findings live outside it."
     },
     {
       "repo": "alamofire",
@@ -1161,7 +1161,7 @@
       "covered": 20465,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (554/554 .swift files \u2014 the whole pinned canonical corpus). hash deccd8b0fd305b6d, analyzer-edges 20,288, coverage 100%, fabrication 0%. This is the draw that FOUND the round: on the pre-fix code the same drawn set read MISSING=1 unexplained=5 (the six findings triaged in script/m14/tmp/sw-full-extent-triage.ts), and the canonical 60-file draw \u2014 hash ea2ac2a489ca0853 \u2014 never touched any of them, because the corpus is 554 files and the canonical draw is 60. The pre-round full-extent reading was truth 20,471 / analyzer 20,293; both sides lost exactly the fabricated targets this round's two name-surface rules refuse (keyword-escaped names published WITH their backticks, tuple positions published as targets), which is why the movement is a before/after rather than a coverage loss: covered == truth at both ends."
+      "note": "FULL EXTENT (554/554 .swift files — the whole pinned canonical corpus). hash deccd8b0fd305b6d, analyzer-edges 20,288, coverage 100%, fabrication 0%. This is the draw that FOUND the round: on the pre-fix code the same drawn set read MISSING=1 unexplained=5 (the six findings triaged in script/m14/tmp/sw-full-extent-triage.ts), and the canonical 60-file draw — hash ea2ac2a489ca0853 — never touched any of them, because the corpus is 554 files and the canonical draw is 60. The pre-round full-extent reading was truth 20,471 / analyzer 20,293; both sides lost exactly the fabricated targets this round's two name-surface rules refuse (keyword-escaped names published WITH their backticks, tuple positions published as targets), which is why the movement is a before/after rather than a coverage loss: covered == truth at both ends."
     },
     {
       "repo": "clojure",
@@ -1171,7 +1171,7 @@
       "covered": 5916,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus at FULL EXTENT \u2014 clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
+      "note": "PRIMARY corpus at FULL EXTENT — clojure/clojure carries 142 .clj/.cljc/.cljs files, so the 200-file cap is the whole corpus, not a sample (the `[cold-pool] clojure:clojure: 142/142 fresh (rot 1, corpus 142)` line). analyzer-edges 3584, heuristic 0, hash 95a43f7f2c4cf5f4. CLEAN. Also measured on that checkout: java 190 files, tree-truth 4219, MISSING 0 (same run)."
     },
     {
       "repo": "clj-kondo",
@@ -1181,7 +1181,7 @@
       "covered": 5024,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
+      "note": "SECOND corpus (M37.16) — clj-kondo is a second, independent clojure codebase. analyzer-edges 2630, heuristic 0, hash bc2700cfffc85a67. CLEAN."
     },
     {
       "repo": "elixir",
@@ -1191,7 +1191,7 @@
       "covered": 8163,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean \u2014 the elixir checkout carries .erl sources too."
+      "note": "PRIMARY corpus, 200 of 567 files. analyzer-edges 5771, heuristic 0, hash 25c9bbbe428df233. CLEAN. Same run measured erlang 45 files (tree-truth 2439) clean — the elixir checkout carries .erl sources too."
     },
     {
       "repo": "phoenix",
@@ -1211,7 +1211,7 @@
       "covered": 10692,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN \u2014 and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
+      "note": "PRIMARY corpus. analyzer-edges 5630, heuristic 0, hash 63df4a1a38b47185. CLEAN — and this is the finding worth naming: erlang's fixture lane is 0/9 RED (arity identity, line base, dedup semantics) while its differential is 0/0 on 200 files of rebar3 and 200 files of otp. The two gates disagree because they measure different things: the fixture pins SHAPES (pick/0 vs pick/1, four call sites on four lines) that these corpora exercise rarely, and the differential compares against tree-derived truth on real code. A lane is not clean because one of its gates is."
     },
     {
       "repo": "otp",
@@ -1221,7 +1221,7 @@
       "covered": 15219,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
+      "note": "SECOND corpus (M37.16) — the OTP tree itself. analyzer-edges 7407, heuristic 0, hash 561d4ea73c74a4b7. CLEAN."
     },
     {
       "repo": "cabal",
@@ -1231,7 +1231,7 @@
       "covered": 2730,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix \u2014 the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
+      "note": "PRIMARY corpus, rotation 1 (the canonical 60-file draw is a subset family of this). analyzer-edges 1594, heuristic 0, hash d0bce2779de89ff9. CLEAN before AND after the #872 fix — the canonical draw never sampled a list-context superclass, which is why the lane read clean while the defect was live."
     },
     {
       "repo": "cabal",
@@ -1241,7 +1241,7 @@
       "covered": 2222,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 \u2014 why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
+      "note": "PRIMARY corpus, a DIFFERENT 200-file rotation (truth 2222 vs 2730 — why every row records its hash), re-measured after the fix. analyzer-edges 1333, heuristic 0, hash 2b092576e28185af. CLEAN."
     },
     {
       "repo": "hledger",
@@ -1251,7 +1251,7 @@
       "covered": 6107,
       "missing": 0,
       "unexplained": 0,
-      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash \u2014 the strongest form this evidence takes, which is why the hash is recorded per row."
+      "note": "SAME FILE SET as the red draw above (hash db22c7f9c7941008, identical to the row it supersedes) re-measured after the fix: evaluator-edges 3423, i.e. exactly +1 edge, MISSING 1 -> 0, unexplained 0, heuristic 0. A before/after on an identical sample set with the same hash — the strongest form this evidence takes, which is why the hash is recorded per row."
     },
     {
       "repo": "zig",
@@ -1271,7 +1271,7 @@
       "covered": 6154,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus (M37.16) \u2014 the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
+      "note": "SECOND corpus (M37.16) — the Zig language server. FULL EXTENT (89/89). analyzer-edges 6107, heuristic 0, hash 4036eddb894d1c1e. CLEAN."
     },
     {
       "repo": "sqlite",
@@ -1281,7 +1281,7 @@
       "covered": 28,
       "missing": 0,
       "unexplained": 0,
-      "note": "draw 3 (2026-09-21) \u2014 FULL EXTENT: sqlite's 42 cpp files. Clean."
+      "note": "draw 3 (2026-09-21) — FULL EXTENT: sqlite's 42 cpp files. Clean."
     },
     {
       "repo": "fmt",
@@ -1291,7 +1291,7 @@
       "covered": 5328,
       "missing": 0,
       "unexplained": 0,
-      "note": "PRIMARY corpus at FULL EXTENT (`73/73 fresh`, hash 7721a6a798592379) under the corrected universe \u2014 fmt carries 73 files there (47 .cc + 26 .h; it has no .cpp/.hpp, so the universe correction does not change its file set, which is why its hash is identical before and after and every number here is a controlled comparison). FINAL: analyzed-edges 5117, uncovered 0, unexplained 0. Two defects were found and closed by this draw: (1) the lane's ORACLE derived 7 false `uses` (one per explicit specialization, `template <> constexpr auto num_bits<native_int128>() -> int` reading its own declared name \u2014 format.h num_bits/digits10, printf.h find, gtest.h GenerateNamesRecursively, one-arg.cc from_repr, fuzzer-common.h assign_from_buf, format-impl-test.cc run_double_tests); the analyzer emitted the matching 7 by the same rule gap, so the two sides agreed on a wrong answer and the row read 100%/0/0 over them. Truth 5335 -> 5328 and analyzer-edges 5123 -> 5117 as both sides stopped reading declared names. (2) the same round's wrapped-declarator fix added one covered edge (5116 -> 5117)."
+      "note": "PRIMARY corpus at FULL EXTENT (`73/73 fresh`, hash 7721a6a798592379) under the corrected universe — fmt carries 73 files there (47 .cc + 26 .h; it has no .cpp/.hpp, so the universe correction does not change its file set, which is why its hash is identical before and after and every number here is a controlled comparison). FINAL: analyzed-edges 5117, uncovered 0, unexplained 0. Two defects were found and closed by this draw: (1) the lane's ORACLE derived 7 false `uses` (one per explicit specialization, `template <> constexpr auto num_bits<native_int128>() -> int` reading its own declared name — format.h num_bits/digits10, printf.h find, gtest.h GenerateNamesRecursively, one-arg.cc from_repr, fuzzer-common.h assign_from_buf, format-impl-test.cc run_double_tests); the analyzer emitted the matching 7 by the same rule gap, so the two sides agreed on a wrong answer and the row read 100%/0/0 over them. Truth 5335 -> 5328 and analyzer-edges 5123 -> 5117 as both sides stopped reading declared names. (2) the same round's wrapped-declarator fix added one covered edge (5116 -> 5117)."
     },
     {
       "repo": "nlohmann-json",
@@ -1301,7 +1301,7 @@
       "covered": 6887,
       "missing": 0,
       "unexplained": 0,
-      "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn \u2014 the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` \u2014 the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` \u2014 a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
+      "note": "SECOND corpus at FULL EXTENT under the corrected universe (423 .cpp + 57 .hpp + 17 .h = 497; 496 drawn — the one .h file the old universe already measured is the overlap), `279/496 fresh`, hash 25cb8fe94f2edef7. FINAL: analyzer-edges 6622, uncovered 0, unexplained 0. This is the draw that found the lane's real defects, and it took the FULL extent to do it: a 200-file draw of this same corpus reads 0/0. PRE-fix, at the same hash: MISSING=1 (`tests/thirdparty/Fuzzer/FuzzerUtilDarwin.cpp :: uses (expr) -> environ` — the declared name was read off a pointer local's INITIALIZER, binding the local as `environ` and shadowing the real read) and unexplained=1 (`tests/abi/include/nlohmann/json_v3_10_5.hpp :: uses binary_reader -> strict @8299` — a `JSON_HEDLEY_NON_NULL(3)` between the return type and the name makes the grammar wrap the whole declarator in a `parenthesized_declarator`, so the method's symbol AND its scope were never created and the parameter's read escaped to the namespace-scope enumerator 8k lines away; that one header alone had lost 14 method symbols). Both closed; the two false reads that the shared template rule had left are gone with them (uses 691 -> 686 on that header, contains 1092 -> 1106)."
     },
     {
       "repo": "sdwebimage",
@@ -1311,7 +1311,7 @@
       "covered": 6580,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits \u2014 the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
+      "note": "FULL EXTENT (247/247 objc-routed files = 104 .m + 143 headers the router admits — the whole pinned first corpus under the lane's M60 universe). hash 5d19f542a93d72c5, analyzer-edges 6,925, coverage 100%, fabrication 0%. Re-derived after the M60 grammar wave: the bare-macro rule recovered the declaration half, so truth moved 6,574 -> 6,580 and analyzer edges 6,893 -> 6,925 while coverage stayed 100%/0/0. The heuristic count moved 287 -> 345 because the header half carries real first-parent implicit-override guesses (they are declared at 0.5 and reported as heuristic, never as unexplained). Line contract re-checked over the SAME widened set: 322 files, 23,379 edges, 0 unlined, 23,379 token-checked, 0 INCONSISTENT (script/m14/tmp/oc-line-equivalence.ts)."
     },
     {
       "repo": "afnetworking",
@@ -1321,7 +1321,7 @@
       "covered": 2957,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers \u2014 the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 \u2014 the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
+      "note": "FULL EXTENT (75/75 objc-routed files = 49 .m + 26 admitted headers — the whole pinned second corpus). hash 72d33ae3725c7c5f, analyzer-edges 3,290, coverage 100%, fabrication 0%. The heuristic-class counts (345 and 333 now) are the lane's DECLARED first-parent override guesses at 0.5 — the M37.10 implicit-override model, reported by the differential as heuristic rather than as unexplained, so they are not a gap."
     },
     {
       "repo": "grails-core",
@@ -1331,7 +1331,7 @@
       "covered": 94659,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden \u2014 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 \u2014 the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
+      "note": "FULL EXTENT (6,931/6,931 = every .groovy and .gradle file the router hands this lane, `.gradle` included via the M60 universe widening). hash 5c0530ca713cebeb, analyzer-edges 98,031, coverage 100%, fabrication 0%. Supersedes the 200-file draws below, which were themselves drawn from the CAPPED pool: the scan's hard 4,000-file bound made the pool a directory-order prefix (4,014 of 6,931 files, 2,917 hidden — 2,762 .groovy and 155 .gradle), so 26,485 truth edges (28% of the lane's truth) had never been compared. The cap is now `DISCOVERY_CAP = Math.max(4000, SAMPLE_PER_LANG)`; canonical 60-file draws keep the 4,000-file pool and their sampleSetHash is untouched. Pre-fix/post-fix on the identical capped drawn set (same hash 17cce86be37fb899): MISSING 2 -> 0, analyzer edges 70,798 -> 71,044, heuristic 3,024 -> 3,261 — the anonymous-body classHierarchy entry (reviews/m60-groovy-anonymous-body-override.md)."
     },
     {
       "repo": "geb",
@@ -1341,37 +1341,27 @@
       "covered": 7556,
       "missing": 0,
       "unexplained": 0,
-      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 \u2014 reported by the differential as heuristic, never as unexplained."
-    },
-    {
-      "repo": "Exposed",
-      "lang": "html",
-      "files": 4000,
-      "truth": 245700,
-      "covered": 245700,
-      "missing": 0,
-      "unexplained": 0,
-      "note": "the deepest html draw in the project, and the one the heavy-corpus requirement asked for. Exposed is the only clean tracked corpus with >=1000 html files (4,255 tracked, 4,032 in the pool; proxicall has 1,089 total but only 12 tracked and is dirty, so it is rejected). 245,700 truth edges at 100% with MISSING=0 and unexplained=0 \u2014 the same 0/0 the 200-file draw reported, at 120x the depth, which is the point: html's differential result is not an artifact of a small sample. This draw is also what made the carrier census worth building, since it is the corpus whose `meta http-equiv=refresh` pragmas (40 across 26 files) exposed a carrier that was missing from BOTH tables. run 2026-09-26, corpus rot 5"
+      "note": "FULL EXTENT (668/668 = the whole pinned second corpus; never affected by the 4,000-file cap). hash 9c2299575193bf12, analyzer-edges 7,702, coverage 100%, fabrication 0%. The heuristic class (288) is the lane's DECLARED first-parent override guesses at 0.5 — reported by the differential as heuristic, never as unexplained."
     }
   ],
   "adjudicated": {
-    "vue": "#906 \u2014 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
-    "scala": "#905 \u2014 one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
-    "java": "#904 \u2014 CLOSED this round (generic substitution + edge label). 4 draws clean.",
-    "go": "#799 \u2014 CLEAN at depth, with the residue ruled and counted. go-tools full extent (1,931 files): MISSING 10, unexplained 2, every row `implements` and every one the name-only oracle (#914: it matches method NAMES, so it over-claims a satisfaction the analyzer correctly withholds). terraform: three harness-verbatim draws (200 / 200 rotation 2 / 400) at 0 unexplained, 0-2 of the same implements-class MISSING. The canonical 60-file draw is clean and is why the lane's `diff` cell reads pass; the full extent is published beside it so the cell is not read as 'no residue'.",
-    "c": "#901 \u2014 two MISSING `uses` on all-caps macro names, from the canonical sweep.",
-    "python": "#902/#927 \u2014 CLOSED at depth: the conditional-callee `calls` edge and the factory-function `extends` edge the deeper draws found are gone, held by python/callee-shapes and python/base-shapes with two CAUGHT reverting mutants. #928 \u2014 CLOSED: the depth cell's last red, resolved ORACLE-side (5043a3cb), which cleared the full extent (unexplained 10 -> 0) and turned this cell green. Python has no open depth residual.",
-    "rust": "#798 \u2014 CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0.",
-    "dart": "#937 \u2014 CLOSED: the truth oracle's named-constructor prescan accepted only `class_definition`, so a Dart 3 `extension type` container's named constructors were invisible to it; the analyzer (whose named-ctor set comes from SYMBOLS, where the extension type became an owner in DARTD21) was right. Full extent: 27 unexplained + 1 MISSING -> 0/0, truth 13,628 -> 13,654, analyzer-edges unmoved at 12,708. #936 \u2014 CLOSED: the cold pool keyed on the FROZEN-TREE path, so every run reported 100% fresh and re-drew files it had already measured (proxicall:dart: 5,942 pooled paths for a 2,211-file corpus under four freeze prefixes). Fixed by keying on the corpus-relative path; without it this round's chunked full extent would not have been a union at all.",
-    "swift": "#924 (swift half) + the full-extent residue \u2014 CLOSED, and closed on the analyzer side except where the ruling says otherwise. The six full-extent findings: (1) a switch-case pattern error-recovers into a call_expression whose callee is the keyword `case`, and the analyzer published a fabricated `calls` (#938); (2) the SCD1 write gate stopped at the `postfix_expression` wrapper, so a force-unwrapped member in an assignment LHS was published as a forced READ (#939) \u2014 pinned by its own fixture with BOTH halves (the unwrap the gate must not publish as a read, and the genuine read it must keep); (3) the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owned was dropped (5 corpus sites, #940); (4) an unresolvable `self.init` published a dangling `calls -> init` on the truth side while the analyzer invented the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`, #941); (5) the enum-construction splice removed \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently lost its edge (found on alamofire at full extent, #942); (6) the NAME SURFACE \u2014 a decorated enum case published the decorator's PAYLOAD as the member name (`@available(*, deprecated, message: \"Cannot be thrown\")` for all five cases of HTTPTypes.swift), and the same re-emit removed keyword-escaped backticks (`case `continue``) and tuple positions (`pair.0`). Every one has a fixture and a reverting mutant; the name-surface half is #924, whose swift side is now paid down and recorded in the R10 register.",
+    "vue": "#906 — 200-file depth on element-plus, POST-FIX: every remaining row is truth-side (calls to keywords `return`/`if`/`string`/`key` from non-call sites; real script-setup calls underived). The analyzer half (#903) is closed.",
+    "scala": "#905 — one uncovered edge at depth, ORACLE-side (truth pairs through a private base member). Analyzer correct; OPEN as oracle debt.",
+    "java": "#904 — CLOSED this round (generic substitution + edge label). 4 draws clean.",
+    "go": "#799 — CLEAN at depth, with the residue ruled and counted. go-tools full extent (1,931 files): MISSING 10, unexplained 2, every row `implements` and every one the name-only oracle (#914: it matches method NAMES, so it over-claims a satisfaction the analyzer correctly withholds). terraform: three harness-verbatim draws (200 / 200 rotation 2 / 400) at 0 unexplained, 0-2 of the same implements-class MISSING. The canonical 60-file draw is clean and is why the lane's `diff` cell reads pass; the full extent is published beside it so the cell is not read as 'no residue'.",
+    "c": "#901 — two MISSING `uses` on all-caps macro names, from the canonical sweep.",
+    "python": "#902/#927 — CLOSED at depth: the conditional-callee `calls` edge and the factory-function `extends` edge the deeper draws found are gone, held by python/callee-shapes and python/base-shapes with two CAUGHT reverting mutants. #928 — CLOSED: the depth cell's last red, resolved ORACLE-side (5043a3cb), which cleared the full extent (unexplained 10 -> 0) and turned this cell green. Python has no open depth residual.",
+    "rust": "#798 — CLEAN at depth, and the depth rows were re-measured the moment the comparison changed: `uses` and `references` were outside the rust allowlist before this round, so the first three draws measured a smaller surface (truth 4156 on the ripgrep hash that now reads 6309). All three final-bytes draws are 100% covered, MISSING=0, unexplained=0, heuristic=0.",
+    "dart": "#937 — CLOSED: the truth oracle's named-constructor prescan accepted only `class_definition`, so a Dart 3 `extension type` container's named constructors were invisible to it; the analyzer (whose named-ctor set comes from SYMBOLS, where the extension type became an owner in DARTD21) was right. Full extent: 27 unexplained + 1 MISSING -> 0/0, truth 13,628 -> 13,654, analyzer-edges unmoved at 12,708. #936 — CLOSED: the cold pool keyed on the FROZEN-TREE path, so every run reported 100% fresh and re-drew files it had already measured (proxicall:dart: 5,942 pooled paths for a 2,211-file corpus under four freeze prefixes). Fixed by keying on the corpus-relative path; without it this round's chunked full extent would not have been a union at all.",
+    "swift": "#924 (swift half) + the full-extent residue — CLOSED, and closed on the analyzer side except where the ruling says otherwise. The six full-extent findings: (1) a switch-case pattern error-recovers into a call_expression whose callee is the keyword `case`, and the analyzer published a fabricated `calls` (#938); (2) the SCD1 write gate stopped at the `postfix_expression` wrapper, so a force-unwrapped member in an assignment LHS was published as a forced READ (#939) — pinned by its own fixture with BOTH halves (the unwrap the gate must not publish as a read, and the genuine read it must keep); (3) the pinned grammar cannot parse `nonisolated(unsafe)`, so a whole class header lands in an ERROR node and the container plus every member it owned was dropped (5 corpus sites, #940); (4) an unresolvable `self.init` published a dangling `calls -> init` on the truth side while the analyzer invented the enclosing symbol's OWN name as the owner (`instantiates constructor -> constructor`, #941); (5) the enum-construction splice removed \"the first calls edge with this source and leaf\", so a same-scope call to an identically named function silently lost its edge (found on alamofire at full extent, #942); (6) the NAME SURFACE — a decorated enum case published the decorator's PAYLOAD as the member name (`@available(*, deprecated, message: \"Cannot be thrown\")` for all five cases of HTTPTypes.swift), and the same re-emit removed keyword-escaped backticks (`case `continue``) and tuple positions (`pair.0`). Every one has a fixture and a reverting mutant; the name-surface half is #924, whose swift side is now paid down and recorded in the R10 register.",
     "clojure": "CLEAN at depth on two corpora. The canonical 60-file draw was already clean; the deeper draws ask whether 60 files hid anything, and neither 142 files of clojure/clojure (full extent) nor 200 of clj-kondo did.",
     "elixir": "CLEAN at depth on two corpora, including phoenix (the framework dialect the primary corpus does not carry).",
-    "erlang": "CLEAN at depth on two corpora (rebar3 200, otp 200) \u2014 and this does NOT clear the lane: erlang's fixture lane is 0/9 red, and the two gates measure different things. Named rather than averaged away.",
-    "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after \u2014 the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
+    "erlang": "CLEAN at depth on two corpora (rebar3 200, otp 200) — and this does NOT clear the lane: erlang's fixture lane is 0/9 red, and the two gates measure different things. Named rather than averaged away.",
+    "haskell": "#872's haskell analyzer half had never landed. Found by the hledger full-extent draw (`extends Lines -> Spr.Lines` MISSING), root-caused to `processClass` still being the flat-list walk the review itself calls the PRE-fix state, fixed in this round against the oracle's own rule (constraint-tree walk, left-spine class, qualified head verbatim), and pinned by four new fixture extends plus a third mutant. cabal was clean before and after — the canonical draw never sampled the shape, which is exactly why this needed depth to see.",
     "zig": "CLEAN at depth on two corpora (zig 200/2947 + zls at full extent).",
-    "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) \u2014 CLOSED. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent (sdwebimage + afnetworking, 0/0 both, now header-inclusive), fixture pins + regression mutants per fix (objc fixtures 8/8 with 35 M59.A7 line pins and 12 near-miss forbids; 32/32 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md).",
-    "cpp": "#612's own bar for the family is a 200+-file deep differential per language. cpp could not meet it: its F5 sampling universe was `ext: \"cc,h\"` while three other declarations in this repo (the product's indexer, the M12 census, the fixture harness) treat .cpp/.hpp as C++. Corrected, the second corpus went 17 -> 496 drawable files, and at full extent the lane was NOT clean \u2014 one MISSING (environ, fixed and pinned this round) and one unexplained (the wrapped-declarator scope loss, fixed and pinned this round). Both are now closed: fmt 73 files 5328/5328, nlohmann-json 496 files 6887/6887, 0/0 on both, at hashes identical to the red runs. The depth cell reads pass because the red draws were fixed, not because the sampler was narrowed.",
-    "groovy": "M49/M37 groovy review waves + the M60 wave: the analyzer defect (an anonymous class body never entered classHierarchy, so every override inside it was silently dropped) is fixed and pinned by fixture groovy/anonymous-body-overrides + mutant groovy/drop-anonymous-body-override; the lane's M14.0.F6 red cell (uncovered: [lambda_expression]) is closed by fixture groovy/lambda-expression with a contract rather than a node census; the harness's 4,000-file discovery cap and the leaf-only coverage match are recorded with their measurements in reviews/m60-groovy-anonymous-body-override.md \u00a72-\u00a73."
+    "objc": "#815 + #853 + the M12 adjudication (which found #D and #B below) — CLOSED. Both review waves' acceptance checklists are discharged on re-derived evidence: every claim probe-verified against the analyzer AND the oracle (reviews/objc/first-review.md, second-review.md), fixes checked against the lane's F5 lanes at full extent (sdwebimage + afnetworking, 0/0 both, now header-inclusive), fixture pins + regression mutants per fix (objc fixtures 8/8 with 35 M59.A7 line pins and 12 near-miss forbids; 32/32 objc mutants CAUGHT), spec decisions recorded in script/m14/spec/objc-completeness.json (OC-B/OC-D/OC-E/OC-R1/R2 + OC-F/G/H/R3), and the lane's closure record written (reviews/objc/m60-closure.md).",
+    "cpp": "#612's own bar for the family is a 200+-file deep differential per language. cpp could not meet it: its F5 sampling universe was `ext: \"cc,h\"` while three other declarations in this repo (the product's indexer, the M12 census, the fixture harness) treat .cpp/.hpp as C++. Corrected, the second corpus went 17 -> 496 drawable files, and at full extent the lane was NOT clean — one MISSING (environ, fixed and pinned this round) and one unexplained (the wrapped-declarator scope loss, fixed and pinned this round). Both are now closed: fmt 73 files 5328/5328, nlohmann-json 496 files 6887/6887, 0/0 on both, at hashes identical to the red runs. The depth cell reads pass because the red draws were fixed, not because the sampler was narrowed.",
+    "groovy": "M49/M37 groovy review waves + the M60 wave: the analyzer defect (an anonymous class body never entered classHierarchy, so every override inside it was silently dropped) is fixed and pinned by fixture groovy/anonymous-body-overrides + mutant groovy/drop-anonymous-body-override; the lane's M14.0.F6 red cell (uncovered: [lambda_expression]) is closed by fixture groovy/lambda-expression with a contract rather than a node census; the harness's 4,000-file discovery cap and the leaf-only coverage match are recorded with their measurements in reviews/m60-groovy-anonymous-body-override.md §2-§3."
   },
   "worstPerLang": {
     "javascript": {
@@ -1411,7 +1401,7 @@
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "GREEN at FULL EXTENT on both corpora under the widened universe: grails-core 6,931/6,931 files (tree-truth 94,659 / 94,659, analyzer-edges 98,031, MISSING=0 unexplained=0) and geb 668/668 (7,556 / 7,556, 7,702 edges, 0/0). Both file counts are the WHOLE corpus, not a draw. The earlier 200-file draws are kept in `draws` as history: they were drawn from a pool the discovery cap had truncated at 4,000 files, which is why this cell read green while 28% of the lane's truth edges were outside every draw \u2014 the residue class that keeps other lanes red (findings outside a draw of a larger corpus) could not be seen here either, and was only visible once the pool itself was the corpus."
+      "note": "GREEN at FULL EXTENT on both corpora under the widened universe: grails-core 6,931/6,931 files (tree-truth 94,659 / 94,659, analyzer-edges 98,031, MISSING=0 unexplained=0) and geb 668/668 (7,556 / 7,556, 7,702 edges, 0/0). Both file counts are the WHOLE corpus, not a draw. The earlier 200-file draws are kept in `draws` as history: they were drawn from a pool the discovery cap had truncated at 4,000 files, which is why this cell read green while 28% of the lane's truth edges were outside every draw — the residue class that keeps other lanes red (findings outside a draw of a larger corpus) could not be seen here either, and was only visible once the pool itself was the corpus."
     },
     "kotlin": {
       "maxSample": 200,
@@ -1431,7 +1421,7 @@
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "two corpora, both at FULL EXTENT under the corrected .cpp-inclusive universe (fmt 73 + nlohmann-json 496), both 100%/0/0 at the end of the round \u2014 but only because the first .cpp-inclusive draw was RED on both counts: MISSING=1 (the declarator-name-from-initializer defect) and unexplained=1 (the wrapped-declarator scope loss). Before this round the lane's cell read `clean @73 files`, not because it was clean but because 423 of the second corpus's files were invisible to the sampler."
+      "note": "two corpora, both at FULL EXTENT under the corrected .cpp-inclusive universe (fmt 73 + nlohmann-json 496), both 100%/0/0 at the end of the round — but only because the first .cpp-inclusive draw was RED on both counts: MISSING=1 (the declarator-name-from-initializer defect) and unexplained=1 (the wrapped-declarator scope loss). Before this round the lane's cell read `clean @73 files`, not because it was clean but because 423 of the second corpus's files were invisible to the sampler."
     },
     "c": {
       "maxSample": 200,
@@ -1450,21 +1440,21 @@
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "GREEN at FULL EXTENT, and GREEN for a reason that can be checked: the residue the cell was red on (MISSING=1 unexplained=5 at 554 files) was a RESIDUE OF THE FULL EXTENT \u2014 the canonical 60-file draw is clean both before and after this round, byte-identical (hash ea2ac2a489ca0853), so a lane whose depth cell had been read off the canonical draw alone would have looked finished while six real findings sat outside it. swift-nio 554/554: truth 20,465 / 20,465, analyzer-edges 20,288, MISSING=0 unexplained=0. alamofire 98/98 (its whole swift surface): truth 3,549 / 3,549, MISSING=0 unexplained=0. Both canonical 60-file draws (swift-nio hash ea2ac2a489ca0853, alamofire hash 0052e892f6e0d27b) are also 0/0, so the report is not hiding behind its weakest draw. No red draw survives: the pre-fix full-extent reading is recorded in `closedInThisRound` rather than left as a live red row, because a red row whose defect has been fixed and pinned is history, not a state."
+      "note": "GREEN at FULL EXTENT, and GREEN for a reason that can be checked: the residue the cell was red on (MISSING=1 unexplained=5 at 554 files) was a RESIDUE OF THE FULL EXTENT — the canonical 60-file draw is clean both before and after this round, byte-identical (hash ea2ac2a489ca0853), so a lane whose depth cell had been read off the canonical draw alone would have looked finished while six real findings sat outside it. swift-nio 554/554: truth 20,465 / 20,465, analyzer-edges 20,288, MISSING=0 unexplained=0. alamofire 98/98 (its whole swift surface): truth 3,549 / 3,549, MISSING=0 unexplained=0. Both canonical 60-file draws (swift-nio hash ea2ac2a489ca0853, alamofire hash 0052e892f6e0d27b) are also 0/0, so the report is not hiding behind its weakest draw. No red draw survives: the pre-fix full-extent reading is recorded in `closedInThisRound` rather than left as a live red row, because a red row whose defect has been fixed and pinned is history, not a state."
     },
     "objc": {
       "maxSample": 247,
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "GREEN at FULL EXTENT on both corpora under the WIDENED universe: sdwebimage 247/247 files (tree-truth 6,580 / 6,580, analyzer-edges 6,925, MISSING=0 unexplained=0) and afnetworking 75/75 (2,957 / 2,957, analyzer-edges 3,290, 0/0). Both file counts are the WHOLE corpus, not a draw, and the corpus now includes the 169 headers that production routes to this lane and the harness never read (see the sampling-universe audit): the declaration half is 52% of the language's files, so leaving it outside the depth claim was itself the gap. The residue class that kept swift's cell red (findings outside a 60-file draw of a 554-file corpus) cannot exist here \u2014 both corpora are read whole \u2014 and that is a property of the corpus, not of the lane."
+      "note": "GREEN at FULL EXTENT on both corpora under the WIDENED universe: sdwebimage 247/247 files (tree-truth 6,580 / 6,580, analyzer-edges 6,925, MISSING=0 unexplained=0) and afnetworking 75/75 (2,957 / 2,957, analyzer-edges 3,290, 0/0). Both file counts are the WHOLE corpus, not a draw, and the corpus now includes the 169 headers that production routes to this lane and the harness never read (see the sampling-universe audit): the declaration half is 52% of the language's files, so leaving it outside the depth claim was itself the gap. The residue class that kept swift's cell red (findings outside a 60-file draw of a 554-file corpus) cannot exist here — both corpora are read whole — and that is a property of the corpus, not of the lane."
     },
     "csharp": {
       "maxSample": 900,
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "issue": "#825 (csharp lane) \u2014 no red draw remains",
+      "issue": "#825 (csharp lane) — no red draw remains",
       "note": "The one red draw (900 files) is superseded: its single unexplained edge was the literal-callee fabrication, fixed and fixture-pinned. FIVE draws now stand, and the last two were taken with the lane's FINAL code (the line round, the target canonicalisation, the params recovery, the parameter-honesty paydown): 200 files at rotation 11 (truth 5,166, hash d314e70f6df0a577) and fsharp FULL EXTENT 243/243 (truth 4,679, hash 4d0e5ba230a7b27f, the same sample as the pre-round row so the two are a same-files before/after). Every one reads MISSING=0 / unexplained=0. powershell's FULL extent (1,275 .cs files) exceeds what one harness invocation can finish at ~0.4s/file (measured: killed at 592s, twice), so the lane's deepest recorded draws are 900 files on powershell and FULL EXTENT on fsharp."
     },
     "php": {
@@ -1473,7 +1463,7 @@
       "unexplained": 0,
       "drawsRed": 2,
       "issue": "#835 (php lane)",
-      "note": "Two full-extent draws, both 100% coverage with 0 fabrication after the R10 round's two fixes, both keeping the pre-fix hash (same files). The round's red draws were phpunit MISSING=2/unexplained=13 in the previous round and, for R10, phpmyadmin MISSING=4 then 0/0 \u2014 the R10 defects were found by the target-spelling census (script/m60/target-spelling-census.ts), which is the instrument that can see a spelling BOTH sides fabricate."
+      "note": "Two full-extent draws, both 100% coverage with 0 fabrication after the R10 round's two fixes, both keeping the pre-fix hash (same files). The round's red draws were phpunit MISSING=2/unexplained=13 in the previous round and, for R10, phpmyadmin MISSING=4 then 0/0 — the R10 defects were found by the target-spelling census (script/m60/target-spelling-census.ts), which is the instrument that can see a spelling BOTH sides fabricate."
     },
     "rust": {
       "maxSample": 200,
@@ -1486,21 +1476,21 @@
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "GREEN by re-derivation. The lane's most recent draw was red and is now clean at every depth: 200 files (rot 6) MISSING=0 unexplained=0, and the FULL EXTENT 475/475 MISSING=0 unexplained=0. The red was #928, ORACLE-side, and the fix moved the truth (16208 -> 16218) rather than the analyzer (20085 both before and after) \u2014 the depth cell was citing a defect the lane did not have, which is why it was recorded and attributed instead of absorbed."
+      "note": "GREEN by re-derivation. The lane's most recent draw was red and is now clean at every depth: 200 files (rot 6) MISSING=0 unexplained=0, and the FULL EXTENT 475/475 MISSING=0 unexplained=0. The red was #928, ORACLE-side, and the fix moved the truth (16208 -> 16218) rather than the analyzer (20085 both before and after) — the depth cell was citing a defect the lane did not have, which is why it was recorded and attributed instead of absorbed."
     },
     "go": {
       "maxSample": 1931,
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 0,
-      "note": "maxSample is the PRIMARY corpus at FULL EXTENT (a draw cap cannot express it); the deepest DRAW is 400 files on terraform, and the 60-file canonical width was re-read post-#914 (hash c52d3a09c6bf827c). The two red rows (go-tools 10/2, terraform 200-rot + 400 at 2/0) are kept in `draws` with `supersededBy` \u2014 the class is #914 and it is closed."
+      "note": "maxSample is the PRIMARY corpus at FULL EXTENT (a draw cap cannot express it); the deepest DRAW is 400 files on terraform, and the 60-file canonical width was re-read post-#914 (hash c52d3a09c6bf827c). The two red rows (go-tools 10/2, terraform 200-rot + 400 at 2/0) are kept in `draws` with `supersededBy` — the class is #914 and it is closed."
     },
     "dart": {
       "maxSample": 2211,
       "missing": 0,
       "unexplained": 0,
       "drawsRed": 1,
-      "note": "GREEN at FULL EXTENT, measured not assumed. dart-http: the whole 335-file corpus in one run (truth 13,654/13,654, MISSING=0, unexplained=0). proxicall: the whole 2,211-file corpus across five disjoint 500-file draws, every one 0/0, union verified 2,211/2,211 from the drawn-path log \u2014 a single-process 2,211-file run is IMPOSSIBLE on this box and fails honestly (the wasm heap dies, the parser returns empty trees, and the harness's parsed-but-empty guard refuses the 0/0 row rather than publishing a fabricated pass; reproduced twice). The one red draw is that failure, attributed and disclosed, not a lane defect. The ORACLE-side red the deep draw DID find (27 unexplained + 1 MISSING at dart-http full extent) is #937, fixed this round: truth 13,628 -> 13,654 with the analyzer unmoved."
+      "note": "GREEN at FULL EXTENT, measured not assumed. dart-http: the whole 335-file corpus in one run (truth 13,654/13,654, MISSING=0, unexplained=0). proxicall: the whole 2,211-file corpus across five disjoint 500-file draws, every one 0/0, union verified 2,211/2,211 from the drawn-path log — a single-process 2,211-file run is IMPOSSIBLE on this box and fails honestly (the wasm heap dies, the parser returns empty trees, and the harness's parsed-but-empty guard refuses the 0/0 row rather than publishing a fabricated pass; reproduced twice). The one red draw is that failure, attributed and disclosed, not a lane defect. The ORACLE-side red the deep draw DID find (27 unexplained + 1 MISSING at dart-http full extent) is #937, fixed this round: truth 13,628 -> 13,654 with the analyzer unmoved."
     },
     "clojure": {
       "maxSample": 200,
@@ -1536,46 +1526,38 @@
       "unexplained": 0,
       "drawsRed": 0,
       "note": "two corpora (zig 200/2947 + zls at FULL EXTENT 89 files)"
-    },
-    "html": {
-      "files": 4000,
-      "truth": 245700,
-      "covered": 245700,
-      "missing": 0,
-      "unexplained": 0,
-      "repo": "Exposed"
     }
   },
   "closedInThisRound": {
-    "#904": "java analyzer \u2014 generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
-    "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads \u2014 declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
-    "#903 (analyzer half)": "vue/svelte SFC \u2014 `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone.",
-    "#825 (csharp lane) \u2014 line round + the literal-callee fabrication": "Every csharp relationship now carries the line of the node that NAMES its target (12 emit sites), pinned by csharp/callsite-lines-825 and four reverting mutants; the M59 oracle reads 23,924 relationships with 0 INCONSISTENT on a 200-file draw. The round's own measurement exposed two further classes, both fixed: (1) a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 on the draw, 100% of the round's inconsistent set) \u2014 now stamped from the name node, with a synthesised name (a constructor named `constructor`, a destructor named `Finalize`) taking NO line; (2) a wrapped qualified name carrying its LAYOUT into the target and claiming the name's first line \u2014 the ruby D3 class, found here by probing the shape (script/m14/tmp/cs-wrapped-qualified.ts). Separately, the 900-file depth draw found the literal-callee fabrication (`calls \u2026 -> false`), fixed structurally and pinned by csharp/literal-callee-recovery.",
-    "#835 (php lane) \u2014 declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE \u2014 the parameter list and the attribute list included \u2014 while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules.",
-    "#835 (php lane) \u2014 R10: the target-spelling contract (include paths and callable names)": "R10's first pass found two live php defects that no per-edge gate could see, because the differential oracle derived the same truth from the same rules and therefore AGREED with the analyzer. (1) `extractIncludePath` returned the RAW TEXT of any `binary_expression`, so `include $this->baseDir . 'revision-info.php'` (phpmyadmin src/Git.php:551) published a reconstructed EXPRESSION as the import module and as a `references` target \u2014 a spelling carrying `$`, `->`, `.` and a quote that no php symbol can be named. A path is now emitted only when EVERY operand is statically known (string, `__DIR__`/`__FILE__`/name constant, interpolated strings refused, only `.` composing), and the rule lives at module level (`phpStaticIncludePath`) so the oracle imports the analyzer's own function instead of mirroring it. (2) `processFunctionCall` took the callee node's raw text, so `$callable()` published `calls -> $callable` / `calls -> $controller` (LicenseControllerTest.php:23) \u2014 a VALUE callee published as a callee NAME. `phpStaticCallableName` now requires a name-shaped callee (probe: over 400 real files, 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule), and the value's read survives as the variable pass's `uses` edge. Pinned by php/include-paths (6 static paths expected, 4 pre-fix spellings forbidden \u2014 the forbids transcribed from a replay of the OLD rule, script/m14/tmp/php-include-prefix-rule.ts) and php/dynamic-callee (the honest `uses -> handler` expected AND `calls -> handler` forbidden, so the fix must move the edge, not lose it); both defects have reverting mutants, all 40 php mutants caught. phpunit FULL EXTENT 2,907/2,907 and phpmyadmin FULL EXTENT 1,232/1,232 both 100% covered, 0 MISSING, 0 unexplained, both on the pre-fix hash.",
-    "#798 (rust depth)": "rust's first depth evidence, and its re-measurement after the read/declared-type labels joined the comparison \u2014 110-file full extent + two rotating 200-file cargo draws, all 0/0 (plus full-extent full-lane enumerators at 0/0 on both corpora).",
+    "#904": "java analyzer — generic-substitution override pairing for anonymous-class bodies, plus the edge-label truncation bug it exposed. Post-fix: 4 draws at 200 files, MISSING=0 unexplained=0 on every one, including the draw that first reported it.",
+    "#838/#836 + CONV-OC-1 (framework surface)": "swift and objective-c framework payloads — declared order tables replace walk/import order, the primary pick and frameworkPatterns are published. swift-nio FULL EXTENT (554 files) and alamofire (98) recorded here; objc BOTH corpora at full extent, afnetworking 49/49 files 2,890/2,890 truth and sdwebimage 104/104 files 6,090/6,090, MISSING=0 unexplained=0.",
+    "#903 (analyzer half)": "vue/svelte SFC — `<script lang=\"tsx\">` blocks were parsed by the non-JSX typescript grammar (a separate tree-sitter-tsx.wasm exists). Post-fix the same script body yields identical calls inside the .vue and as a standalone .tsx; the `dayjs` MISSING class is gone.",
+    "#825 (csharp lane) — line round + the literal-callee fabrication": "Every csharp relationship now carries the line of the node that NAMES its target (12 emit sites), pinned by csharp/callsite-lines-825 and four reverting mutants; the M59 oracle reads 23,924 relationships with 0 INCONSISTENT on a 200-file draw. The round's own measurement exposed two further classes, both fixed: (1) a `contains` edge claiming the DECLARATION's start line, which for an attributed or wrapped declaration is a line the member's name is not written on (653 of 23,924 on the draw, 100% of the round's inconsistent set) — now stamped from the name node, with a synthesised name (a constructor named `constructor`, a destructor named `Finalize`) taking NO line; (2) a wrapped qualified name carrying its LAYOUT into the target and claiming the name's first line — the ruby D3 class, found here by probing the shape (script/m14/tmp/cs-wrapped-qualified.ts). Separately, the 900-file depth draw found the literal-callee fabrication (`calls … -> false`), fixed structurally and pinned by csharp/literal-callee-recovery.",
+    "#835 (php lane) — declared-type graph, fully-qualified calls, and the callable-header read boundary": "Three defects, all found by measurement. (1) The R9 declared-type graph the lane owed was implemented (phpDeclaredTypeRefs, shared by the analyzer and the differential oracle so the class is comparable), pinned by php/declared-type-graph; its own first measurement corrected `function copy(): self`, which had published the METHOD's name as its type. (2) A fully-qualified call took its callee from RAW text, so `PHP_BUILTINS.has(\"\\\\is_file\")` was false (the set holds bare names), a builtin escaped the filter, and the lane published a target no other edge can spell: phpunit FULL EXTENT, 12 such edges, 10 of them builtins. (3) The oracle gates reads on `inBody`, whose boundary is the callable SUBTREE — the parameter list and the attribute list included — while the analyzer's extracted walk visited those positions with a SUBSET of its read rules: phpunit's only non-`calls` MISSING edge was `Result::from(..., int $shellExitCode = self::SUCCESS)`. Re-drawing after (3) exposed a fourth class the mirror could never show: `$o->{'lit'}` / `$o->{2}` published a STRING and an INTEGER LITERAL as symbol names identically on BOTH sides, while `$postParams->$param` had the analyzer silent and the oracle emitting `uses -> $param` (phpmyadmin MISSING=4). One rule now states it on both sides: a member read names a member only when the name is a static `name` node (the anonymous `{` token discriminates, probe-verified), and a braced field's own expression reads come from the ordinary rules.",
+    "#835 (php lane) — R10: the target-spelling contract (include paths and callable names)": "R10's first pass found two live php defects that no per-edge gate could see, because the differential oracle derived the same truth from the same rules and therefore AGREED with the analyzer. (1) `extractIncludePath` returned the RAW TEXT of any `binary_expression`, so `include $this->baseDir . 'revision-info.php'` (phpmyadmin src/Git.php:551) published a reconstructed EXPRESSION as the import module and as a `references` target — a spelling carrying `$`, `->`, `.` and a quote that no php symbol can be named. A path is now emitted only when EVERY operand is statically known (string, `__DIR__`/`__FILE__`/name constant, interpolated strings refused, only `.` composing), and the rule lives at module level (`phpStaticIncludePath`) so the oracle imports the analyzer's own function instead of mirroring it. (2) `processFunctionCall` took the callee node's raw text, so `$callable()` published `calls -> $callable` / `calls -> $controller` (LicenseControllerTest.php:23) — a VALUE callee published as a callee NAME. `phpStaticCallableName` now requires a name-shaped callee (probe: over 400 real files, 1,047 `name` callees and `variable_name` the ONLY non-name shape reaching the rule), and the value's read survives as the variable pass's `uses` edge. Pinned by php/include-paths (6 static paths expected, 4 pre-fix spellings forbidden — the forbids transcribed from a replay of the OLD rule, script/m14/tmp/php-include-prefix-rule.ts) and php/dynamic-callee (the honest `uses -> handler` expected AND `calls -> handler` forbidden, so the fix must move the edge, not lose it); both defects have reverting mutants, all 40 php mutants caught. phpunit FULL EXTENT 2,907/2,907 and phpmyadmin FULL EXTENT 1,232/1,232 both 100% covered, 0 MISSING, 0 unexplained, both on the pre-fix hash.",
+    "#798 (rust depth)": "rust's first depth evidence, and its re-measurement after the read/declared-type labels joined the comparison — 110-file full extent + two rotating 200-file cargo draws, all 0/0 (plus full-extent full-lane enumerators at 0/0 on both corpora).",
     "#902 (python) + #927 (its base-position sibling)": "One rule, two positions: a callee and a BASE that are not statically a name must name NOTHING. `callLeafName`/`callLeafNode` and `baseClassLeaf` now share the allowlist shape (identifier names its text, attribute its leaf, subscript its head in the base position, `parenthesized_expression` unwraps as transparent grouping, everything else names nothing). Measured same-files on the full cython corpus (hash 8e2340b6bbdeb581): analyzer-edges 20093 -> 20085, unexplained 15 -> 10, truth and coverage unmoved. Held by two new fixtures (python/callee-shapes, python/base-shapes) and two CAUGHT reverting mutants (python/callee-shape-fallthrough, python/base-shape-fallthrough).",
-    "#799 (go depth)": "go's first depth evidence: the primary corpus at full extent (1,931 files, all of go-tools) plus three rotating terraform draws up to 400 files, with the class of every non-zero row named (#914 implements, name-only oracle). The `depth: n/a` cell is answered, not asserted: the canonical draw was already clean, and the question the cell asks \u2014 does a deeper draw find what the canonical one hid? \u2014 is answered with measurements in both directions (the 200 rotation 2 draw finds 2 rows the first 200 draw did not, and the full extent finds 10 + 2).",
+    "#799 (go depth)": "go's first depth evidence: the primary corpus at full extent (1,931 files, all of go-tools) plus three rotating terraform draws up to 400 files, with the class of every non-zero row named (#914 implements, name-only oracle). The `depth: n/a` cell is answered, not asserted: the canonical draw was already clean, and the question the cell asks — does a deeper draw find what the canonical one hid? — is answered with measurements in both directions (the 200 rotation 2 draw finds 2 rows the first 200 draw did not, and the full extent finds 10 + 2).",
     "#928 (python, ORACLE-side depth residual)": "The override oracle registered only `def`s as class members, so a subclass `def` redefining a base class-ATTRIBUTE (PyrexType's chained `get_xdecref_code = ...` assignments, PyrexTypes.py 457-460) was invisible to it while the analyzer's ten `overrides` edges were correct. The oracle now registers every name of a chained class assignment at every nesting level of the right-nested chain; the analyzer was NOT touched, per the ruling. Same-files at hash 8e2340b6bbdeb581: truth 16208 -> 16218, unexplained 10 -> 0, analyzer-edges 20085 unmoved. requests is unaffected (37 files, truth 1216, analyzer 1336, 0/0).",
-    "#937 (dart, ORACLE-side depth residual)": "The oracle's named-ctor prescan walked up from each constructor signature looking only for `class_definition`. The pinned FFI bindings declare their whole surface as `extension type` containers, so it registered 0 of 159 constructor signatures in native_cupertino_bindings.dart and every `Foo.named(...)` call inside such a container fell through to the keyword branch \u2014 the truth published `calls -> as` (the FFI `as` constructor's name) where the analyzer published the correct `instantiates`. Fix: accept `extension_type_declaration` as a constructor-owning container, mirroring DARTD21 and the oracle's own extension-type branch. Analyzer untouched, per the ruling.",
-    "#936 (cold pool keyed on the measured path)": "`coldPoolPick` recorded the absolute path it measured; for a corpus whose checkout is dirty or moved, that is a detached worktree under /tmp/m14-frozen-corpus-<hash>/, a NEW directory every run \u2014 so nothing ever looked sampled, the `[cold-pool] N/M fresh` disclosure line read 100% fresh forever, and the pool grew without bound. Fix: key on the corpus-relative path, accepting the old absolute spelling on read so in-place lanes are not reset. Found and closed by this round's full-extent work; it is lane-neutral machinery, so every lane measured on a frozen corpus was sampling blind.",
-    "#914 (go implements \u2014 the lane's last non-zero count)": "variadic interface parameters (which also fabricated `unimplementedDialer -> Dialer`), receiver-only implementors, alias interfaces, diamond interface embedding, and the ORACLE's name-only method-set comparison. Post-fix the lane reads 0 MISSING / 0 UNEXPLAINED on EVERY label the harness compares: go-tools full extent 1,931 files (truth 30,695) and terraform full extent 1,993 files (truth 40,913), plus kubernetes 13,488 files in four index-range chunks with `selected == read, skips 0`. Executed negative against HEAD's real code: pre-fix 5 of 8 expected edges missing and 5 forbidden pairs fabricated (2 of them by the ANALYZER); post-fix 8/8 and 0. Pins: fixture go/implements-signature-914, four go/impl-* mutants, F9-PROBE-GO-IMPL-SIGNATURE (oracleForbid), spec GO20-GO24. Record: reviews/go/fifth-review.md.",
-    "#924 (swift half) \u2014 the M60 name surface": "A decorated enum case (`@available(...) case x`) put a `modifiers` node first and the member-name pick took the first NAMED child \u2014 the decorator payload \u2014 so all five cases of swift-nio's HTTPTypes.swift folded into one `contains` whose target was `@available(*, deprecated, message: \"Cannot be thrown\")`, and the declaration's line came from the decorator instead of the declaration (M59 #861 rules the opposite). Fixed to the identifier after `case`, with the range node fixed too. The same re-emit closed the two other name classes the full extent exposed: a keyword-escaped declaration published WITH its backticks (`case `continue``, `public static var `default``, `func `open``) \u2014 `stripNameQuoting()` strips exactly one surrounding pair, applied in createSymbol and navigationLeaf, mirrored in the oracle \u2014 and a tuple POSITION suffix published as a target (`pair.0`, `_key.1`, 4 rows); `navigationLeaf` no longer falls back to the whole text. Pinned by swift/attributed-enum-case plus mutants swift/attributed-case-payload-name and swift/attributed-case-range-at-decorator; the R10 register's swift row records the conviction as PAID DOWN, and its separator vocabulary (overrides|., references|.) stays UNRULED and owed rather than blessed. Full-extent name census after: 652 files, 23,212 symbols, 78,747 targets, 0 unclassified.",
-    "#938/#939/#940/#941/#942 (swift depth findings)": "Five analyzer/grammar defects the canonical 60-file draw never touched, each found by taking the canonical corpus to its full 554 files: the case-pattern recovery fabricating a `calls` to the keyword `case` (#938, fixture swift/case-pattern-recovery); the write gate stopping at the postfix wrapper so a force-unwrapped LHS member read as a read (#939, fixture swift/unwrap-write-gate, both halves); the grammar's `nonisolated(unsafe)` blind spot dropping a container and its members (#940, fixture swift/error-recovery-nominal); the dangling `self.init` call plus the self-named owner (#941, fixtures swift/error-recovery-nominal + swift/init-delegation); and the enum-construction splice retiring a DIFFERENT same-scope call to an identically named function (#942, fixture swift/enum-construction-splice). Mutants: swift/case-pattern-keyword-call, swift/unwrap-inner-write-as-read, swift/unwrap-outer-write-as-read, swift/error-recovery-no-container, swift/error-recovery-self-owner-target, swift/error-recovery-dangling-init-call, swift/enum-splice-first-edge, swift/enum-splice-no-conversion \u2014 all CAUGHT.",
+    "#937 (dart, ORACLE-side depth residual)": "The oracle's named-ctor prescan walked up from each constructor signature looking only for `class_definition`. The pinned FFI bindings declare their whole surface as `extension type` containers, so it registered 0 of 159 constructor signatures in native_cupertino_bindings.dart and every `Foo.named(...)` call inside such a container fell through to the keyword branch — the truth published `calls -> as` (the FFI `as` constructor's name) where the analyzer published the correct `instantiates`. Fix: accept `extension_type_declaration` as a constructor-owning container, mirroring DARTD21 and the oracle's own extension-type branch. Analyzer untouched, per the ruling.",
+    "#936 (cold pool keyed on the measured path)": "`coldPoolPick` recorded the absolute path it measured; for a corpus whose checkout is dirty or moved, that is a detached worktree under /tmp/m14-frozen-corpus-<hash>/, a NEW directory every run — so nothing ever looked sampled, the `[cold-pool] N/M fresh` disclosure line read 100% fresh forever, and the pool grew without bound. Fix: key on the corpus-relative path, accepting the old absolute spelling on read so in-place lanes are not reset. Found and closed by this round's full-extent work; it is lane-neutral machinery, so every lane measured on a frozen corpus was sampling blind.",
+    "#914 (go implements — the lane's last non-zero count)": "variadic interface parameters (which also fabricated `unimplementedDialer -> Dialer`), receiver-only implementors, alias interfaces, diamond interface embedding, and the ORACLE's name-only method-set comparison. Post-fix the lane reads 0 MISSING / 0 UNEXPLAINED on EVERY label the harness compares: go-tools full extent 1,931 files (truth 30,695) and terraform full extent 1,993 files (truth 40,913), plus kubernetes 13,488 files in four index-range chunks with `selected == read, skips 0`. Executed negative against HEAD's real code: pre-fix 5 of 8 expected edges missing and 5 forbidden pairs fabricated (2 of them by the ANALYZER); post-fix 8/8 and 0. Pins: fixture go/implements-signature-914, four go/impl-* mutants, F9-PROBE-GO-IMPL-SIGNATURE (oracleForbid), spec GO20-GO24. Record: reviews/go/fifth-review.md.",
+    "#924 (swift half) — the M60 name surface": "A decorated enum case (`@available(...) case x`) put a `modifiers` node first and the member-name pick took the first NAMED child — the decorator payload — so all five cases of swift-nio's HTTPTypes.swift folded into one `contains` whose target was `@available(*, deprecated, message: \"Cannot be thrown\")`, and the declaration's line came from the decorator instead of the declaration (M59 #861 rules the opposite). Fixed to the identifier after `case`, with the range node fixed too. The same re-emit closed the two other name classes the full extent exposed: a keyword-escaped declaration published WITH its backticks (`case `continue``, `public static var `default``, `func `open``) — `stripNameQuoting()` strips exactly one surrounding pair, applied in createSymbol and navigationLeaf, mirrored in the oracle — and a tuple POSITION suffix published as a target (`pair.0`, `_key.1`, 4 rows); `navigationLeaf` no longer falls back to the whole text. Pinned by swift/attributed-enum-case plus mutants swift/attributed-case-payload-name and swift/attributed-case-range-at-decorator; the R10 register's swift row records the conviction as PAID DOWN, and its separator vocabulary (overrides|., references|.) stays UNRULED and owed rather than blessed. Full-extent name census after: 652 files, 23,212 symbols, 78,747 targets, 0 unclassified.",
+    "#938/#939/#940/#941/#942 (swift depth findings)": "Five analyzer/grammar defects the canonical 60-file draw never touched, each found by taking the canonical corpus to its full 554 files: the case-pattern recovery fabricating a `calls` to the keyword `case` (#938, fixture swift/case-pattern-recovery); the write gate stopping at the postfix wrapper so a force-unwrapped LHS member read as a read (#939, fixture swift/unwrap-write-gate, both halves); the grammar's `nonisolated(unsafe)` blind spot dropping a container and its members (#940, fixture swift/error-recovery-nominal); the dangling `self.init` call plus the self-named owner (#941, fixtures swift/error-recovery-nominal + swift/init-delegation); and the enum-construction splice retiring a DIFFERENT same-scope call to an identically named function (#942, fixture swift/enum-construction-splice). Mutants: swift/case-pattern-keyword-call, swift/unwrap-inner-write-as-read, swift/unwrap-outer-write-as-read, swift/error-recovery-no-container, swift/error-recovery-self-owner-target, swift/error-recovery-dangling-init-call, swift/enum-splice-first-edge, swift/enum-splice-no-conversion — all CAUGHT.",
     "swift line contract (M59.A7 handoff)": "Every published relationship carries the line of the NAME it names: 652 files, 78,747 edges, 0 unlined, 0 out of range, and 77,737 token-checked with 0 INCONSISTENT by script/m14/tmp/sw-line-equivalence.ts (the token checker's own self-test rejects `discount`/`other` for `count`, so it can fail). Found by the fixture dump rather than by a gate: the surviving `calls Endpoint -> method` edge claimed the CONVERTED site's line (L22) instead of the genuine call's (L29); the same round fixed `retiredLines` being GLOBAL instead of per-pool (it silently deleted unrelated lines), the import range including a preceding attribute line, and the per-emit-site stamping. Mutants swift/drop-relationship-lines and swift/line-off-by-one are CAUGHT.",
-    "the five depth `n/a` cells with a corpus (clojure, elixir, erlang, haskell, zig)": "These five were the only lanes with a pinned corpus and an F5 row but no deeper draw \u2014 the measurable half of the matrix's 22 `depth: n/a` cells. Measured on the primary corpus and the second corpus each. Four are clean on both corpora; haskell found a live defect on the second corpus and it is fixed + pinned in this round.",
+    "the five depth `n/a` cells with a corpus (clojure, elixir, erlang, haskell, zig)": "These five were the only lanes with a pinned corpus and an F5 row but no deeper draw — the measurable half of the matrix's 22 `depth: n/a` cells. Measured on the primary corpus and the second corpus each. Four are clean on both corpora; haskell found a live defect on the second corpus and it is fixed + pinned in this round.",
     "#872 (haskell analyzer half)": "Recorded as FIXED + GATED in reviews/m49-hs1-superclass-constraint-tree.md, but the analyzer change was never in the tree: no commit has touched real-haskell-analyzer.ts since 2026-09-14, the oracle's own comment asserts lockstep it does not have, and both guarding mutants recorded `0 -> 0` in F4. The fixture pinned neither a tuple superclass nor the `Applied` class one mutant names. Now: analyzer walks the constraint tree, four shapes pinned (tuple, qualified, tuple-with-qualified, applied head), mutants CAUGHT, F4 survivors 8 -> 6 (all six remaining are erlang's known fixture red).",
-    "#815 (objective-c first review wave) + #853 (second)": "The two acceptance checklists closed on re-derived evidence rather than on the reviews' own prose: OC-B (category exports), OC-D (C type inventory), OC-E (bare value reads), OC-R1/R2 (update operands, @synthesize/@selector), OC-F (enum cases as values), OC-G (@protocol(P) directive), OC-H (function decay) \u2014 each with its spec entry and its fixtures/mutants already in the tree, plus the F5 re-measurement at full extent on both corpora (0/0) and the closure record.",
-    "objective-c line contract (M59.A7 handoff)": "Before this round the objc analyzer emitted NO `line_number` at all \u2014 0 of 21,591 edges, which is why the LCM's `lines` cell read `fail` for this lane. Now every relationship carries the line of the NAME it names, across all eight kinds the lane publishes (uses 9,669 / calls 8,033 / contains 2,192 / overrides 603 / references 515 / instantiates 507 / extends 52 / implements 20): 0 unlined, 0 out of range, and 21,591 token-checked with 0 INCONSISTENT (the probe self-tests its own boundary-aware token checker first, and needed ZERO exemptions \u2014 its two named exemption classes are declared and empty). The stamping is node-driven at every site (the text and the line come from one selection; `fullMessageSelectorNode` exists for exactly that reason), and the post-pass rows take the owning symbol's own declaration line \u2014 which is how the pins discovered that a method's owner row names its IMPLEMENTATION line, because an @interface method declaration is not symbolized in this lane (protocols excepted). Pinned by 35 line pins + 11 near-miss forbids across three fixtures and three reverting mutants (objc/drop-relationship-lines, objc/line-off-by-one, objc/contains-line-at-container), each CAUGHT by exactly the pinned fixtures.",
-    "#D \u2014 objc: a block-pointer parameter DECLARATION was published as a value read": "The M12 adjudication surfaced one analyzer row that was a defect rather than a fact: `uses register_block -> handler` fired from `void (^handler)(NSString *)` ALONE, with no read anywhere in the function (probe script/m14/tmp/oc-callee-uses.ts: 'decl only' -> uses handler; the C analyzer given the identical function-pointer parameter emits NOTHING). Root cause: the bare-read pass tested the parent node type and init_declarator chains, but a block parameter's name nests `identifier < block_pointer_declarator < parenthesized_declarator < function_declarator < parameter_declaration`. Fixed structurally (isParameterDeclaredName: climb the shared DECLARATOR_WRAPPERS set and require the node to be the enclosing parameter's own `declarator` field), mirrored in the ORACLE (without that the analyzer fix reads as MISSING at full extent \u2014 the #916 lesson). Both corpora re-measured at the time: truth 6,090->6,052 and 2,890->2,855, coverage 100%/MISSING=0/unexplained=0 on both. Pinned by F9-PROBE-OBJC-PARAM-DECL (analyzer AND oracle, oracleForbid on) and by objc/bare-value-reads' forbid pin + mutant (objc/emit-param-decl-as-bare-read).",
-    "#B \u2014 production: the noise filter ate every selector target (17 of the M12 FNs)": "The other half of the M12 adjudication was not the analyzer at all. src/ast/pool-worker.ts filterNoiseRelationships computed a relationship target's 'leaf' as the LAST ':'-separated segment; an Objective-C selector ENDS in ':' because that colon IS its arity, so the leaf was empty, `leaf.length < 1` fired, and the row was dropped as noise BEFORE any consumer saw it \u2014 every `calls` to a keyword selector and every `contains` naming a parameterized method. Measured: 17 of the differential's 30 false negatives were rows the analyzer had emitted and this filter had eaten (the M14 fixture/mutant suites cannot see it: they call analyzer.analyze directly, which is why the lane's fixture suite stayed green over it). Fixed by skipping empty colon segments (the noise-blocking intent is unchanged: `:` or `` still has no leaf; period-terminated markdown prose still drops). Blast radius measured over the pinned corpora (script/m14/tmp/noise-filter-blast.ts): sdwebimage 3,641 of 17,696 relationships and afnetworking 1,724 of 8,333 were being silently dropped \u2014 20% of sdwebimage's graph \u2014 plus Clyde 161; every other repo in the sample moved by 1-12 rows, and those are markdown/YAML heading keys whose text ends in ':' (`Breaking changes:`), the only other shape with a legitimate trailing colon. Fixture-level cross-lane check (script/m14/tmp/m12-cross-lane-filter-check.ts, all 41 languages, fix applied vs reverted on an otherwise identical tree): ONLY objective-c's differential moves (TP 72->89, FN 17->0, FP 0 in both). Pinned by the F9 probe battery (F9-PROBE-OBJC-PRODUCTION-SELECTOR runs the PRODUCTION entry over a real .m file and fails if the selector rows are dropped) and by the M12 objc differential itself (89/89, below).",
+    "#815 (objective-c first review wave) + #853 (second)": "The two acceptance checklists closed on re-derived evidence rather than on the reviews' own prose: OC-B (category exports), OC-D (C type inventory), OC-E (bare value reads), OC-R1/R2 (update operands, @synthesize/@selector), OC-F (enum cases as values), OC-G (@protocol(P) directive), OC-H (function decay) — each with its spec entry and its fixtures/mutants already in the tree, plus the F5 re-measurement at full extent on both corpora (0/0) and the closure record.",
+    "objective-c line contract (M59.A7 handoff)": "Before this round the objc analyzer emitted NO `line_number` at all — 0 of 21,591 edges, which is why the LCM's `lines` cell read `fail` for this lane. Now every relationship carries the line of the NAME it names, across all eight kinds the lane publishes (uses 9,669 / calls 8,033 / contains 2,192 / overrides 603 / references 515 / instantiates 507 / extends 52 / implements 20): 0 unlined, 0 out of range, and 21,591 token-checked with 0 INCONSISTENT (the probe self-tests its own boundary-aware token checker first, and needed ZERO exemptions — its two named exemption classes are declared and empty). The stamping is node-driven at every site (the text and the line come from one selection; `fullMessageSelectorNode` exists for exactly that reason), and the post-pass rows take the owning symbol's own declaration line — which is how the pins discovered that a method's owner row names its IMPLEMENTATION line, because an @interface method declaration is not symbolized in this lane (protocols excepted). Pinned by 35 line pins + 11 near-miss forbids across three fixtures and three reverting mutants (objc/drop-relationship-lines, objc/line-off-by-one, objc/contains-line-at-container), each CAUGHT by exactly the pinned fixtures.",
+    "#D — objc: a block-pointer parameter DECLARATION was published as a value read": "The M12 adjudication surfaced one analyzer row that was a defect rather than a fact: `uses register_block -> handler` fired from `void (^handler)(NSString *)` ALONE, with no read anywhere in the function (probe script/m14/tmp/oc-callee-uses.ts: 'decl only' -> uses handler; the C analyzer given the identical function-pointer parameter emits NOTHING). Root cause: the bare-read pass tested the parent node type and init_declarator chains, but a block parameter's name nests `identifier < block_pointer_declarator < parenthesized_declarator < function_declarator < parameter_declaration`. Fixed structurally (isParameterDeclaredName: climb the shared DECLARATOR_WRAPPERS set and require the node to be the enclosing parameter's own `declarator` field), mirrored in the ORACLE (without that the analyzer fix reads as MISSING at full extent — the #916 lesson). Both corpora re-measured at the time: truth 6,090->6,052 and 2,890->2,855, coverage 100%/MISSING=0/unexplained=0 on both. Pinned by F9-PROBE-OBJC-PARAM-DECL (analyzer AND oracle, oracleForbid on) and by objc/bare-value-reads' forbid pin + mutant (objc/emit-param-decl-as-bare-read).",
+    "#B — production: the noise filter ate every selector target (17 of the M12 FNs)": "The other half of the M12 adjudication was not the analyzer at all. src/ast/pool-worker.ts filterNoiseRelationships computed a relationship target's 'leaf' as the LAST ':'-separated segment; an Objective-C selector ENDS in ':' because that colon IS its arity, so the leaf was empty, `leaf.length < 1` fired, and the row was dropped as noise BEFORE any consumer saw it — every `calls` to a keyword selector and every `contains` naming a parameterized method. Measured: 17 of the differential's 30 false negatives were rows the analyzer had emitted and this filter had eaten (the M14 fixture/mutant suites cannot see it: they call analyzer.analyze directly, which is why the lane's fixture suite stayed green over it). Fixed by skipping empty colon segments (the noise-blocking intent is unchanged: `:` or `` still has no leaf; period-terminated markdown prose still drops). Blast radius measured over the pinned corpora (script/m14/tmp/noise-filter-blast.ts): sdwebimage 3,641 of 17,696 relationships and afnetworking 1,724 of 8,333 were being silently dropped — 20% of sdwebimage's graph — plus Clyde 161; every other repo in the sample moved by 1-12 rows, and those are markdown/YAML heading keys whose text ends in ':' (`Breaking changes:`), the only other shape with a legitimate trailing colon. Fixture-level cross-lane check (script/m14/tmp/m12-cross-lane-filter-check.ts, all 41 languages, fix applied vs reverted on an otherwise identical tree): ONLY objective-c's differential moves (TP 72->89, FN 17->0, FP 0 in both). Pinned by the F9 probe battery (F9-PROBE-OBJC-PRODUCTION-SELECTOR runs the PRODUCTION entry over a real .m file and fails if the selector rows are dropped) and by the M12 objc differential itself (89/89, below).",
     "cpp's F5 sampling universe (`ext` \"cc,h\" -> \"cc,cpp,cxx,h,hpp\")": "The lane's drawable second corpus goes 17 -> 496 files, which is what #612's 200-file floor requires; the canonical F5 row recorded at fdbf069f was drawn under the old string and is not comparable to a re-run in the .cpp-inclusive universe.",
-    "cpp declarator-chain name extraction (CPPD12)": "The declared name was read with a shallow, document-order lookup whose first identifier on an init_declarator is the INITIALIZER. Three defects from one rule: a local bound as the initializer (shadowing the real global's reads \u2014 the corpus MISSING edge), no symbol at all for `**p`/arrays, and `backing` published as the name of `int &alias = backing;`. Pinned by cpp/wrapped-declarator-names-612, three mutants CAUGHT.",
-    "cpp template-wrapped declarator names read as uses (CPPD15/CPPD16)": "`template <> constexpr auto num_bits<native_int128>() -> int` puts the declared name inside `template_function`, so the leftmost-declarator rule (which gates on the direct parent) read the declared entity as a use of itself \u2014 on BOTH sides, which is why no fixture, mutant or draw had ever seen it: the analyzer and the oracle agreed on a wrong answer and the counts cancelled. 7 such pairs at the fmt full extent. One shared rule now (`templateWrappedDeclaratorName`, exported by the analyzer and imported by the oracle), pinned by cpp/template-declarator-name-612, one mutant, and F9-PROBE-CPP-TEMPLATE-DECL-NAME which asserts the absence on both sides with `oracleForbid`.",
-    "cpp wrapped function declarators losing the method symbol and its scope (CPPD17/CPPD18)": "Two spellings wrap the declarator \u2014 a parenthesized NAME (`bool (acceptParenthesized)(\u2026)`) and a macro between the return type and the name (`JSON_HEDLEY_NON_NULL(3)` + a multi-line parameter list, which the grammar recovers as `parenthesized_declarator[ERROR, function_declarator]`). The declared-name lookup scanned the function_declarator's DIRECT children, so neither was found: no method symbol, and because the caller pushes the function scope out of that same result, no scope \u2014 so parameters never bound and their reads resolved outward (the lane's last unexplained edge, `uses binary_reader -> strict @8299`; 14 method symbols lost in that one header). Pinned by cpp/wrapped-declarator-names-612 (both spellings; the macro one carries the ERROR exactly as the corpus does) and F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE; the macro spelling cannot live in a probe because the battery refuses snippets whose tree has errors. One mutant CAUGHT.",
+    "cpp declarator-chain name extraction (CPPD12)": "The declared name was read with a shallow, document-order lookup whose first identifier on an init_declarator is the INITIALIZER. Three defects from one rule: a local bound as the initializer (shadowing the real global's reads — the corpus MISSING edge), no symbol at all for `**p`/arrays, and `backing` published as the name of `int &alias = backing;`. Pinned by cpp/wrapped-declarator-names-612, three mutants CAUGHT.",
+    "cpp template-wrapped declarator names read as uses (CPPD15/CPPD16)": "`template <> constexpr auto num_bits<native_int128>() -> int` puts the declared name inside `template_function`, so the leftmost-declarator rule (which gates on the direct parent) read the declared entity as a use of itself — on BOTH sides, which is why no fixture, mutant or draw had ever seen it: the analyzer and the oracle agreed on a wrong answer and the counts cancelled. 7 such pairs at the fmt full extent. One shared rule now (`templateWrappedDeclaratorName`, exported by the analyzer and imported by the oracle), pinned by cpp/template-declarator-name-612, one mutant, and F9-PROBE-CPP-TEMPLATE-DECL-NAME which asserts the absence on both sides with `oracleForbid`.",
+    "cpp wrapped function declarators losing the method symbol and its scope (CPPD17/CPPD18)": "Two spellings wrap the declarator — a parenthesized NAME (`bool (acceptParenthesized)(…)`) and a macro between the return type and the name (`JSON_HEDLEY_NON_NULL(3)` + a multi-line parameter list, which the grammar recovers as `parenthesized_declarator[ERROR, function_declarator]`). The declared-name lookup scanned the function_declarator's DIRECT children, so neither was found: no method symbol, and because the caller pushes the function scope out of that same result, no scope — so parameters never bound and their reads resolved outward (the lane's last unexplained edge, `uses binary_reader -> strict @8299`; 14 method symbols lost in that one header). Pinned by cpp/wrapped-declarator-names-612 (both spellings; the macro one carries the ERROR exactly as the corpus does) and F9-PROBE-CPP-WRAPPED-DECLARATOR-SCOPE; the macro spelling cannot live in a probe because the battery refuses snippets whose tree has errors. One mutant CAUGHT.",
     "cpp fabricated `uses` duplicates for template-wrapped member calls (CPPD14)": "Three `uses <owner> -> get_ref` edges the oracle does not derive, which HEAD hid behind the declarator bug (the wrong local binding happened to be named `get_ref`). Suppressed through the member-leaf rule's template climbing plus a narrow declaration-name guard; the corpus reads unobstructed (0/0) with the suppression in place, and cpp/wrapped-declarator-names-612 pins the declaration-name half.",
-    "the F9 battery's oracle loader kept a second copy of the wasm table": "`oracleFor` loaded the grammar from a hand-kept 8-language map that duplicated LANGS verbatim and had no `cpp` entry \u2014 so a cpp probe that pins an ORACLE contract (the only kind that catches collusion, which is exactly what the template-declaration class was) could not be written at all. It now reads LANGS, the F5 sweep's own table. Found by trying to write the probe, which is the same way the lane's other instrument gaps were found.",
-    "the M60 objc grammar wave (#743's class, objc half)": "The lane's sampling universe was extended to the header half the product already feeds it (`ext: \"m,h\"` behind the objective-c content guard), and the header half exposed the #743 class in its own idiom: a BARE macro invocation line at file scope immediately before an `@`-declaration (`NS_ASSUME_NONNULL_BEGIN` .. `_END`, which wraps every Apple header) was read as the first specifier of a declaration that then swallowed the `@interface` line into an ERROR \u2014 11 headers, 122 real symbols, AFHTTPSessionManager.h analysing to 0 of its 37 declared symbols, plus phantom symbols minted from the wreckage (`variable NSObject`, `variable void`, `variable provider`). Landed as a grammar rule (grammars/tree-sitter-objc, rebuilt wasm): `macro_prefixed_objc_declaration`, no conflict entry demanded, `prec(-1)` load-bearing (dropping it was built and refused: `Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`). Full-corpus A/B: 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, analyzer output diffed edge by edge (the differential cannot answer this \u2014 its oracle walks the same tree) with 0 real symbol losses and 0 relationship losses against +113 symbols / +158 relationships. The one residue (`prec(-1)` leaves two STACKED macro lines to the `declaration` path, which published `variable PROTOCOL_MACRO`) is refused in the analyzer by isUnterminatedDeclaration, the family's existing ERROR policy. Pinned by objc/macro-prefixed-declaration (which FAILS on the committed wasm and passes on the new one) + objc/publish-unterminated-declaration. Record: reviews/m60-743-objc-grammar-macro-specifier.md.",
+    "the F9 battery's oracle loader kept a second copy of the wasm table": "`oracleFor` loaded the grammar from a hand-kept 8-language map that duplicated LANGS verbatim and had no `cpp` entry — so a cpp probe that pins an ORACLE contract (the only kind that catches collusion, which is exactly what the template-declaration class was) could not be written at all. It now reads LANGS, the F5 sweep's own table. Found by trying to write the probe, which is the same way the lane's other instrument gaps were found.",
+    "the M60 objc grammar wave (#743's class, objc half)": "The lane's sampling universe was extended to the header half the product already feeds it (`ext: \"m,h\"` behind the objective-c content guard), and the header half exposed the #743 class in its own idiom: a BARE macro invocation line at file scope immediately before an `@`-declaration (`NS_ASSUME_NONNULL_BEGIN` .. `_END`, which wraps every Apple header) was read as the first specifier of a declaration that then swallowed the `@interface` line into an ERROR — 11 headers, 122 real symbols, AFHTTPSessionManager.h analysing to 0 of its 37 declared symbols, plus phantom symbols minted from the wreckage (`variable NSObject`, `variable void`, `variable provider`). Landed as a grammar rule (grammars/tree-sitter-objc, rebuilt wasm): `macro_prefixed_objc_declaration`, no conflict entry demanded, `prec(-1)` load-bearing (dropping it was built and refused: `Add a conflict for these rules: type_specifier, macro_prefixed_objc_declaration`). Full-corpus A/B: 0 files worsened, 0 clean files perturbed, ERROR/MISSING nodes 795 -> 582, analyzer output diffed edge by edge (the differential cannot answer this — its oracle walks the same tree) with 0 real symbol losses and 0 relationship losses against +113 symbols / +158 relationships. The one residue (`prec(-1)` leaves two STACKED macro lines to the `declaration` path, which published `variable PROTOCOL_MACRO`) is refused in the analyzer by isUnterminatedDeclaration, the family's existing ERROR policy. Pinned by objc/macro-prefixed-declaration (which FAILS on the committed wasm and passes on the new one) + objc/publish-unterminated-declaration. Record: reviews/m60-743-objc-grammar-macro-specifier.md.",
     "groovy: anonymous-body overrides + the 4,000-file discovery cap + F6 lambda_expression": "One analyzer defect and two measurement defects, all re-derived at the whole corpus: 0 MISSING / 0 unexplained on 6,931 + 668 files, groovy fixtures 73/73, groovy mutants 56/56 CAUGHT, F6 groovy uncovered=0 deadLiterals=0, F9 battery 36/36, and the M12 groovy artifact byte-identical (its own red is the stale hand audit, recorded and filed rather than passed)."
   }
 }

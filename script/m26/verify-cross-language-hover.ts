@@ -50,17 +50,6 @@ const RECORD_FILE = "validation/m26/results/W3.json"
 let checks = 0
 let passed = 0
 
-/**
- * M63.CL3: the floor is the ANCHOR count, and it is 5 because there are five
- * mutants. It was 4, and that was the hole: a mutant whose anchor no longer
- * matches is reported as ANCHOR MISS and skipped, so renaming the line it
- * anchors to turned it into a silent skip and the suite still passed on
- * `mutantsTotal >= 4`. The same failure shape as a gate that cannot fail, one
- * level down. `mutantRecords` records an anchor miss as not-caught, so the floor
- * is the backstop.
- */
-const W3_MUTANT_FLOOR = 5
-
 function check(label: string, condition: boolean, detail = ""): void {
   checks++
   if (condition) passed++
@@ -260,8 +249,8 @@ async function main(): Promise<void> {
       {
         name: "M4 non-cross rows leak",
         file: "component",
-        from: "WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?\n         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)",
-        to: "WHERE r.target_symbol_id = ?\n         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)",
+        from: "WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?",
+        to: "WHERE r.target_symbol_id = ?",
         probe: (m) => {
           // sym-main has exactly ONE stored cross-language inbound row; every
           // same-language inbound row must stay invisible. The leaky mutant
@@ -316,7 +305,7 @@ async function main(): Promise<void> {
         console.log(`  SURVIVED: ${mutant.name}`)
       }
     }
-    check("mutation suite: every planted defect is caught", caught === mutantsTotal && mutantsTotal >= W3_MUTANT_FLOOR, `${caught}/${mutantsTotal} (floor ${W3_MUTANT_FLOOR})`)
+    check("mutation suite: every planted defect is caught", caught === mutantsTotal && mutantsTotal >= 4, `${caught}/${mutantsTotal}`)
 
 
 

@@ -40,16 +40,14 @@ two-command rebuild sequence. `.nim` is the only routed extension — see
 | `func f()` | `function` | `func_declaration` |
 | `iterator f()` | `function` | `iterator_declaration` |
 | `converter f()` | `function` | `converter_declaration` |
-| `method f()` | `method` | `method_declaration`; the receiver type is BOTH `ownerName` (so the method is owned, indexed and companion-visible) and `metadata.nimReceiverType` |
+| `method f()` | `method` | `method_declaration`, receiver type in metadata |
 | `template f()` | `macro` | `template_declaration` |
 | `macro f()` | `macro` | `macro_declaration` |
 | `type O = object` | `struct` | `object_declaration`, non-ref |
 | `type C = ref object` | `class` | `object_declaration` under a `ref_type` |
-| `type T = (int, string)` (unnamed tuple) | `struct` | `tuple_construction` |
-| `type T = tuple[a, b: int]` (named tuple) | `struct` | `tuple_type` |
+| `type T = tuple[int, string]` | `struct` | `tuple_type` / `tuple_deconstruct_declaration` |
 | `type I = concept` | `interface` | `concept_declaration` — a structural, compile-time contract satisfied by implicit dispatch, which is what `Interface` means in this codebase |
 | `type E = enum` | `enum` | `enum_declaration` |
-| `type C = concept` | `interface` | `concept_declaration` |
 | `field` in an object body | `property` | `object_declaration` field |
 | `const X = …` | `constant` | `const_section` |
 | `let` / `var` / `using` at file scope | `variable` | `let_section` / `var_section` / `using_section` |
@@ -125,37 +123,6 @@ The written path is therefore the node's own text, which preserves depth,
 **The `operator` node is an `as` alias, not a separator, when it reads `as`.**
 `import ./shapes as S` binds a *local* name; the right side is never a module.
 The oracle and the analyzer both test for it before testing for a separator.
-
-**A type RHS is wrapped in `type_expression`, and the three shapes are not
-parallel.** The classifier has to see through the wrapper, because the trees differ:
-
-```
-type Color = enum …      -> enum_declaration        (no wrapper)
-type A = concept x       -> concept_declaration     (no wrapper)
-type U = tuple[a: int]   -> type_expression / tuple_type
-type T = (int, string)   -> type_expression / tuple_construction
-```
-
-`unwrapTypeExpression` is a bounded walk that names the shapes it unwraps rather
-than taking the first child. Before it existed, the classifier compared the
-wrapper's own type, so `tuple_type` was never seen and **every tuple type in the
-language was published as a bare `type`** while its fields went unpublished — a
-documented rule that was simply false, and false in the ordinary spelling:
-`(int, string)` is how Nim writes an unnamed tuple (the compiler accepts it with
-0 errors and rejects `tuple[int, string]` with 3). Found by the mutation run, not
-by inspection.
-
-**An unnamed tuple element declares a TYPE, not a field.** The grammar builds the
-same `symbol_declaration_list` for `tuple[x, y: int]` and for `tuple[int, string]`
-— in the second the "names" *are* the types — so the analyzer published
-`property:int` and `property:string`, two properties named after builtin types,
-each with a `contains` edge. Nothing else could have caught it: both names are
-real identifiers, so no dangling check fires, and a symbol count sees two extra
-rows rather than two wrong ones. The discriminator is structural rather than a
-builtin-name guess: a real field has the declaration's own `type` field and an
-unnamed tuple element has none. The rule is scoped by ancestor to `tuple_type`,
-because a `variant_discriminator_declaration` (`case isCircle`) also carries no
-type field and applying it everywhere silently dropped the discriminator.
 
 **Layout is an external scanner.** `scanner.c` owns Nim's indentation state
 (`_layout_start` / `_layout_end` / `_inhibit_layout_end`); without it
@@ -279,113 +246,13 @@ comparable across grammar versions.
 - **Grammar pin** (`bun run script/m14/verify-grammar-pins.ts`): 10 lanes match
   their record, including the NIM source<->wasm proof and the 72/72 conformance
   suite.
-- **M12 hand-audit ground truth** (`script/m12/verify-analyzer.ts nim`,
-  `validation/m12/ground-truth/nim.json`): **precision 1.000, recall 1.000** over
-  106 facts on 4 compiler-validated fixtures. Every fact's `evidence` field cites
-  the construct it asserts, so the audit can catch the analyzer rather than
-  confirm it — and on the first run it did, three times over:
-  - it **asserted** `calls exercise -> describe` for `r.describe`, a *parenless
-    UFCS call*, which the analyzer did not emit at all. Verified in a minimal
-    repro, fixed, and the differential oracle turned out to omit it too — so the
-    lane had been reporting 0% unexplained on a shape both implementations got
-    wrong in the same direction. That is the one failure mode an oracle that
-    mirrors the analyzer structurally cannot catch, and it is what the
-    independent audit is for.
-  - it **asserted** `uses (global) -> x` was absent, because `type Addable =
-    concept x` writes a concept's formal parameter with no `symbol_declaration`
-    and no type annotation — the one binder in Nim that nothing else recognises.
-    A concept is now a scope frame, so its body reads attribute to the concept
-    and its parameters shadow.
-  - it **missed** `calls exercise -> build`, which the analyzer emitted: `b.build`
-    is as much a parenless call as `r.describe` is. Recall is the hard
-    direction, so the audit absorbed the analyzer's row rather than the other way
-    round.
-  - it **asserted** two rows the analyzer had deliberately refused —
-    `extends`/`references` to `RootObj`, one of the four `NIM_COMPILER_ROOTS`
-    that no analyzed file declares, where an edge could never resolve. The
-    analyzer's refusal is the better judgement and the audit adopts it; that
-    reversal is recorded in the ground truth's `auditNote` rather than left
-    implicit.
-  - it also **corrected a fixture line**: the first `shared.nim` read
-    `export proc helper*(x: int)`, which the Nim 2.2.12 compiler rejects with 9
-    errors and which appears 0 times across all 12 corpora. The grammar's ERROR
-    node and the compiler agreed; the fixture was wrong.
-  Both new fixes carry a mutant (`nim/parenless-ufcs-call-lost`,
-  `nim/concept-parameter-read`), so the gate is 42/42 rather than trusting a
-  green suite.
-- **Full-corpus oracle sweep** (the standing tool this lane needs): the
-  differential's 60-file rotation reported 0 unexplained on nearly every draw,
-  which is a COVERAGE limit, not a clean bill — two defect classes hid in files
-  the rotation simply did not sample. Running the oracle over all 3,914 tracked
-  `.nim` files of the Nim compiler (`fixtures/nim/probes/hunt-diff.ts`, per-file
-  truth-vs-analyzer target sets) found them immediately, and both are now fixed:
-  a `{.all.}` qualifier being published inside the module path, and the
-  declared-type pass accepting a callable or a boolean literal as a type name.
-  What remains after the fixes, on all 3,914 files:
-
-  | Residual | Count | Adjudication |
-  | --- | --- | --- |
-  | `uses` for a binding form the oracle did not track | **0 — closed** | Five instances, one cause: the oracle's `bindNames` read a destructuring pattern one level deep, so `let (a, (b, c))` never bound `b`/`c`, and `concept_declaration` had no scope frame at all, so a concept's formal parameter — the one binder in Nim written as a bare identifier in a `parameter_list` — was never a binding. `bindNames` is now recursive and a concept is a frame. Measured over 3,914 files: the class went 5 → 0 |
-  | `instantiates -> sink` (`lib/core/system.nim`) | 1 | **oracle** gap: `sink[T]` is a real declared Nim type, so constructing one IS an instantiation. The oracle's `instantiates` rule does not cover the generic-construction form |
-  | `references -> default` (`lib/js/asyncjs.nim`), `references -> f` (`lib/pure/typetraits.nim`) | 2 | **UNADJUDICATED — the analyzer emits them and the oracle does not, and a minimal repro did not reproduce it.** A field named `default` and a parameter named `f` are both correctly excluded in isolation (verified), so the source is something narrower in these two macro-heavy files. Recorded rather than guessed: a plausible-sounding ruling here would be worse than an open row, and it is the reason the sweep prints file and line for every residual |
-  | `references -> Rgba8` (`tests/.../taliasbugs.nim`) | 1 | **genuinely ambiguous.** `BlenderRgb[Rgba8]` reads as a type argument and the analyzer treats it as one; the enclosing test suggests a value index. Resolving it needs a decision about bracket positions in a non-generic call, not a patch |
-
-  The residual count over the whole corpus is **4, down from 10** when this table
-  was first written. That number matters more than any single row: a standing
-  check that always reports the same handful of known rows is a check nobody
-  reads, and a NEW defect would hide in that noise. With four rows the signal is
-  usable again, and the two unadjudicated rows are named precisely enough to be
-  picked up by whoever has the context for them.
-
-  The import family is now CLEAN over all 3,914 files. Getting there took four
-  corrections, and three of them were the oracle's fault rather than the
-  analyzer's — which is the point of a sweep that reports per-file target sets
-  instead of aggregate counts:
-
-  | Spelling | Oracle published | Analyzer published | Who was right |
-  | --- | --- | --- | --- |
-  | `from std/uri {.all.} as uri2` | `std/uri {.all.} as uri2` | `std/uri` | analyzer — a qualifier and an alias are not part of a module's name |
-  | `import ./m1 {.all.}` | `./m1 {.all.}` | `./m1` | analyzer |
-  | `import m9627 / [a, b]` | `m9627 / [a, b]` | `m9627/a`, `m9627/b` | analyzer — a module LIST is one edge per element |
-  | `include foobar as foo` | `foobar as foo` | `foobar` | analyzer |
-
-  All four shared one cause: an arm of the oracle calling the raw-text reader
-  where it needed the path reader. Three of the four were the SAME arm — the
-  `from`-form, then the `include` form — and the second was only visible after
-  the first was fixed. An aggregate count would have shown "16 import
-  mismatches" and left every one of them unadjudicated.
-  A rotation-only lane would have reported 0% unexplained through all of the above
-  except by luck. That is the single most important methodological finding in this
-  lane, and it is why the sweep is a tool in `fixtures/nim/probes/` rather than a
-  thing to remember to run.
-- **Mutation** (`script/m14/mutate-analyzer.ts`, `BB_MUTANT_ONLY="nim/"`):
-  **40 mutants, 40 caught, exit 0.** One per symbol kind, per relationship kind,
-  per ruled rule in the table below, and per payload row — each a revert of a fix
-  this lane actually made, or of a rule this document claims. Five fixtures
-  passing is not evidence that the suite can fail; this is. The first run caught
-  27 and left 13 survivors, and a survivor is defined by the gate as a hole in
-  the suite rather than a weak mutant. Chasing the 13 found **two real analyzer
-  defects**: a tuple type was never published as a `struct` in *either* of the
-  two ways Nim spells one (so the symbol table above was false), and an unnamed
-  tuple element published properties named after builtin types. Both are fixed and
-  both are pinned in both directions. The other eleven were missing pins — a
-  three-segment import, the `from`-form spelling, the object-construction label,
-  the destructuring shadow, the assignment target, the call-callee double count,
-  the generic-parameter and blank-identifier leaks, and **zero line_number,
-  docstring or decorator pins**, which is why a mutant that deleted every line in
-  the language had survived. Two pins are deliberately *paired*: the
-  `uses stemOf -> fileStem` forbid only means something because
-  `expectSymbols {fileStem, property}` pins that the field exists, since a fix
-  that deleted the field would otherwise satisfy the forbid vacuously.
 - **Completeness classification** (`script/m14/spec/nim-completeness.json`): all
   **127** named node types the pinned wasm declares are classified, so nothing is
-  silently absent — 95 `handled_verified`, 31 `internal_silent` (each with the
+  silently absent — 94 `handled_verified`, 32 `internal_silent` (each with the
   reason it is silent rather than merely unreferenced), 0 `gap`, and 5
   `design_decision` rulings (NIMD1 file-scope pragma statements, NIMD2 cross-file
-  overrides, and 5 `design_decision` rulings — NIMD1 file-scope pragma
-  statements, NIMD2 cross-file overrides, NIMD3 concept satisfaction, NIMD4
-  `.nimble` routing, NIMD5 `.nims` routing, all five now RULED on recorded
-  evidence). The open work in this lane is a **grammar** gap, which is a different
+  overrides, NIMD3 concept satisfaction, NIMD4 `.nimble` routing, NIMD5 `.nims`
+  routing). The open work in this lane is a **grammar** gap, which is a different
   ledger from an analyzer gap.
 - **#419 sections** (`bun run script/m14/completeness-inventory.ts --lang nim`):
   **A** structural (164 types classified), **B** all eight relationship kinds
@@ -404,216 +271,89 @@ comparable across grammar versions.
 Two things this evidence does **not** cover, stated so they are not read as
 covered: cross-file method overrides, and the do-pragma grammar gap below.
 
-## Performance
-
-Two tools, and the second one exists because the first could not be trusted on
-its own.
-
-`script/m12/nim-perf-profile.ts` attributes cost *within* the analyzer per phase.
-It exists because a CPU profile is not a budget: sampling attributes
-tree-sitter's WASM work to `(idle)`, and a profile of this analyzer reported
-**"94% idle, 0.00s in real-nim-analyzer"** while the analyzer was in fact **82% of
-wall time**. The measured split is parse ~22% / analyze ~78%.
-
-`script/m12/nim-perf-ab.mts` compares two analyzer versions in one process,
-interleaved, each one's **minimum** over repeated trials, and compares their
-outputs field by field. Both halves are load-bearing. On this box the same
-200-file sample read 91.5 and 91.1 ms/file back to back and the per-phase
-distribution swung from 28.9% to 20.3% with no code change in between — the
-machine's noise is larger than the effects available, so "it got faster" is
-unfalsifiable unless the comparison cannot see the noise. And the output diff is
-what makes an optimization safe to land: a change that moves one symbol kind, one
-relationship type, target, line or confidence fails in the harness rather than in
-a fixture three commits later.
-
-### Where the time went, and what it cost to fix
-
-The analyzer ran **seven independent full-tree walks**. The cost was never one
-slow function — it was paying the JS↔WASM boundary on the same nodes seven times:
-
-| Walk | Share before |
-| --- | --- |
-| `collectCallsAndUses` | 20–29% |
-| `collectDeclarations` | 15–20% |
-| `collectModules` | 8–19% |
-| `nimCyclomaticComplexity` | 4–19% |
-| `collectDeclaredTypeRefs` | 7–16% |
-| `collectInstantiations` | 8–9% |
-| `collectDocComments` | 5–9% |
-| *containment / inheritance / overrides (symbol table, not tree)* | **0.04%** |
-
-Fusing them to **four** — the three symbol-table passes were already free — gives
-**1.618x, 35.8 → 22.1 ms/file, 544 symbols/s** measured end to end, with
-**byte-identical output** at every step.
-
-Two optimizations were **measured and rejected**, which is the more useful half of
-this record:
-
-- **Memoizing the cyclomatic counter** in one post-order pass keyed by node id,
-  replacing N+1 subtree walks with 1: **23.7% SLOWER**. A `Map` with one entry per
-  node per file costs more than re-walking the handful of nodes inside a small
-  callable body. It also nearly shipped a wrong answer — descending into
-  *anonymous* children double-counts every branch, because an anonymous keyword
-  token carries the same type string as the statement that owns it, which an
-  equivalence check caught on 6,730 of 209,114 nodes.
-- **Fusing the declared-type pass inline** rather than as a hoisted handler:
-  **5.5% SLOWER**, byte-identical output, because `ownerOf` and the recursive
-  `collectFromTypeExpression` were rebuilt on every node visit instead of once per
-  file.
-
-Both point the same way, and it is the design rule for the whole walk: **one
-stack, one local counter, closures built once, and nothing allocated per node.**
-The win is fewer node *visits*; per-node allocation of any kind costs more than
-the traversal it rides on.
-
-### Complexity envelope
+## Complexity envelope
 
 `script/m12/nim-corpus-measure.ts`, artifact
 `validation/m12/results/nim-corpus-complexity.json`. Two numbers are deliberately
-kept apart because they are different claims, and the artifact records which one
+kept apart, because they are different claims and the artifact records which one
 it is making as `measurementPath`:
 
 - **`direct-single-parser`** (the recorded run): 5,056 tracked `.nim`/`.nims`
-  files, one parser in one process. 91,079 symbols, 203,410 relationships.
-  Yield: 18.0 symbols and 40.2 relationships per file.
-- **`production-pool-worker`**: the route the indexer itself takes. A separate
-  claim, and the run is not recorded in this artifact — the pool stalls at worker
-  startup on a machine where other work is in flight, and a stalled pool writes no
-  artifact at all, which reads as "never ran" rather than as "died". Run it on a
-  quiet machine; the script supports it as the default.
+  files, one parser in one process. 91,079 symbols, 203,410 relationships,
+  620.7 s wall (229.2 s user CPU), **147 symbols/s, 328 relationships/s, 8.15
+  files/s**. Yield: 18.0 symbols and 40.2 relationships per file.
+- **`production-pool-worker`**: the route the indexer itself takes. It is a
+  separate claim and the run is not recorded in this artifact — the pool stalls
+  at worker startup on a machine where other work is in flight, and a stalled
+  pool writes no artifact at all, which reads as "never ran" rather than as
+  "died". Run it on a quiet machine; the script supports it as the default.
 
 Relationship mix over the corpus: `calls` 87,244, `references` 44,545, `uses`
-34,937, `contains` 21,784, `imports` 12,090, `instantiates` 2,085, `extends` 657,
-`overrides` 68. Symbol mix: `function` 31,816, `property` 13,836, `variable`
-13,213, `constant` 9,639, `enum_member` 8,471, `struct` 4,284, `macro` 3,792,
-`type` 2,881, `method` 989.
+34,937, `contains` 21,784, `imports` 12,090, `instantiates` 2,085, `extends`
+657, `overrides` 68. Symbol mix: `function` 31,816, `property` 13,836,
+`variable` 13,213, `constant` 9,639, `enum_member` 8,471, `struct` 4,284,
+`macro` 3,792, `type` 2,881, `method` 989.
 
-Cyclomatic complexity is the analyzer's own per-symbol measure: mean 1.82 across
-files, max 1,460, and the worst files are named rather than left as an average —
-`htmlparser.nim` 1,460, `vm.nim` 747, `sigmatch.nim` 542. A mean of 1.82 with a
-max of 1,460 is why the artifact carries the list: an average over mostly-small
-files hides the fact that one proc scored 1,460.
+Cyclomatic complexity is the analyzer's own per-symbol measure. Mean across
+files 1.82; max 1,460, and the worst files are named rather than left as an
+average — `htmlparser.nim` 1,460 (per-file mean 11.89), `vm.nim` 747,
+`sigmatch.nim` 542, `commands.nim` 327, `renderer.nim` 313. A corpus mean of
+1.82 with a max of 1,460 is the reason the artifact carries the worst-file list:
+an average over mostly-small files hides the fact that one proc scored 1,460.
 
 ### Two records that do not fully agree, and why that is stated
+
+The parse record and the complexity record measure **different file sets through
+different paths**, and they are not interchangeable:
 
 | Record | Path | Files | Symbols | Relationships |
 | --- | --- | --- | --- | --- |
 | `nim-corpus-errors.json` | production pool-worker | 5,227 (incl. 171 `.nimble`) | 91,011 | 202,256 |
 | `nim-corpus-complexity.json` | direct single parser | 5,056 (`.nim`/`.nims`) | 91,079 | 203,410 |
 
-The file-set difference is measured, not assumed: the 171 tracked `.nimble` files
-were run through the direct path alone and contribute **26 symbols and 315
-relationships**. The residue is therefore a *path* difference — the engine route
-post-processes the analyzer's output before counting (it drops relationships that
-do not resolve, the same rule the seam gate asserts) — and it is recorded as an
-open reconciliation item rather than smoothed into one number. `.nimble` is
-excluded from the complexity artifact on purpose: that run predates the routing
-decision, so including it would report coverage the router had not yet been given
-when the number was taken. Its share is stated above (26 symbols, 315
-relationships) rather than folded in silently, and a re-run of the measure on a
-quiet machine will cover all 5,227 through the production path.
+The file-set difference is measured, not assumed: the 171 tracked `.nimble`
+files were run through the direct path on their own and contribute **26 symbols
+and 315 relationships**. So 5,056 + 171 files on one path would be 91,105 /
+203,725, and the pool-worker record is still **94 symbols and 1,469
+relationships lower**. The residue is therefore a *path* difference — the engine
+route post-processes the analyzer's output before it is counted (it drops
+relationships that do not resolve, which is the same rule the seam gate asserts)
+— and it is recorded here as an open reconciliation item rather than smoothed
+into a single number. `.nimble` is excluded from the complexity artifact on
+purpose: it is not routed to this analyzer (decision NIMD4), so measuring it
+inside the NIM complexity envelope would report coverage the router does not
+have.
 
 ## Honest limitations
 
-1. **do-pragma is not parsed as a pragma — and the fix is now MEASURED, not
-   assumed.** `expr.#[…].#` is consumed as a block-comment extra, so the 16
-   affected corpus files lose the pragma surface. A 56-line grammar patch was
-   written and, on 2026-09-28, finally rebuilt end to end once the machine had the
-   ~2.3 GB this 41 MB `parser.c` needs:
-
-   | gate | result |
-   | --- | --- |
-   | `tree-sitter generate` | succeeds (15 min) |
-   | `tree-sitter test`, upstream's own 72 cases | **72/72 pass** |
-   | compiler matrix, 17 files | unchanged, no regression |
-   | **whole pinned corpus, 3,914 files** | **0 files fixed, 6 files regressed** |
-
-   The patch is therefore **strictly harmful as written**, and it stays unapplied.
-   The six broken files are all macro-heavy, which points at the cause being
-   structural rather than typographical: `#[` is the EXTERNAL SCANNER's token, so
-   a grammar-level production for it competes with the scanner that owns it. A real
-   fix has to reach the scanner, not just the grammar — which is a different piece
-   of work, honestly scoped rather than left as a hopeful patch. The patch
-   (`$HOME/fixtures/nim/out/0001-nim-dopragma.patch`) and the candidate
-   wasm (5,914,156 B) are both preserved for whoever takes it on.
-
-   This is the strongest argument this lane has for its rebuild protocol: the
-   conformance suite passed 72/72 on a build that made the corpus measurably
-   worse, because upstream's suite contains no do-pragma case. Conformance proves
-   the patch did not break what upstream tests; only the corpus sweep caught what
-   it did.
-
-   A **rebuild hazard** came out of the same exercise and is recorded in
-   `grammars/tree-sitter-nim/PIN.md`: this vendored tree keeps `scanner.c` at the
-   root while upstream keeps it at `src/scanner.c`, and `tree-sitter generate`
-   does not move it. The externals live in `grammar.js`, not in
-   `tree-sitter.json`, so `generate` produces an empty `src/tree_sitter/` and no
-   `src/scanner.c` — and a wasm built that way parses no indentation-sensitive Nim
-   at all, quietly, with a successful build. The PIN's two-command sequence was not
-   sufficient to reproduce the wired build; it now carries the required
-   `cp scanner.c src/scanner.c`.
-2. **Cross-file method overrides now RESOLVE — through the project's companion
-   index, and the per-file default is preserved.** The capability is not
-   NIM-specific: `ASTEngine.AnalyzeContext.overrideCompanion` already existed and
-   six analyzers consumed it, and NIM was the one that could not use it. The
-   blocker turned out to be one missing field rather than a missing algorithm —
-   **a Nim method never declared `ownerName`**. A method's owner IS its receiver
-   type, and `ownerName` is the family-standard field for that, but the receiver
-   was parked in `metadata.nimReceiverType` where nothing generic reads it. So the
-   companion index came back EMPTY for a file whose base class declared a method
-   (`buildOverrideCompanion` keys on `ownerName` + `kind === "method"`), and
-   cross-file resolution could not work no matter what the override pass did.
-   Setting `ownerName` also produced the `contains` edge from a receiver to its
-   method, which the ontology in this document had always claimed.
-
-   The override pass now calls the shared `findDeclaringParent` resolver, so the
-   semantics are identical to java/kotlin/csharp/groovy/scala/swift: the first
-   ancestor in declaration order that actually declares the method. The edge is
-   emitted at **confidence 0.9, not 1.0**, and that is load-bearing — the
-   companion carries `owner -> method names` and NOT each type's own base list, so
-   the walk descends only as far as bases visible in the current file. A hierarchy
-   three modules deep, whose middle module's base is in a third, stops at the
-   visible link. The edge records `nimCrossFileBase` and
-   `nimResolution: "companion-index"` so a companion-resolved edge is
-   distinguishable from a same-file one, and 0.9 keeps it a claim rather than an
-   assertion under the differential's 0.7 threshold.
-
-   **This family is gated by the M12 ground truth, not by a fixture lane**, and
-   that is a property of the fact rather than a gap in coverage: the base type and
-   the method it declares live in different modules by definition, so no
-   single-file fixture can express it. The ground truth asserts
-   `overrides:GlossPainter.paint -> Painter.paint` across `painter.nim` and
-   `gloss.nim`, and its harness is one of the few callers that builds a
-   companion. A mutant for it was written and deliberately REMOVED: the mutation
-   gate requires a mutant to turn the fixture suite red, and the fixture runner
-   passes no context, so the mutant was vacuous by construction and would have
-   made the gate red forever over a genuinely covered family. The fixture-visible
-   half of the same mechanism — a method declaring its `ownerName` — is gated
-   normally, as `nim/method-owner-name-dropped`.
-
-   The production indexer does not yet build a companion, so `bb index` behaves
-   as the honest per-file default. That is the same position the six adopting
-   languages are in, and it is stated here rather than implied.
-3. **`.nims` and `.nimble` are now ROUTED — decided on measurement, as the
-   deferral required.** They were left pending on purpose, with a recorded reason:
-   the pinned grammar declares both in its own `file-types`, and declaring a
-   format is not evidence the analyzer models it. Routing on the declaration
-   alone is the claim-without-coverage class. So the deferral named the missing
-   input, and this is that input, over every tracked file of all 12 corpora:
-
-   | ext | files | error files | error nodes | symbols | relationships | imports |
-   | --- | --- | --- | --- | --- | --- | --- |
-   | `.nims` | 65 | **0** | 0 | 43 | 279 | 96 |
-   | `.nimble` | 171 | **0** | 0 | 26 | 315 | 11 |
-
-   100% parse health on both, and neither is pure data: a `.nims` is NimScript
-   (`set_cmd`/`switch`/`buildFile` — procs and calls on a real stdlib), and a
-   `.nimble`'s `task`/`bin` blocks declare real things. `language-detection.ts`
-   now maps all three extensions to `nim`, and the differential and fixture lanes'
-   `ext` lists changed in the same edit so the claim and the router cannot drift
-   apart: a lane that sweeps an extension the router skips is the inert-pin
-   class, and a lane that under-reports what the router now handles is the same
-   defect wearing a hat. Rulings NIMD4/NIMD5 are now RULED with their numbers.
+1. **do-pragma is not parsed as a pragma.** `expr.#[…].#` is consumed as a
+   block-comment extra by the pinned grammar, so the 16 affected corpus files
+   lose the pragma surface (and pick up ERROR nodes). It is the largest class by
+   file count but every one of those 16 files lives under `nimsuggest/tests/`,
+   i.e. it is a negative test — which is why the shipping-code list above, not the
+   file count, is the honest measure of what a user would hit. The same
+   rebuild-gating applies to every other class in the census table: a 56-line
+   patch for do-pragma is preserved at
+   `$HOME/fixtures/nim/out/0001-nim-dopragma.patch` and is deliberately
+   **not applied**, because a rebuilt wasm has to pass the 72-case conformance
+   suite, the 17-file matrix and the corpus regression before it can be wired,
+   and the machine this was built on cannot hold the 2 GB+ that
+   `tree-sitter generate` needs for a 41 MB `parser.c` while other work is in
+   flight. An unproven grammar patch wired into a pin would be worse than a
+   recorded gap.
+2. **Cross-file method overrides are out of reach.** `overrides` needs the
+   project-wide type hierarchy; the analyzer is per-file, so it emits an override
+   only when the base is declared in the same file. Same-file overrides are
+   covered by fixture, seam and corpus evidence. The alternative — resolving
+   against a corpus-wide name set — would attribute an override to a same-named
+   method of an unrelated type, which is the failure mode this lane refuses.
+3. **`.nims` and `.nimble` are not routed.** The grammar's own `file-types`
+   declares all three, and the differential lane's `ext` list carries `nim,nims`
+   so the sweep does not silently skip them, but `language-detection.ts` routes
+   only `.nim`. `.nimble` is a package manifest with a `requires`/`task` block
+   syntax that is not the same surface as a NIM module, and routing it would
+   claim a format this analyzer does not model. Routing them is a measurement
+   first and a decision second.
 4. **The oracle shares two inputs with the analyzer, deliberately.** It imports
    the analyzer's builtin-name filter, and it takes the analyzer's symbol list as
    the name inventory for `contains` (the zig bare-uses oracle sets the same

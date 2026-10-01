@@ -51,16 +51,7 @@ export function annotationHoverSection(rows: AnnotationRow[]): string {
   for (const row of rows) {
     const who = `${row.author_class} note by ${row.tool_identity}`
     const when = formatAnnotationTime(row.time_updated)
-    // Scope is stated, because the store holds two kinds of note and the reader
-    // cannot otherwise tell them apart: a note written WITH a path is about THIS
-    // file's copy of the symbol, and a note written without one is about the
-    // NAME, so it surfaces in every file that declares it (measured on a real
-    // corpus: one name in 8 files). Rendering both identically made a
-    // whole-codebase opinion read as a statement about the function under the
-    // cursor. The label is a fixed vocabulary, not repo text, so it carries
-    // nothing to escape.
-    const scope = row.symbol_path === null || row.symbol_path === undefined ? "name-level" : "this file"
-    lines.push(`- [${who}, ${when}, ${scope}]: ${escapeAnnotationText(row.body)}`)
+    lines.push(`- [${who}, ${when}]: ${escapeAnnotationText(row.body)}`)
   }
   return lines.join("\n")
 }

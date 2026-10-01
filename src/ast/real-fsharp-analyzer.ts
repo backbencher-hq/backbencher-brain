@@ -25,20 +25,6 @@ const FSHARP_CONSOLE_BUILTINS = new Set([
 ])
 const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetType", "ReferenceEquals"])
 
-/**
- * Every grammar node that WRAPS a written type in F#. The name is always inside one of
- * these; the POSITION is decided by the wrapper's parent. Read off the wired grammar
- * (script/m14/tmp/fs001-shape-census.ts over 400 real files) and from
- * `grammars/tree-sitter-fsharp/fsharp/grammar.js` — the list is F1-audited against the
- * wasm, so a grammar rename shows up as an unknown node type rather than as a silent 0.
- */
-const TYPE_WRAPPER_NODES = new Set([
-  "simple_type", "postfix_type", "paren_type", "generic_type", "function_type",
-  "compound_type", "list_type", "atomic_type", "nullable_type", "struct_type",
-  "static_type", "byref_type", "flexible_type", "types",
-])
-
-
 export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
   public analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -86,30 +72,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // baseType per type name (from `inherit Base()`) — for qualified overrides.
     const baseTypes = new Map<string, string>()
 
-    // FS-D2: every type name this file DECLARES with a real `type X = …` body — i.e.
-    // NOT by `type X with …`. An extension is not a declaration: F#'s `type X with` is
-    // the language's only way to add members to a type declared elsewhere, so
-    // counting it as a declaration would let two extensions of an undeclared type mint
-    // it twice, and would let an extension that PRECEDES its own `type X = …` (4 of
-    // the corpus's 68 extensions do) suppress the real declaration. Collected up front
-    // so the rule is order-independent.
-    const typeNamesDeclaredInFile = this.collectDeclaredTypeNames(rootNode)
-    // FS-D17: the scope a FILE declares, read before the walk rather than during it.
-    const fileScope = this.collectFileScope(rootNode)
-    // FS-D2: which names a `type X with …` has ALREADY published as the file's own
-    // declaration. Scoped to extensions on purpose — a general one-symbol-per-name set
-    // would collapse an F# SIGNATURE file's forward declaration into its definition,
-    // which script/m14/tmp/fs018-compare-dumps.ts reported as 30 dropped symbols
-    // across 15 corpus files before the rule shipped.
-    const typeExtensionsPublished = new Set<string>()
-
-    // FS-D8: the names the EXPORT rule needs, filled while the walk visits them, so
-    // the export pass costs no second traversal. A MODULE's members are importable by
-    // `open`; a TYPE's are not — that asymmetry IS the exports-family ruling the
-    // fixture runner's invariant states.
-    const moduleNames = new Set<string>()
-    const namespaceNames = new Set<string>()
-
     interface WalkFrame {
       node: Node
       scopePath: string[]
@@ -121,53 +83,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     while (walkStack.length > 0) {
       const { node, scopePath, callOwner, bodyDepth } = walkStack.pop()!
       const type = node.type
-
-      // FS-D15 + FS-D16. A parse-recovery region is a fact about the PARSER, not about
-      // the program, and this analyzer was doing two wrong things with one.
-      //
-      // It mined them. Inside an `ERROR` node the grammar hands back a recovery
-      // artifact, and this walk reads that artifact as if it were code: in
-      // fsharp/src/Compiler/Interactive/fsi.fsi the recovery for a malformed
-      // `type IEventLoop =` produced a chain of `typecast_expression` ending in an
-      // `application_expression`, and the analyzer published
-      // `calls GetDefaultConfiguration -> abstract`, `-> member` and `-> Sealed` — the
-      // language keywords and an attribute name, called by a symbol that appears
-      // nowhere near them. Fabrication is the worst class there is, because it is
-      // indistinguishable from a real edge to a consumer.
-      //
-      // And it never said so. `errors` was declared on line 48 and returned on line 937
-      // and never pushed to, so the analyzer's own contract — "syntax errors: ERROR/
-      // MISSING nodes pushed as warning ParseError (never silently dropped)" — had been
-      // a claim in the docs with no code behind it. The region that produced those three
-      // fabricated calls was reported NOWHERE.
-      //
-      // Both are fixed by the same two lines, and they are one decision rather than two:
-      // a recovery region is DISCLOSED and not MINED. Disclosing it means the caller can
-      // see exactly which spans to distrust, which is strictly more information than the
-      // fabricated edges ever were, and it makes the grammar gaps the lane already knows
-      // about (`member val`, `not null` — 6/400 files collapsing to a root ERROR)
-      // visible in the result instead of only in a probe. Suppressing the edges is the
-      // part that costs something, and the cost is measured rather than assumed: see
-      // script/m14/tmp/fs031-error-region-delta.ts, which counts what the rule removes
-      // before and after.
-      if (type === "ERROR") {
-        errors.push({
-          message: "parse recovery region: the tree here is the parser's reconstruction, not the source",
-          range: { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column },
-          severity: "warning",
-        })
-        // Do NOT descend. The whole subtree is recovery, and descending would re-derive
-        // the same artifact through a different node type.
-        continue
-      }
-      if (node.isMissing) {
-        errors.push({
-          message: `missing ${node.type} — the parser inserted this token`,
-          range: { startLine: node.startPosition.row + 1, startColumn: node.startPosition.column, endLine: node.endPosition.row + 1, endColumn: node.endPosition.column },
-          severity: "warning",
-        })
-        continue
-      }
 
       let currentScope = [...scopePath]
       let childCallOwner = callOwner
@@ -184,36 +99,15 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
             metadata: { nodeType: type },
           })
-          if (type === "namespace") namespaceNames.add(name)
-          else moduleNames.add(name)
           currentScope.push(name)
         }
       } else if (type === "type_definition") {
-        // FS-D2: `type X with …` reaches the analyzer as a `type_definition` whose
-        // ONLY body child is a `type_extension` — the grammar wraps it
-        // (`_type_defn_body`'s `type_extension` arm, under `type_definition`). So the
-        // duplicate is not the extension branch alone: the `type_definition` branch
-        // mints the symbol, pushes the scope, and then walks INTO the extension, which
-        // minted it a second time. Measured: 54 duplicate type symbols per 400 real
-        // files (script/m14/tmp/fs012-self-containment.ts), every one a
-        // `type_definition` + `type_extension` pair at the SAME line.
-        const isExtensionBody = !!this.findChild(node, (n) => n.type === "type_extension")
-        // FS-D8: a BARE `type X` (the grammar's `type_declaration`, "no body") is a
-        // FORWARD DECLARATION — the surface an F# SIGNATURE file writes before the
-        // definition. `type Surface` / `type Surface = member this.Real = 1` is ONE
-        // entity, so the export list must name it once; both SYMBOLS stay, because
-        // both are real declarations and the surface one carries the .fsi's line.
-        const isForwardDeclaration = !!this.findChild(node, (n) => n.type === "type_declaration")
         // Pure AST: the clean name is type_name -> long_identifier -> identifier;
         // declared generic params are type_arguments -> type_argument_defn ->
         // type_argument (no source-text regex needed).
         const typeNameNode = this.findDescendant(node, (n) => n.type === "type_name")
         const typeInfo = typeNameNode ? this.typeInfoOf(typeNameNode) : null
         const name = typeInfo?.name ?? null
-        // FS-D8: a TYPE's access modifier is written INSIDE its `type_name` (the node's
-        // own text is literally `internal Tables<'Token>`), a value's or a member's on
-        // the declaration. Read structurally, never from the declaration's text.
-        const accessModifier = this.accessModifierOf(node, typeNameNode ?? null)
         if (name) {
           const hasAnonTypeDefn = !!this.findChild(node, (n) => n.type === "anon_type_defn")
           const hasRecordTypeDefn = this.findDescendants(node, (n) => n.type === "record_type_defn").length > 0
@@ -259,38 +153,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
 
-          // FS-D2: the publication rule for a TYPE EXTENSION, and nothing else.
-          //
-          // `type X with …` is not a declaration of X — it is F#'s only way to add
-          // members to a type declared elsewhere. So an extension publishes X only when
-          // this file has no real `type X = …` at all (the member-only type F# also
-          // allows), and never a second time.
-          //
-          // DELIBERATELY NOT a general one-symbol-per-name rule. An F# SIGNATURE file
-          // forward-declares a type and then defines it, and the definition is the one
-          // carrying the members; a blanket dedupe kept the forward declaration and
-          // dropped the definition. The rule is scoped to extensions, the one place
-          // the duplication is a defect.
-          const isExtensionOnly =
-            isExtensionBody && !typeNamesDeclaredInFile.has(name) && !typeExtensionsPublished.has(name)
-          if (!isExtensionBody || isExtensionOnly) {
-            symbols.push({
-              name,
-              kind,
-              range: this.nodeToRange(node),
-              ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
-              genericParameters: typeInfo?.genericParameters,
-              metadata: {
-                nodeType: type,
-                ...(isExtensionBody ? { isTypeExtension: true } : {}),
-                ...(isForwardDeclaration ? { isForwardDeclaration: true } : {}),
-                ...(accessModifier ? { accessModifier } : {}),
-              },
-            })
-          }
-          if (isExtensionBody) typeExtensionsPublished.add(name)
-          // The SCOPE is pushed either way: an extension's members belong to the
-          // extended type whether or not this file declares it.
+          symbols.push({
+            name,
+            kind,
+            range: this.nodeToRange(node),
+            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            genericParameters: typeInfo?.genericParameters,
+            metadata: { nodeType: type },
+          })
           currentScope.push(name)
 
           // Base type from `inherit Base()` — needed for qualified override targets.
@@ -359,22 +229,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const ifaceImpls = this.findDescendants(node, (n) => n.type === "interface_implementation", 8)
           for (const impl of ifaceImpls) {
             const ifaceType = this.findDescendant(impl, (n) => n.type === "long_identifier" || n.type === "identifier")
-            const writtenIface = ifaceType ? ifaceType.text : null
-            if (writtenIface) {
-              // FS-D9 (R10 spelling) — see the extends arm's note. A qualified interface
-              // is written `System.IDisposable` and DECLARES `IDisposable`; the edge
-              // carries the leaf so it joins to a symbol, and the qualified spelling
-              // stays in `metadata.qualifiedType`.
-              const leaf = writtenIface.includes(".") ? (writtenIface.split(".").pop() as string) : writtenIface
+            const targetName = ifaceType ? ifaceType.text : null
+            if (targetName) {
               pushRel(
                 name,
-                leaf,
+                targetName,
                 ASTEngine.RelationshipType.Implements,
                 1.0,
-                {
-                  nodeType: "interface_implementation",
-                  ...(leaf !== writtenIface ? { qualifiedType: writtenIface } : {}),
-                },
+                { nodeType: "interface_implementation" },
                 lineOf(ifaceType),
               )
             }
@@ -383,32 +245,19 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // Extract class inherits as relationships (search recursively within type)
           for (const inh of inherits) {
             const baseType = this.findDescendant(inh, (n) => n.type === "long_identifier" || n.type === "identifier")
-            const writtenName = baseType ? baseType.text : null
-            if (writtenName) {
+            const targetName = baseType ? baseType.text : null
+            if (targetName) {
               // FSD3: `inherit` is ALWAYS an extends edge. The retired rule here
               // was "the name starts with I and its second character is
               // uppercase, therefore implements" — a guess that mislabels a base
               // class named `IThing` and labels an interface by luck. F#
               // implements interfaces with `interface ... with` (handled above).
-              //
-              // FS-D9 (R10 spelling): the edge's TARGET is the LEAF, because that is
-              // the name the lane publishes for that type as a symbol, and a consumer
-              // joins edges to symbols. `inherit System.Exception()` is written with a
-              // namespace and DECLARES `Exception`; the qualified spelling is kept in
-              // `metadata.qualifiedType` so nothing is lost. R10 is the family rule
-              // applied to ten lanes; this lane was never asked, and the lane's own
-              // truth oracle derived the leaf independently, which is how the 3 sites
-              // in the corpus were found.
-              const leaf = writtenName.includes(".") ? (writtenName.split(".").pop() as string) : writtenName
               pushRel(
                 name,
-                leaf,
+                targetName,
                 ASTEngine.RelationshipType.Extends,
                 1.0,
-                {
-                  nodeType: "class_inherits_decl",
-                  ...(leaf !== writtenName ? { qualifiedType: writtenName } : {}),
-                },
+                { nodeType: "class_inherits_decl" },
                 lineOf(baseType),
               )
             }
@@ -433,28 +282,8 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               node,
               (n) => n.type === "function_declaration_left" || n.type === "value_declaration_left",
             )
-            if (leftNode) {
+            if (leftNode)
               nameNode = this.findChild(leftNode, (n) => n.type === "identifier" || n.type === "identifier_pattern")
-              // FS-D6: when that child is an `identifier_pattern`, its TEXT IS THE WHOLE
-              // LEFT-HAND SIDE. For `let f (a: string) : string = …` the
-              // `identifier_pattern` reads `f (a: string) : string` — parameters and
-              // return annotation included — so taking its text published the signature
-              // as the symbol's NAME. Measured: 60 such symbols per 400 real files (37
-              // with a curried argument list, 23 with a generic argument in the return
-              // type), none joinable by a consumer; script/m14/tmp/fs019-adjudicate-loss
-              // counts the removed names by the character that disqualifies them — 57 by
-              // a parameter list, 16 by a generic argument, 9 by a space, 8 otherwise.
-              //
-              // The declared name is the pattern's FIRST
-              // `long_identifier_or_op -> long_identifier -> identifier` chain, read
-              // structurally. A bare `identifier` child is left alone, which is what
-              // keeps `let f a b = …` and `let inline f x = …` naming `f` as before — a
-              // first draft that also redirected the `identifier` case regressed both,
-              // and the A/B caught it as dropped symbols before it shipped.
-              if (nameNode?.type === "identifier_pattern") {
-                nameNode = this.patternNameNode(nameNode) ?? nameNode
-              }
-            }
           }
           // Fallback for member_defn: method_or_prop_defn → property_or_ident → identifiers
           if (!nameNode) {
@@ -549,17 +378,13 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 4,
               )
 
-              // FS-D8: an F# `member` carries its own access modifier
-              // (`member private this.Reset()`), and neither `internal` nor `private`
-              // is part of the library's importable surface.
-              const memberAccess = this.accessModifierOf(node, null)
               symbols.push({
                 name,
                 kind,
                 range: this.nodeToRange(node),
                 ownerName: owner,
                 isAsync,
-                metadata: { nodeType: type, ...(memberAccess ? { accessModifier: memberAccess } : {}) },
+                metadata: { nodeType: type },
               })
 
               // Qualified override: source = Owner.method, target = Base.method.
@@ -577,49 +402,17 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
               // Calls inside this member/function attribute to it; computed
               // property getters emit no calls (C# family contract).
-              //
-              // FS-D10: a top-level `let` owns the calls in its INITIALISER, whatever
-              // its kind. The rule was keyed on the kind, so a `let checker = …` (a
-              // VARIABLE, because it takes no arguments) did not become an owner, and
-              // in an F# SCRIPT — where the top level IS the program and there is no
-              // enclosing namespace, module or function — every call in it had no source
-              // and was DROPPED. The lane's own truth oracle derives those edges from the
-              // binding, and the differential measured the gap: 2,520 MISSING `calls`
-              // rows per 200 real files, every one of them a real call.
-              //
-              // The kind gate remains for the case that motivated it: a computed PROPERTY
-              // (`member _.X = expr`) emits no calls, which is the C# family contract and
-              // is pinned by the lane's ground truth.
-              if (kind === ASTEngine.SymbolKind.Property && !this.hasExplicitSetter(node)) {
+              if (kind === ASTEngine.SymbolKind.Method || kind === ASTEngine.SymbolKind.Function) {
+                childCallOwner = name
+              } else if (kind === ASTEngine.SymbolKind.Property) {
                 childCallOwner = undefined
               } else {
-                // FS-D13: the "a computed property getter emits no calls" rule is the
-                // C# family contract, and in C# an EXPRESSION-bodied property has no
-                // second body for code to live in. F#'s `with get, set` DOES:
-                //     member _.EventLoop
-                //         with get () = evLoop
-                //         and set (x: IEventLoop) = evLoop.ScheduleRestart()
-                // The accessor is a `property_accessor` node carrying its own `set`
-                // keyword token, so the rule is read structurally: a member with an
-                // explicit SETTER has a body that executes, and suppressing its calls
-                // deletes real code paths. Measured by the lane's own truth oracle.
-                childCallOwner = name
+                childCallOwner = callOwner
               }
               childBodyDepth = bodyDepth + 1
             } else {
-              // FS-D12: a `default` implementation of an abstract member publishes no
-              // SYMBOL — the abstract signature is the canonical one, and the dedup is
-              // correct. But its BODY belongs to that same member, so the body must be
-              // owned by it.
-              //
-              // The arm passed the enclosing owner through unchanged, and inside a class
-              // the enclosing owner is undefined — so every call in every `default`
-              // implementation was DROPPED. F#'s OO surface is written this way
-              // (`abstract member Compile : …` + `default x.Compile (pwd, argv) = …`),
-              // and the lane's own truth oracle measured the gap: 731 of 817 MISSING
-              // `calls` rows per 120 real files were this one shape. The same reasoning
-              // as FS-D10, one level down.
-              childCallOwner = name
+              // Default impl of an abstract member: walk body, no symbol.
+              childCallOwner = callOwner
               childBodyDepth = bodyDepth + 1
             }
           }
@@ -654,60 +447,35 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
           if (owner) abstractMemberNames.add(`${owner}:${nameNode.text}`)
         }
-      } else if (type === "value_declaration" && bodyDepth > 0) {
-        // FS-D5: this arm exists to reach the one `value_declaration` shape the walk
-        // can arrive at INSIDE a class body — the 77 corpus nodes whose parent is
-        // `member_defn` (script/m14/tmp/fs001-shape-census.ts). The arm it replaced read
-        // `val_property_defn`, which is an ANONYMOUS node (`_val_property_defn` in the
-        // grammar's hidden-rule list): it can never be a named child, so the branch was
-        // unreachable, and F1 could not see it — its `isTypeComparison` only accepts a
-        // `x.type === "…"` member expression while the analyzer dispatches on the bare
-        // local `type` (that gate hole is proven in script/m14/tmp/fs007-f1-gate-hole.ts:
-        // 41 of the analyzer's 92 type comparisons are inside F1's validated set).
-        //
-        // The F# member-property this arm was WRITTEN for — `member val A : int with
-        // get, set` — is a live, common construct (890 occurrences in the F# compiler
-        // corpus alone) that the pinned grammar does not parse: it arrives as a
-        // root-level ERROR, not as a `value_declaration`. So no symbol is emitted here,
-        // and the construct is recorded as a GRAMMAR gap rather than papered over with a
-        // text rule. What the arm does do is keep the walk's depth accounting correct
-        // for the shapes that DO parse, so a `value_declaration` in a body is walked
-        // (its subtree's calls attribute to the enclosing member) without being minted.
-        childCallOwner = callOwner
-        childBodyDepth = bodyDepth
+      } else if (type === "val_property_defn") {
+        const nameNode = this.findChild(node, (n) => n.type === "identifier")
+        if (nameNode && nameNode.text) {
+          symbols.push({
+            name: nameNode.text,
+            kind: ASTEngine.SymbolKind.Property,
+            range: this.nodeToRange(node),
+            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            metadata: { nodeType: "val_property_defn" },
+          })
+        }
       } else if (type === "object_expression") {
-        const iface = this.objectExpressionInterface(node)
-        if (iface) {
-          const { written, leaf } = iface
+        const ifaceName = this.findDescendant(node, (n) => n.type === "long_identifier" || n.type === "identifier")
+        if (ifaceName && ifaceName.text) {
           const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
           symbols.push({
-            name: "new " + written,
+            name: "new " + ifaceName.text,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
             ownerName,
             metadata: { nodeType: "object_expression" },
           })
-          // FS-D7: the object's own members belong to the object. `{ new IDisposable
-          // with member _.Dispose() = … }` published `Dispose` with NO owner at all,
-          // because the branch minted a Class symbol and never opened a scope for it —
-          // measured on the second corpora, where an F# SCRIPT (no namespace, no
-          // module) has an empty enclosing scope and every member of every object
-          // expression came out ownerless: suave examples/WebSocket/Program.fs:181,
-          // fsharp-data HtmlNode.fs:123,206, elmish
-          // docs/docs/subscription.fsx:71,144,803,833. The scope is opened under the
-          // SAME name the symbol is published under, so the `contains` edge resolves to
-          // a symbol that exists.
-          currentScope.push("new " + written)
           if (ownerName) {
-            // FS-D9 (R10 spelling), same rule: `{ new System.IDisposable with … }`
-            // implements `IDisposable`, which is the name the leaf declares. Measured: 13
-            // dotted `implements` targets per 400 real files, all of them this shape.
             pushRel(
               ownerName,
-              leaf,
+              ifaceName.text,
               ASTEngine.RelationshipType.Implements,
               1.0,
-              { nodeType: "object_expression", ...(leaf !== written ? { qualifiedType: written } : {}) },
+              { nodeType: "object_expression" },
               lineOf(node),
             )
           }
@@ -751,23 +519,17 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           })
         }
       } else if (type === "type_extension") {
-        // FS-D2: the enclosing `type_definition` has already decided whether this
-        // extension's name is published, and pushed the scope. A REACHED-here
-        // `type_extension` is the nested body of such a `type_definition` (the grammar
-        // wraps every `type X with` in one), so the correct action is exactly one
-        // thing: carry the scope name forward so the members below own the extended
-        // type, and publish nothing. Publishing a Class here is what produced the 54
-        // duplicate symbols and 57 `contains X -> X` self-edges per 400 real files.
-        //
-        // The scope name is read through `typeInfoOf` — the SAME extraction the
-        // `type_definition` branch uses — and not from the node's raw text. That
-        // distinction is load-bearing: `type internal Tables<'Token> with` has a
-        // `type_name` whose text is the whole `internal Tables<'Token>`, so pushing
-        // its text put every extension member under an owner that matches no symbol
-        // anywhere. Caught by the A/B as 510 REAL-LOSS rows for exactly this.
-        const typeNameNode = this.findChild(node, (n) => n.type === "type_name")
-        const extName = typeNameNode ? this.typeInfoOf(typeNameNode)?.name ?? null : null
-        if (extName) currentScope.push(extName)
+        const nameNode = this.findChild(node, (n) => n.type === "type_name" || n.type === "long_identifier")
+        if (nameNode && nameNode.text) {
+          const name = nameNode.text
+          symbols.push({
+            name,
+            kind: ASTEngine.SymbolKind.Class,
+            range: this.nodeToRange(node),
+            ownerName: currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined,
+            metadata: { nodeType: "type_extension" },
+          })
+        }
       } else if (type === "attribute") {
         const attrNameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (attrNameNode && attrNameNode.text) {
@@ -799,14 +561,8 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           // FSD10: a module-less file sources its file-level edges from
           // `Global`, never from the opened name itself (self-sourcing makes an
           // import unfalsifiable: any target would "reference" itself).
-          //
-          // FS-D17 adds the file's DECLARED scope between the two, because `owner` is a
-          // property of where the walk happens to be and the file's scope is a property
-          // of the file. Without it, whether an `open` was attributed to the module or to
-          // `Global` depended on whether the `open` appeared above or below the `module`
-          // keyword — see this method for the two corpus files that disagree.
           pushRel(
-            owner || fileScope || "Global",
+            owner || "Global",
             targetNode.text,
             ASTEngine.RelationshipType.References,
             0.9,
@@ -905,22 +661,9 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // Add Contains relationships: scope owner → owned symbols (the line is the
     // symbol's own line — the containment fact is ABOUT that declaration).
-    //
-    // FS-D3: a self-edge is refused, because a name that contains itself is a
-    // statement about the graph's own bookkeeping rather than about the code, and a
-    // consumer walking containment would loop. Measured on 400 real files
-    // (script/m14/tmp/fs012-self-containment.ts): 368 such edges from three distinct
-    // sources — a DU case named after its own type (`type
-    // TypeProviderDesignation = TypeProviderDesignation of string`, a real and common
-    // F# spelling, 305 of them), a member named after its own type (3 sites: `E.E`,
-    // `MatchClause.Pattern`, `Map.Map`), and the `type_extension` of FS-D2.
-    //
-    // The refusal is at COMPOSITION, covering every tier — the same place the c lane's
-    // #917 self-override fix put it — so the alternative (suppressing the label) is not
-    // on the table: the DU case genuinely IS contained by its union.
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
-      if (_owner && _owner !== s.name) {
+      if (_owner) {
         pushRel(
           _owner,
           s.name,
@@ -932,56 +675,12 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    // FS-D4: the R9 declared-type reference graph. See extractDeclaredTypeRefs.
-    this.extractDeclaredTypeRefs(rootNode, pushRel)
-
-    // FS-D8: the EXPORT surface. F#'s importable units are the ones an `open` can
-    // bind:
-    //   * a file-scope unit — a namespace, a module, a type (a DU case is reachable
-    //     through its type, never on its own);
-    //   * a MODULE's own members, because `open M` binds them directly. F# is the
-    //     haskell/ocaml shape the fixture-runner's export invariant already names, and
-    //     that invariant is what caught the previous behaviour: the lane exported EVERY
-    //     non-variable symbol, so a record field, a method and an object expression's
-    //     member were published as importable units no `open` can bind. F3 reports it
-    //     as `export(s) … do not resolve to a top-level symbol (membership rides
-    //     Contains)`.
-    //   * a TYPE's members are NOT exported — `open M` binds `M.Type`, and a member is
-    //     reached as `M.Type.Member`; membership rides `contains`.
-    //
-    // VISIBILITY, which this now reads and previously did not: the grammar emits an
-    // `access_modifier` node and F# has three levels, so an `internal` or `private`
-    // declaration is not exported. The old code wrote `visibility: "public"` for every
-    // symbol regardless, and the F# compiler corpus is full of internal types
-    // (`type internal Tables<'Token>`, `type internal ByteMemory`).
-    //
-    // FORWARD DECLARATIONS (an `.fsi` `type X` followed by `type X = …`) are ONE
-    // entity: both symbols stay, and the export names the DEFINITION, which is the one
-    // carrying the members — the same surface/definition merge the lane already applies
-    // to `module_val_declaration` (the Clean .dcl/.icl precedent). The fixture-runner
-    // invariant's uniqueness clause is what surfaced this: `duplicate export name(s)
-    // ["Surface"]`.
-    const exportedNames = new Set<string>()
-    const declaredUnits = new Set(
-      symbols
-        .filter((s) => !s.ownerName && s.metadata?.isForwardDeclaration !== true)
-        .map((s) => s.name),
-    )
+    // Exports: all public non-variable symbols
     for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Variable) continue
-      // a DU case / record field is reachable through its type, not on its own
-      if (s.kind === ASTEngine.SymbolKind.EnumMember) continue
-      const isForwardDecl = s.metadata?.isForwardDeclaration === true
-      if (isForwardDecl && declaredUnits.has(s.name)) continue
-      const visibility = this.visibilityOf(s)
-      if (visibility === "private" || visibility === "internal") continue
-      const isTypeMember =
-        !!s.ownerName && !moduleNames.has(s.ownerName) && !namespaceNames.has(s.ownerName)
-      if (isTypeMember) continue
-      if (!s.ownerName && (s.kind === ASTEngine.SymbolKind.Property || s.kind === ASTEngine.SymbolKind.Method)) continue
-      if (exportedNames.has(s.name)) continue
-      exportedNames.add(s.name)
-      exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: visibility as any })
+      const isVariable = s.kind === ASTEngine.SymbolKind.Variable
+      if (!isVariable) {
+        exports.push({ name: s.name, kind: s.kind, range: s.range, visibility: "public" })
+      }
     }
     return {
       language: "fsharp",
@@ -998,687 +697,6 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         hasFrameworkIntelligence: true,
         hasTypeInference: true,
       },
-    }
-  }
-
-  /**
-   * FS-D11 — is this written type a TYPE QUERY rather than a declared type?
-   *
-   * `typeof<T>` and `unbox<T>` are EXPRESSIONS that carry a type argument:
-   * `typeof<TypeInThisAssembly>.Assembly.Location` depends on a RUNTIME VALUE, and
-   * publishing `references loc -> TypeInThisAssembly` as a declared-type dependency
-   * says the opposite — that the declaration names the type in its signature.
-   *
-   * The discriminator walks up through the two shapes the grammar spells the query with,
-   * because it spells it differently depending on which one it is:
-   *   * `typed_expression` whose `base` is a `long_identifier_or_op` reading `typeof` /
-   *     `unbox` — the corpus's own shape (measured by reading the tree: `typeof<Foo>` is
-   *     `typed_expression > long_identifier_or_op(typeof) + types > simple_type`);
-   *   * a `static_type` wrapper, the other spelling.
-   *
-   * A first draft tested only the DIRECT parent for the `long_identifier_or_op`, which
-   * measured nothing, because the type's parent is the `typed_expression` and the
-   * `long_identifier_or_op` is ITS base. The differential's UNEXPLAINED row is what
-   * forced the second reading.
-   */
-  /**
-   * FS-D13 — does a member declare an explicit SETTER?
-   *
-   * F#'s `member _.P with get, set` is ONE member with two `property_accessor` bodies,
-   * and the setter's body executes. The property-getter contract ("a computed property
-   * emits no calls", inherited from the C# family) is about an EXPRESSION-bodied
-   * property, which has no second body to run code in — applying it to the setter
-   * deleted the calls in real code.
-   *
-   * Read from the `property_accessor` node's own keyword token, never from the member's
-   * text: `with get () = … and set (x) = …` and `with get, set` are the same shape.
-   */
-  private hasExplicitSetter(memberDefn: Node): boolean {
-    const mop = this.findChild(memberDefn, (n) => n.type === "method_or_prop_defn")
-    if (!mop) return false
-    for (const acc of this.findDescendants(mop, (n) => n.type === "property_accessor", 6)) {
-      for (let i = 0; i < acc.childCount; i++) {
-        const c = acc.child(i)
-        if (c && !c.isNamed && c.type === "set") return true
-      }
-    }
-    return false
-  }
-
-  private isTypeQueryPosition(t: Node): boolean {
-    let cur: Node | null = t
-    for (let hop = 0; cur && hop < 3; hop++) {
-      if (cur.type === "static_type") return true
-      // `typed_expression` holds the query operator and the type as SIBLINGS:
-      //     (typed_expression (long_identifier_or_op "typeof") (types (simple_type …)))
-      // — so the operator is a CHILD, not the parent, and a test that looked for a
-      // `typeof` parent measured nothing. The first two attempts each got one of these
-      // two facts wrong, and both were caught by the differential's row rather than by
-      // reading, which is the argument for running one at all.
-      if (cur.type === "typed_expression") {
-        for (let i = 0; i < cur.namedChildCount; i++) {
-          const c = cur.namedChild(i)
-          if (c && c.type === "long_identifier_or_op" && (c.text === "typeof" || c.text === "unbox")) return true
-        }
-        return false
-      }
-      const parent: Node | null = cur.parent
-      if (!parent) return false
-      if (parent.type === "long_identifier_or_op" && (parent.text === "typeof" || parent.text === "unbox")) return true
-      if (parent.type === "static_type" || parent.type === "typed_expression") {
-        cur = parent
-        continue
-      }
-      return false
-    }
-    return false
-  }
-
-  /** The member's declared name: `method_or_prop_defn -> property_or_ident`, LAST identifier. */
-  /**
-   * The interface an OBJECT EXPRESSION constructs, as `{ written, leaf }`.
-   *
-   * FS-D14. The object-expression branch used to take the first `long_identifier`
-   * descendant of the node and call that the interface name, which is right exactly
-   * when the name is unqualified. A qualified name is NESTED in this grammar —
-   *
-   *     object_expression
-   *       new
-   *       typed_expression "System.Collections.Generic.IEqualityComparer<InferedType>"
-   *         dot_expression "System.Collections.Generic.IEqualityComparer"
-   *           long_identifier_or_op "System.Collections"
-   *             long_identifier "System"        <-- what the old code found
-   *           . identifier "Collections"
-   *           . long_identifier_or_op "Generic.IEqualityComparer"
-   *         types "InferedType"
-   *
-   * — so "first `long_identifier`" is the FIRST SEGMENT, and the published name was
-   * `new System` with `implements -> System`, a target that resolves to nothing.
-   *
-   * The differential found it twice and in the most useful way available: the lane's
-   * truth side read the SECOND segment. `{ new System.Collections.Generic.IEqualityComparer
-   * with … }` gave the analyzer `System` and the truth `Collections`, which cannot both
-   * be the interface and makes it obvious that the name is somewhere else entirely
-   * rather than that one of them is off by a rule. Two implementations independently
-   * wrong in the same place is the cheapest kind of evidence there is.
-   *
-   * The written name is therefore read from the `dot_expression` that carries it — a
-   * node whose own text IS the full dotted path — and the leaf from the LAST identifier
-   * inside it, so R10's spelling rule applies to the same leaf a consumer would join.
-   * The tree this is built on is printed by script/m14/tmp/fs030-object-expr-name.ts.
-   */
-  private objectExpressionInterface(node: Node): { written: string; leaf: string } | undefined {
-    const carrier =
-      this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
-      this.findDescendant(
-        node,
-        (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
-        4,
-      )
-    if (!carrier) return undefined
-    // `typed_expression` text carries the type ARGUMENTS too, and an argument list is
-    // not part of the type's name.
-    const written = carrier.text.split("<")[0]!.trim()
-    if (!written) return undefined
-    // The leaf is the LAST identifier IN THE CARRIER — the segment after the final dot.
-    //
-    // Scoped to the carrier, not to the object expression: an object expression's
-    // subtree is the interface name AND every member body, so the last identifier in
-    // the whole node is whatever the last member happened to mention. The first version
-    // of this fix read the subtree and published `implements -> x` for
-    // `member _.Equals(x, y) = …` and `-> failwith` for a body that calls it — a
-    // strictly worse answer than `System`, because it now varied with the body. The
-    // name is the carrier's business alone.
-    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 8)
-    const leaf = idents.length ? idents[idents.length - 1]!.text : written
-    return { written, leaf: leaf || written }
-  }
-
-  private memberNameOf(decl: Node): string | undefined {
-    const mop = this.findChild(decl, (n) => n.type === "method_or_prop_defn")
-    const prop = mop ? this.findChild(mop, (n) => n.type === "property_or_ident") : undefined
-    const idents = prop ? this.filterChildren(prop, (n) => n.type === "identifier") : []
-    return idents.length >= 2 ? idents[idents.length - 1]?.text : idents[0]?.text
-  }
-
-  /**
-   * The name a `function_or_value_defn` / `value_declaration` DECLARES, read
-   * structurally and never from an `identifier_pattern`'s text (FS-D6).
-   */
-  private declaredBindingName(decl: Node): string | undefined {
-    const direct = this.findChild(decl, (n) => n.type === "identifier" || n.type === "long_identifier")
-    if (direct?.text) return direct.text.includes(".") ? (direct.text.split(".").pop() as string) : direct.text
-    const left =
-      this.findChild(decl, (n) => n.type === "function_declaration_left") ??
-      this.findChild(decl, (n) => n.type === "value_declaration_left")
-    if (!left) return undefined
-    const pat = this.findChild(left, (n) => n.type === "identifier_pattern")
-    const leaf = pat ? this.patternNameNode(pat) : this.findChild(left, (n) => n.type === "identifier")
-    if (leaf?.text) return leaf.text
-    // the pattern's own text is only a NAME when it has no parameters and no return
-    // annotation — `let x = 1` — which is a structurally checkable condition, not a
-    // spelling one: a name may not contain `(`, `<` or ` : `.
-    if (pat) {
-      const text = pat.text.trim()
-      if (text && !/[()<]/.test(text) && !/\s:/.test(text) && /^[A-Za-z_][A-Za-z0-9_']*$/.test(text)) return text
-    }
-    return undefined
-  }
-
-  /**
-   * The declared NAME inside an `identifier_pattern` — the FIRST
-   * `long_identifier_or_op -> long_identifier -> identifier` chain.
-   *
-   * Not `pattern.text`: an `identifier_pattern` spans the entire left-hand side,
-   * parameters and return annotation included, so its text is a signature, not a name.
-   * See FS-D6 at the call site.
-   */
-  private patternNameNode(pattern: Node): Node | undefined {
-    const holder =
-      pattern.type === "identifier_pattern"
-        ? pattern
-        : this.findChild(pattern, (n) => n.type === "identifier_pattern")
-    const scope: Node = holder ?? pattern
-    return this.findDescendant(
-      scope,
-      (n) =>
-        n.type === "identifier" &&
-        !!n.parent &&
-        (n.parent.type === "long_identifier" || n.parent.type === "long_identifier_or_op"),
-      3,
-    )
-  }
-
-  /**
-   * The nearest ANCESTOR matching the predicate, bounded by `maxDepth` hops.
-   *
-   * Distinct from `findDescendant` on purpose: the declared-type graph asks "which
-   * declaration am I inside?", which is a question about the tree ABOVE the node, and
-   * reusing the descendant search for it would mean passing the whole root — an O(n)
-   * scan per type node, i.e. O(n²) over a file. Bounded hops keep the walk linear (the
-   * lane's own hot-path rule: no per-symbol O(n) scans).
-   */
-  private findAncestor(node: Node, predicate: (n: Node) => boolean, maxDepth: number = 12): Node | undefined {
-    let cur: Node | null = node.parent
-    for (let i = 0; cur && i < maxDepth; i++) {
-      if (predicate(cur)) return cur
-      cur = cur.parent
-    }
-    return undefined
-  }
-
-  /**
-   * The ACCESS MODIFIER written on a declaration, from the grammar's own
-   * `access_modifier` node — never from the declaration's text.
-   *
-   * Where the modifier sits differs by construct, which is why a declaration node and
-   * (for a type) its `type_name` node are both offered:
-   *   * a TYPE — `type internal Tables<'Token>` puts it INSIDE the `type_name`, as its
-   *     first named child; that node's own text is literally `internal Tables<'Token>`,
-   *     which is how the pre-FS-D6 name read published a name with an access modifier
-   *     inside it;
-   *   * a VALUE or a MEMBER — `let internal f = …`, `member private this.Reset()` — puts
-   *     it on the declaration itself;
-   *   * an omitted modifier is `public` in F# and the grammar then emits no node, so
-   *     the answer is `undefined`, which the caller treats as public. `undefined` is
-   *     deliberately NOT "public": a caller can tell "written public" from "written
-   *     nothing" without a second pass.
-   */
-  private accessModifierOf(decl: Node, typeNameNode: Node | null): string | undefined {
-    const read = (n: Node | null): string | undefined => {
-      if (!n) return undefined
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c && c.type === "access_modifier") return c.text
-      }
-      return undefined
-    }
-    const fromTypeName = read(typeNameNode)
-    if (fromTypeName) return fromTypeName
-    const fromDecl = read(decl)
-    if (fromDecl) return fromDecl
-    // an `attributes` wrapper can sit between the declaration and the modifier, so one
-    // more bounded level is read before giving up. (Only NAMED nodes can appear here:
-    // the grammar's `member_modifier` is a hidden rule — `_member_modifier` — so it is
-    // inlined and can never be a node type. A first draft tested for it and F1 caught
-    // the dead branch, which is the gate working.)
-    for (let i = 0; i < decl.namedChildCount; i++) {
-      const c = decl.namedChild(i)
-      if (!c) continue
-      if (c.type === "attributes" || c.type === "type_attributes") {
-        const inner = read(c)
-        if (inner) return inner
-      }
-    }
-    return undefined
-  }
-
-  /** The access modifier a symbol was minted with, defaulting to F#'s implicit public. */
-  private visibilityOf(symbol: ASTEngine.UniversalSymbol): "public" | "internal" | "private" {
-    const recorded = (symbol.metadata as any)?.accessModifier
-    if (recorded === "internal" || recorded === "private" || recorded === "public") return recorded
-    return "public"
-  }
-
-  /**
-   * Every type name this file DECLARES with a real `type X = …` body — i.e. NOT by
-   * `type X with …`. Collected before the walk so the publication rule is
-   * order-independent.
-   */
-  /**
-   * The module or namespace a FILE declares, or undefined.
-   *
-   * FS-D17. An `open` is a SIBLING of the file's `module` declaration, not a child, so a
-   * scope stack maintained by walking down the tree is empty when the walk reaches one.
-   * The analyzer's behaviour was then inconsistent in a way the corpus made obvious:
-   *
-   *   FscMain.fs         `module … CommandLineMain` (line 3), `open System` (line 5)
-   *                      -> the import was sourced to the module, because the walk had
-   *                         already entered the module node by the time it got there
-   *   AssemblyCheck.fs   `open System` (line 3), `module AssemblyCheck =` (line 10)
-   *                      -> the import was sourced to `Global`, because the walk had not
-   *                         reached the module yet
-   *
-   * The file's scope is the same in both cases — in F# the whole file is inside
-   * `AssemblyCheck` — so one of the two answers was wrong and the rule that produced them
-   * was "wherever the walk happened to be", which is not a rule about the program. The
-   * fix is a PRE-PASS, so the answer does not depend on the order of two sibling
-   * declarations.
-   *
-   * A module is preferred over a namespace because a file that declares both nests the
-   * module inside the namespace, and a module name is the closer scope of the two.
-   *
-   * Measured: 128 UNEXPLAINED open-path rows per 120 corpus files before the rule, and
-   * the two example files above disagreeing with each other rather than with the truth.
-   *
-   * ONE top-level declaration, and only one. The first version of this pre-pass took the
-   * FIRST module it found, which is right for AssemblyCheck.fs and wrong for
-   * `docs/fcs/project.fsx`, and the two are the same shape: an `open` above the `module`
-   * keyword. In a single-module file that scope is the file's, wherever the `open` sits. In
-   * a SCRIPT with several modules it is not — `project.fsx` opens `System` at line 35 and
-   * declares `module Inputs` at line 48, and code above the first module in a script is at
-   * the SCRIPT's scope, not inside `Inputs`. "The first module" made 128 rows disagree in
-   * the other direction.
-   *
-   * So the distinction is the count, and it is structural rather than a file extension: a
-   * file with more than one top-level module/namespace is a script, and the walk's own scope
-   * — which is correct inside a module and correctly empty above the first one — already
-   * answers it.
-   */
-  private collectFileScope(root: Node): string | undefined {
-    // TOP-LEVEL declarations only. A `module` nested inside another module does not make
-    // the file a script, and counting it would turn an ordinary file into one.
-    const topLevel: string[] = []
-    let topLevelStartIndex: number | undefined
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "module_defn" || n.type === "named_module" || n.type === "namespace") {
-        const nm = this.findChild(n, (c) => c.type === "type_name" || c.type === "long_identifier" || c.type === "identifier")
-        if (nm?.text) {
-          topLevel.push(nm.text.trim())
-          if (topLevelStartIndex === undefined) topLevelStartIndex = n.startIndex
-        }
-        continue // do not descend: nested modules are not top-level
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
-    }
-    if (topLevel.length !== 1) return undefined
-
-    // ...and only if nothing EXECUTES above it. Two corpus files have one top-level module
-    // and an `open` above it, and they need opposite answers:
-    //
-    //   AssemblyCheck.fs   comments + `open`, then `module AssemblyCheck =`
-    //                      -> the module is the file's scope, and the imports belong to it
-    //   docs/fcs/project.fsx   `open System` (35), `let checker = …` (42), `module Inputs` (48)
-    //                      -> a SCRIPT: the binding at line 42 executes before any module
-    //                         exists, so the file is script-scoped and the imports belong
-    //                         to the script, not to `Inputs`
-    //
-    // The discriminator is the top-level BINDING, and it is structural: `module M` and
-    // `module N` further down project.fsx look like two more top-level modules and are not
-    // — they are inside triple-quoted strings (script/m14/tmp/fs036-top-level.ts), so
-    // counting module nodes is not enough on its own. A binding that executes above the
-    // module is what makes a file a script, and it is the same fact in both files.
-    //
-    // Keying on the `.fsx` extension instead would have been shorter and would have been a
-    // guess about which files are scripts rather than a statement about the code. It would
-    // also have been wrong for a `.fs` file that genuinely is a script.
-    const moduleStart = topLevelStartIndex
-    if (moduleStart === undefined) return undefined
-    const codeWalker: Node[] = [root]
-    while (codeWalker.length > 0) {
-      const n = codeWalker.pop()!
-      if (
-        (n.type === "function_or_value_defn" || n.type === "value_declaration" || n.type === "sequential_expression") &&
-        n.startIndex < moduleStart
-      ) {
-        return undefined
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c) codeWalker.push(c)
-      }
-    }
-    return topLevel[0]
-  }
-
-  private collectDeclaredTypeNames(root: Node): Set<string> {
-    const names = new Set<string>()
-    const stack: Node[] = [root]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (n.type === "type_definition" && !this.findChild(n, (c) => c.type === "type_extension")) {
-        const typeNameNode = this.findDescendant(n, (c) => c.type === "type_name", 3)
-        if (typeNameNode) {
-          const li = this.findChild(typeNameNode, (c) => c.type === "long_identifier")
-          const id = li
-            ? this.findDescendant(li, (c) => c.type === "identifier", 3)
-            : this.findChild(typeNameNode, (c) => c.type === "identifier")
-          if (id?.text) names.add(id.text)
-        }
-        continue
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
-    }
-    return names
-  }
-
-  /**
-   * FS-D4 — the R9 DECLARED-TYPE reference graph: a declaration's WRITTEN type is a
-   * dependency, published as a `references` edge marked
-   * `metadata.relationshipType === "declared_type"`.
-   *
-   * WHY THIS LANE NEEDED IT. R9 is a family standard — rust's own R13 header calls it
-   * one ("mirrors go/c/zig") and thirteen lanes implement it.
-   * `script/m60/declared-type-refs-census.ts` measured fsharp **absent** with the
-   * control present: the snippet parses, the holder is walked, and the lane emits no
-   * type reference at all. A capability that is absent emits nothing for a per-edge
-   * oracle to adjudicate, which is why it survived — the same failure mode R9 was
-   * created to find.
-   *
-   * THE POSITIONS. A written type in F# is a `simple_type` / `postfix_type` /
-   * `generic_type` / … wrapper whose NAME is a `long_identifier` (dotted) or a bare
-   * `identifier`; the position is decided by the wrapper's PARENT, and the source
-   * attribution follows the family rule measured off java/kotlin/python and pinned by
-   * csharp's `declared-type-graph` fixture: a MEMBER's written type belongs to the
-   * enclosing TYPE, a parameter's / return's / local's to the enclosing CALLABLE.
-   *
-   *   record field        -> the record type   (a field is a property OF the type)
-   *   class-body `let`    -> the class          (F#'s private field — a member)
-   *   member parameter    -> the member
-   *   member return type  -> the member
-   *   DU case payload    -> the union type
-   *   module let / local -> the binding or the enclosing function
-   *   type abbreviation  -> the abbreviation
-   *   class inherit      -> REFUSED: already an `extends` edge
-   *   interface impl     -> REFUSED: already an `implements` edge
-   *   the ambiguous `type X = SomeType` (which the grammar reads as a one-case union)
-   *                     -> REFUSED: the RHS and a DU case are the same text, and
-   *                        script/m14/tmp/fs020 measured 114 such sites per 400 files
-   *                        that single-file analysis cannot separate. See that probe
-   *                        for the ruling.
-   *
-   * WHAT MUST NOT BECOME A NAME, each measured (script/m14/tmp/fs016):
-   *   a bound type PARAMETER (`'T`, `^T`) — inside a declaration's own `type_arguments`
-   *   it is a BINDING, not a dependency (rust's R13 rule; csharp's `_genericBound`
-   *   control);
-   *   an UNDERSCORE (`_`, the anonymous type of `Map<string,_>`) — not a name at all;
-   *   an F# PREDEFINED type (`int`, `string`, `unit`, …) — the analogue of go's
-   *   BUILTINS set and csharp's `int`/`string` control.
-   * Deliberately NOT used: the capitalisation of a name. F# lets a type be named
-   * anything, so this lane does not guess a type from its spelling.
-   */
-  private extractDeclaredTypeRefs(
-    rootNode: Node,
-    pushRel: (
-      source: string,
-      target: string,
-      type: ASTEngine.RelationshipType,
-      confidence: number,
-      metadata: Record<string, any>,
-      line?: number,
-    ) => void,
-  ): void {
-    const PREDEFINED = new Set([
-      "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
-      "nativeint", "unativeint", "float", "double", "float32", "single", "decimal", "bool",
-      "char", "string", "obj", "unit", "void", "exn", "list", "array", "seq", "option", "ref",
-      "byte", "sbyte", "intptr", "uintptr", "bigint",
-    ])
-
-    // The name-bearing node inside a type wrapper. Wrappers nest (`postfix_type` holds a
-    // `simple_type` for its base and a `long_identifier` for the postfix), so the rule
-    // is: descend to the first type-ish child, then take the LAST
-    // `long_identifier`/`identifier` at that level — the name the wrapper writes LAST,
-    // which is the type the whole expression denotes (`int option` is `option`;
-    // `Map<string,int>` is `Map`). This is also the node the edge carries its LINE on
-    // (M59.A7), never the wrapper's own start.
-    const nameNodeOf = (t: Node): Node | null => {
-      let cur: Node | null = t
-      for (let guard = 0; guard < 8 && cur; guard++) {
-        if (cur.type === "type_argument") return null // a bound type parameter
-        if (cur.type === "long_identifier") {
-          let leaf: Node | null = null
-          for (let i = 0; i < cur.namedChildCount; i++) {
-            const c = cur.namedChild(i)
-            if (c && (c.type === "identifier" || c.type === "long_identifier")) leaf = c
-          }
-          return leaf ?? cur
-        }
-        if (cur.type === "identifier") return cur
-        let next: Node | null = null
-        for (let i = 0; i < cur.namedChildCount; i++) {
-          const c = cur.namedChild(i)
-          if (
-            c &&
-            (TYPE_WRAPPER_NODES.has(c.type) ||
-              c.type === "type_argument" ||
-              c.type === "type_arguments" ||
-              c.type === "long_identifier" || // the name written DIRECTLY on the wrapper
-              c.type === "identifier")
-          ) {
-            next = c
-            break
-          }
-        }
-        if (!next) return null
-        cur = next
-      }
-      return null
-    }
-
-    /** The published name for a type-bearing node, or null when it is not a dependency. */
-    const publishedName = (node: Node): string | null => {
-      const text = (node.text ?? "").trim()
-      if (!text) return null
-      if (text === "_") return null
-      if (/^['^]/.test(text)) return null // 'T, ^T — a binder, not a dependency
-      const leaf = text.includes(".") ? (text.split(".").pop() as string) : text
-      if (!leaf || leaf === "_" || /^['^]/.test(leaf)) return null
-      if (PREDEFINED.has(leaf)) return null
-      if (!/^[A-Za-z_][A-Za-z0-9_']*$/.test(leaf)) return null
-      return leaf
-    }
-
-    /**
-     * Which of a callable's type positions a written type sits in.
-     *
-     * F# writes a callable's types in three places and the AST separates all three: a
-     * PARAMETER inside an argument list (`paren_pattern` for a curried `(a: T)`,
-     * `argument_patterns`/`argument_spec`/`curried_spec` for an unparenthesised `a: T`),
-     * a RETURN type after the argument list, and a LOCAL's annotation inside a body. A
-     * first draft collapsed the parameter case into "not a return type" and labelled it
-     * `local_annotation`, which is a third position; the `fsharp/name-surface` fixture
-     * pins the corrected labels on `takesGeneric (payload: ResizeArray<int>) : Map<string,
-     * int>` — one line, one parameter and one return type, two different labels.
-     */
-    const callablePosition = (t: Node, decl: Node): "parameter" | "return_type" | "local_annotation" => {
-      const inArgs = this.findAncestor(
-        t,
-        (n) =>
-          n.type === "paren_pattern" ||
-          n.type === "argument_patterns" ||
-          n.type === "argument_spec" ||
-          n.type === "arguments_spec" ||
-          n.type === "curried_spec",
-        3,
-      )
-      if (inArgs) return "parameter"
-      if (decl.type === "value_declaration") return "local_annotation"
-      return "return_type"
-    }
-
-    /** The declaration a written type belongs to, per the family attribution rule. */
-    const resolveSource = (t: Node): { source: string; declaredOn: string } | null => {
-      const parent = t.parent
-      if (!parent) return null
-      if (parent.type === "class_inherits_decl" || parent.type === "interface_implementation") {
-        // REFUSED: already an `extends` / `implements` edge. A second, weaker edge for
-        // the same fact is the duplicate R9 exists to prevent.
-        return null
-      }
-      if (
-        parent.type === "type_attribute" ||
-        parent.type === "type_arguments" ||
-        parent.type === "type_argument_defn"
-      ) {
-        return null
-      }
-      if (parent.type === "record_field") {
-        const rt = this.findAncestor(parent, (n) => n.type === "record_type_defn", 6)
-        if (!rt) return null
-        const td = this.findAncestor(rt, (n) => n.type === "type_definition", 2)
-        if (!td) return null
-        const tn = this.findDescendant(td, (n) => n.type === "type_name", 3)
-        const name = tn ? this.typeInfoOf(tn)?.name ?? null : null
-        return name ? { source: name, declaredOn: "record_field" } : null
-      }
-      if (parent.type === "union_type_field") {
-        const ud = this.findAncestor(parent, (n) => n.type === "union_type_defn", 4)
-        if (!ud) return null
-        const tn = this.findDescendant(ud, (n) => n.type === "type_name", 2)
-        const name = tn ? this.typeInfoOf(tn)?.name ?? null : null
-        return name ? { source: name, declaredOn: "union_case_payload" } : null
-      }
-      // A type ABBREVIATION's right-hand side is a real dependency: `type Names = Dep
-      // list` depends on Dep, which is the fact a reader wants from the graph. The
-      // ambiguous `type Names = Dep` shape is deliberately left out (see the header).
-      if (parent.type === "type_abbrev_defn") {
-        const tn = this.findChild(parent, (n) => n.type === "type_name")
-        const name = tn ? this.typeInfoOf(tn)?.name ?? null : null
-        return name ? { source: name, declaredOn: "type_abbreviation" } : null
-      }
-      // Everything else is a parameter / return / local annotation, which belongs to the
-      // enclosing CALLABLE. `parent` ITSELF can be that declaration — a class body's
-      // `let mutable f : Dep` writes its annotation on a `simple_type` whose parent IS
-      // the `function_or_value_defn` — so the direct parent is tested first and only
-      // then are ancestors walked.
-      const isDecl = (n: Node) =>
-        n.type === "member_defn" ||
-        n.type === "function_or_value_defn" ||
-        n.type === "value_declaration" ||
-        n.type === "additional_constr_defn"
-      const decl = isDecl(parent) ? parent : this.findAncestor(parent, isDecl, 14)
-      if (!decl) return null
-      const pos = callablePosition(t, decl)
-      if (decl.type === "member_defn") {
-        const mop = this.findChild(decl, (n) => n.type === "method_or_prop_defn")
-        const prop = mop ? this.findChild(mop, (n) => n.type === "property_or_ident") : undefined
-        const idents = prop ? this.filterChildren(prop, (n) => n.type === "identifier") : []
-        const name = idents.length >= 2 ? idents[idents.length - 1]?.text : idents[0]?.text
-        return name ? { source: name, declaredOn: pos } : null
-      }
-      if (decl.type === "additional_constr_defn") return { source: "constructor", declaredOn: "parameter" }
-      // A `let` DIRECTLY in a class body is F#'s private field, so its written type
-      // belongs to the TYPE. A `let` INSIDE a body is a LOCAL, and a local's written type
-      // belongs to the enclosing CALLABLE — the family attribution rule, and the rule
-      // the lane's own truth oracle derives independently.
-      //
-      // The distinction is "is there a CALLABLE between the declaration and its type",
-      // not "is there a type_definition above me": a first draft asked the latter, so
-      // `member this.BodyLocal() = let local : Dep = …` attributed the local's type to
-      // the CLASS. The truth oracle found it as the single MISSING row on
-      // fsharp/declared-type-graph (`BodyLocal -> Dep` against the analyzer's
-      // `Holder -> Dep`), which is the second opinion doing the job it exists for.
-      const isCallable = (n: Node) =>
-        n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
-      const inTypeBody = this.findAncestor(decl, (n) => n.type === "type_extension_elements", 3) !== undefined
-      const enclosingCallable = this.findAncestor(decl, isCallable, 8)
-      if (inTypeBody && enclosingCallable === undefined) {
-        // a field of the class: the type owns it
-        const td = this.findAncestor(decl, (n) => n.type === "type_definition", 6)
-        const tn = td ? this.findDescendant(td, (n) => n.type === "type_name", 3) : undefined
-        const tName = tn ? this.typeInfoOf(tn)?.name ?? null : null
-        if (tName) return { source: tName, declaredOn: "class_field" }
-      }
-      // A local: the ENCLOSING callable is the source, never the local's own name —
-      // `let local : Dep` is a dependency of the function that contains it.
-      if (enclosingCallable) {
-        if (enclosingCallable.type === "additional_constr_defn") return { source: "constructor", declaredOn: "local_annotation" }
-        const cName =
-          enclosingCallable.type === "member_defn"
-            ? this.memberNameOf(enclosingCallable)
-            : this.declaredBindingName(enclosingCallable)
-        if (cName) return { source: cName, declaredOn: "local_annotation" }
-      }
-      const name = this.declaredBindingName(decl)
-      if (name) return { source: name, declaredOn: pos }
-      return null
-    }
-
-    const emitted = new Set<string>()
-    const stack: Node[] = [rootNode]
-    while (stack.length > 0) {
-      const n = stack.pop()!
-      if (TYPE_WRAPPER_NODES.has(n.type)) {
-        // only the OUTERMOST wrapper, so a postfix_type inside a list_type is not
-        // counted once per layer
-        const nestedInType = n.parent != null && TYPE_WRAPPER_NODES.has(n.parent.type)
-        // FS-D11: a TYPE QUERY is not a written type. `typeof<T>` and `unbox<T>` are
-        // EXPRESSIONS that carry a type argument — `typeof<TypeInThisAssembly>.Assembly
-        // .Location` is a dependency on a runtime value, and publishing
-        // `references loc -> TypeInThisAssembly` says the opposite.
-        //
-        // The discriminator is the PARENT, and it is two shapes because the grammar
-        // spells the query two ways: a `static_type` wrapper, and a bare
-        // `long_identifier_or_op` named `typeof`/`unbox` whose child is the type. A
-        // first draft refused only the `static_type` wrapper and measured nothing,
-        // because `typeof<Foo>` does not produce one — verified by reading the tree,
-        // not by assuming the wrapper.
-        if (!this.isTypeQueryPosition(n) && !nestedInType) {
-          const nameNode = nameNodeOf(n)
-          const target = nameNode ? publishedName(nameNode) : null
-          const src = resolveSource(n)
-          const key = `${src?.source}|${target}|${n.startIndex}`
-          if (target && src && !emitted.has(key)) {
-            emitted.add(key)
-            pushRel(
-              src.source,
-              target,
-              ASTEngine.RelationshipType.References,
-              1.0,
-              {
-                nodeType: n.type,
-                relationshipType: "declared_type",
-                declaredOn: src.declaredOn,
-                declaredType: target,
-              },
-              nameNode ? nameNode.startPosition.row + 1 : n.startPosition.row + 1,
-            )
-          }
-        }
-      }
-      for (let i = 0; i < n.namedChildCount; i++) {
-        const c = n.namedChild(i)
-        if (c) stack.push(c)
-      }
     }
   }
 

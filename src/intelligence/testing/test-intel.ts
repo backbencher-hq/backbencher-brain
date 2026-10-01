@@ -58,28 +58,6 @@ export function codeTestClause(alias: string): { sql: string; params: string[] }
   }
 }
 
-/** Default page size for the test-intelligence reports.
- *
- *  Measured on backbencher-brain/src: test_mapping at the old default of 1000
- *  rendered 375,270 bytes (~104k tokens) in ONE tool call, because every entry
- *  carries a `links` array. A default is a promise about what a caller gets
- *  without asking; this one is a page a caller can read, and a caller who
- *  wants the whole corpus passes `limit`. */
-const DEFAULT_PAGE = 50
-
-/** Cap on the `links` array inside one mapping entry. A utility called by 400
- *  tests would otherwise render 400 rows for a single symbol, and what a caller
- *  wants from that entry — is it tested, and how strongly — is unchanged by the
- *  380 rows after the first few. Capped and DECLARED; the ranking and the
- *  summary still use the complete set. */
-const DEFAULT_MAX_LINKS = 20
-
-
-
-
-
-
-
 /** Human-readable provenance token for a corpus that produced no evidence. */
 const NO_EVIDENCE_UNKNOWN =
   "no-test-evidence-edges: no calls/references/imports relationship originates from a code test file, so every production symbol is reported untested — this is an absence of evidence, not evidence of absence"
@@ -190,9 +168,7 @@ async function loadGraph(projectId: ProjectID, includeMethods: boolean, filePath
 // id (avoids same-named-symbol contamination).
 export async function testMapping(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestMappingReport> {
   const includeMethods = options.includeMethods ?? true
-  // The page, not the whole corpus: see DEFAULT_PAGE. At the old 1000 a
-  // single call on backbencher-brain/src rendered 375,270 bytes (~104k tokens).
-  const maxResults = options.maxResults ?? DEFAULT_PAGE
+  const maxResults = options.maxResults ?? 1000
   const { filtered, testEdges, testFileCount, testSymCount, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
   const linksByTarget = new Map<string, TestLink[]>()
@@ -228,54 +204,22 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
   })
 
   const tested = entries.filter((e) => e.links.length > 0).length
-  const totalLinks = entries.reduce((sum, e) => sum + e.links.length, 0)
   entries.sort((a, b) => b.links.length - a.links.length || b.complexity - a.complexity)
-
-  // The page is a page. testGaps already declared its bound; testMapping
-  // sliced to maxResults and said nothing, so a caller could not tell 50
-  // entries out of 4048 from the whole corpus.
-  const page = entries.slice(0, maxResults)
-  // Rank on the FULL link count, then trim the array — the ranking is the
-  // finding, the trim is the budget.
-  const ranked = page.map((e) => ({
-    ...e,
-    links: e.links.slice(0, DEFAULT_MAX_LINKS),
-    linksTruncated: e.links.length > DEFAULT_MAX_LINKS,
-  }))
 
   const mappingUnknowns: string[] = []
   if (classifiedEdges === 0) mappingUnknowns.push(NO_EVIDENCE_UNKNOWN)
   const mappingNonCode = nonCodeUnknown(nonCodeTestFiles)
   if (mappingNonCode) mappingUnknowns.push(mappingNonCode)
-  if (entries.length > ranked.length) {
-    mappingUnknowns.push(`entry-page: showing ${ranked.length} of ${entries.length} production symbols — raise limit for the rest`)
-  }
 
   return {
-    entries: ranked,
-    provenance: makeProvenance({
-      evidenceClass: "inferred",
-      engine: "test-intel@intelligence",
-      engineVersion: "m10.05",
-      projectId,
-      source: "brain_symbol+brain_relationship+brain_file",
-      limitations: [
-        "Static relationships do not prove runtime execution or line coverage.",
-        "A production symbol is one whose type is in PROD_SYMBOL_TYPES; constants, properties, type aliases, modules and namespaces are outside the untested denominator entirely.",
-        `An entry carries at most ${DEFAULT_MAX_LINKS} links (linksTruncated says when more exist); the ranking and the summary use the complete set.`,
-      ],
-      truncated: entries.length > ranked.length,
-      unknowns: mappingUnknowns,
-    }),
+    entries: entries.slice(0, maxResults),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-intel@intelligence", engineVersion: "m10.02", projectId, source: "brain_symbol+brain_relationship+brain_file", limitations: ["Static relationships do not prove runtime execution or line coverage."], unknowns: mappingUnknowns }),
     summary: {
       productionSymbols: entries.length,
-      returned: ranked.length,
-      truncated: entries.length > ranked.length,
       testedSymbols: tested,
       untestedSymbols: entries.length - tested,
       testFiles: testFileCount,
       scannedTestSymbols: testSymCount,
-      evidenceLinks: totalLinks,
     },
   }
 }
@@ -293,7 +237,7 @@ export async function testMapping(projectId: ProjectID, options: TestIntelOption
 // complexity desc; second key: riskScore desc, file asc), so the returned page
 // is byte-identical.
 export async function testGaps(projectId: ProjectID, options: TestIntelOptions = {}): Promise<TestGapReport> {
-  const maxResults = options.maxResults ?? DEFAULT_PAGE
+  const maxResults = options.maxResults ?? 200
   const includeMethods = options.includeMethods ?? true
   const { filtered, testEdges, nonCodeTestFiles } = await loadGraph(projectId, includeMethods, options.filePath)
 
@@ -355,7 +299,7 @@ export async function testGaps(projectId: ProjectID, options: TestIntelOptions =
   return {
     gaps,
     provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-gaps@intelligence", engineVersion: "m10.02", projectId, source: "static-test-mapping", limitations: ["A missing static link does not prove that runtime coverage is absent."], truncated: candidates.length > maxResults, unknowns: gapUnknowns }),
-    summary: { total: candidates.length, returned: gaps.length, truncated: candidates.length > gaps.length, byCategory, highRisk },
+    summary: { total: candidates.length, byCategory, highRisk },
   }
 }
 
@@ -401,16 +345,6 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     else indirect.push(entry)
   }
 
-  // testMapping and testGaps both attach the "no-test-evidence-edges" unknown
-  // when the corpus produced nothing. testImpact did not, so on a project with
-  // no test files it reported found:true with two empty arrays — an
-  // authoritative "no test touches this" backed by nothing. The evidence is
-  // one COUNT away, so take it.
-  const testSymbols = (
-    raw.prepare("SELECT COUNT(*) c FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.project_id = ? AND COALESCE(f.is_test_file,0) = 1").get(projectId) as { c: number }
-  ).c
-  const unknowns = ["runtime-coverage-unavailable"]
-  if (testSymbols === 0) unknowns.unshift(NO_EVIDENCE_UNKNOWN)
   return {
     target,
     found: true,
@@ -418,7 +352,7 @@ export async function testImpact(projectId: ProjectID, target: string, options: 
     indirectTests: indirect,
     affectedTestFiles: Array.from(affected).sort(),
     truncated: graph.summary.truncated,
-    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns }),
+    provenance: makeProvenance({ evidenceClass: "inferred", engine: "test-impact@intelligence", engineVersion: "m10.02", projectId, source: "brain_relationship", limitations: ["Static test impact does not prove runtime execution or coverage."], truncated: graph.summary.truncated, unknowns: ["runtime-coverage-unavailable"] }),
     runtimeCoverage: { available: false },
   }
 }

@@ -96,8 +96,6 @@ async function audit(name: string): Promise<void> {
   const firstErrorLineCounts = new Map<string, number>()
   const pipelineMismatchList: { file: string; treeNodes: boolean; pipelineErrors: number }[] = []
   let absent = 0
-  let totalSymbols = 0
-  let totalRelationships = 0
   const started = Date.now()
 
   for (const file of files) {
@@ -140,16 +138,6 @@ async function audit(name: string): Promise<void> {
     try {
       const parsed = await parseFile(abs, process.cwd())
       pipelineErrors = (parsed.errors ?? []).length
-      // The VOLUME counts, measured on THIS file set through THIS production
-      // pipeline. Added 2026-09-26: the manifest's `corpusSymbols` /
-      // `corpusRelationships` had no artifact behind them at all, and css carried
-      // a 47% undercount (1,854 claimed where the same corpus measures 2,722)
-      // that survived every gate because the corpus-claims gate reconciled only
-      // `grammarErrorFiles`. This artifact is the natural home for them: it is
-      // already a FULL-CORPUS walk of the same files through the same entry
-      // point, so a claim it carries is backed with no filter to reason about.
-      totalSymbols += (parsed.symbols ?? []).length
-      totalRelationships += (parsed.relationships ?? []).length
     } catch (error: any) { crashes.push({ file, error: "parseFile: " + String(error?.message ?? error).slice(0, 260) }); continue }
 
     // Production truth is rootNode.hasError (what parseFile gates on). Some
@@ -191,8 +179,6 @@ async function audit(name: string): Promise<void> {
       error: pct(errorFiles.filter((f) => f.errorNodes > 0).length),
     },
     grammarErrorFiles: errorFiles.length,
-    symbols: totalSymbols,
-    relationships: totalRelationships,
     crashFiles: crashes.length,
     pipelineMismatchCount: pipelineMismatchList.length,
     pipelineMismatchFiles: pipelineMismatchList,

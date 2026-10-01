@@ -7,45 +7,6 @@ import { ASTEngine } from "./engine"
 
 interface LuaFrame {
   callable?: string
-  /**
-   * M60 LUA-37: the RESOLVABLE owner of this frame — the container a symbol
-   * declared in this body belongs to.
-   *
-   * `callable` is the LABEL: the full text a body belongs to, so
-   * `function Buffer:initialize()` sets it to `"Buffer:initialize"`. That is
-   * correct for a scope — a local inside that method is scoped to that method and
-   * not to any other — but it is NOT a name any symbol is filed under, because
-   * LUA-15 files the method itself as name `initialize` with owner `Buffer`.
-   * Using the label as `ownerName` therefore produced owners that resolve to
-   * nothing.
-   *
-   * Measured on 300 kong files: 23.0% of symbols carried a qualified
-   * `ownerName`, and 22.6% of `contains` edges carried a qualified SOURCE — of
-   * which 100% (2,175 of 2,175) named no symbol in the file. One relationship in
-   * five could not be joined to a symbol, so a consumer walking from a symbol to
-   * its members hit a wall for a fifth of the graph. The dedicated gate missed it
-   * because it checks that a symbol's NAME is not a path, and never checked that
-   * its OWNER resolves to one.
-   *
-   * So the frame carries both: the label for scope, the owner for identity.
-   * `qualifiedName` on the symbol's metadata already preserves the full path for
-   * display, so nothing is lost by making the owner resolvable.
-   */
-  owner?: string
-  /**
-   * M60 LUA-37: the enclosing function's own SYMBOL NAME — the thing a
-   * `contains` edge must point at.
-   *
-   * For `function fs.appendFile(...)` the label is "fs.appendFile", the owner is
-   * "fs", and the symbol this frame's body is filed under is named "appendFile".
-   * A nested `function write` inside it is contained by the method, so the edge
-   * must read `appendFile -> write`. Reading it from the label instead gave
-   * `fs.appendFile -> write`, and "fs.appendFile" is not a symbol, so a consumer
-   * walking from a symbol to its members could not follow 1,352 luvit edges and
-   * 22.6% of kong's. The name is the only one of the three readings that
-   * resolves, and the whole point of an edge source is that it can be followed.
-   */
-  selfName?: string
   localNames: Set<string>
   /**
    * M60 LUA-20: true inside ANY function body, including a nameless closure.
@@ -66,8 +27,6 @@ interface LuaContext {
   errors: ASTEngine.ParseError[]
   globalVariables: Set<string>
   declaredTables: Set<string>
-  /** M60 LUA-35: file-scope returns that carry no NAME. A disclosure, never an export. */
-  unpublishedSurface: Array<{ shape: string; detail: string | null; line: number; why: string }>
   frameworks: Set<string>
   patterns: Set<string>
   seenRelationships: Set<string>
@@ -85,7 +44,6 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       errors: [],
       globalVariables: new Set<string>(),
       declaredTables: new Set<string>(),
-      unpublishedSurface: [],
       frameworks: new Set<string>(),
       patterns: new Set<string>(),
       seenRelationships: new Set<string>(),
@@ -138,45 +96,10 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         // symbols. The result was a containment edge pointing at nothing.
         // Inheriting the enclosing locals is also simply what the language says:
         // the assignment mutates adapt's parameter, it does not declare anything.
-        //
-        // REGRESSED AND RESTORED. This line was `new Set<string>(frame.localNames)`
-        // and was changed to `new Set<string>()` by c82067ea, a commit titled
-        // "test(xml): replace the differential's recall claim with an oracle-free
-        // coverage gate" — an XML commit that touched the Lua analyzer and left
-        // the paragraph above, which explains exactly why the inheritance is
-        // required, still asserting it. The result was LUA-21 reintroduced, and it
-        // was invisible to all seven dedicated gates: they read fixtures, and
-        // LUA-21 only manifests on real code that writes to an enclosing local.
-        //
-        // The corpus differential caught it, and that is the only reason it was
-        // caught at all: UNEXPLAINED 1 -> 44 and direct-path relationship SPURIOUS
-        // 0 -> 42 on the 83-file slice, restored to 1 and 0 by this line. It is
-        // the second time in two days that a stale-base commit has dropped Lua
-        // analyzer work (41811754 records the first), and both times the comment
-        // outlived the code it described.
         const locals = new Set<string>(frame.localNames)
         for (const parameter of this.extractParameters(node)) locals.add(parameter.name)
         if (functionName || node.type === "function_definition") {
-          // M60 LUA-37: `callable` is the LABEL and `owner` is the resolvable
-          // container. For `function Buffer:initialize()` the label is
-          // "Buffer:initialize" — correct as a scope, and not a name any symbol
-          // is filed under, because LUA-15 files the method as name `initialize`
-          // with owner `Buffer`. An anonymous function has no name, so it inherits
-          // the enclosing frame's owner, which is what keeps a local inside a
-          // nameless closure attached to something that exists.
-          const nameNode = node.childForFieldName("name")
-          const bareOwner = (nameNode ? this.functionOwner(nameNode) : undefined) ?? functionName ?? frame.owner ?? frame.callable
-          // The symbol name this body is filed under: the member's own name for a
-          // method, the function's own name otherwise, and the enclosing frame's
-          // for an anonymous closure — which has none of its own.
-          const selfName = (nameNode ? this.splitMemberName(nameNode, functionName ?? "").name : functionName) || frame.selfName
-          childFrame = {
-            callable: functionName ?? frame.callable,
-            owner: bareOwner,
-            selfName,
-            localNames: locals,
-            inFunction: true,
-          }
+          childFrame = { callable: functionName ?? frame.callable, localNames: locals, inFunction: true }
         }
       }
 
@@ -198,14 +121,6 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       exports: ctx.exports,
       errors: ctx.errors,
       metadata: {
-        // M60 LUA-35. Present ONLY when there is something to say, and every field
-        // is derived from the parse: `shape` from the node type, `detail` from the
-        // node's own text, `line` from its start position, `why` a fixed reason per
-        // shape. Nothing here is a constant shaped like a measurement, which is the
-        // LUA-11 rule — a count or score that did not vary with the file would be
-        // worse than an absent field, and this is a list that is empty whenever the
-        // module's surface is nameable.
-        ...(ctx.unpublishedSurface.length ? { unpublishedSurface: ctx.unpublishedSurface } : {}),
         complexity: ctx.symbols.length + ctx.relationships.length,
         linesOfCode: this.lineCount(content),
         cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
@@ -319,10 +234,6 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters,
       ownerName: owner,
       ownerKind: owner ? ASTEngine.SymbolKind.Class : undefined,
-      // M60 LUA-37: the enclosing body's own symbol name, so a declaration nested
-      // in this one can be contained BY IT rather than by its label. See
-      // addContainsRelationships, which reads this and never reads `scope`.
-      frameSelfName: frame.selfName,
       // qualifiedName keeps the full path, which is what it is FOR. The `name`
       // field is the identity; this is the path. Before the fix the path was
       // doing the identity's job and no path was recorded at all.
@@ -400,15 +311,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(variable),
         scope: frame.callable || "global",
-        // M60 LUA-37: a declaration inside a body is contained by the FUNCTION whose
-      // body it is, so the owner is that function's own name (`selfName`), not the
-      // function's own owner. `function fs.appendFile()` has owner "fs" and self
-      // "appendFile", and a local inside it must read `appendFile -> localName`:
-      // "fs" is the owner of the METHOD, and using it filed the local as a sibling
-      // of the method rather than a member of it, which cost 525 unexplained
-      // contains edges on an 83-file kong slice.
-      ownerName: frame.selfName ?? frame.owner ?? frame.callable,
-        frameSelfName: frame.selfName,
+        ownerName: frame.callable,
         ownerKind: frame.callable ? ASTEngine.SymbolKind.Function : undefined,
         visibility: frame.callable ? "private" : "public",
         metadata: { luaSpecific: true, isLocal: true, isTable, tableFields: isTable ? this.tableFieldNames(value!) : [] },
@@ -435,8 +338,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Variable,
         range: this.nodeToRange(variable),
         scope: frame.callable || "global",
-        ownerName: frame.selfName ?? frame.owner ?? frame.callable,
-        frameSelfName: frame.selfName,
+        ownerName: frame.callable,
         ownerKind: frame.callable ? ASTEngine.SymbolKind.Function : undefined,
         visibility: frame.callable ? "private" : "public",
         metadata: { luaSpecific: true, isGlobal: !frame.callable, isTable, tableFields: isTable ? this.tableFieldNames(value!) : [] },
@@ -548,8 +450,7 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Class,
           range: this.nodeToRange(node),
           scope: source,
-          ownerName: frame.selfName ?? frame.owner ?? frame.callable,
-        frameSelfName: frame.selfName,
+          ownerName: frame.callable,
           metadata: { luaSpecific: true, isLibraryClass: true },
         })
       }
@@ -679,54 +580,6 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     //     from a module path or a literal, which is a different relationship
     //     entirely. Pinned as silent in the gate so a future change cannot start
     //     inventing them unnoticed.
-    // M60 LUA-35: `return setmetatable(M, mt)` names M. The module's surface IS
-    // M — the metatable is an attribute OF M, not a second export — so this is
-    // the one shape LUA-09 left silent that carries a defensible name and was
-    // simply never wired. Measured on kong by
-    // script/m60/lua-silent-export-census.ts: 3 files carry a name here
-    // (`_M`, `deprecation`), 2 more pass an expression with no name to publish.
-    //
-    // The other three silent shapes carry NO name and are recorded as a
-    // DISCLOSURE instead of an export, because "no exports" otherwise means two
-    // indistinguishable things — this module defines nothing, and this module's
-    // surface exists but cannot be named. A disclosure separates them while
-    // publishing no name at all: an export called "kong.tools.dns" for a
-    // re-export of kong.tools.dns would be a fabricated name, which is the same
-    // fabrication LUA-22/LUA-29/LUA-32 refused for relationship targets.
-    if (target.type === "function_call") {
-      // The callee NAME is the call's `name` FIELD, reached exactly as
-      // processCall reaches it. Passing the function_call node itself to
-      // callee() returns undefined — that is LUA-29's whitelist, which rejects
-      // function_call because a call ON a call has no name. Here the node IS the
-      // call, so the name has to be read off its field, and getting that wrong
-      // made every disclosure read `call-result` with a null detail.
-      const nameNode = target.childForFieldName("name") ?? target.namedChild(0)
-      const calleeName = nameNode ? this.callee(nameNode)?.name : undefined
-      if (calleeName === "setmetatable") {
-        const first = this.callArgument(target, 0)
-        const named = this.nameBearing(first)
-        if (named) {
-          ctx.exports.push({ name: named, isDefault: true, range: this.nodeToRange(first!), metadata: { luaSpecific: true, viaMetatable: true } })
-        } else {
-          ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "setmetatable's first argument is an expression, so the surface has no name" })
-        }
-      } else if (calleeName === "require") {
-        const arg = this.callArgument(target, 0)
-        const path = arg?.type === "string" ? this.stringValue(arg) : null
-        ctx.unpublishedSurface.push({ shape: "re-export", detail: path ?? null, line: target.startPosition.row + 1, why: "the surface is another module's, not this module's" })
-      } else {
-        ctx.unpublishedSurface.push({ shape: "call-result", detail: calleeName ?? null, line: target.startPosition.row + 1, why: "the result of a call is statically unknowable" })
-      }
-      return
-    }
-    if (target.type === "string") {
-      ctx.unpublishedSurface.push({ shape: "value-literal", detail: this.stringValue(target) ?? null, line: target.startPosition.row + 1, why: "a value is not a name" })
-      return
-    }
-    if (target.type === "function_definition") {
-      ctx.unpublishedSurface.push({ shape: "anonymous-function", detail: null, line: target.startPosition.row + 1, why: "an anonymous function has no name" })
-      return
-    }
     if (target.type === "table_constructor") {
       for (let i = 0; i < target.namedChildCount; i++) {
         const f = target.namedChild(i)
@@ -746,22 +599,8 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private addContainsRelationships(ctx: LuaContext): void {
-    // M60 LUA-37: the edge SOURCE must be a NAME a consumer can follow, and the
-    // symbol's `scope` is a LABEL, not one — a nested function inside
-    // `function fs.appendFile(...)` has scope "fs.appendFile" and no ownerName, and
-    // the old fallback read the label straight into the edge. Resolution order:
-    //
-    //   1. `ownerName`            — the container, always a symbol (LUA-37)
-    //   2. `frameSelfName`        — the enclosing function's own symbol name
-    //   3. "global"               — a file-scope declaration
-    //
-    // and never `scope`. `frameSelfName` is recorded on the symbol at creation,
-    // because by the time this runs the frames are gone; storing it is what makes
-    // the edge's source a name rather than a path.
     for (const symbol of ctx.symbols) {
-      const owner = symbol.ownerName
-        || ((symbol as any).frameSelfName as string | undefined)
-        || (symbol.scope === "global" || !symbol.scope ? "global" : (symbol.scope as string))
+      const owner = symbol.ownerName || (symbol.scope && symbol.scope !== "global" ? symbol.scope : "global")
       if (owner && owner !== symbol.name) {
         // M60 LUA-01: a Contains edge and the symbol it names must never
         // disagree about the line — java's declarationLineNode states the rule
@@ -850,23 +689,9 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
     return this.hasChildType(node, "local")
   }
 
-  /**
-   * The resolvable CONTAINER of a member: the HEAD of the receiver path.
-   *
-   * M60 LUA-37. `function Buffer:initialize()` has receiver `Buffer`; `function
-   * Buffer.meta.index()` has receiver `Buffer.meta`. Returning the receiver's
-   * text verbatim makes the second an owner of `"Buffer.meta"`, which no symbol is
-   * filed under, so the owner still does not resolve. The head is the only part
-   * of the path that is a declared name, and the analyzer already files
-   * `Buffer` as a symbol. Returns undefined for a bare name — a plain function
-   * has no container, and its own name is its scope.
-   */
   private functionOwner(nameNode: Node): string | undefined {
     if (!["dot_index_expression", "method_index_expression"].includes(nameNode.type)) return undefined
-    const recv = nameNode.childForFieldName("table")?.text
-    if (!recv) return undefined
-    const head = recv.split(".")[0]
-    return head.length > 0 ? head : undefined
+    return nameNode.childForFieldName("table")?.text
   }
 
   private extractParameters(node: Node): ASTEngine.Parameter[] {
@@ -905,10 +730,6 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (child) values.push(child)
     }
     return values
-  }
-
-  private callArgument(node: Node, index: number): Node | undefined {
-    return this.callArguments(node)[index]
   }
 
   private stringValue(node: Node | undefined): string | undefined {

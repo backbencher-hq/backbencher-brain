@@ -1,16 +1,6 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:make",
-  "inputs": {
-    "files": {},
-    "digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "parser": {
-      "path": "/tmp/bb-wasm_tree-sitter-make_tree-sitter-make.wasm",
-      "sha256": "e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff",
-      "bytes": 148909
-    },
-    "unresolved": "no src/ast/real-<lang>-analyzer.ts"
-  },
   "truthSource": "manual_audit",
   "truthReference": "validation/m12/fixtures/make/{Build.mk,Library.mk,Negative.mk}",
   "fixtureDir": "validation/m12/fixtures/make",
@@ -149,11 +139,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:make",
-      "wallTimeMs": 195.170147,
-      "userCpuMs": 95.833,
-      "systemCpuMs": 14.393,
-      "peakRssBytes": 219103232,
-      "rssDeltaBytes": 5263360,
+      "wallTimeMs": 22.926812,
+      "userCpuMs": 51.044,
+      "systemCpuMs": 1.739,
+      "peakRssBytes": 208289792,
+      "rssDeltaBytes": 6201344,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -166,7 +156,7 @@
   "note": "M12 per-analyzer differential for make. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T02:54:46.079Z",
-    "contentSha256": "35bfe793a9b36304e28a9662f48be703d37780fad53675bd0c21b9a3c8ff3a38"
+    "sealedAt": "2026-09-14T23:42:47.927Z",
+    "contentSha256": "cb4709063f9301e0f9e4746eee25388a6dca4d4847a77c2e53febc7b9c0518ac"
   }
 }

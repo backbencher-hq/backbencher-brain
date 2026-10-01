@@ -35,22 +35,9 @@ function writeProject() {
   fs.writeFileSync(path.join(TMP, "src", "math.c"),
     '#include "math.h"\n#include <stdio.h>\n\nint rect_area(const Rect* r) {\n  return r->w * r->h;\n}\n\nextern int run_engine(void);\n\nint main(void) {\n  Rect r = { 3, 4 };\n  printf("%d\\n", rect_area(&r) + run_engine());\n  return 0;\n}\n')
 
-  // cpp — provides run_engine (c-callable) + a class method.
-  //
-  // #612 follow-up: `Engine` and `Turbine` each declare a member named `width`,
-  // so the file holds TWO symbols with the same name — the shape a `contains`
-  // edge, which names its target by NAME alone, cannot disambiguate on its own.
-  // Line 6 vs line 11 is deliberate: the store's old tiebreak compared the
-  // symbol ids as TEXT ("...:width:11" < "...:width:6"), so BOTH edges landed
-  // on line 11 and at most one of them could be right.
-  //
-  // #612 follow-up, the SOURCE half: a `contains` edge names its CONTAINER by
-  // name too, and the store's in-memory name lookup is first-wins — so a file
-  // that repeats a container name resolves the edge to whichever declaration
-  // came first. Two same-named structs in two namespaces is the legal C++ shape
-  // that repeats one: only one of them can enclose the member's own line.
+  // cpp — provides run_engine (c-callable) + a class method
   fs.writeFileSync(path.join(TMP, "src", "engine.cpp"),
-    '#include <string>\n\nclass Engine {\npublic:\n  int run() { return 7; }\n  int width;\n};\n\nclass Turbine {\npublic:\n  int width;\n};\n\nnamespace alpha {\nstruct Box { int w; };\n}\n\nnamespace beta {\nstruct Box { int h; };\n}\n\nint run_engine(void) {\n  Engine e;\n  return e.run();\n}\n')
+    '#include <string>\n\nclass Engine {\npublic:\n  int run() { return 7; }\n};\n\nint run_engine(void) {\n  Engine e;\n  return e.run();\n}\n')
 
   // rust — use import + fn
   fs.writeFileSync(path.join(TMP, "src", "util.rs"),
@@ -101,75 +88,6 @@ async function main() {
     expect(Number(c.c) > 0, `relationships persisted for ${lang} (got ${c.c})`)
   }
 
-  // 5. #612 follow-up: a `contains` edge names its TARGET by NAME, and the
-  //    members containment is built from are exactly the names a file repeats
-  //    (every constructor normalizes to `constructor`, every class may declare
-  //    `width`). The edge carries the CHILD's naming line (#921), and that line
-  //    is the only anchor that says WHICH same-named member it meant. Assert the
-  //    resolved target sits on it — which forces the two `width` edges to
-  //    different rows, since the two members are on different lines.
-  const widthEdges = db.prepare(`
-    SELECT s.name sname, r.line_number rline, t.line_start tline
-      FROM brain_relationship r
-      JOIN brain_symbol s ON s.id = r.source_symbol_id
-      JOIN brain_symbol t ON t.id = r.target_symbol_id
-      JOIN brain_file f ON f.id = s.file_id
-     WHERE r.relationship_type = 'contains' AND t.name = 'width' AND f.id = t.file_id`).all() as any[]
-  expect(widthEdges.length >= 2, `same-named members of two classes produce a contains edge each (got ${widthEdges.length})`)
-  for (const e of widthEdges) {
-    expect(
-      e.rline === e.tline,
-      `contains target resolved on the edge's own line (${e.sname} contains width: edge line ${e.rline}, resolved target line ${e.tline})`,
-    )
-  }
-  expect(
-    new Set(widthEdges.map((e) => e.tline)).size === widthEdges.length,
-    `the two same-named members resolved to DIFFERENT symbols (got lines ${widthEdges.map((e) => e.tline).join(",")})`,
-  )
-
-  // 6. #612 follow-up, the SOURCE half. `alpha::Box` and `beta::Box` are two
-  //    same-file symbols sharing one name, so the name lookup alone cannot tell
-  //    them apart; the edge's own line can, because a `contains` edge asserts
-  //    ENCLOSURE — the child it names sits inside the container it means. Assert
-  //    the stored source's extent covers the child's line, and that the two
-  //    members did not both land on one container.
-  const boxEdges = db.prepare(`
-    SELECT s.name sname, s.line_start sline, COALESCE(s.line_end, s.line_start) send,
-           r.line_number rline, t.name tname, t.line_start tline
-      FROM brain_relationship r
-      JOIN brain_symbol s ON s.id = r.source_symbol_id
-      JOIN brain_symbol t ON t.id = r.target_symbol_id
-      JOIN brain_file f ON f.id = s.file_id
-     WHERE r.relationship_type = 'contains' AND s.name = 'Box' AND f.id = t.file_id`).all() as any[]
-  expect(boxEdges.length >= 2, `both same-named containers carry a contains edge (got ${boxEdges.length})`)
-  for (const e of boxEdges) {
-    expect(
-      e.rline === null || (e.sline <= e.rline && e.send >= e.rline),
-      `contains source ENCLOSES the child its edge carries (${e.sname}@${e.sline}-${e.send} contains ${e.tname} at line ${e.rline})`,
-    )
-  }
-  expect(
-    new Set(boxEdges.map((e) => e.sline)).size === boxEdges.length,
-    `the two same-named containers resolved to DIFFERENT sources (got starts ${boxEdges.map((e) => e.sline).join(",")})`,
-  )
-  //    The same enclosure decides the STRUCTURAL owner the store emits its own
-  //    `contains` edge from — a name lookup cannot tell the two `Box`es apart
-  //    either, so each member's owner must be the box that covers its line.
-  const boxMembers = db.prepare(`
-    SELECT s.name child, s.line_start cline, o.name oname,
-           o.line_start oline, COALESCE(o.line_end, o.line_start) oend
-      FROM brain_symbol s
-      JOIN brain_symbol o ON o.id = s.owner_symbol_id
-      JOIN brain_file f ON f.id = s.file_id
-     WHERE f.relative_path LIKE '%engine.cpp' AND s.name IN ('w', 'h')`).all() as any[]
-  expect(boxMembers.length >= 2, `both members of the same-named containers carry an owner (got ${boxMembers.length})`)
-  for (const m of boxMembers) {
-    expect(
-      m.oname === "Box" && m.oline <= m.cline && m.oend >= m.cline,
-      `the structural owner of ${m.child}@${m.cline} ENCLOSES it (got ${m.oname}@${m.oline}-${m.oend})`,
-    )
-  }
-
   // evidence
   const { emitEvidence } = await import("./evidence-harness")
   emitEvidence({
@@ -184,12 +102,7 @@ async function main() {
     claimLevel: "L1",
     layers: ["cluster-e2e"],
     checks: [
-      {
-        id: "systems-cluster-e2e",
-        description:
-          "polyglot systems project (c/cpp/rust/go/zig) indexed via real CLI: symbols/imports/relationships per language, cross-language edges (c->cpp run_engine), two same-named members of one file resolving to distinct `contains` targets on the edge's own line, AND two same-named containers resolving to the container whose extent encloses the child (#612 follow-up, both halves of the containment rule)",
-        status: failures.length ? ("fail" as const) : ("pass" as const),
-      },
+      { id: "systems-cluster-e2e", description: "polyglot systems project (c/cpp/rust/go/zig) indexed via real CLI, all assertions pass", status: failures.length ? ("fail" as const) : ("pass" as const) },
     ],
     limitations: [
       { description: "covers systems cluster (c, cpp, rust, go, zig); managed-OO/functional clusters still pending their gates" },

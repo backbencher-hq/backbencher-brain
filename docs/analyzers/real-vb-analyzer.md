@@ -108,8 +108,8 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 
 | | |
 |---|---:|
-| symbols | 12,930 |
-| relationships | 39,125 |
+| symbols | 12,834 |
+| relationships | 35,442 |
 | imports | 1,157 |
 | crash files | 0 |
 | empty names / unknown kinds | 0 / 0 |
@@ -119,38 +119,20 @@ Over 435 real `.vb` files through `ASTEngine.parseFile`:
 Kinds: 5456 variable, 4370 method, 913 enum_member, 725 property, 481 class,
 **285 constructor**, 166 namespace, 137 interface, 118 enum, 99 struct, 63 module,
 11 type, 10 event.
-Edges: 14410 references, 11973 contains, 10451 calls, 1157 imports, 265 extends,
-176 implements.
+Edges: 14410 references, 11973 contains, 7581 calls, 1157 imports, 265 extends,
+56 implements.
 
 M14.0.F1: **PASS**, 27 references, 0 unknown node types, 0 unknown fields.
 
-M14.0.F8 (node-type census, `script/m14/vb-node-type-census.ts`): **145/145
-classified, exit 0.** The first run found 146 distinct named types against 42
-classified — the "every construct is accounted for" claim was 29 % true and
-nothing had measured it. Two whole kinds fell out of the unclassified 101:
-**interface members** (three node types in neither set, so nothing visited them
-and every interface was an empty shell) and **operators** (no `name` field, plus
-a visitor that classified the operator's own symbol as punctuation). The
-classification is four-way — declaration, relationship source, known candidate,
-silent — because "classified" and "handled" are different words, and the two-way
-split is what hid both.
-
-M14.0.F5, **whole corpora, not a draw, all seven labels audited** —
-`P3D-Legacy` **1,880 of 1,880 files**, 23,356 truth edges, 23,353 covered
-(**100 %**), 3 missing, **0 unexplained**; `DISMTools` **483 of 483**, 15,689
-truth edges, 15,685 covered (**100 %**), 4 missing, 0 unexplained. Labels:
-`calls`, `contains`, `imports`, `extends`, `implements`, `overrides` and
-`references` — the last two joined the audit this wave, which grew the audited
-set by 3,073 edges that had previously been published and agreed with by nobody.
-All 7 remaining missing rows across both corpora are dropped constructions; 6 are
-the `Sub New*` grammar defect and 1 (`SoundManager`) is unexplained and recorded
-as such.
-
-**Caveat that is part of the number, not a footnote:** the differential's sampler
-had no avalanche, so consecutive "rotations" drew the same 60 files. Every
-earlier 100 % figure from a draw was one file set measured repeatedly. Fixed with
-mulberry32; three independent rotations now read 99.9 %, 100 %, 100 % with 0
-unexplained. See `docs/vb.md`.
+M14.0.F5: **100 % edge for edge, on a 120-file draw** — `P3D-Legacy` 60 of 1,880
+files, 627/627 truth edges covered; `DISMTools` 60 of 483, 1,966/1,966; **0
+missing, 0 unexplained, 0 heuristic** on each, with `analyzer-edges` equal to
+`tree-truth` exactly. Audited labels: `calls`, `contains`, `imports`, `extends`,
+`implements`; `references` is deliberately excluded because the oracle does not
+derive it. **That is 4.5 % of the corpus**, drawn by a rotation that prefers
+never-sampled files, and 48 % of the corpus carries a syntax error the
+differential has never been run against — so this is not a whole-corpus claim
+and the full sweep is the outstanding measurement.
 
 The differential is what found the three defects a corpus-wide count could not,
 because in each case the count stayed healthy while a class of output was missing
@@ -161,30 +143,6 @@ or wrong:
   reading the callee from `function` dropped 15,577 call edges across 1,718 of
   2,660 files. Found NOT by the differential, which read 100 % with the defect
   live because the oracle made the same assumption; found by writing the fixture.
-- **every modifier after the first was invisible** — `modifierNames` read
-  `childForFieldName("modifiers")`, which returns one node, but this grammar emits
-  the field once per modifier. `Public Shared` reported `isStatic: false`,
-  `Public Overrides` published zero `overrides` edges across 435 files, and `Const`
-  fields were published as `Variable`. VB writes `Public` first, so the one
-  modifier that was read was the one least worth reading. Found because the docs
-  claimed `overrides` was published and it was not.
-- **an interface's members were never visited** — three node types in neither the
-  declaration set nor the silent set, so nothing dispatched them and every
-  interface was published as a name with no members while the implementing class
-  had all of them. Found by the census, not by a differential: no edge was
-  *wrong*, a whole class of declaration was *absent*.
-- **no operator was ever published**, for two independent reasons — no `name`
-  field, and a visitor that skipped the operator's own token because
-  `isKeyword` rejects every token not starting with a letter (written to reject
-  `(`, and it rejected every operator symbol). Word operators are worse: the
-  keyword and the word are inlined away and exist nowhere in the tree.
-- **member-level heritage was never collected** — `visitHeritage` was called from
-  exactly one place, the type visitor, so `Public Sub Refresh() Implements
-  IThing.Refresh` published nothing at all. Found by the full-corpus sweep (17 of
-  23 missing rows). The target keeps its qualifier, `IThing.Refresh`, because
-  last-segment reduction would make it `implements Refresh -> Refresh` — the
-  method is named `Refresh` *because* it implements `IThing.Refresh`, so the edge
-  would collapse onto itself.
 - **constructors were absent entirely** — `Public Sub New()` has no `name` field
   (`New` is an anonymous token), so the "declaration without a name" guard
   returned *before* the naming contract was reached. 12,549 symbols contained

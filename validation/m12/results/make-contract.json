@@ -22,11 +22,7 @@
       "passed": true
     },
     {
-      "name": "define/endef macro is a FUNCTION (a call target must be callable)",
-      "passed": true
-    },
-    {
-      "name": "define is NOT a constant (the pre-fix shape)",
+      "name": "define/endef variable is a constant",
       "passed": true
     },
     {
@@ -34,11 +30,7 @@
       "passed": true
     },
     {
-      "name": "computed target declares no symbol",
-      "passed": true
-    },
-    {
-      "name": "computed target publishes a reference to the variable",
+      "name": "variable-reference target is a function",
       "passed": true
     },
     {
@@ -75,31 +67,15 @@
       "passed": true
     },
     {
-      "name": "target depends on prereq (a FILE -> uses, labelled)",
+      "name": "target depends on prereq",
       "passed": true
     },
     {
-      "name": "file prereq is NOT a references edge",
+      "name": "order-only prereq edge",
       "passed": true
     },
     {
-      "name": "order-only prereq edge recorded",
-      "passed": true
-    },
-    {
-      "name": "a computed-target rule still publishes its prereqs",
-      "passed": true
-    },
-    {
-      "name": "the order-only prereq is labelled `references` (builddir is declared here)",
-      "passed": true
-    },
-    {
-      "name": "recipe variable reference edge is `references` (CC is declared here)",
-      "passed": true
-    },
-    {
-      "name": "declared variable is NOT demoted to `uses`",
+      "name": "recipe variable reference edge",
       "passed": true
     },
     {
@@ -120,24 +96,6 @@
     },
     {
       "name": "sinclude imports local.mk",
-      "passed": true
-    },
-    {
-      "name": "include edges are NOT sourced at a constant 'makefile'",
-      "passed": true
-    },
-    {
-      "name": "every relationship carries line_number",
-      "passed": true,
-      "detail": "0 without it"
-    },
-    {
-      "name": "at least 3 distinct evidenceClass tiers are published",
-      "passed": true,
-      "detail": "declared_in_file,export_directive,reference,automatic,external_prerequisite,export_target,call,builtin"
-    },
-    {
-      "name": "an automatic variable is labelled `automatic`, not `builtin`",
       "passed": true
     },
     {
@@ -183,6 +141,11 @@
     }
   ],
   "passed": true,
-  "total": 44,
-  "passedCount": 44
+  "total": 34,
+  "passedCount": 34,
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:47.923Z",
+    "contentSha256": "ad3cea52b5cd3337b021d1e70ea58a7b1b1c026bf24ea0d49f7cdafc3007e8b5"
+  }
 }

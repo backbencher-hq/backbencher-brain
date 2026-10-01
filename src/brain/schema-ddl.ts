@@ -28,14 +28,6 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         has_syntax_errors INTEGER NOT NULL DEFAULT 0,
         error_report TEXT,
         framework_type TEXT,
-        -- The analyzer's FileMetadata as JSON: patterns, detectedFrameworks,
-        -- frameworkPatterns, architecturalInsights, complexity, cyclomaticComplexity,
-        -- codeQuality. The framework_type column above is the ONE field promoted
-        -- to its own column;
-        -- everything else the analyzer computed had nowhere to go, so a correct
-        -- analyzer's pattern evidence was discarded on the way into the index.
-        -- This is the same shape brain_relationship.metadata already uses.
-        metadata TEXT,
         time_created INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000),
         time_updated INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
       );
@@ -56,16 +48,6 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         return_type TEXT,
         parameters TEXT,
         docstring TEXT,
-        -- The symbol's own source text, bounded. This is what makes a word
-        -- that appears ONLY inside a function reachable by a text query.
-        -- Measured on real corpora before it existed: `searchContent` selected
-        -- name/qualified_name/docstring and there was no body column at all, so
-        -- a body-only word was unreachable by BOTH retrieval paths — 27% of
-        -- body-only words on rake, 38% on ripgrep. The body WAS indexed, but
-        -- only as a 50-dimensional hash, which cannot be queried by word.
-        -- Bounded because a symbol can be very large (a 25 599-character body
-        -- was measured on rake) and this table is scanned by content search.
-        source_text TEXT,
         visibility TEXT,
         is_async INTEGER,
         is_static INTEGER,
@@ -370,48 +352,10 @@ export const ANNOTATION_DDL = `
       ON brain_annotation(project_id, symbol_name, author_class, COALESCE(symbol_path, ''));
   `
 
-/**
- * The honesty boundary for `author_class`, enforced by the DATABASE rather than
- * by convention. `author_class` was `TEXT NOT NULL`, which refuses NULL but
- * accepts any string — a row could claim 'human'. The write door hardcodes
- * 'agent', so a bb_annotate call cannot spoof it, but every reader trusts this
- * column verbatim (annotation_ui labels each note with it), so the column itself
- * is where the claim has to be made true.
- *
- * A trigger, not a CHECK: SQLite has no `ALTER TABLE ADD CONSTRAINT`, and
- * rebuilding the table on a shared, long-lived index is a destructive migration
- * this schema deliberately avoids (every migration here is additive + idempotent,
- * see ensureAnnotationTable). A BEFORE trigger is additive, survives reopening,
- * and refuses the write loudly instead of letting a mislabelled note be rendered
- * to a human as a human's own note.
- */
-export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
-    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard
-    BEFORE INSERT ON brain_annotation
-    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
-    BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
-    END;
-    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update
-    BEFORE UPDATE OF author_class ON brain_annotation
-    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
-    BEGIN
-      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
-    END;
-  `
-
 /** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
 export function ensureAnnotationTable(raw: any): void {
   try {
     raw.exec(ANNOTATION_DDL)
-  } catch {}
-  // The author-class guard is part of the same additive, idempotent migration:
-  // a pre-existing DB gains it on the next open, exactly like the table and the
-  // location index. Failures stay swallowed (a read-only or busy open must not
-  // fail because a trigger could not be created) — the same contract as every
-  // other migration here.
-  try {
-    raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
   } catch {}
 }
 
@@ -454,58 +398,6 @@ export function ensureSymbolDeclarationColumn(raw: any): void {
     if (cols.length === 0) return // table absent (fresh DB handled by DDL)
     if (cols.includes("is_declaration")) return
     raw.exec("ALTER TABLE brain_symbol ADD COLUMN is_declaration INTEGER")
-  } catch {}
-}
-
-/**
- * `brain_symbol.source_text` — the symbol's own body, bounded.
- *
- * Added because a word that appears ONLY inside a function was unreachable by
- * every retrieval path. `searchContent` selects name/qualified_name/docstring,
- * and there was no body column at all, so on real corpora:
- *
- *     rake       121 body-only words   88 found   33 UNREACHABLE (27%)
- *     ripgrep    118 body-only words   73 found   45 UNREACHABLE (38%)
- *
- * The body was indexed, but only as a 50-dimensional hash, which cannot be
- * queried by a specific word. So the text was present in the database and
- * absent from retrieval at the same time.
- *
- * Legacy rows are NULL and stay NULL until a re-index writes the body. That is
- * deliberate rather than a gap: content search treats a NULL body as "this row
- * has no body to search", which is true of an un-migrated database, and the
- * tool reports search coverage rather than implying the corpus is complete.
- * Idempotent, and a no-op on a fresh DB where the DDL already created it.
- */
-export function ensureSymbolSourceTextColumn(raw: any): void {
-  try {
-    const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
-    if (cols.length === 0) return
-    if (cols.includes("source_text")) return
-    raw.exec("ALTER TABLE brain_symbol ADD COLUMN source_text TEXT")
-  } catch {}
-}
-
-/**
- * M14 #277 follow-on: `brain_file.metadata`.
- *
- * Found from the bash lane, but it is not a bash problem: EVERY analyzer returns
- * its FileMetadata and `storeResults` had no column for it, so `patterns`,
- * `detectedFrameworks`, `architecturalInsights`, `complexity`,
- * `cyclomaticComplexity` and `codeQuality` were computed for all 29 languages
- * and thrown away. The worker was ALSO dropping the object before the store, so
- * the data was lost at two independent points; this fixes the second one.
- *
- * SQLite cannot add a column inside CREATE TABLE IF NOT EXISTS, so existing
- * databases need the explicit ALTER. Idempotent, and a no-op on a fresh DB where
- * the DDL above already created the column.
- */
-export function ensureFileMetadataColumn(raw: any): void {
-  try {
-    const cols = (raw.prepare("PRAGMA table_info(brain_file)").all() as Array<{ name: string }>).map((c) => c.name)
-    if (cols.length === 0) return // table absent (fresh DB handled by DDL)
-    if (cols.includes("metadata")) return
-    raw.exec("ALTER TABLE brain_file ADD COLUMN metadata TEXT")
   } catch {}
 }
 

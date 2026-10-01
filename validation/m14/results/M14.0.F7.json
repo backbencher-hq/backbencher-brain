@@ -1,172 +1,43 @@
 {
   "checks": [
     {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-java",
+      "description": "real CLI index -> brain.db row-level assertions (symbols/relationships/imports/xlang flags)",
+      "id": "e2e-polyglot",
       "status": "pass"
     },
     {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-groovy",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-kotlin",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-scala",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-typescript",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-javascript",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-vue",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-svelte",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-c",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-cpp",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-rust",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-go",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-zig",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-csharp",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-dart",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-swift",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-objc",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-php",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-ruby",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-python",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-haskell",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-erlang",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-clojure",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-elixir",
-      "status": "pass"
-    },
-    {
-      "description": "no no-op ternaries, duplicate if/else bodies, write-only this-flags, or fresh-node identity comparisons in the analyzer source",
-      "findings": 0,
-      "id": "analyzer-hygiene-html",
+      "description": "re-index does not grow rows",
+      "id": "idempotency",
       "status": "pass"
     }
   ],
   "claimLevel": "L1",
-  "commit": "bb20dbc6798e06caa1bd5ce4e4b47e4abac45a93",
-  "committedAt": "2026-09-28T23:11:58-04:00",
+  "commit": "e5fbe1dd89e14732ab289d72f8178641c250baa1",
+  "committedAt": "2026-09-08T20:04:19+02:00",
+  "data": {
+    "durationMs": 2110,
+    "failures": [],
+    "perfBaselineRef": "docs/M14-COMPLETENESS-LEDGER.md#perf-baselines"
+  },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
   "issueId": "M14.0.F7",
   "layers": [
-    "hygiene"
+    "pipeline-e2e"
   ],
   "limitations": [
     {
-      "description": "Regex-based detection over TypeScript source: multi-line identical-branch ternaries, alias-heavy this-patterns, cross-method write-only object props, and variable-to-variable node comparisons (dataflow needed — the TSD2 `nameField === n` shape) are out of scope (covered by review + F9 probes instead)"
+      "description": "assertions cover the seam classes discovered so far; every future seam bug must be added here as a permanent check"
+    },
+    {
+      "description": "duration recorded for F9 trend; hard ceiling intentionally coarse to stay machine-tolerant"
     }
   ],
-  "regeneratedAt": "2026-09-29T03:12:26.610Z",
-  "regeneratedAtCommit": "bb20dbc6798e06caa1bd5ce4e4b47e4abac45a93",
-  "runtime": "node v24.3.0",
+  "runtime": "node v22.22.1",
   "schemaVersion": 2,
-  "title": "Analyzer-hygiene gate: dead code classes mechanically detected (no-op ternaries, duplicate branches, write-only flags)"
+  "title": "Pipeline end-to-end gate",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.321Z",
+    "contentSha256": "05132e24b97b5cb49d7906f2358971bc3b5a52410a461646cb8bab5f97ed9dbd"
+  }
 }

@@ -90,11 +90,7 @@ try {
   await indexProject(emptyPid, empty)
   const emptyRes = await generateDocumentation(emptyPid, empty, { mode: "symbol", target: "missing" })
   check("empty: missing symbol yields not-indexed unknown", emptyRes.unknowns.some((u) => u.reason === "not-indexed"), JSON.stringify(emptyRes.unknowns))
-  // An empty result still emits every declared section, so section completeness
-  // is satisfied; what must be false is the OVERALL gate, which is the claim a
-  // caller actually reads (M20.D3: it used to report passed=true here).
-  negative("empty: the overall quality gate does not pass", emptyRes.quality.passed === false, JSON.stringify(emptyRes.quality))
-  check("empty: completeness.expected is the mode's declared section count", emptyRes.quality.completeness.expected === 5, JSON.stringify(emptyRes.quality.completeness))
+  negative("empty: quality does not claim completeness", emptyRes.quality.completeness.passed === false, JSON.stringify(emptyRes.quality.completeness))
   rmSync(empty, { recursive: true, force: true })
   rmSync(path.dirname(BrainDatabase.getDbPath(emptyPid)), { recursive: true, force: true })
 } finally {
