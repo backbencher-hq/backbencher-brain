@@ -350,8 +350,20 @@ async function cmdIndex(
       bounded: "derived data re-processed for touched files (bounded pass)",
       deferred: "derived data deferred — run: bb index --post",
       "skipped-unchanged": "no files parsed, so no derived pass ran",
+      // A derived phase threw. MEASURED with a fault injected into the resolution
+      // pass: the run used to print "full (derived data fully re-processed)" with
+      // a WARN in the log and exit 0, and `bb index --post` printed the same
+      // condition as a success. Same remediation as stale derived data.
+      partial: "at least one derived phase FAILED, so the derived data is incomplete",
     }
     console.log(`  derived: ${derived} (${derivedNote[derived] ?? derived})`)
+    if (derived === "partial") {
+      // `--post` already refuses to call such an index complete, and exits
+      // non-zero. The main path said nothing and exited 0, so one condition was
+      // reported as success on one path and as failure on the other.
+      console.error("  ✗ a derived phase failed — index marked partial. Run: bb index --post")
+      process.exitCode = 1
+    }
     if (unresolved === 0) {
       console.log("  consistency: 0 unresolved relationships — every stored relationship is attached to a symbol")
     } else if (unresolved > 0) {

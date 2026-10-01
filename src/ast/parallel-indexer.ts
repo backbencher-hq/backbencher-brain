@@ -430,7 +430,7 @@ export interface ParallelIndexingStats {
      * are still unattached. Only `bb index --post` resolves them (16 -> 0).
      * So `derivedPass` is not a consistency statement, and the count below is.
      */
-    derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged"
+    derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged" | "partial"
     /** Relationships this project holds whose target could not be attached to a
      *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
      *  The row is present and counted, but it is not an edge — traversal reads it
@@ -3981,7 +3981,11 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
     rawDb.run(`DROP TABLE IF EXISTS _res_name`)
   } catch (err) {
+    // Rethrow. This catch used to swallow, and swallowing here is what made a
+    // FAILED resolution indistinguishable from a successful one at every
+    // structured surface — see the note at the throw.
     log.warn("relationship resolution failed", { error: err })
+    throw err
   }
 }
 
@@ -4691,7 +4695,8 @@ export async function indexProjectParallel(
 
       // M21.I2: a failed post-processing phase must not silently leave the
       // project status as "complete". Persist a visible partial status.
-      if (post.phases.some((p) => p.outcome === "failed")) {
+      const failedPhases = post.phases.filter((p) => p.outcome === "failed")
+      if (failedPhases.length > 0) {
         try {
           await BrainDatabase.updateIndexStatus(projectId, { status: "partial" })
           _log.log("  ⚠ index marked partial: a post-processing phase failed")
@@ -4700,7 +4705,13 @@ export async function indexProjectParallel(
         }
       }
       phases.totalWallMs = Date.now() - stats.startTime
-      if (stats.summary) stats.summary.derivedPass = "full"
+      // `derivedPass` is what the CLI turns into "derived: <pass> (<note>)", and it
+      // was set to "full" unconditionally — so a run whose resolution had thrown
+      // printed "derived: full (derived data fully re-processed)" while the log
+      // carried a WARN. It could not be derived from the phase outcomes before,
+      // because `resolveRelationships` swallowed its own errors and the phase was
+      // recorded "ok"; with that fixed the measurement is available and this is it.
+      if (stats.summary) stats.summary.derivedPass = failedPhases.length > 0 ? "partial" : "full"
     } else if (options.isIncremental && !options.skipPostProcessing && !stats.cancelled) {
       // M40.A2: bounded incremental post-pass — derived data stays consistent
       // at write-cost proportional to what THIS run touched, never O(project).
