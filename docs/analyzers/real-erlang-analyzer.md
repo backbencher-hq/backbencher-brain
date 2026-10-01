@@ -281,6 +281,41 @@ path), and the two mean different things when a stub exists:
   named function to exist, so an entry with no symbol there is a genuine unresolved
   reference and is counted, not invented.
 
+## When the grammar gives up (ER-D38)
+
+Not every Erlang file is Erlang to this grammar. Two real classes in OTP are not:
+
+- **wx's `api_gen` sources are code-generation templates.** The body is markup —
+  `<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>` — and after it the top level
+  returns as a run of ERROR nodes with loose `call`/`atom`/`ann_type` fragments
+  between them and not one `fun_decl` in the file.
+- **The pre-R16 two-argument module form**, `-module(pmod, [Props])`, is likewise
+  unparseable.
+
+A file with **no recoverable declaration of any kind** — no `fun_decl`,
+`module_attribute`, `pp_define`, `record_decl`, `type_alias`/`opaque`/`nominal`,
+`import_attribute`, `export_attribute`, `export_type_attribute` — therefore yields
+**no symbols and no relationships**, and publishes its error count instead.
+`metadata.grammarDamaged` says so.
+
+Every edge recoverable from those fragments is fabricated: the lines and the nesting
+are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes
+structure the source does not have. 12 files corpus-wide.
+
+The boundary is deliberately narrow, and the other side of it matters just as much:
+a file with no functions and no `-module` but with `-define` blocks is derived
+normally, including its file-scope macro references. `epp_SUITE_data/mac2.erl` is
+four `-define`s and one `-plupp({?p, ?'p', ?P, ?'P'})` with no module and no
+function, and it must keep yielding four macro constants, four `contains` edges and
+four references.
+
+Worth recording how this hole opened: it was made by a *correctness* fix earlier in
+the same wave. ER-D32 gave `currentSource` a file-path fallback so file-scope
+references would stop being dropped — and that removed the only thing suppressing the
+wreckage, because an undefined source makes `pushRel` a no-op. Nothing noticed for a
+full corpus run. A fix can open a hole as easily as close one, and it will not come
+with a boundary unless someone writes one.
+
 ## Complexity model
 
 Per symbol: `1 + arms + extra clauses`, and the file total is `1 + every branch
