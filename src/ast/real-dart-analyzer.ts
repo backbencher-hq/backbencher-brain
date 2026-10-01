@@ -2340,11 +2340,34 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     // phantom members) — never the raw token, so this branch does NOT go
     // through `signatureNameNode`'s text.
     if (inner.type === "operator_signature") {
-      const opTok = inner.childCount >= 3 ? inner.child(2) : null
+      const opTok = this.operatorTokenNode(inner)
       return opTok ? `operator ${opTok.text}` : null
     }
     const id = this.findChildByType(inner, "identifier")
     return id ? id.text : null
+  }
+
+  /** The operator symbol token of an `operator_signature`.
+   *
+   *  This locates the `operator` KEYWORD and takes the token after it. It must NOT
+   *  hardcode a child index: the return type in front of the keyword is not one
+   *  node but a variable number of them. A plain `bool` is a single
+   *  `type_identifier`, so `child(2)` is the operator token — but a SCOPED return
+   *  type (`core$_.bool`, `ns.bool`) is a `scoped_identifier` the grammar splits,
+   *  which shifts every later child by one.
+   *
+   *  Measured: `extension ByteString$$Methods on ByteString { core$_.bool
+   *  operator >(ByteString byteString) { ... } }` in ok_http's JNI bindings, where
+   *  `child(2)` then names the member after the return type's last segment and
+   *  publishes `operator bool` — a member name that names a TYPE, on a class that
+   *  has no such member, while the real `operator >` went missing. Scanning for
+   *  the keyword is invariant to how the return type is spelled. */
+  private operatorTokenNode(inner: Node): Node | null {
+    for (let i = 0; i < inner.childCount; i++) {
+      const c = inner.child(i)
+      if (c && !c.isNamed && c.text === "operator") return inner.child(i + 1)
+    }
+    return null
   }
 
   /** Node form of `signatureName`: the node that names a member edge is also
@@ -2355,7 +2378,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const nameNode = inner.childForFieldName("name")
     if (nameNode) return nameNode
     if (inner.type === "operator_signature") {
-      return inner.childCount >= 3 ? inner.child(2) : null
+      return this.operatorTokenNode(inner)
     }
     return this.findChildByType(inner, "identifier")
   }
