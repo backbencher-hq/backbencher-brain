@@ -1,8 +1,8 @@
 {
   "samplePerLang": 60,
   "loadContext": {
-    "loadAvgStart": 41.87,
-    "loadAvgEnd": 38.66,
+    "loadAvgStart": 22.16,
+    "loadAvgEnd": 25.38,
     "sliceCount": 1
   },
   "counts": {
@@ -1461,7 +1461,7 @@
         "avgMsPerFile": 1.408,
         "filesMeasured": 185,
         "loadAvg1AtMeasure": 30.85,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
       },
       "sampleSetHash": "def94838c364b04e"
@@ -1478,7 +1478,7 @@
         "avgMsPerFile": 13.964,
         "filesMeasured": 191,
         "loadAvg1AtMeasure": 29.77,
-        "method": "analyze() only, min of 5 runs — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with the rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this number. Cost is linear in input size on svelte (0.94 ms/file at 200-500B, 4.29 at 500B-1KB, 5.81 at 1-5KB, 22.1 above 5KB), so the average is real work proportional to the file rather than a fixed overhead."
       },
       "sampleSetHash": "13f8825d05114cf8"
@@ -1532,8 +1532,8 @@
       },
       "grammarResidual": {
         "files": 15,
-        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment — the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
-        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained — a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
+        "cause": "tree-sitter-yaml 0.7.1 cannot lex a multi-line double-quoted scalar. CORRECTED 2026-09-28: it is not that a 58-byte token costs the file its containment \u2014 the DOCUMENT ROOT becomes an ERROR node and the parse stops, covering only 27.6-31.1% of the file (root ERROR spans 72,809-110,341 bytes over docker/api/docs/v1.25..v1.38), so 69-72% is never parsed at all.",
+        "attribution": "PyYAML parses those same 15 files cleanly, and script/m60/yaml-bucket-audit.ts explains 88,675 lost paths across them with 0 unexplained \u2014 a path is explained when its own span is damaged, or an ancestor's is, or its bytes lie beyond the parse's extent."
       },
       "note": "Added 2026-09-27 with the yaml lane (M14 #286). The lane has an INDEPENDENT oracle rather than a hand-authored truth file: PyYAML 6.0.1 compose, sharing no code, algorithm or data model with the tree-sitter side, which is the property the shared F5 sweep requires of a lane's truth source (a truth file written by the same hand as the analyzer is a mirror, not a differential)."
     },
@@ -1567,7 +1567,7 @@
         "avgMsPerFile": 16.259,
         "filesMeasured": 160,
         "loadAvg1AtMeasure": 21.9,
-        "method": "analyze() only, min of 5 runs after 2 warmups — the differential's own grain and a stricter run selection",
+        "method": "analyze() only, min of 5 runs after 2 warmups \u2014 the differential's own grain and a stricter run selection",
         "note": "Load-STABLE and comparable with rows pinned at load ~5: a 20 ms pure-CPU burn measured 20.0 ms at loadAvg1 30 (scheduler inflation 1.00x), so a busy host does not inflate this process's numbers. The CSS lane's earlier refusal to measure on a busy box rested on that assumption and it was tested and found false."
       },
       "sampleSetHash": "dd6619b1d6986840"
@@ -1598,6 +1598,24 @@
         "avgMsPerFile": 10.5
       },
       "sampleSetHash": "abac0ebd75471c84"
+    },
+    "mojo:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 15.7
+      },
+      "sampleSetHash": "f283f9d9ea1ffb83"
+    },
+    "plack:perl": {
+      "missing": 0,
+      "unexplained": 0,
+      "heuristic": 0,
+      "perf": {
+        "avgMsPerFile": 2.9
+      },
+      "sampleSetHash": "2503e48eb336f10f"
     }
   },
   "hashes": {
@@ -1656,6 +1674,8 @@
     "element-plus:scss": "dd6619b1d6986840",
     "grails-core:xml": "30e8a9b5f186db8b",
     "tf-aws-components:make": "00ec53d40fe79068",
-    "consul:make": "abac0ebd75471c84"
+    "consul:make": "abac0ebd75471c84",
+    "mojo:perl": "5de0d06368bc8571",
+    "plack:perl": "1d9cea09bbdb468c"
   }
 }
