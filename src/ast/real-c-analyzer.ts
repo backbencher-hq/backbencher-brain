@@ -1015,10 +1015,38 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.primitiveAliases = this.buildPrimitiveAliases(rootNode)
     this.aliasTargets = this.buildAliasTargets(rootNode)
 
-    const structs: Record<string, any[]> = {}
-    const globalVars: Record<string, boolean> = {}
-    const unions: Record<string, any[]> = {}
-    const enums: Record<string, boolean> = {}
+    // #972: PROTOTYPE-LESS records. These four are keyed by arbitrary C identifiers,
+    // and `{}` inherits Object.prototype, so every lookup of a name that happens to be
+    // an Object.prototype member returned a truthy INHERITED value instead of
+    // undefined. `structs["constructor"]` is `Object`, `structs["toString"]` is a
+    // function -- both truthy.
+    //
+    // Measured: zig/lib/libc/mingw/winpthreads/thread.c:92
+    //
+    //   static void __attribute__((constructor))
+    //   ctor (void)
+    //
+    // `constructor` is a gcc attribute token declared NOWHERE, and the analyzer
+    // published `uses ctor -> constructor` -- a dangling edge to a name with no
+    // symbol, the exact defect class #962 was created to remove. The trace showed all
+    // four maps claiming the name at once (globalVars=true structs=true unions=true
+    // enums=true), which is the signature of the inherited lookup rather than of a
+    // declaration. isResolvableUseTarget's `if (globalVars[name] || structs[name] ||
+    // unions[name] || enums[name]) return true` then admitted it.
+    //
+    // `constructor` is the rare name; `toString` and `valueOf` are ORDINARY C
+    // identifiers, so this is a live class, not a curiosity.
+    //
+    // Object.create(null) is the whole fix and it is deliberately done HERE, at the
+    // four declarations, rather than at the 11 read sites and 12 write sites: every
+    // lookup becomes correct at once, and it also closes a write hazard -- a
+    // declaration of a struct named `__proto__` would otherwise ASSIGN the prototype
+    // rather than add a key. A hasOwnProperty guard at each site would have left the
+    // write path and the other sites exposed to the next one that got added.
+    const structs: Record<string, any[]> = Object.create(null)
+    const globalVars: Record<string, boolean> = Object.create(null)
+    const unions: Record<string, any[]> = Object.create(null)
+    const enums: Record<string, boolean> = Object.create(null)
     const patterns: Record<string, boolean> = {}
 
     // Pre-pass: collect every type DECLARATION name in the file (struct/union/
