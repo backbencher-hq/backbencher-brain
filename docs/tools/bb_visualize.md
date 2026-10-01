@@ -65,6 +65,16 @@ Scoped dependency and architecture visualization over the canonical graph engine
       "type": "boolean",
       "description": "include test/spec sources. Default true: they are ordinary source. When false, test/spec/testdata directories and *_test.* / *spec.* files are excluded and counted"
     },
+    "view": {
+      "type": "string",
+      "enum": [
+        "graph",
+        "codemap",
+        "class"
+      ],
+      "default": "graph",
+      "description": "which picture of the project to draw. `graph` (default) is the force-directed dependency map: nodes are symbols, lines are relationships, sized by stored evidence. `codemap` is a CODE MAP in the spirit of the Sourcegraph Chromium map: a squarified treemap where one rectangle is one SYMBOL, sized by the lines it spans, nested inside its file and its top-level directory — so the shape of a codebase, the density of its definitions, and what each file is made of are all visible at once. IMPORTANT AND EXACT: this is a symbol-level map, not a token-level one. The index stores symbols with line spans and kinds, not tokens, so `codemap` draws symbols and says so in its own legend. `class` is a UML-style class diagram: boxes for classes, interfaces, structs and enums, with inheritance, implementation and containment edges. It is only as complete as the index, and it DECLARES what it could not resolve rather than quietly drawing a partial diagram. The view is independent of `format`, so `view` composes with every output format."
+    },
     "format": {
       "type": "string",
       "enum": [
@@ -89,6 +99,7 @@ Scoped dependency and architecture visualization over the canonical graph engine
 - Text, JSON, or genuinely SELF-CONTAINED HTML: one file with no network, no fonts and no build step, carrying its own force-directed layout and canvas renderer, so it renders offline and in an air-gapped editor
 - In the HTML the evidence is ENCODED rather than decorated: edge opacity is stored confidence, relationship type sets colour and a structural/behavioural dash, a cross-language edge gets its own wide dash and is drawn beneath the local edges, a stale endpoint is a hollow ring, node size is the index's own gravity, and any node or edge can be selected to read its stored facts
 - The DEFAULT text format carries the same declared coverage, selection and exclusion as the JSON one, so the reply a caller gets without asking is the reply that can be audited
+- `view` — an axis INDEPENDENT of `format`, so every view composes with every delivery form. `graph` is the force-directed dependency map; `codemap` is a Sourcegraph-style rectangular code map; `class` is a UML-style class diagram. The chosen view rides the result as `view`, so a caller can tell which picture an answer describes
 
 ## Examples
 
@@ -105,18 +116,23 @@ Scoped dependency and architecture visualization over the canonical graph engine
 ## Limitations
 
 - The graph reflects static indexed relationships
-- GRAPH SELECTION IS A PRIMARY-KEY SLICE, and says so. The relationship query is `ORDER BY id LIMIT maxLinks*3`, so on a project with 141,445 stored relationships only the first 6,000 by primary key are read at the default budget. `considered` declares the stored count, the read count, and the fact that the slice is arbitrary but stable rather than a ranking — measured: the maxLinks=200 answer is a strict PREFIX of the maxLinks=2000 answer, because a larger budget appends to a primary-key order instead of reconsidering a ranking, so the small picture is the first slice of an arbitrary one and not a summary of the large one. The node ordering is declared too: gravity for project and feature scope, source order for file, module and symbol
-- LANGUAGE FILTERS ARE APPLIED BEFORE THE LIMIT, not after it. They used to be applied in memory to an already-truncated selection ordered by gravity, so a language whose symbols were not in that slice was cut before the filter ran: measured on cargo, `languages: ['javascript']` returned 0 nodes and declared the project had none, while the index held 56 javascript symbols — and the declared total counted the language in SQL while the returned nodes did not, so one reply contradicted itself. `relationshipTypes` deliberately filters edges rather than nodes, and says so: a caller narrowing edges must not change which nodes exist
-- `feature` scope matches a symbol NAME or a docstring. The docstring half is thin in practice and the answer does not pretend otherwise: measured on cargo, 70 of 40,595 symbols (0.17%) carry one, so a feature query is usually a name match
-- The graph reflects static indexed relationships
+- THE EDGE SET IS COMPLETE for the returned nodes, not a slice of the relationship table. It used to be neither fast nor right: the query read `LIMIT maxLinks*3` rows in PRIMARY KEY order and found ZERO of the 1,142 relationships that actually connect 400 selected symbols, because the slice is uncorrelated with the node set. Edges are now fetched by joining both endpoints, so the answer states a complete fact and no M-of-N apology is needed
+- THE NODE SET IS A SELECTION, and says so. Project and feature scope take the index's own gravity, so the graph is the busiest core rather than a sample; file, module and symbol scope take source order, because that is the only order a reader of one file would want. `considered.nodeSelection` names which applied
+- A MERGED EDGE KEEPS ITS WEIGHT. Several stored relationship rows share one (source, target, type) — a call made from 15 call sites is one drawn edge but 15 pieces of evidence. MEASURED on cargo: 394 stored rows between 200 returned nodes collapse to 285 links, so 109 rows used to vanish with nothing to say so. The graph shape is right to merge them, since 15 parallel edges would be noise; the weight is what distinguishes a hot edge from a stray reference, so `occurrences` and every `rowId` ride the edge, thickness encodes it, and the readout totals the stored rows behind the drawn edges
+- PERFORMANCE IS BOUNDED BY THE OUTPUT BUDGET, and the largest budget is the slowest case. Measured on cargo at the documented maximum of maxNodes 2000: the edge query binds two placeholders per symbol, so 4,000 symbols bind 8,000 parameters — 12.5 ms at 200 nodes, 322 ms at 1,000, 1,340 ms at 4,000. A temp-table formulation of the same join was measured and is WORSE (2,574 ms), because SQLite plans `IN (SELECT ...)` as a repeated index seek, so the direct bind is kept and the cost is declared rather than hidden. `brain_symbol(project_id, gravity_score DESC, line_start)` removes a 40,595-row sort from every call and is created on open, not only on fresh databases
 - NOISE FILTER (declared, and the caller's to change). Build output and VCS metadata are excluded by default, matched on whole path SEGMENTS. This was previously a bare-substring rule that removed real source: measured on cargo, `dist` removed `src/util/edit_distance.rs`, `out` removed `src/compiler/layout.rs` and `src/compiler/output_depinfo.rs`, and `build` removed `crates/cargo-test-support/build.rs`, leaving 225 of 1,787 symbol-bearing files with no exclusion declared anywhere. Test and spec sources are ordinary source and are INCLUDED by default; `excludePatterns` and `includeTests` change all of it, and whatever is removed is counted onto `excluded`
 - SCOPE TARGETS ARE VALUES, not patterns. `%` and `_` match themselves and a directory prefix matches on a segment boundary, so `src/util` never reaches `src/utilities`. This matches bb_analyze, whose contract states the same rule; the two tools previously disagreed, and this one was the permissive one (measured: a target of `%` selected every file in the corpus)
+- LANGUAGE FILTERS ARE APPLIED BEFORE THE LIMIT, not after it. They used to be applied in memory to an already-truncated selection ordered by gravity, so a language whose symbols were not in that slice was cut before the filter ran: measured on cargo, `languages: ['javascript']` returned 0 nodes and declared the project had none, while the index held 56 javascript symbols — and the declared total counted the language in SQL while the returned nodes did not, so one reply contradicted itself. `relationshipTypes` deliberately filters edges rather than nodes, and says so: a caller narrowing edges must not change which nodes exist
+- `feature` scope matches a symbol NAME or a docstring. The docstring half is thin in practice and the answer does not pretend otherwise: measured on cargo, 70 of 40,595 symbols (0.17%) carry one, so a feature query is usually a name match
 - Nodes and links beyond configured budgets are omitted and reported
-- Owner-cascade attribution: member-level relationships are attributed to the owner class, same as bb_graph
+- `view: codemap` is SYMBOL-LEVEL, not token-level, and the artifact says so in its own legend. The index stores symbols with line spans and kinds; it stores no tokens, so a character-level code map would be promising a resolution the data does not have. Directories are named RELATIVE to the scope target, because grouping by the path's top segment gave a scoped call exactly one group — a treemap of a single rectangle
+- `view: class` is only as complete as the index, and it SPLITS what it could not draw rather than reporting one number. Relationships to a type this scope did not select (`outside`) and relationships to a selected field, method or enum member (`members`) are different failures: conflating them made the diagram claim a missing class hierarchy where none was missing — MEASURED on cargo's src/compiler, the old single figure read 969 while the index holds 2 `implements` relationships there and 967 of the rest were `contains` links pointing at fields. Members are now DRAWN in each box from those same containment links
+- `view: class` ORDERS TYPES BEFORE METHODS, because gravity on a real project belongs to the functions that do the work and the types inheritance connects would otherwise be cut by the query's own LIMIT. MEASURED: with the plain ordering a module scope put 135 types past the limit behind 1,200 methods and drew 1 arrow out of 970; type-like symbols are now ordered first, and where a narrow scope selects types from elsewhere in the project to make an inheritance edge drawable, the count is declared in `considered.nodeSelection`
+- A class diagram of many types cannot be legible as an overview. Rows wrap into a grid rather than running off both edges, the initial fit is clamped to a readable scale, and `fit all` overrides that clamp
 
 ## Performance
 
-maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction.
+maxNodes, maxLinks, scope, relationshipTypes, and languages constrain graph construction. `view` changes the picture, not the budget: codemap and class read the same node and edge sets as graph, and the class view's type-first ordering is a sort on an index-backed column.
 
 ## Safety
 
