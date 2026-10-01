@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSourceTextColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -107,6 +107,12 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // and verifier opens is a PRE-EXISTING one.
       ensureSymbolDeclarationColumn(raw)
       ensureFileMetadataColumn(raw)
+      // Same reasoning for the symbol body: without this column a word that
+      // appears only inside a function is unreachable by content search, because
+      // the body is not in the searchable corpus at all. Legacy rows stay NULL
+      // until a re-index writes the body, and content search reports that
+      // coverage rather than implying the corpus is complete.
+      ensureSymbolSourceTextColumn(raw)
     }
   }
 
