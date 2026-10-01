@@ -33,6 +33,9 @@ import { execSync, spawnSync } from "child_process"
 // than a second copy of the rule that this lane would then have to keep editing
 // here in parallel.
 import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
+// M60 label-coverage sweep: dart published the largest single-label blob of any
+// unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
+import { deriveDartContainsTruth } from "./oracles/dart-contains"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -20703,6 +20706,14 @@ async function main() {
         for (const e of deriveDartBareUses(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+        // M60 label-coverage sweep: dart's CONTAINMENT surface — the largest
+        // single-label blob the sweep found unadmitted (7,698 edges per 25-file
+        // sample) — had no independent truth at any scale. Written from Dart's own
+        // containment rule; see script/m14/oracles/dart-contains.ts for the rule and
+        // for the one analyzer convention it mirrors (a constructor's name).
+        for (const e of deriveDartContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "swift") {
         for (const e of deriveSwiftEdges(root, SWIFT_PROTOCOLS)) {
@@ -20992,6 +21003,14 @@ async function main() {
           // before this. The existing kotlin contains fixtures pinned ONE
           // expect and zero forbids, so the class had no protection at all.
           ...(lang === "kotlin" ? ["contains"] : []),
+          // M60: dart joins the contains-audited set. Its containment surface — the
+          // backbone the graph is navigated by, and the largest unadmitted blob the
+          // label-coverage sweep found — had no independent truth at any scale, and
+          // the allowlist dropped the label so none of it was compared. Full mirror
+          // per M49.G7: the oracle push and this allowance land in the same commit,
+          // because truth without the allowance is the #910 shape where a new
+          // oracle's rows read as MISSING.
+          ...(lang === "dart" ? ["contains"] : []),
           // M60 S1 (2026-09-27): scala joins the uses-audited set. Measured
           // before this change: scala emitted 8 labels and the allowlist compared
           // 5, so uses/contains/references — 59-62% of everything the analyzer
