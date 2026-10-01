@@ -12,12 +12,12 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Analyzer | `src/ast/real-python-analyzer.ts` (`RealPythonAnalyzer`) |
 | Extensions | `.py`, `.pyi` |
 | Grammar | `tree-sitter-python` 0.25.0, `wasm/tree-sitter-python.wasm`, **pinned by sha256** |
-| Fixtures | 11 |
-| Mutants | 25, all caught |
+| Fixtures | 15 |
+| Mutants | 28, none surviving |
 | Completeness | 130 node types, 60 handled, 65 silent, **0 unclassified**, 7 explicit decisions |
 | Regex | **0** — no `RegExp`, no `/…/` literal |
 | Corpus | 3,271 `.py` files, 23,911 symbols, 99,743 relationships, 0 parse errors |
-| Independent oracle | 90,825 edges agreed; **6,048 disagreements, which are the oracle's incompleteness, not the analyzer's error rate** (PY-20) |
+| Independent oracle | **90 disagreements over 3,271 files**, down from 6,048 — three were real analyzer defects, the rest the instrument's own (PY-21) |
 
 ## What a consumer may rely on
 
@@ -118,6 +118,27 @@ first. Over the corpus, **2,036 of 3,271 files (62.2%)** carry a framework.
 | node-type classification | `script/m14/spec/python-completeness.json` |
 | independent truth | `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts` |
 | the measurements behind all of it | `reviews/python/master-review.md` |
+
+## What the oracle found
+
+An independent tree-derived oracle (`script/m14/oracles/python-truth.ts`) exists to falsify this
+lane. Run over the whole corpus, it found **three real defects**, each settled by asking CPython
+rather than by argument:
+
+| Defect | Kind | Effect |
+| --- | --- | --- |
+| A class nested in a **class body** had no `ownerName`, so no `contains` | loss | 60 edges recovered |
+| A name bound in a **lambda or comprehension** was published as a class member | fabrication | 20 edges removed |
+| Override bases keyed by class **name**, merging same-named classes | misattribution | 32 edges corrected |
+
+The third is the one worth remembering: it neither added nor removed an edge, it pointed a
+*correct-looking* edge at the wrong class — which is why neither a count nor a set comparison can
+see that failure, and why an oracle had to be built to say so.
+
+A consumer reading this contract should know one consequence of how the store identifies edges:
+**a `calls` edge count depends on formatting.** Three chained calls on one line publish one
+relationship; the same three across three lines publish three, because the store's dedup key is
+`(source, type, target, line)` and cannot express two occurrences of one call on one line (PY-22).
 
 ## Known gaps
 
