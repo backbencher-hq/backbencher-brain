@@ -1120,14 +1120,86 @@ is not evidence of an encoding: libxml2's `text-4-byte-UTF-16-BE.xml` holds
 `ff fe 3c 00 3f 00 78 00` — a UTF-16**LE** BOM and LE code units — because the name
 is the test case.
 
-**M22 — the differential rests on one corpus, and that is now stated.** The pinned
-row covers `grails-core` (314 of 8,889 tracked files). Measured on the other five:
-`maven` 3,250 files **0/0**, and `libxslt` 1,144 → 2,012/1,377, `libxml2` 1,311 →
-3,281/4,244, `cxf` 2,439 → 602/319, `docx4j` 431 → 548/192. This is oracle
-coverage rather than analyzer defects — the disagreement is dominated by DTD/XSD
-declaration classes the oracle never derives — and it is the largest single piece
-of work left on this lane. Claiming the corpus coverage the lane does not have
-would not be; so the coverage is written down instead.
+**M22 — the differential now covers ALL SIX PINNED CORPORA.** It used to rest on
+`grails-core` alone — 314 of 8,889 tracked files — and the review attributed the
+other five to "oracle coverage rather than analyzer defects". That was a **belief
+supported by a shape**, not a measurement, and the two point different ways: if
+any class were the analyzer being wrong, "widen the oracle" would be the wrong
+move. `script/m12/xml-differential-gap.mts` settles it by bucketing every
+`contains` edge by **the ROLE that emitted it**, because a role is a rule and a
+rule can be right or wrong while a target's spelling is not.
+
+First measurement: **6,132 unexplained** against 244,003 corroborated, and the
+leading class was not DTD declarations at all. Six oracle defects followed, none
+of them the analyzer's:
+
+  1. **`id` is not a name attribute** (3,367 edges). In XSD a component's name is
+     `name`; `id` is the XML `id` attribute used for identity constraints and
+     annotation cross-referencing, which the W3C's own `XMLSchema.xsd` leans on
+     heavily. Reading it as the declaration minted components called
+     `string.preserve` and `boolean.whiteSpace` — names of nothing in the
+     language.
+  2. **An XSLT instruction that constructs a node does not declare one.**
+     `<xsl:element name="x">` builds a result-tree node and its `name` may be
+     computed. **The principled fix was wrong and is recorded in the source**:
+     removing XSLT from the vocabulary set wholesale made things worse, 5,952 →
+     11,687 unexplained, because `<xsl:param name="p"/>` genuinely declares. The
+     rule is per-CONSTRUCT, and `call-template` is a third reason — its `name` is
+     a static reference to a template declared elsewhere.
+  3. **WSDL was absent entirely.**
+  4. **The DTD branch the oracle's own comment admitted it lacked.**
+     `elementdecl` / `AttlistDecl` / `entitydecl` / `notationdecl` are none of them
+     `element` nodes, so every earlier phase skipped them. The owner rule is **not
+     uniform**: `<!ELEMENT>`/`<!ENTITY>`/`<!NOTATION>` are owned by the
+     **DOCTYPE's own name**, `<!ATTLIST>` by **the element it declares attributes
+     for**, a content model by **the element being declared**. Content-model
+     members nest (`(a, (b|c)*)`) so the reader descends rather than reading
+     direct children, which would silently drop every nested group.
+  5. **A table lookup used a prefix slice where it needed the LOCAL name.** Written
+     *unprefixed* under a default `xmlns` — which XSLT generating WSDL does
+     constantly — the slice yields the whole string, nothing matches, and one file
+     contributed **1,585** wrongly-renamed edges.
+  6. **RELAX NG was wrong twice in opposite directions and each caught the other.**
+     `<element name="doc">` *does* declare; `<ref name="elem"/>` does *not*.
+     Removing the vocabulary was wrong, and so was also removing
+     `element`/`attribute` — which inverted it, giving `contains start ->
+     element` against the analyzer's `contains start -> doc`. That mutual
+     falsification is the only reason the final table is right rather than merely
+     plausible.
+
+```
+corpus        files   oracle  corrob.  unexpl.  share
+cxf            2439    76310    76310        1  0.0%
+docx4j          431    66529    66529        0  0.0%
+grails-core     314     8327     8327        0  0.0%
+libxml2        1311    23652    23647       24  0.1%
+libxslt        1144    21499    21493       18  0.1%
+maven          3250    53786    53786        0  0.0%
+TOTAL          8889   250103   250060       43  0.02%
+```
+
+The 43 are named rather than absorbed: **18 `pseudo_attribute`** (a synthetic
+`xml-stylesheet` representation — an analyzer artefact rather than a tree fact, so
+the oracle correctly declines to corroborate it) and **10 `dtd_content_model`**
+self-references like `contains dia:group -> dia:group`, where a content model
+admits the element it belongs to and both readings are defensible. Neither is in a
+class the oracle claims to derive.
+
+**Two hand-maintained vocabulary tables now, deliberately, and a gate between
+them.** The analyzer and the oracle each keep their own declaration-vocabulary
+table. Importing one into the other would make them agree by construction, and an
+oracle that cannot disagree is a mirror rather than a check — so the duplication is
+intentional, and `script/m12/xml-vocab-tables.ts` is the defence against drift. It
+asserts the two cover the same **namespaces**, because that is the drift which
+produces thousands of unexplained edges and an argument instead of a finding; it
+deliberately does **not** assert the construct lists agree, because that is a
+semantic judgement and forcing two copies to match textually would put the oracle's
+independence in the same place. Failure-proven: removing WSDL from one table
+exits 1.
+
+The pinned `grails-core` row did not move through any of the six fixes — 100%
+covered, MISSING=0, unexplained=0 throughout — which is the signature of a fix to
+the **instrument** rather than to the analyzer.
 
 **Cross-lane, found because a lane is measured by shared tools.** The 229-commit
 m48-recovery merge removed the xml lane's `LANG_REPOS` entry, its

@@ -284,11 +284,19 @@ grails-core:xml  files=60  truth=1487  covered=1487 (100%)
 full grails-core sweep: 314 files, missing=0, unexplained=0
 ```
 
-That lane's coverage is `contains` only, and it rests on **one corpus of six** —
-`maven` is 0/0 over 3,250 files, while `libxslt` (2,012 / 1,377), `libxml2`
-(3,281 / 4,244), `cxf` (602 / 319) and `docx4j` (548 / 192) disagree, dominated by
-DTD/XSD declaration classes the oracle does not derive. That is oracle coverage
-rather than analyzer defects, and it is the largest piece of work left on the lane.
+That lane's coverage is `contains` only. It used to rest on **one corpus of six**
+— `maven` 0/0 over 3,250 files while `libxslt`, `libxml2`, `cxf` and `docx4j`
+disagreed heavily — and that was recorded as "oracle coverage rather than analyzer
+defects" on the strength of a shape rather than a measurement. The measurement
+since taken found six oracle defects and **no** analyzer defect; see *Differential
+coverage — all six corpora* below for the current 43-of-250,135 figure across all
+8,889 files.
+
+One consequence is worth stating because it is the reason this lane could be
+trusted to find anything at all: while the gap was open, a defect in the oracle
+and a defect in the analyzer produced the **same** signature — edges on one side
+only — and the only thing that distinguished them was reading the tree. Six of the
+seven fixes this review produced were of that indistinguishable kind.
 
 It also reports `contains-attribute` recall **0.910** and 76,372 spurious
 relationships, and **both numbers are the oracle's error**. On
@@ -319,6 +327,55 @@ the tree before it can be called a defect — the instrument that produced them 
 the one shown above to be wrong.
 
 ## Corpus validation
+
+### Differential coverage — all six corpora
+
+The differential is **not** a single-corpus gate. `script/m12/xml-differential-gap.mts`
+runs the analyzer and the independent oracle over **all 8,889 tracked files in
+every pinned repository** and buckets every `contains` edge by the ROLE that
+emitted it:
+
+| corpus | files | oracle `contains` | corroborated | unexplained | share |
+|---|---|---|---|---|---|
+| cxf | 2,439 | 76,310 | 76,310 | 1 | 0.0% |
+| docx4j | 431 | 66,529 | 66,529 | 0 | 0.0% |
+| grails-core | 314 | 8,327 | 8,327 | 0 | 0.0% |
+| libxml2 | 1,311 | 23,652 | 23,647 | 24 | 0.1% |
+| libxslt | 1,144 | 21,499 | 21,493 | 18 | 0.1% |
+| maven | 3,250 | 53,786 | 53,786 | 0 | 0.0% |
+| **total** | **8,889** | **250,103** | **250,060** | **43** | **0.02%** |
+
+The 43 are named rather than absorbed. **18** are `pseudo_attribute` — a synthetic
+`xml-stylesheet` representation, an analyzer artefact rather than a fact in the
+tree, so the oracle correctly declines to corroborate it. **10** are
+`dtd_content_model` self-references such as `contains dia:group -> dia:group`,
+where a DTD content model admits the element it belongs to and both readings are
+defensible. Neither is in a class the oracle claims to derive.
+
+Getting here meant fixing the **oracle**, not this analyzer: the review had
+attributed the five-corpora gap to oracle coverage on the strength of a shape
+rather than a measurement, and the measurement found six oracle defects — `id`
+read as a name attribute, XSLT node-construction read as declaration, WSDL absent,
+the whole DTD branch missing, a prefix slice where the LOCAL name was needed, and
+RELAX NG wrong in two opposite directions that caught each other. Every one of
+those is written up where it lives (the oracle's source, and
+`reviews/xml/master-review.md` owed item 8).
+
+**The pinned `grails-core` row did not move through any of the six fixes** — 100%
+covered, MISSING=0, unexplained=0 throughout — which is the signature of a fix to
+the instrument rather than to the analyzer.
+
+Two declaration-vocabulary tables are kept, in this file and in the oracle,
+**deliberately**: importing one into the other would make them agree by
+construction, and an oracle that cannot disagree is a mirror rather than a check.
+`script/m12/xml-vocab-tables.ts` is the defence against drift — it asserts the two
+cover the same **namespaces**, which is the drift that produces thousands of
+unexplained edges and an argument instead of a finding. It deliberately does not
+assert the construct lists agree, because that is a semantic judgement and forcing
+two copies to match textually would put the oracle's independence in the same
+place. Failure-proven: removing WSDL from one table exits 1.
+
+### Corpus inputs
 
 - Manifest: `$HOME/fixtures/xml/repositories/MANIFEST.json` (also outside version control) — six repositories at pinned
   revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
@@ -371,6 +428,10 @@ run names files that are expected to fail and fails the run if they succeed.
 - Entity-reference accounting: `script/m12/xml-entity-accounting.mts` — 11,940
   `EntityRef` sites, 908 collapsed edges, **11,919 accounted**; the 21-site
   residual is declared by file and size and the gate exits 1 if any of it changes
+- Differential corpus coverage: `script/m12/xml-differential-gap.mts` — 43
+  unexplained of 250,135 `contains` edges over **8,889 files / all six corpora**
+- Vocabulary-table drift: `script/m12/xml-vocab-tables.ts` — analyzer and oracle
+  cover the same 4 namespaces; exit 1 on drift
 - Encoding recovery: `script/m12/xml-encoding-recovery.mts` — 22 files, 1,537
   symbols, 229 relationships, **with the predicate written into the script**
 - Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
