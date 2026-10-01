@@ -5453,9 +5453,32 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol. Rule: the exemption applies ONLY when the enumerator is
           // a DIRECT child of its enumerator_list (no preproc wrapper
           // between) — exactly the shapes extractEnum can see.
-          const isFileScopeEnumerator = n.parent?.type === "enumerator"
+          // #966: an ENUMERATOR declares a member regardless of whether its enum is
+          // file-scope or function-local. #961 ruled function-local TYPES are
+          // published, and the analyzer publishes their MEMBERS too -- owned by the
+          // type, not by the function:
+          //
+          //   curl/src/tool_paramhlp.c:418  enum e_action { allow, deny, set }
+          //     declared INSIDE a function (that enum_specifier is fnLocal=true)
+          //   analyzer: name="allow" kind=enum_member owner=e_action scope=e_action
+          //
+          // Members are unqualified precisely because they belong to the TYPE and the
+          // type carries the scope; #961's qualification disambiguates colliding type
+          // NAMES (lpRandomEntries.pick), it does not re-qualify members that cannot
+          // collide inside their own enum.
+          //
+          // It has to be its own admission disjunct, not a relaxation of
+          // isFileScopeEnumerator: that predicate only feeds varDeclSuppressed, while
+          // the arm that actually gates admission is the generic `!isFunctionLocal(n)`
+          // clause -- which a function-local enumerator always fails. Relaxing it was
+          // measured first and changed nothing (230 -> 230).
+          //
+          // A local VARIABLE of the same name still shadows, via fnLocals at the read
+          // site. Measured cost of the stale gate: 97 unexplained `uses` edges.
+          const isEnumeratorMember = n.parent?.type === "enumerator"
             && n.parent?.parent?.type === "enumerator_list"
             && n.parent?.parent?.parent?.type === "enum_specifier"
+          const isFileScopeEnumerator = isEnumeratorMember
             && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
           // #907 round 2: a glued definition the ANALYZER emits at file scope is
@@ -5464,7 +5487,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
-          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
+          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || isEnumeratorMember || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
             // is the preproc_function_def) is what makes the name unmaskable-as-
@@ -5627,7 +5650,28 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           edges.push({ label: "imports", from: "(expr)", target: raw })
         }
       }
-    } else if (n.type === "identifier" && !isAssignLhs(n)) {
+    } else if (n.type === "identifier") {
+      // #967: the `&& !isAssignLhs(n)` clause here was the SAME withdrawn SCD1/CGD1
+      // write-gate #965 removed from the FIELD branch, left in place on the
+      // IDENTIFIER branch. Since #960 a write to a declared name IS a `uses`, and in
+      // real C most file-scope variable reads ARE assignments, so this clause was
+      // suppressing the MAJORITY of the global-variable `uses` rows:
+      //
+      //   curl/lib/easy.c:137  Curl_cmalloc = (curl_malloc_callback)malloc;
+      //   curl/lib/easy.c:271  Curl_cmalloc = m;
+      //   curl/lib/easy.c:272  Curl_cfree   = f;
+      //
+      // The clause is provably about writes, not reads: `p->f++` was always
+      // published as a `uses` while the identical `p->f += 1` was not, purely because
+      // the grammar folds compound-assign into `assignment_expression` while `++` is
+      // an `update_expression`. No reading existed under which the two legitimately
+      // differed, which is why #960 withdrew the rule.
+      //
+      // Nothing else is lost with it: DECLARING a name stays excluded by
+      // isDeclaringIdentifier below, and a function-local VARIABLE still binds
+      // nothing (C-D1) via fnLocals at this site -- neither gate lived here.
+      //
+      // Measured over 2,600 files: UNEXPLAINED 142 -> 16.
       // CGD-IDENT mirror: a bare identifier READ of a file-scope variable,
       // enum member, or macro constant. Truth requires the name to be
       // DECLARED somewhere in this file (mirrors isResolvableUseTarget:
