@@ -211,7 +211,7 @@ const GATES: GateSpec[] = [
     // this is the one mutation that must fail the identity itself.
     mutateIsolated: {
       file: "src/intelligence/documentation/doc-engine.ts",
-      from: "sections.push(assembleSection({ ...draft, facts: capped }, citations))",
+      from: "sections.push(assembleSection({ ...draft, facts: capped }, citations, unknowns))",
       to: "sections.push(assembleSection(draft, citations))",
       expect: "the per-section cap is applied again",
     },
