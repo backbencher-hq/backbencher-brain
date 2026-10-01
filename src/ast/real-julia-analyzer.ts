@@ -727,10 +727,6 @@ export class RealJuliaAnalyzer {
             { juliaSpecific: true, isFieldRead: true, isOperatorMember: member.type !== "identifier" }))
           break
         }
-
-        // ---------------------------------------------------------------- macro definitions in scope
-        case "macrocall_expression_head":
-          break
       }
 
       // Recurse with the (possibly advanced) scope, and push an exit frame so `depth` tracks
