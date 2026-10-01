@@ -753,11 +753,34 @@ so the field NAME sits inside a macro ARGUMENT. Consequences:
   `calls:f->BIT` but no `uses` for its argument, so #908's "a real macro invocation
   pairs `calls` + `uses`" is only half-implemented today.
 
+**This was already ruled, and the code says so.** Before writing this section I
+should have grepped first. `fieldDeclarationHasDeclarator` at
+`src/ast/real-c-analyzer.ts:654` already encodes the decision, with this exact
+example in its comment:
+
+    #define BIT(x) int x : 1
+    struct flags { int a; BIT(closing); BIT(keepalive); int b; };
+
+and already fixed a live corruption it caused — `curl/lib/cf-h2-proxy.c` emitted
+`cf_h2_proxy_ctx.BIT` five times and `tunnel_stream.BIT` three times, publishing the
+MACRO'S OWN NAME as the member, and computed the struct's `memorySize` from a field
+that does not exist. The existing ruling is silence, for the same reason given
+below: whether the macro's parameter lands in name position is a property of its
+REPLACEMENT list, which is C-D2's ruled-out territory.
+
+So the `contains` half below is not a new decision — it re-derives a settled one, and
+the 30 oracle misses were ALREADY a declared limitation before this section existed.
+Recorded as such rather than left looking like fresh work.
+
 **Ruling.** Two claims with different warrant, resolved differently:
 
-1. `uses:S->chunked_encoding` is PROVABLE. The identifier occurs in the
-   declaration, and #908 already treats macro arguments as real uses. Publishing it
-   closes the gap that case 4 exposes.
+1. `uses:S->chunked_encoding` is the only genuinely NEW claim here. The identifier
+   occurs in the declaration, and #908 treats macro arguments as real uses, so the
+   `uses` edge is weaker than `contains` and survives even where ownership does not.
+   It is NOT yet implemented, and it must be adjudicated against the existing choice
+   of silence rather than assumed to be free — case 4 shows a macro invocation in a
+   BODY also emits no `uses` for its argument, so a general rule would touch every
+   macro call in the corpus and needs its own measurement.
 2. `contains:S->chunked_encoding` is NOT provable. `contains` asserts the struct
    OWNS the member, which is only true if `BIT` expands to a bitfield whose name is
    its argument. That expansion is exactly what C-D2 forbids, and a macro that took
