@@ -582,14 +582,37 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     language: "solidity",
     defectClass: "correctness",
     description:
-      "SOL-16 REVERT, the second bug the fixture was written for: do not clear the run anchor after a flush, so a TRAILING comment run at the end of a parent reuses the previous declaration as its target. On natspec-sol16 that published the file's closing remark as part of `IThing`'s docstring — the precise opposite of what a trailing remark is. Caught by natspec-sol16's exact `docstring` for `IThing`.",
-    transform: (r: any) => ({
-      ...r,
-      symbols: (r.symbols ?? []).map((s: any) => {
-        if (typeof s.docstring !== "string" || !s.docstring.includes("FOLLOW")) return s
-        return { ...s, docstring: `${s.docstring}\nA trailing remark that documents nothing: Solidity attaches documentation to what FOLLOWS it, so this run has no declaration to land on and must not be published.` }
-      }),
-    }),
+      "SOL-16 REVERT, the second bug the fixture was written for: do not clear the run anchor after a flush, so a TRAILING comment run at the end of a parent reuses the previous declaration as its target. On natspec-sol16 that published the file's closing remark as part of `IThing`'s docstring — the precise opposite of what a trailing remark is. Modelled from the SOURCE, because the harness passes `content` and a fixture-phrase key would never fire. Caught by natspec-sol16's exact `docstring` for `IThing`. (The mutant body uses a small regex; the ZERO-REGEX gate scopes the ANALYZER, and a revert written against the fixture's own text would be the weaker instrument.)",
+    // The first attempt keyed on a phrase from the FIXTURE'S comment text, so it never
+    // fired — a mutant that models nothing and reads as coverage is exactly what this
+    // file's own header warns about. Modelled from the SOURCE instead (the harness
+    // passes `content`): find the file's trailing comment run, which the correct
+    // analyzer publishes nowhere, and graft it onto the last documented declaration.
+    transform: (r: any, content?: string) => {
+      if (typeof content !== "string") return r
+      const lines = content.split("\n")
+      let end = lines.length
+      while (end > 0 && lines[end - 1].trim() === "") end--
+      let start = end
+      while (start > 0) {
+        const t = lines[start - 1].trim()
+        if (t.startsWith("//") || t.startsWith("/*") || t.startsWith("*") || t.startsWith("*/")) start--
+        else break
+      }
+      if (start >= end) return r
+      const trailing = lines.slice(start, end)
+        .map((l) => { const t = l.trim(); return t.startsWith("//") ? t.slice(2).trim() : t.replace(/^\*+/, "").trim() })
+        .filter((l) => l !== "")
+        .join("\n")
+      if (trailing === "") return r
+      const syms = (r.symbols ?? []) as any[]
+      for (let i = syms.length - 1; i >= 0; i--) {
+        if (typeof syms[i].docstring !== "string") continue
+        syms[i] = { ...syms[i], docstring: `${syms[i].docstring}\n${trailing}` }
+        break
+      }
+      return { ...r, symbols: syms }
+    },
     caughtBy: "solidity/natspec-sol16",
   },
   {

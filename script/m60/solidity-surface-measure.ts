@@ -179,6 +179,9 @@ const allDeclaredNames = new Set<string>()
 const owners = new Set<string>()
 let getterSymbols = 0
 const callKindsTotal: Record<string, number> = {}
+let commentsRead = 0
+let commentsAttached = 0
+let documentedSymbols = 0
 let overridesEmitted = 0
 let overridesEmittedExternal = 0
 let overridesUnresolved = 0
@@ -274,6 +277,9 @@ for (const f of files) {
   overridesEmitted += Number(md.overridesEmitted ?? 0)
   overridesUnresolved += Number(md.overridesUnresolved ?? 0)
   overridesEmittedExternal += Number(md.overridesEmittedExternal ?? 0)
+  commentsRead += Number(md.commentsRead ?? 0)
+  commentsAttached += Number(md.commentsAttached ?? 0)
+  documentedSymbols += Number(md.documentedSymbols ?? 0)
   const ck = (md.callKinds ?? {}) as Record<string, number>
   for (const k of Object.keys(ck)) callKindsTotal[k] = (callKindsTotal[k] ?? 0) + ck[k]
   overridesAmbiguousBaseCount += Number(md.overridesAmbiguousBaseCount ?? 0)
@@ -341,6 +347,10 @@ const out = {
     analyzerDecisions: {
       publicStateVariables: getterSymbols,
       getterSymbols,
+      commentsRead,
+      commentsAttached,
+      documentedSymbols,
+      natspecNote: "SOL-16. `commentsRead` is every `comment` node in the corpus; `commentsAttached` is how many of them landed on a declaration, which is the count that matters because Solidity attaches documentation to what FOLLOWS it. The gap between the two is real: a comment before an expression, or a trailing remark at the end of a body, documents nothing. `documentedSymbols` is the share of the 5,976 symbols that carry a `docstring`, which the store persists to `brain_symbol.docstring` — a column NULL for every Solidity symbol before this.",
       overridesEmitted,
       overridesEmittedExternal,
       overridesUnresolved,
