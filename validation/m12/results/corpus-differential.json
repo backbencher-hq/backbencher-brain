@@ -1,0 +1,965 @@
+{
+  "generatedAt": "2026-10-01T07:01:30.647Z",
+  "wasm": "$HOME/backbencher-brain/wasm/tree-sitter-xml.wasm",
+  "samples": {
+    "REL_SPURIOUS": [
+      "docx4j/docs/developer/math-corpus-tools/corpus/omml/mover1.omml.xml references m:t->amp resolvable=builtin",
+      "docx4j/docs/developer/math-corpus-tools/corpus/omml/mover3.omml.xml references m:t->amp resolvable=builtin",
+      "docx4j/docs/developer/math-corpus-tools/corpus/omml/munder2.omml.xml references m:t->amp resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references w:tag->amp resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references w:t->lt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references w:t->gt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case1->lt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case1->gt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case2->lt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case2->gt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case3->lt resolvable=builtin",
+      "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml references case3->gt resolvable=builtin"
+    ],
+    "REL_DECLARED_UNRESOLVED": [
+      "docx4j/xsd/dml/dml-audioVideo.xsd references extLst->CT_OfficeArtExtensionList ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-audioVideo.xsd references wavAudioFile->CT_EmbeddedWAVAudioFile ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references dk1->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references lt1->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references dk2->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references lt2->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent1->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent2->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent3->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent4->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent5->CT_Color ambiguousWithBuiltin=false",
+      "docx4j/xsd/dml/dml-baseStylesheet.xsd references accent6->CT_Color ambiguousWithBuiltin=false"
+    ],
+    "SYM_SPURIOUS": [
+      "libxml2/result/valid/781333.xml a<-pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp:llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll extra=1",
+      "libxml2/test/valid/781333.xml a<-pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp:llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll extra=1"
+    ],
+    "EMPTY_NAME": [
+      "libxml2/test/relaxng/OASIS/spectest.xml \"x y\" kind=class"
+    ],
+    "REL_WRONG_LINE": [
+      "libxml2/test/relaxng/OASIS/spectest.xml contains-element incorrect->x:&#xE35; got=874 wantAny=872",
+      "libxml2/test/relaxng/OASIS/spectest.xml contains-element incorrect->x:y:z got=884 wantAny=882",
+      "libxml2/test/relaxng/OASIS/spectest.xml contains-element incorrect->x: got=894 wantAny=892",
+      "cxf/core/src/test/resources/schemas/echoSchema.xsd contains-element xsd:sequence->echo got=8 wantAny=7",
+      "cxf/core/src/test/resources/schemas/echoSchema.xsd contains-element xsd:sequence->out got=16 wantAny=15",
+      "cxf/core/src/test/resources/schemas/logSchema.xsd contains-element xsd:sequence->message got=8 wantAny=7",
+      "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/rp-2.xsd contains-element xsd:schema->UnableToPutResourcePropertyDocumentFaultType got=170 wantAny=169",
+      "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/rp-2.xsd contains-element xsd:schema->InvalidModificationFaultType got=223 wantAny=222",
+      "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/rp-2.xsd contains-element xsd:schema->InvalidModificationFault got=234 wantAny=233",
+      "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/rp-2.xsd contains-element xsd:schema->UpdateResourcePropertiesRequestFailedFault got=290 wantAny=289",
+      "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/rp-2.xsd contains-element xsd:schema->DeleteResourcePropertiesRequestFailedFault got=304 wantAny=303",
+      "cxf/tools/wsdlto/test/src/test/resources/wsdl2java_wsdl/bug305770/rp-2.xsd contains-element xsd:schema->UpdateResourcePropertiesRequestFailedFault got=286 wantAny=285"
+    ]
+  },
+  "instrumentLimitations": [
+    {
+      "where": "docx4j/xsd/xslfo/fop.xsd (4,360 lines) and its 4 clones",
+      "symptom": "the oracle resolves 60 in-vocabulary declarations where the analyzer resolves 982, so the pair-level differential reports ~1,400 missed element/attribute pairs and ~3,100 spurious ones for this file alone",
+      "cause": "TWO, both in the ORACLE. (1) A flat pre-order sweep cannot scope namespaces with one shared binding map — a prefix bound on a deep element leaks to every later sibling and clearing it per element erases the ancestors' — so the first version resolved 60 of 4,041 elements as in-vocabulary; the oracle now stores INHERITED per-node maps. (2) The file itself is not a conformant schema: its `<xs:documentation>` blocks contain real declarations, and the default namespace is UNDECLARED (an empty xmlns declaration) on part of the tree, so `effectiveNamespace` is the empty string for 3,978 of 4,042 elements and the declared-name rule cannot fire. The analyzer's worklist-based scope resolves the same elements differently.",
+      "whatSettlesIt": "The analyzer emits EXACTLY one symbol per tree element and per tree attribute for this file: 4,042 element symbols and 3,546 attribute symbols, counted independently from the parse tree's own `element` and `Attribute` node counts, which are 4,042 and 3,546. Nothing is lost. The disagreement is about how many of them carry a DECLARED name, and it is confined to this one non-conformant file and its 4 clones.",
+      "notCountedAs": "an analyzer defect. It is an instrument limitation, and it is the price of the oracle being an INDEPENDENT second opinion with a different algorithm: the difference in scope handling is exactly the kind of thing a differential is supposed to surface, and here it surfaced the ORACLE's bug."
+    }
+  ],
+  "corpus": {
+    "files": 7975,
+    "bytes": 29398776,
+    "extensions": [
+      "*.xml",
+      "*.xsd",
+      "*.dtd"
+    ],
+    "revisions": {
+      "grails-core": "334007a8b5622a3c428c009ef1e19569ce9135d9",
+      "docx4j": "0e8e7633ef46012e0d3603339728b83ed21d5045",
+      "libxml2": "c43dc98d27ac315a48d93dbd399c6c22cf7125b1",
+      "maven": "d296cc33fbcd48b46caca380204628a4ad45aca8",
+      "cxf": "e43776be4dca84494478e45977f78b44546b7dd6",
+      "libxslt": "ec95343e75c503523b91495f021d109173e169c4"
+    },
+    "wallMs": 382230
+  },
+  "headline": {
+    "grammarNodes": 5899555,
+    "grammarErrorNodes": 48847,
+    "grammarMissingNodes": 9,
+    "filesWithGrammarError": 177,
+    "filesWithGrammarErrorPct": 2.219,
+    "filesUnparseableByRouter": 0,
+    "symbolsEmitted": 657432,
+    "relationshipsEmitted": 230603,
+    "relationshipsCarryingLine": 230603,
+    "relationshipsCarryingLinePct": 100,
+    "relationshipsWrongLine": 15,
+    "namesWithWhitespaceOrNul": 1,
+    "memberSymbolsWithoutOwner": 0,
+    "repeatedIdentityKeys": 20904,
+    "collapsedEdgeOccurrences": 485258,
+    "collapsedEdgePairs": 45711,
+    "sameIdentitySamePositionDuplicates": 0,
+    "symbolFreeFiles": 129
+  },
+  "perSymbolClass": {
+    "SPURIOUS": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 2,
+      "recall": null,
+      "precision": 0
+    },
+    "attribute": {
+      "truth": 268456,
+      "hit": 268456,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "doctype": {
+      "truth": 807,
+      "hit": 807,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-attribute-decl": {
+      "truth": 1650,
+      "hit": 1650,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-element-decl": {
+      "truth": 854,
+      "hit": 854,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-general-entity": {
+      "truth": 590,
+      "hit": 590,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-notation": {
+      "truth": 2,
+      "hit": 2,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-notation-decl": {
+      "truth": 5,
+      "hit": 5,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-parameter-entity": {
+      "truth": 92,
+      "hit": 92,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "element": {
+      "truth": 362539,
+      "hit": 362539,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "namespace-attr": {
+      "truth": 22298,
+      "hit": 22298,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "processing-instruction": {
+      "truth": 101,
+      "hit": 101,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "pseudo-attribute": {
+      "truth": 18,
+      "hit": 18,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "pseudo-instruction": {
+      "truth": 18,
+      "hit": 18,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    }
+  },
+  "perRelationshipCollapse": {
+    "contains-attribute": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 220352,
+      "pairs": 19118
+    },
+    "contains-dtd-attribute-decl": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 702,
+      "pairs": 99
+    },
+    "contains-dtd-element-decl": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 15,
+      "pairs": 3
+    },
+    "contains-dtd-entity-decl": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 29,
+      "pairs": 13
+    },
+    "contains-dtd-parameter-entity-decl": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 4,
+      "pairs": 2
+    },
+    "contains-element": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 250173,
+      "pairs": 23461
+    },
+    "contains-namespace": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 5404,
+      "pairs": 829
+    },
+    "contains-processing-instruction": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 23,
+      "pairs": 5
+    },
+    "dtd-content-model": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 767,
+      "pairs": 149
+    },
+    "imports-schema-location": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 4,
+      "pairs": 2
+    },
+    "references-attribute-qname": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "occurrences": 7785,
+      "pairs": 2030
+    }
+  },
+  "perRelationshipClass": {
+    "SPURIOUS": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 595,
+      "recall": null,
+      "precision": 0
+    },
+    "contains-attribute": {
+      "truth": 67223,
+      "hit": 67223,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-dtd-attribute-decl": {
+      "truth": 1032,
+      "hit": 1032,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-dtd-element-decl": {
+      "truth": 371,
+      "hit": 371,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-dtd-entity-decl": {
+      "truth": 574,
+      "hit": 574,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-dtd-notation-decl": {
+      "truth": 5,
+      "hit": 5,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-dtd-parameter-entity-decl": {
+      "truth": 85,
+      "hit": 85,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-element": {
+      "truth": 128218,
+      "hit": 128218,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-namespace": {
+      "truth": 17723,
+      "hit": 17723,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-processing-instruction": {
+      "truth": 28,
+      "hit": 28,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "contains-pseudo-attribute": {
+      "truth": 18,
+      "hit": 18,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "declared-unresolved": {
+      "truth": 0,
+      "hit": 0,
+      "missed": 0,
+      "spurious": 0,
+      "edges": 424,
+      "recall": null,
+      "precision": null
+    },
+    "dtd-content-model": {
+      "truth": 814,
+      "hit": 814,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "dtd-ndata-notation": {
+      "truth": 7,
+      "hit": 7,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "imports-doctype-external-id": {
+      "truth": 238,
+      "hit": 238,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "imports-entity-external-id": {
+      "truth": 73,
+      "hit": 73,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "imports-notation-external-id": {
+      "truth": 5,
+      "hit": 5,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "imports-schema-location": {
+      "truth": 630,
+      "hit": 630,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "imports-stylesheet": {
+      "truth": 18,
+      "hit": 18,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    },
+    "references-attribute-qname": {
+      "truth": 12432,
+      "hit": 12432,
+      "missed": 0,
+      "spurious": 0,
+      "recall": 1,
+      "precision": 1
+    }
+  },
+  "observedNamedNodeTypes": {
+    "Name": 971992,
+    "CharData": 605721,
+    "element": 363675,
+    "AttValue": 291666,
+    "Attribute": 291295,
+    "STag": 275932,
+    "ETag": 275695,
+    "content": 273275,
+    "EmptyElemTag": 87980,
+    "ERROR": 48847,
+    "Comment": 12723,
+    "EntityRef": 10273,
+    "document": 7833,
+    "prolog": 6964,
+    "CharRef": 6902,
+    "VersionNum": 6563,
+    "XMLDecl": 6562,
+    "EncName": 4980,
+    "TokenizedType": 1234,
+    "Nmtoken": 1198,
+    "AttDef": 1048,
+    "DefaultDecl": 1048,
+    "AttlistDecl": 741,
+    "EntityValue": 601,
+    "GEDecl": 577,
+    "elementdecl": 477,
+    "contentspec": 477,
+    "doctypedecl": 407,
+    "Enumeration": 397,
+    "StringType": 321,
+    "ExternalID": 315,
+    "SystemLiteral": 315,
+    "URI": 315,
+    "CDSect": 276,
+    "CDStart": 276,
+    "CData": 273,
+    "PubidLiteral": 173,
+    "Mixed": 170,
+    "children": 144,
+    "PI": 101,
+    "PITarget": 101,
+    "PEDecl": 91,
+    "PseudoAtt": 36,
+    "PseudoAttValue": 36,
+    "PEReference": 24,
+    "StyleSheetPI": 18,
+    "NDataDecl": 7,
+    "NotationDecl": 5,
+    "PublicID": 1
+  },
+  "zeroSymbolFiles": [
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_2.dtd",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_3.dtd",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_1.dtd",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_2.dtd",
+    "docx4j/docx4j-core/src/main/java/org/docx4j/org/apache/xml/security/resource/config.dtd",
+    "docx4j/docx4j-core/src/main/resources/org/docx4j/openpackaging/parts/WordprocessingML/numbering.xml",
+    "docx4j/docx4j-core/src/main/resources/org/docx4j/openpackaging/parts/WordprocessingML/styles.xml",
+    "libxml2/python/tests/test.dtd",
+    "libxml2/result/ebcdic_566012.xml",
+    "libxml2/result/noent/ebcdic_566012.xml",
+    "libxml2/result/noent/slashdot16.xml",
+    "libxml2/result/noent/text-4-byte-UTF-16-BE-offset.xml",
+    "libxml2/result/noent/text-4-byte-UTF-16-BE.xml",
+    "libxml2/result/noent/text-4-byte-UTF-16-LE-offset.xml",
+    "libxml2/result/noent/text-4-byte-UTF-16-LE.xml",
+    "libxml2/result/noent/utf16bebom.xml",
+    "libxml2/result/noent/utf16bom.xml",
+    "libxml2/result/noent/utf16lebom.xml",
+    "libxml2/result/slashdot16.xml",
+    "libxml2/result/text-4-byte-UTF-16-BE-offset.xml",
+    "libxml2/result/text-4-byte-UTF-16-BE.xml",
+    "libxml2/result/text-4-byte-UTF-16-LE-offset.xml",
+    "libxml2/result/text-4-byte-UTF-16-LE.xml",
+    "libxml2/result/utf16bebom.xml",
+    "libxml2/result/utf16bom.xml",
+    "libxml2/result/utf16lebom.xml",
+    "libxml2/result/xmlid/id_err1.xml",
+    "libxml2/result/xmlid/id_err2.xml",
+    "libxml2/result/xmlid/id_tst1.xml",
+    "libxml2/result/xmlid/id_tst2.xml",
+    "libxml2/result/xmlid/id_tst3.xml",
+    "libxml2/result/xmlid/id_tst4.xml",
+    "libxml2/test/VC/dtds/a.dtd",
+    "libxml2/test/VC/dtds/doc.dtd",
+    "libxml2/test/XInclude/ents/issue733.dtd",
+    "libxml2/test/c14n/1-1-without-comments/doc.dtd",
+    "libxml2/test/c14n/with-comments/doc.dtd",
+    "libxml2/test/c14n/without-comments/doc.dtd",
+    "libxml2/test/dtds/eve.dtd",
+    "libxml2/test/ebcdic_566012.xml",
+    "libxml2/test/errors/754947.xml",
+    "libxml2/test/errors/758588.xml",
+    "libxml2/test/errors/attr1.xml",
+    "libxml2/test/errors/attr2.xml",
+    "libxml2/test/errors/empty.xml",
+    "libxml2/test/errors/invalid-start-tag-1.xml",
+    "libxml2/test/errors/invalid-start-tag-2.xml",
+    "libxml2/test/errors/name2.xml",
+    "libxml2/test/errors/trailing-null-2.xml",
+    "libxml2/test/errors/truncated-utf16.xml",
+    "libxml2/test/errors/unclosed-element.xml",
+    "libxml2/test/errors/utf8-1.xml",
+    "libxml2/test/errors/utf8-2.xml",
+    "libxml2/test/recurse/lol_ip_content.dtd",
+    "libxml2/test/recurse/lol_ip_value.dtd",
+    "libxml2/test/slashdot16.xml",
+    "libxml2/test/text-4-byte-UTF-16-BE-offset.xml",
+    "libxml2/test/text-4-byte-UTF-16-BE.xml",
+    "libxml2/test/text-4-byte-UTF-16-LE-offset.xml",
+    "libxml2/test/text-4-byte-UTF-16-LE.xml",
+    "libxml2/test/threads/a/a.dtd",
+    "libxml2/test/threads/abc.dtd",
+    "libxml2/test/threads/acb.dtd",
+    "libxml2/test/threads/b/b.dtd",
+    "libxml2/test/threads/bac.dtd",
+    "libxml2/test/threads/bca.dtd",
+    "libxml2/test/threads/c/c.dtd",
+    "libxml2/test/threads/cab.dtd",
+    "libxml2/test/threads/cba.dtd",
+    "libxml2/test/utf16bebom.xml",
+    "libxml2/test/utf16bom.xml",
+    "libxml2/test/utf16lebom.xml",
+    "libxml2/test/valid/dtds/127772.dtd",
+    "libxml2/test/valid/dtds/694228.dtd",
+    "libxml2/test/valid/dtds/766956.dtd",
+    "libxml2/test/valid/dtds/NewsMLv1.2.dtd",
+    "libxml2/test/valid/dtds/cond_sect1.dtd",
+    "libxml2/test/valid/dtds/cond_sect2.dtd",
+    "libxml2/test/valid/dtds/nitf-2-5.dtd",
+    "libxml2/test/valid/dtds/notes.dtd",
+    "libxml2/test/valid/dtds/objednavka.dtd",
+    "libxml2/test/valid/dtds/pe-in-text-decl.dtd",
+    "libxml2/test/valid/dtds/pe-test.dtd",
+    "libxml2/test/valid/dtds/pe-val-latin1.dtd",
+    "libxml2/test/valid/dtds/spec.dtd",
+    "libxml2/test/valid/dtds/xhtml1-frameset.dtd",
+    "libxml2/test/valid/dtds/xhtml1-strict.dtd",
+    "libxml2/test/valid/dtds/xhtml1-transitional.dtd",
+    "libxml2/test/valid/dtds/xmlspec.dtd",
+    "libxml2/test/valid/t4.dtd",
+    "libxml2/test/valid/t4a.dtd",
+    "libxml2/test/valid/t6.dtd",
+    "maven/impl/maven-core/src/test/resources/projects/bad-project.xml",
+    "maven/its/core-it-suite/src/test/resources/mng-4498/repo-a/org/apache/maven/its/mng4498/dep/0.1-SNAPSHOT/maven-metadata.xml",
+    "maven/its/core-it-suite/src/test/resources/mng-5898/ejbs/src/main/resources/META-INF/ejb-jar.xml",
+    "maven/its/core-it-suite/src/test/resources/mng-5898/servlets/servlet/src/main/webapp/WEB-INF/web.xml",
+    "maven/its/core-it-suite/src/test/resources/mng-8561/src/res/test.xml",
+    "cxf/rt/bindings/xml/src/test/resources/message-operation-empty-param.xml",
+    "cxf/rt/databinding/jaxb/src/test/java/org/apache/cxf/jaxb/resources/emptyReq.xml",
+    "cxf/rt/ws/policy/src/main/resources/schemas/XMLSchema.dtd",
+    "cxf/rt/ws/policy/src/main/resources/schemas/datatypes.dtd",
+    "cxf/rt/ws/security/src/test/resources/org/apache/cxf/ws/security/wss4j/signed_missing_signed_body.xml",
+    "cxf/rt/ws/security/src/test/resources/org/apache/cxf/ws/security/wss4j/signed_missing_signed_header.xml",
+    "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/XMLSchema.dtd",
+    "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/datatypes.dtd",
+    "libxslt/tests/REC/stand-2.7-1.dtd",
+    "libxslt/tests/docbook/common/l10n.dtd",
+    "libxslt/tests/docbook/dtd/3.1.7/calstblx.dtd",
+    "libxslt/tests/docbook/dtd/3.1.7/dbtblcals.dtd",
+    "libxslt/tests/docbook/dtd/3.1.7/dbtblxchg.dtd",
+    "libxslt/tests/docbook/dtd/3.1.7/docbookx.dtd",
+    "libxslt/tests/docbook/dtd/3.1.7/soextblx.dtd",
+    "libxslt/tests/docbook/dtd/4.0/calstblx.dtd",
+    "libxslt/tests/docbook/dtd/4.0/docbookx.dtd",
+    "libxslt/tests/docbook/dtd/4.0/soextblx.dtd",
+    "libxslt/tests/docbook/dtd/4.1.2/calstblx.dtd",
+    "libxslt/tests/docbook/dtd/4.1.2/docbookx.dtd",
+    "libxslt/tests/docbook/dtd/4.1.2/soextblx.dtd",
+    "libxslt/tests/docbook/dtd/simple/3.1.7.1/sdocbook-custom.dtd",
+    "libxslt/tests/docbook/dtd/simple/3.1.7.1/sdocbook.dtd",
+    "libxslt/tests/docbook/dtd/simple/3.1.7.1/sdocbookref-custom.dtd",
+    "libxslt/tests/docbook/dtd/simple/3.1.7.1/sdocbookref.dtd",
+    "libxslt/tests/docbook/dtd/simple/4.1.2.4/sdocbook-custom.dtd",
+    "libxslt/tests/docbook/dtd/simple/4.1.2.4/sdocbook.dtd",
+    "libxslt/tests/docbook/dtd/simple/4.1.2.4/sdocbookref.dtd",
+    "libxslt/tests/general/doc.dtd",
+    "libxslt/tests/multiple/dict.dtd",
+    "libxslt/tests/multiple/result.xml",
+    "libxslt/tests/xmlspec/xmlspec-v21.dtd"
+  ],
+  "errorFileSamples": [
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_2.dtd E=128 M=0 bytes=19787",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_3.dtd E=156 M=0 bytes=34963",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_1.dtd E=28 M=0 bytes=6593",
+    "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_2.dtd E=52 M=0 bytes=14181",
+    "docx4j/docx4j-core/src/main/java/org/docx4j/org/apache/xml/security/resource/config.dtd E=39 M=0 bytes=2897",
+    "docx4j/docx4j-core/src/main/resources/org/docx4j/openpackaging/parts/WordprocessingML/numbering.xml E=6917 M=0 bytes=13844",
+    "docx4j/docx4j-core/src/main/resources/org/docx4j/openpackaging/parts/WordprocessingML/styles.xml E=17322 M=0 bytes=34642",
+    "libxml2/doc/xmlcatalog.xml E=1 M=0 bytes=18766",
+    "libxml2/doc/xmllint.xml E=1 M=0 bytes=38823",
+    "libxml2/python/tests/test.dtd E=1 M=0 bytes=21",
+    "libxml2/result/ebcdic_566012.xml E=1 M=0 bytes=61",
+    "libxml2/result/errors/ns-ent.xml E=2 M=0 bytes=241",
+    "libxml2/result/noent/ebcdic_566012.xml E=1 M=0 bytes=61",
+    "libxml2/result/noent/slashdot16.xml E=5188 M=0 bytes=10374",
+    "libxml2/result/noent/text-4-byte-UTF-16-BE-offset.xml E=75 M=0 bytes=4244",
+    "libxml2/result/noent/text-4-byte-UTF-16-BE.xml E=74 M=0 bytes=4238",
+    "libxml2/result/noent/text-4-byte-UTF-16-LE-offset.xml E=75 M=0 bytes=4244",
+    "libxml2/result/noent/text-4-byte-UTF-16-LE.xml E=74 M=0 bytes=4238",
+    "libxml2/result/noent/utf16bebom.xml E=174 M=0 bytes=344",
+    "libxml2/result/noent/utf16bom.xml E=130 M=0 bytes=258",
+    "libxml2/result/noent/utf16lebom.xml E=173 M=0 bytes=344",
+    "libxml2/result/slashdot16.xml E=5188 M=0 bytes=10374",
+    "libxml2/result/text-4-byte-UTF-16-BE-offset.xml E=75 M=0 bytes=4244",
+    "libxml2/result/text-4-byte-UTF-16-BE.xml E=74 M=0 bytes=4238",
+    "libxml2/result/text-4-byte-UTF-16-LE-offset.xml E=75 M=0 bytes=4244",
+    "libxml2/result/text-4-byte-UTF-16-LE.xml E=74 M=0 bytes=4238",
+    "libxml2/result/utf16bebom.xml E=174 M=0 bytes=344",
+    "libxml2/result/utf16bom.xml E=130 M=0 bytes=258",
+    "libxml2/result/utf16lebom.xml E=173 M=0 bytes=344",
+    "libxml2/result/valid/REC-xml-19980210.xml E=1 M=0 bytes=159436",
+    "libxml2/result/valid/id2.xml E=4 M=0 bytes=272",
+    "libxml2/result/xmlid/id_err1.xml E=1 M=0 bytes=45",
+    "libxml2/result/xmlid/id_err2.xml E=5 M=0 bytes=108",
+    "libxml2/result/xmlid/id_tst1.xml E=5 M=0 bytes=108",
+    "libxml2/result/xmlid/id_tst2.xml E=5 M=0 bytes=110",
+    "libxml2/result/xmlid/id_tst3.xml E=5 M=0 bytes=110",
+    "libxml2/result/xmlid/id_tst4.xml E=5 M=0 bytes=108",
+    "libxml2/test/VC/dtds/a.dtd E=1 M=0 bytes=62",
+    "libxml2/test/VC/dtds/doc.dtd E=1 M=0 bytes=56",
+    "libxml2/test/VCM/v22.xml E=2 M=0 bytes=205",
+    "libxml2/test/XInclude/ents/issue733.dtd E=1 M=0 bytes=31",
+    "libxml2/test/c14n/1-1-without-comments/doc.dtd E=1 M=0 bytes=18",
+    "libxml2/test/c14n/with-comments/doc.dtd E=1 M=0 bytes=18",
+    "libxml2/test/c14n/without-comments/doc.dtd E=1 M=0 bytes=18",
+    "libxml2/test/dtds/eve.dtd E=1 M=0 bytes=122",
+    "libxml2/test/ebcdic_566012.xml E=1 M=0 bytes=63",
+    "libxml2/test/errors/754946.xml E=2 M=0 bytes=78",
+    "libxml2/test/errors/754947.xml E=1 M=0 bytes=29",
+    "libxml2/test/errors/758588.xml E=1 M=0 bytes=10243",
+    "libxml2/test/errors/759020.xml E=0 M=1 bytes=4191",
+    "libxml2/test/errors/759398.xml E=4 M=0 bytes=16934",
+    "libxml2/test/errors/759573-2.xml E=9 M=0 bytes=349",
+    "libxml2/test/errors/759573.xml E=1 M=0 bytes=104",
+    "libxml2/test/errors/attr1.xml E=1 M=0 bytes=5649",
+    "libxml2/test/errors/attr2.xml E=1 M=0 bytes=5650",
+    "libxml2/test/errors/content1.xml E=0 M=1 bytes=202",
+    "libxml2/test/errors/doctype1.xml E=1 M=0 bytes=25",
+    "libxml2/test/errors/doctype2.xml E=1 M=0 bytes=21",
+    "libxml2/test/errors/empty.xml E=1 M=0 bytes=0",
+    "libxml2/test/errors/ent_redecl.xml E=1 M=0 bytes=47"
+  ],
+  "topRepeatedIdentities": [
+    [
+      "entry/key",
+      9385
+    ],
+    [
+      "name/xml:lang",
+      9091
+    ],
+    [
+      "group/name",
+      8900
+    ],
+    [
+      "entry/value",
+      8892
+    ],
+    [
+      "xsd:annotation/xsd:documentation",
+      8297
+    ],
+    [
+      "dependencylist/dependency",
+      7176
+    ],
+    [
+      "jaxws:properties/entry",
+      7030
+    ],
+    [
+      "dependencies/dependency",
+      5885
+    ],
+    [
+      "dependency/artifactId",
+      5870
+    ],
+    [
+      "dependency/groupId",
+      5866
+    ],
+    [
+      "gd/name",
+      4524
+    ],
+    [
+      "gd/fmla",
+      4523
+    ],
+    [
+      "xsd:restriction/xsd:enumeration",
+      4253
+    ],
+    [
+      "xsd:enumeration/value",
+      4253
+    ],
+    [
+      "template/name",
+      4194
+    ],
+    [
+      "localization/gentext",
+      4186
+    ],
+    [
+      "gdLst/gd",
+      4175
+    ],
+    [
+      "context/template",
+      4174
+    ],
+    [
+      "template/text",
+      4174
+    ],
+    [
+      "gentext/key",
+      4086
+    ],
+    [
+      "gentext/text",
+      4086
+    ],
+    [
+      "bean/class",
+      3952
+    ],
+    [
+      "dependency/version",
+      3858
+    ],
+    [
+      "description/xml:lang",
+      3571
+    ],
+    [
+      "packagelist/packagereq",
+      3515
+    ],
+    [
+      "packagereq/type",
+      3515
+    ],
+    [
+      "w:latentStyles/w:lsdException",
+      3485
+    ],
+    [
+      "w:lsdException/w:name",
+      3485
+    ],
+    [
+      "group/description",
+      3428
+    ],
+    [
+      "w:lsdException/w:uiPriority",
+      3300
+    ],
+    [
+      "property/name",
+      3270
+    ],
+    [
+      "bean/property",
+      2878
+    ],
+    [
+      "w:lsdException/w:unhideWhenUsed",
+      2804
+    ],
+    [
+      "w:lsdException/w:semiHidden",
+      2756
+    ],
+    [
+      "/project",
+      2695
+    ],
+    [
+      "project/artifactId",
+      2666
+    ],
+    [
+      "beans/bean",
+      2653
+    ],
+    [
+      "xsd:enumeration/xsd:annotation",
+      2649
+    ],
+    [
+      "project/modelVersion",
+      2529
+    ],
+    [
+      "pt/x",
+      2508
+    ],
+    [
+      "pt/y",
+      2508
+    ],
+    [
+      "plugins/plugin",
+      2462
+    ],
+    [
+      "plugin/artifactId",
+      2462
+    ],
+    [
+      "project/default",
+      2301
+    ],
+    [
+      "SPEECH/LINE",
+      2159
+    ],
+    [
+      "plugin/groupId",
+      2145
+    ],
+    [
+      "bean/id",
+      2120
+    ],
+    [
+      "dependency/scope",
+      1969
+    ],
+    [
+      "project/version",
+      1851
+    ],
+    [
+      "project/groupId",
+      1849
+    ],
+    [
+      "goals/goal",
+      1803
+    ],
+    [
+      "entry/title",
+      1797
+    ],
+    [
+      "path/lnTo",
+      1744
+    ],
+    [
+      "lnTo/pt",
+      1744
+    ],
+    [
+      "entry/p",
+      1739
+    ],
+    [
+      "letter/entry",
+      1735
+    ],
+    [
+      "entry/c",
+      1735
+    ],
+    [
+      "project/name",
+      1732
+    ],
+    [
+      "plugin/version",
+      1694
+    ],
+    [
+      "ref/bean",
+      1650
+    ]
+  ],
+  "knownGapEntityReferenceCoverage": {
+    "what": "every entity_reference edge is reported SPURIOUS",
+    "why": "this oracle derives no entity references; entity_reference is not among its 19 classes",
+    "entityReferenceEdgesCorpusWide": 5350,
+    "ofWhichBuiltin": 4816,
+    "coveredElsewhereBy": [
+      "script/m14/differential.ts — deriveTreeEdges xml branch (section E 0/0 row)",
+      "script/m12/xml-entity-accounting.mts — accounting identity over 11,940 sites"
+    ]
+  }
+}
