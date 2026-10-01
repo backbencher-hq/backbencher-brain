@@ -50,6 +50,8 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 // saw, while the lane printed a percentage. Same finished-but-unconnected shape as
 // typescript's 846 lines and clojure's three.
 import { deriveZigContainment, deriveZigImports, deriveZigExports, deriveZigInstantiation } from "./zig-truth"
+// M60: erlang `contains` — see script/m14/oracles/erlang-contains.ts for the rule.
+import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -8885,6 +8887,12 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
   const seen = new Set<string>()
   const isCapitalized = (t: string): boolean => t.length > 0 && t.charCodeAt(0) >= 65 && t.charCodeAt(0) <= 90
   const DART_BUILTINS = new Set(["print", "assert", "identical", "toString", "hashCode", "runtimeType", "noSuchMethod"])
+  // Pattern contexts whose qualified head-and-member reads are member reads.
+  const PATTERN_PARENTS = new Set([
+    "constant_pattern", "logical_or_pattern", "relational_pattern",
+    "cast_pattern", "null_check_pattern", "null_assert_pattern",
+    "parenthesized_pattern", "object_pattern",
+  ])
   const key = (label: string, target: string) => label + ":" + target
   const push = (label: string, target: string) => {
     const k = key(label, target)
@@ -9181,6 +9189,30 @@ export function deriveDartEdges(root: any): { label: string; from: string; targe
     // DT-A/DT-F mirror: selector with arguments. Chain walk decides
     // construction vs call (named ctors, prefix construction); bare calls
     // keep the DARTD1 rule verbatim.
+    // A QUALIFIED CONSTANT PATTERN is not a selector. `case HttpStatus.continue_:`
+    // and `S.a =>` in a switch expression parse as
+    //   constant_pattern > qualified > [ type_identifier, identifier ]
+    // so the member-read branch below — keyed on `selector` — never sees it, and
+    // `deriveDartBareUses` does not either, because a member read there requires
+    // an enclosing CLASS and a switch in a top-level function has none. Nothing
+    // published those reads, so 40 rows in ok_http's
+    // `cupertino_client.dart` (`_findReasonPhrase -> continue_ / ok / created / …`,
+    // one per HTTP status) read as UNEXPLAINED. They are genuine reads of enum
+    // constants and the analyzer has emitted them since the qualified-pattern rule
+    // landed; this is the mirror that was never written.
+    //
+    // Restricted to a PATTERN parent on purpose: `qualified` also spells ordinary
+    // qualifier chains, so admitting it wholesale would make this a second, looser
+    // spelling of the `selector` rule below and let the two disagree.
+    if (t === "qualified" && n.parent && PATTERN_PARENTS.has(n.parent.type)) {
+      const parts = n.namedChildren
+      const head = parts[0]
+      const member = parts[parts.length - 1]
+      if (parts.length >= 2 && head && member && head.type === "type_identifier" &&
+          member.type === "identifier" && isCapitalized(head.text) && !DART_BUILTINS.has(member.text)) {
+        push("uses", member.text)
+      }
+    }
     if (t === "selector") {
       const hasArgs = n.namedChildren.some((c: any) => c.type === "argument_part")
       if (hasArgs) {
@@ -20692,6 +20724,16 @@ async function main() {
           ;(truth as any[]).push({ label: "instantiates", from: e.from, target: e.target })
         }
       }
+      if (lang === "erlang") {
+        // M60 label-coverage sweep: erlang published `contains` that the allowlist
+        // dropped. Erlang has no classes, so the module is the container; see
+        // script/m14/oracles/erlang-contains.ts for the rule and for what is
+        // deliberately NOT a member (a `-spec` restates a function's type, it is not
+        // a separate declaration). Full mirror: truth and allowance in one commit.
+        for (const e of deriveErlangContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
           // C923 (#923): the truth now DERIVES the member-level interface contract, but
@@ -21170,6 +21212,7 @@ async function main() {
           // M60: zig joins contains, imports and exports — all three oracles already
           // existed in zig-truth.ts, wired only to tmp probes.
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
+          ...(lang === "erlang" ? ["contains"] : []),
           // M60: clojure's `uses` oracle existed in clojure-truth.ts with no consumer
           // in this file, so the label was unadmitted AND unmeasured — the same
           // finished-but-unconnected shape as typescript and contains.
