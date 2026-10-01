@@ -918,6 +918,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // CP6 (second review): `auto [x, y]` bindings declare (see the
       // carve-out in isDeclarationPosition — all names, not first-only).
       "structured_binding_declarator",
+      // A DESTRUCTOR's name is declared, never read: `~json_sax()` puts the
+      // class name inside a `destructor_name` node, and without this entry the
+      // guard below returned false and the class name read as a value use. The
+      // analyzer's behaviour was already correct — the destructor branch reads
+      // the name to BUILD the symbol and never emitted a `uses` for it — so
+      // this entry changes no output here; it is here so the SET matches the
+      // F5 oracle's, because the oracle was the side that got it wrong and the
+      // whole point of a shared set is that neither side can drift alone.
+      // Measured on the oracle: 27 `uses` truth rows for names that are all
+      // constructor/destructor declarations in nlohmann's ABI test header
+      // (`json_sax`, `lexer`, `binary_reader`, `iter_impl`, `nonesuch`,
+      // `file_input_adapter`, `input_stream_adapter`, `json_sax_dom_parser`) —
+      // the analyzer published ZERO `uses` for every one of them.
+      "destructor_name",
       // F6 audit: `template_type_parameter` / `template_value_parameter` are
       // NOT types in the pinned tree-sitter-cpp grammar — template parameters
       // parse as `type_parameter_declaration` (`typename T` / `class T`) and
