@@ -1,8 +1,8 @@
 {
  "schemaVersion": 1,
  "instrument": "script/m14/tmp/c-audit/m12-truth-drift.ts",
- "generatedAt": "2026-10-01T07:15:03.385Z",
- "commit": "ad20a6c9e3e65a40b63b4c1e3d5ab3f04c941a1b",
+ "generatedAt": "2026-10-01T23:04:58.862Z",
+ "commit": "a22e713c1f7d1576cf92b97b89bbbe29c9fe2c69",
  "purpose": "Per-row comparison of the PINNED M12 ground truth against the LIVE analyzer, on the four M12 fixtures. The M12 differential is a fixture differential, so this needs no corpus -- which is what makes it runnable at all in a checkout where the F5 harness's corpus root ($HOME/fixtures/repositories) does not exist.",
  "why": "validation/m12/results/c-differential.json asserts passed:true at 92/92 and lists rel:Module.c:instantiates:buffer_create:malloc and rel:Module.c:references:global:stdlib.h among its TRUE POSITIVES. The analyzer emits neither: Module.c produces imports 2 / calls 6 / uses 8, with no `instantiates` (the allocator edge was deliberately removed as noise) and includes in the first-class `imports` kind since M60/#910. A row the analyzer cannot produce cannot be a true positive, so the artifact is green on something that cannot fail.",
  "totals": {
