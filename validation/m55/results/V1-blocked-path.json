@@ -7,8 +7,8 @@
     "height": 1080
   },
   "editor": {
-    "binary": "/usr/bin/code",
-    "version": "1.138.0",
+    "binary": "Command failed: bash -lc command -v code",
+    "version": "",
     "pinnedDeclared": "1.85.0 (.vscode-test)",
     "pinHonored": false
   },
@@ -19,17 +19,17 @@
     "bundleSha256": ""
   },
   "fixture": {
-    "workspace": "$HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
+    "workspace": "$HOME/Documents/Default Project/ishaq/.bbgraph-base/validation/m55/.blocked-path-fixture-absent",
     "present": false,
     "contentHash": null,
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-09-19T02:54:50.747Z",
-  "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
+  "generatedAt": "2026-09-30T02:39:15.543Z",
+  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), code (the editor under test), python3 + PIL (script/m55/pixel-read.py), declared fixture workspace ($HOME/Documents/Default Project/ishaq/.bbgraph-base/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:50.953Z",
-    "contentSha256": "efd2cd3548e00073c0ae7d43d29a8353bede9b9f097332aa87a1713f08e3659a"
+    "sealedAt": "2026-09-30T02:39:15.987Z",
+    "contentSha256": "ea867413f4c611ced6c10631aa62b8ddbf5f273e6c6069fa5c97c493c021236d"
   }
 }
