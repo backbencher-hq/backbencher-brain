@@ -1172,7 +1172,13 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         name,
         ASTEngine.RelationshipType.Contains,
         1.0,
-        { evidenceClass: "structural", isForeignImport: true },
+        // The entity travels with the edge as well as the symbol: the cited line
+        // is the `foreign import` line, which spells the C name
+        // (`WaitForSingleObject`) while the Haskell binding adds an underscore
+        // (`waitForSingleObject_`). A consumer — or a gate — checking that the
+        // target name appears at the cited line has to be able to find the
+        // spelling that IS there.
+        { evidenceClass: "structural", isForeignImport: true, ...(entity ? { foreignEntity: entity } : {}) },
         this.lineOf(node),
       )
       if (entity) {
@@ -1207,10 +1213,22 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name) return false
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    const typeRange = this.nodeToRange(node)
+    // A `data`/`newtype` declaration puts its keyword on its own line often
+    // enough that the node's start line is the bare word `data`:
+    //   data
+    //     RuleCommands
+    //       (scope :: Scope)
+    // Anchoring the symbol at its own `name` node puts every `contains` edge
+    // citing it on the line the name is written, which is the line a reader wants.
+    if (nameNode) {
+      typeRange.startLine = nameNode.startPosition.row + 1
+      typeRange.startColumn = nameNode.startPosition.column
+    }
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Type,
-      range: this.nodeToRange(node),
+      range: typeRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
@@ -1459,6 +1477,16 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processInstance(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
     let className = ""
     let targetType = ""
+    // The node that CARRIES the target type's name. An instance declaration is
+    // routinely multi-line and its `instance` keyword sits on its own line:
+    //   instance IsGraph ipkg srcpkg =>
+    //     IsNode (GenericPlanPackage ipkg srcpkg) where
+    // so the instance node's start line is the `instance` keyword and never
+    // contains the symbol's own name. Anchoring the symbol's range at this node
+    // puts the name — and therefore every `contains` edge citing it — on the line
+    // a reader would land on. Measured over cabal: 32 edges in one file cited a
+    // bare `instance` keyword.
+    let targetNode: Node | null = null
 
     // Shape: [context?, name(class), type_patterns?, instance_declarations?]
     const classNode = this.findNamedChildByType(node, ["name"])
@@ -1471,6 +1499,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const direct = this.findNamedChildByType(tpNode, ["name", "constructor"])
       if (direct?.text) {
         targetType = direct.text
+        targetNode = direct
       } else {
         const list = this.findNamedChildByType(tpNode, ["list"])
         if (list) {
@@ -1483,7 +1512,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // M60 (#924, haskell E half): the TARGET TYPE's NAME, not the whole
             // application — (M1 i c f) names the type M1, and publishing M1 i c
             // put a payload where a name belongs. See haskellAppliedHeadName.
-            if (first) targetType = this.haskellAppliedHeadName(first) ?? first.text
+            if (first) {
+              targetType = this.haskellAppliedHeadName(first) ?? first.text
+              // anchor on the APPLIED HEAD, which is where the name is written:
+              // `(GenericPlanPackage ipkg srcpkg)` names it at the apply's first
+              // child, not at the enclosing `instance` keyword's line
+              const head = first.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
+              targetNode = head ?? first
+            }
           }
         }
       }
@@ -1508,10 +1544,16 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name || name === " ") return false
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    const instRange = this.nodeToRange(node)
+    if (targetNode) {
+      // start where the NAME is, end where the declaration is
+      instRange.startLine = targetNode.startPosition.row + 1
+      instRange.startColumn = targetNode.startPosition.column
+    }
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
+      range: instRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
