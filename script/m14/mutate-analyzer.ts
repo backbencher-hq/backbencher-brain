@@ -12243,6 +12243,27 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    // NO MUTANT for the declaration-keyed override lookup, and that is a decision rather
+    // than an omission.
+    //
+    // The revert reads: clear each method's `ownerClassKey` so the resolution falls back to
+    // the name-keyed base table, which reproduces `class C` with no base inheriting the bases
+    // of an unrelated `class C(Base)`. It was written, and it reported `0 -> 0 failures` — a
+    // SURVIVOR — for a reason that has nothing to do with the fix: relationships are derived
+    // INSIDE `analyze()`, so by the time a ParseResult exists the edges are already emitted,
+    // and deleting a symbol field afterwards cannot re-derive one.
+    //
+    // Shipping it would have been the exact failure this lane keeps hitting: a mutant that
+    // models nothing, reports as though it modelled something, and reads as coverage in the
+    // mutant count. `python/same-name-class-scopes` pins the behaviour instead, with both
+    // sides of the line — the class that genuinely extends `Base` as a positive row, and the
+    // identical source and target at the line of the class that does not as a forbid, so the
+    // fixture cannot tell the two declarations apart by name and has to use the line.
+    //
+    // The same limit applies to the lambda/comprehension scope guard: both are questions
+    // about the TREE, asked inside `analyze()`, and a ParseResult cannot answer them.
+  },
+  {
     id: "python/class-variable-binding-suppressed",
     language: "python",
     defectClass: "relationship-loss",

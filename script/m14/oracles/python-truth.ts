@@ -231,7 +231,17 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   // left-to-right and ALL of them are real bases; emitting only the first would lose a
   // diamond, which is the single most common shape in the corpora this is measured on.
   for (const c of classes) {
-    for (const b of c.bases) add("extends", c.name, b, c.line)
+    // A SAME-NAME BASE IS NOT AN EXTENDS EDGE. `class _X(_X)` — the real
+    // `IpythonMagic.py` PGO-shadowing idiom — REBINDS the name: the inner `_X` is a
+    // different class from the outer one, so publishing `extends _X -> _X` would assert a
+    // self-loop the source does not contain and that would resolve to the class itself.
+    //
+    // This is the lane's declared boundary (#299) rather than a bug, and the leaf text is
+    // still recorded in the class's baseClasses metadata, so the information is not lost —
+    // it is just not asserted as a relationship. The oracle derived these 13 edges and the
+    // analyzer does not, so mirroring the rule here is what makes the differential able to
+    // see anything else in the column.
+    for (const b of c.bases) if (b !== c.name) add("extends", c.name, b, c.line)
   }
 
   // `overrides` — a method whose NAME also exists on a base. Derived from the skeleton,
@@ -254,9 +264,38 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
   for (const c of classes) {
     for (const [m, line] of c.methods) {
       for (const b of c.bases) {
-        // A base the SOURCE qualified is external even when a local class shares its
-        // leaf, so it can never be a local override target.
-        const base = c.qualifiedBases.has(b) ? undefined : classes.find((x) => x.name === b)
+        // A BASE NAME RESOLVES TO THE BINDING VISIBLE AT THE CLASS STATEMENT, which for a
+        // file declaring the same class name more than once is the nearest PRECEDING
+        // declaration — not the first one in the file.
+        //
+        // `classes.find(x => x.name === b)` took the first, so in
+        // `cython/Tools/dataclass_test_data/test_dataclasses.py`, where a dozen test methods
+        // each declare their own `class A`, `class B` and `class C`, every base resolved to
+        // whichever namesake appeared earliest and the override edges paired a class with a
+        // base from a different method entirely. That is the same defect the analyzer had and
+        // the same fix: identity is a DECLARATION SITE, not a name. CPython's own `ast` is the
+        // referee — `ast.walk` over that file reports `class C` at L127 with `bases: None`
+        // beside `class C(B)` at L120, and two same-named classes in different scopes have no
+        // relationship to each other at all.
+        //
+        // `x.name !== c.name` is not a micro-optimisation. `class ArgumentParser(ArgumentParser)`
+        // in `ansible/parsing/urls.py`-style files rebinds a name the module IMPORTED, and the
+        // imported class is the real base — so pairing it with the local namesake would make
+        // every class override itself, which is not a thing a class can do. A class cannot
+        // extend itself, so a base that resolves to the declaring class is by definition not a
+        // local base, and the honest reading is external rather than self.
+        //
+        // What this still cannot settle is a base name that is BOTH imported and locally
+        // declared by a DIFFERENT class, where the import is the real base. Resolving that
+        // needs the module's imports, which this derivation does not read, so for those files
+        // the oracle's `overrides` verdict is not evidence about the lane and is reported as
+        // unresolved rather than as agreement or disagreement.
+        //
+        // `findLast` over declarations strictly before this one is the lexical rule Python
+        // itself applies when it evaluates the base list: the name must already be bound.
+        const base = c.qualifiedBases.has(b)
+          ? undefined
+          : classes.findLast((x) => x.name === b && x.line < c.line && x.name !== c.name)
         if (base && base.methods.has(m)) add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
         else if (!base && b === "object" && m === "__init__") add("overrides", `${c.name}.${m}`, `${b}.${m}`, line)
       }
