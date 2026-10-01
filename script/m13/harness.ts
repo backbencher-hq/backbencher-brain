@@ -13,6 +13,27 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
+/**
+ * True when a result carries no NaN similarity.
+ *
+ * The predicate that matters is "not a non-finite NUMBER", not
+ * `Number.isFinite(value)`. `SemanticResult.similarity` is `number | null`, and
+ * null is the DECLARED marker for "no similarity was computed": a
+ * keyword-fallback result is not vector-ranked, so it carries null — and never
+ * carried 0, because a zero is a number and consumers treated it as one. See
+ * the fallback in `src/intelligence/search/semantic-search.ts`.
+ *
+ * `Number.isFinite(null)` is false, so using it here fails on a CORRECT result.
+ * That went unnoticed because the adversarial and integration scenarios used to
+ * return no results at all, and `[].every(...)` is vacuously true. It surfaced
+ * when the body column and the terms route made a previously-unmatchable query
+ * matchable — i.e. an assertion that separated "no results" from "bad results"
+ * only by accident was not asserting anything.
+ */
+export function noNanSimilarity(row: { similarity?: unknown }): boolean {
+  return typeof row.similarity === "number" ? Number.isFinite(row.similarity) : row.similarity === null
+}
+
 export type EvidenceLayer = "unit" | "integration" | "e2e" | "corpus"
 export type EvidenceState = "verified" | "partial" | "known-gap" | "untested"
 

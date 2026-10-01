@@ -1,5 +1,6 @@
 import { BrainDatabase } from "../../brain/database"
 import type { ProjectID } from "../../project/schema"
+import { normalizeScopePath } from "./dependencies"
 import type { ComplexityMetric, ComplexityReport } from "../contracts"
 import { makeProvenance } from "../evidence"
 
@@ -117,12 +118,17 @@ export async function analyzeComplexity(
       breakdown: topRows.map((s) => ({ name: s.name, type: s.symbolType, complexity: s.complexity, file: s.file, line: s.line })),
       symbolCount,
       filesInScope,
+      // Project-wide: the two counts are the same question here.
+      filesMatchingScope: filesInScope,
       couplingRelationshipTypes: [...COUPLING_RELATIONSHIP_TYPES],
       provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
     }
   }
 
   let symbols: SymRow[]
+  // "exact-file" | "directory-prefix" for a file-shaped scope; undefined for a
+  // symbol or project scope, where the question does not arise.
+  let scopeMatch: ComplexityReport["scopeMatch"]
   if (scope === "function") {
     if (!options.target) throw new Error("Function name required for function scope")
     symbols = raw.prepare(base + " AND s.name = ? LIMIT 50").all(projectId, options.target) as SymRow[]
@@ -135,12 +141,29 @@ export async function analyzeComplexity(
     // 1. an exact relative path — what a caller means, and unambiguous even
     //    when the path contains % or _.
     symbols = raw.prepare(base + " AND f.relative_path = ?").all(projectId, wanted) as SymRow[]
-    if (symbols.length === 0 && wanted.includes("/")) {
+    // Which of the two file-shaped scopes this is. `scope` alone says "file"
+    // for both, which reads as ONE file: measured on the atlas corpus,
+    // `target: "src/wide"` reported `scope: "file"` with `filesInScope: 68`. A
+    // reader who trusts the label concludes the metrics describe one file, and
+    // `maintainability` — a per-unit index — is then read as a file's score
+    // when it is a directory's.
+    scopeMatch = "exact-file"
+    // No `includes("/")` guard here. There was one, and it made every
+    // TOP-LEVEL directory an invalid scope: a directory prefix needs no slash,
+    // so `"ast"` never reached this branch and was refused as "no indexed file
+    // matches" — on backbencher-brain/src, where 84 of 184 files live under
+    // `ast/`, while `ast/real-nim-analyzer.ts` answered fine. The guard cannot
+    // have been protecting anything, because a bare name that is not a path
+    // matches no directory either and falls through to the same refusal below.
+    // Measured on that corpus: `target: "ast"`, `"intelligence"` and `"mcp"`
+    // were all refused; each holds 60-84 indexed files.
+    if (symbols.length === 0) {
       // 2. a directory prefix, anchored at a separator so "src/util" cannot
       //    match "src/utilities", and ESCAPED so a % or _ is a character.
       symbols = raw
         .prepare(base + " AND f.relative_path LIKE ? ESCAPE '\\'")
         .all(projectId, escapeLike(wanted) + "/%") as SymRow[]
+      scopeMatch = "directory-prefix"
     }
     if (symbols.length === 0) {
       // 3. REFUSE. The old code answered with `%target%` matched anywhere, so
@@ -161,6 +184,33 @@ export async function analyzeComplexity(
   }
 
   const symbolCount = symbols.length
+  // Two different questions, and the report used to answer only one of them.
+  //
+  //   filesMatchingScope — how many indexed FILES the scope names
+  //   filesInScope       — how many of those hold a SYMBOL the metrics are over
+  //
+  // They differ whenever a file in scope has no indexed symbol, and they
+  // differed silently: on backbencher-brain/src, `target: "ast"` reported
+  // `filesInScope: 83` while the scope holds 84 files, and `linesOfCode` — the
+  // sum over the symbol-bearing files — was one file short of the scope with
+  // nothing saying so. A reader checking the count against the store finds a
+  // discrepancy they cannot explain, which is worse than a larger number.
+  let filesMatchingScope = 0
+  if (scope === "file" && options.target) {
+    const clean = normalizeScopePath(options.target)
+    const exact = raw.prepare(base + " AND f.relative_path = ?").all(projectId, clean) as SymRow[]
+    if (exact.length > 0) {
+      filesMatchingScope = new Set(exact.map((r) => r.fileId)).size
+    } else {
+      filesMatchingScope = Number(
+        (
+          raw
+            .prepare("SELECT COUNT(*) c FROM brain_file f WHERE f.project_id = ? AND f.relative_path LIKE ? ESCAPE '\\'")
+            .get(projectId, escapeLike(clean) + "/%") as { c: number }
+        ).c ?? 0,
+      )
+    }
+  }
   let filesInScope = 0
   let totalCyclomatic = 0
   const breakdown: ComplexityReport["breakdown"] = []
@@ -232,6 +282,8 @@ export async function analyzeComplexity(
     breakdown: breakdown.slice(0, 20),
     symbolCount,
     filesInScope,
+    filesMatchingScope,
+    scopeMatch,
     couplingRelationshipTypes: [...COUPLING_RELATIONSHIP_TYPES],
     provenance: makeProvenance({ evidenceClass: "indexed", engine: ENGINE, engineVersion: ENGINE_VERSION, projectId, source: "brain_symbol+brain_file+brain_relationship", limitations: ["depthOfInheritance unavailable; cyclomatics use indexed heuristics not dynamic dispatch."] }),
   }
