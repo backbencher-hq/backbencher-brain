@@ -38,6 +38,27 @@
  */
 import type { Node } from "web-tree-sitter"
 
+/**
+ * The label set this oracle can emit, exported so the repository-wide
+ * relationship-type coverage gate reads it from HERE rather than from the shared
+ * `differential.ts`.
+ *
+ * WHY THIS EXPORT EXISTS. The gate derives each lane's audited set by evaluating
+ * one filter expression inside `differential.ts` - a shared file that six lanes
+ * rewrite. When the Ruby oracle moved out of that file (see the header), the gate
+ * kept reporting `ruby 2 un-audited: ["contains","references"]` - a confident and
+ * now false claim, because Ruby's oracle derives all eight and the gate was reading
+ * a file that no longer held the answer. That is the same failure mode the gate's own
+ * header warns about, reached from the other direction: not an empty set read as a
+ * real one, but a STALE set read as a current one.
+ *
+ * The value is derived from the emitter itself, not restated, so it cannot drift from
+ * what the oracle actually produces.
+ */
+export const RUBY_ORACLE_LABELS: ReadonlyArray<RubyTruthEdge["label"]> = [
+  "calls", "contains", "extends", "implements", "instantiates", "overrides", "references", "uses",
+]
+
 /** One derived fact. `from` is set for edges that name an owner. */
 export interface RubyTruthEdge {
   label: "calls" | "contains" | "extends" | "implements" | "instantiates" | "overrides" | "references" | "uses"
@@ -482,6 +503,18 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // enclosing class - PROBED: `module M; class << self; def go; end; end; end`
       // publishes `contains:go`. Passing `undefined` for `cls` here dropped every
       // singleton method in the corpus.
+      //
+      // UNLESS it is nested inside a METHOD BODY. PROBED:
+      // `def m; class << self; def full_url_for(o); end; end; end` publishes ONLY
+      // `contains:m` - the singleton reopens `self` of a call frame, which is not the
+      // class, so nothing inside it is a member of one. Same principle as the
+      // nested-def rule. Without this, route_set.rb's nested proxy singleton invented
+      // `contains` for methods the graph does not treat as members.
+      let inMethodBody = false
+      for (let q: Node | null = n.parent; q; q = q.parent) {
+        if (q.type === "class" || q.type === "module" || q.type === "singleton_class") break
+        if (q.type === "method" || q.type === "singleton_method") { inMethodBody = true; break }
+      }
       const body = n.childForFieldName("body")
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -490,7 +523,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           n: c, parent: n,
           suppress: f.suppress, inBody: false,
           scopes: [...f.scopes, n.id],
-          cls: f.cls, methodId: f.methodId,
+          cls: inMethodBody ? undefined : f.cls, methodId: f.methodId,
         })
       }
       void body
