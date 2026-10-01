@@ -399,7 +399,13 @@ export const LANG_REPOS: Record<string, string> = {
   // natural second corpus and is deliberately NOT registered: the differential takes
   // one corpus per lane, and adding a second would mean picking which number is the
   // claim, which is the thing a single declared corpus prevents.
-  java: "grails-core",
+  java: "$HOME/fixtures/xml/repos/grails-core",
+  // M14.6 (java/xml): this pin named a directory that does not exist, the same defect
+  // the groovy pin had. grails-core lives under fixtures/xml/repos/ (fetched there for
+  // the xml lane), not under CORPUS_ROOT, so the scoped-run guard aborted `--lang java`
+  // with 'corpus repo missing' before any lane measured. corpusPath honours an absolute
+  // pin, so the lane now says where its corpus IS. grails-core is a real corpus for
+  // java: thousands of tracked .java files in a mixed Java/Groovy project.
   // M14.6 groovy: this pin named a directory that did not exist. `grails-core` is under
   // `fixtures/xml/repos/` (the xml lane fetched it there), not under CORPUS_ROOT, so the
   // repo's own M60 surface audit reported `0 file(s), 0 edge(s), 0 symbol(s)` with every row
@@ -502,7 +508,13 @@ export const LANG_REPOS: Record<string, string> = {
   // XML's corpus is restored under the xml workdir rather than CORPUS_ROOT, which
   // is why BB_CORPUS_ROOT exists (see the CORPUS_ROOT definition). The baseline row
   // is keyed `grails-core:xml` and that key has to keep meaning exactly one repo.
-  xml: "grails-core",
+  xml: "$HOME/fixtures/xml/repos/grails-core",
+  // M14.6 (java/xml): this pin named a directory that does not exist, the same defect
+  // the groovy pin had. grails-core lives under fixtures/xml/repos/ (fetched there for
+  // the xml lane), not under CORPUS_ROOT, so the scoped-run guard aborted `--lang java`
+  // with 'corpus repo missing' before any lane measured. corpusPath honours an absolute
+  // pin, so the lane now says where its corpus IS. grails-core is a real corpus for
+  // java: thousands of tracked .java files in a mixed Java/Groovy project.
   // M14 (#288): html's primary corpus is `otp`, chosen for DIALECT rather than
   // volume. The two largest .html holdings in CORPUS_ROOT are Exposed (4,255
   // Dokka-generated API-doc pages) and alamofire (332 jazzy-generated ones):
@@ -608,7 +620,14 @@ export const SECOND_CORPUS: Record<string, string> = {
   // in the primary corpus) is NOT provided for this lane, and saying so is the
   // honest form of it.
   toml: "ripgrep",
-  java: "clojure",
+  // M14.6 (java): was "clojure", which has no checkout anywhere on this machine. Like
+  // the groovy `geb` pin it aborted the whole java-scoped differential before a single
+  // lane measured, because the scoped-run guard resolves every in-scope repo BEFORE
+  // measuring. Removed rather than left to abort the sweep.
+  //
+  // WHAT THIS COSTS: the java lane is now single-corpus and its two-corpus gate is not
+  // running. A change visible only on a second dialect would be invisible here, and
+  // java's differential record must not be read as if the gate were covered.
   // M60 #278: powershell's second corpus is `ansible` — 24 production .ps1/.psd1
   // files, and a genuinely different dialect rather than a second copy of the same
   // one. Ansible's PowerShell is written for Windows PowerShell 5.1: no classes at
