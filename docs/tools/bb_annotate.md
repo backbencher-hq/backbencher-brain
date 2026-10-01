@@ -44,7 +44,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 ## Returns
 
 - Stored annotation id and provenance (tool identity, timestamp)
-- Declared refusals for a missing/blank symbol, an empty body, or an over-limit body
+- Declared refusals for missing symbol, empty body, or over-limit body
 
 ## Examples
 
@@ -52,7 +52,7 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 ## Errors
 
-- Missing or blank symbol
+- Missing or unknown symbol
 - Empty body (a refusal, not a silent no-op)
 - Body exceeds the declared 2000-char limit
 
@@ -60,7 +60,6 @@ Attach an agent-authored annotation to a symbol in the shared index. Provenance 
 
 - Annotations are opinions layered on index evidence, never index truth
 - Annotation store semantics are owned by the M28 workstream
-- Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given
 
 ## Performance
 

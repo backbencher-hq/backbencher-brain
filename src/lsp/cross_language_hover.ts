@@ -282,19 +282,6 @@ JOIN brain_file   tf ON tf.id = ts.file_id
 WHERE r.project_id = ? AND r.is_cross_language = 1 AND ss.name = ?
 ORDER BY self_file, self_line, direction, other_file, other_line, row_id`
 
-/** Every indexed symbol that CARRIES the name — including the ones with no
- *  cross-language rows at all. A name held by six symbols where one is
- *  connected is a different fact from a name held by one, and an agent that
- *  cannot see the difference will read "one of my six `f` symbols is
- *  cross-language" as "`f` is cross-language". The gate caught this: the copy
- *  count disagreed with the index for every ambiguous name (CL1 A2). */
-const ALL_COPIES_SQL = `
-SELECT s.id AS id, s.name AS name, f.relative_path AS file, f.language AS language, s.line_start AS line
-FROM brain_symbol s
-JOIN brain_file f ON f.id = s.file_id
-WHERE s.project_id = ? AND s.name = ?
-ORDER BY f.relative_path, s.line_start, s.id`
-
 /** Every stored cross-language row touching ANY symbol with this name, with
  *  both ends named, filtered by project.
  *
@@ -307,30 +294,20 @@ export function storedCrossLanguageFactsByName(
   name: string,
 ): CrossLanguageNameResult {
   const rows = db.prepare(AGENT_FACTS_SQL).all(projectId, name, projectId, name) as unknown as AgentFactRow[]
-  const allCopies = db.prepare(ALL_COPIES_SQL).all(projectId, name) as unknown as Array<{
-    id: string; name: string; file: string | null; language: string | null; line: number | null
-  }>
 
-  // Every copy first, so a copy with no rows is still declared; the row scan
-  // then adds each copy's row count.
   const copies = new Map<string, CrossLanguageNameCopy>()
-  for (const copy of allCopies) {
-    copies.set(copy.id, { id: copy.id, symbol: copy.name, file: copy.file, language: copy.language, line: copy.line, crossRowCount: 0 })
-  }
   const seenRows = new Set<string>()
   const facts: CrossLanguageAgentFact[] = []
   let unpairable = 0
   let collapsed = 0
 
   for (const row of rows) {
-    const copy = copies.get(row.self_id)
-    if (copy) copy.crossRowCount++
-    else {
-      // A row whose source symbol is not in this project (should be impossible
-      // under the project filter, but a stored id is not a promise): the copy is
-      // added rather than dropped, so the count can never under-report.
-      copies.set(row.self_id, { id: row.self_id, symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line, crossRowCount: 1 })
+    const copy = copies.get(row.self_id) ?? {
+      id: row.self_id, symbol: row.self_name, file: row.self_file,
+      language: row.self_language, line: row.self_line, crossRowCount: 0,
     }
+    copy.crossRowCount++
+    copies.set(row.self_id, copy)
 
     // One stored row is one fact. A self-referential row matches from both
     // directions; it is counted as collapsed, not emitted twice.

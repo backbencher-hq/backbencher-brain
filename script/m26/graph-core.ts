@@ -527,10 +527,6 @@ export interface ImpactResultLike {
   totalCountIfKnown: number | null
   truncated: boolean
   truncationReason: string | null
-  /** M63.T1: how the requested name became the root this walk started at.
-   *  Optional so hand-built fixtures keep type-checking; a surface that
-   *  receives it says so out loud (see renderImpact). */
-  rootMatch?: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
 }
 
 /** M55.T1 (Truth Rule 2): a declared substitution is rendered on EVERY surface
@@ -576,26 +572,6 @@ export function renderImpact(result: ImpactResultLike, dom: GraphDom): { nodesRe
     (member, owner) => `"${member}" has no dependencies of its own — showing the impact of its owner ${owner}`,
   )
   if (impactNote !== null) impactNote.addClass("bb-impact-resolution-note")
-  // M63.T1: a name that did not resolve to an exact stored symbol is a
-  // SUBSTITUTION too, and the same law applies: the panel says which symbol
-  // the question was actually asked about, and how many stored symbols share
-  // the name. Measured on the bb_impact corpus lane: an agent asked about
-  // graphql-js `push` (141 stored relationships point at a `push`) gets the
-  // impact of a different `push` — here an empty set — and a panel that shows
-  // only the numbers is indistinguishable from "nothing depends on this".
-  // The owning-declaration case already has its own note above, so this only
-  // speaks when the name itself was not an exact hit.
-  const match = result.rootMatch
-  if (match && match.via !== "exact" && match.via !== "owning-declaration") {
-    layer.setAttribute("data-root-match", match.via)
-    layer.setAttribute("data-root-requested", match.requested)
-    layer.setAttribute("data-root-name-matches", String(match.nameMatches))
-    const note = dom.create("div")
-    note.addClass("bb-root-match-note")
-    note.setAttribute("data-root-match", match.via)
-    note.textContent = `"${match.requested}" is not a stored symbol on its own — showing the impact of ${result.root.name}${result.root.file ? ` (${result.root.file})` : ""}`
-    layer.appendChild(note)
-  }
   for (const dep of result.impact) {
     const el = dom.create("div")
     el.addClass("bb-impact-node")

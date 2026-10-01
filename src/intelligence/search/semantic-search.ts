@@ -17,30 +17,6 @@ const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 // Sparse/incompatible model labels that must never be fed to dense cosine.
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
 
-/** Stored embeddings vs indexable symbols, read with one query. Returns 1/1
- *  when there is nothing to cover, so a fully-unembedded index never renders
- *  as "0% covered" (which reads as total failure rather than total absence). */
-function measureCoverage(raw: any, projectId: ProjectID): { indexSymbolCount: number; embeddedSymbolCount: number; embeddingCoverage: number } {
-  try {
-    // TWO placeholders, TWO bindings — binding one leaves the second subquery
-    // NULL, which SQLite reports as 0, and coverage then reads "0 of 0" on
-    // every project instead of the real ratio.
-    const row = raw.prepare(
-      "SELECT (SELECT COUNT(*) FROM brain_symbol WHERE project_id = ?) AS symbols, " +
-        "(SELECT COUNT(DISTINCT entity_id) FROM brain_semantic_embedding WHERE project_id = ?) AS embedded",
-    ).get(projectId, projectId) as { symbols: number; embedded: number } | undefined
-    const indexSymbolCount = row?.symbols ?? 0
-    const embeddedSymbolCount = row?.embedded ?? 0
-    return {
-      indexSymbolCount,
-      embeddedSymbolCount,
-      embeddingCoverage: indexSymbolCount > 0 ? embeddedSymbolCount / indexSymbolCount : 1,
-    }
-  } catch {
-    return { indexSymbolCount: 0, embeddedSymbolCount: 0, embeddingCoverage: 1 }
-  }
-}
-
 type EmbeddingRow = {
   rowid?: number
   entityId: string
@@ -105,16 +81,10 @@ export async function semanticVectorSearch(
   const maxResults = options.maxResults || 50
   const raw = await BrainDatabase.getRawInstance(projectId)
 
-  // Coverage is measured, not assumed, and read once per call. Every response
-  // carries it, including the fallback ones: a caller asking "why did I get
-  // these results" needs the ratio, and at 22% coverage the vector path
-  // succeeds while most of the index is simply absent from the comparison.
-  const coverage = measureCoverage(raw, projectId)
-
   const emptyMeta = (method: "vector" | "keyword-fallback", reason: string, model = "unknown", dimension = 0): SemanticSearchResults => ({
     results: [],
     provenance: makeProvenance({ evidenceClass: method === "vector" ? "unknown" : "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: method === "vector" ? "no-result" : "content-search-fallback", limitations: ["Semantic retrieval is candidate discovery, not behavioral proof."], unknowns: [reason] }),
-    metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason, ...coverage },
+    metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason },
   })
 
   let queryVector: number[]
@@ -125,23 +95,6 @@ export async function semanticVectorSearch(
   }
   if (!queryVector || queryVector.length === 0) {
     return await keywordFallback(projectId, query, options, "no-query-vector")
-  }
-  // A vector of the right SHAPE but no magnitude is a different failure from an
-  // empty one, and it must not be reported as "we compared vectors and none
-  // were close enough".
-  //
-  // The local word-vector model returns a 50-element array of zeros whenever
-  // every token in the query is out of vocabulary — which is every
-  // identifier-shaped query, because the vocabulary is built by splitting
-  // camelCase and snake_case while the query tokenizer splits on whitespace
-  // only. Measured over 9 real repositories: 99 of 99 symbol names and 81 of
-  // 180 ordinary questions produce exactly this vector. Cosine against the zero
-  // vector is 0 for EVERY row, so the old code fell through to
-  // `no-vector-above-threshold` — a reason that blames the index for a problem
-  // that is entirely in the query, and points remediation at re-embedding a
-  // corpus that was embedded correctly.
-  if (queryVector.every((component) => component === 0)) {
-    return await keywordFallback(projectId, query, options, "degenerate-query-vector")
   }
 
   // Authoritative model = the one that actually produced this query vector.
@@ -232,7 +185,6 @@ export async function semanticVectorSearch(
       dimension: queryVector.length,
       scannedRows: rows.length,
       filteredRows: scored.length,
-      ...coverage,
     },
   }
 }
@@ -295,14 +247,11 @@ async function keywordFallback(
   reason: string,
 ): Promise<SemanticSearchResults> {
   const { searchContent } = await import("./content-search")
-  const raw = await BrainDatabase.getRawInstance(projectId)
   const content = await searchContent(projectId, query, {
     maxResults: options.maxResults || 50,
     languages: options.languages,
     symbolKind: options.symbolKind,
   })
-  // `similarity: null`, not 0 — see SemanticResult.similarity. A zero is a
-  // NUMBER, and every consumer treated it as one.
   const results: SemanticResult[] = content.map((row) => ({
     entityId: row.fileId,
     symbolName: row.symbolName || row.context,
@@ -310,7 +259,7 @@ async function keywordFallback(
     file: row.file,
     line: row.line,
     snippet: row.snippet,
-    similarity: null,
+    similarity: 0,
     language: row.language,
     stale: (row as any).stale === true || undefined,
   }))
@@ -325,7 +274,6 @@ async function keywordFallback(
       scannedRows: content.length,
       filteredRows: content.length,
       fallbackReason: reason,
-      ...measureCoverage(raw, projectId),
     },
   }
 }
