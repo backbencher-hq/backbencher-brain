@@ -22,7 +22,7 @@ There was also no grammar to route to: `tree-sitter-vb` and
 ## The base, and the bake-off
 
 Two VB.NET grammars exist. Both were built to ABI-15 wasm and run over the same
-corpora with the same loader (`fixtures/probes/grammar-bakeoff.ts`):
+corpora with the same loader (`script/m14/tmp/grammar-bakeoff.ts`):
 
 | candidate | 600-file P3D draw, clean | named node types |
 |---|---|---|
@@ -38,7 +38,7 @@ parsed **38.67 %** of files cleanly.
 
 ## The 18 repairs
 
-Every one has a minimal repro under `fixtures/grammar-repro/cases/`. The list is
+Every one has a minimal repro under `grammars/_vendored/vbnet/repro-cases/`. The list is
 authored in `script/m14/verify-grammar-pins.ts` under `LANES.vb.provenance.patches`
 and repeated here because the pin's field is a machine list and this is the
 reader-facing one.
@@ -100,10 +100,10 @@ the two that exist, and it is **not finished**: see below.
 
 ## The measured state, and the floor
 
-`fixtures/grammar-repro/grammar-gate.sh` is the gate. It runs two halves:
+`grammars/_vendored/vbnet/grammar-gate.sh` is the gate. It runs two halves:
 
 - **27 repro cases** — the fast inner loop, one per defect class;
-- **the corpus differential** — `fixtures/probes/grammar-baseline.ts` over four
+- **the corpus differential** — `script/m14/tmp/grammar-baseline.ts` over four
   independent corpora, compared against `fixtures/validation/grammar-floor.json`.
 
 The corpus half is the load-bearing one, and it exists because of a specific
@@ -128,7 +128,7 @@ Where it started: 38.67 % on the authoritative corpus, 58.50 % on the P3D draw.
 **One file in eleven still carries an ERROR.** The remaining defect classes are a
 long tail — 324 distinct failure signatures across 112 bad files, with no class
 above 5 files — so the cheap wins are spent and the rest is long work. The work
-list is `fixtures/probes/defect-census.ts`, which ranks defect classes by the
+list is `script/m14/tmp/defect-census.ts`, which ranks defect classes by the
 number of *files* each one costs.
 
 ## The encoding finding, which is a product gap and not a grammar gap
@@ -136,7 +136,7 @@ number of *files* each one costs.
 40 of P3D's 1880 `.vb` files are **UTF-16 with a BOM** — Windows Forms Designer
 output. Read as UTF-8 they are `N.a.m.e.s.p.a.c.e` and are a whole-file ERROR for
 *any* grammar. The corpus reader strips the BOM
-(`fixtures/probes/vb-source.ts`) so the grammar is measured on text.
+(`script/m14/tmp/vb-source.ts`) so the grammar is measured on text.
 
 That leaves a real product requirement, recorded here so it is not lost:
 **`readFileSync(path, "utf8")` is not a correct VB reader.** A VB.NET product that
@@ -162,7 +162,7 @@ tree-sitter generate && tree-sitter build --wasm --docker
 cp tree-sitter-vbnet.wasm ../../wasm/
 ```
 
-Then `fixtures/grammar-repro/grammar-gate.sh` and
+Then `grammars/_vendored/vbnet/grammar-gate.sh` and
 `bun run script/m14/verify-grammar-pins.ts --write`.
 
 The pristine upstream `grammar.js` is kept at
