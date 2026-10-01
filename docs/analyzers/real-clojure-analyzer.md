@@ -352,6 +352,18 @@ a symbol — which a prefix list also has. The symptom was an alias table of siz
 two aliases existed. A libspec with no dot in its first segment is **relative** and
 resolves against the requiring namespace.
 
+**A shared alias table was masking a `references` defect (open).** `aliasTableOf` is
+read by `references`, `implements` and `extends` alike, and the two care about it
+differently. Fixing prefix lists — which the fixture proves the *analyzer* does
+correctly — takes `implements` from 96.62% to **98.65%** and takes `references` from
+95.52% to **92.28%**. That is not a trade to be made on evidence: the truth was
+*wrong* about prefix lists, and the wrongness was hiding a second bug. Reverting to
+keep a metric green is the "make the gate agree with itself" failure, so the fix stays
+and the newly-exposed `references` residual is recorded instead. 471 misses now read
+`jio` at core.clj:7267 (a top-level `(require '[clojure.java.io :as jio])`, which
+CLJ-D40 taught the `calls` derivation and not this one) and
+`clojure.core.reducers/reduce` — both alias gaps of the same family, both next.
+
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with
