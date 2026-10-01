@@ -1437,7 +1437,7 @@ const handlers: Record<string, ToolHandler> = {
     // M48.C2 (#700): every non-project scope needs a target — without one the
     // old path silently rendered a project-wide graph for a scoped request.
     if (scope !== "project" && !args.target) return textResult(`bb_visualize scope=${scope} requires a target`, true)
-    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
+    const request: VisualizationRequest = { scope: scope as VisualizationScope, target: args.target ? String(args.target) : undefined, format: ["text", "json", "html"].includes(String(args.format)) ? args.format : "text", view: ["graph", "codemap", "class"].includes(String(args.view)) ? args.view : "graph", maxNodes: args.maxNodes == null ? undefined : Number(args.maxNodes), maxLinks: args.maxLinks == null ? undefined : Number(args.maxLinks), relationshipTypes: Array.isArray(args.relationshipTypes) ? args.relationshipTypes.map(String) : undefined, languages: Array.isArray(args.languages) ? args.languages.map(String) : undefined }
     const result = await visualizeProject(projectId, request)
     // M35.S3: per-node stale flags (node file changed since index); links
     // inherit worst-of-endpoints — a link is stale if EITHER endpoint's file

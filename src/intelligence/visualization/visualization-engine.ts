@@ -1,13 +1,19 @@
 import { BrainDatabase } from "../../brain/database"
 import { DependencyGraphVisualizer } from "../../ast/dependency-graph-visualizer"
+import { renderCodeMapDocument, assertCodeMapParses } from "../../ast/visualization/code-map-renderer"
+import { renderClassDocument, assertClassDiagramParses } from "../../ast/visualization/class-diagram-renderer"
 
 export type VisualizationScope = "project" | "file" | "module" | "symbol" | "feature"
 export type VisualizationFormat = "text" | "json" | "html"
+/** Which picture of the project the answer draws. Independent of `format`, so
+ *  every view is available in every delivery form. */
+export type VisualizationView = "graph" | "codemap" | "class"
 
 export interface VisualizationRequest {
   scope?: VisualizationScope
   target?: string
   format?: VisualizationFormat
+  view?: VisualizationView
   maxNodes?: number
   maxLinks?: number
   relationshipTypes?: string[]
@@ -25,6 +31,7 @@ export interface VisualizationResult {
   scope: VisualizationScope
   target: string | null
   format: VisualizationFormat
+  view: VisualizationView
   nodes: any[]
   links: any[]
   /** What the noise filter removed, and on whose authority. A partial graph must
@@ -156,6 +163,152 @@ function countAvailableSymbols(
   return Number((row as { c: number })?.c ?? 0)
 }
 
+/**
+ * The CODE MAP view.
+ *
+ * One rectangle per SYMBOL, sized by the lines it spans, nested inside its file and
+ * its top-level directory, in a squarified treemap. This is the Sourcegraph
+ * Chromium-map shape, and the honest difference is stated in the view itself: the
+ * index stores symbols with line spans and kinds, not tokens, so this paints
+ * symbols and says so on its own legend. A view that let a reader believe it was
+ * token-level would be worse than no view at all.
+ */
+function renderCodeMap(result: VisualizationResult): string {
+  assertCodeMapParses()
+  return renderCodeMapDocument({
+    // The code map draws SYMBOLS, so it needs the symbol shape rather than the
+    // node/link projection the dependency map uses. Nodes already carry everything
+    // it needs -- name, kind, language, file, line span, qualified name, gravity,
+    // stale -- so nothing is refetched and nothing is invented.
+    symbols: result.nodes,
+    excluded: result.excluded,
+    scope: result.scope,
+    target: result.target,
+    // What the map does NOT show, declared on its face. A rectangle map makes it
+    // especially easy to believe you are seeing the whole project.
+    totalNodesAvailable: result.totalNodesAvailable,
+    shownNodes: result.nodes.length,
+  })
+}
+
+/**
+ * The UML-style CLASS view.
+ *
+ * Boxes for the class-like symbols the index actually has -- class, interface,
+ * struct, enum -- with inheritance, implementation and containment edges. UML is
+ * only as complete as the index that draws it, and this states plainly how much of
+ * what it found it could not resolve. Measured on cargo: most `extends` and
+ * `implements` relationships point at symbols the project scope did not select, so
+ * the diagram says "N relationships left the frame" instead of drawing a partial
+ * picture that looks complete.
+ */
+function renderClassDiagram(result: VisualizationResult): string {
+  assertClassDiagramParses()
+  const CLASSY = new Set(["class", "struct", "interface", "enum", "trait", "type", "protocol", "object"])
+  const EDGEY = new Set(["extends", "implements", "contains", "instantiates", "imports"])
+  const classes = result.nodes.filter((n: any) => CLASSY.has(String(n.type)))
+  const classIds = new Set(classes.map((n: any) => n.id))
+  const edges = result.links.filter(
+    (l: any) => EDGEY.has(l.type) && classIds.has(l.source) && classIds.has(l.target),
+  )
+  // Two DIFFERENT things get left undrawn, and conflating them made the diagram
+  // lie about itself.
+  //
+  // MEASURED on cargo at `scope: module, target: src/compiler`: the warning read
+  // "969 inheritance or containment relationship(s) point at types outside this
+  // scope and are NOT drawn". The stored breakdown is 2 implements, 834 contains,
+  // 134 instantiates. So the claim that 969 *inheritance* relationships left the
+  // frame was false -- there were TWO. Nearly all of it was `contains` pointing at
+  // properties and methods, which are a class's FIELDS, not types: those are
+  // undrawn because this renderer draws relationships between types and nothing else.
+  // Reporting them as lost inheritance would make a reader conclude the index had no
+  // class hierarchy here, when the truth is the opposite.
+  //
+  // So the undrawn set is split by WHY, and both halves are declared:
+  //   outside -- an endpoint is not in the node set at all, so a type the index holds
+  //              was not selected. This is the one that says "widen the scope".
+  //   members -- an endpoint IS selected but is a property, method or enum member.
+  //              A field, not a missing class.
+  const nodeIds = new Set(result.nodes.map((n: any) => n.id))
+  const byId = new Map(result.nodes.map((n: any) => [n.id, n]))
+  let outside = 0
+  let members = 0
+  const membersByClass: Record<string, { name: string; type: string; stale?: boolean }[]> = {}
+  for (const l of result.links as any[]) {
+    if (!EDGEY.has(l.type)) continue
+    if (classIds.has(l.source) && classIds.has(l.target)) continue
+    const sIn = nodeIds.has(l.source)
+    const tIn = nodeIds.has(l.target)
+    if (!sIn || !tIn) {
+      outside++
+      continue
+    }
+    members++
+    // A `contains` link from a type to a non-type IS that type's member. Rather than
+    // counting it as undrawn, it goes in the box: the payload already holds it.
+    if (l.type === "contains") {
+      const host = classIds.has(l.source) ? l.source : l.target
+      const child = byId.get(classIds.has(l.source) ? l.target : l.source)
+      if (!child) continue
+      const list = membersByClass[host] ?? (membersByClass[host] = [])
+      if (list.length < 200 && !list.some((m) => m.name === child.name && m.type === child.type)) {
+        list.push({ name: String(child.name), type: String(child.type), stale: Boolean(child.stale) })
+      }
+    }
+  }
+  return renderClassDocument({
+    classes,
+    edges,
+    outside,
+    members,
+    membersByClass,
+    totalNodesAvailable: result.totalNodesAvailable,
+    excluded: result.excluded,
+    scope: result.scope,
+    target: result.target,
+  })
+}
+
+/**
+ * The ORDER BY for a scope that ranks by importance.
+ *
+ * `class` ranks TYPES FIRST. Measured on cargo at `scope: module, target:
+ * src/compiler`: with the plain gravity ordering the class view drew 1
+ * relationship out of 1,095, because gravity on a real project belongs to the
+ * functions that do the work and the classes inheritance connects never reach the
+ * node set. The view then correctly declared that 1,094 relationships left the
+ * frame -- honest, and useless.
+ *
+ * A dependency map wants the busiest code. A class diagram wants the TYPES. So the
+ * class view orders type-like symbols first, and only then by gravity. It does NOT
+ * filter them in: dropping every method would make the diagram a lie about what is
+ * in scope, and the tools in this repo do not quietly narrow what they report.
+ *
+ * The narrower scopes (file, module, symbol) order by source position, which is
+ * already the right order for a reader of one file, so they are untouched.
+ */
+function importanceOrder(view: VisualizationView | undefined): string {
+  if (view === "class") {
+    return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, s.gravity_score DESC, s.line_start`
+  }
+  return "s.gravity_score DESC, s.line_start"
+}
+
+/**
+ * The ORDER BY for a scope that walks source order.
+ *
+ * Unchanged for every view except `class`, because source order IS the right order
+ * for a reader of one file. MEASURED: it was the wrong order for the class view. The
+ * module query is bounded, and the types sat past the bound behind thousands of
+ * methods -- so they were cut before the renderer ever saw them, and widening had no
+ * budget left to spend. Ordering type-like symbols first puts every type in the frame
+ * and leaves room beside them.
+ */
+function scopedOrder(view: VisualizationView | undefined, base: string): string {
+  if (view !== "class") return base
+  return `CASE WHEN s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object') THEN 0 ELSE 1 END, ${base}`
+}
+
 export async function visualizeProject(projectId: string, request: VisualizationRequest = {}): Promise<VisualizationResult> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const scope = request.scope ?? "project"
@@ -169,11 +322,55 @@ export async function visualizeProject(projectId: string, request: Visualization
   const stripped = target.replace(/\/$/, "")
   const leaf = stripped.split("/").pop() ?? stripped
   const needle = `%${escapeLike(target.toLowerCase())}%`
-  if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY s.line_start LIMIT ?`).all(projectId, ...lang.params, target, target, segmentPrefix(stripped), maxNodes * 2) as any[]
-  else if (scope === "module") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY f.relative_path,s.line_start LIMIT ?`).all(projectId, ...lang.params, segmentPrefix(stripped), segmentPrefix(leaf), maxNodes * 2) as any[]
-  else if (scope === "symbol") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (s.name=? OR s.qualified_name=?) ORDER BY s.line_start LIMIT ?`).all(projectId, ...lang.params, target, target, maxNodes * 2) as any[]
-  else if (scope === "feature") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY s.gravity_score DESC,s.line_start LIMIT ?`).all(projectId, ...lang.params, needle, needle, maxNodes * 2) as any[]
-  else symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} ORDER BY s.gravity_score DESC,s.line_start LIMIT ?`).all(projectId, ...lang.params, maxNodes * 2) as any[]
+  if (scope === "file") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path=? OR f.path=? OR f.relative_path LIKE ?) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, target, target, segmentPrefix(stripped), maxNodes * 2) as any[]
+  else if (scope === "module") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (f.relative_path LIKE ? OR f.relative_path LIKE ?) ORDER BY ${scopedOrder(request.view, "f.relative_path,s.line_start")} LIMIT ?`).all(projectId, ...lang.params, segmentPrefix(stripped), segmentPrefix(leaf), maxNodes * 2) as any[]
+  else if (scope === "symbol") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (s.name=? OR s.qualified_name=?) ORDER BY ${scopedOrder(request.view, "s.line_start")} LIMIT ?`).all(projectId, ...lang.params, target, target, maxNodes * 2) as any[]
+  else if (scope === "feature") symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} AND (lower(s.name) LIKE ? OR lower(COALESCE(s.docstring,'')) LIKE ?) ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, needle, needle, maxNodes * 2) as any[]
+  else symbols = raw.prepare(`SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id WHERE s.project_id=?${lang.where} ORDER BY ${importanceOrder(request.view)} LIMIT ?`).all(projectId, ...lang.params, maxNodes * 2) as any[]
+  // A class diagram whose boxes are the types INSIDE the scope, but whose arrows
+  // point at types OUTSIDE it, is the same picture as no diagram at all.
+  //
+  // MEASURED on cargo at `scope: module, target: src/compiler`: 112 types in scope,
+  // 990 inheritance/containment relationships touching them, and exactly ONE
+  // drawable arrow, because cargo's compiler types extend and implement types from
+  // std and rustc that no module scope will ever contain. The view reported the 989
+  // it could not draw, which is honest and useless.
+  //
+  // So for the class view the node set is widened by the types inheritance actually
+  // needs, taken from the project index, up to the same node budget. They are added
+  // to the SELECTED set before the edge query, so the arrows resolve. They are not
+  // hidden: the count is declared in nodeSelection, and the diagram states how many
+  // types came from outside the scope.
+  //
+  // Widening by NAME would be fabrication, so this does not do that: it selects real,
+  // stored, type-like symbols from the index and lets the stored relationships decide
+  // which of them connect. A type that still fails to connect simply is not drawn.
+  let classWidening = 0
+  if (request.view === "class" && scope !== "project" && symbols.length > 0) {
+    const already = new Set(symbols.map((symbol) => symbol.id))
+    const budget = Math.max(0, maxNodes * 2 - symbols.length)
+    if (budget > 0) {
+      const extra = raw
+        .prepare(
+          `SELECT s.id,s.name,s.qualified_name,s.symbol_type,s.line_start,s.line_end,s.gravity_score,f.language,f.relative_path AS file
+             FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+            WHERE s.project_id=?${lang.where}
+              AND s.symbol_type IN ('class','struct','interface','enum','trait','type','protocol','object')
+            ORDER BY s.gravity_score DESC,s.line_start LIMIT ?`,
+        )
+        .all(projectId, ...lang.params, budget + already.size) as any[]
+      const chosen: any[] = []
+      for (const candidate of extra) {
+        if (already.has(candidate.id)) continue
+        chosen.push(candidate)
+        if (chosen.length >= budget) break
+      }
+      if (chosen.length > 0) {
+        classWidening = chosen.length
+        symbols = symbols.concat(chosen)
+      }
+    }
+  }
   const ids = new Set(symbols.map((symbol) => symbol.id))
   // The edge set is fetched BY JOINING the selected nodes, not by reading a slice
   // of the relationship table and discarding most of it.
@@ -244,13 +441,20 @@ export async function visualizeProject(projectId: string, request: Visualization
   // SELECTION, and until now nothing in the answer named it.
   let nodeSelectionNote = "every symbol matching the scope, in source order"
   if (scope === "project" || scope === "feature") {
-    nodeSelectionNote = "the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample"
+    nodeSelectionNote = request.view === "class"
+      ? "type-like symbols first (class, struct, interface, enum, trait, type, protocol, object), then the highest-gravity symbols \u2014 a class diagram needs the TYPES, and gravity on a real project belongs to the functions that do the work"
+      : "the highest-gravity symbols first, so the graph is the project's busiest core rather than a sample"
   } else if (scope === "file") {
     nodeSelectionNote = "every symbol in the file, in source order"
   } else if (scope === "module") {
     nodeSelectionNote = "every symbol under the module directory, in source order"
   } else {
     nodeSelectionNote = `every symbol named ${target}, in source order`
+  }
+  // The class view's widening is a change to the SELECTION, so it is named in the
+  // selection rather than left for the reader to infer from a count.
+  if (classWidening > 0) {
+    nodeSelectionNote += `, plus the ${classWidening} highest-gravity type-like symbol(s) from elsewhere in the project, added so that inheritance pointing out of this scope can be drawn rather than merely counted`
   }
   const omittedDanglingLinks = graph.links.filter((link) => !nodeIds.has(link.source) || !nodeIds.has(link.target)).length
   const truncated = originalNodes > nodes.length || originalLinks > links.length
@@ -263,12 +467,18 @@ export async function visualizeProject(projectId: string, request: Visualization
       ? `no indexed symbol matches scope=${scope}${target ? ` target="${target}"` : ""}${request.languages?.length ? ` languages=[${request.languages.join(",")}]` : ""}${request.relationshipTypes?.length ? ` relationshipTypes=[${request.relationshipTypes.join(",")}]` : ""} — absence declared, never guessed`
       : `${totalNodesAvailable} symbol(s) match this query but none survived the projection — absence declared, never guessed`)
     : null
-  return { scope, target: target || null, format: request.format ?? "text", nodes, links, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, omittedDanglingLinks }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table`, relationshipSetTruncated: originalLinks > links.length, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable } }
+  return { scope, target: target || null, format: request.format ?? "text", view: request.view ?? "graph", nodes, links, excluded: graph.excluded, declaredAbsent, absenceNote, totalNodesAvailable, provenance: { source: "canonical-graph-engine", indexedProject: projectId, omittedDanglingLinks }, considered: { relationshipsBetweenSelectedNodes, relationshipSelection: `every relationship connecting two of the ${nodeIds.size} returned nodes — complete for this node set, not a slice of the relationship table`, relationshipSetTruncated: originalLinks > links.length, nodeSelection: nodeSelectionNote, languagesConsidered: request.languages?.length ? request.languages : null }, truncation: { truncated, originalNodes, originalLinks, maxNodes, maxLinks, reason: truncated ? "output limits" : null, totalNodesAvailable } }
 }
 
 export function formatVisualization(result: VisualizationResult): string {
   if (result.format === "json") return JSON.stringify(result, null, 2)
-  if (result.format === "html") return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded })
+  if (result.format === "html") {
+    // The view chooses the picture; the format chooses the delivery. A new view is
+    // therefore one entry here rather than three new format values.
+    if (result.view === "codemap") return renderCodeMap(result)
+    if (result.view === "class") return renderClassDiagram(result)
+    return DependencyGraphVisualizer.generateHTML({ nodes: result.nodes, links: result.links, excluded: result.excluded })
+  }
   // The DEFAULT format is what every caller gets unless they think to ask for JSON,
   // so it must carry the same facts the JSON does. It used to be four lines and 153
   // characters that never mentioned the true symbol total, the declared relationship
