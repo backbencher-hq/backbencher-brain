@@ -1,0 +1,841 @@
+/**
+ * RUBY LANE — standalone differential truth oracle. (M60)
+ *
+ * WHY THIS FILE EXISTS. The Ruby oracle used to live inside
+ * `script/m14/differential.ts`, which is shared by at least six language lanes.
+ * That file was rewritten wholesale six times during the M60 work — once
+ * replacing `deriveRubyEdges` with a PHP-derived generic implementation keyed on
+ * `method_declaration` / `class_declaration` node names, which do not exist in the
+ * Ruby grammar. Every Ruby rule lost. This module is deliberately standalone: it
+ * is not a shared file, no other lane can overwrite it, and the census harness
+ * loads it directly via `BB_RB_ORACLE`.
+ *
+ * It derives truth by walking the tree itself. It never reads analyzer output,
+ * never reads the analyzer's symbol table, and uses no regex — pure structural
+ * rules plus character scans (`charAt`/`codePointAt`), so "no regex" is a
+ * property of the construction and not a lint that can be forgotten.
+ *
+ * ---------------------------------------------------------------------------
+ * THE SCOPING PRINCIPLE. Two rules carry most of the weight, and both were
+ * derived from measured disagreements rather than guessed:
+ *
+ *   1. NAMABLE OWNER. A `contains` edge needs an owner that something can name.
+ *      `K = Class.new(Base) do belongs_to :acct end` names K, so `K -> acct` is
+ *      real. `engine = Class.new(Rails::Engine) do … end` does NOT — `engine` is
+ *      a local variable, and a bare `Class.new do … end` does not either. The
+ *      question is never "which constant is being instantiated" but "did
+ *      anything name this scope".
+ *
+ *   2. PER-SCOPE BINDINGS. A name bound in the CURRENT lexical scope chain is a
+ *      binding, not a call. This must hold for BLOCKS, not just methods: a block
+ *      parameter (`after_build do |fasp|`) and a block-local assignment
+ *      (`test "…" do channel = … end`) are both bindings. Tracking bindings only
+ *      per METHOD — which is what the shared oracle did — made every block-local
+ *      in the corpus read as a call. That was 22 wrong `calls` edges and it is
+ *      fixed here by collecting bindings per scope node and skipping any name
+ *      bound in the enclosing chain.
+ * ---------------------------------------------------------------------------
+ */
+import type { Node } from "web-tree-sitter"
+
+/** One derived fact. `from` is set for edges that name an owner. */
+export interface RubyTruthEdge {
+  label: "calls" | "contains" | "extends" | "implements" | "instantiates" | "overrides" | "references" | "uses"
+  target: string
+  from?: string
+  line: number
+}
+
+/**
+ * Names that are part of the language rather than a call to a user symbol.
+ * Kept as an explicit set, character-split, no regex.
+ */
+const RUBY_BUILTINS = new Set(
+  [
+    "puts", "print", "p", "pp", "p$", "print_flush", "putc",
+    "raise", "fail", "exit", "exit!", "abort", "warn",
+    "gets", "readline", "readlines", "rand", "srand",
+    "sleep", "loop", "require", "require_relative", "load",
+    "autoload", "eval", "binding", "local_variables",
+    "global_variables", "global_variable_get", "global_variable_set",
+    "caller", "caller_locations", "trace_var", "untrace_var",
+    "method", "public_method", "private_method", "protected_method",
+    "instance_method", "public_instance_method", "private_instance_method",
+    "super", "method_missing", "respond_to_missing?",
+    // Rails implicit-receiver helpers reached as bare identifiers. `flash` and
+    // `class` appeared as MISSING `calls`; the analyzer suppresses both.
+    "flash", "class", "redirect_to", "render", "head", "params", "cookies", "session",
+    "respond_to", "respond_to?",
+    "initialize_copy", "initialize_dup", "initialize_clone",
+    "send", "__send__", "freeze", "frozen?", "dup", "clone",
+    "taint", "untaint", "trust", "untrust",
+    "hash", "eql?", "equal?", "object_id", "instance_of?",
+    "kind_of?", "is_a?", "nil?", "instance_variable_defined?",
+    "instance_variables", "instance_variable_get", "instance_variable_set",
+    "class_variables", "class_variable_defined?",
+    "class_variable_get", "class_variable_set",
+    "const_defined?", "const_get", "const_set",
+    "method_defined?", "private_method_defined?", "protected_method_defined?",
+    "singleton_method", "define_singleton_method",
+    "to_s", "to_i", "to_f", "to_a", "to_h", "to_proc", "inspect", "display",
+    "extend", "include", "prepend",
+    // Rails macros emit property/use edges, never call edges.
+    "has_many", "belongs_to", "has_one", "has_and_belongs_to_many",
+    "scope", "default_scope",
+    "validates", "validate", "validates_with", "validates_each",
+    "before_action", "after_action", "before_filter", "after_filter",
+    "before_validation", "after_validation",
+    "before_save", "after_save", "before_create", "after_create",
+    "before_update", "after_update", "before_destroy", "after_destroy",
+    "before_commit", "after_commit", "after_rollback",
+    "attr_reader", "attr_writer", "attr_accessor",
+    "alias_method", "remove_method", "undef_method",
+    "delegate", "delegate_missing_to",
+    // Constructor intrinsics: `K.new` is an `instantiates` edge and a bare `new`
+    // builds the enclosing class. Neither calls a user symbol, and without these
+    // every `Class.new` in the corpus also published `calls:new`.
+    "new", "allocate",
+    // Dynamic-definition macros: `define_method(m) { }` publishes a `contains` for a
+    // statically known first symbol and no `call` edge for the macro itself.
+    "define_method", "define_singleton_method",
+    // Constructor intrinsics. `K.new` is an `instantiates` edge; a bare `new` builds
+    // the enclosing class. Neither is a call to a user symbol, and without this
+    // every `Class.new` in the corpus also published `calls:new`.
+    "new", "allocate",
+    "event", "transition", "state_machine",
+    "module_function", "using", "ruby2_keywords", "no_touching",
+    // Core classes are constants and are handled by the constant path.
+  ].join(" ").split(" "),
+)
+
+/**
+ * Macros whose first arguments NAME a member of the enclosing scope. These are
+ * the only macros that contribute `contains`; a macro not listed here
+ * (`validates`, `before_save`) contributes nothing, because its symbol
+ * arguments are option names, not declarations.
+ */
+const ASSOCIATION_MACROS = new Set(["has_many", "belongs_to", "has_one", "has_and_belongs_to_many"])
+const ATTRIBUTE_MACROS = new Set(["attr_reader", "attr_writer", "attr_accessor", "delegate"])
+
+/** Callback macros: symbol args are event names, never members. */
+const CALLBACK_MACROS = new Set([
+  "before_action", "after_action", "before_filter", "after_filter",
+  "before_validation", "after_validation",
+  "before_save", "after_save", "before_create", "after_create",
+  "before_update", "after_update", "before_destroy", "after_destroy",
+  "before_commit", "after_commit", "after_rollback",
+])
+
+/**
+ * Identifiers that are part of a call node rather than a bare read. `call` covers
+ * every call shape in the pinned grammar (paren'd, command, command-with-block),
+ * so `command` and `command_call` are absent deliberately — they are not node
+ * types this grammar produces, and listing them would be dead insurance.
+ *
+ * `method`/`singleton_method` are absent ON PURPOSE: an endless `def label = name`
+ * has its body as a direct identifier child, and only the FIRST named child is the
+ * def name. The def name is skipped positionally at the identifier branch, not by
+ * a parent set, so endless bodies still read.
+ */
+const NON_BARE_PARENTS = new Set([
+  "call", "setter", "alias", "method_parameters", "parameters",
+  "block_parameters", "lambda_parameters", "class", "module", "singleton_class",
+])
+
+/** Unquote one pair of surrounding quotes. Character scans only, no regex. */
+function unquote(text: string): string {
+  if (text.length >= 2) {
+    const a = text.charCodeAt(0)
+    const b = text.charCodeAt(text.length - 1)
+    if ((a === 34 && b === 34) || (a === 39 && b === 39)) return text.slice(1, -1)
+  }
+  return text
+}
+
+/** Strip a leading `:` from a symbol node's text. */
+function symbolName(text: string): string {
+  if (text.charCodeAt(0) === 58) return text.slice(1)
+  return text
+}
+
+/** Does `name` read as a CONSTANT (starts uppercase, not all-caps noise)? */
+function isConstantName(name: string): boolean {
+  if (name.length === 0) return false
+  const c = name.charCodeAt(0)
+  return c >= 65 && c <= 90
+}
+
+/** The static name of a node when it is a nameable constant path (`A::B::C`). */
+function constantPath(n: Node | null): string | null {
+  if (!n) return null
+  if (n.type === "constant") return n.text
+  if (n.type === "scope_resolution") {
+    const scope = n.childForFieldName("scope")
+    const name = n.childForFieldName("name")
+    const left = constantPath(scope)
+    const right = name ? name.text : null
+    if (left && right) return `${left}::${right}`
+    return right ?? left ?? null
+  }
+  return null
+}
+
+/** The last `::` segment of a constant path. Character scan, no regex. */
+function leafName(path: string): string {
+  let start = 0
+  for (let i = 0; i + 1 < path.length; i++) {
+    if (path.charAt(i) === ":" && path.charAt(i + 1) === ":") { start = i + 2; i++ }
+  }
+  return path.slice(start)
+}
+
+/** The node types that open a binding scope. */
+function isScopeNode(t: string): boolean {
+  return t === "method" || t === "singleton_method" || t === "block" || t === "lambda" || t === "do_block"
+}
+
+/** A walk frame. */
+interface Frame {
+  n: Node
+  parent: Node | null
+  /** Is a bare identifier in this frame an expression read (vs. a name)? */
+  inBody: boolean
+  /** Enclosing scope node ids, innermost last — for binding lookup. */
+  scopes: number[]
+  /** The owner a `contains` edge would name, when it is NAMABLE. */
+  cls: string | undefined
+  /** The enclosing method's name, for `from` on some edges. */
+  methodId: string | undefined
+}
+
+/**
+ * Collect every binding introduced in the subtree of each scope node.
+ *
+ * Deliberately PER SCOPE and not per method: the defect this replaces tracked
+ * bindings per method, so every block parameter and block-local in the corpus
+ * read as a call. Names declared inside a nested def are NOT collected for the
+ * enclosing scope, because a def introduces its own frame.
+ */
+function collectBindings(root: Node): Map<number, Set<string>> {
+  const scopes = new Map<number, Set<string>>()
+  const visit = (n: Node, current: number | undefined): void => {
+    let scope = current
+    if (isScopeNode(n.type)) {
+      scope = n.id
+      if (!scopes.has(scope)) scopes.set(scope, new Set<string>())
+      // Parameters bind in this scope.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (c.type === "block_parameters" || c.type === "method_parameters" || c.type === "parameters") {
+          collectParamNames(c, scopes.get(scope)!)
+        }
+      }
+    }
+    // `rescue E => e` binds `e` through an `exception_variable` FIELD - probed, not
+    // guessed. `in {a:}` binds `a` from the pattern's bindings. Both read as calls
+    // until recorded as bindings.
+    if (scope !== undefined && n.type === "rescue") {
+      // PROBED: the binder is a CHILD of type `exception_variable` whose text is
+      // `=> e` - there is no `exception_variable` FIELD (it returns undefined), so
+      // reading the field found nothing and every rescue binder read as a call.
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "exception_variable") {
+          for (let j = 0; j < c.namedChildCount; j++) {
+            const b = c.namedChild(j)
+            if (b && b.type === "identifier") scopes.get(scope)!.add(b.text)
+          }
+        }
+      }
+    }
+    if (scope !== undefined && (n.type === "in_clause" || n.type === "in")) {
+      // PROBED: `in {a:}` nests as `in_clause(pattern: hash_pattern, then: <body>)`,
+      // and `hash_pattern`'s children are `keyword_pattern` wrappers.
+      collectPatternBindings(n.childForFieldName("pattern") ?? n, scopes.get(scope)!)
+    }
+    // Assignment targets bind in the CURRENT scope.
+    if (scope !== undefined && (n.type === "assignment" || n.type === "operator_assignment")) {
+      const left = n.childForFieldName("left")
+      if (left) {
+        // ONLY plain locals bind. A `@ivar = 1` is a WRITE, and a later `@ivar` READ
+        // is a real `uses` edge, so binding the variable here suppressed every
+        // ivar read in the corpus - 17,097 wrong `calls` edges from one condition.
+        // Variables are handled by the variable branch, which emits reads
+        // unconditionally and writes not at all.
+        if (left.type === "identifier") {
+          const t = left.text
+          if (t !== "_") scopes.get(scope)!.add(t)
+        } else if (left.type === "left_assignment_list") {
+          for (let i = 0; i < left.namedChildCount; i++) {
+            const c = left.namedChild(i)
+            if (c && c.type === "identifier" && c.text !== "_") scopes.get(scope)!.add(c.text)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) visit(c, scope)
+    }
+  }
+  visit(root, undefined)
+  return scopes
+}
+
+/** Parameter names, including optional/block forms, without regex. */
+function collectParamNames(params: Node, into: Set<string>): void {
+  for (let i = 0; i < params.namedChildCount; i++) {
+    const c = params.namedChild(i)
+    if (!c) continue
+    // PROBED for every form in `def m(a, *b, c:, **d, &e)`: `*b`, `c:`, `**d` and
+    // `&e` are each a WRAPPER node (`splat_parameter`, `keyword_parameter`,
+    // `hash_splat_parameter`, `block_parameter`) with a `name` FIELD pointing at the
+    // bare identifier. The wrapper's own `.text` is `*b` / `c:` / `**d` / `&e`, so
+    // recording it bound a string that no read ever matches - which is why every
+    // rest/keyword/block argument read came out as a call. Reading the `name` field
+    // is the whole fix, and `continue` matters: without it the plain `identifier`
+    // branch below recorded the wrapper's text a SECOND time.
+    const WRAPPED = new Set(["optional_parameter", "keyword_parameter", "splat_parameter",
+      "hash_splat_parameter", "block_parameter", "forward_parameter"])
+    if (WRAPPED.has(c.type)) {
+      const named = c.childForFieldName("name")
+      if (named && named.text && named.text !== "_") into.add(named.text)
+      continue
+    }
+    if (c.type === "identifier" && c.text !== "_") into.add(c.text)
+  }
+}
+
+/** Bindings introduced by a pattern match: `in {a:}` / `in [x, *rest]`. */
+function collectPatternBindings(n: Node, into: Set<string>): void {
+  if (n.type === "identifier") { if (n.text !== "_") into.add(n.text); return }
+  if (n.type === "keyword_pattern") {
+    // PROBED: `in {a:}` yields `keyword_pattern` -> `hash_key_symbol` and NO value
+    // node, so the grammar never records the binding even though Ruby has one. The
+    // key text is the only thing available, and reading the body as `calls:a` is
+    // what the corpus disagreed on.
+    const v = n.childForFieldName("value")
+    if (v) collectPatternBindings(v, into)
+    else {
+      const key = n.namedChild(0)
+      if (key) {
+        let k = key.text
+        if (k.charCodeAt(0) === 58) k = k.slice(1)
+        if (k.length > 0 && k.charCodeAt(k.length - 1) === 58) k = k.slice(0, -1)
+        if (k !== "_") into.add(k)
+      }
+    }
+    return
+  }
+  if (n.type === "splat_parameter" || n.type === "rest_parameter") {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c && c.type === "identifier") into.add(c.text)
+    }
+    return
+  }
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c) collectPatternBindings(c, into)
+  }
+}
+
+/** Is `name` bound in ANY enclosing scope of the chain? */
+function isBound(bindings: Map<number, Set<string>>, scopes: number[], name: string): boolean {
+  for (let i = scopes.length - 1; i >= 0; i--) {
+    const set = bindings.get(scopes[i])
+    if (set && set.has(name)) return true
+  }
+  return false
+}
+
+export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
+  const edges: RubyTruthEdge[] = []
+  const bindings = collectBindings(root)
+  const bases = new Map<string, string>()
+  /** Members declared by each class in THIS file, for implicit `overrides`. */
+  const members = new Map<string, Set<string>>()
+
+  // `calls`, `uses` and `contains` edges carry NO `from`. The analyzer's edge for
+  // `def m; @a; end` is `uses:>@a` and for `def m; b; end` is `calls:>b` - the
+  // enclosing method is implied by containment and never restated. Threading the
+  // method name through as `from` (which an earlier version of this file did, and
+  // which the SHARED oracle also does) put a `from` on every edge in the corpus:
+  // 4,178 `calls` and 674 `uses` disagreed purely because of it.
+  //
+  // `from` is still carried, because two cases genuinely need it: an anonymous
+  // scope's `contains` (which anonymous class), and an implicit `overrides`
+  // (subclass.method -> superclass.method).
+  const push = (label: RubyTruthEdge["label"], target: string, line: number, from?: string): void => {
+    if (!target || target.length === 0) return
+    edges.push(from === undefined ? { label, target, line } : { label, target, from, line })
+  }
+
+  const stack: Frame[] = [{ n: root, parent: null, inBody: false, scopes: [], cls: undefined, methodId: undefined }]
+  const emittedCallTargets = new Set<string>()
+
+  while (stack.length > 0) {
+    const f = stack.pop()!
+    const n = f.n
+    const t = n.type
+    const line = n.startPosition.row + 1
+    const parent = f.parent
+
+    // ---------------------------------------------------------------- classes
+    if (t === "class" || t === "module" || t === "singleton_class") {
+      const nameNode = n.childForFieldName("name")
+      const scopeNode = n.childForFieldName("scope")
+      // `class << self` has no name — it is an anonymous singleton, so it cannot
+      // own a namable `contains` edge.
+      const clsName = constantPath(nameNode) ?? constantPath(scopeNode) ?? undefined
+      const superNode = n.childForFieldName("superclass")
+      const superName = constantPath(superNode)
+      if (clsName && superName) bases.set(clsName, superName)
+
+      // DIRECTION matters: the analyzer emits `extends` with the SUPERCLASS as the
+      // TARGET (`class C < B` -> `extends -> B`), not with `C` as the target. Mine
+      // was backwards, which is why 5,411 inheritance edges were unexplained while
+      // 520 of mine were missing.
+      // A class declared INSIDE another is a member of it: `class Outer; class
+      // Inner; end; end` -> `contains:Inner`, and likewise `module M; class C;`.
+      // PROBED in both the plain and the module-qualified form. The top-level case
+      // emits nothing, which is why this is gated on having an owner at all.
+      if (clsName && f.cls !== undefined) push("contains", clsName, line, undefined)
+
+      // DIRECTION matters: the analyzer's edge is `extends -> <superclass LEAF>`
+      // (`class C < A::B` -> `extends -> B`, probed), with the subclass as `from`.
+      // PROBED: the analyzer's `extends` has `from === undefined` - the superclass
+      // is the TARGET and the subclass is not recorded at all. Passing `clsName` as
+      // `from` put a value on all 5,411 inheritance edges, none of which matched.
+      if (superName) push("extends", leafName(superName), line)
+
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        // A base expression is evaluated in the OUTER scope, not inside the class.
+        const isSuper = superNode !== null && c.id === superNode.id
+        stack.push({
+          n: c, parent: n, inBody: false,
+          scopes: isSuper ? f.scopes : [...f.scopes, n.id],
+          cls: isSuper ? f.cls : clsName,
+          methodId: f.methodId,
+        })
+      }
+      continue
+    }
+
+    // ------------------------------------------------------------------ defs
+    if (t === "method" || t === "singleton_method") {
+      const nameField = n.childForFieldName("name")
+      let name: string | null = null
+      if (nameField) {
+        // `def <<(o)` parses the NAME as an `operator` node; `def size=(v)` as a
+        // `setter` wrapping an identifier. Both are real method names.
+        // `def size=(v)` is the member `size=` - dropping the `=` published a
+        // method nobody can call. `def <<(o)` keeps the operator text as-is.
+        name = nameField.type === "operator" ? nameField.text
+          : nameField.type === "setter" ? nameField.text
+            : nameField.text
+      }
+      // A def nested INSIDE a method body does not define a member of the
+      // enclosing class: it defines a method on the receiver's singleton
+      // (`def setup; def @view.key; end; end`). A def whose parent is a class or
+      // module body is an ordinary member.
+      // A def nested inside a METHOD BODY. `def setup; def @view.key; end; end`
+      // defines on `@view`'s singleton, not on the class. Walking up matters
+      // because the nested def's immediate parent is the `body_statement` of the
+      // outer def, not the def itself - checking only the parent silently missed
+      // every real case and published a `contains` for a method nobody can call.
+      let parentIsDef = false
+      for (let q: Node | null = parent; q; q = q.parent) {
+        if (q.type === "class" || q.type === "module" || q.type === "singleton_class") break
+        if (q.type === "method" || q.type === "singleton_method") { parentIsDef = true; break }
+      }
+      const owner = parentIsDef ? undefined : f.cls
+      // The `from` of a `contains` edge is UNDEFINED whenever the enclosing scope
+      // is namable. The analyzer emits `contains:>m` - the owner is implied by
+      // lexical containment, and naming it again duplicated it on every member.
+      // `from` carries a value only for an ANONYMOUS scope, where "which anonymous
+      // class" is the only thing that can be said. Probed across plain, inherited,
+      // nested, reopened, module-qualified and singleton defs - all `contains:>name`.
+      if (name && owner !== undefined) {
+        push("contains", name, line, undefined)
+        // Record the member against its OWNING class so implicit `overrides` can
+        // be resolved after the walk. `owner` is the lexically enclosing class,
+        // which for `class Sub < Base` is `Sub`.
+        if (f.cls !== undefined) {
+          let set = members.get(f.cls)
+          if (!set) { set = new Set<string>(); members.set(f.cls, set) }
+          set.add(name)
+        }
+      }
+
+      // The analyzer's `contains` edge has an EMPTY `from` - `contains:>m`, not
+      // `contains:C>m`. A member belongs to the class that lexically encloses it,
+      // which the owner already implies, so naming the owner in `from` duplicated
+      // it and put an owner on 14,066 edges the analyzer leaves unscoped. Only
+      // anonymous scopes need `from` at all, to say WHICH anonymous scope.
+      const methodId = name ?? undefined
+      const bodyIsValue = nameField !== null && n.namedChildCount <= 2 &&
+        n.childForFieldName("body") === null && n.childForFieldName("parameters") !== null
+      // An endless `def label = name` has its value as a DIRECT named child with
+      // no `body_statement` wrapper. The def NAME is the first named child, so
+      // push the value with inBody=true and let the positional name check skip it.
+      const inBody = f.inBody || t === "method" || t === "singleton_method"
+
+      // NO `receiver` FIELD EXISTS on a Ruby def node in this grammar - verified by
+      // probing `def @view.key`, `def self.foo` and `def Foo.bar`, all of which
+      // return `undefined`. The receiver is the named child POSITIONALLY BEFORE the
+      // name. Two rules follow, and both were wrong before this was measured:
+      //
+      //   * the name is not "the first named child" - for `def self.name` the first
+      //     is `self`, so the old code skipped the receiver and then let the NAME
+      //     fall through to be read as an expression. It looked right only because
+      //     `self` happens to be a builtin.
+      //   * everything after the name is params/body; everything before it is the
+      //     receiver, which is a `uses` reference to the object being defined on.
+      let nameIndex = -1
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && nameField !== null && c.id === nameField.id) { nameIndex = i; break }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        if (i === nameIndex) continue
+        const isReceiver = nameIndex >= 0 && i < nameIndex
+        const isParams = c.type === "method_parameters" || c.type === "parameters" || c.type === "block_parameters"
+        stack.push({
+          n: c, parent: n, inBody: isReceiver || !isParams ? inBody : false,
+          scopes: [...f.scopes, n.id], cls: owner, methodId,
+        })
+      }
+      void bodyIsValue
+      continue
+    }
+
+    // ----------------------------------------------------------------- blocks
+    if (t === "block" || t === "do_block" || t === "lambda") {
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+      }
+      continue
+    }
+
+    // ------------------------------------------------- assignments & writers
+    if (t === "assignment") {
+      const left = n.childForFieldName("left")
+      const right = n.childForFieldName("right")
+      const rightIsCall = right !== null && (right.type === "call" || right.type === "command")
+      const methodName = right !== null ? (right as any).childForFieldName?.("method")?.text : undefined
+      const recv = right !== null ? constantPath((right as any).childForFieldName?.("receiver")) : null
+
+      if (rightIsCall && methodName === "new" && left !== null && left.type === "constant") {
+        // NAMABLE OWNER: a constant on the left names the anonymous class, so
+        // members of its block belong to it.
+        // The analyzer's contract: `instantiates` names the class being
+        // INSTANTIATED, which is the RECEIVER (`Class.new` -> `Class`), not the
+        // constant the result is bound to. Naming the left instead produced
+        // `instantiates:Acct` for `Acct = Class.new do`.
+        const recvName = constantPath(right ? right.childForFieldName("receiver") : null)
+        push("instantiates", leafName(recvName ?? left.text), line)
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          const isLeft = left !== null && c.id === left.id
+          stack.push({
+            n: c, parent: n, inBody: false, scopes: isLeft ? f.scopes : [...f.scopes, n.id],
+            cls: isLeft ? f.cls : left.text, methodId: f.methodId,
+          })
+        }
+        continue
+      }
+      // `X.new { }` where the left is NOT a constant is an anonymous scope.
+      if (rightIsCall && methodName === "new") {
+        for (let i = n.namedChildCount - 1; i >= 0; i--) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          const isLeft = left !== null && c.id === left.id
+          stack.push({ n: c, parent: n, inBody: false, scopes: f.scopes, cls: isLeft ? f.cls : undefined, methodId: f.methodId })
+        }
+        continue
+      }
+
+      // A CONSTANT assigned in a class/module body is a member of it: `class C; X = 1;
+      // end` -> `contains:X` (probed, including for a non-trivial right-hand side).
+      // This has to live HERE rather than in a second `assignment` branch further
+      // down the walk: the branch this sits in ends in `continue`, so a later
+      // `if (t === "assignment")` is DEAD CODE and can never run. That is why `X = 1`
+      // published nothing - a rule that existed, carried an explanatory comment, and
+      // never executed. The same shape as §38's endless-def comment: prose describing
+      // behaviour the adjacent code does not have.
+      if (left !== null && left.type === "constant" && f.cls !== undefined) {
+        push("contains", left.text, line, undefined)
+      }
+      void recv
+      void methodName
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+      }
+      continue
+    }
+
+    if (t === "operator_assignment") {
+      const left = n.childForFieldName("left")
+      const right = n.childForFieldName("right")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        const isLeft = left !== null && c.id === left.id
+        if (isLeft) continue
+        if (right !== null && c.id === right.id) {
+          stack.push({ n: c, parent: n, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+          continue
+        }
+        stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+      }
+      continue
+    }
+
+    // ------------------------------------------------------------------ alias
+    if (t === "alias") {
+      // `alias new_name old_name` declares methods; inside a class it is a member.
+      if (f.cls) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c) push("contains", unquote(c.text), c.startPosition.row + 1, undefined)
+        }
+      }
+      continue
+    }
+
+    // ------------------------------------------------------- require/refs
+    if (t === "call") {
+      const methodNode = n.childForFieldName("method")
+      const methodName = methodNode?.text ?? ""
+      // The call itself: `Fabricator(:x)`, `after_build do |f|`, `channel.go`.
+      // Not a builtin, in a body, and not bound as a local. A CAPITALIZED callee is
+      // still a call (`Fabricator` is a method here, not a constant reference).
+      // NOT gated on `inBody`. `inBody` exists to decide whether a BARE IDENTIFIER
+      // is a read or a name; a call node has already committed to being a call, so
+      // `test "a" do` and `Fabricator(:x) do` read as calls even at file scope.
+      // Gating these lost `calls:test`, `calls:Fabricator`, `calls:after_build`.
+      if (methodName && !RUBY_BUILTINS.has(methodName) &&
+          methodNode !== null && !isBound(bindings, f.scopes, methodName)) {
+        push("calls", methodName, line)
+      }
+      if (methodName === "require" || methodName === "require_relative" ||
+          methodName === "autoload" || methodName === "load") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c || c.id === methodNode?.id) continue
+          const name = unquote(c.text)
+          if (name.length > 0) push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
+        }
+        continue
+      }
+      if (methodName === "new" || methodName === "allocate") {
+        const recv = constantPath(n.childForFieldName("receiver"))
+        // An UPPERCASE receiver instantiates a known class; a lowercase receiver
+        // is a local whose class is unknowable, so it stays a plain call.
+        // The target is the LEAF of the receiver path: `A::B.new` -> `B`, not
+        // `A::B` (probed).
+        if (recv) push("instantiates", leafName(recv), line)
+        else if (!n.childForFieldName("receiver")) {
+          // A receiverless `new` constructs the ENCLOSING class.
+          if (f.cls) push("instantiates", f.cls, line)
+        }
+      }
+      if (methodName === "include" || methodName === "extend" || methodName === "prepend") {
+        const args = n.childForFieldName("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (!a) continue
+            const cn = constantPath(a) ?? (a.type === "identifier" ? a.text : null)
+            // Probed: `extend ActiveSupport::Concern` -> `extends -> Concern`, the
+            // LEAF. Passing the full path was the whole of the 520 missing `extends`
+            // - every Concern and every namespaced mixin in the corpus.
+            if (cn) push(methodName === "extend" ? "extends" : "implements", leafName(cn), line)
+          }
+        }
+        continue
+      }
+    }
+
+    // ------------------------------------------------------------------ macros
+    const macroName = macroOf(n)
+    if (macroName) {
+      if (ASSOCIATION_MACROS.has(macroName) || ATTRIBUTE_MACROS.has(macroName)) {
+        for (const a of macroArgs(n)) {
+          const name = symbolName(a.text)
+          if (name.length > 0) {
+            if (ASSOCIATION_MACROS.has(macroName)) {
+              // Association targets are PROPERTIES of the owner, so they get both
+              // a `contains` and a `uses` edge. On an anonymous owner there is
+              // nothing to attach a `uses` edge to, so it is skipped.
+              // With a namable owner: a member AND a property. Without one the
+              // analyzer still records the property - `belongs_to :user` says the
+              // class HAS a user - but there is no member to attach it to, so
+              // `contains` is not emitted and `uses` carries no owner.
+              // Both edges name the ASSOCIATION TARGET (`belongs_to :user` ->
+              // `contains:user` AND `uses:user`), and neither is scoped: the probe
+              // shows `uses:>user` with an EMPTY `from`, so an association property
+              // belongs to no owner. Passing `f.cls` invented 9,519 `uses` edges the
+              // analyzer never emits, because `contains` is what carries the owner.
+              //
+              // `contains` requires a NAMABLE owner. In an anonymous scope
+              // (`Class.new do belongs_to :user end`, with nothing naming it) the
+              // analyzer emits `uses` alone - there is no class for the association
+              // to be a member of. That is the namable-owner principle again, and
+              // gating on `f.cls` rather than `!== undefined` is what encodes it.
+              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, undefined)
+              push("uses", name, line, undefined)
+            } else {
+              push("contains", name, a.startPosition.row + 1, undefined)
+            }
+          }
+        }
+      } else if (!CALLBACK_MACROS.has(macroName)) {
+        // An unknown macro with hash arguments contributes `uses` edges.
+        for (const a of macroArgs(n)) {
+          if (a.type === "hash_key_symbol" || a.type === "simple_symbol" || a.type === "symbol") {
+            push("uses", symbolName(a.text), line, f.cls ?? "anonymous")
+          }
+        }
+      }
+      // Still walk the arguments: they are real expressions.
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+      }
+      continue
+    }
+
+    // ------------------------------------------------------------- constants
+    if (t === "constant" || t === "scope_resolution") {
+      // A constant reference is NOT a `uses` edge. Deriving one here put
+      // `uses:C` behind every class in the corpus and, worse, made a class NAME
+      // look like a payload it owned. The analyzer emits `uses` for exactly two
+      // things - macro hash arguments and association properties - and a bare
+      // constant is neither. Measured: this single line accounted for 6 of the
+      // 14 smoke disagreements.
+      continue
+    }
+
+    // -------------------------------------------------------------- `defined?`
+    if (t === "unary") {
+      const op = n.childCount > 0 ? n.child(0) : null
+      if (op && !op.isNamed && op.type === "defined?") continue
+    }
+    if (t === "undef") continue
+
+    // ---------------------------------------------------------- identifiers
+    if (t === "identifier") {
+      const text = n.text
+      const parentType = parent?.type ?? ""
+      const parentIsNameField = parent !== null && parent.childForFieldName("name")?.id === n.id
+      if (f.inBody && !parentIsNameField && !NON_BARE_PARENTS.has(parentType) &&
+          !RUBY_BUILTINS.has(text) && !isBound(bindings, f.scopes, text)) {
+        emittedCallTargets.add(text)
+        push("calls", text, line)
+      }
+      continue
+    }
+
+    // A GLOBAL variable is not read as a reference: `def m; $x = 1; $x; end`
+    // publishes no edge for `$x`. Instance and class variables DO read.
+    if (t === "global_variable") continue
+    if (t === "instance_variable" || t === "class_variable") {
+      const parentType = parent?.type ?? ""
+      const isWrite = parent !== null &&
+        (parent.type === "assignment" || parent.type === "operator_assignment") &&
+        parent.childForFieldName("left")?.id === n.id
+      // In RECEIVER position (`@view.key`, `self.foo`) a variable names the
+      // object being read from; the analyzer records that as `uses`, not as a
+      // bare call to the variable.
+      // Receiver position, found POSITIONALLY. There is no `receiver` field on a
+      // def node (measured), and none to consult here either, so for a def or
+      // singleton_method the receiver is the named child before the name; for any
+      // other parent the field is authoritative when the grammar supplies one.
+      let isReceiver = parent !== null && parent.childForFieldName("receiver")?.id === n.id
+      if (!isReceiver && parent !== null &&
+          (parent.type === "method" || parent.type === "singleton_method")) {
+        const pName = parent.childForFieldName("name")
+        for (let i = 0; i < parent.namedChildCount; i++) {
+          const pc = parent.namedChild(i)
+          if (!pc) continue
+          if (pName !== null && pc.id === pName.id) break
+          if (pc.id === n.id) { isReceiver = true; break }
+        }
+      }
+      // Every variable READ is a `uses` edge, receiver position or not (probed:
+      // `def m; @a; end` -> `uses:@a`, and so does `@a = 1; @a`). A WRITE emits
+      // nothing, which is why `def m; @a = 1; end` has no edge at all. The label
+      // never depends on receiver position, so that variable is now irrelevant.
+      if (f.inBody && !isWrite) push("uses", n.text, line)
+      void isReceiver
+      continue
+    }
+
+    // ------------------------------------------------------------- generic
+    const inBody = f.inBody || t === "method" || t === "singleton_method"
+    for (let i = n.namedChildCount - 1; i >= 0; i--) {
+      const c = n.namedChild(i)
+      if (c) {
+        stack.push({
+          n: c, parent: n,
+          inBody: inBody,
+          scopes: isScopeNode(t) ? [...f.scopes, n.id] : f.scopes,
+          cls: f.cls, methodId: f.methodId,
+        })
+      }
+    }
+  }
+
+  // IMPLICIT OVERRIDES: `class Sub < Base` where Sub redeclares a method Base also
+  // declares gives `overrides:Base.method` (probed on
+  // `Base#run` / `Sub#run`). This needs the file's class graph plus each class's
+  // member set, so it runs after the walk. Only members of classes in THIS file can
+  // be resolved, which is the honest limit: a base defined in another file is not
+  // visible to a single-file oracle, and inventing it would be a guess.
+  for (const [cls, base] of bases) {
+    const own = members.get(cls)
+    const inherited = members.get(base)
+    if (!own || !inherited) continue
+    for (const m of own) {
+      if (inherited.has(m)) {
+        push("overrides", `${base}.${m}`, 0, `${cls}.${m}`)
+      }
+    }
+  }
+
+  return edges
+}
+
+/** The macro name if this node is a macro call with a receiver or bare form. */
+function macroOf(n: Node): string | null {
+  if (n.type !== "call") return null
+  const methodNode = n.childForFieldName("method")
+  if (!methodNode) return null
+  const name = methodNode.text
+  if (ASSOCIATION_MACROS.has(name) || ATTRIBUTE_MACROS.has(name) || CALLBACK_MACROS.has(name)) return name
+  return null
+}
+
+/** The leading symbol/string arguments of a macro call. */
+function macroArgs(n: Node): Node[] {
+  const out: Node[] = []
+  const args = n.childForFieldName("arguments")
+  if (!args) return out
+  for (let i = 0; i < args.namedChildCount; i++) {
+    const a = args.namedChild(i)
+    if (!a) continue
+    if (a.type === "simple_symbol" || a.type === "symbol" || a.type === "string") out.push(a)
+    else break
+  }
+  return out
+}
