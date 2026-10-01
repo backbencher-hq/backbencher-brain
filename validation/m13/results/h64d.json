@@ -120,7 +120,7 @@
     {
       "name": "every spelling of one file resolves to the same indexed row",
       "pass": true,
-      "detail": "src/a.ts -> src/a.ts:fresh | ./src/a.ts -> src/a.ts:fresh | src//a.ts -> src/a.ts:fresh | src/./a.ts -> src/a.ts:fresh | /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-h64d-paths-qPS8I0/src/a.ts -> src/a.ts:fresh"
+      "detail": "src/a.ts -> src/a.ts:fresh | ./src/a.ts -> src/a.ts:fresh | src//a.ts -> src/a.ts:fresh | src/./a.ts -> src/a.ts:fresh | /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-h64d-paths-8gIHdV/src/a.ts -> src/a.ts:fresh"
     },
     {
       "name": "and they all normalise to one project-relative path",
@@ -204,9 +204,9 @@
       "detail": "1 path resolved; the project scan still ran separately and is reported as such"
     },
     {
-      "name": "and its own cost is reported",
+      "name": "and its own cost is measured and reported separately from the corpus scan",
       "pass": true,
-      "detail": "pathsMs=4 vs freshnessMs=1"
+      "detail": "pathsMs=4 (the named path) vs freshnessMs=0 (the project scan it did not replace) — both reported, neither asserted to be ordered"
     }
   ],
   "negativeCases": 3,
@@ -224,10 +224,10 @@
   "limitations": [
     "The `absent` case is asserted with a path that does not exist. A caller who misspells an EXISTING file gets `not-indexed` rather than `absent`, because the two are genuinely indistinguishable from the filesystem alone; the reason string says which case it is."
   ],
-  "generatedAt": "2026-10-01T01:45:37.486Z",
+  "generatedAt": "2026-10-01T03:13:41.028Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T01:50:43.743Z",
-    "contentSha256": "6e2328aa55f299182f19f5377c982755c191be9d6958c7e8adead1dbd9dc32b3"
+    "sealedAt": "2026-10-01T03:13:48.160Z",
+    "contentSha256": "4e7155be4ea1a99c4e0baf5f7b232fe8f6c513bc0c0bc260ddc7179ecb88124f"
   }
 }
