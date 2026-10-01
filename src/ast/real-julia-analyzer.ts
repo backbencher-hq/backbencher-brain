@@ -667,10 +667,20 @@ export class RealJuliaAnalyzer {
           // analyzer had `uses -> Compiler`, with 681 of 732 truth rows unmatched and 268 the other
           // way. The defect inverted the edge rather than dropping it, which is why no count on its
           // own would have shown it — every field read produced a plausible `uses` row.
+          // A member can be an OPERATOR NAME, quoted: `x.:(==)`, `s.:<`. The member is then a
+          // `quote_expression`, not an `identifier`, so the identifier lookup found nothing and the
+          // read vanished. The name is the quoted symbol's text, without the `:( )` wrapper, so
+          // `x.:(==)` reads the member `==` rather than the five characters `: ( = )`.
           const member = this.namedChildren(node).find((c) => c.type === "identifier" && c.id !== value.id)
-            ?? this.namedChildren(node).find((c) => c.type === "identifier")
+            ?? this.namedChildren(node).find((c) => c.type === "identifier" && c.id !== value.id)
+            ?? this.namedChildren(node).find((c) => c.id !== value.id && (c.type === "quote_expression" || c.type === "operator"))
           if (!member) break
-          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", member.text.trim(), node, 0.9, { juliaSpecific: true, isFieldRead: true }))
+          const memberName = member.type === "quote_expression"
+            ? (this.pos(member, 0)?.text.trim() ?? member.text.trim().replace(/^:\(|\)$/g, ""))
+            : member.text.trim()
+          if (!memberName) break
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", memberName, node, 0.9,
+            { juliaSpecific: true, isFieldRead: true, isOperatorMember: member.type !== "identifier" }))
           break
         }
 
@@ -883,6 +893,17 @@ export class RealJuliaAnalyzer {
         const inner = this.typeHeadName(left)
         if (inner) return inner
       }
+    }
+    // A QUALIFIED type is a `field_expression` and the WHOLE path is the name. `x::Threads.SpinLock`
+    // is (field_expression (identifier Threads) (identifier SpinLock)), and taking pos(0) returned
+    // `Threads` — so every annotation naming a type in a namespace published a reference to the
+    // NAMESPACE. Same shape as the `type_head` bug this function already had a scar for, one field
+    // away: there it named a struct after its supertype, here it names a type after its module.
+    // Found by the F5 `references` oracle (`base/task.jl` `Threads.SpinLock`,
+    // `base/cpuid.jl` `Threads.Atomic`, `test/cancellation.jl` `Base.GMP.MPZ`).
+    if (node.type === "field_expression") {
+      const path = this.fieldPath(node)
+      if (path) return path
     }
     const first = this.pos(node, 0)
     if (first && first.type === "identifier") return first.text.trim()
