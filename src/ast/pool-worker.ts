@@ -729,6 +729,11 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           //
           // Purely additive, on the same terms as the CSS forwarding above: nothing
           // read these before, so no consumer changes behaviour.
+          // SOL-22. A LICENCE is a file-level fact and the module symbol is the only
+          // symbol that can carry it, so without this key a Solidity file's licence was
+          // in the analyzer's payload and in no consumer's hands — the same seam as
+          // `docstring` above, and the same terms: additive, nothing read it before.
+          license: (s as any).license ?? (s.metadata as any)?.license ?? null,
           docstringKind: (s as any).docstringKind ?? (s.metadata as any)?.docstringKind ?? null,
           docTags: (s as any).docTags ?? (s.metadata as any)?.docTags ?? null,
           comments: (s as any).comments ?? (s.metadata as any)?.comments ?? null,
