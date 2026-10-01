@@ -288,7 +288,10 @@ async function searchContentClassic(
   // before the column existed has none, and the tool says so rather than
   // letting a partial corpus look complete.
   const withBody = usable.filter((r) => !!r.sourceText).length
-  return buildResults(raw, page, "content", maxResults, { totalMatches: matched.length })
+  return buildResults(raw, page, "content", maxResults, {
+    totalMatches: matched.length,
+    bodyCoverage: { withBody, symbols: usable.length, ratio: usable.length ? withBody / usable.length : 1 },
+  })
 }
 
 /**
@@ -479,11 +482,12 @@ function buildResults(
   page: CorpusRow[],
   mode: string,
   _maxResults: number,
-  meta: { totalMatches: number; truncated?: boolean } = { totalMatches: page.length },
+  meta: { totalMatches: number; truncated?: boolean; bodyCoverage?: { withBody: number; symbols: number; ratio: number } } = { totalMatches: page.length },
 ): SearchResults {
   const results: SearchResults = withMeta([], mode)
   results.totalMatches = meta.totalMatches
   if (meta.truncated) results.truncated = true
+  if (meta.bodyCoverage) results.bodyCoverage = meta.bodyCoverage
   for (const row of page) {
     results.push({
       file: row.relativePath,
@@ -495,7 +499,12 @@ function buildResults(
       symbolType: row.symbolType,
       language: row.language,
       matchType: "content",
-      snippet: row.docstring ? firstLine(row.docstring) : (row.qualifiedName || row.name),
+      // When the match came from the BODY and there is no docstring, the first
+      // body line is the most honest snippet: it shows why this symbol matched
+      // rather than repeating its name.
+      snippet: row.docstring
+        ? firstLine(row.docstring)
+        : (row.sourceText ? firstLine(row.sourceText) : (row.qualifiedName || row.name)),
       complexity: row.complexity,
       _relevance: 1,
     })
@@ -542,10 +551,14 @@ function rankWithFts5(
   if (candidates.length < 2) return candidates
   const table = "__bb_content_fts_" + Math.random().toString(36).slice(2, 10)
   try {
-    raw.exec("CREATE VIRTUAL TABLE " + table + " USING fts5(id UNINDEXED, name, qualified_name, docstring)")
-    const insert = raw.prepare("INSERT INTO " + table + " (id, name, qualified_name, docstring) VALUES (?, ?, ?, ?)")
+    // The body is a FOURTH indexed column, not an afterthought. bm25 is the
+    // only IDF-aware ranking in the product; leaving the body out of it would
+    // mean the one retriever that can weight a rare word properly never saw the
+    // word at all.
+    raw.exec("CREATE VIRTUAL TABLE " + table + " USING fts5(id UNINDEXED, name, qualified_name, docstring, source_text)")
+    const insert = raw.prepare("INSERT INTO " + table + " (id, name, qualified_name, docstring, source_text) VALUES (?, ?, ?, ?, ?)")
     for (const row of candidates) {
-      insert.run(row.id, row.name, row.qualifiedName ?? "", row.docstring ?? "")
+      insert.run(row.id, row.name, row.qualifiedName ?? "", row.docstring ?? "", row.sourceText ?? "")
     }
     const terms = query.split(/\s+/).filter(Boolean).map(ftsQuote).join(" OR ")
     if (!terms) return candidates
