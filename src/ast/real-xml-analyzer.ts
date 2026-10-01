@@ -857,6 +857,54 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             )
             addRelationship(elementName, attrName, ASTEngine.RelationshipType.Contains, { role: "dtd_attribute_declaration" }, attrNameNode)
 
+            // M18 (ATTLIST-default round): AN ATTRIBUTE'S DEFAULT IS A USE OF
+            // WHATEVER IT IS BUILT FROM. `<!ATTLIST foo bar CDATA
+            // "&lt;&gt;&quot;">>` says `bar`'s default value is assembled from
+            // `lt`, `gt` and `quot`, and an attribute cannot be given its default
+            // without expanding them. That claim was dropped: an `EntityRef` was
+            // only collected under an OWNING ELEMENT, and a DTD declaration has no
+            // element above it — the same structural reason the entity
+            // replacement-text and parameter-reference rounds hit, and the third
+            // instance of it.
+            //
+            // THE OWNER IS THE ATTRIBUTE, not the element the ATTLIST is about.
+            // That is what makes the ruling derivable rather than a preference: the
+            // default is a property of `bar`, so `bar` is what depends on `lt`, and
+            // it is consistent with the `contains foo -> bar` edge this block
+            // already publishes for the declaration itself. Attaching it to `foo`
+            // instead would claim `foo` has a dependency its own declaration does
+            // not mention.
+            //
+            // Measured by `script/m12/xml-entity-accounting.mts`, which is the
+            // accounting that found it: 10 of the then-21-site residual, across 4
+            // files. 9 are the PREDEFINED entities — the same `&lt; &gt; &quot;`
+            // M18 made `builtin`, so these are resolvable, not dangling. The tenth
+            // is libxml2's `test/errors/rec_att_default.xml`, where `&a;` expands
+            // to `&b;` and `&b;` back to `&a;`; that file is an infinite-recursion
+            // conformance probe, and publishing the reference is still correct —
+            // the cycle is a property of the document, not a parse failure — so it
+            // is labelled `recovery` rather than refused.
+            if (defaultDecl) {
+              const stack: Node[] = [defaultDecl]
+              while (stack.length > 0) {
+                const n = stack.pop()!
+                if (n.type === "EntityRef") {
+                  const text = n.text.trim()
+                  if (text.length > 2 && text.startsWith("&") && text.endsWith(";")) {
+                    const ref = text.slice(1, -1)
+                    if (ref.length > 0) {
+                      entityReferenceCandidates.push({ ownerName: attrName, name: ref, node: n, textNode: n })
+                    }
+                  }
+                  continue
+                }
+                for (let i = n.namedChildCount - 1; i >= 0; i--) {
+                  const c = n.namedChild(i)
+                  if (c) stack.push(c)
+                }
+              }
+            }
+
             // `<!ATTLIST gif src NOTATION (gif|jpg) #IMPLIED>` declares a
             // dependency on two NOTATIONS. Those names are declarations too.
             for (const notation of this.descendantsOfType(attDef, "NotationType")) {

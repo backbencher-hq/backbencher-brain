@@ -85,28 +85,26 @@ type RefContext = "content" | "inside-attribute-value" | "inside-entity-replacem
  *
  * Each entry says WHY, because "we did not get round to it" is not a ruling:
  *
- *  - `attlist-default`: `&lt;` inside a DTD ATTLIST's declared DEFAULT value
- *    (`<!ATTLIST foo bar CDATA "&lt;&gt;&quot;">`). The reference is real text in
- *    an attribute's default, and the attribute declaration is what would depend
- *    on it. Whether the owner is the attribute declaration or the DTD holding it
- *    is a ruling not yet written down, and an edge with the WRONG owner is worse
- *    than no edge. OWED.
- *
  *  - `entity-in-ns-uri`: a reference whose text sits inside a namespace URI. No
- *    XML processor expands entity references in a namespace URI, so these are
- *    sites the grammar reports and the language does not resolve; publishing
- *    them would assert a dependency the language says does not exist.
- *    RULED: not a reference.
+ *    XML processor expands entity references in a namespace URI — the URI is taken
+ *    as a literal string, which is the whole point of comparing an entity-expanded
+ *    name against one — so these are sites the grammar reports and the language
+ *    does not resolve. Publishing them would assert a dependency the language
+ *    says does not exist. RULED: not a reference.
  *
- *  - `residual-single`: one site each, not yet adjudicated against the tree.
- *    Recorded rather than explained, because an unexplained number is at least
- *    honest about being unexplained.
+ *  - `attlist-default` is GONE from this list, which is the direction this gate is
+ *    meant to be able to fail in. All four entries were there at 10 sites; the
+ *    analyzer now publishes them, and the gate went red saying so, and removing
+ *    the entries is what makes it green again.
+ *
+ *  - `residual-single`: sites not yet adjudicated against the tree. Recorded
+ *    rather than explained, because an unexplained number is at least honest about
+ *    being unexplained. Two of them are `&dest;` inside an `EntityValue` that the
+ *    grammar wraps in ERROR because the replacement text is `<dest id='foo'/>` —
+ *    markup inside a general entity's value, which needs an internal subset to be
+ *    legal and so is not well-formed where it stands.
  */
 const DECLARED_RESIDUAL: Record<string, { sites: number; ruling: string }> = {
-  "libxml2/result/def-xml-attr.xml": { sites: 3, ruling: "attlist-default" },
-  "libxml2/result/noent/def-xml-attr.xml": { sites: 3, ruling: "attlist-default" },
-  "libxml2/test/def-xml-attr.xml": { sites: 3, ruling: "attlist-default" },
-  "libxml2/test/errors/rec_att_default.xml": { sites: 1, ruling: "attlist-default" },
   "libxml2/test/entity-in-ns-uri.xml": { sites: 2, ruling: "entity-in-ns-uri" },
   "libxml2/result/valid/id2.xml": { sites: 1, ruling: "residual-single" },
   "libxml2/test/valid/id2.xml": { sites: 1, ruling: "residual-single" },
