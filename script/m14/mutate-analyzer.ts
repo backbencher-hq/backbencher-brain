@@ -12242,8 +12242,8 @@ export const MUTANTS: Mutant[] = [
       }),
     }),
   },
-    // NO MUTANT for the declaration-keyed override lookup, and that is a decision rather
-    // than an omission.
+  // NO MUTANT for the declaration-keyed override lookup, and that is a decision rather
+  // than an omission.
     //
     // The revert reads: clear each method's `ownerClassKey` so the resolution falls back to
     // the name-keyed base table, which reproduces `class C` with no base inheriting the bases
