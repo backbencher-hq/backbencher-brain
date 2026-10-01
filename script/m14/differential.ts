@@ -1540,6 +1540,32 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
           component = namePair?.childForFieldName("value")?.text?.replace(/['"]/g, "") || from
         }
       }
+      if (n.type === "export_statement") {
+        const isDefault2 = (n.children ?? []).some((c: any) => !c.isNamed && c.text === "default")
+        const obj = (n.namedChildren ?? []).find((c: any) => c.type === "object")
+        if (isDefault2 && obj) {
+          const namePair = (obj.namedChildren ?? []).find(
+            (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
+          )
+          component = (namePair?.childForFieldName("value")?.text ?? "").replace(/^['"]|['"]$/g, "") || from
+          // The OPTIONS hoist: `props: dropdownItemProps` / `emits: selectV2Emits`
+          // names a declaration exactly as the macro form does, so it gets the
+          // same contract row. Found by the gate, not by reading: the first
+          // derivation covered only the CALL forms and left these 3 rows
+          // unexplained on element-plus (ElDropdownItem -> dropdownItemProps,
+          // ElSelectV2 -> selectV2Props, ElSelectV2 -> selectV2Emits). An
+          // INLINE literal names no declaration and yields no row, same as above.
+          for (const opt of ["props", "emits"]) {
+            const pair = (obj.namedChildren ?? []).find(
+              (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === opt,
+            )
+            const v = pair?.childForFieldName("value")
+            if (v?.type === "identifier" && v.text) {
+              out.push({ label: "references", from: component, target: v.text })
+            }
+          }
+        }
+      }
       if (n.type === "call_expression") {
         const callee = n.childForFieldName("function")?.text
         if (callee === "provide" || callee === "inject") {
@@ -1559,11 +1585,19 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
           let named: any = null
           const typeArgs = (n.namedChildren ?? []).find((c: any) => c.type === "type_arguments")
           if (typeArgs) {
-            const innerNodes: any[] = [typeArgs]
-            while (innerNodes.length) {
-              const t = innerNodes.pop()!
-              if (t.type === "type_identifier" && !named) named = t
-              for (const c of t.namedChildren ?? []) innerNodes.push(c)
+            // PRE-ORDER, left to right, FIRST type_identifier wins. The shape that
+            // matters is a GENERIC type argument —
+            // `defineProps<SegmentedProps<T>>()` on a component carrying
+            // `generic="T extends Option"`, where the declaration is the generic's
+            // OWN name and `T` is the component's own type parameter. A LIFO walk
+            // descends into the `<T>` arguments first and returns the parameter,
+            // which is not a declaration at all: measured as the last residual
+            // MISSING on element-plus (`segmented -> T`).
+            const queue: any[] = [typeArgs]
+            while (queue.length) {
+              const t = queue.shift()!
+              if (t.type === "type_identifier") { named = t; break }
+              for (const c of t.namedChildren ?? []) queue.push(c)
             }
           }
           if (!named) {
@@ -14134,10 +14168,15 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
         if (tp.namedChildren.some((c: any) => c.type === "list")) return "[]"
         // an applied head: `ExceptT Error` names ExceptT, and `C1 c` names C1.
         // A bare `variable` is a type PARAMETER, never the target.
+        // Left spine, for the third time: this path names the instance SYMBOL (and
+        // so its `contains` edge) and still descended only one level, publishing
+        // `contains Module -> Set' sep b` for `instance Described (Set' sep b a)`
+        // and `Parsec.ParsecT s u`. Found by the blindness corpus in 4k, which is
+        // the point of having one.
         const par = tp.namedChildren.find((c: any) => c.type === "parens")
         const ap = par?.namedChildren.find((c: any) => c.type === "apply")
         const first = ap?.namedChild(0)
-        if (first) return first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+        if (first) return leftSpineName(first) ?? first.text
         return ""
       }
       const deep = (x: any, depth: number): any => {
@@ -23171,6 +23210,16 @@ async function main() {
         from: String(r.source ?? r.from ?? r.fromSymbol ?? ""),
         line: r.line_number ?? 0,
         confidence: typeof r.confidence === "number" ? r.confidence : 1,
+        // M60 (#910) shape, reproduced 90 lines below its own warning. The
+        // ANALYZER-side allowlist is evaluated on the NORMALIZED row, and the
+        // normalization dropped `metadata`, so the F12/F2 contract-row allowance
+        // (VUE_CONTRACT_ROW) could never fire: the analyzer's rows were silently
+        // filtered out while the oracle emitted the same rows as truth — 79
+        // MISSING on element-plus, every one of which the analyzer DOES emit. It
+        // read as an analyzer regression and was a harness gap, which is the #910
+        // sentence verbatim. Carrying metadata makes the allowance reachable, and
+        // is the right normalization to carry regardless.
+        metadata: r.metadata ?? {},
       // c, rust and go compare CALL edges too (their independently derivable
       // truth); zig derives calls AND uses; other languages do not derive
       // call truth, so including calls there would flag every real call edge
@@ -23929,21 +23978,33 @@ async function main() {
     // per-lane samples were already collected; printing them here costs nothing
     // and turns "150 MISSING" from a number into a diagnosis. Disclosed, never
     // scored: this is a probe run and writes no artifact.
+    // A count with no samples is a number you cannot act on, and that is the
+    // same failure this lane's review is about: a green number nobody can
+    // triage. The block below printed samples ONLY for MISSING and ONLY when
+    // MISSING was non-zero, so a lane sitting at MISSING=0 / unexplained=3 — the
+    // state the F12/F2 contract oracle landed in — reported a residual with no
+    // way to see it. Both directions print now, each labelled.
     for (const key of [...measuredKeys]) {
       // A second-corpus lane's row is keyed `repo:lang` and lives in reportSecond.
       const row: any = (report as any)[key] ?? (reportSecond as any)[key]
-      if (!row || (row.missingInAnalyzer ?? 0) === 0) continue
+      if (!row) continue
       const laneSamples: any[] = row.samples ?? []
-      console.log(`  [${key}] ${row.missingInAnalyzer} MISSING / ${row.truth} truth — samples:`)
-      const seenTgt = new Set<string>()
-      let shown = 0
-      for (const smp of laneSamples) {
-        if (smp.dir !== "MISSING") continue
-        const k = `${smp.label}|${smp.target}`
-        if (seenTgt.has(k)) continue
-        seenTgt.add(k)
-        console.log(`    ${smp.label} ${smp.from} -> ${smp.target}   (${smp.file})`)
-        if (++shown >= 12) break
+      for (const [dir, count, headline] of [
+        ["MISSING", row.missingInAnalyzer ?? 0, `${row.missingInAnalyzer} MISSING / ${row.truth} truth`],
+        ["UNEXPLAINED", row.unexplainedInAnalyzer ?? 0, `${row.unexplainedInAnalyzer} unexplained / ${row.analyzerEdges ?? "?"} analyzer edges`],
+      ] as const) {
+        if (!count) continue
+        console.log(`  [${key}] ${headline} — samples:`)
+        const seenTgt = new Set<string>()
+        let shown = 0
+        for (const smp of laneSamples) {
+          if (smp.dir !== dir) continue
+          const k = `${smp.label}|${smp.target}`
+          if (seenTgt.has(k)) continue
+          seenTgt.add(k)
+          console.log(`    ${smp.label} ${smp.from} -> ${smp.target}   (${smp.file})`)
+          if (++shown >= 12) break
+        }
       }
     }
     console.log(
