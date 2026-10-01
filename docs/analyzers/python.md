@@ -13,11 +13,11 @@ defects behind them, see [`reviews/python/master-review.md`](../../reviews/pytho
 | Extensions | `.py`, `.pyi` |
 | Grammar | `tree-sitter-python` 0.25.0, `wasm/tree-sitter-python.wasm`, **pinned by sha256** |
 | Fixtures | 15 |
-| Mutants | 28, none surviving |
+| Mutants | 29, none surviving |
 | Completeness | 130 node types, 60 handled, 65 silent, **0 unclassified**, 7 explicit decisions |
 | Regex | **0** — no `RegExp`, no `/…/` literal |
 | Corpus | 3,271 `.py` files, 23,911 symbols, 99,743 relationships, 0 parse errors |
-| Independent oracle | **99.94% — 161,059 edges agreed, 90 disagreements.** Every relationship type the analyzer emits has an independent second derivation (PY-23) |
+| Independent oracle | **99.9994% — 161,094 edges agreed, 1 disagreement.** Every relationship type the analyzer emits has an independent second derivation (PY-23) |
 
 ## What a consumer may rely on
 
@@ -115,8 +115,8 @@ first. Over the corpus, **2,036 of 3,271 files (62.2%)** carry a framework.
 | Claim | Where it is pinned |
 | --- | --- |
 | grammar bytes | `validation/m14/grammar-pins.json`, lane `python` |
-| 11 fixtures | `validation/m14/fixtures/python/` |
-| 25 mutants | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
+| 17 fixtures | `validation/m14/fixtures/python/` |
+| 29 mutants | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
 | node-type classification | `script/m14/spec/python-completeness.json` |
 | independent truth | `script/m14/oracles/python-truth.ts` + `python-truth-diff.ts` |
 | the measurements behind all of it | `reviews/python/master-review.md` |
@@ -124,7 +124,7 @@ first. Over the corpus, **2,036 of 3,271 files (62.2%)** carry a framework.
 ## What the oracle found
 
 An independent tree-derived oracle (`script/m14/oracles/python-truth.ts`) exists to falsify this
-lane. Run over the whole corpus, it found **three real defects**, each settled by asking CPython
+lane. Run over the whole corpus, it found **nine real defects**, each settled by asking CPython
 rather than by argument:
 
 | Defect | Kind | Effect |
@@ -133,6 +133,22 @@ rather than by argument:
 | A name bound in a **lambda or comprehension** was published as a class member | fabrication | 20 edges removed |
 | Override bases keyed by class **name**, merging same-named classes | misattribution | 32 edges corrected |
 | A class **variable** satisfied the "base declares this name" test | fabrication, marked **verified** | 22 fabricated edges at 0.95 |
+| A **qualified** base (`unittest.TestCase`) bound to an unrelated local namesake | misattribution | external base made internal |
+| `aiter`/`anext` were missing from the **builtin** filter | loss | builtins presented as undefined |
+| Module-scope calls were dropped whenever the file was **named `module.py`** | loss | 2 edges recovered (PY-25) |
+| A class-body `__all__` published **module** `exports` | fabrication | 3 false edges removed (PY-24) |
+| A class-body `__all__` published **no** `contains`, though it is a real member | loss | last missing edge in the corpus (PY-24) |
+
+The last two are one construct with opposite signs, and the pair is the most useful result here.
+`__all__` is the module's export contract — `import *` reads the module binding and looks
+nowhere else — so a class body that assigns one publishes nothing. The lane read it wherever it
+found it, and then returned before the class-member path, so `CythonDotParallel` in
+`cython/Cython/Shadow.py:786` produced three false `exports` edges *and* withheld one true
+`contains`. The `contains` half is what the oracle reported. The `exports` half it could not:
+the oracle derived them too, from the same unstated assumption, so two derivations agreed on a
+false fact and the report came back clean. **A differential finds disagreement; it cannot find a
+shared blind spot.** The false edges are now pinned as forbid rows on the *semantics* (`import *
+` ignores a class `__all__`), not on the code path that implements them.
 
 The third is the one worth remembering: it neither added nor removed an edge, it pointed a
 *correct-looking* edge at the wrong class — which is why neither a count nor a set comparison can

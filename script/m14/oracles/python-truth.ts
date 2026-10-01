@@ -467,7 +467,19 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       const body = m && m[2] !== undefined ? m[2] : t
       return body.replace(/^["']/, "").replace(/["']$/, "")
     }
-    const walkExports = (n: any): void => {
+    const walkExports = (n: any, scopeDepth = 0): void => {
+      // `__all__` is the MODULE's export contract and nothing else. A class body may assign one —
+      // cython's `Cython/Shadow.py` has `__all__` inside `CythonDotParallel` at L786 — and
+      // `from x import *` reads the module binding only, so a class `__all__` publishes NO
+      // exports. Deriving them anyway made this oracle AGREE with the analyzer on a false fact,
+      // which is exactly how two edges that should not exist reported zero differential rows:
+      // two derivations of mine agreed, and agreement between my own assumptions is not
+      // evidence. The class assignment is still a real member, so it is derived as `contains`
+      // (which is why that side showed up as missing while this side showed up as clean).
+      //
+      // Only `class_definition` and `function_definition` open a scope. A module-level `if` does
+      // not, so `if __name__ == "__main__": __all__ = (...)` still declares exports.
+      const nested = scopeDepth + (n.type === "class_definition" || n.type === "function_definition" ? 1 : 0)
       // `assignment` AND `augmented_assignment`: `__all__ += ["extra"]` is an ordinary way
       // to extend a module's public surface and the lane reads it, so a derivation that
       // handled only `=` would report the augmentation as missing. Both carry a `left` and a
@@ -477,6 +489,7 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
         const left = n.childForFieldName("left")
         const right = n.childForFieldName("right")
         if (left && left.type === "identifier" && left.text === "__all__" &&
+            nested === 0 &&
             right && (right.type === "list" || right.type === "tuple")) {
           for (let i = 0; i < right.namedChildCount; i++) {
             const el = right.namedChild(i)
@@ -488,10 +501,10 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) walkExports(c)
+        if (c) walkExports(c, nested)
       }
     }
-    walkExports(rootNode)
+    walkExports(rootNode, 0)
   }
 
   // `uses` — MEMBER READS. The largest relation type in the lane by volume (69,537 edges
