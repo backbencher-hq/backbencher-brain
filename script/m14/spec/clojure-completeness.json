@@ -261,8 +261,20 @@
         "status": "RULED",
         "question": "Is `..` unconditionally a Java member-access macro?",
         "resolution": "RULED: no — it is a core MACRO, and clojure/core.clj DEFINES it: `(defmacro .. \"form => fieldName-symbol …\" …)` at L1677. In that file every later `(.. sc comparator (compare …))` is a call to the macro the file itself defines, which is exactly what CLJ-D18's shadow guard admits. The analyzer read it that way (the `..` case falls through to the generic branch and the gate decides); deriveClojureEdges' `.`-prefix branch fired first and dropped it, so the full-extent run over clojure/clojure read 1 unexplained of 6,871 truth edges — the analyzer right and the oracle wrong, the m49 W24 shape. Pinned by the full-extent lane."
+      },
+      {
+        "id": "CLJ-M60",
+        "node_type": "contains / uses",
+        "status": "RULED — both labels were unadmitted AND unmeasured, and both oracles already existed",
+        "question": "The M60 label-coverage sweep reported clojure emitting `contains` and `uses` that the allowlist dropped. Unlike most of the 41 gaps, this one needed no new oracle: deriveClojureContainsTruth, deriveClojureUsesTruth and deriveClojureStaticUsesTruth were all already written in script/m14/clojure-truth.ts, and the only caller anywhere in the repo was script/m14/tmp/clj-uses-contains-gate.ts. Same finished-but-unconnected shape as the two typescript oracles (846 lines, zero consumers).",
+        "resolution": "Wired all three into differential.ts with their allowlist entries in the same commit, per the full-mirror rule (truth without the allowance is the #910 shape). The only adaptation is a SHAPE adapter: clojure-truth speaks {source,target,type} and the harness takes {label,from,target}; no rule is reinterpreted. deriveClojureStaticUsesTruth needs the analyzer's own core-builtin suppression predicate, which differential.ts already imports (CLOJURE_CORE_BUILTINS) — sharing that is legitimate because it is the family contract rather than a resolution rule, and it is how the tmp gate called it too. Result on a 15-file clojure draw: 99.2% covered, MISSING=6, and all six are pre-existing `calls`/`references` rows — ZERO missing on either newly-admitted label. verify-label-coverage now passes clojure with an empty gap list.",
+        "measured_by": "script/m14/verify-label-coverage.ts, script/m14/differential.ts --label-dump"
       }
     ],
     "_description": "Clojure analyzer contract (CLJ waves + the M60 deep round, probe- and corpus-verified against the pinned @yogthos/tree-sitter-clojure 0.0.14 wasm): the RULINGS below are load-bearing — each names the node types whose handling they govern. CLJ-D1..D16 are the original sixteen; CLJ-D17..D29 are the M60 deep round (2026-09-28), which is the first wave whose instrument was the DERIVATION of a shipped constant rather than a hand list: the core-suppression set is derived from the language's own source (CLJ-D17), the suppression gate gained two exemptions so the expansion could not trade one fabrication for another (CLJ-D18), and the declaration/identity/ns-clause surfaces were swept on four corpora (4,885 tracked .clj/.cljc/.cljs files, 4,252 of them in one repo). The round found 13 defect classes, one of which (the core list) had been invisible to every existing gate because the F5 oracle imports the list by reference — a MIRRORED fabrication is invisible to a differential whose truth side carries the same bug, which is the lane's recurring blind spot and the reason the gap note below now names the instruments rather than asserting cleanliness."
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES. script/m14/verify-label-coverage.ts reads the differential allowlist, runs the analyzer over a corpus sample, and reports every label the analyzer EMITS that the allowlist DROPS. Clojure reached an empty gap list when the M60 round wired its `contains` and `uses` oracles, which had both been written in script/m14/clojure-truth.ts with no consumer in differential.ts at all.",
+    "declared_gaps": []
   }
 }
