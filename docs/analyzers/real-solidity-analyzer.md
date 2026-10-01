@@ -68,6 +68,7 @@ the index.
 | SOL-11 | `overrides` | **Three tiers.** Base in-file **and** declaring the member → **0.9**, verified. Base **not** in-file but named by an explicit `override(…)` → **0.75**, `inferred`, `meta.reasonCode: "named-by-override-specifier"`, `meta.externalBase: true`. Bare `override` with **one** header base → **0.75**, `reasonCode: "single-header-base"`. Bare `override` with **two or more** header bases → **no edge**. `AnalyzeContext.overrideCompanion` is read when a caller populates it. | Solidity's compiler **rejects** `override(X)` unless `X` declares the member, so for any compiling source the edge is the language's own invariant, not a guess — which is why an external base may be emitted at all. Fifteen sibling analyzers get cross-file overrides from `overrideCompanion`, and **nothing in production ever populates it**; Solidity does not need it. The 2+-bases case stays refused because the keyword says *one* of them declares the member without saying which. |
 | SOL-12 | `exports` | The **compilation-unit surface**: every file-scope declaration except a free function. | Solidity has no export construct. `solc` emits an ABI and abstraction for each contract, interface and library and nothing else; a free function contributes no ABI entry. |
 | SOL-13 | A function is a declaration container | Its **locals belong to it**, so `contains f -> ok` rather than `contains C -> ok`. | Solidity locals are strictly function-scoped, so the contract-level edge is simply false. PowerShell PS3 deliberately keeps a method's owner as its class; that is right for PowerShell and wrong here, and the divergence is stated rather than inherited. |
+| SOL-15 | Every `calls` edge carries a `calleeKind` | `localFunction` (declared on the enclosing type) · `inheritedMember` (reached through an in-file base) · `inFileTypeMember` (a member of another in-file type, via a receiver or `using X for T`) · `modifierInvocation` · `eventEmission` · `errorRevert` (a custom error) · `namespaceBuiltin` (`abi.` / `type.` / `super.` / `this.`) · `external` (declared in another file). Derived from the grammar and this file's declarations; **no hand-written list of builtin member names**. | A call edge used to be emitted from the callee NAME alone, so the census reported one undifferentiated "1,786 unresolved" class mixing a conversion, a language namespace, a custom error and a genuinely cross-file member. There is deliberately no builtin-name list: the first measurement had one containing `at`, `contains` and `length`, which are user-defined `EnumerableSet` methods — it would have silently reclassified live project edges. A conversion (`uint256(x)`) emits **no** edge at all, because `calleeNameOf` has no `primitive_type` case and a conversion is not a call. |
 | SOL-14 | Store-refused names | Not declared. | `pool-worker.ts`'s `UNIVERSAL` denylist says such names are "never legitimate declarations in any language". For Solidity that is false: `self` (CrosschainLinked.sol:59) and `root` (MerkleTreeMock.sol:15) are both real. Measured as 2 unknown `contains` targets before the rule existed. |
 | F9 | Edge targets | An edge target must be a name a stored symbol could have. | A target carrying `/` names nothing, and would sit at **zero** `unknownTargets` for as long as it existed — the metric asks whether a target *matches* a symbol, and a name matching nothing is no more detectable than one matching something. |
 
@@ -94,7 +95,7 @@ short circuits only, with the operator read **structurally** rather than by matc
 source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
-`63.88 ms/file, 1,301 facts/ms` over 389 files at `loadAvg1 22.87` on 8 cores, with
+`79.60 ms/file, 1,059 facts/ms` over 389 files at `loadAvg1 26.21` on 8 cores, with
 `perfIsQualified: false` because of it.
 
 ---
@@ -178,10 +179,15 @@ Named, with their measured size. None of these is hidden in a percentage.
    list precisely when more than one base declares a member, so the keyword says one
    of them does and not which. Reported as `overridesUnresolved` /
    `overridesAmbiguousBaseCount`.
-3. **1,786 `calls` targets resolve to no local symbol** (482 distinct) — EVM and ABI
-   members like `transfer`, `encode`, `returndatasize`, `toUint`. **Expected, and not
-   meant to be 0**: Solidity has no syntax that separates `t.transfer(…)` from a
-   user-defined member call, so suppressing the class would lose real edges. Top
+3. **1,849 `calls` targets resolve to no local symbol** (543 distinct), and every one
+   is now CLASSIFIED rather than pooled — `external` 1,642 (a member or free function
+   declared in another file), `errorRevert` 148, `eventEmission` 59. Two kinds are
+   EXCLUDED from the figure because their target is not a project symbol by
+   construction: `namespaceBuiltin` 269 (`abi.encode`, `type(X).y`, `super.f()`) and
+   `conversion`. **Expected, and not meant to be 0**: Solidity has no syntax that
+   separates `t.transfer(…)` from a user-defined member call, so suppressing the class
+   would lose real edges. Note the figure ROSE from 1,786 while the lane got more
+   correct — see limitation 11. Top
    targets are in the surface artifact as the adjudication surface.
 4. **Two store-refused names.** `self` and `root` are real Solidity identifiers that
    `pool-worker.ts`'s shared `UNIVERSAL` denylist drops. The lane refuses the
@@ -222,7 +228,23 @@ Named, with their measured size. None of these is hidden in a percentage.
    so the census passes, but it is not Solidity conformance evidence; a Solidity F11
    instance would be. Named rather than fixed, because the pin is a shared file and a
    working gate beats a clever one.
-10. **The F5 floor is 2 missing / 18 unexplained, not 0/0.** Both directions are
+11. **Two dead instruments that agreed were reading as a pass.** The `revert_statement`
+    case had **never fired** — in the analyzer *and* in the F5 oracle — because both
+    tested `node.namedChild(0).type === "identifier"` and the grammar puts an
+    `expression` wrapper there for `revert Boom(1)`, `revert Solo` and `revert("x")`
+    alike. 453 custom-error call edges over the corpus did not exist in this lane, and
+    F5 agreed at zero because truth was dead in the same place. Repairing only the
+    analyzer then produced 37 "unexplained" edges that no re-run could clear, because
+    `sweepStateKey` hashed every analyzer in `src/ast` but **not** `script/m14/oracles`
+    — so an oracle edit left the journal key byte-identical and the next run printed
+    `RESUMED` with the previous truth function's numbers. All three are fixed; the
+    oracles are part of the sweep state now, and the oracle repair cut
+    calls-unexplained from 47 to 2 on the adjudication draw.
+10. **The F5 floor is 2 missing / 21 unexplained, not 0/0.** The floor moved UP from
+    18 because of limitation 11 — more truth is derived and more analyzer edges exist,
+    so the residue is larger in absolute terms while `unclassifiable` stays **0**. The
+    move and its reason are recorded in `validation/m14/differential-baseline.json`
+    under `floorMoves["solidity:solidity"]`. Both directions are
    itemised into classes with reasons, and **0 rows are unclassifiable in either
    direction**. The 8 MISSING rows are one class — a `type(IFoo).interfaceId` mention
    of an interface declared in another file. The unexplained rows are `uses` naming a
@@ -241,14 +263,14 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Parse damage | **0** damaged, 0 ERROR, 0 MISSING, 0 damage classes | same |
 | Type coverage | **112 of 124** declared named exercised; **12** never | same |
 | Never-exercised reachability | **12/12** probes reached their type; **8/8** negative controls correct | same, `--verify-silence` on the spec |
-| Symbols / relationships | **5,976** / **26,350** | `script/m60/solidity-surface-measure.ts` |
-| **Line coverage** | **26,350 / 26,350 = 100.00%** | same |
+| Symbols / relationships | **5,976** / **26,803** | `script/m60/solidity-surface-measure.ts` |
+| **Line coverage** | **26,803 / 26,803 = 100.00%** | same |
 | `unknownTargets` | **0** | same |
 | `dupKeys` | **0** | same |
 | `reservedTargets` | **0** | same, via the imported predicate |
-| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 3878 · `extends` 537 · `exports` 487 · `references` 1303 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
-| Evidence tiers | structural 6619 · usage_contextual 18410 · import_based 899 · inferred 422 | same, read from the analyzer's own central emitter |
-| Perf | 63.88 ms/file, 1,301 facts/ms, at `loadAvg1 22.87` / 8 cores — **`perfIsQualified: false`** | same |
+| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1303 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
+| Evidence tiers | structural 6619 · usage_contextual 18863 · import_based 899 · inferred 422 | same, read from the analyzer's own central emitter |
+| Perf | 79.60 ms/file, 1,059 facts/ms, at `loadAvg1 26.21` / 8 cores — **`perfIsQualified: false`** | same |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
@@ -256,9 +278,9 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Fixtures | **22**, all passing, every row read off measured output | `bun run script/m14/run-fixtures.ts --lang solidity` |
 | Mutants | **24**, all caught | `BB_MUTANT_ONLY="solidity/" bun run script/m14/mutate-analyzer.ts` |
 | Zero regex | 0 operations, 0 literals, 4/4 helpers; gate verified to fail 3 ways | `bun run script/m60/solidity-zero-regex.ts --selftest` |
-| F5 differential | coverage **99.9%**, MISSING **2**, unexplained **18** (1.1%) | `bun run script/m14/differential.ts --lang solidity` |
+| F5 differential | coverage **99.9%**, MISSING **2**, unexplained **21** (1.2%) | `bun run script/m14/differential.ts --lang solidity` |
 | F5 adjudication | **0** unclassifiable in either direction | `script/m60/solidity-unexplained-adjudication.ts` |
-| F5 floor / perf baseline | `missing 2 / unexplained 18 / ruling SOL-SCOPE`; 5.3 ms/file with its load recorded and flagged unqualified | `validation/m14/differential-baseline.json` |
+| F5 floor / perf baseline | `missing 2 / unexplained 21 / ruling SOL-SCOPE`; 5.3 ms/file with its load recorded and flagged unqualified | `validation/m14/differential-baseline.json` |
 
 ### What the instruments are for, and what they are not
 

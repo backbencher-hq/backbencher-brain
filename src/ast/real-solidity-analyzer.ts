@@ -1,6 +1,6 @@
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
-import { isReservedTarget, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
+import { isReservedTarget, isPrimitiveTypeToken, ENGINE_FUNCTION_NAMES, STORE_REFUSED_SYMBOL_NAMES } from "./solidity-reserved-tokens"
 
 /**
  * Solidity analyzer.
@@ -368,7 +368,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      * (attribution), so calls made inside a method are attributed to the method
      * and a contract's incoming edges stay its own rather than its methods'.
      */
-    interface Frame { owner: string; scope: string; containerLine: number; yul: boolean }
+    interface Frame { owner: string; scope: string; containerLine: number; yul: boolean; isType?: boolean }
     const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false }]
     const top = (): Frame => frames[frames.length - 1]
     const atFileScope = (): boolean => frames.length === 1
@@ -387,6 +387,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     const membersByType = new Map<string, Set<string>>()
     /** `<contract>` → its direct base names, for SOL-5 and SOL-11. */
     const basesByContract = new Map<string, string[]>()
+    /** SOL-15 — modifiers declared in THIS file, so a call to one is a modifier
+     *  INVOCATION and not a call to some function that happens to share its name.
+     *  `initializer()` is the corpus's clearest case: 24 rows, all of them the
+     *  `Initializable` modifier, none of them a function. */
+    const modifierNamesInFile = new Set<string>()
     /** Deferred `overrides`: resolved after the whole file is read. */
     const overrideCandidates: {
       memberName: string; owner: string; line: number; explicit: string[]; anyBase: string[]
@@ -711,6 +716,27 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    /** SOL-15 companion — the INNER callee node. `call_expression`'s `function`
+     *  field is an `expression` WRAPPER around the real callee, which is why
+     *  `calleeNameOf` descends. The first version of the callee-object capture passed
+     *  the WRAPPER to `memberObjectName`, whose `childForFieldName("object")` is null
+     *  on a wrapper, so every member call got `calleeObject: ""` and all 270 of the
+     *  corpus's namespace builtins (`abi.encode`) classified as `external` — the
+     *  classification silently measuring nothing. Same descent as the name, so the
+     *  two can never disagree about which node the callee is. */
+    const innerCalleeOf = (node: Node | null, depth = 0): Node | null => {
+      if (!node || depth > 6) return null
+      if (node.type === "identifier" || node.type === "member_expression" ||
+          node.type === "user_defined_type" || node.type === "struct_expression") return node
+      for (let i = 0; i < node.namedChildCount; i++) {
+        const c = node.namedChild(i)
+        if (!c) continue
+        const got = innerCalleeOf(c, depth + 1)
+        if (got) return got
+      }
+      return null
+    }
+
     /** SOL-7 companion — the OBJECT a member access hangs off. */
     const memberObjectName = (node: Node): string => {
       const obj = node.childForFieldName("object")
@@ -906,9 +932,18 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    const openFrame = (node: Node, owner: string, scope: string, line: number, yul = false) => {
+    const openFrame = (node: Node, owner: string, scope: string, line: number, yul = false, isType = false) => {
       openedFrames.add(nodeKey(node))
-      frames.push({ owner, scope, containerLine: line, yul })
+      frames.push({ owner, scope, containerLine: line, yul, isType })
+    }
+    /** SOL-15 — the nearest enclosing TYPE. `top().owner` cannot answer this inside a
+     *  function body, because SOL-13 makes a function frame its own owner, so
+     *  `top().owner` there is the FUNCTION (`everything`), not the contract. Marking
+     *  the type frames is what lets a call say which contract it was written in,
+     *  which is the whole basis of resolving it. */
+    const enclosingTypeOf = (): string => {
+      for (let i = frames.length - 1; i >= 1; i--) if (frames[i].isType) return frames[i].owner
+      return ""
     }
 
     // -------------------------------------------------------------- traversal
@@ -1034,7 +1069,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
           }
           basesByContract.set(name, bases)
-          openFrame(node, name, name, line)
+          openFrame(node, name, name, line, false, true)
           break
         }
 
@@ -1135,6 +1170,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (!nameNode) break
           const name = nameNode.text
           const line = nameNode.startPosition.row + 1
+          modifierNamesInFile.add(name)   // SOL-15
           const meta = modifiersOf(node)
           if (findFirstChild(node, "override_specifier")) {
             meta.overrideExternal = true
@@ -1498,6 +1534,20 @@ const meta = modifiersOf(node)
               // built-in types, so that deletion was silent and total. The name and
               // the fact about where it came from now cannot disagree.
               ...(got.viaMember ? { isMemberCall: true } : {}),
+              // SOL-15 — the OBJECT a member call hangs off. `abi.encode(…)` and
+              // `token.balanceOf(…)` are both `member_expression` callees, and only
+              // the object separates a language builtin from a project member. Read
+              // HERE, at the emit, because the post-pass has the callee NAME and
+              // nothing else: `encode` alone cannot say which of the two it was.
+              ...(got.viaMember ? { calleeObject: memberObjectName(innerCalleeOf(fn)) } : {}),
+              // SOL-15 — the enclosing TYPE, captured here because the relationship's
+              // SOURCE is the enclosing scope's LEAF name (`everything`, not
+              // `Child.everything`), so the owner cannot be recovered from the row
+              // afterwards. The first version tried, got no owner, and classified
+              // every call as `inFileTypeMember` — a wrong answer produced by a
+              // missing field rather than a wrong rule, which is the harder kind of
+              // bug to see because the rule looks fine.
+              ...(enclosingTypeOf() !== "" ? { calleeOwner: enclosingTypeOf() } : {}),
               ...(fn && findFirstChild(fn, "struct_expression") !== null ? { hasCallOptions: true } : {}),
             })
           }
@@ -1524,14 +1574,31 @@ const meta = modifiersOf(node)
         // child, which is the structural difference (measured on the tree, not
         // assumed: `revert E(m)` puts the identifier and the `revert_arguments` as
         // SIBLINGS).
+        // A CUSTOM ERROR is a call, and this case NEVER FIRED before SOL-15 measured
+        // it. It tested `node.namedChild(0).type === "identifier"`, but the grammar
+        // puts an `expression` WRAPPER there for all three spellings —
+        // `revert Boom(1);`, `revert Solo;` and `revert("x");` each report
+        // `expression` — so the guard was false for every possible input and the
+        // branch was decoration. The corpus has custom errors declared in
+        // `contracts/interfaces/draft-IERC6093.sol` and elsewhere, and not one
+        // reached the graph as a call.
+        //
+        // The name is the same leaf the callee resolver reads, so `revert Boom(1)`
+        // resolves through the call's `function` field and `revert Solo` through the
+        // wrapper, and `revert("x")` resolves to nothing at all — a string is not a
+        // name, which is the correct outcome rather than a missed row.
         case "revert_statement": {
           const first = node.namedChildCount > 0 ? node.namedChild(0) : null
-          if (first && (first.type === "identifier" || first.type === "user_defined_type")) {
-            const name = first.type === "identifier" ? first.text : udtName(first)
-            if (name !== "") {
-              addRel(top().scope, name, ASTEngine.RelationshipType.Calls, 0.9,
-                first.startPosition.row + 1, { isCustomErrorRevert: true })
-            }
+          const calleeNode = first === null ? null
+            : first.type === "call_expression" ? innerCalleeOf(first.childForFieldName("function"))
+              : innerCalleeOf(first)
+          const got = calleeNameOf(calleeNode)
+          if (got && got.name !== "") {
+            addRel(top().scope, got.name, ASTEngine.RelationshipType.Calls, 0.9,
+              got.line, {
+                isCustomErrorRevert: true,
+                ...(enclosingTypeOf() !== "" ? { calleeOwner: enclosingTypeOf() } : {}),
+              })
           }
           break
         }
@@ -1767,6 +1834,108 @@ const meta = modifiersOf(node)
       if (!hit) overridesUnresolved++
     }
 
+    // ------------------------------------------------------------- SOL-15 calls
+    // WHAT THIS IS FOR. Every `calls` edge used to be emitted from the callee NAME
+    // ALONE, with no statement of whether that name is a symbol at all. The corpus
+    // census then reported 1,786 targets "resolving to no declared symbol" and the
+    // doc called the whole class expected — which is honest as far as it goes and
+    // useless as a gate, because it lumps together four things that have nothing to
+    // do with each other:
+    //
+    //   · `uint256(x)`, `address(p)` — a CONVERSION. Solidity's grammar models it as
+    //     a `call_expression` whose callee is a `primitive_type`, so it is not a
+    //     function call and its target is not a symbol. 40 in the corpus.
+    //   · `abi.encode(…)`, `type(IERC20).interfaceId`, `super.f()`, `this.f()` — a
+    //     language NAMESPACE, not a project member. 270.
+    //   · a call to a modifier (`initializer()`), which invokes code but is not a
+    //     function. 24 by name; see modifierNamesInFile.
+    //   · and only then the real residue: a member or free function that this file
+    //     cannot see because it is declared in ANOTHER file.
+    //
+    // So every `calls` edge now carries `calleeKind`, DERIVED — from the grammar for
+    // the first two (the callee node's own type, and the member object), and from
+    // this file's own declarations plus the inheritance closure for the rest. There
+    // is deliberately NO hand-written list of "builtin member names" here. The first
+    // draft of this measurement had one, containing `at`, `contains` and `length` —
+    // and those are user-defined `EnumerableSet` methods declared in another file,
+    // so the list would have silently reclassified real project edges as builtins.
+    // A classification that needs a curated list to avoid eating live relationships
+    // is not a classification.
+    //
+    // WHY A POST-PASS. Calls are emitted DURING the walk and a declaration may follow
+    // its use — legal Solidity, and the corpus does it. Same reason SOL-11's override
+    // resolution is a post-pass.
+    const memberClosure = (owner: string, seen = new Set<string>()): Set<string> => {
+      const out = new Set<string>()
+      if (seen.has(owner)) return out
+      seen.add(owner)
+      for (const m of membersByType.get(owner) ?? []) out.add(m)
+      for (const b of basesByContract.get(owner) ?? []) {
+        for (const m of memberClosure(b, seen)) out.add(m)
+      }
+      return out
+    }
+    const closures = new Map<string, Set<string>>()
+    for (const owner of membersByType.keys()) closures.set(owner, memberClosure(owner))
+
+    const callKinds: Record<string, number> = {
+      conversion: 0, namespaceBuiltin: 0, modifierInvocation: 0,
+      localFunction: 0, inheritedMember: 0, inFileTypeMember: 0,
+      eventEmission: 0, errorRevert: 0, structConstructor: 0, external: 0,
+    }
+    for (const rel of relationships) {
+      if (rel.type !== ASTEngine.RelationshipType.Calls) continue
+      const md = rel.metadata as Record<string, unknown>
+      // The SOURCE is the enclosing scope's qualified name, so the owner is
+      // everything before the final separator. A file-scope source has no owner.
+      const owner = typeof md.calleeOwner === "string" ? md.calleeOwner : ""
+      const ownDirect = new Set<string>(membersByType.get(owner) ?? [])
+      const ownInherited = new Set<string>()
+      for (const b of basesByContract.get(owner) ?? []) {
+        for (const m of memberClosure(b)) ownInherited.add(m)
+      }
+      const kind = ((): string => {
+        // The three non-call shapes this language routes through `calls`, each tagged
+      // by its OWN emit site: `emit E(...)`, `revert MyError(...)`, and `S{...}`.
+      if (md.isEventEmission === true) return "eventEmission"
+      if (md.isCustomErrorRevert === true) return "errorRevert"
+      if (md.isStructConstructor === true) return "structConstructor"
+        // A conversion's callee IS a primitive type word, which the reserved-token
+        // module already recognises MECHANICALLY (`uint`/`int`/`bytes` + digits, or
+        // a fixed type word) — so this needs no list of type names.
+        if (isPrimitiveTypeToken(rel.target)) return "conversion"
+        const obj = typeof md.calleeObject === "string" ? md.calleeObject : ""
+        if (obj === "abi" || obj === "type" || obj === "super" || obj === "this") return "namespaceBuiltin"
+        if (modifierNamesInFile.has(rel.target)) return "modifierInvocation"
+        // ORDER MATTERS, and the first draft had it wrong in a way no corpus row
+        // could catch: `own` was the member CLOSURE, which already contains the
+        // inherited members, so `own.has(target)` was true for an inherited call and
+        // EVERYTHING resolved as `localFunction` — leaving `inheritedMember`
+        // unreachable. A classification whose most interesting branch cannot fire is
+        // not tested by the corpus, because the corpus happens to have zero
+        // same-file calls at all (measured: localFunction 0, inheritedMember 0 over
+        // 3,878 edges — OpenZeppelin calls out of the file almost every time). The
+        // fixture is what tests it, which is why validation/m14/fixtures/solidity/
+        // call-resolution-sol15.sol exists.
+        //
+        // 1. declared directly on the enclosing type — a local function
+        if (ownDirect.has(rel.target)) return "localFunction"
+        // 2. reachable through an in-file base — an inherited member
+        if (ownInherited.has(rel.target)) return "inheritedMember"
+        // 3. a member of SOME OTHER in-file type reached through a receiver or a
+        //    `using X for T` directive. Named `inFileTypeMember` rather than
+        //    `libraryFunction` because a receiver can be a CONTRACT or a STRUCT too,
+        //    and calling that "library" would state something the tree does not say.
+        for (const [otherOwner, set] of membersByType) {
+          if (otherOwner === owner) continue
+          if (set.has(rel.target)) return "inFileTypeMember"
+        }
+        return "external"
+      })()
+      md.calleeKind = kind
+      callKinds[kind] = (callKinds[kind] ?? 0) + 1
+    }
+
     // ---------------------------------------------------------- SOL-12 exports
     // The compilation-unit surface. Structural: the tree states which
     // declarations are at file scope and which are members.
@@ -1833,6 +2002,7 @@ const meta = modifiersOf(node)
         hasFrameworkIntelligence: true,
         analysisVersion: "6.0-sol-module-owners-lines-tiers",
         // Reported rather than hidden — see the F9 spec and the surface measure.
+        callKinds,
         overridesEmitted,
         overridesEmittedExternal,
         overridesUnresolved,
