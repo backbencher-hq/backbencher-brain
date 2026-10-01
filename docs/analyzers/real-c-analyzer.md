@@ -51,23 +51,34 @@ The distinct types the analyzer **actually emits** over the 2,498-file corpus
 | type | emitted | count | metadata.relationshipType |
 | --- | --- | --- | --- |
 | `calls` | ✅ | 200,105 | `c_function_call` |
-| `uses` | ✅ | 74,129 | `field_access` 53,995 · `identifier_usage` 20,334 |
-| `contains` | ✅ | 16,938 | — (container → member) |
-| `references` | ✅ | 10,471 | `type_reference` |
+| `uses` | ✅ | 87,057 | `field_access` · `identifier_usage` (the pre-#960 split 53,995 / 20,334 predates the write-ruling and no longer sums to the total) |
+| `contains` | ✅ | 17,396 | — (container → member) |
+| `references` | ✅ | 10,538 | `type_reference` |
 | `imports` | ✅ | 10,993 | `include_dependency` |
-| `exports` | ✅ | 0 on this corpus | `linux_kernel_export` (Linux `EXPORT_SYMBOL*`) |
-| `instantiates` | ❌ **N/A — see below** | 0 | — |
+| `exports` | ✅ | 958 | `module_export` (kernel + userspace markers, #963) |
+| `instantiates` | ✅ | 5 (#962) | `instantiates` → the allocated TYPE |
 | `extends` / `implements` / `overrides` | ❌ **N/A — see below** | 0 | — |
 
-**`instantiates` is not emitted, and this page previously said it was.** The
-allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
+**`instantiates` IS emitted (#962), and this section previously said it was not.**
+The allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
 `free`/`kfree`/`vfree`, set `metadata.usesMalloc` on the enclosing function, and
-raise the `Dynamic Memory Management` pattern — and a comment in the code records
-why the edge is gone: "malloc allocates BYTES, not a named type — an
-`Instantiates` edge to the literal 'malloc' could never resolve to a type symbol
-and was pure noise (removed; allocation tracking lives in metadata + patterns)."
-The row above is the truth; the earlier ontology table contradicted the code it
-documented.
+raise the `Dynamic Memory Management` pattern — and a comment in the code
+recorded why the edge had been removed: "malloc allocates BYTES, not a named type
+— an `Instantiates` edge to the literal 'malloc' could never resolve to a type
+symbol and was pure noise (removed; allocation tracking lives in metadata +
+patterns)." That reasoning was right about the target and wrong about the
+consequence, exactly as #963's `exports` defect was: across all 25 M12 truths that
+pin an `instantiates` edge the target is always a TYPE (`Point`, `HashMap`,
+`List`, `User`, `MemoryStorage`, …), and C's `-> malloc` was the only non-type
+target in the family. #962 restored the relation and reads the target from the
+**cast** and from **`sizeof`**, which disagree in practice about which carries the
+type. Only a type declared in the same file qualifies (C-D2), so the corpus
+carries 5 such edges and the M12 truth row for `buffer_create` is recorded as
+`rel:Module.c:instantiates:buffer_create:Buffer` with `unmetUnder: C-D2`.
+
+**`exports` was ALSO dead for a target-shaped reason, and #963 fixed it the same
+way.** See #963 below — the pre-#963 edge pointed at a synthesised constant
+`KERNEL_EXPORT` written in no source file anywhere.
 
 **`extends` / `implements` / `overrides` are N/A by ruling, not by omission** — C
 has no class heritage. Recorded as spec decision `C-D1`.
@@ -87,7 +98,7 @@ both are the family contract with cpp rather than an omission.
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
 | imports | ✅ | `#include <path>` / `#include "path"` → module name (pure-String `stripIncludeChars` unwrap of the `path` field / `string_literal` / `system_lib_string`). A macro-composed include argument is a `call_expression` and is refused — C-D2. | 1.0 |
-| exports | ✅ | public (non-static) function/variable symbols; Linux `EXPORT_SYMBOL*` → `X exports KERNEL_EXPORT` | — |
+| exports | ✅ | a declaration introduced by an export marker. **Source = the declared NAME**; **target = the marker macro as written** (`EXPORT_SYMBOL`, `CURL_EXTERN`, `GIT_EXTERN`, `REDISMODULE_API`) — never the macro's argument, which in the prefixed forms is a return *type* (`GIT_EXTERN(int)`), and never the synthesised `KERNEL_EXPORT` the pre-#963 code emitted. All four surviving conventions: kernel call form, userspace prefix, paren form, and bare-token form. See #963 for the declared grammar limit (typedef return type). | 1.0 |
 
 **Relationship source identity:** `getRelationshipSource()` returns the
 enclosing FUNCTION name — never the block scope (`core_init.block_211` would be a
@@ -701,7 +712,7 @@ verification, not any oracle at all:
 | `contains` | yes | 16 facts | `contains-vs-clang.ts`, 852 members on redis (this wave) |
 | `imports` | yes | 6 facts | none |
 | `references` | yes | 8 facts | none |
-| `exports` | yes | via `c-completeness` | none |
+| `exports` | yes | via `c-completeness` + `exports-marker-conventions-963` | none (typedef-return-type shape is a declared grammar limit, pinned as `forbidRelationships`) |
 | `instantiates` | yes (#962) | 1 fact, `unmetUnder: C-D2` | n/a |
 
 ### `contains` against clang, and two real defects it found
@@ -917,6 +928,95 @@ resolve. The type is read from the cast and from `sizeof`, which disagree about 
 carries it. An untyped `void *` allocation publishes nothing — there is no type to
 instantiate. The truth row is retargeted `-> Buffer` and recorded `unmetUnder: C-D2`
 (`Buffer` is in Module.H).
+
+**#963 — what does `exports` point at, and which markers count? At the NAME and
+the marker, and all of them.** The relation fired **zero times in 2,798 corpus
+files** while the M12 truth family expects a populated `exports`, for three
+independent defects — each one alone sufficient to make it wrong:
+
+1. **The marker list held only kernel macros.** `EXPORT_SYMBOL` and friends were
+   listed; three userspace codebases spell the same boundary as `CURL_EXTERN`
+   (curl, 163 markers), `GIT_EXTERN` (libgit2, 955) and `REDISMODULE_API`
+   (redis, 401). None was recognised, and none of the three kernel macros appears
+   in any of them.
+2. **Only the CALL spelling was handled.** `EXPORT_SYMBOL(my_fn, GPL);` is a
+   `call_expression` and reached an export branch. The userspace spelling is a
+   **prefix on an ordinary declaration** — `CURL_EXTERN int curl_strequal(...);`
+   — which reaches no export branch at all.
+3. **The target was fabricated.** The kernel edge pointed at a synthesised
+   constant **`KERNEL_EXPORT`**, a name written in no source file anywhere, and
+   `c-completeness` pinned it as if it were ground truth. This is the same
+   fabrication class #962 removed from `instantiates` (`-> malloc`): the target
+   must be something a consumer can resolve.
+
+**The ruling.** The source is the **declared name** and the target is the
+**marker macro as written**. Both halves are forced. The name cannot be the
+macro's argument, because in every prefixed form the argument *is the return
+type* — `GIT_EXTERN(int)` would publish `exports int -> GIT_EXTERN`, a **type as
+an exported name**, which is precisely the defect #962 corrected. Only in the
+kernel call form is the argument genuinely the name, so only there is it used.
+
+**All four conventions that survive the parse now emit**, pinned by
+`c/exports-marker-conventions-963`:
+
+| convention | example | corpus |
+| --- | --- | --- |
+| kernel call form | `EXPORT_SYMBOL(kernel_exported_symbol, GPL);` | 0 in these corpora — the kernel macros appear in none of them |
+| userspace prefix | `CURL_EXTERN int curl_strequal(const char*, const char*);` | curl 37 |
+| paren form (argument = return type) | `GIT_EXTERN(int) git_libgit2_version(int *out);` | libgit2 907 |
+| bare token (expands to nothing) | `REDISMODULE_API int RedisModule_Alloc(int);` | redis 14 |
+
+Corpus total **958**, up from 0. Audited corpus-wide: **947/957 (98.96%)** of
+the sources resolve to a symbol in the same payload.
+
+**The marker is read from `macro_prefixed_type_specifier`, not from
+`namedChild(0)`.** That node — added by the #743 grammar wave — is what carries
+a macro prefix, and its **first child is a `macro_specifier`** holding the macro
+name:
+
+```
+declaration
+  macro_prefixed_type_specifier
+    macro_specifier "CURL_EXTERN"
+    primitive_type    "int"
+  function_declarator "curl_strequal(...)"
+```
+
+Testing `namedChild(0).type === "identifier"` finds nothing and leaves the
+relation at zero even with the macros listed; that was the second dead end here.
+
+**Two traps, pinned under `forbidRelationships` so they cannot regress silently:**
+
+- **The self-reference.** When recovery splits a multi-line declaration, the
+  declarator walk reaches the marker itself and publishes
+  `exports CURL_EXTERN -> CURL_EXTERN`. An exported name can never *be* the
+  marker, so the walk rejects it. This cost exactly one phantom
+  (958 → 957).
+- **The recovered typedef.** In the broken declaration the walk's fallback node
+  is the return type, so a rule stopping at the wrong node publishes
+  `exports CURLcode -> CURL_EXTERN`.
+
+**DECLARED GRAMMAR LIMIT — a typedef return type.** With a typedef after the
+marker, `macro_prefixed_type_specifier` does not form and the declaration
+degrades to two tokens:
+
+```
+CURL_EXTERN CURLcode curl_mime_type(char *mime);
+declaration
+  type_identifier "CURL_EXTERN"   <- the marker, absorbed as a type
+  identifier      "CURLcode"      <- the return type, as a declarator
+;
+```
+
+Marker and name are **both** destroyed; the exported name survives nowhere in
+the tree. Recovering it would mean reading text rather than structure, so no
+edge is published and none is claimed. Pinned as a `forbidRelationships` entry so
+it stays visible. **This is a grammar reach limit, not an analyzer defect, and
+it is the one shape `exports` cannot cover.**
+
+**Gate.** `c/exports-name-is-the-macro-argument` reinstates all three defects at
+once; live mutants **39/39**, 5 retired, 0 property violations, F1 67 refs with
+0 unknown, fixtures **33/33**.
 
 ### The two measurements that remain limited
 
