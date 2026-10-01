@@ -29,6 +29,7 @@ import { execSync, spawnSync } from "child_process"
 // than a second copy of the rule that this lane would then have to keep editing
 // here in parallel.
 import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
+import { deriveVueContainsTruth } from "./oracles/vue-contains"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -1528,6 +1529,35 @@ export /**
  * keyed on an identifier. Only NAMES are derived — the member lists live in the
  * declaration, which is a different file's business.
  */
+/**
+ * The options object of `export default …`, through BOTH shapes a Vue component
+ * is written in.
+ *
+ *   export default { … }                  -> the object is a named child
+ *   export default defineComponent({ … }) -> it is the call's FIRST ARGUMENT
+ *
+ * Only the first shape was handled, and that is a blind spot shaped exactly like
+ * the corpus's most common component style: element-plus writes `defineComponent`
+ * almost everywhere. It is what left 3 analyzer rows unexplained on element-plus
+ * (ElDropdownItem -> dropdownItemProps, ElSelectV2 -> selectV2Props, ElSelectV2
+ * -> selectV2Emits — all Options `props:`/`emits:` hoists) and it silently
+ * DISABLED `deriveVueHeritageTruth` for every defineComponent file too, which is
+ * worth stating plainly: the F1 oracle was narrower than the analyzer it was
+ * checking, and passing on vue-element-admin only showed that that corpus uses
+ * the shape the oracle could see.
+ *
+ * The differential earned this rather than the analyzer losing the rows: they
+ * were real, the analyzer was right, and the ORACLE could not express them.
+ */
+function vueDefaultOptionsObject(exportStatement: any): any {
+  const direct = (exportStatement.namedChildren ?? []).find((c: any) => c.type === "object")
+  if (direct) return direct
+  const call = (exportStatement.namedChildren ?? []).find((c: any) => c.type === "call_expression")
+  const args = call?.childForFieldName("arguments")
+  const first = args?.namedChild?.(0)
+  return first?.type === "object" ? first : undefined
+}
+
 function deriveVueContractEdges(roots: any[], from: string): Array<{ label: string; from: string; target: string }> {
   const out: Array<{ label: string; from: string; target: string }> = []
   for (const root of roots) {
@@ -1539,7 +1569,7 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
       // the same reading the heritage derivation does.
       if (n.type === "export_statement") {
         const isDefault = (n.children ?? []).some((c: any) => !c.isNamed && c.text === "default")
-        const obj = (n.namedChildren ?? []).find((c: any) => c.type === "object")
+        const obj = vueDefaultOptionsObject(n)
         if (isDefault && obj) {
           const namePair = (obj.namedChildren ?? []).find(
             (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
@@ -1549,7 +1579,7 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
       }
       if (n.type === "export_statement") {
         const isDefault2 = (n.children ?? []).some((c: any) => !c.isNamed && c.text === "default")
-        const obj = (n.namedChildren ?? []).find((c: any) => c.type === "object")
+        const obj = vueDefaultOptionsObject(n)
         if (isDefault2 && obj) {
           const namePair = (obj.namedChildren ?? []).find(
             (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
@@ -1589,25 +1619,22 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
           // `defineProps<AffixProps>()`, `defineProps(affixProps)`. An INLINE
           // literal names no declaration, so it yields no contract row — its
           // members are symbols, which the analyzer-side comparison already sees.
-          let named: any = null
+          // F14: participants are read from the SHAPE of the type argument, not
+          // by a blind first-`type_identifier` search. That search reached into
+          // the object literal's property signatures and so named a PROP'S TYPE
+          // as the contract (node.vue's `defineProps<{ node: NodeShape; … }>()`
+          // has no participant at all), while the generic's OWN name — the case
+          // the search was written for, `defineProps<SegmentedProps<T>>()` where
+          // `T` is the component's own type parameter and must NOT win — is read
+          // explicitly. The old search had also been fixed once for exactly that
+          // generic case (`segmented -> T`); the shape rule subsumes that fix and
+          // states why it was needed.
           const typeArgs = (n.namedChildren ?? []).find((c: any) => c.type === "type_arguments")
-          if (typeArgs) {
-            // PRE-ORDER, left to right, FIRST type_identifier wins. The shape that
-            // matters is a GENERIC type argument —
-            // `defineProps<SegmentedProps<T>>()` on a component carrying
-            // `generic="T extends Option"`, where the declaration is the generic's
-            // OWN name and `T` is the component's own type parameter. A LIFO walk
-            // descends into the `<T>` arguments first and returns the parameter,
-            // which is not a declaration at all: measured as the last residual
-            // MISSING on element-plus (`segmented -> T`).
-            const queue: any[] = [typeArgs]
-            while (queue.length) {
-              const t = queue.shift()!
-              if (t.type === "type_identifier") { named = t; break }
-              for (const c of t.namedChildren ?? []) queue.push(c)
-            }
+          for (const part of vueContractTypeParticipants(typeArgs)) {
+            out.push({ label: "references", from: component, target: part.name })
           }
-          if (!named) {
+          let named: any = null
+          if (!typeArgs || vueContractTypeParticipants(typeArgs).length === 0) {
             const arg = n.childForFieldName("arguments")?.namedChild(0)
             let inner: any = arg
             for (let i = 0; i < 8 && inner; i++) {
@@ -1626,6 +1653,26 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
             if (inner?.type === "identifier") named = inner
           }
           if (named?.text) out.push({ label: "references", from: component, target: named.text })
+          // F13: the ARRAY form's IDENTIFIER elements each name a declaration.
+          // The oracle already derived one identifier out of an array argument
+          // above (it walks `as_expression` / `satisfies` wrappers down to an
+          // array and takes the first identifier) — but the analyzer reads EVERY
+          // identifier element, so a first-element-only oracle turned the 13
+          // corpus files with two-or-more constants into permanent MISSING rows.
+          // time-select.vue is the case that exposed it:
+          // `defineEmits([CHANGE_EVENT, 'blur', 'focus', 'clear',
+          // UPDATE_MODEL_EVENT])` — two declarations, and the second one was
+          // invisible here. String elements name an EVENT, not a declaration, so
+          // they yield no contract row.
+          const argList = n.childForFieldName("arguments")
+          const arg0 = argList?.namedChild?.(0)
+          if (arg0?.type === "array") {
+            for (const el of arg0.namedChildren ?? []) {
+              if (el.type === "identifier" && el.text) {
+                out.push({ label: "references", from: component, target: el.text })
+              }
+            }
+          }
         }
       }
       for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
@@ -1634,6 +1681,62 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
       }
     }
   }
+  return out
+}
+
+/**
+ * F14: what counts as a CONTRACT PARTICIPANT in `defineProps<…>()` — the mirror of
+ * `contractTypeShape` in the analyzer, and derived independently from the same
+ * tree. Descend INTERSECTION / UNION constituents and type wrappers, read a
+ * generic's OWN name, and STOP at an object literal.
+ *
+ * The oracle previously walked to the first `type_identifier` ANYWHERE in the type
+ * arguments, which reaches into the object literal's property signatures. That
+ * produced a MISSING on node.vue (`defineProps<{ node: NodeShape; menuId?: string
+ * }>()`, where `NodeShape` is the type of ONE prop and the props are already
+ * symbols) and disagreed with the analyzer over menu.vue's
+ * `defineProps<{ … } & Pick<CommonProps, 'height'>>()`, where the participant is
+ * `Pick`. Neither error was visible below the 829-file draw, which is the reason
+ * to run the full corpus before believing a sampled lane.
+ */
+function vueContractTypeParticipants(typeArgs: any): Array<{ name: string; node: any }> {
+  const out: Array<{ name: string; node: any }> = []
+  const seen = new Set<string>()
+  const add = (n: any): void => {
+    if (!n?.text || seen.has(n.text)) return
+    seen.add(n.text)
+    out.push({ name: n.text, node: n })
+  }
+  const walk = (node: any, depth: number): void => {
+    if (!node || depth > 8) return
+    switch (node.type) {
+      case "intersection_type":
+      case "union_type":
+        for (const c of node.namedChildren ?? []) walk(c, depth + 1)
+        return
+      case "parenthesized_type":
+      case "as_expression":
+      case "satisfies_expression":
+      case "non_null_expression": {
+        const kids = node.namedChildren ?? []
+        walk(kids.length ? kids[0] : null, depth + 1)
+        return
+      }
+      case "object_type":
+        return
+      case "generic_type": {
+        const kids = node.namedChildren ?? []
+        if (kids.length > 0 && (kids[0].type === "type_identifier" || kids[0].type === "nested_type_identifier")) add(kids[0])
+        return
+      }
+      case "type_identifier":
+        add(node)
+        return
+      default:
+        return
+    }
+  }
+  if (typeArgs) for (const c of typeArgs.namedChildren ?? []) walk(c, 0)
   return out
 }
 
@@ -1654,6 +1757,42 @@ function deriveVueContractEdges(roots: any[], from: string): Array<{ label: stri
  * rel-type-coverage gate CHECK 1. Nothing is hidden; the claim is simply sized
  * to what is checked.
  */
+/**
+ * VUE-MR: is this analyzer `contains` row one the TypeScript containment oracle
+ * derives?
+ *
+ * `contains` is the surface a graph is NAVIGATED by and had no independent truth
+ * for this lane at any corpus scale. The delegated JavaScript/TypeScript half is
+ * covered by the lane-owned `deriveTypeScriptContainsTruth`, which shares no rule
+ * table with `RealTypeScriptAnalyzer` — measured 99/99 against the analyzer on a
+ * 250-file draw across both corpora.
+ *
+ * Admission is by `metadata.sfcDelegated`, which is PER-ROW provenance, and that
+ * detail is load-bearing. The first attempt used a per-file set of the pairs the
+ * oracle derived, populated where the truth is derived — and the analyzer-side
+ * allowlist is evaluated in a block shared by every language AFTER the per-file
+ * loop, so the set held only the LAST file's pairs and the gate filtered out
+ * almost every real row: 82 MISSING on element-plus, all of which the analyzer
+ * demonstrably emits (measured directly: steps/src/item.vue publishes all ten of
+ * its interface containment rows, every one `sfcDelegated: true`).
+ *
+ * A bare label list would have been worse in the other direction: it would have
+ * admitted all 363 vue `contains` rows, including the 147 the component-ownership
+ * rule owns and the oracle does not yet mirror, and turned every one of those
+ * into MISSING.
+ */
+function VUE_DELEGATED_CONTAINS_ROW(r: any): boolean {
+  // `label`, NOT `type`: the analyzer-side allowlist runs on the NORMALIZED row,
+  // and the normalization (M60/#910, which had to carry `metadata` for
+  // VUE_CONTRACT_ROW to be reachable at all) renames the relationship type to
+  // `label` and keeps `type` out of the object entirely. Reading `type` here
+  // compared `undefined` to "contains", so the gate returned false for every row
+  // and silently admitted nothing — which is exactly what the first run showed:
+  // truth +82, analyzer edges unchanged at 1487.
+  if (String(r?.label ?? r?.type ?? r?.relationshipType) !== "contains") return false
+  return r?.metadata?.sfcDelegated === true
+}
+
 function VUE_CONTRACT_ROW(r: any): boolean {
   const md = r?.metadata ?? {}
   return md.isPropContract === true || md.isEmitContract === true ||
@@ -1681,7 +1820,7 @@ function deriveVueHeritageTruth(roots: any[] | any, from = ""): Array<{ label: s
       // MISSING still 0, which is the differential working: an edge nothing
       // could check). All children, not just named ones.
       const isDefault = (n.children ?? []).some((c: any) => !c.isNamed && c.text === "default")
-      const obj = (n.namedChildren ?? []).find((c: any) => c.type === "object")
+      const obj = vueDefaultOptionsObject(n)
       if (isDefault && obj) {
         // The component's own identity: the `name:` option, else the module.
         const namePair = (obj.namedChildren ?? []).find(
@@ -1717,7 +1856,7 @@ function deriveVueHeritageTruth(roots: any[] | any, from = ""): Array<{ label: s
   return out
 }
 
-async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+export async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
   const { js: parser, ts: tsParser, tsx: tsxParser } = await embeddedScriptParsers()
   const out: any[] = []
   const eng = await import("../../src/ast/engine")
@@ -22563,6 +22702,23 @@ async function main() {
           for (const e of deriveVueContractEdges(subTrees, vueModule)) {
             ;(truth as any[]).push(e)
           }
+          // CONTAINMENT for the SCRIPT blocks. `contains` is the surface a graph is
+          // navigated by, and it had no independent truth for this lane at any
+          // corpus scale. The delegated JavaScript/TypeScript half is covered by
+          // the lane-owned `deriveTypeScriptContainsTruth`, which shares no rule
+          // with `RealTypeScriptAnalyzer`; measured 99/99 against the analyzer on a
+          // 250-file draw across both corpora, which is what makes it safe to put
+          // `contains` in the audited set. The VUE-owned half — the component
+          // containing its own contract symbols — has its own oracle
+          // (`oracles/vue-contains.ts`) but is NOT yet wired: it currently covers
+          // 59 of 163 component-owned rows, and adding it half-derived would be
+          // the dishonest widening this file's doctrine exists to prevent. Its
+          // measured gap is recorded in the ledger, not hidden.
+          for (const st of subTrees) {
+            for (const e of deriveTypeScriptContainsTruth(st)) {
+              ;(truth as any[]).push(e)
+            }
+          }
         }
         // Vue's merge pass filters compiler macros (VUE_COMPILER_MACROS:
         // defineProps/defineEmits/withDefaults/...) from sub-analyzer
@@ -23252,7 +23408,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => VUE_CONTRACT_ROW(r) || ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),
+      }))      .filter((r: any) => VUE_CONTRACT_ROW(r) || VUE_DELEGATED_CONTAINS_ROW(r) || ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" || lang === "perl" ? ["calls"] : []),
           // M60-HK wave (2026-09-29): haskell joins the audited set for the
           // labels deriveHaskellEdges now derives independently. `overrides` was
           // ALREADY in this list above (via the universal clause) and was

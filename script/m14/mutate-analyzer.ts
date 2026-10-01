@@ -9242,6 +9242,138 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "vue/declare-emits-identifier-array-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F13 regression: the IDENTIFIER elements of a `defineProps([…])` / `defineEmits([…])` array stop producing contract edges. `propEntries` accepts string elements only, which is right — an identifier is a declaration, not an event name, and a symbol for it would be the F6 phantom class again — but DROPPING it was worse than either: measured at the 829-file corpus draw, 6 files with an identifier in a macro array lose those rows, and time-select.vue's `defineEmits([CHANGE_EVENT, 'blur', 'focus', 'clear', UPDATE_MODEL_EVENT])` published three events where the component emits five. The differential surfaced the loss as MISSING rows before any of this was found (`time-select -> CHANGE_EVENT`, `picker -> UPDATE_MODEL_EVENT`). Caught by vue/declare-emits-identifier-array, which pins the string control `blur` in the SAME array so an implementation cannot satisfy it by changing how strings are read.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).filter((s: any) => s?.metadata?.isEmitContract !== true && s?.metadata?.isPropContract !== true),
+      relationships: (r.relationships ?? []).filter(
+        (e: any) => e?.metadata?.isEmitContract !== true && e?.metadata?.isPropContract !== true,
+      ),
+    }),
+  },
+  {
+    id: "vue/contract-participant-nested-prop-type",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "F14 regression: contract PARTICIPANTS are read by a blind first-`type_identifier` search again, which reaches into the object literal's property signatures and names a PROP'S TYPE as the contract. Two corpus files caught this in opposite directions at the 829-file draw: node.vue's `defineProps<{ node: NodeShape; menuId?: string }>()` has NO participant (the props are symbols; NodeShape is one prop's type, already a delegate declared_type row) yet the oracle derived one — a permanent MISSING; and menu.vue's `defineProps<{ nodes: NodeShape[] } & Pick<CommonProps, 'height'>>()` should name `Pick` but the analyzer took `NodeShape`, so the two sides each manufactured half of one disagreement. The mutation re-adds a participant row for any type identifier appearing anywhere under a macro's type arguments, which is exactly the old rule. Caught by vue/contract-type-participant's FORBID row, which is scoped to a contract-marked edge from the COMPONENT so the delegate's legitimate declared_type row to NodeShape — sourced at the `intersect` variable — survives to prove the rule is about participants and not about erasing type references.",
+    transform: r => {
+      const anyContract = (r.relationships ?? []).find(
+        (e: any) => e?.metadata?.isPropContract === true || e?.metadata?.isEmitContract === true,
+      )
+      if (!anyContract) return r
+      // The old rule could only ever produce a name the tree already contained,
+      // so synthesize the shape it produced: a contract edge from the component to
+      // a type identifier that is NOT a top-level participant. `NodeShape` is the
+      // exact name the two corpus files disagreed over.
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          {
+            source: anyContract.source,
+            target: "NodeShape",
+            type: anyContract.type,
+            confidence: 0.95,
+            line_number: anyContract.line_number,
+            metadata: { ...(anyContract.metadata ?? {}), isPropContract: true },
+          },
+        ],
+      }
+    },
+  },
+  {
+    id: "vue/intersection-props-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F14's other half: `genericMacroEntries` goes back to reading a DIRECT `object_type` child of the type arguments, which an INTERSECTION does not have — `defineProps<{ … } & Pick<X, 'a'>>()` matches nothing and publishes no props at all. Measured: cascader-panel/src/menu.vue emitted prop symbols `[]` before this fix and `['nodes','index']` after. Distinct from the participant mutant on purpose, because the two halves were fixed in different methods and a single mutant reverting both would pass whenever only one was pinned.",
+    transform: r => {
+      const props = (r.symbols ?? []).filter((s: any) => s?.metadata?.isProp === true)
+      if (!props.length) return r
+      // A component with an intersection operand loses the literal half of its
+      // contract; the named half stays, which is what makes this observable as a
+      // partial loss rather than an empty result.
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => s?.metadata?.isProp !== true),
+      };
+    },
+  },
+  {
+    id: "vue/v-for-collection-backtrack-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "V4/M49 character regression: the v-for parser stops at end-of-input instead of BACKTRACKING the greedy separator, so the collection is read as part of the directive rather than after it. The regex engine gave characters back from the separator until the collection had something to match, and that backtracking is observable: for `v-for=\"item in  \"` the final space WAS the collection. This was a REAL bug in the first hand-written replacement, caught by a 799-shape equivalence sweep rather than by any fixture — 170 of 799 shapes differed. Simulated on the output as a collection read whose TARGET absorbed the separator, which is what an un-backtracked parse yields. Caught by vue/v-for-directive-shapes, which expects the four collections to resolve.",
+    transform: r => {
+      const uses = (r.relationships ?? []).filter((e: any) => String(e?.type) === "uses")
+      if (!uses.length) return r
+      const seen = new Set<string>()
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((e: any) => {
+          if (String(e?.type) !== "uses") return e
+          const t = String(e.target)
+          if (seen.has(t)) return e
+          seen.add(t)
+          return { ...e, target: `${t} in `, metadata: { ...(e.metadata ?? {}), unbacktracked: true } }
+        }),
+      }
+    },
+  },
+  {
+    id: "vue/v-for-greedy-head-revert",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "V4/M49 character regression: the v-for alias head is taken GREEDILY, so `(row, i) in grid` binds ONE name instead of two and the loop variables stop SHADOWING the members they share a name with — every template read of an alias becomes a spurious member read. The head is the SHORTEST run without a `)` for which the keyword matches, which is what makes `(row, i)` bind two names and `item in items` bind `item` rather than `item in items`. Simulated faithfully without reaching into the parser: a member that has a symbol but NO use edge is precisely a member whose every template read was shadowed, so publishing a use for it is exactly what losing the shadowing produces. Caught by vue/v-for-directive-shapes, whose twelve forbidden rows are all shadowed members.",
+    transform: r => {
+      const used = new Set((r.relationships ?? []).filter((e: any) => String(e?.type) === "uses").map((e: any) => String(e.target)))
+      const shadowed = (r.symbols ?? []).filter(
+        (s: any) => s?.kind === "method" && !used.has(String(s?.name)) && s?.ownerName === "VForDirectiveShapes",
+      )
+      if (!shadowed.length) return r
+      const donor = (r.relationships ?? []).find((e: any) => String(e?.type) === "uses")
+      if (!donor) return r
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...shadowed.map((s: any) => ({
+            ...donor,
+            source: s.ownerName,
+            target: s.name,
+            metadata: { ...(donor.metadata ?? {}), shadowingLost: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "vue/define-options-name-drop",
+    language: "vue",
+    defectClass: "omission",
+    description: "F16 regression: the `name` inside `defineOptions({ … })` is ignored again, so a `<script setup>` component that declares its identity the Vue 3.3+ way falls back to the FILE STEM. The macro was in VUE_COMPILER_MACROS purely so its call edge would be filtered, and nothing looked inside it — measured on the corpus, `td-wrapper.vue` (`name: 'TableTdWrapper'`) was published as `td-wrapper` and `split-bar.vue` (`name: 'ElSplitterBar'`) as `split-bar`. Caught by vue/define-options-name, whose `size` prop is declared with the inline generic form on purpose: it is owned by the DECLARED name, so the mutant fails on ownership as well as on the component's own name, which is what distinguishes a correct rename (with its re-point) from a bare rename that orphans the members.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s?.metadata?.isScriptSetupComponent === true
+          ? {
+              ...s,
+              name: String(s.metadata?.moduleName ?? s.name),
+              ownerName: undefined,
+              metadata: { ...(s.metadata ?? {}), isScriptSetupComponent: undefined },
+            }
+          : s,
+      ),
+      relationships: (r.relationships ?? []).map((e: any) =>
+        e?.target && (r.symbols ?? []).some((s: any) => s?.metadata?.isScriptSetupComponent === true && s.name === e.target)
+          ? { ...e, target: String(e.target) }
+          : e,
+      ),
+    }),
+  },
+  {
     id: "vue/component-split-identity",
     language: "vue",
     defectClass: "symbol-identity",
