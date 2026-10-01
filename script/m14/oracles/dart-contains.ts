@@ -109,6 +109,32 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
     for (const decl of named(body)) {
       switch (decl.type) {
         case "declaration": {
+          // A `declaration` does NOT only hold fields. The grammar's word for the
+          // container does not tell you what the member inside it is: a METHOD or a
+          // GETTER can be written as `declaration > function_signature` /
+          // `declaration > getter_signature` exactly as well as under a
+          // `method_signature`. Measured over 1,294 ProxiCall/lib files, handling
+          // only fields and constructors here cost 6,640 rows — 5,153 getters and
+          // 1,487 methods — which is 94% of every remaining divergence. The
+          // localization files alone supply most of the getters
+          // (`AppLocalizations.applicationFailedToStartMessage`).
+          //
+          // Constructor first, because `constructor_signature` and
+          // `constant_constructor_signature` are handled by family below and DARTD3
+          // overrides the wrapper's own name.
+          if (named(decl).some((c: any) => c.type.includes("constructor") || c.type.includes("factory"))) { pushName("constructor"); break }
+          for (const w of named(decl)) {
+            if (w.type === "function_signature" || w.type === "getter_signature" || w.type === "setter_signature") {
+              pushName(firstOfType(w, "identifier")?.text); break
+            }
+            if (w.type === "operator_signature") {
+              for (let i = 0; i < w.childCount; i++) {
+                const g = w.child(i)
+                if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { pushName(nx.text); break } }
+              }
+              break
+            }
+          }
           // a field, in EITHER of the two shapes the grammar produces:
           //   `final String label;`  -> initialized_identifier_list -> initialized_identifier
           //   `static final X = e;`  -> static_final_declaration_list -> static_final_declaration
@@ -146,6 +172,19 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
           // constant_constructor_signature`, so the family test has to be here too
           // and not only on the `declaration` path.
           if (inner.type.includes("constructor") || inner.type.includes("factory")) { pushName("constructor"); break }
+          // An OPERATOR member is named by an ANONYMOUS token — `operator ==` is the
+          // member `==`, `operator call` is `call`, `operator []` is `[]` — and
+          // `operator_signature` has no name field and no named children at all, so
+          // an identifier lookup finds nothing and a named-children walk cannot see
+          // it. The 60 rows left after the `declaration` path was fixed were exactly
+          // this, on the `method_signature` path.
+          if (inner.type === "operator_signature") {
+            for (let i = 0; i < inner.childCount; i++) {
+              const g = inner.child(i)
+              if (g && !g.isNamed && g.text === "operator") { const nx = inner.child(i + 1); if (nx) { pushName(nx.text); break } }
+            }
+            break
+          }
           // A PLAIN constructor also arrives as `method_signature >
           // constructor_signature` — `class ContentBloc { ContentBloc({…}); }`
           // parses that way, NOT as `declaration > constructor_signature`. DARTD3
