@@ -264,6 +264,26 @@ affects.
   `function`, 10 856 `method`, 343 `property`, 132 `constructor`), with nothing
   to maintain as analyzers add symbol kinds.
 
+  **A signature also shows the types the index records.** The `parameters` column
+  holds a JSON list of `{name, type, isOptional}` for **82.8% of the 6 007 entries
+  measured across the eight corpora**, and the renderer read `name` and discarded
+  the rest — so `Join(s S)` was documented as `Join(s)`. A section named Inputs
+  and outputs was reporting the names of the inputs and nothing about their types,
+  from a row it had just read. Discarding evidence you have already loaded is the
+  same defect as asserting something the index does not support, pointed the other
+  way. Three rules, each from what the data holds: a recorded type is shown, an
+  absent one is omitted rather than guessed, and `isOptional` is stated in words
+  because `name?: type` is TypeScript syntax and would be wrong in a Go document
+  (17 entries, so the wording costs nothing and discards nothing).
+
+  **A statement is a sentence about source, not markdown.** Every character
+  markdown would act on is neutralised before rendering, while the citation
+  markers — appended after the statement, and the only links in the document — are
+  left alone. This was already a hazard: a Go return type of `*Server` reached the
+  page unescaped, and a statement quoting `map[string]*Server` would render the
+  middle as italics. Rendering the indexed parameter types multiplied the
+  exposure, since 1 105 of the measured types contain `*`.
+
   Those kinds cannot be settled by reading source instead, and the attempt is
   worth recording: scanning one line for a bracket pair after the name reported
   **100% for every type** — `variable Is(require("./is"))`,
