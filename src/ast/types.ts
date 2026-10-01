@@ -213,10 +213,13 @@ export interface ParseResult {
 export interface AnalyzeContext {
   /**
    * Project-level companion index for cross-file override-target resolution:
-   * owner type name → declared method names. Built by the caller (M12
-   * differential harness; production indexer via M12.44) from the symbols of
-   * previously parsed files. Absent for per-file-only callers — analyzers then
-   * fall back to their deterministic first-parent default.
+   * owner type name → declared method names. Built by the CALLER from the
+   * symbols of previously parsed files — the M12 differential harness, and
+   * `override-companion-pass.ts` on demand. NOT built by the batch indexer, so
+   * a normal full-project run has none and every analyzer falls back to its
+   * deterministic first-parent default (corrected 2026-09-30, VSD26: this field
+   * previously claimed the production indexer provided it "via M12.44", which
+   * nothing implements).
    */
   overrideCompanion?: Map<string, Set<string>>
   [key: string]: any
