@@ -209,3 +209,8 @@ grammars/tree-sitter-yaml/src/parser.c
 !grammars/tree-sitter-xml/xml/src/node-types.json
 !grammars/tree-sitter-xml/xml/src/parser.c
 !grammars/tree-sitter-xml/xml/src/scanner.c
+
+# scratch artifacts: not project source, kept on disk only
+.bb-tmp*.ts
+which2.ts
+_data2_poly/
