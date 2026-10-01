@@ -73,9 +73,17 @@ const RUBY_BUILTINS = new Set(
     // is the analyzer's suppression list, not a judgement about the Ruby language,
     // and adding an entry that is not in the analyzer's list is always wrong.
     "class",
+    // Kernel path intrinsics. PROBED: `def m; __dir__; end` publishes NOTHING, and
+    // `File.expand_path('../G', __dir__)` publishes only `calls:expand_path`. These
+    // are builtins, so the read is suppressed.
+    "__dir__", "__FILE__", "at_exit", "block_given?", "caller_locations", "freeze",
     // Visibility modifiers. PROBED: `def a; end; private :a` publishes `contains:a`
     // and NOTHING for `private` - it is a modifier, not a call. Same for its siblings.
     "private", "public", "protected", "module_function", "private_class_method",
+    // `define_method` is suppressed as a CALL but still DECLARES a member - see the
+    // define_method branch. PROBED: `define_method(:go) { }` -> contains:go, no calls.
+    "define_method", "define_singleton_method",
+    "alias_method",
     "public_class_method", "private_constant",
     "respond_to", "respond_to?",
     "initialize_copy", "initialize_dup", "initialize_clone",
@@ -107,9 +115,6 @@ const RUBY_BUILTINS = new Set(
     // builds the enclosing class. Neither calls a user symbol, and without these
     // every `Class.new` in the corpus also published `calls:new`.
     "new", "allocate",
-    // Dynamic-definition macros: `define_method(m) { }` publishes a `contains` for a
-    // statically known first symbol and no `call` edge for the macro itself.
-    "define_method", "define_singleton_method",
     // Constructor intrinsics. `K.new` is an `instantiates` edge; a bare `new` builds
     // the enclosing class. Neither is a call to a user symbol, and without this
     // every `Class.new` in the corpus also published `calls:new`.
@@ -164,6 +169,19 @@ const NON_BARE_PARENTS = new Set([
   "call", "setter", "alias", "method_parameters", "parameters",
   "block_parameters", "lambda_parameters", "class", "module", "singleton_class",
 ])
+
+/**
+ * Does a string literal's TEXT contain `#{`, i.e. is it interpolated?
+ *
+ * Character scan, no regex. An interpolated literal is not a static path, so
+ * `require "a/#{x}"` names a file that cannot be known from the tree.
+ */
+function hasInterpolation(text: string): boolean {
+  for (let i = 0; i + 1 < text.length; i++) {
+    if (text.charCodeAt(i) === 35 && text.charCodeAt(i + 1) === 123) return true
+  }
+  return false
+}
 
 /**
  * Kernel conversion functions. `Array(x)` is a Kernel method, not a call to a user
@@ -244,6 +262,15 @@ function isScopeNode(t: string): boolean {
 interface Frame {
   n: Node
   parent: Node | null
+  /**
+   * Names that are WRITES anywhere within the enclosing assignment, and so are not
+   * read on either side of it. `a[b] = a[b] + 1` marks `b` as a write for the WHOLE
+   * assignment, not just its left - probed, and the reason is the same as the
+   * multiple-assignment rule (`@a, @b = a, b`): a target position collects the name
+   * once and every later read of it inside the same expression is a re-read of a
+   * binding, not a reference.
+   */
+  suppress: Set<string> | undefined
   /** Is a bare identifier in this frame an expression read (vs. a name)? */
   inBody: boolean
   /** Enclosing scope node ids, innermost last — for binding lookup. */
@@ -439,7 +466,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     edges.push(from === undefined ? { label, target, line } : { label, target, from, line })
   }
 
-  const stack: Frame[] = [{ n: root, parent: null, inBody: false, scopes: [], cls: undefined, methodId: undefined }]
+  const stack: Frame[] = [{ n: root, parent: null, suppress: undefined, inBody: false, scopes: [], cls: undefined, methodId: undefined }]
   const emittedCallTargets = new Set<string>()
 
   while (stack.length > 0) {
@@ -460,7 +487,8 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         const c = n.namedChild(i)
         if (!c) continue
         stack.push({
-          n: c, parent: n, inBody: false,
+          n: c, parent: n,
+          suppress: f.suppress, inBody: false,
           scopes: [...f.scopes, n.id],
           cls: f.cls, methodId: f.methodId,
         })
@@ -523,7 +551,8 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         // A base expression is evaluated in the OUTER scope, not inside the class.
         const isSuper = superNode !== null && c.id === superNode.id
         stack.push({
-          n: c, parent: n, inBody: false,
+          n: c, parent: n,
+          suppress: f.suppress, inBody: false,
           scopes: isSuper ? f.scopes : [...f.scopes, n.id],
           cls: isSuper ? f.cls : clsName,
           methodId: f.methodId,
@@ -614,7 +643,8 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         const isReceiver = nameIndex >= 0 && i < nameIndex
         const isParams = c.type === "method_parameters" || c.type === "parameters" || c.type === "block_parameters"
         stack.push({
-          n: c, parent: n, inBody: isReceiver || !isParams ? inBody : false,
+          n: c, parent: n,
+          suppress: f.suppress, inBody: isReceiver || !isParams ? inBody : false,
           scopes: [...f.scopes, n.id], cls: owner, methodId,
         })
       }
@@ -653,7 +683,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             const owner = left.text
             for (let i = n.namedChildCount - 1; i >= 0; i--) {
               const c = n.namedChild(i)
-              if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: owner, methodId: f.methodId })
+              if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: owner, methodId: f.methodId })
             }
             continue
           }
@@ -661,7 +691,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       }
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
       }
       continue
     }
@@ -669,7 +699,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     if (t === "lambda") {
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: [...f.scopes, n.id], cls: f.cls, methodId: f.methodId })
       }
       continue
     }
@@ -689,14 +719,37 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         // INSTANTIATED, which is the RECEIVER (`Class.new` -> `Class`), not the
         // constant the result is bound to. Naming the left instead produced
         // `instantiates:Acct` for `Acct = Class.new do`.
+        // The receiverless form builds the ENCLOSING class. PROBED: `EMPTY = new('',
+        // nil)` inside a class -> `instantiates:C` (the enclosing class), NOT
+        // `instantiates:EMPTY`. Naming the left was wrong for the constant case too:
+        // `X = Foo.new` -> `instantiates:Foo`.
         const recvName = constantPath(right ? right.childForFieldName("receiver") : null)
-        push("instantiates", leafName(recvName ?? left.text), line)
+        // `b = Class.new do ... end` (LOCAL left) still publishes `instantiates:Class`
+        // - the receiver is what is being constructed. Only the `contains` for the
+        // name is suppressed, because a local binds no graph node.
+        //
+        // A RECEIVERLESS `new` does NOT build the enclosing class from inside a
+        // method. PROBED: `EMPTY = new('', nil)` in a CLASS BODY -> `instantiates:C`,
+        // but `current_account.account_moderation_notes.new(…)` is a collection build
+        // and `new` inside a def is just an unknown constructor. Falling back to
+        // `f.cls` unconditionally was 626 MISSING `instantiates`, every one of them a
+        // collection `.new` in a Rails controller method being reported as an
+        // instantiation of the controller.
+        if (recvName) push("instantiates", leafName(recvName), line)
+        // A constant bound to a factory IS a member of the enclosing scope.
+        // PROBED across all four factories: `E = Class.new`, `E = Struct.new(:a)`,
+        // `E = Module.new do def go; end end` and `E = Foo.new` each publish
+        // `contains:E`. This branch `continue`s, so the generic constant-assignment
+        // rule below it never ran for factories - the same unreachable-rule shape as
+        // the `X = 1` case, and it hid every `SOME_CONSTANT = Something.new` member.
+        if (f.cls !== undefined) push("contains", left.text, line, undefined)
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
           const isLeft = left !== null && c.id === left.id
           stack.push({
-            n: c, parent: n, inBody: false, scopes: isLeft ? f.scopes : [...f.scopes, n.id],
+            n: c, parent: n,
+            suppress: f.suppress, inBody: false, scopes: isLeft ? f.scopes : [...f.scopes, n.id],
             cls: isLeft ? f.cls : left.text, methodId: f.methodId,
           })
         }
@@ -723,12 +776,38 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // does reparent - the namable-owner rule again, and the two branches have to
       // differ.
       if (rightIsCall && methodName === "new") {
+        // A LOCAL left: the receiver is still instantiated, but nothing is named.
+        const recv0 = constantPath(right ? right.childForFieldName("receiver") : null)
+        if (recv0) push("instantiates", leafName(recv0), line)
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
           const c = n.namedChild(i)
           if (!c) continue
-          stack.push({ n: c, parent: n, inBody: false, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: false, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
         }
         continue
+      }
+
+      // `a[b] = ...` marks `b` a WRITE for the whole assignment, on BOTH sides.
+      // PROBED: `poll.cached_tallies[choice] = (poll.cached_tallies[choice] || 0) + 1`
+      // publishes `calls:cached_tallies` twice and NO `calls:choice` - even though the
+      // right-hand side reads the same index. Same rule as the multiple assignment
+      // (`@a, @b = a, b`): a target position collects the name, and every occurrence
+      // of it inside the same expression is that binding, not a fresh read. Without
+      // this the oracle published `calls:choice` for every indexed-write in the corpus.
+      let writeNames: Set<string> | undefined
+      if (left !== null && left.type === "element_reference") {
+        writeNames = new Set<string>()
+        const collected: Set<string> = writeNames
+        const collectIndex = (nd: Node): void => {
+          for (let i = 0; i < nd.namedChildCount; i++) {
+            const ch = nd.namedChild(i)
+            if (!ch) continue
+            if (ch.type === "identifier" || ch.type === "instance_variable" ||
+                ch.type === "class_variable") collected.add(ch.text)
+            else collectIndex(ch)
+          }
+        }
+        collectIndex(left)
       }
 
       // A CONSTANT assigned in a class/module body is a member of it: `class C; X = 1;
@@ -746,7 +825,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       void methodName
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: writeNames ?? f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
       }
       continue
     }
@@ -760,16 +839,36 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         const isLeft = left !== null && c.id === left.id
         if (isLeft) continue
         if (right !== null && c.id === right.id) {
-          stack.push({ n: c, parent: n, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+          stack.push({ n: c, parent: n, suppress: f.suppress, inBody: true, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
           continue
         }
-        stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
       }
       continue
     }
 
     // ------------------------------------------------------------------ alias
-    // `alias` publishes NOTHING. PROBED, three ways:
+    // `alias new old` publishes `calls:new` and NO member. PROBED three ways:
+    //   def push; alias << push     -> calls:<< , no contains:<<
+    //   alias foo? bar               -> calls:foo?, no member
+    //   alias_method :c, :b          -> calls:alias_method calls:c , no member
+    // So the keyword reads its NEW name as an expression and declares nothing.
+    // NOT gated on `inBody`: `class C; alias foo? bar; end` publishes `calls:foo?` at
+    // CLASS-BODY scope, where `inBody` is false. The name in an alias is a declaration
+    // being read, not an expression in a body, so the body-context test does not apply.
+    if (t === "alias") {
+      // Only an IDENTIFIER-shaped new name is read. PROBED: `alias foo? bar` gives
+      // `calls:foo?`; `alias << push` gives nothing at all - an operator target is not
+      // a method name that can be called, so the generalisation "the new name is read"
+      // is wrong for operators and only a fixture shows it.
+      const firstA = n.namedChild(0)
+      if (firstA && firstA.type === "identifier" && !RUBY_BUILTINS.has(firstA.text)) {
+        push("calls", firstA.text, firstA.startPosition.row + 1)
+      }
+      continue
+    }
+
+    // `alias` (keyword) declares no member. PROBED, three ways:
     //   def push(x); alias << push    -> contains:push   (no `<<`)
     //   def a; def b; alias_method :c, :b  -> contains:a b   (no `c`)
     //   def b; alias_method :c, :b     -> contains:b      (no `c`)
@@ -802,16 +901,27 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // `receiver`. Testing `methodNode === null` therefore never fired, which is why
       // this rule changed nothing on the first attempt. A constant in the method
       // position with no receiver is the conversion-function shape.
-      if (methodNode !== null && methodNode.type === "constant" &&
-          n.childForFieldName("receiver") === null &&
-          KERNEL_CONVERSIONS.has(methodNode.text)) continue
+      // ...but only ITSELF. `Array(x)` suppresses the conversion name and still
+      // publishes `calls:x`, so this must not `continue` past the arguments.
+      const isKernelConversion = methodNode !== null && methodNode.type === "constant" &&
+        n.childForFieldName("receiver") === null && KERNEL_CONVERSIONS.has(methodNode.text)
+      void isKernelConversion
 
-      if (methodName && !RUBY_BUILTINS.has(methodName) &&
+      // A Kernel conversion suppresses ITSELF but not its arguments: PROBED,
+      // `Array(x)` publishes `calls:x` and no `calls:Array`.
+      if (methodName && !RUBY_BUILTINS.has(methodName) && !isKernelConversion &&
           methodNode !== null && !isBound(bindings, f.scopes, methodName)) {
         push("calls", methodName, line)
       }
-      if (methodName === "require" || methodName === "require_relative" ||
-          methodName === "autoload" || methodName === "load") {
+      // ONLY A RECEIVERLESS call is a require. PROBED: `params.require("body-mime")`
+      // publishes NOTHING - it is a Rails strong-parameters call, not a file load,
+      // and its string argument is a parameter name. Requiring a receiver here
+      // fabricated a `references` edge for every strong-parameter read in the
+      // corpus, and the target was not even a path (`body-mime`, `RawEmail`).
+      const hasReceiver = n.childForFieldName("receiver") !== null
+      if (!hasReceiver &&
+          (methodName === "require" || methodName === "require_relative" ||
+           methodName === "autoload" || methodName === "load")) {
         // Only a STRING LITERAL names a required file. PROBED: `require "a/b"` gives
         // exactly one `references` edge; nothing else on the call contributes. This
         // branch walked every NAMED child, so `params.require(:domain_block)` and
@@ -825,6 +935,14 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
             const a = args.namedChild(i)
             if (!a) continue
             if (a.type !== "string" && a.type !== "bare_string") continue
+            // An INTERPOLATED literal is not a path. PROBED: `require "a/#{x}"` and
+            // `require "a#{x}"` both publish NOTHING, in either quote style, while
+            // `require 'a/b'` publishes `references:a/b`. The target is computed at
+            // runtime, so the file it names is unknowable from the tree - and the
+            // fragment `a/#{x}_b` is not a path in any sense. 297 MISSING
+            // `references` were exactly these (every adapter/service require in
+            // Rails, e.g. `require "active_support/cache/#{store}"`).
+            if (hasInterpolation(a.text)) continue
             const name = unquote(a.text)
             if (name.length > 0) {
               push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
@@ -833,15 +951,35 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         }
         continue
       }
-      if (methodName === "new" || methodName === "allocate") {
-        const recv = constantPath(n.childForFieldName("receiver"))
+      // The FACTORY form (`K = X.new`) already emitted its `instantiates` in the
+      // assignment branch above, with the correct receiver. Emitting it again here
+      // produced a duplicate per factory - 7 MISSING `instantiates`, one per `Class.new`
+      // assignment in the corpus. The two branches now partition the work: the
+      // assignment branch handles factories, this one handles every other `.new`.
+      const inFactoryAssignment = parent !== null && parent.type === "assignment" &&
+        parent.childForFieldName("right")?.id === n.id
+      if ((methodName === "new" || methodName === "allocate") && !inFactoryAssignment) {
+        const recvNode = n.childForFieldName("receiver")
+        const recv = constantPath(recvNode)
         // An UPPERCASE receiver instantiates a known class; a lowercase receiver
         // is a local whose class is unknowable, so it stays a plain call.
         // The target is the LEAF of the receiver path: `A::B.new` -> `B`, not
         // `A::B` (probed).
+        //
+        // Anything else is an ASSOCIATION COLLECTION, not a class. PROBED:
+        // `x.account_moderation_notes.new(r)` -> `calls:account_moderation_notes` with
+        // NO `instantiates`, and `account.notes.new` -> `calls:notes` likewise. An
+        // instance-variable receiver keeps `calls:new`: `@x.new(r)` gives
+        // `calls:new uses:@x`. Collapsing every non-constant receiver into the
+        // enclosing class was 626 MISSING `instantiates` - every
+        // `current_account.account_notes.new(…)` in the Rails controllers, which
+        // builds a collection rather than a class.
         if (recv) push("instantiates", leafName(recv), line)
-        else if (!n.childForFieldName("receiver")) {
-          // A receiverless `new` constructs the ENCLOSING class.
+        else if (recvNode !== null) {
+          // A lowercase RECEIVER keeps the call; an instance variable keeps `new`.
+          if (recvNode.type === "identifier") push("calls", "new", line)
+        } else {
+          // A receiverless `new` constructs the ENCLOSING class (probed).
           if (f.cls) push("instantiates", f.cls, line)
         }
       }
@@ -851,10 +989,16 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
           for (let i = 0; i < args.namedChildCount; i++) {
             const a = args.namedChild(i)
             if (!a) continue
-            const cn = constantPath(a) ?? (a.type === "identifier" ? a.text : null)
-            // Probed: `extend ActiveSupport::Concern` -> `extends -> Concern`, the
-            // LEAF. Passing the full path was the whole of the 520 missing `extends`
-            // - every Concern and every namespaced mixin in the corpus.
+            // The mixin target must be NAMEABLE. PROBED: `include M` and `include A::B`
+            // both publish (`implements:M`, `implements:B` - the LEAF, so passing the
+            // full path was the whole of the original 520 missing `extends`), but
+            // `include local_account` publishes NOTHING - a lowercase identifier is a
+            // local, and in RSpec it is almost always a `let` reference, not a mixin.
+            // Accepting identifiers here published `implements:local_account`,
+            // `implements:recipient`, `implements:bot_account` for every
+            // `.to include(x)` matcher in the corpus: 274 MISSING `implements`, all
+            // invented. A mixin is named by a constant; nothing else is nameable.
+            const cn = constantPath(a)
             if (cn) push(methodName === "extend" ? "extends" : "implements", leafName(cn), line)
           }
         }
@@ -874,7 +1018,44 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       }
     }
 
+    // `define_method(:go) { }` DECLARES a member. PROBED: the analyzer publishes
+    // `contains:go` for a LITERAL first argument, and nothing for
+    // `define_method(m)` where the name is not statically known. It needs a namable
+    // owner too, by the same rule as every other member.
+    if (t === "call" && n.childForFieldName("method")?.text === "define_method") {
+      const args0 = n.childForFieldName("arguments")
+      if (f.cls !== undefined && args0 !== null) {
+        const first0 = args0.namedChild(0)
+        if (first0 && (first0.type === "simple_symbol" || first0.type === "symbol")) {
+          const nm0 = symbolName(first0.text)
+          if (nm0.length > 0) push("contains", nm0, first0.startPosition.row + 1, undefined)
+        }
+      }
+    }
+
+    // `alias_method :c, :b` publishes BOTH `calls:alias_method` and `calls:c` - the
+    // macro is an ordinary call and its first symbol is read as an expression.
+    // PROBED. The `alias` KEYWORD is different again: `alias foo? bar` publishes only
+    // `calls:foo?` and no member, so the keyword branch below keeps its own handling.
+
     // ------------------------------------------------------------------ macros
+    // `alias_method :c, :b` publishes `calls:c` as well as `calls:alias_method`.
+    // PROBED. The macro name is a builtin (suppressed as a call) but its first symbol
+    // is read as an expression, so the edge is emitted here rather than by the generic
+    // call branch.
+    if (t === "call" && n.childForFieldName("method")?.text === "alias_method") {
+      const args1 = n.childForFieldName("arguments")
+      // Also not gated on `inBody` - `class C; alias_method :c, :b; end` is class-body
+      // scope and still publishes `calls:c`.
+      if (args1 !== null) {
+        const first1 = args1.namedChild(0)
+        if (first1 && (first1.type === "simple_symbol" || first1.type === "symbol")) {
+          const nm1 = symbolName(first1.text)
+          if (nm1.length > 0) push("calls", nm1, line)
+        }
+      }
+    }
+
     const macroName = macroOf(n)
     if (macroName) {
       if (DELEGATE_MACROS.has(macroName)) {
@@ -906,7 +1087,12 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
               if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, undefined)
               push("uses", name, line, undefined)
             } else {
-              push("contains", name, a.startPosition.row + 1, undefined)
+              // The SAME namable-owner rule as associations: PROBED, a bare
+              // `Class.new do attr_reader :site end` publishes `instantiates:Class`
+              // and NOTHING else - no `contains:site`. An attribute declared in an
+              // anonymous class belongs to a class the graph will not name, so there
+              // is no member to attach it to. Only a named owner yields `contains`.
+              if (f.cls !== undefined) push("contains", name, a.startPosition.row + 1, undefined)
             }
           }
         }
@@ -921,7 +1107,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // Still walk the arguments: they are real expressions.
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
-        if (c) stack.push({ n: c, parent: n, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
+        if (c) stack.push({ n: c, parent: n, suppress: f.suppress, inBody: f.inBody, scopes: f.scopes, cls: f.cls, methodId: f.methodId })
       }
       continue
     }
@@ -958,6 +1144,41 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         parent.parent.childForFieldName("left")?.id === parent.id
       if (isIndexedWrite) continue
       const parentIsNameField = parent !== null && parent.childForFieldName("name")?.id === n.id
+      // `_` on the LEFT of any assignment is a throwaway WRITE, so the name is never
+      // read. PROBED: `_ = 1`, `_, b = 1, 2` and `_, b, = IO.select(...)` all publish
+      // nothing; only `_.to_s` (a real read) does, and that shape already agreed. The
+      // binding table does not save us here because `_` binds nothing by name, so the
+      // write test has to catch the left-hand side directly.
+      // `_` on the left of an assignment is a throwaway WRITE, so the name is never
+      // read. PROBED: `_ = 1`, `_, b = 1, 2` and `_, b, = IO.select(...)` all publish
+      // nothing; only `_.to_s` (a real read) does, and that shape already agreed. The
+      // binding table cannot save us here because `_` binds nothing by name, so the
+      // write test has to catch the left-hand side directly. The multiple-assignment
+      // form nests one level deeper: `left_assignment_list` inside `assignment`.
+      let isWriteTarget = false
+      if (parent !== null) {
+        if (parent.type === "assignment" || parent.type === "operator_assignment") {
+          isWriteTarget = parent.childForFieldName("left")?.id === n.id
+        } else if (parent.type === "left_assignment_list") {
+          const owner = parent.parent
+          isWriteTarget = owner !== null &&
+            (owner.type === "assignment" || owner.type === "operator_assignment") &&
+            owner.childForFieldName("left")?.id === parent.id
+        }
+      }
+      if (text === "_" && isWriteTarget) continue
+      if (f.suppress !== undefined && f.suppress.has(text)) continue
+      // A BARE index READ of an unvalidated attribute: PROBED
+      // `poll.t[choice] = 1` publishes only `calls:t`, and
+      // `poll.cached_tallies[choice] = (poll.cached_tallies[choice] || 0) + 1` publishes
+      // `calls:cached_tallies` TWICE and no `calls:choice`. The index expression on
+      // BOTH sides of the assignment is dropped, even though the same read appears
+      // twice. So an identifier in index position of an assignment reads as nothing,
+      // on either side.
+      const isIndexOperand = parent !== null && parent.type === "element_reference" &&
+        parent.parent !== null && parent.parent.type === "assignment" &&
+        parent.parent.childForFieldName("left")?.id === parent.id
+      if (isIndexOperand) continue
       if (f.inBody && !parentIsNameField && !NON_BARE_PARENTS.has(parentType) &&
           !RUBY_BUILTINS.has(text) && !isBound(bindings, f.scopes, text)) {
         emittedCallTargets.add(text)
@@ -996,7 +1217,23 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // `def m; @a; end` -> `uses:@a`, and so does `@a = 1; @a`). A WRITE emits
       // nothing, which is why `def m; @a = 1; end` has no edge at all. The label
       // never depends on receiver position, so that variable is now irrelevant.
-      if (f.inBody && !isWrite) push("uses", n.text, line)
+      // A MULTIPLE assignment writes and reads nothing. PROBED:
+      // `def i(a,b); @x, @y = a, b; end` publishes NO edges, not `uses:@x`/`uses:@y`.
+      // The single-target form is also a write and publishes nothing; only a bare
+      // read does. So the write test has to cover the `left_assignment_list` parent
+      // too, not just `assignment` - a left-assignment list is a separate node type
+      // and was falling through as if the ivar were being read. 144 MISSING `uses`.
+      const inMultiWrite = parent !== null && parent.type === "left_assignment_list" &&
+        parent.parent !== null &&
+        (parent.parent.type === "assignment" || parent.parent.type === "operator_assignment")
+      if (f.suppress !== undefined && f.suppress.has(n.text)) continue
+      // Only an INSTANCE variable read is a `uses` edge. PROBED: `def app; @@app; end`
+      // publishes NOTHING, in any position - including the read after
+      // `defined?(@@app)`, which is skipped anyway by the unevaluated-probe rule.
+      // A class variable is a binding on the class, not a reference to a member.
+      // 35 MISSING `uses`, e.g. `integration.rb`'s `@@app`.
+      if (t === "class_variable") continue
+      if (f.inBody && !isWrite && !inMultiWrite) push("uses", n.text, line)
       void isReceiver
       continue
     }
@@ -1008,6 +1245,7 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       if (c) {
         stack.push({
           n: c, parent: n,
+          suppress: f.suppress,
           inBody: inBody,
           scopes: isScopeNode(t) ? [...f.scopes, n.id] : f.scopes,
           cls: f.cls, methodId: f.methodId,
