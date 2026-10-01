@@ -659,7 +659,98 @@ This also **retires the two-file exclusion** `call-edge-fidelity` carried: it
 could not account for `curl/lib/http.c` (5,115 lines) and `curl/lib/openldap.c`
 (1,387). The tree oracle has no such blind spot, and both files now agree.
 
-**What is still open, and it is NOT an analyzer defect.** The differential
+### #965–#970: the C `uses`/`references` oracle, and what remains in it
+
+Six rounds, each one a case where the ORACLE was the stale side. Every fix was
+found by measuring the residual and classifying it, never by reading the
+analyzer and adjusting the oracle to agree.
+
+| round | change | UNEXPLAINED | MISSING |
+| --- | --- | --- | --- |
+| start | — | 3,937 | — |
+| #965 | oracle enforced the **withdrawn** SCD1 write-gate on field access | 230 | 15 |
+| #966 | oracle gated enum members on file scope — stale since **#961** | 142 | 15 |
+| #967 | oracle enforced the same withdrawn write-gate on the **identifier** path | **16** | 15 |
+| #969 | keywords admitted as declared names (`uses void`, `references struct`) | 16 | **13** |
+| #970 | **REJECTED on measurement** — see below | — | 1,048 |
+
+All figures are over 2,600 files (curl, libgit2, redis, zig), all four labels the
+C differential compares, per-file unique `(label, target)` in both directions.
+
+**#967 was the big one and was found by tracing, not guessing.** Every admission
+sub-condition was satisfied at the declaration (`curl/lib/easy.c:110`,
+`translation_unit > declaration > init_declarator`), so the name *was* in
+`declaredNames` — but the two assignment-LHS occurrences never reached the read
+branch, because the branch itself was gated `n.type === "identifier" &&
+!isAssignLhs(n)`. Since #960 a write to a declared name IS a `uses`, and in real
+C most file-scope variable reads ARE assignments, so that clause was suppressing
+the majority of the global-variable rows.
+
+**#970 is recorded because it was WRONG, and measuring caught it.** The hypothesis
+was #908's pairing (a real macro invocation yields both `calls` and `uses`).
+Mirroring it for every function-like macro took MISSING from 13 to **1,048**, so
+the analyzer does not pair generally. The real shape is much narrower:
+
+```
+redis/deps/lua/src/lua_bit.c:99   #define BIT_OP(func, opr) \
+                                    static int func(lua_State *L) { ... }
+redis/deps/lua/src/lua_bit.c:103  BIT_OP(bit_band, &=)      <- a macro
+                                                                     INVOCATION
+                                                                    that DEFINES a
+                                                                    function
+```
+
+The macro name is a *use* because the invocation is the heading of a generated
+function definition — not because macro invocations pair in general. Mirroring
+that narrowly needs the replacement list, and it is a boundary question about
+#908 rather than a mechanical gap. **Not done.**
+
+**The 16 remaining UNEXPLAINED are five distinct families**, all classified:
+
+| family | rows | example |
+| --- | --- | --- |
+| macro-invocation-as-definition heading | ~8 | `uses BIT_OP` (lua_bit.c:103) |
+| parenthesised declarator name in a heading | 1 | `uses global -> luaL_register` (lauxlib.c:229, `void (luaL_register)(...)`) |
+| gcc attribute token | 2 | `uses ctor -> constructor` (thread.c:92, `__attribute__((constructor))`) — **no symbol exists**, so this is a dangling edge |
+| `references` to types in positions the oracle does not derive | 4 | `references ULONGLONG` (version_win32.c:48,127) |
+| member name inside `offsetof(...)` | 1 | `uses ts` (ioctl.c:67) — a member named at TYPE level, arguably not a value read |
+
+Three of these look like **analyzer** defects rather than oracle gaps: a `uses`
+on a function heading's own name, a `uses` to a name with no symbol
+(`constructor`), and a value `uses` for a member named inside `offsetof`. They
+are unadjudicated.
+
+**The 13 remaining MISSING are oracle fabrications**, in three groups: reads of
+names declared inside `#if 0` (dead code — zig's mingw-w64 K&R runtime, where
+`s1`/`s2`/`n` are old-style parameters with no `function_definition` to attach
+them to), typedef aliases recovered as identifiers (`typedef struct md5_ctx
+my_md5_ctx;`), and external types the file does not declare (C-D2).
+
+**A K&R gap was found and deliberately left.** A local collector fix for
+old-style `declaration_list` parameters is real and correct, but every K&R
+definition measured in these corpora sits inside `#if 0`, so it moved nothing
+(13/16 either way). It is recorded rather than shipped untested.
+
+### Cross-lane reverts: a process finding, twice
+
+`script/m14/differential.ts` is shared and has now silently reverted c-lane work
+**twice**, both times by a commit in a different lane:
+
+- `4f5df8fd` — *"m14(csharp): fsharp is EXHAUSTIVELY clean"* — deleted all of
+  #966 (61 deletions).
+- `f4758f59` — *"fix(rust): two label gaps the coverage census found"* — deleted
+  `C_KEYWORDS`, all of #969.
+
+Both were caused by staging the whole file from a base that predated the c-lane
+commit. Neither commit shows the deletion in its subject. The `--commit-tree`
+helper (`script/m14/stage-shared.sh`) commits exact blobs without touching the
+shared index, which prevents an agent from *accidentally* clobbering others — but
+it does not stop an agent who has a stale working tree from staging the whole
+file. **This needs an owner decision, not another workaround**: either a per-lane
+fork of the differential oracles, or a pre-commit check that a staged hunk does
+not silently delete another lane's committed code.
+
+### What is still open, and it is NOT an analyzer defect. The differential
 compares four labels for C (`calls`, `uses`, `references`, `imports` —
 `differential.ts` allowlist), and `deriveCCalls` derives all four. Over the same
 2,600 files, `uses` alone leaves **3,937 analyzer edges unexplained**, heavily
