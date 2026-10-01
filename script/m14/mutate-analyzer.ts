@@ -14999,6 +14999,44 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "make/recover-the-lost-trailing-recipe-as-a-symbol",
+    language: "make",
+    defectClass: "fabricated-symbol",
+    description:
+      "Publishes the dropped trailing recipe line's shell text as a symbol, which is what tree-sitter error recovery produces when the final recipe line has no terminating newline. The recipe line is not lost in make's model -- GNU Make 4.3 runs it -- so a symbol named after its command is a dependency the build file does not have. Found by make/recipe-eof-no-newline; the corpus cannot see it because 0 of the 100 pinned files lack a trailing newline.",
+    transform: r => {
+      const owner = (r.symbols ?? []).find((x: any) => x.kind === "module")
+      if (!owner) return r
+      return {
+        ...r,
+        symbols: [...(r.symbols ?? []), {
+          id: "sym-gcc-o-build", name: "gcc -o build", kind: "function",
+          range: { start: { line: 27, character: 1 }, end: { line: 27, character: 12 } },
+          metadata: { nodeType: "recipe_line", fabricated: true },
+        }],
+      }
+    },
+  },
+  {
+    id: "make/depend-on-the-lost-trailing-recipe",
+    language: "make",
+    defectClass: "invented-dependency",
+    description:
+      "Adds a `uses` edge from the target to the dropped trailing recipe line's command. Same root cause as the fabricated symbol above -- the final recipe line has no terminating newline -- and the more dangerous half: a target now depends on something it does not depend on.",
+    transform: r => {
+      const owner = (r.symbols ?? []).find((x: any) => x.kind === "module")
+      const tgt = (r.symbols ?? []).find((x: any) => x.name === "build")
+      if (!owner || !tgt) return r
+      return {
+        ...r,
+        relationships: [...(r.relationships ?? []), {
+          id: "rel-invented", type: "uses", source: "build", target: "gcc -o build",
+          line_number: 27, metadata: { role: "recipe_line", evidenceClass: "reference", fabricated: true },
+        }],
+      }
+    },
+  },
+  {
     id: "make/ignore-brace-expansion-form",
     language: "make",
     defectClass: "wrong-edge-target",

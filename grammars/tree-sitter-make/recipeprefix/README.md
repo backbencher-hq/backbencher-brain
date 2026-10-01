@@ -143,43 +143,63 @@ Shipped: the prefix on recipe lines, with `_ordinary_rule` byte-for-byte upstrea
 `src/scanner.c` ships beside it, and `.gitignore` excludes `grammars/tree-sitter-*/src/*`,
 so the scanner is force-added.
 
-Open: **MAKE-G5**, a recipe line at EOF with no trailing newline is an ERROR and is lost.
-Pre-existing upstream behaviour, identical in the pristine build, invisible to the corpus.
+Partly closed: **MAKE-G5**, a recipe line at EOF with no trailing newline was an ERROR node and was
+lost. Pre-existing upstream behaviour, identical in the pristine build, invisible to the corpus.
 
-It stays open, and the reason is worth the space. **Seven arrangements were built and
-measured**, and none of them works:
+### Closed for a declared prefix — RECIPE_EOL
+
+`_recipeprefix_tab` is `token.immediate`, so a recipe line's newline can **never** be left to
+`extras`: an immediate token refuses to match across skipped whitespace. That is why upstream's
+terminator is mandatory, and it is also why `optional` cannot express the end-of-input case —
+`extras` skips the newline, the next prefix becomes unmatchable, and `recipe_lines` collapses to 0
+across the corpus.
+
+The fix moves the decision to the one component that can observe end of input. `RECIPE_EOL` is a
+third external token, emitted **zero-width** by `src/scanner.c` when `lookahead == 0`. A newline
+still lexes as the internal `NL`, so it can never match a real character. Measured: node surface
+unchanged at 44 named / 24 fields, corpus A/B 11 → 0 with 0 regressions, +3.7% size.
+
+### Still open for a tab, and that is a property of tree-sitter
+
+The external scanner is **not consulted after an internal `token.immediate` token**. Established by
+diagnostic, not inference: making the terminator external-*only* leaves the prefixed case working
+and the tab case still failing, so the scanner is simply never called there. The obvious
+workaround — making the tab an external token too — was measured and **rejected**: it
+reintroduces the two-readings-of-one-character regression that cost two builds in P3
+(`recipe_lines` → 0 on ordinary files).
+
+So the two cases have two fixtures, because claiming the tab case would be claiming a fix that is
+not there.
+
+### What a fix for the tab case would take
+
+The recipe **prefix** and the recipe **terminator** have to share one mechanism. Thirteen
+arrangements were built and measured:
 
 | # | arrangement | result |
 |---|---|---|
 | 1 | `optional(NL)` on `_prefixed_recipe_line` | generation fails, wants associativity on `_prefixed_recipe_line` |
-| 2 | + `prec.right` on `_prefixed_recipe_line` and `_line_text` | generates; `recipe_lines` **falls to 0** across the corpus; wasm 167 KB → 240 KB; target case still broken |
-| 3 | declared `[$._line_text]` conflict instead | same collapse; target case still broken |
-| 4 | separate `_prefixed_recipe_line_eof` rule after the `repeat` | ordinary cases correct again; target still broken (with `prec.right`, and with `prec.left`) |
-| 5 | that EOF form as a peer **inside** the repeat | ordinary cases correct; target still broken (2 of 5) |
-| 6 | terminator moved **inside** `recipe_line` as `optional(NL)` | generation fails on `_prefixed_recipe_line` |
-| 7 | #6 plus `prec.right` on `_prefixed_recipe_line`, `_line_text` **and** `recipe_line` | generates; regresses ordinary files again; target still broken |
+| 2 | + `prec.right` on `_prefixed_recipe_line` and `_line_text` | generates; `recipe_lines` **falls to 0** across the corpus; 167 KB → 240 KB; target still broken |
+| 3 | declared `[$._line_text]` conflict instead | same collapse; target still broken |
+| 4 | separate `_prefixed_recipe_line_eof` rule after the `repeat` | ordinary cases correct; target broken (`prec.right`, and `prec.left`) |
+| 5 | that EOF form as a peer **inside** the repeat | ordinary correct; target broken (2 of 5) |
+| 6 | terminator moved **inside** `recipe_line` | generation fails on `_prefixed_recipe_line` |
+| 7 | #6 plus `prec.right` on three rules | regresses ordinary files; target still broken |
+| 8 | explicit four-way `choice`, nothing nullable | conflict persists — it is the `repeat`, not the terminator |
+| 9 | #8 + declared `[_prefixed_recipe_line]` and `[$._line_text]` | ordinary cases correct; target still broken |
+| 10 | external `RECIPE_EOL` at EOF, tab left internal | **fixes the prefixed case**; scanner not consulted after a tab |
+| 11 | tab also external, so the scanner is always in play | reintroduces the two-readings regression |
+| 12 | newline absorbed into the `shell_text` **token** (`token(seq(body, optional(/[\r\n]+/)))`), so the lexer decides | generated cleanly with **zero behavioural regressions** after two genuine nullable-tail ambiguities were fixed by enumeration — and still failed: at EOF the lexer prefers `word` over the recipe text. Cost 167 KB → 273 KB |
+| 13 | #12 continued: enumerated `_attached_recipe_line`, resolved the `$$`-escape conflict | same as #12 |
 
-The generator's complaint **moves** with each fix — `_prefixed_recipe_line`, then
-`_line_text`, then `recipe_line` — rather than disappearing. That is the diagnostic
-signature: the change relocates an ambiguity instead of removing one.
+The generator's complaint **moves** with each fix rather than disappearing, which is the signature of
+relocating an ambiguity instead of removing one.
 
-**Why it is hard.** Upstream ends every recipe line with a mandatory
-`token.immediate(/[\r\n]+/)`, and that token does double duty: it ends the line *and*
-terminates the enclosing `repeat`. Optionalise it and "another recipe line" becomes
-indistinguishable from "the recipe ended here" — and the ambiguity is reported inside
-`_line_text`'s split construction, three rules away from the edit.
-
-**Why the lexical escape does not work either.** The obvious dodge is to let the
-newline be part of the `shell_text` *token*, so the decision is the lexer's rather than
-the parser's. A token can only permit a newline in **trailing** position with a
-lookahead the regex language does not have — and `allowSplit` already makes a recipe's
-text several tokens with `$(VAR)` interpolation wedged between them, so "trailing" is
-not a property any single one of them can own.
-
-A real fix re-encodes the recipe boundary: a dedicated `shell_text` construction for
-recipes that absorbs its own terminator. That is lexical surgery on text every directive
-also uses, so it wants its own corpus A/B and its own fixture rather than riding along
-with anything above.
+**#12 is the most promising direction and it is unsolved, not closed.** Moving the newline into the
+token removes every grammar-level ambiguity at a stroke — the lexer, not the parser, decides — and
+it got further than anything else: clean generation, no regressions. What it does not solve is why
+`word` wins the token at end of input, and that is a token-precedence question this lane has not
+answered.
 
 ## Reproducing
 

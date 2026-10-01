@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-30T20:44:10.377Z",
-  "commit": "fa6851b63d14777460b82c353cbc87441a9b68a2",
+  "generatedAt": "2026-10-01T01:06:02.115Z",
+  "commit": "b07bbc2d1aa5055bb88c6131c1ff5937c100bb51",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here CONSOLIDATED 2026-09-28: this record is the union of the grammar-governance line and m48-recovery, so every lane either side pinned is present. Lanes both sides changed are marked with a mergeNote and keep the side whose bytes the gate verifies.",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -1765,19 +1765,19 @@
     "make": {
       "wired": {
         "file": "wasm/tree-sitter-make.wasm",
-        "sha256": "8b70b4e9d83d6f9009074e283cedb378329b01249dba74266e82a81df4af12cc",
-        "bytes": 167375
+        "sha256": "0f6f4ed85e92274344430277430f39278e33036f414d1cc8f602e8f379ea0ce9",
+        "bytes": 173520
       },
       "surface": {
-        "ids": 191,
-        "uniqueNames": 175,
+        "ids": 192,
+        "uniqueNames": 176,
         "namedIds": 47,
         "namedUnique": 44,
-        "anonIds": 144,
-        "anonUnique": 132,
+        "anonIds": 145,
+        "anonUnique": 133,
         "fieldCount": 24,
-        "idOrderDigest": "2281eee82beefda527ef639385230573ddbf2a75b17d4563579277c2805cfbf8",
-        "typeSetDigest": "21b2733f14a59c232943a3a48a949431baf8cef1ed457c481df495617489d0b2",
+        "idOrderDigest": "1df7b5b3c58ae880d3f2d1b34f11d5f590180530c916e979623762e1b81f1eb3",
+        "typeSetDigest": "e63a4649248c49a56d1cd95b894d65bbef28e5d025eb3e8adcc39a0e559b3821",
         "fieldSetDigest": "92babc5a63edcab9b4372f39cb9a2a5f9f9b45f846fd13612acdd21ea2a544a2"
       },
       "copies": [
@@ -1794,8 +1794,8 @@
         "dir": "grammars/tree-sitter-make",
         "files": {
           "ab/grammar.patch": {
-            "sha256": "203c4f87d5d52f6728f61ee65343aca2f8541c6daa3a99f150b335e3e01b5b8e",
-            "bytes": 10911
+            "sha256": "dded568192e3a6a93715073c9206159359b38a44be781f442793561f70b8fe65",
+            "bytes": 9971
           },
           "ab/pristine-grammar.js": {
             "sha256": "951a109b093ae8bf197a58b8f3c65b22ba06621d65dfb1b8c75301669f925edd",
@@ -1806,8 +1806,8 @@
             "bytes": 148909
           },
           "grammar.js": {
-            "sha256": "2099ac4ca21e5c64f24c29c9d3076cbae4e4ce91bbcfdd6bed5bea0fe04e3110",
-            "bytes": 21703
+            "sha256": "3f59f1d3138eac7cef1f45bce8dfef79f3406a4502fac412a27b448b1ee82908",
+            "bytes": 22697
           },
           "LICENSE": {
             "sha256": "28eecdb75b6de2d9020603531461444bf54db827ee2fb345a8fcf4dbee7c2ad1",
@@ -1818,8 +1818,8 @@
             "bytes": 1159
           },
           "PIN.md": {
-            "sha256": "1784516baeef768c9bbcf8858ab293f6fc6c3a3eed06e62a484871b5d6ef2765",
-            "bytes": 9245
+            "sha256": "a8d2bb00a3e77c51dd45cd8aec37fed0cef9bfb80fb7fc3c9955b1e8e38adda2",
+            "bytes": 10348
           },
           "recipeprefix/grammar.patch": {
             "sha256": "797f31f60d59b62828f5d64893af2293fad6b2ec89d47a1a15ba2f2d4723b9d0",
@@ -1830,28 +1830,28 @@
             "bytes": 21404
           },
           "recipeprefix/README.md": {
-            "sha256": "9c0a1f2041b5849422f3d512f46c0b90da5639345bbc21a0e9e9325e562499aa",
-            "bytes": 7505
+            "sha256": "e834d374d72f86a23b4108a54db83afb46723267e8dc367c34e0b17a6c53b34b",
+            "bytes": 11364
           },
           "recipeprefix/scanner.c": {
             "sha256": "45d96c6a38f7fc35e95dd3a29d92c288c064c85a004e776eb219c1a2962ec676",
             "bytes": 9533
           },
           "src/grammar.json": {
-            "sha256": "c81ad9d7e67d13eaaa7ff430d289482f3b2b59a6f36b02e8c750f745c1d7a4e9",
-            "bytes": 119718
+            "sha256": "015cdd82dfff6bc4dc152ee1cf91689354a24a4bf6e706741c17681c66f45a06",
+            "bytes": 119991
           },
           "src/node-types.json": {
             "sha256": "a83879f8ada41149aa1c7b9ac435ed3353635966e73638685b124d6a3e7a2cff",
             "bytes": 47818
           },
           "src/parser.c": {
-            "sha256": "65c2c037ebc6c2b221a3c2204ed420fc5dacab4ea0cd81fc13824f38061bb3dc",
-            "bytes": 1095953
+            "sha256": "70e5798b4829d9c6e9c01934ae0b74d166f96d810085a40461ac2c748b6e97bb",
+            "bytes": 1143845
           },
           "src/scanner.c": {
-            "sha256": "cba2950bbbb392e45e3eb283cdc5bd4e240e548a25e7b63c1d95302fd2c6d611",
-            "bytes": 11639
+            "sha256": "3bad9e33cff50baf3ec9321f6bb9bcbf6b73a86f7c1449755d938f0d26e68cc2",
+            "bytes": 12986
           },
           "src/tree_sitter/alloc.h": {
             "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
@@ -1870,7 +1870,7 @@
             "bytes": 646
           }
         },
-        "digest": "8359a305616267cc6b9aa045a48087762fa974bef6022e5f70e53d4210a294fe",
+        "digest": "5fd38b5618b2d485e057bf37710c3c7ed0249f7b85b183dd03b4cb4fe6f44156",
         "fileCount": 19
       },
       "sourceVsWasm": {
@@ -1878,7 +1878,7 @@
         "declaredNamedTypes": 44,
         "declaredSupertypes": 0,
         "wasmNamedUnique": 44,
-        "wasmUniqueNames": 175,
+        "wasmUniqueNames": 176,
         "missingInWasm": [],
         "allowedWasmExtras": [],
         "namedOnlyInWasm": []
