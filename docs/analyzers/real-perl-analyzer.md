@@ -120,10 +120,12 @@ uncertain: `name-only-callee`, `dynamic-receiver`, `concrete-invocant`,
 `isa-array`, `moo-role-composition`, `use-role-composition`, `base-declares-method`,
 `first-parent-guess`.
 
-`overrides` is the heuristic class: with no companion index (production never
-supplies one) a method of a class with a declared base gets the deterministic
-first-parent guess at **0.5**, below the 0.7 consumer threshold, so it is counted
-as suspicion rather than as a claim.
+`first-parent-guess` is the heuristic class, and it is deliberately small: since
+PERL-MR15 built the cross-file companion, only the **347** `overrides` edges whose
+base lies outside the project keep it, at **0.5** and below the 0.7 consumer
+threshold, so they are counted as suspicion rather than as a claim. The other
+6,111 are withdrawn outright and 1,627 are confirmed at 0.95 by a base that is
+actually in the project.
 
 ## The grammar fact that decides this lane
 
@@ -553,10 +555,21 @@ real file; a fixture with ten decision points now reports 11.
 
 ## Honest limitations
 
-- Cross-file override precision needs the optional project companion index, which
-  production never supplies. Without it the lane emits the deterministic
-  first-parent guess at 0.5 and says so in the reason code, rather than dropping the
-  edge (which is what it did before M37.10) or inventing certainty.
+- Cross-file override precision uses the project companion index, which production
+  now builds (PERL-MR15, `src/ast/override-companion-pass.ts`, wired in
+  `indexProjectParallel` before the store). Measured over all 5,774 corpus files:
+  of 8,085 `overrides` edges, **1,627 are confirmed at 0.95, 6,111 are WITHDRAWN
+  (75.6%), and 347 stay first-parent guesses at 0.5** because their base is outside
+  the project. Before this, 75.6% of the label was false and every gate was green,
+  because MISSING=0/unexplained=0 asks whether an edge is EXPLAINABLE from the tree,
+  not whether it is TRUE.
+  Two limits remain, both recorded in `perl/override-companion-resolve`: a base
+  that declares NO method never enters the companion (`mergeSymbolsIntoOverrideCompanion`
+  creates an entry only for a method symbol), so withdrawal is undecidable for it;
+  and only the FIRST declared base is consulted, so one `use parent` per owner is
+  what gets resolved. The companion is scoped to perl — making it
+  language-agnostic would move java/kotlin/python/php/swift/dart, whose pinned
+  baselines were measured without one.
 - A method call on a dynamic receiver is a leaf-name match. The owning class is
   not knowable at this layer, which is what `dynamic-receiver` records.
 - `use base` / `use parent` inheritance is read from one file. A base declared in
