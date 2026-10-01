@@ -9,10 +9,10 @@ upstream's bytes.
 | Upstream | `tree-sitter-grammars/tree-sitter-make` |
 | Upstream revision | `70613f3d812cbabbd7f38d104d60a409c4008b43` ("chore: regenerate parser and bindings with 0.26.6") |
 | Upstream package | `tree-sitter-make` 1.1.1 (MIT) |
-| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `8b70b4e9d83d6f9009074e283cedb378329b01249dba74266e82a81df4af12cc`, 167,375 bytes — **a local build of the patched source below** |
+| Wired wasm | `wasm/tree-sitter-make.wasm`, sha256 `0f6f4ed85e92274344430277430f39278e33036f414d1cc8f602e8f379ea0ce9`, 173,520 bytes — **a local build of the patched source below** |
 | Pristine build (retained) | `ab/pristine-make.wasm`, sha256 `e85bd50b8182497c311fd72c4441b530ff437421176b64114faf532641534fff`, 148,909 bytes |
-| Patches | `ab/grammar.patch` (in-repo) — 3 patches, all measured (§ "The patches") |
-| External scanner | `src/scanner.c` — required by patch P3; **not** carried by `ab/grammar.patch`, which cannot express a new source file |
+| Patches | `ab/grammar.patch` (in-repo) — 4 patches, all measured (§ "The patches") |
+| External scanner | `src/scanner.c` — required by patches P3 and P4; **not** carried by `ab/grammar.patch`, which cannot express a new source file |
 | Gate | `bun run script/m14/verify-grammar-pins.ts` (lane `make`) |
 
 ## Why this is a patch and not a swap
@@ -61,6 +61,19 @@ two prefixed lines ambiguous, so the greedy recipe `repeat` swallowed the next r
 `grammars/tree-sitter-make/recipeprefix/README.md` records the three rejected
 versions. Note that `ab/grammar.patch` cannot express P3 alone: a new source file is
 not an edit, so `src/scanner.c` ships beside the patch.
+
+**P4 — the recipe line that ends the file.** Upstream ends every recipe line with a mandatory
+newline token that does double duty: it ends the line *and* terminates the enclosing `repeat`.
+So a recipe line which is the last thing in a file, with no newline after it, was an ERROR node
+and was lost — and GNU Make 4.3 runs such a file. `_recipeprefix_tab` is `token.immediate`, so the
+newline can never be left to `extras`: an immediate token refuses to match across skipped
+whitespace. That is why the terminator is mandatory, and why making it optional collapses
+`recipe_lines` to 0 across the corpus. The fix moves the decision to the only component that can
+observe end of input: `RECIPE_EOL` is a third external token emitted **zero-width** by the scanner
+at `lookahead == 0`. A newline still lexes as the internal `NL`, so it can never match a real
+character. Closed for a **declared** prefix only — tree-sitter does not consult the external
+scanner after an internal `token.immediate` prefix, so a tab-prefixed final line is still open.
+Both cases are pinned by their own fixture.
 
 `tree-sitter.json` is vendored and **load-bearing**: without it the CLI falls back to
 ABI 14 and silently emits a parser that differs from the wired one.
@@ -128,7 +141,7 @@ be a sign the patch was wrong.
 
 `src/node-types.json` at the patched revision declares **44 named node types and
 24 fields**. The wired wasm's own enumerable surface, read through
-web-tree-sitter's `Language` API, is **191 ids / 44 named / 132 anonymous / 24
+web-tree-sitter's `Language` API, is **192 ids / 44 named / 133 anonymous / 24
 fields** — the identical named set and field set, **in both directions, zero
 missing and zero extra**.
 

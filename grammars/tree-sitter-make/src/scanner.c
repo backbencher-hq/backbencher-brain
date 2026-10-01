@@ -49,6 +49,7 @@
 enum TokenType {
   RECIPE_PREFIX,        // consumes the prefix character, if it is the tracked one
   RECIPEPREFIX_VALUE,   // the value of a `.RECIPEPREFIX` assignment, single char only
+  RECIPE_EOL,          // ZERO-WIDTH: end of input standing in for a recipe line's newline
 };
 
 static inline bool is_space(int32_t c) { return c == ' ' || c == '\t' || c == '\f' || c == '\v'; }
@@ -187,7 +188,29 @@ bool tree_sitter_make_external_scanner_scan(void *payload, TSLexer *lexer, const
   // case the internal token exists to serve.
   if (scanner->recipe_prefix == DEFAULT_RECIPE_PREFIX) return false;
 
-if (valid_symbols[RECIPE_PREFIX]) {
+// The END-OF-INPUT TERMINATOR, asked for first because it is the only test in this
+  // function that can succeed having consumed nothing, and because the branches below
+  // all assume there is input left to look at.
+  //
+  // `_recipeprefix_tab` is `token.immediate`, so a recipe line's newline cannot be left
+  // to `extras`: an immediate token refuses to match across skipped whitespace. That is
+  // why upstream's terminator is mandatory, and why making it `optional` cannot work
+  // either -- `extras` skips the newline for the EOF branch, which leaves the next tab
+  // unmatchable, and `recipe_lines` collapses to 0 across the corpus. Nine arrangements
+  // were measured before this one and every one of them moved the ambiguity rather than
+  // removing it.
+  //
+  // At end of input there is no newline to consume, and this is the only component that
+  // can SEE that there is none. Guarded on `lookahead == 0`, so it can never match a real
+  // character: a newline still lexes as the internal `NL`, and this token stays a
+  // zero-width signal that the line ended because the file did.
+  if (valid_symbols[RECIPE_EOL] && lexer->lookahead == 0) {
+    lexer->mark_end(lexer);
+    lexer->result_symbol = RECIPE_EOL;
+    return true;
+  }
+
+  if (valid_symbols[RECIPE_PREFIX]) {
       // Skip the whitespace BEFORE comparing, and this is not optional.
       //
       // tree-sitter calls the external scanner at the position where the PREVIOUS

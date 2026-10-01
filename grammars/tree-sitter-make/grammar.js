@@ -115,6 +115,7 @@ export default grammar({
   externals: $ => [
     $._recipeprefix,
     $._recipeprefix_value,
+    $._recipe_eol,
   ],
 
   rules: {
@@ -288,7 +289,20 @@ export default grammar({
       // ambiguity to resolve.
       choice($._recipeprefix_tab, $._recipeprefix),
       optional($.recipe_line),
-      NL,
+      // `NL` OR an end-of-input terminator the scanner supplies.
+        //
+        // `_recipeprefix_tab` is `token.immediate`, so the newline that ends a recipe
+        // line CANNOT be left to `extras`: an immediate token refuses to match across
+        // skipped whitespace. That is why upstream's terminator is mandatory, and it
+        // is why making it `optional` cannot work either -- `extras` skips the newline
+        // for the EOF branch, which leaves the next tab unmatchable, and `recipe_lines`
+        // collapses to 0 across the corpus. Nine arrangements were measured before this
+        // one; all of them moved the ambiguity rather than removing it.
+        //
+        // An external scanner is the only component that can observe end of input, so
+        // `RECIPE_EOL` is emitted ZERO-WIDTH exactly there and nowhere else. The newline
+        // case stays the internal `NL`, so this token can never match real characters.
+      choice(NL, $._recipe_eol),
     ),
 
     recipe_line: $ => seq(
