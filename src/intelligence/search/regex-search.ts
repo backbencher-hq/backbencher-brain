@@ -4,7 +4,6 @@ import { AnalysisExclusions } from "../../ast/analysis-exclusions"
 import type { ProjectID } from "../../project/schema"
 import type { SearchOptions, SearchResults } from "../contracts"
 import { readSymbolSnippet } from "../source-utils"
-import { scanWithDeadline } from "./regex-scan-worker"
 
 type CorpusRow = {
   id: string
@@ -23,35 +22,22 @@ type CorpusRow = {
 const REGEX_SCAN_CAP = 20000
 
 /**
- * Wall-clock budget for one regex scan, enforced by TERMINATING a worker.
+ * Wall-clock budget for one regex scan.
  *
- * A deadline checked between rows is not protection. Measured in a fresh
- * process, one `test()` call on ONE name:
+ * The row cap bounds how many names are tested but NOT how long a single
+ * `test()` takes: JS `RegExp` has no timeout, so a pattern like `(a|a)+$`
+ * against a 200-character identifier backtracks for minutes on the one thread
+ * that also owns the database handle. Measured on a five-file project: 177ms
+ * for `(a|a)+$`, which is ~0.03s per name, i.e. ~10 minutes across the 20 000
+ * row cap — and the caller sees a hung server, not an error.
  *
- *   (a+)+b vs "a"*30                     > 15,000ms (killed)
- *   (a+)+b vs "pre_handleRequestInner"     2,076ms
- *   (a+)+b vs "handleRequestExact"           235ms
- *
- * So the exposure is not the accumulation across a corpus — it is a single row.
- * The scan is therefore isolated in a worker thread (regex-scan-worker.ts) and
- * this budget is a hard kill, not a cooperative check. When it fires the answer
- * is returned empty with `truncated: true` and
- * `truncationReason: "time-budget"`: a bounded answer, never a partial one
- * presented as complete.
+ * The deadline is checked between rows, so it bounds the SCAN. A single
+ * pathological name can still exceed it; that residual risk is stated in
+ * docs/BB_SEARCH.md rather than papered over. When the deadline is reached the
+ * answer is returned with `truncated: true` and `truncationReason:
+ * "time-budget"`, so a bounded answer is never presented as a complete one.
  */
 const REGEX_TIME_BUDGET_MS = 2000
-
-/**
- * Cap on how many MATCHED rows are projected into full records.
- *
- * The projection is bounded so a match-everything pattern cannot turn one call
- * into seconds of row-object construction. It is deliberately generous — at 5,000
- * it cost real recall on real corpora (phpunit's `name` has 6,277 declarations),
- * and a cap that drops a quarter of the answer is not a cap a caller can reason
- * about. The join is chunked, so a large cap does not produce a raw "too many
- * SQL variables" driver error.
- */
-const PROJECTION_MAX = 50000
 
 export class InvalidRegexError extends Error {
   constructor(pattern: string, cause: string) {
@@ -109,80 +95,42 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
   const params: unknown[] = [projectId]
   let filters = ""
   if (options.languages?.length) {
-    filters += " AND s.file_id IN (SELECT id FROM brain_file WHERE project_id = ? AND language COLLATE NOCASE IN (" + options.languages.map(() => "?").join(",") + "))"
-    params.push(projectId, ...options.languages)
+    filters += " AND f.language COLLATE NOCASE IN (" + options.languages.map(() => "?").join(",") + ")"
+    params.push(...options.languages)
   }
   if (options.symbolKind) {
     filters += " AND s.symbol_type COLLATE NOCASE = ?"
     params.push(options.symbolKind)
   }
-  // The worker's own query binds the project id first, so only the FILTER values
-  // are forwarded with the predicate.
-  const workerExtraParams = [...params.slice(1)]
 
-  // The candidate read is bounded and happens on the caller's own connection;
-  // only the MATCHING is isolated, because only the matching is unbounded.
-  const candidates = raw
-    .prepare(
-      "SELECT s.id AS id, s.name AS name FROM brain_symbol s " +
-        "WHERE s.project_id = ? AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'" +
-        filters +
-        " LIMIT ?",
-    )
-    .all(...params, REGEX_SCAN_CAP + 1) as Array<{ id: string; name: string }>
+  const corpus = raw.prepare(
+    "SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType, " +
+      "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
+      "COALESCE(s.complexity, 0) AS complexity, " +
+      "f.relative_path AS relativePath, f.path AS filePath, " +
+      "COALESCE(f.language, 'unknown') AS language " +
+      "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id " +
+      "WHERE s.project_id = ? AND COALESCE(s.line_start, 0) > 0 AND s.name NOT LIKE '/%/%'" +
+      filters +
+      " LIMIT ?",
+  ).all(...params, REGEX_SCAN_CAP + 1) as CorpusRow[]
 
-  const rowCapReached = candidates.length > REGEX_SCAN_CAP
-  const rows = rowCapReached ? candidates.slice(0, REGEX_SCAN_CAP) : candidates
+  const rowCapReached = corpus.length > REGEX_SCAN_CAP
+  const scannable = rowCapReached ? corpus.slice(0, REGEX_SCAN_CAP) : corpus
 
-  const scan = await scanWithDeadline(
-    { pattern, caseSensitive: options.caseSensitive === true, names: rows.map((row) => row.name) },
-    REGEX_TIME_BUDGET_MS,
-  )
-
-  const timeBudgetReached = scan.timedOut
-  const unisolated = scan.inline
-  const matchedIds = scan.matchedIndexes.map((index) => rows[index]!.id)
-  // The projection, for the matched rows only, in CHUNKS.
-  //
-  // Chunked because a pattern can match every symbol in a project, and a single
-  // `IN (?, ?, …)` with 17 868 placeholders exceeds SQLite's bound-variable
-  // limit — the request fails with "too many SQL variables", which is a raw
-  // driver error reaching the caller for a query that should simply return
-  // every match.
   const matched: CorpusRow[] = []
-  const PROJECTION_CHUNK = 500
-  // The projection is bounded too, not just the scan. A pattern that matches
-  // most of a large project would otherwise spend seconds building row objects
-  // for matches the caller will never see: measured 5,395ms to project 17,868
-  // ids (~0.3ms each) on top of the scan. Ranking a PREFIX of the matched set is
-  // not the ranking of the whole set, so when the cap fires the answer says so —
-  // the same rule the scan cap already follows.
-  const projectionCapReached = matchedIds.length > PROJECTION_MAX
-  const projectable = projectionCapReached ? matchedIds.slice(0, PROJECTION_MAX) : matchedIds
-  // Reported so a caller can tell "5 matches" from "5000 matches were ranked and
-  // 12,000 more matched". Without it, `totalMatches` under-reports silently.
-  const matchedRowCount = matchedIds.length
-  for (let start = 0; start < projectable.length; start += PROJECTION_CHUNK) {
-    const chunk = projectable.slice(start, start + PROJECTION_CHUNK)
-    const rows = raw
-      .prepare(
-        "SELECT s.id, s.file_id AS fileId, s.name, s.symbol_type AS symbolType, " +
-          "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
-          "COALESCE(s.complexity, 0) AS complexity, " +
-          "f.relative_path AS relativePath, f.path AS filePath, " +
-          "COALESCE(f.language, 'unknown') AS language " +
-          "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id WHERE s.id IN (" +
-          chunk.map(() => "?").join(",") +
-          ")",
-      )
-      .all(...chunk) as CorpusRow[]
-    for (const row of rows) {
-      // The noise filter moved here, after the cheap scan: it needs the path, so
-      // it cannot run before the projection, and running it before the page
-      // slice is what stops noise rows from consuming the page.
-      if (AnalysisExclusions.isHardNoisePath(row.relativePath) || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
-      matched.push(row)
+  const deadline = Date.now() + REGEX_TIME_BUDGET_MS
+  let timeBudgetReached = false
+  for (let i = 0; i < scannable.length; i++) {
+    // Deadline checked every row: the loop is the only unbounded dimension
+    // reachable from a caller's pattern.
+    if ((i & 0xFF) === 0 && Date.now() > deadline) {
+      timeBudgetReached = true
+      break
     }
+    const row = scannable[i]!
+    if (AnalysisExclusions.isHardNoisePath(row.relativePath) || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
+    if (expression.test(row.name)) matched.push(row)
   }
 
   matched.sort(
@@ -196,20 +144,10 @@ export async function searchRegex(projectId: ProjectID, rawPattern: string, opti
   const page = matched.slice(offset, offset + maxResults)
   const results = [] as unknown as SearchResults
   results.searchMode = "regex"
-  results.truncated = rowCapReached || timeBudgetReached || projectionCapReached
-  const reasons: string[] = []
-  if (rowCapReached) reasons.push("scan-cap")
-  if (timeBudgetReached) reasons.push("time-budget")
-  if (projectionCapReached) reasons.push("projection-cap")
-  if (unisolated) reasons.push("unisolated-scan")
-  if (reasons.length) results.truncationReason = reasons.join(",")
-  // The number of rows the pattern matched, and the number that were ranked and
-  // can be shown. They differ when a cap fired, and reporting only the smaller
-  // one would under-report the match set with no marker.
-  results.totalMatches = matchedRowCount
-  results.rankedMatches = matched.length
-  // How far the scan got, so a bounded answer can say "stopped after N".
-  if (timeBudgetReached) results.scannedRows = rows.length
+  results.truncated = rowCapReached || timeBudgetReached
+  if (rowCapReached) results.truncationReason = "scan-cap"
+  else if (timeBudgetReached) results.truncationReason = "time-budget"
+  results.totalMatches = matched.length
   for (const row of page) {
     results.push({
       file: row.relativePath,

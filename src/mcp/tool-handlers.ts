@@ -598,11 +598,25 @@ const handlers: Record<string, ToolHandler> = {
           `showing ${lines.length} of ${total} match${total === 1 ? "" : "es"}` +
             (results.truncated ? " — TRUNCATED: a candidate cap or the noise filter kept matches out of this page" : ""),
         )
+      } else if (results.truncated && lines.length > 0) {
+        footer.push(`TRUNCATED (${results.truncationReason ?? "unknown"}) — this page is not the whole match set`)
       }
       if ((results.staleCount ?? 0) > 0) footer.push(`${results.staleCount} of ${lines.length} results are STALE — the file changed after indexing`)
       if (results.freshnessError) footer.push("freshness could not be resolved for these results (staleCount is not a freshness claim)")
+      if (results.truncated && lines.length === 0) {
+        footer.push(
+          `scan was cut short (${results.truncationReason ?? "unknown"}) after ${results.scannedRows ?? "some"} of the candidate rows — this is NOT a complete answer`,
+        )
+      }
       return {
-        text: lines.length ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "") : `no results for "${query}"`,
+        text: lines.length
+          ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "")
+          : // An EMPTY page is not automatically a complete answer. When the
+            // engine declared that it was cut short, "no results" is a lie the
+            // caller cannot detect — a bounded scan and a scan that genuinely
+            // found nothing were byte-identical. The bound is stated instead.
+            `no results for "${query}"` +
+            (results.truncated || results.freshnessError ? `\n${footer.length ? footer.join("\n") : `scan was cut short (${results.truncationReason ?? "unknown"}) — this is NOT a complete answer`}` : ""),
         results,
         lines,
         rows: results.map((r: any) => ({ fileId: r.fileId })),
@@ -940,8 +954,12 @@ const handlers: Record<string, ToolHandler> = {
       const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
-        ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
-        ...d.dependents.map((x) => ({ fileId: x.fileId })),
+        // A resolved internal target is identified by its relative path; the
+        // id is looked up here rather than shipped in every entry.
+        ...d.dependencies.filter((x) => !x.external && x.resolution !== "unresolved").map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
+        // Dependents carry the relative path; resolve it to a row id here,
+        // once, for the freshness check below.
+        ...d.dependents.map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
       ])
       const first = deps[0]
       // Every other collection mode states how many items it returned; this
@@ -993,7 +1011,7 @@ const handlers: Record<string, ToolHandler> = {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
               for (const x of d.dependencies) if (!x.external && x.fileId) x.stale = statuses.get(x.fileId) !== "fresh"
-              for (const x of d.dependents) x.stale = statuses.get(x.fileId) !== "fresh"
+              for (const x of d.dependents) x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
             }
           },
         },
@@ -1812,6 +1830,8 @@ const handlers: Record<string, ToolHandler> = {
             rule: impact.rule,
             budget: impact.budget,
             traversal: impact.traversal,
+            cascade: impact.cascade,
+            countVerification: impact.countVerification,
             ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
             impact: dependents,
             shownCount: impact.shownCount,

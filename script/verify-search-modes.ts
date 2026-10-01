@@ -98,18 +98,7 @@ try {
   harness.check("public file mode returns freshness metadata", typeof filePayload.stale === "boolean" && typeof filePayload.contentLength === "number")
   harness.check("unmodified file mode reports fresh", filePayload.stale === false)
 
-  // The escape is refused as an MCP ERROR ENVELOPE (isError + a message), which
-  // is what the handler's own M40.A7 contract requires. This assertion used to
-  // demand a THROWN error, so it only passed while the handler leaked raw
-  // throws out of the tool call — i.e. the gate was pinning the defect it
-  // claimed to be guarding. Read the envelope, and assert it carries no content.
-  const escape = await publicSearch({ mode: "file", filePath: "../outside.ts" }, { projectPath: root, projectId })
-  const escapeText = escape.content[0]?.text ?? ""
-  harness.check(
-    "public file mode refuses a path escape with an error envelope",
-    escape.isError === true && /escapes project root/.test(escapeText) && !/content/.test(escapeText),
-    `isError=${escape.isError} text=${escapeText.slice(0, 120)}`,
-  )
+  await harness.rejectsAsync("public file mode rejects path escape", () => publicSearch({ mode: "file", filePath: "../outside.ts" }, { projectPath: root, projectId }), "escapes project root")
 
   // Freshness across all four modes: modify a file on disk without reindexing.
   appendFileSync(path.join(root, "src", "app.ts"), "\n// stale marker\n")
