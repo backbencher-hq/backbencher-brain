@@ -184,59 +184,6 @@ Line numbers are NOT claimed for complexity (`metadata.complexity` /
 `cyclomaticComplexity` are counts, not positions) or for symbol declarations
 beyond their own declaration line.
 
-## M59 / M60 line compliance
-
-M59's contract (`reviews/m49-callsite-line-gap.md`) is three obligations, and all
-three are measured — twice, by **two independent instruments**: this lane's
-`zigw-line-accuracy.ts` and M59's own `script/m59/oracle-callsite.ts`.
-
-| obligation | instrument | result |
-|---|---|---|
-| every relationship corresponding to a source construct carries that construct's **1-based** line | `oracle-callsite.ts --lang=zig --files-per-lang=1200` | **31,128 / 31,128 with a line, 0 without** |
-| " | `zigw-line-accuracy.ts 3839` (full corpus) | **453,928 relationships, 0 without a line** |
-| the line is the **right** line — it carries the name the edge names | `oracle-callsite.ts` | **0 INCONSISTENT** |
-| " | `zigw-line-accuracy.ts 3839` | **453,928 at 100.00%, 0 off**; per-class 100% |
-| the claim is **falsifiable** | `zigw-line-accuracy.ts --shift 1` | **13.08%** — a one-line shift collapses it, so 100% is a measurement and not a tautology |
-
-### The declared exception list
-
-M59 asks for relationships with **no single source construct** to be declared
-rather than given an invented line. Zig's list is **empty**, and per class the
-construct each line points at is:
-
-| class | the construct whose line it carries |
-|---|---|
-| `calls` | the callee leaf (`helper`) |
-| `uses` (field read) | the member leaf (`items` in `list.items`) |
-| `uses` (bare read) | the identifier itself |
-| `contains` | the **member's own declaration line** — synthesized from the symbol table rather than walked at a site, but still a real construct, which is why it is not an exception |
-| `references` (declared type) | the type NAME node, not the enclosing declaration (M59.A7) |
-| `references` / `imports` (the twin) | the **path literal** inside `@import("...")` (M60.A7) |
-| `instantiates` | the construction / generic application site |
-| `exports` | the `pub` declaration |
-
-Where a line genuinely cannot be derived the field is **omitted, never written as
-0** (#820) — which is why the presence counts above are 100% rather than 100%-of-a-
-guess. There is no Zig relationship in 3,839 files that carries a borrowed or
-invented line.
-
-### What M59's oracle could not check, and why it matters
-
-M59's own oracle reports **80 of 31,128 rows (0.26%) as `notCheckable`** — rows
-where its generic token model cannot find a written token at the claimed line. For
-Zig those are the **import family**: an `@import` target is a *path inside a string
-literal* (`@import("src/build/main.zig")`), so the path is written on the line but
-is not an identifier-shaped token. The same shape makes go's and ruby's `imports`
-rows uncheckable in their runs, for the same reason.
-
-This is a limit of the **shared instrument's** token model, not of Zig's lines: the
-path-specific rule in `zigw-line-accuracy.ts` checks an `imports` edge against the
-path as written or its last segment, and reports 100% over 453,928 edges. Worth
-stating plainly rather than leaving as a number: M59's evidence artifact retains
-`notCheckableSample` for only **3 files per language**, so those 80 rows cannot be
-itemised from the artifact at all — for any lane. That is a cap on what M60's fold-in
-can evidence, and it is the shared instrument's to raise, not this lane's.
-
 ## Complexity
 
 Per-symbol cyclomatic complexity on every function/method, from a base of 1:

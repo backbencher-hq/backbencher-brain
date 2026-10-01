@@ -1,64 +1,3 @@
-/**
- * ERLANG TRUTH ORACLE — the independent second derivation, and the LANE'S OWN.
- *
- * The M14.0.F5 differential compares an analyzer against TRUTH derived from the same
- * parse tree by a separate implementation. That is what makes it a differential
- * rather than a self-check: if both sides shared one traversal, a defect in that
- * traversal would be invisible to both. So this file is written against the GRAMMAR
- * — the node types and fields the wired `tree-sitter-erlang` wasm actually exposes,
- * enumerated by `script/m14/tmp/erlang-grammar-census.ts`: 213 named types observed,
- * 122 named at runtime, and the wasm's own table declaring 137 — and it derives each
- * fact by its own walk, in its own order, with its own data structures.
- *
- * WHY IT IS NOT IN `tmp/`. It started there as a probe and it earned its way out. The
- * project's own ontology gate (`script/m60/rel-type-coverage-gate.ts`) reported
- *
- *     erlang  1 un-audited: ["contains"]
- *
- * because `differential.ts`'s erlang oracle — `deriveErlangEdges`, described in its
- * own comment as "mirroring real-erlang-analyzer.ts" — derives seven labels and not
- * `contains`. So ~202,000 of this lane's relationships were STORED AND COMPARED
- * AGAINST NOTHING by the shared gate. This file derives all of them, and the shared
- * differential is wired to call it (the same mechanism
- * `script/m14/fsharp-truth-oracle.ts` uses), which closes that gap at its source
- * rather than in a lane-local report.
- *
- * WHERE IT DELIBERATELY DISAGREES WITH THE ANALYZER. An oracle that re-derives the
- * analyzer's rules by reading its source is a second copy, not a second opinion.
- * Each disagreement below is the oracle reading the ERLANG LANGUAGE, and each one
- * found a real defect in the analyzer:
- *
- *   ER-D34  a module may name itself through a macro (`-module(?FILE_SUITE).`); the
- *           oracle mints the module symbol under what the macro EXPANDS TO.
- *   ER-D35  only `?MODULE:f/1` names this file's module; any other macro in module
- *           position names nothing derivable. The mirror substituted the enclosing
- *           module and fabricated self-calls — 922 of them over the corpus.
- *   ER-D36  a bare unquoted atom in type syntax is the ATOM LITERAL of that name.
- *           The mirror counted every one as a type dependency.
- *   ER-D38  a file with no recoverable declaration of any kind, AND ERROR nodes
- *           present, yields nothing rather than edges recovered from wreckage.
- *
- * AND WHERE IT DELIBERATELY AGREES. Four times both sides were wrong in the same way
- * and the differential reported zero — the mirror cannot see a shared assumption
- * about tree shape. The grammar census is written down here so the next reader knows
- * which facts are independently derived and which are shared knowledge:
- *
- *   GENERATOR  the `<-` of a comprehension generator is NOT a direct child of
- *              `lc_or_zc_expr`; the grammar wraps it in a `generator` node
- *              (`lc_or_zc_expr -> generator -> {LHS, <-, RHS}`). Both sides first
- *              missed that and agreed; only the authored fixture caught it.
- *   NIFS      `-nifs([f/1])` holds `binary_op_expr` (`f` `/` `1`), NOT an `fa` —
- *              while the grammar's own `-record`-in-`wild_attribute` error path
- *              produces `fa` for some vendor attributes. Both spellings are read.
- *   MODNAME   `-module(?M)`'s child is a `macro_call_expr` whose name is a `var`,
- *              never an `atom`.
- *   QUALIFIED a qualified type keeps its module: `missing_mod:referenced_type` is ONE
- *              type name, and reading the callee atom alone emits the bare leaf.
- *
- * Every rule the two sides share is a rule about the GRAMMAR. Every rule they apply
- * differently is a rule about the LANGUAGE, and is written down in
- * `script/m14/spec/erlang-completeness.json`.
- */
 // ER3 wave — the Erlang dual-lens ORACLE.
 //
 // An INDEPENDENT derivation of every symbol and every relationship the analyzer
@@ -297,14 +236,6 @@ export function oracleAnalyze(root: any, _filePath: string): OracleFile {
     "import_attribute",
     "export_attribute",
     "export_type_attribute",
-    // `-include` / `-include_lib` count. An include-ONLY header — comments plus one
-    // `-include("other.hrl")` — has no symbol to publish but it does have a real
-    // dependency to record, and `etop.hrl` and `OTP-PUB-KEY.hrl` both are one.
-    // Leaving these out of the set made the grammar-damage guard silence the
-    // analyzer's correct include reference, which the full-corpus lens reported as 2
-    // unexplained edges.
-    "pp_include",
-    "pp_include_lib",
   ])
   const hasAnyDeclaration = forms.some((f: any) => DECLARATION_FORMS.has(f.type))
   if (topLevel.length === 0 && !hasAnyDeclaration) {
@@ -739,15 +670,4 @@ function stripQuotes(text: string): string {
   let out = ""
   for (const ch of text) if (ch !== '"' && ch !== "'") out += ch
   return out
-}
-
-/**
- * The shape `script/m14/differential.ts` consumes, so this file can serve the shared
- * gate directly rather than through a lane-local report. Same edges, flattened to
- * `{label, from, target}`; the census keeps the richer form (lines, contexts,
- * arities) because its whole job is comparing lines and contexts too.
- */
-export function deriveErlangEdges(root: any, filePath = ""): { label: string; from: string; target: string }[] {
-  const r = oracleAnalyze(root, filePath)
-  return r.edges.map((e) => ({ label: e.type, from: e.source, target: e.target }))
 }
