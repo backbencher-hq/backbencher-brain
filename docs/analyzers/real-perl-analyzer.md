@@ -590,8 +590,8 @@ real file; a fixture with ten decision points now reports 11.
 | station | state |
 | --- | --- |
 | F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. It is green NOW by measurement (`audit-analyzer-grammar.ts`, `perl PASS refs=53 unknown=0 unknownFields=0`), after PERL-MR4 removed seven node types it had invented. See the correction below. |
-| F3 fixtures | **8 expectations, 8/8 pass.** `validation/m14/fixtures/perl/`, one per defect class |
-| F4 mutation | **32 mutants, 32/32 caught** |
+| F3 fixtures | **13 expectations, 13/13 pass.** `validation/m14/fixtures/perl/` — one per defect class, plus the three-file `override-companion-resolve` group that pins confirmed / withdrawn / unknown-base together |
+| F4 mutation | **39 mutants, 39/39 caught** |
 | perl ownership gate | **15/15** -- perl-owned CONTENT, seconds to run, the row that catches a commit that rebuilt a perl file from a stale base |
 | line oracle (M59.A7) | **0 INCONSISTENT** over 420 files / 14,103 relationships, self-test caught |
 | #419 structural (A) | green -- 170/170 classified, each in exactly one bucket |
