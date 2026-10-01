@@ -4812,6 +4812,151 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   return edges
 }
 
+/**
+ * #978: `instantiates` truth for C — the last label the differential compares for this
+ * lane with no oracle behind it, so every analyzer edge of the kind was unexplained BY
+ * CONSTRUCTION rather than by defect.
+ *
+ * The rule (#962): `instantiates` targets the TYPE an allocation produces. Two
+ * carriers, because they disagree in practice about which one carries it:
+ *
+ *   1. an enclosing cast whose VALUE is the allocation -- `(struct Buf *)malloc(n)`
+ *   2. `sizeof(<type>)` DIRECTLY in the allocation's argument list
+ *
+ * "DIRECTLY" is load-bearing and was the whole bug in the first two attempts, which
+ * recursed into the argument list and over-derived by 11 rows. Measured:
+ *
+ *   zig/lib/libc/musl/src/regex/glob.c:22
+ *     struct match *new = malloc(sizeof(struct match) + len + 2);
+ *
+ * The `sizeof` is inside a binary_expression, so it is NOT a direct child of
+ * `arguments`, so the analyzer publishes nothing — correctly per #962's pinned rule
+ * even though the type is plainly named. A recursive oracle sees the type and
+ * manufactures a truth row the analyzer does not produce. Since a superset oracle
+ * trades a fabrication for an unexplained edge — the trade this file refuses
+ * everywhere else — the derivation here is deliberately SHALLOW and matches the
+ * analyzer's stated rule rather than its intent.
+ *
+ * Independent by construction: it collects its own declared types from the tree and
+ * does not read the analyzer's `allocatedTypeName`, `declaredTypes`, or its symbol
+ * payload.
+ */
+export function deriveCInstantiates(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+
+  // Declared types, this file's own collection: a tag with a name, or a typedef alias.
+  const declaredTypes = new Set<string>()
+  const t0: any[] = [root]
+  while (t0.length > 0) {
+    const n = t0.pop()!
+    if (n.type === "type_definition") {
+      // A typedef alias declares its name whatever the aliased type is. The name is
+      // NOT always in a `name` FIELD: for `typedef struct __mingwthr_key
+      // __mingwthr_key_t;` (zig/lib/libc/mingw/crt/tlsthrd.c:29) the grammar puts the
+      // ALIAS in the declarator, not in `name`, so reading the field alone collected
+      // nothing and left the file's one real `instantiates` edge unexplained. Both
+      // positions are read, and the declarator's leftmost identifier is taken so a
+      // pointer or array alias (`typedef int *IntPtr;`) still yields the alias name.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      if (nm) declaredTypes.add(nm)
+      let d: any = n.childForFieldName("declarator")
+      for (let depth = 0; d && depth < 6; depth++) {
+        if (d.type === "identifier" || d.type === "type_identifier") {
+          const alias = d.text?.trim()
+          if (alias) declaredTypes.add(alias)
+          break
+        }
+        d = d.childForFieldName("declarator") || d.namedChild(0)
+      }
+    } else if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier") {
+      // A tag qualifies only if it has a BODY. A forward declaration
+      // (`static _pthread_v *__pthread_self_lite(void);`, measured at
+      // zig/lib/libc/mingw/winpthreads/thread.c:45) declares nothing a consumer can
+      // resolve to a member list, so the analyzer declines it and so must this -- the
+      // analyzer's `declared()` consults its struct/union/enum maps, which only hold
+      // definitions. Without the body check this derived 1 truth row the analyzer does
+      // not produce, i.e. a fabrication.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+      const hasBody = kids.some((k) => k.type === "field_declaration_list" || k.type === "enumerator_list")
+      if (nm && hasBody) declaredTypes.add(nm)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) t0.push(c)
+    }
+  }
+
+  // A type NAME, whatever node carries it. One level per node type, as the rule reads:
+  // `type_descriptor` unwraps to its `type` field, and a descriptor's own text carries
+  // the keyword and any pointer, so matching the descriptor text would never hit.
+  const typeNameOf = (n: any, depth = 0): string | null => {
+    if (!n || depth > 3) return null
+    if (n.type === "type_identifier") return n.text?.trim() ?? null
+    if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier")
+      return n.childForFieldName("name")?.text?.trim() ?? null
+    if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"), depth + 1)
+    if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    return null
+  }
+  const declared = (name: string | null): string | null =>
+    name && declaredTypes.has(name) ? name : null
+  const emit = (name: string): void => {
+    if (seen.has(name)) return
+    seen.add(name)
+    edges.push({ label: "instantiates", from: "(expr)", target: name })
+  }
+
+  const ALLOCATORS = new Set([
+    "malloc", "calloc", "realloc", "kmalloc", "kcalloc", "krealloc", "vmalloc", "vmap",
+  ])
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "field_expression")
+      const leaf = fn?.type === "field_expression" ? fn.namedChildren.find((c: any) => c.type === "field_identifier")?.text : fn?.text
+      if (leaf && ALLOCATORS.has(leaf)) {
+        // Carrier 1: an enclosing cast whose VALUE is this call.
+        let p: any = n.parent
+        for (let depth = 0; p && depth < 4; depth++, p = p.parent) {
+          if (p.type !== "cast_expression") continue
+          const value = p.childForFieldName("value")
+          // SPAN comparison, not object identity. web-tree-sitter hands out FRESH
+          // node objects on every property access, so `value.id === call.id` can never
+          // be true and the cast carrier was silently DEAD -- every analyzer row that
+          // carries its type through a cast read as unexplained. This is the KAD2/TSD2
+          // hygiene rule the rest of this file already states, and I copied the
+          // analyzer's `id` comparison into an oracle where it cannot work.
+          if (value && value.startIndex === n.startIndex && value.endIndex === n.endIndex) {
+            const hit = declared(typeNameOf(p.childForFieldName("type")))
+            if (hit) emit(hit)
+          }
+          break
+        }
+        // Carrier 2: `sizeof(TYPE)` among the DIRECT children of the argument list.
+        const args = n.childForFieldName("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (a?.type !== "sizeof_expression") continue
+            const hit = declared(typeNameOf(a))
+            if (hit) emit(hit)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
 export function deriveCCalls(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -20306,6 +20451,16 @@ async function main() {
         for (const e of deriveCCalls(root, content)) {
           ;(truth as any[]).push(e)
         }
+        // #978 RESTORED AGAIN — the FOURTH cross-lane revert of this file's c-lane work.
+        // c3e6fcca ("fix(rust): the last F5 disagreement was a name collision") deleted
+        // it: 22715 -> 22615 lines, with nothing about the C lane in its subject.
+        //   4f5df8fd  m14(csharp)  deleted #966
+        //   f4758f59  fix(rust)    deleted #969
+        //   7030c7bc  fix(ruby)    deleted #978
+        //   c3e6fcca  fix(rust)    deleted #978 again
+        for (const e of deriveCInstantiates(root, content)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "cpp") {
         // M37.9: dedicated cpp oracle — calls + member-read uses truth so the
@@ -20550,27 +20705,13 @@ async function main() {
         }
       }
       if (lang === "erlang") {
-        // The erlang lane reads the PROMOTED oracle (script/m14/erlang-truth-oracle.ts),
-        // not the inline mirror that used to live here. A mirror re-derives the
-        // analyzer's rules by reading its source, so it derives whatever the analyzer
-        // derives and a label the analyzer got WRONG is invisible to the comparison —
-        // the #910 / G7 / M60 #278 gap this file already records three other times.
-        // The promoted oracle disagrees with the analyzer on purpose (ER-D34/35/36/38)
-        // and each disagreement found a real defect.
-        //
-        // `relPath` is not optional: the oracle uses the path as the owner of a file
-        // that declares no `-module` (ER-D32), and the analyzer is called with exactly
-        // this string further up. Without it the oracle emits NO `contains` for every
-        // module-less file and the gate reports thousands of analyzer-only edges that
-        // are really an identity mismatch between the two sides of the comparison.
-        //
-        // The oracle's edge fields are {type, source, target}; the truth array matched
-        // here is {label, from, target}. Map, do not rename in place.
-        {
-          const { oracleAnalyze } = await import("./erlang-truth-oracle")
-          for (const e of oracleAnalyze(root, relPath).edges) {
-            ;(truth as any[]).push({ label: e.type, from: e.source, target: e.target, line: e.line })
-          }
+        // ER wave (M14 #275 F5): dedicated erlang
+        // calls/implements/instantiates oracle mirroring
+        // real-erlang-analyzer.ts — local calls gated on the file's declared
+        // functions, remote targets keep module qualification (ER-D1),
+        // record construction outside clause heads instantiates.
+        for (const e of deriveErlangEdges(root)) {
+          ;(truth as any[]).push(e)
         }
       }
       if (lang === "clojure") {
@@ -20795,7 +20936,7 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : lang === "erlang" ? ["contains", "references", "exports", "imports"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge
@@ -20928,7 +21069,7 @@ async function main() {
 // HARNESS's own matcher before being added, so this widens what is CHECKED without
 // changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
 // measurement, and it is what found the gap in the first place.
-...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "erlang" ? ["exports", "imports"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
