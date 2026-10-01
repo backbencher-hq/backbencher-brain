@@ -233,6 +233,60 @@ function methodNames(node: any, bodyType: string): string[] {
   return out
 }
 
+/** Which of a type's members carry an `@override` annotation.
+ *
+ *  The EXTERNAL pass of the resolution is annotation-gated — a member of a class
+ *  that is not declared in this file is claimed as an override only when the
+ *  member says it overrides something. Without this the oracle over-claims on
+ *  every generated override: freezed emits `List<Object?> get props => [...]`
+ *  with no annotation, so an ungated pass derived 81 `X.props -> Equatable.props`
+ *  edges the analyzer deliberately does not publish.
+ *
+ *  Measured, and the direction matters: `class C extends Cubit { @override void
+ *  close() {} }` agrees on both sides with a companion index; drop the
+ *  annotation and the analyzer publishes nothing while an ungated oracle still
+ *  does. The analyzer is right — an unannotated member of a class whose base is
+ *  in another repository cannot be proven to override anything from this file
+ *  alone, and claiming it is a fabricated edge. */
+function overrideMembers(node: any, bodyType: string): Set<string> {
+  const out = new Set<string>()
+  const body = named(node).find((c: any) => c.type === bodyType)
+  if (!body) return out
+  const annotated = (m: any): boolean => {
+    // the annotation is a preceding sibling; some shapes nest it one level up
+    for (let hop = 0, cur = m; hop < 3 && cur; hop++) {
+      const sib = cur.previousNamedSibling
+      if (sib) {
+        const txt = sib.text ?? ""
+        if (/@override\b/.test(txt)) return true
+        if (sib.type.includes("annotation") || sib.type.includes("metadata")) {
+          for (let i = 0; i < sib.namedChildCount; i++) {
+            const c = sib.namedChild(i)
+            if (c && /@?override\b/.test(c.text ?? "")) return true
+          }
+        }
+      }
+      cur = sib
+    }
+    return false
+  }
+  for (const m of named(body)) {
+    if (!annotated(m)) continue
+    for (const w of named(m)) {
+      if (!NAME_WRAPPERS.has(w.type)) continue
+      const nm = field(w, "name")
+      if (nm && nm !== "operator" && IDENT.test(nm)) out.add(nm)
+      else if (w.type === "operator_signature") {
+        for (let i = 0; i < w.childCount; i++) {
+          const g = w.child(i)
+          if (g && !g.isNamed && g.text === "operator") { const nx = w.child(i + 1); if (nx) { out.add(nx.text); break } }
+        }
+      }
+    }
+  }
+  return out
+}
+
 /**
  * The real type names in one heritage group, with an IMPORT-ALIAS prefix dropped.
  *
@@ -328,6 +382,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
   // index the file: declaration name -> the methods it declares
   const methodsOf = new Map<string, string[]>()
   const supertypesOf = new Map<string, string[]>()
+  const overrideOf = new Map<string, Set<string>>()
   const collect = (node: any): void => {
     if (!node) return
     if (DECLS.has(node.type)) {
@@ -335,6 +390,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
       if (nm) {
         const bodyType = BODY_OF[node.type]
         methodsOf.set(nm, methodNames(node, bodyType))
+        overrideOf.set(nm, overrideMembers(node, bodyType))
         supertypesOf.set(nm, directSupertypes(node))
       }
     }
@@ -384,7 +440,10 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         // not declared here — the companion pass, and the end of the road if it
         // does not have the member either
         if (companion && companion.has(sup)) {
-          if (companion.get(sup)!.has(m)) {
+          // rule 4 is ANNOTATION-GATED. Only a member that says `@override` is
+          // claimed against a base this file cannot see; an unannotated one is
+          // not provable from this file alone and claiming it fabricates an edge.
+          if (companion.get(sup)!.has(m) && (overrideOf.get(cls)?.has(m) ?? false)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
           }
