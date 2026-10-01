@@ -178,6 +178,47 @@ const reg: any = {
   assertsOn: "analyzer OUTPUT (published symbols and relationships), not tree shapes",
   classes: {},
 }
+/** D13: does this friend declaration carry a function BODY (i.e. define, not declare)? */
+function friendDeclHasBody(decl: any): boolean {
+  for (let i = 0; i < decl.namedChildCount; i++) {
+    const c = decl.namedChild(i)
+    if (!c) continue
+    if (c.type === "function_definition" || c.type === "compound_statement") return true
+  }
+  return false
+}
+
+/** D13: the friend definition's body range, in 1-based lines. */
+function friendDeclBody(decl: any): { startLine: number; endLine: number } | null {
+  for (let i = 0; i < decl.namedChildCount; i++) {
+    const c = decl.namedChild(i)
+    if (c && (c.type === "function_definition" || c.type === "compound_statement"))
+      return { startLine: c.startPosition.row + 1, endLine: c.endPosition.row + 1 }
+  }
+  return null
+}
+
+/**
+ * D13: the name of the class a friend declaration is written INSIDE.
+ *
+ * Walks up past `field_declaration_list` to the specifier. A friend at namespace
+ * scope has no enclosing class and returns null, which is correct: there is no
+ * class to have wrongly owned the body.
+ */
+function enclosingClassName(node: any): string | null {
+  let cur = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    const t = cur.type
+    if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
+      return cur.childForFieldName?.("name")?.text ?? null
+    }
+    if (t === "namespace_definition" || t === "function_definition" || t === "translation_unit") return null
+    cur = cur.parent
+  }
+  return null
+}
+
 const cls = (id: string, title: string, contract: string, gated = true) => {
   const c = { id, title, contract, gated, n: 0, byName: new Map<string, number>(), sites: [] as any[] }
   reg.classes[id] = c
@@ -215,6 +256,27 @@ const D8 = cls("D8", "a trailing ANNOTATION macro is published as a function or 
 const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before the source's own brace balance",
   "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
   false)
+
+/**
+ * D13: a read inside a friend function DEFINITION is attributed to the enclosing class.
+ *
+ * Stated HERE, independently of the analyzer's three D13 helpers
+ * (`enclosingFriendDeclaration`, `nodeHasFunctionBody`, `enclosingScopeOf`), for
+ * D8's reason: a gate that imports the code under test cannot be run against the
+ * code it gates. The check below re-derives the friend, its body and the
+ * containing class from the tree and asks only whether a published `uses` edge
+ * inside that body is owned by that class.
+ *
+ * A friend is not a member of the class it is written in, so its body is not the
+ * class's. CP2 established that a friend declaration mints no member; extending
+ * that to a friend's DEFINITION left the body unowned, and the walk then attributed
+ * its reads to the class. Measured at `absl/random/uniform_int_distribution.h:87`
+ * as `uses param_type -> b` — a read of a PARAMETER owned by the class, where the
+ * class also has members named `a()` and `b()`, so the edge is indistinguishable
+ * from reading them. It was the single UNEXPLAINED analyzer edge on abseil-cpp.
+ */
+const D13 = cls("D13", "a read inside a friend function DEFINITION is attributed to the enclosing class",
+  "A friend function is not a member of the class whose body it is written in, so nothing in that body belongs to the class. Reading a friend definition's parameters as members of the class that merely encloses them is a scope-attribution error, and a misleading one wherever a member shares the parameter's name.")
 
 /**
  * D11: a function is published whose RETURN TYPE is a class DEFINITION.
@@ -517,6 +579,26 @@ for (const repo of REPOS) {
           })
         }
       }
+      // D13 — a `uses` edge inside a friend function DEFINITION's body, owned by
+      // the class the friend is written in. Stated from the tree, not from the
+      // analyzer's helpers, so the gate can run against the code it gates.
+      if (n.type === "friend_declaration" && friendDeclHasBody(n)) {
+        const cls = enclosingClassName(n)
+        const body = friendDeclBody(n)
+        if (cls && body) {
+          for (const x of (r.relationships ?? []) as any[]) {
+            if (x.type !== "uses") continue
+            if (String(x.source) !== cls) continue
+            const ln = Number(x.line_number ?? -1)
+            if (ln >= body.startLine && ln <= body.endLine) {
+              add(D13, `${cls}->${x.target}`, {
+                repo, file: rel, line: ln, owner: cls, target: x.target,
+                friendLine: n.startPosition.row + 1,
+              })
+            }
+          }
+        }
+      }
       // D11 — a published symbol whose range IS a function_definition that
       // returns a class DEFINITION. Stated here independently of the analyzer's
       // `returnTypeIsClassDefinition`, for D8's reason: a gate that imports the
@@ -576,7 +658,7 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} R1=${R1.n} R2=${R2.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} R1=${R1.n} R2=${R2.n}\n`)
 }
 
 // D10 — the engine's own byte cap. Counted by the engine, not by this script, so

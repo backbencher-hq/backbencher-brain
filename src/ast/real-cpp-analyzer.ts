@@ -94,6 +94,89 @@ function lastScopeSegment(text: string): string {
  * (#916's lesson — a copied rule is a second answer, and the two sides
  * cancelling out of every count is how a wrong edge survives a year of gates).
  */
+function enclosingFriendDeclaration(node: Node): Node | null {
+  let cur: Node | null = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    if (cur.type === "friend_declaration") return cur
+    cur = cur.parent
+  }
+  return null
+}
+
+/**
+ * D13: does this friend declaration DEFINE a function (carry a body), rather than
+ * merely declare one? A declaration has no `compound_statement` anywhere under it.
+ */
+function nodeHasFunctionBody(decl: Node): boolean {
+  let cur: Node | null = decl
+  let guard = 0
+  while (cur && guard++ < 64) {
+    if (cur.type === "compound_statement" || cur.type === "function_definition") return true
+    for (let i = 0; i < cur.namedChildCount; i++) {
+      const c = cur.namedChild(i)
+      if (c && (c.type === "compound_statement" || c.type === "function_definition")) return true
+    }
+    cur = cur.parent
+  }
+  return false
+}
+
+/**
+ * D13: the scope that lexically ENCLOSES the class a friend definition sits in.
+ *
+ * Walked off the tree rather than carried on `Scope`, which holds no owner link. A
+ * friend function is not a member of that class, so its body's reads belong to
+ * whatever contains the class — a namespace, an outer class, or the file.
+ */
+/**
+ * D13: the scope a friend function's body belongs to.
+ *
+ * A friend defined in a class body is NOT a member of that class, so the class is
+ * skipped outright and the walk continues to whatever genuinely encloses it — a
+ * namespace, an enclosing function, or the file.
+ *
+ * The first version of this helper returned the CONTAINING CLASS, which is the one
+ * scope a friend's body can never belong to; it therefore re-attributed the reads to
+ * exactly the owner the fix was written to remove, and the reproducer did not move at
+ * all. That is why there is no class/struct/union arm here rather than merely a
+ * reordered one: for this rule a class is never the answer.
+ */
+function enclosingScopeOf(node: Node): { node: Node; name: string; kind: ASTEngine.SymbolKind } {
+  let cur: Node | null = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    const t = cur.type
+    // class_specifier / struct_specifier / union_specifier are deliberately absent:
+    // a friend of a class is not a member of it, so no enclosing class owns the body.
+    // An unnamed enclosing scope falls back to `global`, NEVER to the string
+    // "anonymous": that string is the analyzer's own no-name SENTINEL, and D7's
+    // contract calls the collision out explicitly ("Publishing `anonymous` also
+    // collides with the analyzer's own no-name sentinel"). Measured: a first
+    // version of this helper used `nm || "anonymous"` and moved 239 edges ONTO
+    // the sentinel corpus-wide — trading one wrong named owner for a worse one,
+    // since a sentinel owner cannot be told apart from a class whose name the
+    // analyzer failed to read.
+    if (t === "namespace_definition") {
+      const nm = cur.childForFieldName?.("name")?.text
+      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Namespace }
+      break
+    }
+    if (t === "function_definition" || t === "function_declarator") {
+      const nm = cur.childForFieldName?.("declarator")?.text
+      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Function }
+      break
+    }
+    if (t === "translation_unit") {
+      return { node: cur, name: "global", kind: ASTEngine.SymbolKind.Function }
+    }
+    cur = cur.parent
+  }
+  // Nothing above it but classes: a friend defined at file scope belongs to the file,
+  // which is the same `global` owner an out-of-line definition already gets.
+  return { node, name: "global", kind: ASTEngine.SymbolKind.Function }
+}
+
 export function extendsTargetName(baseText: string, className: string): string | null {
   const leafOf = (raw: string): string => {
     let t = stripAccessSpecifier(raw)
@@ -2122,8 +2205,34 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (private) Method symbol for someone else's function. The subtree
         // still walks (parameter names bind nothing observable), but no
         // symbol is emitted.
+        //
+        // D13: that rule is right for a friend DECLARATION and wrong for a friend
+        // DEFINITION, which has a BODY whose reads belong to the friend and not
+        // to the class. Measured on `abseil-cpp/absl/random/uniform_int_distribution.h:86`:
+        //
+        //   friend bool operator==(const param_type& a, const param_type& b) {
+        //     return a.lo_ == b.lo_ && a.range_ == b.range_;
+        //   }
+        //
+        // published `uses param_type -> lo_`, `-> a` and `-> b`, because no symbol
+        // owns the body and the walk therefore attributed it to the enclosing class.
+        // The read is real; the OWNER is wrong, and wrong in the worst direction:
+        // `param_type` also has member functions named `a()` and `b()` (lines 81-82),
+        // so the edge is indistinguishable from reading those. 1 unexplained row on
+        // abseil, 2 more on spdlog's out-of-line constructor (`basic_file_sink-inl.h:21`,
+        // owned by `global`), 3 of 22,806 analyzer edges over 1,028 files.
+        //
+        // The fix keeps CP2 exactly as it was for a declaration — still no symbol —
+        // and only re-OWNs a definition's body, to the scope that lexically encloses
+        // the CLASS rather than the class itself. A friend is not a member, so its
+        // body is not the class's.
         if (hasFriendAncestor(node)) {
           newContext = parentContext
+          const friendDecl = enclosingFriendDeclaration(node)
+          if (friendDecl && nodeHasFunctionBody(friendDecl)) {
+            const outer = enclosingScopeOf(friendDecl)
+            newContext = { ...parentContext!, node: outer.node, name: outer.name, kind: outer.kind }
+          }
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
             if (child) stack.push({ node: child, parentContext: newContext })
