@@ -70,20 +70,33 @@ These are corpus-level properties this analyzer is held to. Each has a script un
 | **analysis is linear in definitions, not quadratic** | `scala-perf-shape.ts`, `scala-perf-corpus.ts` | shape exponent **1.53 → 0.98**; full-corpus **425.6s → 147.4s**; worst single file **135,382ms → 2,971ms**. The cause was `extractScalaDoc` re-scanning all preceding siblings per doc comment. |
 | **output is unchanged by the perf fix** | `scala-output-equivalence.ts` | 226,635 nodes, 38,601 relationships, 6,730 symbols — **zero differences** against the committed pre-fix output. |
 
-### Known identity limits (SDJ-9, open)
+### Known identity limits
 
-Two symbol-identity limits are measured and **not** fixed, because each fix must move the
-contains oracle in the same commit or the lane reports a false MISSING:
+**Extension methods are pinned (SDJ-9, shipped).** A Scala 3 extension method is in scope
+only for its receiver type, so the receiver is part of its identity. A colliding name is
+published as `name@ReceiverLeaf`; the receiver is also recorded on the symbol
+(`metadata.extensionReceiver`), which it previously was not — that omission is why two
+`isPackage` methods for `AbstractFile` and `JFile` were byte-identical. Three rules, each
+forced by a measurement:
 
-- **Extension methods drop their receiver.** 3,203 extension methods across 1,399 blocks;
-  in **75 files, 177 names** are declared in 2+ blocks with different receivers
-  (`FileUtils.isPackage` exists for both `AbstractFile` and `JFile`). A Scala 3 extension
-  method is in scope only *for its receiver type*, so this is semantic, not cosmetic. The
-  receiver is already available at the emit site (the analyzer publishes a `uses` edge to
-  it), so the fix is to disambiguate the name on collision by the receiver leaf.
-- **Nested locals take the enclosing type as owner.** `val cls` declared in two different
-  `lazy val`s of one object publishes as the same owner. 1,148 duplicate names are
-  same owner + kind + signature and therefore indistinguishable in the graph.
+- **Collision-only.** A call's target is the callee as written, so renaming all 3,203
+  extension methods would stop the ~3,026 unambiguous ones resolving.
+- **Every colliding member is decorated**, not first-bare/second-`#2` — otherwise a
+  method's identity would depend on source order.
+- **The criterion is 2+ distinct receivers, not 2+ declarations.** PPrint.scala declares two
+  `substring` overloads in one block; a count-based rule renamed both to the same
+  `substring@SourceFile` and produced a false MISSING against the oracle.
+
+Measured: indistinguishable duplicates **1,148 → 1,123** (25 true merges closed). Pinned by
+`scala/m60-extension-identity`, which fails if the rule is reverted.
+
+**Same-named members are still first-wins (SDJ-12, open).** Symbols are not lost — the id is
+`${fileId}:${name}:${startLine}` — but the name index is first-wins, so the *second* declaration
+of a same-named member in a file is unreachable by name. 1,123 duplicates remain. The dominant
+cause is the class + companion object family: both owners share a NAME, their members share a
+KIND, and `(using Context)` is not in `parameters`, so `TypeComparer.isSameType` at :2478 and
+:3503 are identical on every field the graph reads. The analyzer already stamps `ownerKind`;
+the identity does not use it.
 
 ## Supported constructs
 

@@ -3650,6 +3650,113 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   // (`UnsafeUnboundedSuite contains q`), because nothing in that path is a
   // function scope. It is block-local, not API. See SDJ-3.
   let givenCounter = 0
+
+  // M60/SDJ-9 — extension method identity, mirrored from the analyzer.
+  //
+  // A Scala 3 extension method is in scope only for its receiver type, so
+  // (receiver, name) is its identity. The analyzer publishes a colliding name as
+  // `name@ReceiverLeaf`; this side must publish the SAME target or the lane
+  // reports a false MISSING. Measured on scala3
+  // (script/m14/tmp/scala-extension-identity.ts): 3,203 extension methods, and in
+  // 75 files 177 names are declared in 2+ blocks with different receivers.
+  //
+  // The multiplicity is resolved by a PRE-PASS over `extension_definition` nodes
+  // rather than by walking twice, for a concrete reason: `walk` is stateful — it
+  // advances `givenCounter` and the per-file anonymous-class counter — so a second
+  // pass would publish `given_1` and `anonymous_X#3` where the first published
+  // `given_0` and `anonymous_X#2`, and the truth would disagree with itself.
+  // Scanning only the extension blocks is narrow (75 of 18,446 scala3 files even
+  // have a collision) and leaves the walk's state untouched.
+  const EXT_DECL_TYPES = new Set(["function_definition", "function_declaration"])
+  // The receiver of an extension method, read exactly as the analyzer's `uses`
+  // side and its own receiver extraction do: walk up to the nearest enclosing
+  // `extension_definition`, stopping at a TYPE (a def inside a nested object is
+  // not an extension method).
+  const extReceiverOf = (n: any): string | null => {
+    let anc: any = n.parent
+    while (anc && anc.type !== "extension_definition") {
+      if (anc.type === "class_definition" || anc.type === "object_definition" ||
+          anc.type === "trait_definition" || anc.type === "enum_definition") return null
+      anc = anc.parent
+    }
+    if (!anc) return null
+    const pc = namedChildOf(anc, "parameters")
+    const p0 = pc && pc.namedChildCount > 0 ? pc.namedChild(0) : null
+    if (!p0) return null
+    for (let j = 0; j < p0.namedChildCount; j++) {
+      const tc = p0.namedChild(j)
+      if (tc && (tc.type.endsWith("_type") || tc.type.includes("type_identifier"))) {
+        const t = tc.text
+        return t.endsWith("?") ? t.slice(0, -1) : t
+      }
+    }
+    return null
+  }
+  // The owner of an extension block: the nearest enclosing type definition, which
+  // is what the analyzer's `parent` is and therefore what its `contains` source is.
+  const ownerOfExtensionBlock = (blk: any): string => {
+    let anc: any = blk.parent
+    while (anc) {
+      if (anc.type === "class_definition" || anc.type === "object_definition" ||
+          anc.type === "trait_definition" || anc.type === "enum_definition") {
+        return stripNameQuoting(String(anc.childForFieldName?.("name")?.text ?? "").trim())
+      }
+      anc = anc.parent
+    }
+    return ""
+  }
+  // owner -> name -> receivers. A name with 2+ distinct receivers is ambiguous.
+  const extNamesByOwner = new Map<string, Map<string, Set<string>>>()
+  {
+    const scan = (n: any): void => {
+      if (n.type === "extension_definition") {
+        const owner = ownerOfExtensionBlock(n)
+        if (owner) {
+          let byName = extNamesByOwner.get(owner)
+          if (!byName) { byName = new Map(); extNamesByOwner.set(owner, byName) }
+          for (let i = 0; i < n.namedChildCount; i++) {
+            const c = n.namedChild(i)
+            if (!c || !EXT_DECL_TYPES.has(c.type)) continue
+            const nm = stripNameQuoting(String(c.childForFieldName?.("name")?.text ?? "").trim())
+            if (!nm) continue
+            const rcv = extReceiverOf(c)
+            if (!rcv) continue
+            let set = byName.get(nm)
+            if (!set) { set = new Set(); byName.set(nm, set) }
+            set.add(rcv)
+          }
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) scan(c)
+      }
+    }
+    scan(root)
+  }
+  // The receiver leaf, matching the analyzer's `receiverLeaf`: drop a type-argument
+  // suffix, then keep the last dot-separated segment. No regex.
+  const receiverLeaf = (t: string): string => {
+    let s = t
+    const cut = s.indexOf("[")
+    if (cut > 0) s = s.slice(0, cut)
+    const dot = s.lastIndexOf(".")
+    if (dot >= 0) s = s.slice(dot + 1)
+    return s.trim()
+  }
+  // The published member name for a function node, honouring SDJ-9.
+  const memberNameFor = (n: any, name: string, owner: string): string => {
+    if (!owner) return name
+    const byName = extNamesByOwner.get(owner)
+    if (!byName) return name
+    const recvs = byName.get(name)
+    if (!recvs || recvs.size < 2) return name
+    const rcv = extReceiverOf(n)
+    if (!rcv) return name
+    const leaf = receiverLeaf(rcv)
+    return leaf.length > 0 ? `${name}@${leaf}` : name
+  }
+
   const walk = (n: any, owner: string, inFnScope: boolean): void => {
     let nextOwner = owner
     let nextInFn = inFnScope
@@ -3693,7 +3800,8 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
     } else if (FN_DECLS.has(n.type)) {
       const nm = declName(n)
       if (nm) {
-        if (owner) push(owner, nm)
+        // SDJ-9: a colliding extension method is published as `name@Receiver`.
+        if (owner) push(owner, memberNameFor(n, nm, owner))
         nextOwner = nm
       }
       nextInFn = true
@@ -19892,7 +20000,21 @@ async function main() {
     fs.mkdirSync(path.dirname(LANE_JOURNAL), { recursive: true })
     fs.writeFileSync(LANE_JOURNAL, JSON.stringify({ stateKey, corpusPins: repoPins, lanes: rows }, null, 2))
   }
-  const laneJournal: Record<string, any> = loadJournal()
+  // `--force-fresh` MEANS what its name says. `M14_SWEEP_STATE` looks like the knob
+  // for this and is not: `resolveSweepState` returns it only for a batch CHILD, so a
+  // top-level run that sets it and expects a fresh measurement gets the computed key
+  // and the previous journal anyway. That cost two nearly-published numbers in one
+  // session — a run reporting `RESUMED from journal` with the previous run's rows —
+  // and the only reason either was caught was reading the run's own output for
+  // `files=` instead of `RESUMED`. A knob that silently does nothing is worse than no
+  // knob, because it is believed.
+  //
+  // Resume is still the default: a crashed 20-minute sweep should not throw away 19
+  // minutes of work. This opts OUT deliberately, and the flag is hashed into the
+  // state key, so a forced run and a resumed run never share a journal file.
+  const FORCE_FRESH = process.argv.includes("--force-fresh")
+  const laneJournal: Record<string, any> = FORCE_FRESH ? {} : loadJournal()
+  if (FORCE_FRESH) console.log("  [journal] --force-fresh: ignoring any existing lane journal for this run")
   const jKeyOf = (l: { lang: string; repo: string; isSecond: boolean }) => (l.isSecond ? `${l.repo}:${l.lang}` : l.lang)
   if (willBatch) {
     const missing = lanes.filter(l => !laneJournal[jKeyOf(l)]).length
