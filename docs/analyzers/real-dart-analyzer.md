@@ -118,6 +118,32 @@ Declared budgets: fixtures < 2 s (met: 1.14 s); 400-file corpus < 600 s
 (met: 281.9 s — flutter framework files are large; 20 files > 100 KB and one
 1.8 MB generated `icons.dart` in the sample).
 
+**Now also measured on the PRIMARY corpus, which the declared figure never covered.**
+`ProxiCall/lib`, 1,294 files, fresh parser per file so the method matches the
+declared one:
+
+| corpus | files | symbols | relationships | wall | budget |
+| --- | --- | --- | --- | --- | --- |
+| declared `corpus_subset` (Flutter framework) | 399 | 23,952 | 88,098 | 281.9 s | < 600 s |
+| **live `ProxiCall/lib`** | **1,294** | **265,148** | **675,964** | **202.5 s** | **< 600 s, met at 3.24x the file count** |
+
+Extrapolated to the declared 400-file scale the live corpus would be **62.4 s**, so
+the budget is met with a wide margin rather than narrowly. Peak RSS 1,174.6 MB on
+1,294 files, against 619.5 MB on 399 — *lower* per file.
+
+**The throughput figures are NOT like-for-like and should not be compared as a
+speed-up.** The live run reports 1,310 symbols/s against the declared 85. The
+declared `corpus_subset` is a Flutter-framework ERROR SCAN — it walks every node
+looking for parse failures and reports "0 error files" — over framework files that
+are far larger than ProxiCall's, while the live run only analyses. Reading 15x out
+of that difference would be reading two different jobs.
+
+No pathological hotspot either: the 20 slowest files hold **26.5%** of wall time, and
+they are the generated `l10n/generated/app_localizations_*.dart` set — ~30 files of
+400–965 KB, each declaring ~5,353 real getters. A tail that flat is a corpus-shape
+fact, not a per-file pathology, and it is the same set that supplies 48% of all
+`property` symbols.
+
 Hot-path audit: single iterative AST traversal (explicit stack, no recursion
 depth risk); scope carried per-frame as immutable snapshots (no shared
 mutable stack — children are processed later from the DFS stack, so scope
