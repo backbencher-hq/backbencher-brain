@@ -262,7 +262,23 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       "export_attribute",
       "export_type_attribute",
     ])
-    if (!this.prePassForms(rootNode).some((f) => DECLARATION_FORMS.has(f.type))) {
+    //
+    // AND there is EVIDENCE of damage. The first version fired on the absence of
+    // declarations alone, which is not the same thing, and the unknown-symbols probe
+    // caught it by reporting such files as SUSPECT: `ms_transform.hrl` and `qlc.hrl`
+    // each hold a single `-compile({parse_transform, …})`, `enable.hrl` holds a
+    // single `-feature(…)`, and two test headers hold nothing at all. None of those
+    // is damaged — they are simply files with nothing to declare, and calling them
+    // grammar-damaged would put a false claim in the evidence artifact. The
+    // discriminator is the ERROR/MISSING nodes: damage is a parse that went wrong,
+    // not a file that had nothing to say.
+    // `rootNode.hasError`, not `ctx.errors.length`: this runs immediately after the
+    // pre-pass and BEFORE the main walk, so the error list is still empty here and a
+    // rule keyed on it silently stops firing — which is exactly what happened the
+    // first time, and it showed up as wxListCtrl.erl quietly producing 20
+    // relationships again.
+    const hasErrorNodes = rootNode.hasError === true
+    if (hasErrorNodes && !this.prePassForms(rootNode).some((f) => DECLARATION_FORMS.has(f.type))) {
       ctx.grammarDamaged = true
     }
 
