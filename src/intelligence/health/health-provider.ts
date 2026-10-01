@@ -101,10 +101,28 @@ export interface UnifiedHealthReport {
     embeddedByEntityType: Array<{ entityType: string; count: number }>
     /** M64.R5: symbol kinds with zero embeddings — unattempted, not partial. */
     unembeddedKinds: Array<{ kind: string; count: number }>
+    /**
+     * M64.A2: per-language searchability — the join of the per-language census
+     * and the embedding census, which is the number that answers "will bb_ask
+     * find anything about this language?". A language at 0% is unreachable by
+     * semantic search however healthy the project total looks.
+     */
+    byLanguage: Array<{ language: string; symbols: number; embedded: number; searchablePercent: number }>
   }
   schema: { version: number | null; migration: string | null; tables: number }
   /** M64.H7: `parserStatus` was removed — hardcoded "unknown", printed by nothing. */
   runtime: { runtime: "bun" | "node"; version: string; database: string }
+  /**
+   * M64.A3: what THIS call cost, measured from function entry. The `perf:` line
+   * in the output reports the last INDEX RUN's phases, which is a different
+   * measurement of a different thing and was the only cost on the surface.
+   *
+   * The named phases are measured, not apportioned, and deliberately do NOT sum
+   * to `totalMs`: the database open and the option handling sit between them and
+   * belong to no bucket. `totalMs` is the number to act on; the phases are for
+   * explaining it.
+   */
+  timing: { totalMs: number; aggregatesMs: number; freshnessMs: number; integrityMs: number; refreshMs: number }
   integrity: IndexHealthReport | null
   /** M64.H9: `runs` is a COUNT(*), not the length of a 100-row page. */
   analysisRuns: { runs: number; findings: number; byState: Record<string, number>; runTotalKnown: boolean } | null
@@ -222,6 +240,20 @@ function queueRefresh(
 
 
 export async function getUnifiedHealth(projectId: string, projectPath: string, options: UnifiedHealthOptions = {}): Promise<UnifiedHealthReport> {
+  // M64.A3: what THIS call cost. The report had a `perf:` line, but it reports
+  // the last INDEX RUN's phases — a different measurement of a different thing,
+  // sitting on a line labelled `perf` next to a runtime line. Nothing measured
+  // the call the caller was waiting for, which is the only cost they can act
+  // on (and the one the M52 latency work budgets).
+  //
+  // MEASURED, never estimated, and the phases are the ones that can each be a
+  // large fraction of the total: the freshness scan is O(files checked) disk
+  // work, the aggregates are index scans, and the optional integrity battery
+  // content-hashes the corpus when it is in `complete` mode. `totalMs` is from
+  // function entry, so it includes the aggregates this object reports.
+  const timing = { totalMs: 0, aggregatesMs: 0, freshnessMs: 0, integrityMs: 0, refreshMs: 0 }
+  const startedCall = Date.now()
+  const now = () => Date.now()
   const warnings: HealthWarning[] = []
   const refresh = { requested: options.refresh === true || options.force === true, force: options.force === true, wait: options.wait !== false, completed: false, durationMs: null as number | null, processedFiles: null as number | null, derived: null as string | null }
   let raw = await BrainDatabase.getRawInstance(projectId)
@@ -294,6 +326,9 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
         const stats: any = await refreshPromise
         refresh.completed = true
         refresh.durationMs = Date.now() - started
+        // M64.A3: a refresh dominates any other phase by orders of magnitude, so
+        // it is recorded in its own field rather than left implicit in the total.
+        timing.refreshMs = refresh.durationMs
         refresh.processedFiles = stats.processedFiles ?? stats.totalFiles ?? 0
         // M40.A6: honest derived-data signal from the refresh run itself —
         // never imply derived data is current when the pass did not run.
@@ -335,6 +370,7 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // because every 10th index is also every 5th sampled index. Hash ranking
   // cannot alias — it is independent of the sort order — and it is a pure
   // function of the id set, so identical state still gives an identical answer.
+  const aggregatesStarted = now()
   const allFileRows = raw.prepare("SELECT id, relative_path FROM brain_file WHERE project_id=?").all(projectId) as Array<{ id: string; relative_path: string }>
   const fileRows = freshnessMode === "complete" ? selectSampleFiles(allFileRows, Number.MAX_SAFE_INTEGER) : selectSampleFiles(allFileRows, sampleSize)
   // M64.H4: the old call was `checkResultsFreshness`, which runs one
@@ -345,6 +381,10 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   // unique file, and it also returns the REASON per file, so "stale" can say
   // whether the hash differs or the file is gone.
   const resolved = resolveRowsFreshnessDetailed(raw, projectId, fileRows.map((row) => ({ fileId: row.id })), { freshnessMode })
+  // M64.A3: the freshness scan is O(files checked) disk work — one stat each and
+  // a content read on a fast-path miss — so it is the phase that decides whether
+  // a call is fast, and it is worth naming separately from the index scans.
+  timing.freshnessMs = now() - aggregatesStarted - timing.refreshMs
   const statuses = resolved.statuses
   let fresh = 0, stale = 0, missing = 0
   const staleFiles: string[] = [], missingFiles: string[] = []
@@ -456,8 +496,41 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       effectiveConfig = { baseURL: effFull.baseURL, model: effFull.model, configured: effFull.configured, sources: effFull.sources }
     } catch { effectiveConfig = null }
   }
+  // M64.A2: the actionable coverage question is PER LANGUAGE, and the report
+  // had the two halves separately — per-language file/symbol counts, and a
+  // per-KIND embedding census — and never joined them. So a reader could learn
+  // that the project is 22% covered overall and that `function=4569`, and still
+  // not be able to answer the question they actually have: "will bb_ask find
+  // anything about the Rust in this repo?"
+  //
+  // Per language, the share of that language's symbols that carry a vector.
+  // The EXISTS probes brain_embed_entity_idx, so this is one index lookup per
+  // symbol rather than a scan, and it is the same query shape the semantic
+  // reader itself uses to find candidates — so "searchable here" means
+  // searchable by the thing that will search.
+  const embeddedByLanguage = (() => {
+    try {
+      const rows = raw.prepare(
+        "SELECT f.language AS language, COUNT(DISTINCT s.id) AS embedded " +
+        "FROM brain_symbol s JOIN brain_file f ON f.id = s.file_id AND f.project_id = ? " +
+        "WHERE s.project_id = ? AND EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.project_id = ? AND e.entity_id = s.id) " +
+        "GROUP BY f.language",
+      ).all(projectId, projectId, projectId) as any[]
+      const have = new Map(rows.map((r) => [String(r.language), Number(r.embedded)]))
+      return languageRows.map((l) => ({
+        language: l.language,
+        symbols: l.symbols,
+        embedded: have.get(String(l.language)) ?? 0,
+        searchablePercent: l.symbols > 0 ? Math.round(((have.get(String(l.language)) ?? 0) / l.symbols) * 1000) / 10 : 0,
+      }))
+    } catch {
+      return []
+    }
+  })()
+
   let integrity: IndexHealthReport | null = null
   if (options.integrity === true) {
+    const integrityStarted = now()
     // M64.N1: `integrity: true` is the opt-in DEEP check, so it runs the two
     // disk-touching checks over EVERY indexed file instead of a sample. This is
     // what makes the two staleness numbers in one report agree: with both
@@ -465,9 +538,40 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
     // population by the same method and cannot report different counts. The
     // indexer's own call keeps the default sampled mode, so its per-index cost
     // is unchanged.
-    try { integrity = await runIndexHealthCheck(projectId as any, { diskScan: "complete" }) }
+    // M64.A4: pass the freshness scan's own per-file verdicts in. Round 1 made
+    // the battery run `complete`, and `freshness: "complete"` already content-
+    // hashes every file — so the two did the SAME work twice in one call, and
+    // the gate caught it as `integrity=79ms vs freshness=106ms` with integrity
+    // supposedly the dominant phase. On a 264k-file corpus that is two full
+    // corpus hashes to produce one number.
+    //
+    // The battery's two disk checks (Hash Drift, Files Missing) are then pure
+    // arithmetic over the reasons this function already computed. Only when the
+    // freshness scan did NOT cover every file does the battery do its own I/O,
+    // so the indexer's hot path — which calls the battery with no pre-resolved
+    // map and a sampled mode — is completely unaffected.
+    const coversEveryFile = fileRows.length >= files
+    try {
+      integrity = await runIndexHealthCheck(projectId as any, {
+        diskScan: "complete",
+        preResolved: coversEveryFile ? { total: files, reasons: reasonCounts } : null,
+      })
+    }
     catch (error) { warnings.push({ code: "INTEGRITY_FAILED", message: error instanceof Error ? error.message : String(error), severity: "error" }) }
+    timing.integrityMs = now() - integrityStarted
   }
+  // M64.A3: the integrity battery in `complete` mode content-hashes every
+  // indexed file, so it is the one optional flag that can turn a millisecond
+  // call into a seconds call. Reporting it is the difference between a caller
+  // knowing why and guessing why. Measured around the call itself, NOT by
+  // subtraction — the first version derived it as "everything after the
+  // freshness phase", which silently absorbed every post-freshness aggregate
+  // and reported integrityMs=4 on a call that never ran the battery.
+  //
+  // M64.A4: with the battery reusing the freshness verdicts it no longer does
+  // its own corpus hash, so this is now 13 SQL aggregates rather than a second
+  // pass over the disk.
+  timing.aggregatesMs = now() - aggregatesStarted - timing.refreshMs - timing.freshnessMs - timing.integrityMs
   let analysisRuns: UnifiedHealthReport["analysisRuns"] = null
   if (options.includeAnalysisRuns === true) {
     // M64.H9: this asked getAnalysisHistory for 100 rows and then reported
@@ -575,6 +679,9 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
   const performanceStats = typeof perfRaw === "string" && perfRaw ? (() => { try { const p = JSON.parse(perfRaw); return Array.isArray(p?.runs) ? p : null } catch { return null } })() : null
   const perfRuns = performanceStats?.runs ?? []
   const latestPerfRun = perfRuns.length > 0 ? perfRuns[perfRuns.length - 1] : null
+  // M64.A3: closed last, immediately before the object is built, so `totalMs`
+  // covers everything the report describes.
+  timing.totalMs = now() - startedCall
 
   return {
     projectId, projectPath, timestamp: Date.now(),
@@ -631,12 +738,17 @@ export async function getUnifiedHealth(projectId: string, projectPath: string, o
       // that is a fact the reader could not see.
       embeddedByEntityType: entityTypeRows.map((row) => ({ entityType: String(row.entity_type), count: Number(row.c) })),
       unembeddedKinds: kindsWithNoEmbeddings(raw, projectId),
+      // M64.A2: the join. `searchablePercent` is the share of that language's
+      // symbols a semantic query can reach at all; a language at 0% is invisible
+      // to bb_ask no matter how healthy the project looks overall.
+      byLanguage: embeddedByLanguage,
     },
     schema: { version: schema?.version ?? null, migration: schema?.migration_name ?? null, tables: tableCount },
     // M64.H7: `parserStatus` was typed `"available" | "unknown"`, hardcoded to
     // "unknown", and read by no code path in any mode. A field that cannot
     // vary and is never printed is not a measurement; it is a claim in a type.
     runtime: { runtime: typeof Bun !== "undefined" ? "bun" : "node", version: process.version, database: (raw as any).driver ?? "sqlite" },
+    timing,
     integrity, analysisRuns, refresh,
     effectiveConfig,
     languages: languageRows,
@@ -659,6 +771,44 @@ function renderFileList(label: string, files: string[], cap = 20): string {
   if (files.length === 0) return `${label}: none`
   if (files.length <= cap) return `${label}: ${files.join(", ")}`
   return `${label}: ${files.length} total, first ${cap}: ${files.slice(0, cap).join(", ")} — raise \`limit\`/use freshness="complete" and read freshness.staleFiles in the JSON for the rest`
+}
+
+/**
+ * M64.A3: this call's cost, with the phases that were non-zero.
+ *
+ * Zero-valued phases are omitted rather than printed as `integrity=0ms`, so a
+ * warm default call reads as one short line and a slow one shows where the time
+ * went. The phases are measurements, not a decomposition of the total: the
+ * database open and option handling sit between them, so the parts can sum to
+ * less than the whole and the `total=` prefix keeps that from reading as an
+ * error.
+ */
+function renderTiming(t: UnifiedHealthReport["timing"]): string {
+  const parts: string[] = []
+  if (t.refreshMs) parts.push(`refresh=${t.refreshMs}ms`)
+  if (t.integrityMs) parts.push(`integrity=${t.integrityMs}ms`)
+  if (t.freshnessMs) parts.push(`freshness=${t.freshnessMs}ms`)
+  if (t.aggregatesMs) parts.push(`aggregates=${t.aggregatesMs}ms`)
+  return `total=${t.totalMs}ms${parts.length ? ` (${parts.join(" ")})` : ""}`
+}
+
+/**
+ * M64.A1: the first sentence of a check's own text.
+ *
+ * Integrity descriptions and remediations are written as prose for a human
+ * reading a terminal, and several run to three sentences — the orphan-owner
+ * remediation in particular explains at length why the obvious repair does not
+ * work. Inlining them whole would put a paragraph on every failing check. The
+ * first sentence carries the instruction ("Re-index the affected files"); the
+ * rest is context, and it is still there in `integrity.checks[]`.
+ *
+ * Splits on a full stop followed by whitespace or end, so a decimal point or a
+ * path like `bb index <dir>.` is not mistaken for a sentence end.
+ */
+function firstSentence(text: string): string {
+  const m = /^(.*?[.!?])(?:\s|$)/.exec(text.trim())
+  const out = (m ? m[1] : text.trim()).replace(/\s+/g, " ")
+  return out.length > 400 ? `${out.slice(0, 397)}…` : out
 }
 
 /**
@@ -726,7 +876,13 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
     // M64.P1: a recorded shortfall prints as INCOMPLETE, so a half-built index
     // cannot be skimmed as a normal one.
     `index: version=${report.indexStatus.indexingVersion ?? "unrecorded"} indexedFiles=${report.indexStatus.indexedFiles ?? "unrecorded"}/${report.indexStatus.totalFilesDiscovered ?? "unrecorded"}${report.indexStatus.isIncomplete ? ` — INCOMPLETE, ${report.indexStatus.indexShortfall} file(s) found by the walk were never written` : ""} status=${report.indexStatus.status ?? "unrecorded"} errors=${report.indexStatus.recordPresent ? report.indexStatus.errors.length : "unrecorded"}${report.indexStatus.recordPresent ? "" : " (no brain_index_status row for this project)"}`,
-    `perf: schemaVersion=${report.performanceStats.schemaVersion ?? "none"} runs=${report.performanceStats.runs.length} latestWallMs=${report.performanceStats.latestRun?.phases?.totalWallMs ?? "n/a"}`,
+    // The last INDEX RUN, labelled as such: this is not the cost of the call you
+    // just made, and the two were previously on adjacent lines under a bare
+    // `perf:` with nothing to say which was which.
+    `index run: schemaVersion=${report.performanceStats.schemaVersion ?? "none"} runs=${report.performanceStats.runs.length} latestWallMs=${report.performanceStats.latestRun?.phases?.totalWallMs ?? "n/a"} (the last INDEX RUN, not this call)`,
+    // M64.A3: this call, measured. `total` is the number to act on; the phases
+    // explain it, and are named only when non-zero so a warm call stays short.
+    `this call: ${renderTiming(report.timing)}`,
     `runtime: ${report.runtime.runtime} ${report.runtime.version} / ${report.runtime.database}`,
   ]
   if (report.refresh.requested) {
@@ -738,7 +894,30 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   // rather than the length of a 100-row page. The suffix is kept for readers
   // that want to know which method produced it.
   if (report.analysisRuns) lines.push(`analysis: ${report.analysisRuns.runs} runs / ${report.analysisRuns.findings} findings (both are full-table counts, not page lengths)`)
-  if (report.integrity) lines.push(`integrity: ${report.integrity.overallHealth}% (${report.integrity.summary.warn} warnings, ${report.integrity.summary.error} errors, ${report.integrity.checks.length} checks)`)
+  if (report.integrity) {
+    const s = report.integrity.summary
+    lines.push(`integrity: ${report.integrity.overallHealth}% (${s.error} errors, ${s.warn} warnings, ${s.scored} scored + ${s.informational} informational checks)`)
+    // M64.A1: the one-liner used to be "integrity: 92% (0 warnings, 1 errors)",
+    // which is not actionable — an agent reading the TEXT form cannot tell
+    // WHICH check failed, and the names were only in the JSON. The answer to
+    // that was "run bb_health(integrity=true) for details", a loop that costs a
+    // second 13-check battery to learn one fact.
+    //
+    // The check's own remediation string is carried too, because a name says
+    // what is wrong and a remediation says what to do about it — and half of
+    // them are not guessable from the name ("Orphan Owner References" does not
+    // suggest that a --force rebuild is documented NOT to fix it).
+    //
+    // Bounded, and bounded in the direction that matters: the healthy case adds
+    // nothing at all, and a pathological project caps at 3 named checks with a
+    // count of the rest.
+    const failing = report.integrity.checks.filter((c) => c.status !== "ok")
+    for (const c of failing.slice(0, 3)) {
+      const fix = c.remediation ? ` -> ${firstSentence(c.remediation)}` : ""
+      lines.push(`  ${c.status.toUpperCase().padEnd(5)} ${c.name}: ${firstSentence(c.description)}${fix}`)
+    }
+    if (failing.length > 3) lines.push(`  … and ${failing.length - 3} more non-ok check(s); read integrity.checks[] in the JSON for the full set`)
+  }
   // M40.A8: effective embedding config with per-field source (verbose only).
   if (report.verbose && report.effectiveConfig) {
     const ec = report.effectiveConfig
@@ -749,6 +928,15 @@ export function formatUnifiedHealth(report: UnifiedHealthReport): string {
   // advertised verbose contract. Omitted entirely unless verbose=true.
   if (report.verbose) {
     if (report.languages.length) lines.push(`languages: ${report.languages.map((l) => `${l.language}:${l.files}f/${l.symbols}s`).join(" ")}`)
+    // M64.A2: the join of the two censuses, and the number a caller actually
+    // needs before choosing what to ask a semantic question about. A language
+    // at 0% is unreachable by bb_ask however healthy the project total reads.
+    const byLang = report.embeddings.byLanguage.filter((l) => l.symbols > 0)
+    if (byLang.length) {
+      lines.push(`searchable by language: ${byLang.map((l) => `${l.language}:${l.embedded}/${l.symbols}(${l.searchablePercent}%)`).join(" ")}`)
+      const dead = byLang.filter((l) => l.embedded === 0).map((l) => l.language)
+      if (dead.length) lines.push(`unsearchable languages: ${dead.join(", ")} — no symbol in these has a vector, so bb_ask cannot return them`)
+    }
     // M64.R5: which kinds were embedded and which were never attempted.
     if (report.embeddings.embeddedByEntityType.length) {
       lines.push(`embedded kinds: ${report.embeddings.embeddedByEntityType.map((k) => `${k.entityType}=${k.count}`).join(" ")}`)
