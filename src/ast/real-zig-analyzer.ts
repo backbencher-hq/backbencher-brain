@@ -754,7 +754,13 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           // navigable one — the member's own declaration line. Omitted, never
           // written as 0, when the symbol carries no range (#820).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: {},
+          // Z44, restored: the reason code, so every class in this analyzer answers
+          // "why does this edge exist?" the same way. `contains` is built from the
+          // SYMBOL TABLE at the end of the walk rather than at the member's site,
+          // which is why it carried an EMPTY metadata object -- and it is the
+          // LARGEST class in the corpus (176 rows in a 200-file draw), so the one
+          // that said nothing was the one with the most to say.
+          metadata: { relationshipType: "zig_ownership" },
         })
       }
     }
@@ -1252,7 +1258,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Instantiates,
         confidence: 1.0,
         line_number: line,
-        metadata: { zigSpecific: true, isExternalTarget: false, ...md },
+        metadata: { relationshipType: "zig_instantiation", zigSpecific: true, isExternalTarget: false, ...md },
       })
     }
     const sites = (n: Node): void => {
@@ -1314,7 +1320,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         ...(line > 0 ? { line_number: line } : {}),
-        metadata: { zigExport: true, exportKind: String(e.kind ?? "") },
+        metadata: { relationshipType: "zig_export", zigExport: true, exportKind: String(e.kind ?? "") },
       })
     }
   }
