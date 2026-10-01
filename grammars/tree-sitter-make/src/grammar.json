@@ -475,11 +475,20 @@
           ]
         },
         {
-          "type": "IMMEDIATE_TOKEN",
-          "content": {
-            "type": "PATTERN",
-            "value": "[\\r\\n]+"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "PATTERN",
+                "value": "[\\r\\n]+"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_recipe_eol"
+            }
+          ]
         }
       ]
     },
@@ -4382,6 +4391,10 @@
     {
       "type": "SYMBOL",
       "name": "_recipeprefix_value"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_recipe_eol"
     }
   ],
   "inline": [
