@@ -702,6 +702,55 @@ of regex syntax are in comments recording earlier replacements.
 M12 truth drift 92 facts, 85 still-produced, 7 produced-under-another-type,
 **0 not-produced**.
 
+### #982: the oracle has no concept of inactive code, and that is the MISSING floor
+
+Restoring #978 (4th time, `8630a6a8`) made the C lane's MISSING count move: 0 at one
+rotation, 4 at the next, 1 at the one after. UNEXPLAINED stayed 0 throughout. A
+MISSING count that wanders is not a property of the analyzer, so the wandering was
+traced rather than averaged.
+
+Rot 20's four rows were `uses (expr) -> s1`, `-> s2`, `-> n` in
+`zig/lib/libc/mingw/misc/wmemcmp.c` and `uses (expr) -> TlsDtorNode` in
+`zig/lib/libc/mingw/crt/tlssup.c`. Three of them are INACTIVE:
+
+    #if 0                       <- line 21
+    int
+    wmemcmp(s1, s2, n)          <- lines 23-27, a K&R definition
+    ...
+    #endif                      <- line 40
+
+`grep -cE` over `#if/#ifdef/#else/#endif` shows the entire function sits between
+lines 21 and 40. The analyzer publishes ZERO uses for that whole 56-line file, which
+is correct: the code cannot compile. The oracle emits truth for it anyway.
+
+That is structural, not a rotation accident. `grep -nE "if0|inactive|IF0"` over the
+22,715-line oracle returns NOTHING: the oracle has no notion of inactive
+preprocessor regions anywhere, so it walks `#if 0` branches exactly like live code.
+
+**Blast radius, measured.** Of 400 sampled `.c` files in
+`zig/lib/libc/mingw`, 12 contain an `#if 0` region — 3.0%. A 60-file rotation
+therefore samples ~1.8 of them, which is the entire observed MISSING swing. So the
+C differential has a structural MISSING FLOOR of roughly two files per rotation that
+has nothing to do with the analyzer, and any rotation where it reads 0 is luck
+rather than a clean bill.
+
+`TlsDtorNode` is the one live row, and it is a different question. It is a
+`typedef struct` used as a variable's type at line 65, and the analyzer publishes no
+type-position `uses` ANYWHERE — measured across five shapes:
+
+    struct S{}; S *v;                        no uses
+    typedef struct T { int a; } T; T *v;     no uses
+    typedef struct T { int a; } T; T d;      no uses
+    typedef int MyInt; MyInt x;              no uses
+    typedef struct T { struct T *next; } T;
+      void f(T *p){ p->next; }               1 use, and not the type
+
+`tlssup.c` carries 19 uses, none of them touching `TlsDtorNode` or `dtor_list`. The
+oracle is arguably right that `T *v` USES `T`; the analyzer is consistently silent on
+type position. Adopting it is a corpus-wide SCOPE decision, not a patch — every
+declaration in every file would gain edges — so it is recorded here, NOT taken here.
+Both items are inherited, neither was introduced by #978.
+
 ### #981: `contains` independent reach reaches curl — and immediately finds two real defects
 
 The clang contains oracle could not read curl or libgit2, so 852/852 was a
