@@ -3650,6 +3650,9 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
   // (`UnsafeUnboundedSuite contains q`), because nothing in that path is a
   // function scope. It is block-local, not API. See SDJ-3.
   let givenCounter = 0
+  // M60/SDJ-8 oracle half: per-file anonymous-class name counter (see the
+  // anonymous branch of the walk below).
+  const anonNameUse = new Map<string, number>()
 
   // M60/SDJ-9 — extension method identity, mirrored from the analyzer.
   //
@@ -3839,8 +3842,31 @@ export function deriveScalaContainsTruth(root: any): { label: string; from: stri
       // maxLineNumber = ...` inside `def messageAndPos`).
     } else if (isAnonymousClassNode(n)) {
       const anon = anonymousName(n)
-      if (owner) push(owner, anon)
-      nextOwner = anon
+      // M60/SDJ-8, oracle half. The analyzer numbers a repeated anonymous-class
+      // name per file: `anonymous_TypeTraverser`, then `anonymous_TypeTraverser#2`,
+      // `#3`, ... because the bare name is unique only within its SUPERTYPE —
+      // measured 3,330 anonymous symbols over 1,503 files with 402 files
+      // collapsing two or more of their own classes into one node. This side
+      // still emitted the BARE name only, so it published one `anonymous_Cont`
+      // where the analyzer published `anonymous_Cont`, `anonymous_Cont#2` ..
+      // `#8`. Coverage is matched on (label, target), so every disambiguated
+      // anonymous class past the first was reported as UNEXPLAINED
+      // FABRICATION — 11 rows in ContSuite.scala and IOSuite.scala on a 60-file
+      // cats-effect draw, and hundreds corpus-wide. The analyzer was fixed and
+      // this side was not, which is precisely the coupling the SDJ note warns
+      // about: both ends of a naming rule move together.
+      //
+      // The counter is keyed the same way and advanced in WALK order, so the two
+      // sides agree only if their traversals agree. That is not assumed: the draw
+      // above re-measures it (MISSING must stay 0 while unexplained falls to 0),
+      // and a disagreement in traversal order would show up as a MISSING.
+      if (anon) {
+        const seenAnon = anonNameUse.get(anon) ?? 0
+        anonNameUse.set(anon, seenAnon + 1)
+        const numbered = seenAnon === 0 ? anon : `${anon}#${seenAnon + 1}`
+        if (owner) push(owner, numbered)
+        nextOwner = numbered
+      }
       nextInFn = false
     } else if (VAL_DECLS.has(n.type)) {
       // The one skip rule. A val is not an owner, so `nextOwner` is unchanged.
