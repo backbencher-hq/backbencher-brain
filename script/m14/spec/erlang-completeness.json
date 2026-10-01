@@ -2,7 +2,7 @@
   "language": "erlang",
   "grammar": "tree-sitter-erlang.wasm",
   "handled_verified": {
-    "_description": "ER3 (2026-09-28). DERIVED FROM THE GRAMMAR'S OWN NODE-TYPE TABLE, not written by hand: the wasm declares 137 node-type entries, 132 of them distinct named types (binary_op_expr appears 4x, macro_call_expr 2x, unary_op_expr 2x — the grammar registers one entry per production that shares the name). Every distinct named type is in this file exactly once: 104 here, 28 in internal_silent, 0 gaps. Two corpora were walked to decide WHICH bucket each belongs in and to measure every claim: script/m14/tmp/erlang-grammar-census.ts over 4,326 files (otp 3,874 / rebar3 264 / cowboy 188) found 213 types observed at runtime, 122 of them named — the 10 the corpus never produces (shebang, error_sentinel, the three ssr_* forms, pp_elif, deprecated_module and the three remaining replacement_* shapes) are classified from the table and from the grammar's own documentation of them, and that difference is the reason the table is the source of truth: a census can only see what a corpus happens to exercise. VERIFICATION PER ROW: 16 fixtures in validation/m14/fixtures/erlang/ (16/16 pass), 42 mutants all caught (script/m14/mutate-analyzer.ts with BB_MUTANT_ONLY=erlang/), the M14 hygiene gate, and the corpus dual lens (script/m14/tmp/erlang-census.ts against the independent oracle in erlang-oracle.ts): 150 files, 38,560 relationships, 0 unexplained, 0 missing, 0 line-contract mismatches, 0 symbol mismatches. Note `ERROR` is deliberately NOT listed: it is a parse STATE, not a node type, so the table does not contain it — the analyzer still reports every ERROR and MISSING node on the ParseResult's `errors` channel (elixir parity).",
+    "_description": "ER3 (2026-09-28). DERIVED FROM THE GRAMMAR'S OWN NODE-TYPE TABLE, not written by hand: the wasm declares 137 node-type entries, 132 of them distinct named types (binary_op_expr appears 4x, macro_call_expr 2x, unary_op_expr 2x \u2014 the grammar registers one entry per production that shares the name). Every distinct named type is in this file exactly once: 104 here, 28 in internal_silent, 0 gaps. Two corpora were walked to decide WHICH bucket each belongs in and to measure every claim: script/m14/tmp/erlang-grammar-census.ts over 4,326 files (otp 3,874 / rebar3 264 / cowboy 188) found 213 types observed at runtime, 122 of them named \u2014 the 10 the corpus never produces (shebang, error_sentinel, the three ssr_* forms, pp_elif, deprecated_module and the three remaining replacement_* shapes) are classified from the table and from the grammar's own documentation of them, and that difference is the reason the table is the source of truth: a census can only see what a corpus happens to exercise. VERIFICATION PER ROW: 25 fixtures in validation/m14/fixtures/erlang/ (25/25 pass), 54 mutants all caught (script/m14/mutate-analyzer.ts with BB_MUTANT_ONLY=erlang/), the M14 hygiene gate, and the corpus dual lens (script/m14/tmp/erlang-census.ts against the independent oracle in script/m14/erlang-truth-oracle.ts): 4,617 .erl/.hrl files across otp/rebar3/cowboy, 209,247 symbols, 1,098,788 relationships, 0 unexplained, 0 missing, 0 line-contract mismatches, 0 symbol mismatches (validation/m14/results/erlang-dual-lens-full-corpus.json). Note `ERROR` is deliberately NOT listed: it is a parse STATE, not a node type, so the table does not contain it \u2014 the analyzer still reports every ERROR and MISSING node on the ParseResult's `errors` channel (elixir parity).",
     "types": [
       "module_attribute",
       "module",
@@ -111,7 +111,7 @@
     ]
   },
   "internal_silent": {
-    "_description": "Three groups, each a decision rather than an omission. (1) LITERALS AND COMMENTS — atom, var, integer, float, string, char, comment — plus the two literal-only leaves: `dotdotdot` is the `...` that opens a tail and `concatables` is the adjacent-string run the grammar builds. An atom is only ever a type reference inside a type context (where processTypeReferences reads it deliberately) or a callee/module/record name at a site with its own branch, so it emits nothing on its own. (2) DIRECTIVES THAT DECLARE NOTHING — -compile, -file, -feature, -deprecated (and its fas/desc/multi_string parts), -undef: each is a knob on the compiler or a file-level note, and attrs-er3 FORBIDS the fabrication `-compile({inline,[helper/1]}) -> references -> inline`. The deprecation shape is worth naming because it looks like a function list and is not: OTP 28's `-deprecated([{now, 0, \"…\"}])` holds a KIND, a VERSION and prose, never an `f/a` pair. (3) SHAPES WITH NO CORPUS SITE — the binary-SSR forms (ssr_definition / ssr_replacement / ssr_when, a binary-only OTP construct), the remaining replacement_* macro-body guards, a shebang line and the grammar's own error_sentinel. The anonymous-token class (152 entries: `,` `)` `end` `->` `of` `when` `|`, every operator, every keyword) is not listed because the gate classifies NAMED types — and the analyzer's dispatch is `isNamed`-guarded, so a keyword token can never be mistaken for the construct it spells. That guard is a real fix: the pre-ER3 analyzer compared `type === \"define\"`, which also matched the anonymous `define` token inside every pp_define.",
+    "_description": "Three groups, each a decision rather than an omission. (1) LITERALS AND COMMENTS \u2014 atom, var, integer, float, string, char, comment \u2014 plus the two literal-only leaves: `dotdotdot` is the `...` that opens a tail and `concatables` is the adjacent-string run the grammar builds. An atom is only ever a type reference inside a type context (where processTypeReferences reads it deliberately) or a callee/module/record name at a site with its own branch, so it emits nothing on its own. (2) DIRECTIVES THAT DECLARE NOTHING \u2014 -compile, -file, -feature, -deprecated (and its fas/desc/multi_string parts), -undef: each is a knob on the compiler or a file-level note, and attrs-er3 FORBIDS the fabrication `-compile({inline,[helper/1]}) -> references -> inline`. The deprecation shape is worth naming because it looks like a function list and is not: OTP 28's `-deprecated([{now, 0, \"\u2026\"}])` holds a KIND, a VERSION and prose, never an `f/a` pair. (3) SHAPES WITH NO CORPUS SITE \u2014 the binary-SSR forms (ssr_definition / ssr_replacement / ssr_when, a binary-only OTP construct), the remaining replacement_* macro-body guards, a shebang line and the grammar's own error_sentinel. The anonymous-token class (152 entries: `,` `)` `end` `->` `of` `when` `|`, every operator, every keyword) is not listed because the gate classifies NAMED types \u2014 and the analyzer's dispatch is `isNamed`-guarded, so a keyword token can never be mistaken for the construct it spells. That guard is a real fix: the pre-ER3 analyzer compared `type === \"define\"`, which also matched the anonymous `define` token inside every pp_define.",
     "types": [
       "atom",
       "var",
@@ -144,7 +144,7 @@
     ]
   },
   "gap": {
-    "_description": "ER-G1..ER-G5 are CLOSED (macro uses, fun references, -callback Methods, record member reads/updates, -opaque symbols) and ER3 opened no new gap. The corpus dual lens found and closed nine more classes that were never on the list — pattern-position guards, generator bindings, spec/callback type graphs, qualified type names, ?MODULE() clause heads, per-clause fun_decl merging, the ERROR-hoisted declaration set, callback-vs-definition kind order, and the imports' external classification — each registered below as a decision with the measurement that found it. What remains is NOT an analyzer gap but a store-layer question, filed in reviews/erlang/m49-er3-grammar-truth.md: `ExportInfo` and the analyzer's `patterns[]` have no store column and no reader, so both are emitted and fixture-pinned but dead at the store (family-wide, #811, shared with haskell).",
+    "_description": "ER-G1..ER-G5 are CLOSED (macro uses, fun references, -callback Methods, record member reads/updates, -opaque symbols) and ER3 opened no new gap. The corpus dual lens found and closed nine more classes that were never on the list \u2014 pattern-position guards, generator bindings, spec/callback type graphs, qualified type names, ?MODULE() clause heads, per-clause fun_decl merging, the ERROR-hoisted declaration set, callback-vs-definition kind order, and the imports' external classification \u2014 each registered below as a decision with the measurement that found it. What remains is NOT an analyzer gap but a store-layer question, filed in reviews/erlang/m49-er3-grammar-truth.md: `ExportInfo` and the analyzer's `patterns[]` have no store column and no reader, so both are emitted and fixture-pinned but dead at the store (family-wide, #811, shared with haskell).",
     "gaps": []
   },
   "design_decision": {
@@ -155,7 +155,7 @@
         "node_type": "remote,remote_module",
         "status": "RULED",
         "question": "Remote-call target convention: stored `module:function` vs a bare leaf.",
-        "resolution": "RULED: the target KEEPS `module:function`. The separator is semantic — a bare `reply` would conflate every module's reply. Pinned by mutant erlang/remote-target-unqualified (behaviour-otp) and by the forbid `calls go -> format` in arity-distinct-calls."
+        "resolution": "RULED: the target KEEPS `module:function`. The separator is semantic \u2014 a bare `reply` would conflate every module's reply. Pinned by mutant erlang/remote-target-unqualified (behaviour-otp) and by the forbid `calls go -> format` in arity-distinct-calls."
       },
       {
         "id": "ER-D2",
@@ -169,13 +169,13 @@
         "node_type": "spec",
         "status": "RULED",
         "question": "-spec declarations: standalone symbol or annotation?",
-        "resolution": "RULED (ER3 extended): a -spec declares NO symbol — the fun_decl does that — but ER-D27 makes its signature a source of TYPE references, so `run -> request` is a real edge. Pinned by types-er3 and mutant erlang/spec-type-refs-dropped."
+        "resolution": "RULED (ER3 extended): a -spec declares NO symbol \u2014 the fun_decl does that \u2014 but ER-D27 makes its signature a source of TYPE references, so `run -> request` is a real edge. Pinned by types-er3 and mutant erlang/spec-type-refs-dropped."
       },
       {
         "id": "ER-D4",
         "node_type": "record_update_expr",
         "status": "RULED",
-        "question": "Record updates vs constructions — both are record-shaped.",
+        "question": "Record updates vs constructions \u2014 both are record-shaped.",
         "resolution": "RULED: only a record_expr outside pattern position is a construction (instantiates). An update is member mutation: `uses` to the record and to every assigned field, never instantiates. Pinned by patterns-er3 (which FORBIDS `instantiates body -> r` for the update on line 24) and mutant erlang/record-type-ref-becomes-instantiates."
       },
       {
@@ -183,7 +183,7 @@
         "node_type": "map_expr,map_field,map_expr_update,field_expr",
         "status": "RULED",
         "question": "Map expressions: construction/reads like records, or silent?",
-        "resolution": "RULED: maps carry no type identity in Erlang (#{...} is structural, any key/value) — unlike a record there is no declared name to resolve, so construction, reads and updates emit nothing. The corpus census confirms the choice is cheap: 2,817 map_expr and 593 map_expr_update nodes in 450 files produce no edges and no lost ones (the lens reports 0 missing)."
+        "resolution": "RULED: maps carry no type identity in Erlang (#{...} is structural, any key/value) \u2014 unlike a record there is no declared name to resolve, so construction, reads and updates emit nothing. The corpus census confirms the choice is cheap: 2,817 map_expr and 593 map_expr_update nodes in 450 files produce no edges and no lost ones (the lens reports 0 missing)."
       },
       {
         "id": "ER-D6",
@@ -211,21 +211,21 @@
         "node_type": "record_update_expr",
         "status": "RULED",
         "question": "ER-D14: remote resolution by DFS atom order, and `?MODULE:run(...)` invisible.",
-        "resolution": "RULED: STRUCTURAL extraction (the module is the atom inside remote_module; the function is the atom that is a DIRECT child of remote — a changed grammar then misses loudly), and the one unambiguous predefined macro expands: ?MODULE in module position resolves to this module, while the ?MODULE use itself still emits its macro reference. Pinned by dispatch-er3, refs-er2 and mutant erlang/macro-module-dropped."
+        "resolution": "RULED: STRUCTURAL extraction (the module is the atom inside remote_module; the function is the atom that is a DIRECT child of remote \u2014 a changed grammar then misses loudly), and the one unambiguous predefined macro expands: ?MODULE in module position resolves to this module, while the ?MODULE use itself still emits its macro reference. Pinned by dispatch-er3, refs-er2 and mutant erlang/macro-module-dropped."
       },
       {
         "id": "ER-D10",
         "node_type": "record_field",
         "status": "RULED",
         "question": "ER-D12: record field DEFAULT values were never walked.",
-        "resolution": "RULED: call extraction lives in the MAIN walk with one attribution rule for every evaluation context — the nearest enclosing DECLARATION: function > record > macro > type > module. Pinned by record-ops-er2 (`calls state -> erlang:make_ref` at the -record line)."
+        "resolution": "RULED: call extraction lives in the MAIN walk with one attribution rule for every evaluation context \u2014 the nearest enclosing DECLARATION: function > record > macro > type > module. Pinned by record-ops-er2 (`calls state -> erlang:make_ref` at the -record line)."
       },
       {
         "id": "ER-D11",
         "node_type": "",
         "status": "RULED",
         "question": "Are calls inside a macro BODY edges?",
-        "resolution": "RULED: NO. A macro body is template text; its expansion sites are unknown (the grammar does not expand), so an edge from the template names a line that is not a call site and a per-use edge would have to be fabricated. Macro USES inside a body ARE emitted — a macro-to-macro dependency is static and was measured 123 times per 300 corpus files. Measured suppression: 119 calls + 99 internal_fun per 300 files. Pinned by macros-er3 and mutant erlang/macro-body-calls-restored."
+        "resolution": "RULED: NO. A macro body is template text; its expansion sites are unknown (the grammar does not expand), so an edge from the template names a line that is not a call site and a per-use edge would have to be fabricated. Macro USES inside a body ARE emitted \u2014 a macro-to-macro dependency is static and was measured 123 times per 300 corpus files. Measured suppression: 119 calls + 99 internal_fun per 300 files. Pinned by macros-er3 and mutant erlang/macro-body-calls-restored."
       },
       {
         "id": "ER-D12",
@@ -246,7 +246,7 @@
         "node_type": "",
         "status": "RULED",
         "question": "Do macro-headed function clauses produce a symbol?",
-        "resolution": "RULED: `?MODULE() -> …` DOES, and its expansion is exact — ?MODULE is a predefined macro whose value is this file's module atom, so the function is `<module>/<arity>`. Measured: 79 of 79 such corpus clauses are `?MODULE()`, and before the fix every one produced NO symbol. Any OTHER macro head is REFUSED: `-define(DOUBLE(X), helper(X))` + `?DOUBLE(X) -> X` declares `helper/1`, so naming the macro would fabricate a function. Pinned by edge-cases-er3 and mutant erlang/macro-head-unresolved."
+        "resolution": "RULED: `?MODULE() -> \u2026` DOES, and its expansion is exact \u2014 ?MODULE is a predefined macro whose value is this file's module atom, so the function is `<module>/<arity>`. Measured: 79 of 79 such corpus clauses are `?MODULE()`, and before the fix every one produced NO symbol. Any OTHER macro head is REFUSED: `-define(DOUBLE(X), helper(X))` + `?DOUBLE(X) -> X` declares `helper/1`, so naming the macro would fabricate a function. Pinned by edge-cases-er3 and mutant erlang/macro-head-unresolved."
       },
       {
         "id": "ER-D15",
@@ -260,14 +260,14 @@
         "node_type": "",
         "status": "RULED",
         "question": "Which node types are TYPE syntax rather than runtime code?",
-        "resolution": "RULED: 14 types, from measurement rather than intuition — `call` occurs under type_sig 859, ann_type 3,398, type_alias 145, field_type 89, fun_type_sig 38, opaque 16 and nominal 4 times per 300 corpus files, so a signature is a TYPE graph and never a call graph. `ann_type` is a type context in BOTH positions: in a guard, `X :: integer()` is a type test while `is_integer(X)` beside it is a real call. Pinned by types-er3 (which FORBIDS `calls handle -> …`)."
+        "resolution": "RULED: 14 types, from measurement rather than intuition \u2014 `call` occurs under type_sig 859, ann_type 3,398, type_alias 145, field_type 89, fun_type_sig 38, opaque 16 and nominal 4 times per 300 corpus files, so a signature is a TYPE graph and never a call graph. `ann_type` is a type context in BOTH positions: in a guard, `X :: integer()` is a type test while `is_integer(X)` beside it is a real call. Pinned by types-er3 (which FORBIDS `calls handle -> \u2026`)."
       },
       {
         "id": "ER-D17",
         "node_type": "",
         "status": "RULED",
         "question": "Which nodes are complexity decision points?",
-        "resolution": "RULED: per ARM — cr_clause 10,968 (case + receive + try-of + maybe-else), if_clause 908, catch_clause 585, receive_after 929 — plus andalso/orelse (the only short-circuit operators; `and`/`or`/`band`/`bor` are bitwise and open no path) and one point per comprehension (ER-D18). A `maybe`/`case`/`try` construct adds none of its own, so its arms are counted once. Pinned by record-ops-er2 (guarded = 4) and otp28-er3 (pick = 3) with mutants erlang/maybe-arms-flattened, erlang/comprehension-complexity-dropped, erlang/short-circuit-branch-dropped."
+        "resolution": "RULED: per ARM \u2014 cr_clause 10,968 (case + receive + try-of + maybe-else), if_clause 908, catch_clause 585, receive_after 929 \u2014 plus andalso/orelse (the only short-circuit operators; `and`/`or`/`band`/`bor` are bitwise and open no path) and one point per comprehension (ER-D18). A `maybe`/`case`/`try` construct adds none of its own, so its arms are counted once. Pinned by record-ops-er2 (guarded = 4) and otp28-er3 (pick = 3) with mutants erlang/maybe-arms-flattened, erlang/comprehension-complexity-dropped, erlang/short-circuit-branch-dropped."
       },
       {
         "id": "ER-D18",
@@ -281,14 +281,14 @@
         "node_type": "",
         "status": "RULED",
         "question": "OTP 28 constructs the pre-ER3 model did not know existed.",
-        "resolution": "RULED: `maybe … else … end` (maybe_expr) and its `Pattern ?= Expr` assertion (cond_match_expr) are counted (ER-D17), and `-nominal T() :: …` declares a Type exactly as `-type` does. Measured on real sites in asn1ct.erl and init.erl. Pinned by otp28-er3 and types-er3 (meta.isNominal)."
+        "resolution": "RULED: `maybe \u2026 else \u2026 end` (maybe_expr) and its `Pattern ?= Expr` assertion (cond_match_expr) are counted (ER-D17), and `-nominal T() :: \u2026` declares a Type exactly as `-type` does. Measured on real sites in asn1ct.erl and init.erl. Pinned by otp28-er3 and types-er3 (meta.isNominal)."
       },
       {
         "id": "ER-D20",
         "node_type": "",
         "status": "RULED",
         "question": "Do -import / -include / -include_lib carry an external/internal classification?",
-        "resolution": "RULED (M60/#910's is_external contract): `-import(lists, …)` names an OTP module and `-include_lib(\"kernel/…\")` resolves through the code path — both external; `-include(\"local.hrl\")` is this project's. The pre-ER3 code wrote no classification at all, so the file-dependency engine could not keep system dependencies out of internal resolution. Pinned by attrs-er3 and mutant erlang/import-external-dropped."
+        "resolution": "RULED (M60/#910's is_external contract): `-import(lists, \u2026)` names an OTP module and `-include_lib(\"kernel/\u2026\")` resolves through the code path \u2014 both external; `-include(\"local.hrl\")` is this project's. The pre-ER3 code wrote no classification at all, so the file-dependency engine could not keep system dependencies out of internal resolution. Pinned by attrs-er3 and mutant erlang/import-external-dropped."
       },
       {
         "id": "ER-D21",
@@ -308,7 +308,7 @@
         "id": "ER-D23",
         "node_type": "remote",
         "status": "RULED",
-        "question": "A dynamic remote (`M:f(X)`, `erlang:F(X)`) has no statically nameable callee — emit the leaf?",
+        "question": "A dynamic remote (`M:f(X)`, `erlang:F(X)`) has no statically nameable callee \u2014 emit the leaf?",
         "resolution": "RULED: emit NOTHING. The bare leaf would conflate every module's `f`, and naming the module alone names no function. The count is kept in the review's accounting rather than invented as an edge. Pinned by dispatch-er3 (FORBIDS `calls run -> dyn` and `-> F`) and mutant erlang/dynamic-remote-named."
       },
       {
@@ -322,7 +322,7 @@
         "id": "ER-D25",
         "node_type": "generator",
         "status": "RULED",
-        "question": "MIRROR BLINDNESS: the `<-` of a comprehension generator is not a direct child of the lc_or_zc_expr — the grammar wraps it in a `generator` node.",
+        "question": "MIRROR BLINDNESS: the `<-` of a comprehension generator is not a direct child of the lc_or_zc_expr \u2014 the grammar wraps it in a `generator` node.",
         "resolution": "RULED and FIXED on BOTH sides. The analyzer AND the independent oracle first missed the wrapper and agreed with each other on the wrong answer, which is the one class a mirror cannot see; only the authored fixture patterns-er3 caught it. Recorded because it is the strongest argument in this wave for keeping the fixture lane and the lens as separate instruments."
       },
       {
@@ -330,14 +330,14 @@
         "node_type": "fun_decl",
         "status": "RULED",
         "question": "The pinned grammar gives EVERY clause its own `fun_decl` (18,444 fun_decls for 18,409 clauses; `;` is a child of fun_decl 7,059 times). Is one fun_decl one function?",
-        "resolution": "RULED: NO — one FUNCTION per (name, arity), which is Erlang's own rule. The symbol is created once per identity and every later clause folds into it: the range grows, clauseCount is the FILE-WIDE tally for that identity, and the branch counts sum. Before the fix `handle_req/2` was two rows and clauseCount was permanently 1. Pinned by behaviour-otp, arity-exports and mutant erlang/clause-merge-dropped."
+        "resolution": "RULED: NO \u2014 one FUNCTION per (name, arity), which is Erlang's own rule. The symbol is created once per identity and every later clause folds into it: the range grows, clauseCount is the FILE-WIDE tally for that identity, and the branch counts sum. Before the fix `handle_req/2` was two rows and clauseCount was permanently 1. Pinned by behaviour-otp, arity-exports and mutant erlang/clause-merge-dropped."
       },
       {
         "id": "ER-D27",
         "node_type": "",
         "status": "RULED",
         "question": "Do -callback and -spec signatures contribute type references?",
-        "resolution": "RULED: YES. A behaviour's callback signature is its contract and it names types — `-callback init_per_suite(Config :: ct_config())` makes `init_per_suite -> ct_config` a real edge — and a -spec names the types its function's contract depends on. The corpus lens measured 65 such edges dropped in 60 files before the fix, all of the behaviour interface, which is the most valuable type graph in an OTP codebase. Pinned by types-er3 and mutants erlang/callback-type-refs-dropped + erlang/spec-type-refs-dropped."
+        "resolution": "RULED: YES. A behaviour's callback signature is its contract and it names types \u2014 `-callback init_per_suite(Config :: ct_config())` makes `init_per_suite -> ct_config` a real edge \u2014 and a -spec names the types its function's contract depends on. The corpus lens measured 65 such edges dropped in 60 files before the fix, all of the behaviour interface, which is the most valuable type graph in an OTP codebase. Pinned by types-er3 and mutants erlang/callback-type-refs-dropped + erlang/spec-type-refs-dropped."
       },
       {
         "id": "ER-D28",
@@ -350,15 +350,15 @@
         "id": "ER-D29",
         "node_type": "source_file",
         "status": "RULED",
-        "question": "May the pre-pass read only the top level? Every declaration's only parent is source_file — but is that true when the file does not parse?",
-        "resolution": "RULED: NO, not without a counter-example in hand, and there is one. A malformed `-record #r{…}` (no parentheses) makes the grammar wrap the WHOLE file in one ERROR node and hoist the -module, the record and the -export lists into it (otp/lib/dialyzer/test/indent_SUITE_data/src/rec_remote_unknown.erl, hasError=true). A pre-pass that read only the top level therefore found no module name at all and attributed the whole file to its path — a defect the corpus lens caught AFTER the optimisation, which is why the set of descended containers is written down and measured rather than assumed."
+        "question": "May the pre-pass read only the top level? Every declaration's only parent is source_file \u2014 but is that true when the file does not parse?",
+        "resolution": "RULED: NO, not without a counter-example in hand, and there is one. A malformed `-record #r{\u2026}` (no parentheses) makes the grammar wrap the WHOLE file in one ERROR node and hoist the -module, the record and the -export lists into it (otp/lib/dialyzer/test/indent_SUITE_data/src/rec_remote_unknown.erl, hasError=true). A pre-pass that read only the top level therefore found no module name at all and attributed the whole file to its path \u2014 a defect the corpus lens caught AFTER the optimisation, which is why the set of descended containers is written down and measured rather than assumed."
       },
       {
         "id": "ER-D30",
         "node_type": "",
         "status": "RULED",
-        "question": "A module both DECLARES a callback and DEFINES it (a behaviour with a default implementation — otp/lib/tftp/src/tftp_logger.erl is the witness). Which wins, and is document order allowed to decide?",
-        "resolution": "RULED: the DEFINITION decides the kind and the line, because the definition is the thing that exists; `isCallback` stays, since the contract is true whether or not this file implements it, and the contract's line stays in metadata.callbackLine. The pre-ER3 behaviour was order-dependent — the `-callback` line comes first, so the symbol stayed a Method whose range started on the contract. Pinned by edge-cases-er3 (kind=function, meta.definedHere, `contains -> logger` at line 16 with 13 forbidden) and mutant erlang/callback-kind-order."
+        "question": "A module both DECLARES a callback and DEFINES it (a behaviour with a default implementation \u2014 otp/lib/tftp/src/tftp_logger.erl is the witness). Which wins, and is document order allowed to decide?",
+        "resolution": "RULED: the DEFINITION decides the kind and the line, because the definition is the thing that exists; `isCallback` stays, since the contract is true whether or not this file implements it, and the contract's line stays in metadata.callbackLine. The pre-ER3 behaviour was order-dependent \u2014 the `-callback` line comes first, so the symbol stayed a Method whose range started on the contract. Pinned by edge-cases-er3 (kind=function, meta.definedHere, `contains -> logger` at line 16 with 13 forbidden) and mutant erlang/callback-kind-order."
       },
       {
         "id": "ER-D31",
@@ -372,14 +372,14 @@
         "node_type": "",
         "status": "RULED",
         "question": "Who owns the declarations in an .erl file that declares NO -module?",
-        "resolution": "RULED: the FILE PATH. Erlang has an honest gap here — a source file may carry no module at all, because it is an include fragment that gets textually included into some other module. OTP ships them: lib/syntax_tools/examples/merl/basic_test.erl has its `-module(basic_test).` line COMMENTED OUT and says so in a comment on line 1 ('Tests - for including in another module'). Nothing in the file names the module it will end up in, and the analyzer cannot know it. Three options were weighed: (a) fabricate a module name from the filename — rejected, that invents a module that does not exist; (b) leave the owner empty — rejected, it loses the containment of four real function definitions and makes every member ownerless; (c) the file path, the outermost container that definitely holds the declaration and the only identity the file has. RULED (c), and every module-scope declaration now routes through one helper `ownerNameOf` because the duplicated fallback HAD drifted: macros took a bare `ctx.moduleName` while functions, records, types and callbacks took the path, so in a module-less file a macro got no owner while the function beside it got one. The 400-file draw found that as 5 analyzer-only edges and 8 symbol mismatches on that one file. The independent oracle reached the same conclusion from the other side — it had left the owner empty and its `contains` loop dropped the members entirely, losing the ownership. Consequence recorded in the harness: a symbol whose owner is its own file is a FILE-SCOPE UNIT, the same class the export rule already admits when it is ownerless, so a fragment's `-export` is importable by its bare name instead of being reported unresolvable. Pinned by fragment-er3 with mutant erlang/module-less-owner-dropped."
+        "resolution": "RULED: the FILE PATH. Erlang has an honest gap here \u2014 a source file may carry no module at all, because it is an include fragment that gets textually included into some other module. OTP ships them: lib/syntax_tools/examples/merl/basic_test.erl has its `-module(basic_test).` line COMMENTED OUT and says so in a comment on line 1 ('Tests - for including in another module'). Nothing in the file names the module it will end up in, and the analyzer cannot know it. Three options were weighed: (a) fabricate a module name from the filename \u2014 rejected, that invents a module that does not exist; (b) leave the owner empty \u2014 rejected, it loses the containment of four real function definitions and makes every member ownerless; (c) the file path, the outermost container that definitely holds the declaration and the only identity the file has. RULED (c), and every module-scope declaration now routes through one helper `ownerNameOf` because the duplicated fallback HAD drifted: macros took a bare `ctx.moduleName` while functions, records, types and callbacks took the path, so in a module-less file a macro got no owner while the function beside it got one. The 400-file draw found that as 5 analyzer-only edges and 8 symbol mismatches on that one file. The independent oracle reached the same conclusion from the other side \u2014 it had left the owner empty and its `contains` loop dropped the members entirely, losing the ownership. Consequence recorded in the harness: a symbol whose owner is its own file is a FILE-SCOPE UNIT, the same class the export rule already admits when it is ownerless, so a fragment's `-export` is importable by its bare name instead of being reported unresolvable. Pinned by fragment-er3 with mutant erlang/module-less-owner-dropped."
       },
       {
         "id": "ER-D33",
         "node_type": "",
         "status": "RULED",
         "question": "Which line does a `contains` edge carry when a declaration's NAME sits on a different line from the construct that declares it?",
-        "resolution": "RULED: the NAME's line, per M59 (#825) applied to ownership edges. `range.startLine` is the DECLARATION node's line, which for a multi-line `-define(\\n   plain_macro,\\n   1)` is the `-define(` line — one above the name. Measured: otp/lib/snmp/src/manager/snmpm_net_if.erl defines worker/4 in two -ifdef/-else branches, so the keyword is on 208 and 219 while the macro names are on 209 and 220; the analyzer said 208 and 219. Found by the 400-file draw and MISSED by the 150-file one, which is the whole argument for running the bigger draw. Every declaration already records its name's line in `metadata.line`, so `contains` now reads that and falls back to `range.startLine` only when it is absent. The fix immediately exposed a second inconsistency, and that is the more useful half: after a `-callback` is later satisfied by a real definition, the merged symbol's `metadata.line` still pointed at the CONTRACT, so `contains` followed a declaration that is not the symbol (ER-D30 says the definition decides both kind and line). `metadata.line` now follows the definition and the contract's line stays in callbackLine. Pinned by line-owner-er3 (macro, function-like macro, record and type, all written SPLIT across lines, requiring the name lines and FORBIDDING the construct lines) with mutant erlang/owner-line-uses-construct, and by edge-cases-er3 for the callback/definition merge."
+        "resolution": "RULED: the NAME's line, per M59 (#825) applied to ownership edges. `range.startLine` is the DECLARATION node's line, which for a multi-line `-define(\\n   plain_macro,\\n   1)` is the `-define(` line \u2014 one above the name. Measured: otp/lib/snmp/src/manager/snmpm_net_if.erl defines worker/4 in two -ifdef/-else branches, so the keyword is on 208 and 219 while the macro names are on 209 and 220; the analyzer said 208 and 219. Found by the 400-file draw and MISSED by the 150-file one, which is the whole argument for running the bigger draw. Every declaration already records its name's line in `metadata.line`, so `contains` now reads that and falls back to `range.startLine` only when it is absent. The fix immediately exposed a second inconsistency, and that is the more useful half: after a `-callback` is later satisfied by a real definition, the merged symbol's `metadata.line` still pointed at the CONTRACT, so `contains` followed a declaration that is not the symbol (ER-D30 says the definition decides both kind and line). `metadata.line` now follows the definition and the contract's line stays in callbackLine. Pinned by line-owner-er3 (macro, function-like macro, record and type, all written SPLIT across lines, requiring the name lines and FORBIDDING the construct lines) with mutant erlang/owner-line-uses-construct, and by edge-cases-er3 for the callback/definition merge."
       },
       {
         "id": "ER-D34",
@@ -400,22 +400,101 @@
         "node_type": "atom (in type syntax)",
         "status": "RULED",
         "question": "Is a bare unquoted atom in Erlang type syntax a type reference?",
-        "resolution": "RULED: NO. A type dependency is an APPLIED name, and only an applied name — in Erlang you must write `foo()` to apply a type, so a bare atom in type syntax is the ATOM LITERAL of that name. `-type day() :: monday | tuesday.` declares the two atoms and depends on nothing; `-type job() :: #{id := job_id()}.`'s `id` is a field DECLARATION, not a call. The same walk covers a record type's field names (`#state{q :: [job()]}`): `q` is a declaration, `job()` is applied. This is not a new observation — it is the M12 false positive that started the ER3 wave, where the differential fell from 1.000 to 0.784 with 19 false positives, two of them exactly this shape (`job -> id`, `job -> kind`, the map keys of a map type). The ER3 rewrite re-introduced it because its type walk treated every `atom` under a type declaration as a type name, emitting edges that resolve to same-named types or record properties elsewhere in the file and read as real dependencies. Surfaced by the m48-recovery merge, which brought the co-agent's erlang fixtures (a486abd0) into the tree and made them disagree with the analyzer. Fixed by walking only `call` heads (the applied form) plus qualified `mod:type()` remotes (ER-D31 unchanged). Pinned by types-er3, which FORBIDS `handle -> ok`, `handle -> error` and `payload -> undefined` while still REQUIRING the applied `binary()`, `request()` and `reply()` — a forbidden set the mutant must be selective to survive — and by refs-er2, with mutant erlang/type-syntax-bare-atom-counted."
+        "resolution": "RULED: NO. A type dependency is an APPLIED name, and only an applied name \u2014 in Erlang you must write `foo()` to apply a type, so a bare atom in type syntax is the ATOM LITERAL of that name. `-type day() :: monday | tuesday.` declares the two atoms and depends on nothing; `-type job() :: #{id := job_id()}.`'s `id` is a field DECLARATION, not a call. The same walk covers a record type's field names (`#state{q :: [job()]}`): `q` is a declaration, `job()` is applied. This is not a new observation \u2014 it is the M12 false positive that started the ER3 wave, where the differential fell from 1.000 to 0.784 with 19 false positives, two of them exactly this shape (`job -> id`, `job -> kind`, the map keys of a map type). The ER3 rewrite re-introduced it because its type walk treated every `atom` under a type declaration as a type name, emitting edges that resolve to same-named types or record properties elsewhere in the file and read as real dependencies. Surfaced by the m48-recovery merge, which brought the co-agent's erlang fixtures (a486abd0) into the tree and made them disagree with the analyzer. Fixed by walking only `call` heads (the applied form) plus qualified `mod:type()` remotes (ER-D31 unchanged). Pinned by types-er3, which FORBIDS `handle -> ok`, `handle -> error` and `payload -> undefined` while still REQUIRING the applied `binary()`, `request()` and `reply()` \u2014 a forbidden set the mutant must be selective to survive \u2014 and by refs-er2, with mutant erlang/type-syntax-bare-atom-counted."
       },
       {
         "id": "ER-D37",
         "node_type": "wild_attribute / attr_name",
         "status": "RULED",
         "question": "Is a `-nifs([f/a])` entry with no Erlang clause an annotation or a declaration?",
-        "resolution": "RULED: a DECLARATION. ER-D22 held that the attribute annotates the function it names rather than minting a duplicate symbol, which is right when a stub exists and wrong when it does not — and a NIF need not have one: it is implemented in C, its Erlang name is declared BY the attribute, and the compiler accepts `-nifs([n/1])` with no `n/1` clause anywhere in the file. The pre-fix code asserted in a comment that 'a NIF always has an Erlang-visible stub'; that assertion is false and dropping those entries made every call to such a NIF dangle with nothing in the graph saying a function was declared. So an entry WITH a clause is annotated (ER-D22 stands) and an entry WITHOUT one is PUBLISHED as a Function symbol with `declaredByNifsAttribute` and `clauseCount: 0`, its line being the attribute's line, since the attribute is the only declaration site and `contains` must carry the name-bearing node (ER-D33). `-on_load` is deliberately NOT extended the same way: the compiler REQUIRES the named function to exist, so an entry with no symbol there is a genuine unresolved reference and stays counted. Surfaced by the co-agent's imports-and-try fixture, which pins the publish behaviour. Pinned there, with mutant erlang/nif-without-stub-dropped."
+        "resolution": "RULED: a DECLARATION. ER-D22 held that the attribute annotates the function it names rather than minting a duplicate symbol, which is right when a stub exists and wrong when it does not \u2014 and a NIF need not have one: it is implemented in C, its Erlang name is declared BY the attribute, and the compiler accepts `-nifs([n/1])` with no `n/1` clause anywhere in the file. The pre-fix code asserted in a comment that 'a NIF always has an Erlang-visible stub'; that assertion is false and dropping those entries made every call to such a NIF dangle with nothing in the graph saying a function was declared. So an entry WITH a clause is annotated (ER-D22 stands) and an entry WITHOUT one is PUBLISHED as a Function symbol with `declaredByNifsAttribute` and `clauseCount: 0`, its line being the attribute's line, since the attribute is the only declaration site and `contains` must carry the name-bearing node (ER-D33). `-on_load` is deliberately NOT extended the same way: the compiler REQUIRES the named function to exist, so an entry with no symbol there is a genuine unresolved reference and stays counted. Surfaced by the co-agent's imports-and-try fixture, which pins the publish behaviour. Pinned there, with mutant erlang/nif-without-stub-dropped."
       },
       {
         "id": "ER-D38",
         "node_type": "ERROR (whole file)",
         "status": "RULED",
         "question": "When the grammar has destroyed a file, what may an analyzer derive from the wreckage?",
-        "resolution": "RULED: NOTHING, and the boundary is checked explicitly. Not every Erlang file is Erlang to this grammar: wx's `api_gen` sources are code-GENERATION TEMPLATES whose body is markup (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`), and OTP's abstract-format `-record #r{...}` is likewise unparseable. After such a construct the top level returns as a run of ERROR nodes with loose `call`/`atom`/`ann_type` fragments between them — 32 top-level ERRORs in otp/lib/wx/api_gen/wx_extra/wxListCtrl.erl, and not one `fun_decl` in the file. Every edge recoverable from those fragments is FABRICATED: the lines and the nesting are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes structure the source does not have. What made the analyzer start deriving from the wreckage is worth recording, because it is the more useful half: ER-D32's file-path fallback for `currentSource` removed the ONLY thing that had been stopping it — an undefined source makes `pushRel` a no-op. A correctness fix opened a hole because it came without a boundary, and the full-corpus dual lens found it as 55 analyzer-only edges. So the analyzer now applies the same rule as the independent oracle: a file with NO recoverable declaration of any kind — no fun_decl, module_attribute, pp_define, record_decl, type_alias/opaque/nominal, import_attribute, export_attribute, export_type_attribute — yields no symbols and no relationships, and publishes its error count instead. 12 files corpus-wide. The guard is deliberately NARROW and the negative half is the point: a file with no functions and no `-module` but with `-define` blocks is derived normally, including the file-scope macro references ER-D32's edge fallback exists to publish — `epp_SUITE_data/mac2.erl` is four `-define`s and one `-plupp({?p, ?'p', ?P, ?'P'})` with no module and no function, and it yields four macro constants, four `contains` edges and four references. Pinned by grammar-damaged-er3 (FORBIDS the recoverable `calls` and the recoverable function symbol, REQUIRES zero symbols, zero relationships and the error report) with fragment-er3 and modname-unresolvable-er3 pinning the other side of the same line."
+        "resolution": "RULED: NOTHING, and the boundary is checked explicitly. Not every Erlang file is Erlang to this grammar: wx's `api_gen` sources are code-GENERATION TEMPLATES whose body is markup (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`), and OTP's abstract-format `-record #r{...}` is likewise unparseable. After such a construct the top level returns as a run of ERROR nodes with loose `call`/`atom`/`ann_type` fragments between them \u2014 32 top-level ERRORs in otp/lib/wx/api_gen/wx_extra/wxListCtrl.erl, and not one `fun_decl` in the file. Every edge recoverable from those fragments is FABRICATED: the lines and the nesting are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes structure the source does not have. What made the analyzer start deriving from the wreckage is worth recording, because it is the more useful half: ER-D32's file-path fallback for `currentSource` removed the ONLY thing that had been stopping it \u2014 an undefined source makes `pushRel` a no-op. A correctness fix opened a hole because it came without a boundary, and the full-corpus dual lens found it as 55 analyzer-only edges. So the analyzer now applies the same rule as the independent oracle: a file with NO recoverable declaration of any kind \u2014 no fun_decl, module_attribute, pp_define, record_decl, type_alias/opaque/nominal, import_attribute, export_attribute, export_type_attribute \u2014 yields no symbols and no relationships, and publishes its error count instead. 12 files corpus-wide. The guard is deliberately NARROW and the negative half is the point: a file with no functions and no `-module` but with `-define` blocks is derived normally, including the file-scope macro references ER-D32's edge fallback exists to publish \u2014 `epp_SUITE_data/mac2.erl` is four `-define`s and one `-plupp({?p, ?'p', ?P, ?'P'})` with no module and no function, and it yields four macro constants, four `contains` edges and four references. Pinned by grammar-damaged-er3 (FORBIDS the recoverable `calls` and the recoverable function symbol, REQUIRES zero symbols, zero relationships and the error report) with fragment-er3 and modname-unresolvable-er3 pinning the other side of the same line."
+      },
+      {
+        "id": "ER-D39",
+        "node_type": "preproc_define (function-like)",
+        "status": "RULED",
+        "question": "`macro` is one of the 25 values in the store's SymbolKind and 8 analyzers emit it. What kind is an Erlang `-define`?",
+        "resolution": "RULED: the kind splits on exactly the line the C analyzer already draws (real-c-analyzer.ts:3989 \u2014 `isFunctionLikeMacro ? Macro : Constant`), because the grammar already splits it. A function-like macro `-define(SCALE(X), X * 2)` takes parameters, so it is not a value; the store's LSP identity list (lsp/identity.ts:77) names `macro` as distinct from `constant`, which is a consumer that would otherwise treat every Erlang macro as a constant. An object-like `-define(LIMIT, 100)` genuinely IS a compile-time constant and stays `Constant`. Before this every `-define` was published as `constant`, so a parameterized macro claimed to be a value and `macro` was emitted by no Erlang symbol at all \u2014 the same class of finding as ER-D40 below, on the symbol axis rather than the relationship axis. Both `isFunctionLike` (Erlang's existing spelling) and `isFunctionLikeMacro` (C's) are recorded so a cross-lane query can match either. A macro remains NOT a function: no call edge can resolve to one (ER-D11), which is unchanged."
+      },
+      {
+        "id": "ER-D40",
+        "node_type": "export_attribute / export_type_attribute",
+        "status": "RULED",
+        "question": "`-export([f/1])` names the module's public surface. Should it be a relationship, and if so which one?",
+        "resolution": "RULED: YES \u2014 one `exports` edge per `fa` in the attribute, which is what 16 analyzers already emit. `contains` says \"f/1 is a member\" and `exports` says \"f/1 is the interface\"; those are different facts and Erlang has both. The declaration existed only as `ExportInfo` on the side, so the label was stored and compared against nothing \u2014 the exact wording the ontology gate uses when it reports a type as unaudited. The line is the `fa`'s own line, not the attribute's, per M60 #278's name-bearing-node rule. `-export_type` emits the same label with `isTypeExport`, since a type export is a different declaration form. NO declared-symbol guard, deliberately: `-export([f/1])` is true of a module's interface whether or not f/1 is defined in that file (a parse transform or an included file can supply it), and the oracle derives the same set from the same declaration, so both sides agree without guessing. `-export([?MODULE/0])` resolves `?MODULE` to the module name, the same expansion the analyzer's readFa already performed for function declarations \u2014 two live OTP corpus files write it that way, so reading only the `atom` child silently dropped the export."
+      },
+      {
+        "id": "ER-D41",
+        "node_type": "import_attribute",
+        "status": "RULED",
+        "question": "`-import(Mod, [f/a])` is a dependency. Which relationship label records it?",
+        "resolution": "RULED: BOTH `imports` and `references`, from the same declaration, each named at the module atom's own line. `imports` is the one the module-dependency pass actually reads \u2014 `brain_import` rows, src/intelligence/analysis/dependencies.ts:27-28, relied on precisely BECAUSE `resolved_symbol_id` is often null and only the specifier and its `is_external` flag matter. Before this, an Erlang `-import` emitted only `references`, so the pass that exists to report it could not see one: the fact was recorded under a label nothing was reading. 19 analyzers emit `imports`; this one stored the fact and dropped the label. `references` stays because the two statements differ \u2014 `imports` is the dependency, `references` is the mention \u2014 matching the shape the bash analyzer already uses for `source`-style imports (real-bash-analyzer.ts:1299). `isExternal: true` is already recorded on ImportInfo by ER-D20 and is repeated on the edge."
       }
     ]
+  },
+  "symbol_kind_audit": {
+    "_description": "SYMBOL-KIND AUDIT (M14 master review, 2026-10-01). The question this answers is the symbol-axis twin of the relationship-ontology audit: of the 25 distinct values in the store's SymbolKind enum, which does an Erlang source file actually declare, and is every omission a deliberate ruling rather than an oversight? Enumerated by reading the enum in src/ast/types.ts (31 members, 25 distinct string values \u2014 six are backward-compat aliases: Table/Object/Service/Resource -> class, TypeAlias -> type, Record -> type) and grepping every SymbolKind.* the analyzer constructs. Method matters here: the omissions were found by comparing against the enum and against what 8-19 other analyzers emit, NOT by reading the analyzer for what looks missing. That is how ER-D39 was found \u2014 `macro` is a kind in the enum, a kind the LSP identity list already names, and no Erlang symbol emitted it.",
+    "emitted": {
+      "count": 8,
+      "kinds": [
+        "constant",
+        "function",
+        "macro",
+        "method",
+        "module",
+        "property",
+        "struct",
+        "type"
+      ],
+      "why_each": {
+        "module": "`-module(m).` \u2014 also the fallback owner for a file that declares none (ER-D32).",
+        "function": "`name(A, B) -> ...` and `name() -> ...` clauses, merged by name/arity (ER3).",
+        "macro": "function-like `-define(F(X), ...)` (ER-D39) \u2014 a parameterized macro is not a value.",
+        "constant": "object-like `-define(N, 5000)`, which IS a compile-time constant (ER-D39).",
+        "property": "a `-record`'s fields \u2014 the store's record-field kind.",
+        "struct": "the `-record` itself; ER-D36 keeps bare type atoms as literals, so this is the only record declaration.",
+        "type": "`-type`/`-opaque`/`-nominal` aliases.",
+        "method": "`-callback`/`-spec` surface on a behaviour, published as methods (the family shape for a behaviour's contract)."
+      }
+    },
+    "ruled_not_applicable": {
+      "count": 17,
+      "note": "Each is a construct Erlang has no declaration site for. In every case emitting it would mean fabricating a declaration the language does not contain \u2014 which is the failure mode ER-D38 already rules out for grammar-damaged files, applied to intact ones.",
+      "kinds": {
+        "class": "no classes; a `-record` is published as struct, the nearest real declaration.",
+        "interface": "no interface declaration; a behaviour's contract is `-callback`, published as method, and the binding is an `implements` edge.",
+        "trait": "no trait declaration; `-behaviour` names another module, it does not declare one.",
+        "enum": "no enum declaration. The nearest shape, an ATOM union `-type t() :: a | b.`, is a type declaration already published as `type`, and ER-D36 rules that a bare atom in that position is a literal rather than a member \u2014 so publishing `enum`/`enum_member` there would invent two declarations the source does not have.",
+        "enum_member": "same reasoning as enum; there is no member declaration site.",
+        "variable": "clause-head bindings and locals are deliberately not symbols. `LocalsAreNotSymbols` is the family's stated contract and a corpus-wide probe found no unknown-symbol class for them: they are read, never declared.",
+        "import": "`-import(lists, [map/2])` imports items from ANOTHER module; they are not symbols of this file (imports-and-try pins `equals: 0` for them). The dependency is an `imports` edge (ER-D41); a symbol would duplicate it.",
+        "export": "an `-export([f/1])` entry names a function that already has its own symbol. A second `export` symbol would double-count it; the fact that it is public is an `exports` EDGE (ER-D40), which is the axis a relationship belongs on.",
+        "constructor": "no constructors; record construction is an `instantiates` edge, and `-record` is the struct.",
+        "namespace": "no namespace declaration; a module is the unit.",
+        "actor": "Erlang/OTP is the actor model, and the analyzer records `patterns['Actor Model (OTP)']` \u2014 but a process is a RUNTIME instance, not a source declaration. There is no `-actor` site to publish.",
+        "event": "no event declaration.",
+        "delegate": "no delegate declaration.",
+        "extension": "no extension declaration; a parse transform is named by `-compile`, not declared as one.",
+        "mixin": "no mixin declaration.",
+        "impl": "no impl block; a behaviour is bound with an `implements` edge, not declared in an impl construct.",
+        "union": "a union is a type in Erlang (`a | b` inside a `-type`), already published as `type`; an anonymous union inside a larger type has no declaration site of its own."
+      },
+      "partition_check": {
+        "enum_members_in_types_ts": 31,
+        "distinct_values": 25,
+        "aliases_collapsed": "Table/Object/Service/Resource -> class, TypeAlias -> type, Record -> type",
+        "emitted": 8,
+        "ruled_not_applicable": 17,
+        "sum": 25,
+        "verified_by": "sorted(emitted kinds) + sorted(ruled kinds) == the 25 distinct enum values, asserted when this section is written"
+      }
+    }
   }
 }
