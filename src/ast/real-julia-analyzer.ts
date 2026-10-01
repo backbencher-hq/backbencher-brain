@@ -656,9 +656,21 @@ export class RealJuliaAnalyzer {
             }
             break
           }
-          const prop = this.firstNamedChildOfType(node, "identifier")
-          if (!prop) break
-          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", prop.text.trim(), node, 0.9, { juliaSpecific: true, isFieldRead: true }))
+          // The MEMBER is the child that is NOT the receiver. `field_expression` has exactly one
+          // field, `value`, which is the RECEIVER — so `a.b` is (identifier a)(identifier b) and the
+          // member is the identifier that is not `value`.
+          //
+          // The first version took the FIRST identifier, which is the RECEIVER, so `c.radius`
+          // published `uses -> c` — naming the object instead of the thing read off it, for every
+          // field access in the language. Found by the F5 `uses` oracle: on 40 corpus files it
+          // derived `uses -> AbstractInterpreter` for `<: Compiler.AbstractInterpreter` and the
+          // analyzer had `uses -> Compiler`, with 681 of 732 truth rows unmatched and 268 the other
+          // way. The defect inverted the edge rather than dropping it, which is why no count on its
+          // own would have shown it — every field read produced a plausible `uses` row.
+          const member = this.namedChildren(node).find((c) => c.type === "identifier" && c.id !== value.id)
+            ?? this.namedChildren(node).find((c) => c.type === "identifier")
+          if (!member) break
+          relationships.push(this.rel(scope || GLOBAL_SCOPE, "uses", member.text.trim(), node, 0.9, { juliaSpecific: true, isFieldRead: true }))
           break
         }
 
