@@ -39,6 +39,11 @@ const surface = read("validation/m60/results/solidity-surface.json")
 // would let half the numbers drift unchecked — which is the same seam class as the
 // `revert_statement` branch: a case in the source that reads as coverage.
 const projCensus = read("validation/m60/results/solidity-projectwide-census.json")
+// Two more artifacts the doc now cites. A doc-truth gate that reads one artifact while
+// the document quotes three lets two thirds of the numbers drift unchecked — the same
+// seam class as a case in the source that reads as coverage.
+const perf = read("validation/m60/results/solidity-perf.json")
+const caseAudit = read("validation/m60/results/solidity-case-audit.json")
 const census = read("validation/m60/results/solidity-type-census.json")
 const adj = read("validation/m60/results/solidity-unexplained-adjudication.json")
 const baseline = read("validation/m14/differential-baseline.json")
@@ -97,6 +102,18 @@ const checks: Check[] = [
   { doc: "`external` **78", what: "census true floor", actual: projCensus.totals.counts["external"], expect: (v) => v === 78 },
   { doc: "93.3% is project-resolvable", what: "census project-resolvable pct", actual: projCensus.totals.projectResolvablePct, expect: (v) => v === "93.3%" },
   { doc: "4.7% is the true floor", what: "census truly-external pct", actual: projCensus.totals.trulyExternalPct, expect: (v) => v === "4.7%" },
+  // ── M60.solidity-perf. The best-of-N figure and, more importantly, the fact that it
+  //    is NOT qualified. Pinning the boolean is the point: a doc that quietly stopped
+  //    saying "unqualified" would otherwise pass every numeric check here.
+  { doc: "ms/file best-of-", what: "perf best-of-N is stated", actual: perf.method.trials, expect: (v) => v === perf.method.trials },
+  { doc: "spread x", what: "perf spread is stated", actual: perf.results.spreadRatio, expect: (v) => v === perf.results.spreadRatio },
+  { doc: "`perfIsQualified` is **false**", what: "perf is still unqualified", actual: perf.qualification.perfIsQualified, expect: (v) => v === false },
+  { doc: "no trial ran below the rule's `loadAvg1 < 8`", what: "perf verdict is the unqualified one", actual: perf.qualification.perfIsQualified, expect: (v) => v === false },
+  // ── M60.solidity-case-audit. The proof, and its count.
+  { doc: "cannot, by construction", what: "case audit proves the trivial-body cases safe", actual: caseAudit.totals.trivialBody, expect: (v) => v >= 1 },
+  { doc: "the remaining", what: "case audit suspicious count is stated", actual: caseAudit.totals.suspicious, expect: (v) => v === caseAudit.totals.suspicious },
+  { doc: "of {SILENT} such cases".replace("{SILENT}", String(caseAudit.totals.silentButLive)), what: "case audit silent-but-live count", actual: caseAudit.totals.silentButLive, expect: (v) => v === caseAudit.totals.silentButLive },
+  { doc: "and the gate", what: "case audit lists each suspicious case with a reason", actual: Object.keys(caseAudit.suspicious.reasons).length, expect: (v) => v === caseAudit.totals.suspicious },
   // The invariant the census asserts internally, re-checked here because a gate that
   // trusts a sibling script's self-report is not a second opinion.
   { doc: "denominator is asserted equal to the sum of its routes", what: "census denominator equals its numerators", actual: projCensus.totals.routeSumMatchesAudited, expect: (v) => v === true },
