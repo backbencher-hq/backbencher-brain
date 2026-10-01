@@ -579,9 +579,9 @@ real file; a fixture with ten decision points now reports 11.
   legitimately declare no package or sub; each was inspected rather than assumed.
 - The F1 grammar cell is green (0 unknown node types, 0 unknown fields). The 415
   node *types the corpora contain* is a different set from the 140 the grammar
-  *declares*, and the classification that matters is the declared one: all 140 are
-  in exactly one bucket of `script/m14/spec/perl-completeness.json` (52 handled, 74
-  internal-silent, 14 ruled by 14 decisions, 0 gaps). Note the wasm declares 168
+  *declares*, and the classification that matters is the declared one: all **142**
+  are in exactly one bucket of `script/m14/spec/perl-completeness.json` (**52**
+  handled, **76** internal-silent, **14** ruled by 14 decisions, **0** gaps). Note the wasm declares 168
   named node-type **ids** that resolve to 140 unique names, so the completeness
   gate's "168 types" and this spec's 140 are both right and mean different things.
 
@@ -592,8 +592,8 @@ real file; a fixture with ten decision points now reports 11.
 | F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. It is green NOW by measurement (`audit-analyzer-grammar.ts`, `perl PASS refs=53 unknown=0 unknownFields=0`), after PERL-MR4 removed seven node types it had invented. See the correction below. |
 | F3 fixtures | **13 expectations, 13/13 pass.** `validation/m14/fixtures/perl/` — one per defect class, plus the three-file `override-companion-resolve` group that pins confirmed / withdrawn / unknown-base together |
 | F4 mutation | **39 mutants, 39/39 caught** |
-| perl ownership gate | **15/15** -- perl-owned CONTENT, seconds to run, the row that catches a commit that rebuilt a perl file from a stale base |
-| line oracle (M59.A7) | **0 INCONSISTENT** over 420 files / 14,103 relationships, self-test caught |
+| perl ownership gate | **29/29** -- perl-owned CONTENT, seconds to run, the row that catches a commit that rebuilt a perl file from a stale base |
+| line oracle (M59.A7) | **0 INCONSISTENT** over a 60-file draw per corpus (7 corpora, 14,156 edges), self-test caught. Presence at full depth: `perl-lineless` reports **107,467 / 107,467** relationships carrying a line, 0 without, across all six labels |
 | #419 structural (A) | green -- 170/170 classified, each in exactly one bucket |
 | #419 relationship kinds (B) | green -- the six kinds the lane emits, all pinned |
 | #419 payload matrix (C) | green -- complexity, parameters, decorators, imports, exports |
