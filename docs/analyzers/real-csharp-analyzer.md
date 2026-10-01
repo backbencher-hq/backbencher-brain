@@ -342,6 +342,31 @@ for the class. The remaining headroom is real and now *measured* rather than gue
 useful change: the depth sweep is a gate-shaped instrument that turns "cost grows with depth" into a
 number with a named cause.
 
+### A second attempt at `findContainingCSharpFunction` — reverted, and why that is the right call
+
+The next candidate by invocation share (~19%) is `findContainingCSharpFunction`, which answers "what
+is my nearest enclosing method/constructor/destructor?" by walking to the root, once per identifier.
+Memoising it with path compression is the textbook fix: on a miss, walk up remembering the path until
+a cached node is reached, then write the answer for every node on the path.
+
+**It was implemented, proved wrong, and reverted.** A checker compared the memoised result against
+the raw walk for every node in 60 real roslyn files: **2,854 disagreements out of 48,645 nodes.**
+
+The bug is instructive and specific. The raw walk examines `node.parent` upward. The compressed
+version called the raw walk on `node.parent` — which examines `node.parent.parent` upward, silently
+**skipping the node's own parent**. A node directly inside a method therefore got `null` where the
+walk said `constructor`.
+
+What makes this worth recording rather than just fixing quietly: `findContainingCSharpFunction`
+supplies the **owner** for relationships derived from expressions. A cache that returns the wrong
+owner does not crash, does not fail a fixture, and does not change a coverage number — it silently
+relabels every edge inside the affected subtree, which is precisely the defect class this round spent
+eight fixes removing. A near-miss here would have been invisible to every gate in the lane.
+
+The correct version caches only nodes **strictly below** the resolver and never the resolver itself,
+and it must be verified node-for-node against the walk before it lands — the same standard applied to
+`blocked_by=[…]` and to the retraction of the "call-count explosion" claim. Not landed here.
+
 **Still not fixed, and the rest of the line is still not named.** What is established: the axis (depth), the
 shape (O(nodes × depth)), the family (ancestor-ascending predicates, none dominant), and that the
 first localisation attempt was wrong because of where its counters were placed.
