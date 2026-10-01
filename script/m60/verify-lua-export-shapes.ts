@@ -234,6 +234,88 @@ for (const [n, src] of [
   )
 }
 
+
+// ── LUA-35: the shapes that carry no NAME, and the one that does ─────────────
+// `return setmetatable(M, mt)` names M. The module's surface IS M, exactly as in
+// `return M`, which the analyzer already handles — so this is the one silent
+// shape that has a defensible name and was simply not wired.
+//
+// The other three carry no name at all, and the payload must not invent one:
+//   return require("x")     the surface is x's, not this module's
+//   return "literal"        a value, and a value is not a name
+//   return f()              the result of a call, statically unknowable
+//
+// For those the useful thing is a DISCLOSURE, not an export. "No exports" today
+// means two indistinguishable things — this module defines nothing, and this
+// module's surface exists but has no name — and a consumer cannot tell them
+// apart. The disclosure separates them while publishing no name, which is the
+// only honest option: an export called "x" for a re-export of x would be a
+// fabricated name, and this lane has refused that in every other case.
+{
+  const surfaceOf = async (src: string): Promise<{ exports: string[]; disclosures: any[] }> => {
+    const p = join(dir, `s${Math.random().toString(36).slice(2)}.lua`)
+    writeFileSync(p, src)
+    const d: any = await parseWithAnalyzer(p)
+    rmSync(p, { force: true })
+    return {
+      exports: (d.exports ?? []).map((e: any) => e.name).sort(),
+      disclosures: d.metadata?.unpublishedSurface ?? [],
+    }
+  }
+
+  // 1. the fixable shape: a NAME is present and must be published
+  {
+    const { exports, disclosures } = await surfaceOf('local Account = {}\nlocal AccountMeta = {}\nsetmetatable(Account, AccountMeta)\nreturn setmetatable(Account, AccountMeta)\n')
+    check(
+      exports.includes("Account"),
+      "return setmetatable(<name>, mt) publishes the name it carries",
+      `got ${JSON.stringify(exports)}`,
+    )
+    check(
+      !disclosures.some((d: any) => d.shape === "call-result" && d.detail === "setmetatable"),
+      "a setmetatable whose first argument is a name is not disclosed as unnameable",
+      JSON.stringify(disclosures),
+    )
+  }
+  // the same, reached through a dot index: `setmetatable(kong.Account, mt)`
+  {
+    const { exports } = await surfaceOf('local Account = {}\nlocal M = {}\nsetmetatable(M, { __index = Account })\nreturn setmetatable(M, {})\n')
+    check(exports.includes("M"), "a dot-index first argument is still a name", `got ${JSON.stringify(exports)}`)
+  }
+  // 2. the nameless shapes: NO export, and a disclosure that says why
+  for (const [shape, src, why] of [
+    ["re-export", 'return require("kong.tools.dns")\n', "the surface is another module's"],
+    ["value-literal", 'return "a string"\n', "a value is not a name"],
+    ["call-result", "return Schema.define({})\n", "the result of a call is statically unknowable"],
+  ] as Array<[string, string, string]>) {
+    const { exports, disclosures } = await surfaceOf(src)
+    check(exports.length === 0, `${shape} publishes no invented name`, `got ${JSON.stringify(exports)}`)
+    const d = disclosures.find((x: any) => x.shape === shape)
+    check(!!d, `${shape} is disclosed rather than silent`, `disclosures: ${JSON.stringify(disclosures)}`)
+    if (d) {
+      check(typeof d.why === "string" && d.why.length > 0, `${shape}'s disclosure states why`, JSON.stringify(d))
+      check(typeof d.line === "number" && d.line >= 1, `${shape}'s disclosure carries the line of the return`, `line=${d.line}`)
+    }
+  }
+  // a re-export's disclosure must name the module it defers to — that is the
+  // information a consumer actually wanted, and it is derived from the source.
+  {
+    const { disclosures } = await surfaceOf('return require("kong.tools.dns")\n')
+    const d = disclosures.find((x: any) => x.shape === "re-export")
+    check(d?.detail === "kong.tools.dns", "a re-export disclosure names the module deferred to", `got ${JSON.stringify(d?.detail)}`)
+  }
+  // 3. a module that DOES name things carries no disclosure
+  {
+    const { exports, disclosures } = await surfaceOf("return { alpha = 1, beta = 2 }\n")
+    check(exports.length === 2 && disclosures.length === 0, "a fully-named module discloses nothing", `exports ${JSON.stringify(exports)} disclosures ${JSON.stringify(disclosures)}`)
+  }
+  // 4. a function's return is never a module surface (LUA-20), so no disclosure
+  {
+    const { exports, disclosures } = await surfaceOf('local f = function()\n  return require("x")\nend\nreturn f\n')
+    check(exports.length === 1 && !disclosures.some((d: any) => d.shape === "re-export"), "an in-function return discloses nothing", `exports ${JSON.stringify(exports)} disclosures ${JSON.stringify(disclosures)}`)
+  }
+}
+
 rmSync(dir, { recursive: true, force: true })
 
 console.log(`verify-lua-export-shapes: ${pass} passed, ${fail} failed`)

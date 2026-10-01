@@ -1,16 +1,17 @@
 #!/bin/sh
 # Lane-protection pre-push hook (install: script/git-hooks/install.sh).
-# Blocks pushing to main any commit that deletes a protected closed-milestone
-# artifact without the owner-approval tag "retire-approved" in its message.
-# Read-only gate: fs checks + git log — adds ~1s to a push.
+# Blocks a push to main that would leave a protected closed-milestone artifact
+# missing, unless the owner-approval tag "retire-approved" is in a commit message.
+# Read-only gate: one python3 process + `git cat-file` probes. Adds ~1s to a push.
 
 zero="0000000000000000000000000000000000000000"
 while read local_ref local_sha remote_ref remote_sha; do
   case "$remote_ref" in
     refs/heads/main)
       if [ "$remote_sha" = "$zero" ]; then
+        # New branch: there is no remote tip to diff against, so the net-effect
+        # check has nothing to compare. Protect the last 200 commits instead.
         range="$local_sha"
-        # New branch: protect the last 200 commits to stay fast and safe.
         if git rev-parse --verify --quiet "$local_sha~200" >/dev/null 2>&1; then
           range="$local_sha~200..$local_sha"
         fi
@@ -18,32 +19,81 @@ while read local_ref local_sha remote_ref remote_sha; do
         range="$remote_sha..$local_sha"
       fi
 
-      deleted=$(git log --diff-filter=D --name-only --format= "$range" 2>/dev/null | grep -v '^$' | sort -u)
-      if [ -n "$deleted" ]; then
-        blocked=""
-        MANIFEST="$(git rev-parse --show-toplevel)/validation/lane-protection/protected-paths.json"
-        for f in $deleted; do
-          if python3 - "$MANIFEST" "$f" <<'PYEOF' 2>/dev/null
-import json, sys
-manifest, path = sys.argv[1], sys.argv[2]
-protected = [p["path"] for p in json.load(open(manifest))["protected"]]
-sys.exit(0 if any(path == p or path.startswith(p + "/") for p in protected) else 1)
-PYEOF
-          then
-            blocked="$blocked $f"
-          fi
-        done
-        if [ -n "$blocked" ]; then
-          echo ""
-          echo "LANE PROTECTION: push to main blocked."
-          echo "These closed-milestone artifacts are deleted in the range being pushed:$blocked"
-          echo ""
-          echo "If this deletion is intended and owner-approved, re-commit with the"
-          echo "approval tag in the message (\"retire-approved\"), e.g.:"
-          echo "  git commit --amend -m \"... (retire-approved)\""
-          echo "Otherwise restore the files before pushing."
-          exit 1
-        fi
+      MANIFEST="$(git rev-parse --show-toplevel)/validation/lane-protection/protected-paths.json"
+      if [ ! -f "$MANIFEST" ]; then
+        echo "LANE PROTECTION: $MANIFEST is missing, so no protected path can be checked." >&2
+        echo "                   Refusing to push: a gate that cannot read its manifest must not pass silently." >&2
+        exit 1
+      fi
+
+      # TWO CHECKS, because "did a commit in the range delete it" and "will this
+      # push leave it missing" are different questions and only the second is the
+      # risk. The original hook asked the first, so f7fb0997 — which deleted 6,327
+      # files including 269 protected ones and had all 269 restored immediately
+      # after — blocked every subsequent push of this repo, forever, because the
+      # deletion is in the history whether or not the files came back. A gate that
+      # cannot be satisfied without `--no-verify` stops being a gate.
+      #
+      #   1. NET EFFECT (the real one): a protected path present at the remote tip
+      #      and ABSENT at the new tip. This is the push deleting it.
+      #   2. STRICT REMAINDER: a protected path absent at the new tip whose
+      #      deletion appears in this range. Covers the case where the remote
+      #      already lost it, so check 1 cannot see the push taking it further.
+      #
+      # Together these are never weaker on the case that matters — a protected
+      # artifact ending up missing — and they stop blocking on a delete that a
+      # later commit undid. Both checks read the manifest ONCE, in one process:
+      # the first version spawned one python3 per deleted file, so a range with
+      # 6,327 deletions took ~21 minutes and every push past it looked like a hang.
+      blocked=$(REMOTE_SHA="$remote_sha" LOCAL_SHA="$local_sha" RANGE="$range" python3 -c '
+import json, os, subprocess, sys
+
+manifest = sys.argv[1]
+remote = os.environ["REMOTE_SHA"]
+local = os.environ["LOCAL_SHA"]
+zero = "0" * 40
+protected = [p["path"] for p in json.load(open(manifest))["protected"] if p.get("path")]
+
+def exists(rev, path):
+    """Does `path` exist in `rev`? An unborn remote tip has no tree to ask."""
+    if rev == zero:
+        return False
+    return subprocess.run(["git", "cat-file", "-e", "%s:%s" % (rev, path)],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+lost, absent = [], []
+for path in protected:
+    if exists(local, path):
+        continue
+    absent.append(path)
+    if exists(remote, path):
+        lost.append(path)
+
+# Check 2: which of the paths that are now absent did THIS range delete?
+if absent:
+    deleted = subprocess.run(
+        ["git", "log", "--diff-filter=D", "--name-only", "--format=", os.environ["RANGE"]],
+        capture_output=True, text=True).stdout
+    deleted_set = {l for l in deleted.splitlines() if l.strip()}
+    for path in absent:
+        if path in deleted_set or any(d.startswith(path + "/") for d in deleted_set):
+            if path not in lost:
+                lost.append(path)
+
+print(" ".join(sorted(lost)))
+' "$MANIFEST" 2>/dev/null)
+
+      if [ -n "$blocked" ]; then
+        echo ""
+        echo "LANE PROTECTION: push to main blocked."
+        echo "These protected closed-milestone artifacts would be MISSING after this push:"
+        for p in $blocked; do echo "  $p"; done
+        echo ""
+        echo "If the removal is intended and owner-approved, re-commit with the"
+        echo "approval tag in the message (\"retire-approved\"), e.g.:"
+        echo "  git commit --amend -m \"... (retire-approved)\""
+        echo "Otherwise restore the files before pushing."
+        exit 1
       fi
       ;;
   esac

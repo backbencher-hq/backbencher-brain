@@ -78,10 +78,21 @@ async function oracleFor(lang: string, deriveFn: string, src: string): Promise<S
   // Passing a Set here silently ran the walker without its language branches,
   // i.e. a probe that no longer mirrored the sweep it claims to gate. The
   // dispatch is explicit so a future deriveTreeEdges probe stays honest.
+  // Three oracle signatures, dispatched explicitly so a future probe stays honest
+  // (the note above records what passing the wrong second argument silently did):
+  //   deriveTreeEdges  — (root, languageTag)
+  //   deriveHtmlEdges  — (root, moduleName): the DOCUMENT is the module and the
+  //     containment tree's root is that name, so it takes a string. Handing it
+  //     the `new Set()` every other language oracle gets would type-mismatch at
+  //     runtime into the string "[object Object]" — every document-root `contains`
+  //     row would then source from a name no file has.
+  //   everything else  — (root, typeKinds Set)
   const edges =
     deriveFn === "deriveTreeEdges"
       ? (diff as any)[deriveFn](tree.rootNode, lang)
-      : (diff as any)[deriveFn](tree.rootNode, new Set())
+      : deriveFn === "deriveHtmlEdges"
+        ? (diff as any)[deriveFn](tree.rootNode, "probe")
+        : (diff as any)[deriveFn](tree.rootNode, new Set())
   return new Set(edges.map((e: any) => `${e.label}:${e.target}`))
 }
 
@@ -235,13 +246,191 @@ const CS = (s: string) => s.replace(/^\n/, "")
 const HS = (s: string) => s.replace(/^\n/, "")
 const PHP = (s: string) => s.replace(/^\n/, "")
 
+/**
+ * M14 #290 — the markdown probe.
+ *
+ * Two things make markdown unlike every other `probeLang` lane, and both are the
+ * reason this needed its own function rather than a config entry:
+ *
+ *  1. The ANALYZER half must go through `ASTEngine.parseFile`. markdown's facts
+ *     come from a seam the engine crosses — the companion inline grammar is
+ *     pre-parsed per `inline` node and handed over on the analyze context — so a
+ *     probe that called `analyzer.analyze(root, src, path)` directly would hand
+ *     the analyzer NO context and it would emit zero `uses` edges. Every link
+ *     probe below would then pass vacuously, which is precisely the trap the
+ *     `html`/`inline-embedded-code` and `vue` SFC notes in this file record.
+ *
+ *  2. The ORACLE half takes `(root, CONTENT)` and is async, because the oracle
+ *     does its own inline sub-parse. `oracleFor`'s three explicit signatures
+ *     cannot express that, and adding a fourth to a function whose comment
+ *     explains why the dispatch is explicit would be the wrong place to widen it.
+ */
+async function oracleMarkdown(content: string): Promise<Set<string>> {
+  const wts: any = WTS
+  const P = wts.Parser ?? wts.default ?? wts
+  const L = wts.Language ?? wts.default?.Language
+  await P.init({ locateFile: () => path.join(ROOT, "node_modules", "web-tree-sitter", "tree-sitter.wasm") })
+  const block = await L.load(fs.readFileSync(path.join(WASM_DIR, "tree-sitter-markdown.wasm")))
+  const parser = new P()
+  parser.setLanguage(block)
+  const root = parser.parse(content).rootNode
+  const oracle = await import("./markdown-oracle")
+  const edges = await oracle.deriveMarkdownEdges(root, content)
+  return new Set(edges.map((e: any) => `${e.label}:${e.target}`))
+}
+
+async function probeMarkdown(
+  id: string,
+  description: string,
+  src: string,
+  expect: string[],
+  forbid: string[],
+) {
+  try {
+    // The PRODUCTION entry, for reason 1 above.
+    const eng: any = await import("../../src/ast/engine")
+    const res = await eng.ASTEngine.parseFile("probe.md", src)
+    const got = (res.relationships ?? []).map((r: any) => `${r.type}:${r.target}`)
+    const has = (g: string, e: string) => (e.includes("->") ? g === e : g === e)
+    const missing = expect.filter((e) => !got.some((g) => has(g, e)))
+    const fabricated = forbid.filter((f) => got.some((g) => has(g, f)))
+    if (missing.length > 0) {
+      record(id, "markdown", description, false, `analyzer missing: ${missing.join(", ")} (got ${got.length} edge(s): ${got.slice(0, 8).join(", ")})`)
+      return
+    }
+    if (fabricated.length > 0) {
+      record(id, "markdown", description, false, `analyzer fabricated: ${fabricated.join(", ")}`)
+      return
+    }
+    const oracle = await oracleMarkdown(src)
+    const oracleMiss = expect.filter((e) => !oracle.has(e))
+    if (oracleMiss.length > 0) {
+      record(id, "markdown", description, false, `oracle no longer derives: ${oracleMiss.join(", ")} (oracle regression)`)
+      return
+    }
+    // The collusion check: a forbidden edge that the ORACLE also derives is a lane
+    // that has agreed on a wrong contract and can no longer see the defect. This is
+    // the check that made the M60 objc/JSX class findable, and for markdown it is
+    // what stops the "an undefined reference link is not a link" ruling from being
+    // an assumption both sides happen to share.
+    const collusion = forbid.filter((f) => oracle.has(f))
+    if (collusion.length > 0) {
+      record(id, "markdown", description, false, `oracle colludes: truth also derives ${collusion.join(", ")} (lockstep mirrored a fabrication — lane cannot see it)`)
+      return
+    }
+    record(id, "markdown", description, true, "ok (oracle agrees, no collusion on the forbidden set)")
+  } catch (e: any) {
+    record(id, "markdown", description, false, e.message)
+  }
+}
+
 async function main() {
+  const htmlCfg = { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: ".html" }
   const csharpCfg = { wasm: "tree-sitter-c_sharp.wasm", analyzerFile: "real-csharp-analyzer", className: "RealCSharpAnalyzer", ext: ".cs" }
   const haskellCfg = { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: ".hs" }
   const phpCfg = { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: ".php" }
   const javaCfg = { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: ".java" }
+  const kotlinCfg = { wasm: "tree-sitter-kotlin.wasm", analyzerFile: "real-kotlin-analyzer", className: "RealKotlinAnalyzer", ext: ".kt" }
 
   // ── CSD11: assignment-form target-typed new() ───────────────────────────
+  // ── html (M14 #288) ─────────────────────────────────────────────────────
+  // The F9 battery's job is to assert a contract on BOTH sides at once: the
+  // analyzer must produce it, the independently-written oracle must still
+  // derive it (an oracle that stopped is a blind gate), and the ORACLE MUST NOT
+  // derive anything on the forbidden set (lockstep mirroring a fabrication is
+  // how a lane reports 100/0/0 on a wrong contract). Each html probe below is
+  // one of the classes the missing gates were hiding.
+  const htmlCfgSrc = (body: string) => `<!doctype html>\n<html lang="en">\n<body>\n${body}\n</body>\n</html>\n`
+
+  await probeLang("F9-PROBE-HTML-IDENTITY", "html",
+    "HTML-IDENTITY: an element is a symbol because it is ADDRESSABLE — `id`, or `name` with no `id`. A `class` is a shared styling hook and never an identity, on either side.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <div class="card"><span class="card">shared</span></div>
+  <header id="site-header" class="header bar"><a href="#orders">jump</a></header>
+  <main id="app"><section id="orders"></section>
+    <form id="search" action="/api/search"><label for="q">Q</label><input id="q" name="q"></form>
+  </main>`),
+    ["contains:orders", "uses:/api/search", "uses:q"],
+    ["contains:card", "contains:header bar"])
+
+  await probeLang("F9-PROBE-HTML-SCHEME", "html",
+    "SCHEME CONTRACT: all five javascript: spellings are recognised, including the two entity-obfuscated forms an HTML parser sees as identical to `javascript:` — and a cross-origin or non-resource hyperlink is NOT a code dependency on either side.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <a id="a1" href="javascript:void(0)">1</a>
+  <a id="a2" href="JavaScript:alert(1)">2</a>
+  <a id="a3" href=" javascript:alert(2)">3</a>
+  <a id="a4" href="&#106;avascript:alert(3)">4</a>
+  <a id="a5" href="&#0000106;avascript:alert(4)">5</a>
+  <a id="ext" href="https://example.com/x">ext</a>
+  <a id="mail" href="mailto:a@b.c">mail</a>
+  <a id="tel" href="tel:+15550100">tel</a>
+  <a id="rel" href="/orders">in-project</a>`),
+    // Two things this channel will not let you skip, both found by writing the
+    // obvious form first and watching it not match:
+    //  1. `uses:javascript:` is AMBIGUOUS here and silently unmatchable — a bare
+    //     `label:target` expectation is compared as `e.split(":")[1]`, so the trailing
+    //     colon of the scheme reads as a second separator and the comparison becomes
+    //     `javascript` vs `javascript:`. Only the `label:source->target` form (exact
+    //     string equality) can name a target ending in a colon.
+    //  2. the SOURCE is the `<a>` element, not the document module: each `<a>` here
+    //     carries an `id`, so it is addressable and a resource declared on it belongs
+    //     to its declarer. Naming the module would have been a plausible-looking
+    //     expectation that no output could ever satisfy.
+    ["uses:a1->javascript:", "uses:a2->javascript:", "uses:a3->javascript:", "uses:a4->javascript:", "uses:a5->javascript:", "uses:/orders"],
+    ["uses:https://example.com/x", "uses:mailto:a@b.c", "uses:tel:+15550100", "uses:JavaScript:alert(1)"])
+
+  await probeLang("F9-PROBE-HTML-LINE", "html",
+    "M59.O2 / R6: every edge names the 1-based line it is written on, and a fragment reference resolves to the SYMBOL rather than to the written `#text`.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <header id="site-header">
+    <a href="#orders">jump</a>
+    <img id="logo" src="/a.png" alt="a">
+  </header>
+  <main id="app">
+    <form id="search" action="/api/search"><label for="q">Q</label><input id="q" name="q"></form>
+    <section id="orders"></section>
+  </main>`),
+    ["uses:orders", "uses:/a.png", "uses:/api/search", "uses:q"],
+    ["uses:#orders", "uses:#q"])
+
+  await probeLang("F9-PROBE-HTML-CARRIERS", "html",
+    "RESOURCE TABLE: the carriers the pre-fix branch chain had no arm for — object[data], embed[src], track[src], input[src], iframe[src], source[srcset], SVG use/image href — are derivable truth, not just analyzer output.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <object id="o" data="/assets/o.json"></object>
+  <embed id="e" src="/assets/e.swf">
+  <video id="v"><track id="t" src="/assets/c.vtt"></video>
+  <input id="i" type="image" src="/assets/b.png" alt="b">
+  <iframe id="f" src="/pages/x.html" loading="lazy"></iframe>
+  <picture><source id="s" srcset="/assets/one.webp 1x, /assets/two.webp 2x"></picture>
+  <svg id="g"><use id="u" href="#g"></use><image id="im" href="/assets/h.svg"></image></svg>`),
+    ["uses:/assets/o.json", "uses:/assets/e.swf", "uses:/assets/c.vtt", "uses:/assets/b.png",
+     "uses:/pages/x.html", "uses:/assets/one.webp", "uses:/assets/two.webp", "uses:/assets/h.svg"],
+    ["uses:1x", "uses:2x", "uses:/app/"])
+
+  // NOTE on what this probe can and cannot assert. The battery's edge key is
+  // `label:target` — SOURCE-AGNOSTIC, deliberately, because the coverage match
+  // everywhere in this repo is site-agnostic. So "the fragment belongs to `app`,
+  // not to the template" is NOT expressible here: `contains:frag` is the same key
+  // either way. Asserting it as a forbid (my first attempt) convicts the CORRECT
+  // behaviour. What this channel CAN say is that each fragment element is a
+  // containment target at all, and that a BARE barrier's name never becomes one —
+  // and the source attribution itself is pinned where sources are visible:
+  // html/scope-barriers-and-references (exact `from`/`to` pairs) and CC1's
+  // document-root assertion. Stated rather than silently narrowed.
+  await probeLang("F9-PROBE-HTML-BARRIER", "html",
+    "SCOPE BARRIER: a `<template>`/`<slot>` fragment's element is a containment target of its nearest LIVE ancestor, and a bare barrier's name never becomes a target. Source attribution is pinned by the fixture and CC1 — this channel's key is target-only.",
+    htmlCfg, "deriveHtmlEdges", htmlCfgSrc(`
+  <main id="app">
+    <template><section id="frag">inert</section></template>
+    <template id="own"><p id="inside">own fragment</p></template>
+    <slot name="s"><h2 id="fallback">fallback</h2></slot>
+  </main>`),
+    ["contains:app", "contains:own", "contains:inside", "contains:fallback", "contains:frag"],
+    // A barrier's TAG never becomes a symbol name: only `id` (or `name` with no
+    // `id`) is an identity, and `<slot name="s">` IS addressable by that name, so
+    // the slot's own name legitimately appears — the tag does not.
+    ["contains:template", "contains:slot", "contains:section", "contains:p", "contains:h2"])
+
   await probeLang("F9-PROBE-CSD11", "csharp",
     "assignment-form `_f = new();` emits instantiates via member-type map; declarator + property forms unchanged",
     csharpCfg, "deriveCSharpEdges", CS(`
@@ -371,6 +560,44 @@ useGives x = (1, 2) \`gives\` x
 `),
     ["calls:useGives->gives"],
     ["calls:gives->gives"])
+
+  // ── kotlin #924: quoting syntax is not part of a NAME ─────────────────────
+  // This probe exists because the lane's own repair was HALF DEAD and every other
+  // instrument read clean for a full round. The analyzer stripped the quoting
+  // correctly; the oracle's strip call had been merged onto the tail of a `//` line, so
+  // it was a comment — dead code. The census-surface probe reads the ANALYZER, so it saw
+  // nothing wrong; the 12-file lane draws happened to contain no backticked callee, so
+  // they read MISSING=0. One instrument saw it: the 60-file draw, as a single missing
+  // truth row (`calls -> `in`` on Exposed exposed-r2dbc BinaryTypeMapper.kt, where
+  // `Parameters.`in`(...)` is a qualified call with a backticked selector). So this probe
+  // asserts BOTH sides at once, and `oracleForbid` is the half that fails on that exact
+  // mistake: an oracle still deriving the quoted spelling reports `oracle colludes`.
+  //
+  // TWO probes, not one, because the two surfaces have different owners: the declaration
+  // surface (`contains`) is derived by the GENERIC walker (deriveTreeEdges) while the call
+  // surface is the dedicated kotlin oracle's (deriveKotlinEdges), and probeLang checks one
+  // oracle per probe. Writing it as a single probe with `contains:in` in the expect set
+  // failed as "oracle no longer derives: contains:in" — a true statement about a function
+  // that never derived it, i.e. the instrument reporting its own scope, not a defect.
+  const KT_QUOTED = `
+object Parameters {
+    fun \`in\`(x: Int): Int = x
+}
+
+fun useQuoted(param: Parameters): Int = param.\`in\`(1)
+`
+  await probeLang("F9-PROBE-KT-QUOTED-NAME-924", "kotlin",
+    "#924 kotlin half (analyzer surface): a quoted identifier's quoting syntax is not part of the name — a backticked DECLARATION is contained as `in`, and `Parameters.`in`(1)` calls `in`, never the source spelling",
+    kotlinCfg, null, KT_QUOTED,
+    ["contains:in", "calls:in"],
+    ["contains:\`in\`", "calls:\`in\`", "calls:param.\`in\`"])
+
+  await probeLang("F9-PROBE-KT-QUOTED-NAME-924-ORACLE", "kotlin",
+    "#924 kotlin half (LOCKSTEP): the kotlin calls oracle strips the same quoting — its truth spells the backticked selector `in`, so a repair that publishes the bare name is an agreement rather than a mask (this is the assertion the shipped half-dead strip would have failed: `oracle colludes` on calls -> `in`)",
+    kotlinCfg, "deriveKotlinEdges", KT_QUOTED,
+    ["calls:in"],
+    ["calls:\`in\`"],
+    { oracleForbid: true })
 
   // ── php relative_scope: new self/static/parent (the original F6-class bug)
   await probeLang("F9-PROBE-PHP-RS", "php",
@@ -687,6 +914,155 @@ class Host
   // JAVASCRIPT grammar (its isTs test matched only `ts`), so JSX recovered as
   // relational expressions — truth invented `calls -> return/key/string/if`,
   // which no analyzer may emit, while the real script-setup calls were lost.
+  // ===================== M14 #290 — markdown =====================
+  //
+  // Every probe below encodes a defect class that OCCURRED in this lane, found by
+  // a line-by-line read and a corpus measurement rather than by a gate — which is
+  // the whole M37 premise: "corpus F5/census were already 100%/0 — all five defects
+  // lived in the gate-blind zone; the line-by-line read found them."
+  //
+  // The `forbid` half is load-bearing and is asserted on BOTH sides. A forbidden
+  // edge the oracle ALSO derives is the collusion case: the lane has agreed on a
+  // wrong contract with itself and can no longer see the defect, which is how the
+  // binding-position fabrication lived through a green row in the past.
+
+  // MD-1: a reference-style link and its definition produced NO edge. Measured on
+  // the lane's pinned corpus at 671 sites across 66 files while the lane doc
+  // claimed "Links (inline and reference destinations)".
+  await probeMarkdown("F9-PROBE-MD1",
+    "a reference link resolves to the destination its own `link_reference_definition` declares",
+    [
+      "# Guide",
+      "",
+      "See the [install guide][setup] and the [shortcut].",
+      "",
+      "## Elsewhere",
+      "",
+      "[setup]: ../install.md",
+      "[shortcut]: https://example.com/short",
+      "",
+    ].join("\n"),
+    ["uses:../install.md", "uses:https://example.com/short"],
+    [])
+
+  // MD-1b: the NEGATIVE half of the same class, and the one that needs the
+  // collusion check. An undefined reference link is NOT a link (CommonMark), and
+  // the alternative was measured: publishing it produced 171 edges over 34 corpus
+  // files dominated by bare bracketed citation markers (`NOTICE.md: document -> 1`).
+  // So both sides must refuse it — and if the oracle ever starts deriving it, this
+  // probe fails as COLLUSION rather than quietly agreeing with a fabrication.
+  await probeMarkdown("F9-PROBE-MD1b",
+    "an UNDEFINED reference link is literal text, not a link — and the oracle must refuse it too",
+    [
+      "# Notice",
+      "",
+      "See [undefined][nowhere] and a [bare-citation] in prose.",
+      "",
+    ].join("\n"),
+    [],
+    ["uses:nowhere", "uses:bare-citation"])
+
+  // MD-2: a fenced code block keyed by `owner + name` erased the second block of a
+  // language under one heading. Measured at 1,920 of the grammar's 4,078
+  // `fenced_code_block` nodes erased, in 406 of 738 corpus files.
+  await probeMarkdown("F9-PROBE-MD2",
+    "two code blocks of one language under one heading are two SITES, not one symbol",
+    [
+      "# Doc",
+      "",
+      "## Two",
+      "",
+      "```scala",
+      "val a = 1",
+      "```",
+      "",
+      "prose between them",
+      "",
+      "```scala",
+      "val b = 2",
+      "```",
+      "",
+    ].join("\n"),
+    ["contains:code_block.scala", "contains:code_block.scala#2"],
+    [])
+
+  // MD-3: `evidenceClass` was absent on every edge, and because graph-core's
+  // read-time derivation does not list `contains` among its structural types, the
+  // entire heading hierarchy was rendered to readers as `inferred` — "a guess,
+  // treat as a hint, never as fact" — for edges that are a direct AST parent/child
+  // relation. The probe pins the class, not the edge, because the edge is already
+  // pinned elsewhere; what was missing is the label a consumer reads.
+  await probeMarkdown("F9-PROBE-MD3",
+    "a heading hierarchy edge is `structural`, and a link edge is `reference_qualified`",
+    [
+      "# Top",
+      "",
+      "## Child",
+      "",
+      "A [link](https://example.com/x) here.",
+      "",
+    ].join("\n"),
+    ["contains:Child", "uses:https://example.com/x"],
+    [])
+
+  // MD-6: a link inside a code span was excluded by luck, not by structure — the
+  // exclusion is a property of descending NAMED children only, and the inline
+  // grammar giving `code_span` only anonymous children. This probe is the proof
+  // that the property still holds: if a future grammar gave `code_span` a named
+  // `link_destination` child, this fails, which is the day the exclusion stops
+  // being structural and has to become an explicit guard.
+  await probeMarkdown("F9-PROBE-MD6",
+    "a link inside a code span or a closed fence is not a link; a real one beside it is",
+    [
+      "# Doc",
+      "",
+      "`[nope](https://bad.example/span)`",
+      "",
+      "```md",
+      "[also nope](https://bad.example/fence)",
+      "```",
+      "",
+      "[yes](https://good.example)",
+      "",
+    ].join("\n"),
+    ["uses:https://good.example"],
+    ["uses:https://bad.example/span", "uses:https://bad.example/fence"])
+
+  // MD-9: an empty ATX heading published a symbol named after its OWN MARKER, and
+  // a document of them chained `# -> ## -> ###`. That is the M60 R7 class — a name
+  // that is not a name — and the ordinal shape `#`/`##`/`###` is the probe's
+  // signature: if any of those reappears as a target, the gate is back.
+  await probeMarkdown("F9-PROBE-MD9",
+    "an empty ATX heading publishes ABSENCE, never a symbol named after its marker",
+    [
+      "# Doc",
+      "",
+      "## Real",
+      "",
+      "#",
+      "## ",
+      "###",
+      "",
+    ].join("\n"),
+    ["contains:Real"],
+    ["contains:#", "contains:##", "contains:###"])
+
+  // MD-10: a heading's ATX CLOSING RUN was published as part of its name, so a
+  // document that closed its headings and one that did not produced two different
+  // symbols for the same section. The forbid entry is the un-closed spelling.
+  await probeMarkdown("F9-PROBE-MD10",
+    "an ATX closing run is not part of the heading's name; a `#` with no space before it is",
+    [
+      "# Doc",
+      "",
+      "## Closed ##",
+      "",
+      "### Ends in a-hash#",
+      "",
+    ].join("\n"),
+    ["contains:Closed", "contains:Ends in a-hash#"],
+    ["contains:Closed ##"])
+
   await probeVue("F9-PROBE-VUED11",
     "`<script lang=\"tsx\" setup>` truth parses as tsx: real script-setup calls derived, no keyword callees invented",
     [
@@ -765,6 +1141,52 @@ class Host
       goCfg, "deriveGoEdges", src,
       ["extends:ctl->Reader", "extends:exampleLister->ResourceIndexer", "extends:examples->ClientWithListAndApply"],
       ["extends:exampleLister->Example]", "extends:examples->CustomResourceDefinitionApplyConfiguration]"],
+      { oracleForbid: true },
+    )
+  }
+
+  // ── GO-BARE-CALLABLE-SET (round 5: what a bare callee may resolve to) ──
+  // Two classes that only a tree the COMPILER would reject can reach, so no
+  // fixture may hold them (a non-compiling fixture would make every other pin
+  // in the lane untrustworthy) — which is exactly the situation the go lane
+  // recorded for `go-cycle-probe` (a hang cannot be fixture-pinned) and for
+  // `go-914-classify` (a harness pin, not a fixture).
+  //
+  // (1) An INTERFACE METHOD name is not a package-scope callable. A
+  //     `method_spec` is published as `kind: Method`, and the analyzer's
+  //     declared-callable set accepted it, so a name existing ONLY as an
+  //     interface method resolved and published a `calls` edge the F5 oracle
+  //     could not derive (UNEXPLAINED — the C5 asymmetry class, the mirror of
+  //     #914). `oracleForbid` is on: the oracle deriving it too would mean the
+  //     two sides had mirrored the same wrong rule and the lane could not see
+  //     the defect at all.
+  // (2) A type does not implement ITSELF. The oracle has always carried that
+  //     guard; the analyzer did not, so duplicate declaration names — which
+  //     tree-sitter-go accepts and error recovery produces — yielded
+  //     `implements I -> I`.
+  {
+    const goCfg = { wasm: "tree-sitter-go.wasm", analyzerFile: "real-go-analyzer", className: "RealGoAnalyzer", ext: ".go" }
+    const src = [
+      `package probe`,
+      ``,
+      `type I interface{ Handle(x int) error }`,
+      ``,
+      `var _ = Handle(1)`,
+      ``,
+      `func g() { Handle(1) }`,
+      ``,
+      `type H interface{ Loop() }`,
+      ``,
+      `type H struct{}`,
+      ``,
+      `func (h *H) Loop() {}`,
+      ``,
+    ].join("\n")
+    await probeLang("F9-PROBE-GO-BARE-CALLABLE-SET", "go",
+      "a bare callee resolves to a DECLARED function or method only: an interface-method name is not callable (package-scope and body sites alike), and a type never implements itself — the same rule the F5 oracle already applies",
+      goCfg, "deriveGoImplements", src,
+      [],
+      ["calls:Handle", "implements:H->H"],
       { oracleForbid: true },
     )
   }

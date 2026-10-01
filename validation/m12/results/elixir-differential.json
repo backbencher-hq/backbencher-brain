@@ -8,8 +8,8 @@
         "bytes": 9702
       },
       "src/ast/engine.ts": {
-        "sha256": "df286a99659c4f14faffaecc6370da8b5bf9dd6809a10e2ad397253b65e58fc9",
-        "bytes": 74072
+        "sha256": "7f5e3f2ba578e276c6376751d3b6422466fa25b437b0ce5f12d1b93c18845059",
+        "bytes": 75193
       },
       "src/ast/fingerprint.ts": {
         "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
@@ -20,48 +20,48 @@
         "bytes": 23350
       },
       "src/ast/framework-intelligence.ts": {
-        "sha256": "c04f986e25fcafc51b3e6e0a23a9df18974b3dd0adddb4ac16dc8dbb4c10be9d",
-        "bytes": 40095
+        "sha256": "de307ac2a68ab6baee1f9f4cd0d3b4690d189d21b17e41b78e91c6206106f000",
+        "bytes": 46065
       },
       "src/ast/language-detection.ts": {
-        "sha256": "0813b36368eda40195bc61a146ab8a081438e81eb2293dfd18d7ff9fd78daf58",
-        "bytes": 4948
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
       },
       "src/ast/override-context.ts": {
-        "sha256": "8795b053d9d2b9199221263170cbb64bb6b598b645a29e269f9ca029cbfc4aeb",
-        "bytes": 4363
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
       },
       "src/ast/real-bash-analyzer.ts": {
         "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
         "bytes": 29157
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "804302cf964b52530a11f0d3b1e566d6df7519daa73c3bcc97e84fcc5d86d8fb",
-        "bytes": 106664
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
       },
       "src/ast/real-clean-analyzer.ts": {
-        "sha256": "cea24e56a170ef075ee391e2e001fb0f3ab874aa05bca5abf4750dcb1569749f",
-        "bytes": 22600
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
       },
       "src/ast/real-clojure-analyzer.ts": {
         "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
         "bytes": 89802
       },
       "src/ast/real-cpp-analyzer.ts": {
-        "sha256": "42d8bb2cbb001cdf16bb5fddda79efa5b87ad16dbcf4e5125efa80d43efafdab",
-        "bytes": 90257
+        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
+        "bytes": 134291
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "77d6732f951502841928fd1be42639acbc6e1aca2ef5f6c778bf7dc485e9b931",
-        "bytes": 120796
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
         "bytes": 33011
       },
       "src/ast/real-dart-analyzer.ts": {
-        "sha256": "390e9838a6914840e0c00a514ef538caa206b0e779120e3f78e0df2281caaaad",
-        "bytes": 102001
+        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
+        "bytes": 119919
       },
       "src/ast/real-elixir-analyzer.ts": {
         "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
@@ -76,20 +76,20 @@
         "bytes": 32473
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "f6a242fad3ae91b51567b6ec64ac1aadc1efb1c6cd411e8034c225303eed7498",
-        "bytes": 147431
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
         "bytes": 21325
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "8dcba02ee159768453093d85535139ce0dc7648faefab8831d3acfeeceefb05f",
-        "bytes": 119797
+        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
+        "bytes": 126319
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "0b4df3b7dbd298917344310684f899e0f69e3fb5149fb5165635fedd61bbb8f0",
-        "bytes": 54878
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
@@ -100,8 +100,8 @@
         "bytes": 20521
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "95c0f695ba799b7b0da97fc4be20df2faf7672814e862ec050b2ab6b4899ecfe",
-        "bytes": 140683
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
       },
       "src/ast/real-javascript-analyzer.ts": {
         "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
@@ -128,36 +128,36 @@
         "bytes": 13413
       },
       "src/ast/real-objective-c-analyzer.ts": {
-        "sha256": "2cf3348934d5e4c950542e6d2cfe0e8c014befd1f45884299ff3c6649fd2b29a",
-        "bytes": 61621
+        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
+        "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
         "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
         "bytes": 26379
       },
       "src/ast/real-php-analyzer.ts": {
-        "sha256": "684339cfc5e53d4cee9aae44feee0f9225e0b0e3445ce1d0cf900eb64fad6b8b",
-        "bytes": 83171
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
       },
       "src/ast/real-powershell-analyzer.ts": {
         "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
         "bytes": 24914
       },
       "src/ast/real-python-analyzer.ts": {
-        "sha256": "27a4891170a5d90c07d13bbb6e96ed46ceef8130872d3c014433b529d8f8989a",
-        "bytes": 49950
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
       },
       "src/ast/real-r-analyzer.ts": {
         "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
         "bytes": 39112
       },
       "src/ast/real-ruby-analyzer.ts": {
-        "sha256": "64a3209636df0cfedd61d155f46ef91466ed405c09d7e0431ef24e2e93c0d506",
-        "bytes": 74260
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
       },
       "src/ast/real-rust-analyzer.ts": {
-        "sha256": "08ad117ce4008609bbdfbf64a9eca45a2b99ea906c5655b197f9a8f92b359370",
-        "bytes": 87903
+        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
+        "bytes": 107870
       },
       "src/ast/real-scala-analyzer.ts": {
         "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
@@ -172,8 +172,8 @@
         "bytes": 71997
       },
       "src/ast/real-swift-analyzer.ts": {
-        "sha256": "bfa7471766020bf3c5eee2910d6baa44b776f86a9dc20314bac1013ca7d0d144",
-        "bytes": 82717
+        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
+        "bytes": 107709
       },
       "src/ast/real-typescript-analyzer.ts": {
         "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
@@ -192,8 +192,8 @@
         "bytes": 23819
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "25ac06734eaab0dbc753963cc40e2e55645a67137a79be7d362316e80b579580",
-        "bytes": 57574
+        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
+        "bytes": 62122
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -204,16 +204,16 @@
         "bytes": 31754
       },
       "src/brain/brain.sql.ts": {
-        "sha256": "1bdcfe4b14bfd949c0a7807f69362623534b2aa13dc328d7a1ed7064fccaa377",
-        "bytes": 18297
+        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
+        "bytes": 18451
       },
       "src/brain/database.ts": {
-        "sha256": "a7e38da14f93351ca254d4c7016d494a20bb7a2d5f0951bddfd00982cbd00976",
-        "bytes": 17626
+        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
+        "bytes": 18136
       },
       "src/brain/schema-ddl.ts": {
-        "sha256": "70b72af907eb43464aef9a8b489ac7af817da32a7db15f8a6684e162d6ff5ca5",
-        "bytes": 28163
+        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
+        "bytes": 29793
       },
       "src/project/project.sql.ts": {
         "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
@@ -236,8 +236,8 @@
         "bytes": 333
       },
       "src/util/wasm.ts": {
-        "sha256": "d39d222537fe513a7999a9445f3b78f6e16459e2378ec4305e71b2d5425d0621",
-        "bytes": 6897
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
       },
       "validation/m12/fixtures/elixir/Negative.ex": {
         "sha256": "e499f984189c7bac2cd1738c7db5bde64af6e77eef7d81277367eeded014e5e4",
@@ -252,7 +252,7 @@
         "bytes": 17754
       }
     },
-    "digest": "4849597404502267a2d2cfdf41e14f6dab49a197b9ae38038b3bb790cdc2920a",
+    "digest": "a89ed98c98b114a46ab208408c481d124e03d9c0a61567317f0753baf8727227",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-elixir_tree-sitter-elixir.wasm",
       "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
@@ -377,11 +377,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:elixir",
-      "wallTimeMs": 16.553145,
-      "userCpuMs": 49.862,
-      "systemCpuMs": 2.178,
-      "peakRssBytes": 251490304,
-      "rssDeltaBytes": 3276800,
+      "wallTimeMs": 98.174024,
+      "userCpuMs": 70.02,
+      "systemCpuMs": 7.652,
+      "peakRssBytes": 215810048,
+      "rssDeltaBytes": 1687552,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -394,7 +394,7 @@
   "note": "M12 per-analyzer differential for elixir. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.857Z",
-    "contentSha256": "00da043f2105e22c9955470dc00e237eee168ea2b2042780019813d411cb1fa1"
+    "sealedAt": "2026-09-28T02:54:45.421Z",
+    "contentSha256": "45baae35472b631cacb638be62c3172c2aaf31720758b5d1b0a90473d42c034e"
   }
 }

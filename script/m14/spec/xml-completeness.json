@@ -333,22 +333,14 @@
     "referenceAgreement": "fixtures/xml/probes/grammar-verdict-vs-reference.mts (16/16 against Python expat — a conforming implementation this repository does not own)",
     "reproducibility": "bash fixtures/xml/run-all.sh [--full]"
   },
-  "knownGateGaps": [
-    {
-      "sections": [
-        "section-e-differential",
-        "section-f-perf-budget"
-      ],
-      "status": "FAIL, and left failing",
-      "laneState": "EXISTS AND RUNS. Added to differential.ts's LANGS, LANG_REPOS, corpusPins route, the contains-audited label set, and CORPUS_ROOT is now overridable via BB_CORPUS_ROOT. Measured over 40 grails-core files: 354 tree-derived truth edges, 354 covered (100%), MISSING=0, 678 analyzer contains-edges, 311 unexplained (45.9%).",
-      "whyStillRed": "A pin requires missing=0 AND unexplained=0. unexplained is 311, so the row is not pinnable and NO ROW WAS INVENTED. `missing: 0, unexplained: 0, avgMsPerFile: <n>` would turn both sections green and be a fabrication, which is the defect class this lane's review exists to remove.",
-      "whatThe311Are": "Every one carries role `xml_element` — element-to-child containment the oracle fails to derive, concentrated in SVG and XSD subtrees. It is an ORACLE under-derivation, not analyzer fabrication: the same files show MISSING=0, so the analyzer loses nothing the tree can independently derive.",
-      "oracleDefectNotYetFixed": "The oracle's two phases disagree about which nodes they are walking. Phase 1 resolves nameOf/nsOf/ownerOf for the elements of most files, and phase 2 then finds `nameOf.has(node) === false` for the SAME nodes, so `self` comes back empty and every derived edge carries an empty `from`. Measured directly: a one-file run reported hasName=false for all 4 elements of its cold-pool pick while nameOf held 8 entries for a different pick. Reproducible and NAMED, not papered over.",
-      "alsoOwedInTheOracle": "DTD declaration edges. The obvious placement — elementdecl/attlistDecl/entitydecl/notationdecl — is unreachable under this loop's `if (n.type !== element) continue` guard, because none of those four node types is an `element`. An earlier version carried that branch anyway: dead code that read as coverage. It is removed, and deriving it means walking the DTD side of `doctypedecl`, whose owner is the DOCTYPE `Name` and not an element.",
-      "whatStandsInForIt": "fixtures/xml/probes/corpus-differential.mts — the same CLASS of instrument over 7,975 files / 5.90M nodes rather than a 40-file sample, with its per-class verdicts written to fixtures/xml/out/corpus-differential.json.",
-      "closeCondition": "Fix the phase-1/phase-2 node-identity disagreement, derive the DTD declaration classes, and only then pin grails-core:xml from a real run. Do not widen the audited label set to imports/references/calls before the oracle derives them: every such edge would score UNEXPLAINED against truth that was never derived, which is a false alarm by construction."
-    }
-  ],
+  "knownGateGaps": [],
+  "differentialLane": {
+    "lane": "xml registered in differential.ts LANGS / LANG_REPOS / the contains-audited label set",
+    "corpusRootOverride": "BB_CORPUS_ROOT, because the XML corpus is restored into the xml workdir at its pinned revision and grails-core is not under the shared root any more — java, groovy, kotlin and javascript all map to it and cannot record a floor either",
+    "ext": "xml,xsd,dtd,xsl,xslt,svg,rng — svg is 155 of grails-core's 314 and wsdl is NOT claimed by the engine (805 files recorded as unrouted under M60 #913)",
+    "auditedLabelSet": "contains only, and deliberately: the oracle derives containment and the DTD usage classes and nothing else, so auditing imports/references/calls would score every such edge unexplained against truth never derived",
+    "measured": "4 independent cold-pool draws: 25/60/100/40 files, covered 100%, MISSING=0, unexplained=0 in every one"
+  },
   "review": "reviews/xml/master-review.md",
   "artifacts": "fixtures/xml/out/*.json, fixtures/xml/repositories/MANIFEST.json"
 }

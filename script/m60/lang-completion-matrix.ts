@@ -9,6 +9,13 @@
 //
 //   diff      M14.0.F5   analyzer covers the tree truth: MISSING=0, no
 //                        unexplained edges, no fabricated edges (@ HEAD)
+//   sharp     M60.SHARP  the SAME question asked with the qualifier kept: the
+//                        published rule's normTarget is the LAST SEGMENT, so a
+//                        truth row can be passed by an analyzer edge naming a
+//                        DIFFERENT qualified member (the groovy d6a7cd89 defect,
+//                        published as MISSING=2 when 4 rows were missing). A lane
+//                        whose strict row carries hard>0 cannot be done; a missing
+//                        row is DISCLOSED, never a pass (the sweep is resumable)
 //   fixtures  M14.0.F3   adversarial fixtures: fail=0
 //   corpus    M12 claims every grammar-error claim is backed by a measured
 //                        artifact and agrees with it
@@ -25,7 +32,7 @@
 // (e.g. M37's per-language ✅ table) rather than open work are declared
 // cross-cutting here, by number, with a reason — never silently dropped.
 //
-// Run: bun script/m60/lang-completion-matrix.ts
+// Run: bun script/m60/lang-completion-matrix.ts [--self-test]
 import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs"
 import path from "node:path"
 
@@ -58,7 +65,17 @@ const canon = (l: string) => ALIAS[l.toLowerCase()] ?? l.toLowerCase()
 
 const FAMILIES: Record<string, string[]> = {
   jvm: ["java", "kotlin", "scala", "groovy"],
-  web: ["typescript", "javascript", "vue", "svelte"],
+  // html is a WEB language and was filed under `config` with json/yaml/xml/sql.
+  // That is the #857 class one level up: two artifacts disagreeing about which
+  // family a lane belongs to is how a lane gets counted twice or not at all, and
+  // the consequence here is concrete rather than bookkeeping — a `web family
+  // closed` claim is computed from this map, so with html outside it NO web-family
+  // closure claim could ever have covered an html defect. The web family's
+  // boundary is "the browser's document and script languages", and html is its
+  // document language; the four lanes already here are its script and component
+  // languages. `css` stays in `config` deliberately: it has no analyzer lane in
+  // this milestone and its detection story is not the web family's.
+  web: ["typescript", "javascript", "vue", "svelte", "html"],
   // ManagedOO (the M14.4 wave, plans/M14-issues.json #264–#270): swift and
   // objc were filed under `systems` here, which contradicted the wave that
   // actually owns them AND the family the OO plan assigns its lanes to. The
@@ -68,7 +85,7 @@ const FAMILIES: Record<string, string[]> = {
   oo: ["python", "ruby", "php", "dart", "csharp", "swift", "objc"],
   systems: ["c", "cpp", "rust", "go", "zig"],
   functional: ["haskell", "clojure", "elixir", "erlang", "fsharp", "clean"],
-  config: ["json", "yaml", "xml", "html", "css", "sql", "graphql", "hcl", "markdown", "makefile", "bash", "powershell", "lua", "perl", "r"],
+  config: ["json", "yaml", "xml", "css", "sql", "graphql", "hcl", "markdown", "makefile", "bash", "powershell", "lua", "perl", "r"],
 }
 const familyOf = (l: string) =>
   Object.entries(FAMILIES).find(([, ls]) => ls.includes(l))?.[0] ?? "other"
@@ -207,14 +224,95 @@ function trackerSelfTest(): { passed: number; failed: string[] } {
   return { passed, failed }
 }
 
+/**
+ * The `sharp` cell, as a PURE function of the artefact and the lane's own row, so the
+ * cell's rule can be falsified by --self-test instead of being read off the render
+ * loop. The three-way split it encodes:
+ *
+ *   fail      the artefact carries a lane whose strict pass found a HARD mask — the
+ *             published rule passed a truth row on a DIFFERENT qualified target. This
+ *             is the ONE case where a measurement of the analyzer revokes the tick.
+ *   disclosed hard=0 but the row is absent, uncitable, or carries soft rows only.
+ *             Absence is a coverage statement about the SWEEP, not about the lane: a
+ *             disclosed cell is printed, named, and never counted as a pass.
+ *   pass      a citable row with no hidden rows at all.
+ *
+ * `diff === "n/a"` short-circuits: a lane with no differential lane has nothing for a
+ * sharpness rule to sharpen, and inventing a cell there would be the mirror image of
+ * the false unknown this file has already paid for once (objc's grammar cell).
+ */
+export function sharpCell(
+  diffCell: Cell,
+  artefact: { complete?: boolean; citable?: number; expected?: number; commit?: string; refused?: { lang: string; reason: string }[] } | null,
+  row: { hard?: number; hidden?: number; soft?: number; strictMissing?: number; truth?: number; files?: number; digest?: string } | null,
+  lang: string,
+): { cell: Cell; note: string } {
+  if (diffCell === "n/a") return { cell: "n/a", note: "sharp: not a differential lane" }
+  if (!artefact) return { cell: "disclosed", note: "sharp: no M60.SHARP artefact — this lane's MISSING=0 is still the LEAF rule's, not the written-target rule's" }
+  if (!row) {
+    const why = artefact.refused?.find((r) => r.lang === lang)?.reason
+    const coverage = `${artefact.citable ?? 0}/${artefact.expected ?? 25} citable lane(s) @ ${(artefact.commit ?? "?").slice(0, 8)}`
+    return { cell: "disclosed", note: artefact.complete
+      ? `sharp: ABSENT from a COMPLETE ${coverage} — the lane list and the artefact disagree; treat as unmeasured`
+      : `sharp: not measured under the strict rule yet (artefact is INCOMPLETE: ${coverage})${why ? `; refused for this lane: ${why}` : ""}` }
+  }
+  const hard = row.hard ?? 0
+  const hidden = row.hidden ?? 0
+  if (hard > 0) return { cell: "fail", note: `sharp: HARD MASK(S) ${hard} — the leaf rule passes ${hard} truth row(s) on a DIFFERENT qualified target (strict-missing ${row.strictMissing ?? 0}, hidden ${hidden}); the published MISSING=0 is not "the analyzer publishes that edge"` }
+  if (hidden > 0) return { cell: "disclosed", note: `sharp: ${hidden} soft row(s) — one side is a bare leaf, a spelling contract question, not libelled as a defect (strict-missing ${row.strictMissing ?? 0})` }
+  return { cell: "pass", note: `sharp: truth=${row.truth ?? 0} row(s) compared AS WRITTEN, strict-missing 0, hidden 0 @ ${row.files ?? 0} files (digest ${row.digest ?? "?"})` }
+}
+
+/**
+ * The sharp column's own negatives. This cell's only value is that it can REVOKE a
+ * tick, so the falsification is on all three sides: a hard row must lose the cell (and
+ * with it the tick), an absent row must NOT read as a pass, and a clean row must pass.
+ * The artefact shapes used are the shapes the instrument actually emits.
+ */
+function sharpSelfTest(): { passed: number; failed: string[] } {
+  const failed: string[] = []
+  let passed = 0
+  const check = (name: string, cond: boolean) => (cond ? passed++ : failed.push(name))
+  const artefact = (over: any = {}) => ({ complete: true, citable: 25, expected: 25, commit: "c8ca2578deadbeef", refused: [], ...over })
+  const clean = { hard: 0, hidden: 0, soft: 0, strictMissing: 0, truth: 12790, files: 107, digest: "abc" }
+  const hardRow = { ...clean, hard: 4, hidden: 4, strictMissing: 4 }
+  const softRow = { ...clean, hidden: 4, soft: 4, strictMissing: 4 }
+
+  check("sharp: a lane with no differential lane has no sharp cell", sharpCell("n/a", artefact(), clean, "bash").cell === "n/a")
+  check("sharp: with NO artefact the cell is disclosed, never a pass", sharpCell("pass", null, null, "php").cell === "disclosed")
+  check("sharp: an absent lane in a partial artefact is disclosed", sharpCell("pass", artefact({ complete: false, citable: 2 }), null, "rust").cell === "disclosed")
+  check("sharp: the disclosure names the lane's own refusal reason when the artefact carries one",
+    sharpCell("pass", artefact({ complete: false, citable: 2, refused: [{ lang: "rust", reason: "verdict tree-moved" }] }), null, "rust").note.includes("tree-moved"))
+  check("sharp: a CLEAN strict row is a pass", sharpCell("pass", artefact(), clean, "javascript").cell === "pass")
+  check("sharp: a HARD MASK revokes the cell", sharpCell("pass", artefact(), hardRow, "kotlin").cell === "fail")
+  check("sharp: the hard note states the count AND refuses the stronger reading",
+    /HARD MASK\(S\) 4/.test(sharpCell("pass", artefact(), hardRow, "kotlin").note) &&
+    sharpCell("pass", artefact(), hardRow, "kotlin").note.includes("is not \"the analyzer publishes that edge\""))
+  check("sharp: soft-only rows are disclosed, not libelled as a defect", sharpCell("pass", artefact(), softRow, "typescript").cell === "disclosed")
+  check("sharp: an absent lane in a COMPLETE artefact is a contradiction and says so",
+    /COMPLETE/.test(sharpCell("pass", artefact(), null, "php").note))
+  check("sharp: a red cell blocks the tick (the revoke this column exists for)",
+    !Object.values({ diff: "pass", sharp: sharpCell("pass", artefact(), hardRow, "kotlin").cell, tracker: "pass" }).every((c) => c !== "fail"))
+  check("sharp: a clean cell and a soft cell do NOT block the tick",
+    [clean, softRow].every((r) => Object.values({ diff: "pass", sharp: sharpCell("pass", artefact(), r, "x").cell, tracker: "pass" }).every((c) => c !== "fail")))
+  return { passed, failed }
+}
+
 const trackerSelf = trackerSelfTest()
 if (trackerSelf.failed.length) {
   console.error(`tracker self-test FAILED (${trackerSelf.passed} passed, ${trackerSelf.failed.length} failed):`)
   for (const f of trackerSelf.failed) console.error(`  ${f}`)
   process.exit(1)
 }
+const sharpSelf = sharpSelfTest()
+if (sharpSelf.failed.length) {
+  console.error(`sharp self-test FAILED (${sharpSelf.passed} passed, ${sharpSelf.failed.length} failed):`)
+  for (const f of sharpSelf.failed) console.error(`  ${f}`)
+  process.exit(1)
+}
 if (process.argv.includes("--self-test")) {
   console.log(`tracker self-test: ${trackerSelf.passed} passed, 0 failed`)
+  console.log(`sharp self-test: ${sharpSelf.passed} passed, 0 failed`)
   process.exit(0)
 }
 
@@ -245,6 +343,15 @@ const DEPTH = exists("validation/m60/results/depth-probes.json") ? readJson("val
 const ORACLE_SIDE_RESIDUALS = new Set<string>(["#905", "#906"])
 const depthWorst: Record<string, { maxSample: number; missing: number; unexplained: number; drawsRed: number; issue?: string }> =
   DEPTH?.worstPerLang ?? {}
+
+// Oracle sharpness (M60.SHARP): the SAME diff question with the qualifier kept. The
+// artefact is OPTIONAL and its absence is disclosed rather than scored — the sweep is
+// resumable across a tree other actors are editing, so an absent row is a statement
+// about coverage, not about the lane. What the column changes is the other direction:
+// once a lane's strict row exists, hard>0 revokes its tick, which is the one thing the
+// leaf-rule diff cell could never see (groovy d6a7cd89: published MISSING=2, actually 4).
+const SHARP = exists("validation/m60/results/oracle-sharpness.json") ? readJson("validation/m60/results/oracle-sharpness.json") : null
+const sharpRows: Record<string, any> = SHARP?.rows ?? {}
 
 if (!F5 || !F3 || !F1 || !CLAIMS || !P1 || !TRACKER) {
   console.error("missing an input artifact — refusing to compute a matrix from partial evidence")
@@ -315,6 +422,13 @@ const rows: Row[] = languages.map(lang => {
     else notes.push(`diff: truth=${d.treeTruthEdges} covered=${d.coveredByAnalyzer} analyzer-edges=${d.analyzerEdges} (heuristic-class ${d.heuristicUnexplained})`)
   } else { cells.diff = "n/a"; notes.push("diff: not a measured differential lane") }
 
+  // The sharp cell is computed from the artefact through a pure function so its rule is
+  // falsifiable (see sharpSelfTest): hard>0 fails the lane, an absent or uncitable row is
+  // disclosed with its reason, a clean row passes.
+  const sharp = sharpCell(cells.diff, SHARP, sharpRows[lang] ?? null, lang)
+  cells.sharp = sharp.cell
+  notes.push(sharp.note)
+
   const fx = fixtureSummary[lang]
   if (fx) {
     // A failing fixture whose expectation file is uncommitted is not milestone
@@ -375,7 +489,7 @@ const rows: Row[] = languages.map(lang => {
 
 // ---------------------------------------------------------------- report
 const SYM: Record<Cell, string> = { pass: "✓", fail: "✗", "n/a": "·", disclosed: "~" }
-const COLS = ["diff", "depth", "fixtures", "corpus", "fresh", "grammar", "lines", "folder", "tracker"]
+const COLS = ["diff", "sharp", "depth", "fixtures", "corpus", "fresh", "grammar", "lines", "folder", "tracker"]
 console.log(`\nM60.LCM — per-language completion at ${F5.commit?.slice(0, 8)} (F5) / HEAD`)
 console.log(`${"language".padEnd(12)} ${"family".padEnd(11)} ${COLS.map(c => c.slice(0, 7).padStart(8)).join("")}   TRULY DONE`)
 for (const r of rows) {
@@ -404,9 +518,12 @@ if (import.meta.main) writeFileSync(OUT, JSON.stringify({
   gate: "M60.LCM",
   title: "Per-language completion matrix — a tick only where every applicable dimension is green",
   at: new Date().toISOString(),
-  method: "joins M14.0.F5 (diff), M14.0.F3 (fixtures), M12 corpus-claims gate, M14.0.F1 (grammar audit), M60.P1 (line emission), reviews/* closure markers, and the dated tracker snapshot validation/m49/lang-open-issues.json; a missing dimension reports 'n/a' and never counts as a pass",
+  method: "joins M14.0.F5 (diff), M60.SHARP (sharp), M14.0.F3 (fixtures), M12 corpus-claims gate, M14.0.F1 (grammar audit), M60.P1 (line emission), reviews/* closure markers, and the dated tracker snapshot validation/m49/lang-open-issues.json; a missing dimension reports 'n/a' or is disclosed '~' and never counts as a pass, and a measured M60.SHARP row with hard>0 fails the lane",
   inputs: {
     differential: `validation/m14/results/M14.0.F5.json @ ${F5.commit?.slice(0, 8)}`,
+    sharpness: SHARP
+      ? `validation/m60/results/oracle-sharpness.json @ M60.SHARP (${SHARP.citable}/${SHARP.expected} citable lane(s), ${SHARP.complete ? "complete" : "INCOMPLETE"}, commit ${String(SHARP.commit ?? "?").slice(0, 8)})`
+      : "validation/m60/results/oracle-sharpness.json @ absent — no lane has been measured under the written-target rule yet, so every diff cell above is the LEAF rule's",
     fixtures: FIX ? `validation/m60/results/fixtures-at-head.json @ ${FIX.at} (live canonical run, untracked-fixture rule applied)` : `validation/m14/results/M14.0.F3.json @ ${F3.commit?.slice(0, 8)}`,
     grammarAudit: `validation/m14/results/M14.0.F1.json @ ${F1.commit?.slice(0, 8)}`,
     corpusClaims: `validation/m12/results/corpus-claims-gate.json @ ${CLAIMS.checkedAt}`,
@@ -428,7 +545,8 @@ if (import.meta.main) writeFileSync(OUT, JSON.stringify({
     ]),
   ),
   columns: {
-    diff: "M14.0.F5 MISSING/unexplained/fabrication all zero",
+    diff: "M14.0.F5 MISSING/unexplained/fabrication all zero (leaf rule: the target's LAST SEGMENT)",
+    sharp: "M60.SHARP: the target compared AS WRITTEN — hard=0 means the leaf rule hid nothing; hard>0 fails the lane; an absent row is disclosed (~), never a pass",
     depth: "every 200-file draw on the lane's pinned repo is MISSING=0 and unexplained=0 (60 is the canonical draw)",
     fixtures: "M14.0.F3 committed-fixture fail=0 (untracked failures excluded, #899)",
     corpus: "M12 claim agrees with artifact",

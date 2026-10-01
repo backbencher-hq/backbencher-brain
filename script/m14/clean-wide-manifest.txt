@@ -1,0 +1,2179 @@
+$HOME/fixtures/clean-wide/CleanSerial/examples/Monitor.icl
+$HOME/fixtures/clean-wide/CleanSerial/examples/test.icl
+$HOME/fixtures/clean-wide/CleanSerial/src-posix/CleanSerial/Platform.icl
+$HOME/fixtures/clean-wide/CleanSerial/src-windows/CleanSerial/Platform.dcl
+$HOME/fixtures/clean-wide/CleanSerial/src-windows/CleanSerial/Platform.icl
+$HOME/fixtures/clean-wide/CleanSerial/src/CleanSerial.dcl
+$HOME/fixtures/clean-wide/CleanSerial/src/CleanSerial.icl
+$HOME/fixtures/clean-wide/CleanSerial/src/CleanSerial/iTasks.dcl
+$HOME/fixtures/clean-wide/CleanSerial/src/CleanSerial/iTasks.icl
+$HOME/fixtures/clean-wide/CleanSerial/tests/listDevices.icl
+$HOME/fixtures/clean-wide/clean-core/Extensions.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Numeric.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Numeric.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Numeric/Signed.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Numeric/Signed.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Order.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Order.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Order/Bounded.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Algebra/Order/Bounded.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Clean/Core.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Clean/Core.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Control/Appendable.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Control/Appendable.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Internal.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Internal.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Strict.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Strict.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Unboxed.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Array/Unboxed.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Bool.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Bool.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Char.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Char.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Enum.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Enum.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/File.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/File.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Function.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Function.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Int.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Int.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Nat.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Nat.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Real.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/Data/Real.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/System/File.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/System/File.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/Text/Show.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/_SystemArray.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/_SystemArray.icl
+$HOME/fixtures/clean-wide/clean-core/Sources/_SystemEnum.dcl
+$HOME/fixtures/clean-wide/clean-core/Sources/_SystemEnum.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/dynamic_string.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/dynamic_string.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_copy_with_names.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_copy_with_names.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_to_sapl_string.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_to_sapl_string.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_to_string_and_descriptors.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/graph_to_string_and_descriptors.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/sapldebug.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/common/sapldebug.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/linux/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/macosx/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/win32/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-graph-copy/win64/symbols_in_program.dcl
+$HOME/fixtures/clean-wide/clean-graph-copy/win64/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/BatchBuild.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/IdeState.dcl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/IdeState.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/PmCallBack.dcl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/errwin.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/interrupt.dcl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/interrupt.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/messwin.icl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/typeatt.dcl
+$HOME/fixtures/clean-wide/clean-ide/BatchBuild/typeatt.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdAction.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdAction.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdActionType.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdActionType.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdFile.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdFile.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdFind.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdFind.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdKeyMapping.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdKeyMapping.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdKeyboard.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdKeyboard.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdLineText.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdLineText.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdLook.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdLook.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMessage.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMessage.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMonad.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMonad.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMouse.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMouse.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMovement.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdMovement.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdPosition.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdPosition.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdSelection.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdSelection.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdState.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdState.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdTab.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdTab.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdText.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdText.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualCursor.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualCursor.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualLineNr.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualLineNr.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualText.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdVisualText.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdWindow.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/EdWindow.icl
+$HOME/fixtures/clean-wide/clean-ide/Ed/syncol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ed/syncol.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdClient.dcl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdClient.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdCommon.dcl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdCommon.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdEditMenu.dcl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdEditMenu.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdFileMenu.dcl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdFileMenu.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdOptionsMenu.dcl
+$HOME/fixtures/clean-wide/clean-ide/Editor/EdOptionsMenu.icl
+$HOME/fixtures/clean-wide/clean-ide/Editor/Main.icl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/Mac/heap_profile_os_dependent.dcl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/Mac/heap_profile_os_dependent.icl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/ShowHeapProfile.dcl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/ShowHeapProfile.icl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/Windows/heap_profile_os_dependent.dcl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/Windows/heap_profile_os_dependent.icl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/heapprofiler.dcl
+$HOME/fixtures/clean-wide/clean-ide/HeapProfile/heapprofiler.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/EdClient.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/EdClient.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/EdCommon.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/EdCommon.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/IDE.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/IDE.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/IdeState.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/IdeState.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/PmCallBack.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/PmCallBack.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/PmDialogues.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/PmDialogues.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/UtilInterrupt.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/UtilInterrupt.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/balance.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/balance.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/clipboard.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/clipboard.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/colourclip.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/colourclip.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/conswin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/conswin.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/edfiles.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/edfiles.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/edoptions.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/edoptions.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/errwin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/errwin.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/fbi.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/fbi.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/finder.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/finder.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/idehelp.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/idehelp.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/ideoptions.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/ideoptions.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/interrupt.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/interrupt.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/menubar.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/menubar.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/messwin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/messwin.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/prefix.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/prefix.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/projmen.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/projmen.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/projwin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/projwin.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/search.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/search.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/searchtree.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/searchtree.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/shift.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/shift.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/targetui.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/targetui.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/tooltip.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/tooltip.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/treeparse.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/treeparse.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/typeatt.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/typeatt.icl
+$HOME/fixtures/clean-wide/clean-ide/Ide/typewin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Ide/typewin.icl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/LinkerInterface/WriteOptionsFile.dcl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/LinkerInterface/WriteOptionsFile.icl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/LinkerInterface/linkargs.dcl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/LinkerInterface/linkargs.icl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/ProverOptions/ProverOptions.dcl
+$HOME/fixtures/clean-wide/clean-ide/Interfaces/ProverOptions/ProverOptions.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/ConvertMWObject.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/ConvertMWObject.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/IdePlatform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/IdePlatform.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/Platform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/Platform.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/PlatformObjectIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/PlatformObjectIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/PmCleanSystem.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/PmCleanSystem.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilNewlinesFile.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilNewlinesFile.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilObjectIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/UtilObjectIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/dodebug.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/dodebug.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker2.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker2.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker3.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker3.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker_resources.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/linker_resources.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/mach_o_linker.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/mach_o_linker.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/mach_o_linker2.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/mach_o_linker2.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/nodebug.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/nodebug.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/tools.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/tools.icl
+$HOME/fixtures/clean-wide/clean-ide/Mac/xcoff_linker.dcl
+$HOME/fixtures/clean-wide/clean-ide/Mac/xcoff_linker.icl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/Platform.dcl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/PmCleanSystem.dcl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/PmCleanSystem.icl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/UtilIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/UtilIO.icl
+$HOME/fixtures/clean-wide/clean-ide/MacOSX/set_return_code.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmAbcMagic.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmAbcMagic.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmCompilerOptions.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmCompilerOptions.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmDirCache.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmDirCache.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmDriver.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmDriver.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmEnvironment.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmEnvironment.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmFileInfo.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmFileInfo.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmFiles.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmFiles.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmParse.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmPath.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmPrefs.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmPrefs.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmProject.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmProject.icl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmTypes.dcl
+$HOME/fixtures/clean-wide/clean-ide/Pm/PmTypes.icl
+$HOME/fixtures/clean-wide/clean-ide/Registry/change_registry.icl
+$HOME/fixtures/clean-wide/clean-ide/Registry/first_run.dcl
+$HOME/fixtures/clean-wide/clean-ide/Registry/first_run.icl
+$HOME/fixtures/clean-wide/clean-ide/Registry/registry.dcl
+$HOME/fixtures/clean-wide/clean-ide/Registry/registry.icl
+$HOME/fixtures/clean-wide/clean-ide/Registry/version.dcl
+$HOME/fixtures/clean-wide/clean-ide/Registry/version.icl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/Mac/time_profile_os_dependent.dcl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/Mac/time_profile_os_dependent.icl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/ShowProfile.dcl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/ShowProfile.icl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/Windows/time_profile_os_dependent.dcl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/Windows/time_profile_os_dependent.icl
+$HOME/fixtures/clean-wide/clean-ide/TimeProfile/timeprofiler.icl
+$HOME/fixtures/clean-wide/clean-ide/Unix/Arm/Platform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/Arm/Platform.icl
+$HOME/fixtures/clean-wide/clean-ide/Unix/Intel/Platform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/PmCleanSystem.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/PmCleanSystem.icl
+$HOME/fixtures/clean-wide/clean-ide/Unix/UtilIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/UtilIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Unix/UtilNewlinesFile.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/UtilNewlinesFile.icl
+$HOME/fixtures/clean-wide/clean-ide/Unix/set_return_code.dcl
+$HOME/fixtures/clean-wide/clean-ide/Unix/set_return_code.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/AltFileSelect.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/AltFileSelect.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/DodoUtil.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/DodoUtil.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/ExtListBox.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/ExtListBox.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/ExtNotice.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/ExtNotice.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/FilteredListBox.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/FilteredListBox.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/FontEnv.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/FontEnv.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/Help.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/Help.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StateMonad.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StateMonad.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdError.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdError.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdListBox.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdListBox.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdParsComb.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdParsComb.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdPathname.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdRegExp.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StdRegExp.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/StrictList.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/StrictList.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/Table.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/Table.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilDate.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilDate.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilDiagnostics.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilDiagnostics.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilOptions.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilOptions.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilPatch.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilPatch.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilSequence.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilSequence.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilStrictLists.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/UtilStrictLists.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/colorpickcontrol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/colorpickcontrol.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/expand_8_3_names_in_path.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/expand_8_3_names_in_path.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/filehist.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/filehist.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/flexbar.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/flexbar.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/flextextcontrol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/flextextcontrol.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/flexwin.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/flexwin.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/fpu.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/fpu.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/framecontrol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/framecontrol.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/ioutil.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/ioutil.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/morecontrols.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/morecontrols.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/tabcontrol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/tabcontrol.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/textcharstream.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/textcharstream.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/wraptextcontrol.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/wraptextcontrol.icl
+$HOME/fixtures/clean-wide/clean-ide/Util/wraptextcontrolalt.dcl
+$HOME/fixtures/clean-wide/clean-ide/Util/wraptextcontrolalt.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/IdePlatform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/IdePlatform.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/StdIOCommon.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/StdIOCommon.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/StdProcessAttribute.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/StdProcessAttribute.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/deviceevents.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/deviceevents.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/osbitmap.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/osbitmap.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/processdevice.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/processdevice.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/processevent.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PatchConsoleEvents/processevent.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/Platform.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/Platform.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PlatformObjectIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PlatformObjectIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/PmCleanSystem.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/PmCleanSystem.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilNewlinesFile.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilNewlinesFile.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilObjectIO.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/UtilObjectIO.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/asynclaunch.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/asynclaunch.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/dodebug.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/dodebug.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/lib.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/lib.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/set_return_code.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/set_return_code.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/thread_message.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/thread_message.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/tools.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/tools.icl
+$HOME/fixtures/clean-wide/clean-ide/Win/xcoff.dcl
+$HOME/fixtures/clean-wide/clean-ide/Win/xcoff.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/AbsSyn.dcl
+$HOME/fixtures/clean-wide/clean-ide/cpm/AbsSyn.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Cpm.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/CpmLogic.dcl
+$HOME/fixtures/clean-wide/clean-ide/cpm/CpmLogic.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Parser.dcl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Parser.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Posix/CpmPaths.icl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Windows/CpmPaths.dcl
+$HOME/fixtures/clean-wide/clean-ide/cpm/Windows/CpmPaths.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Email/simple.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/APLAS.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/Copy of allGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/DSVIS2005.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/HenkEnJanWillemGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/apply2GECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/applyGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/arrowexamplesGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/basicArrowEditors.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/basicEditors.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/basicEditors.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/calculator2GEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/coffeemachine.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/counterGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/databaseGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/doubleCounterexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/draw2GEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/drawingGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/editeditorGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/estherGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/examplesAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/examplesAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/functionTestexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/inflistGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/loopGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/mutualGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/olddemoGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/paperediteditorGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/selfGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/simpleGECexamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/spreadsheetGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/teststateGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/timersGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/tree.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GEC/tree.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/eq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/freevars.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/fromStr.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/map.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/mapSt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/reduce.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/toStr.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/value.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/GenLib/zip.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Http/example.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/Charlie/Charlie.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/Charlie/CharlieGfx.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/Charlie/CharlieGfx.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/SINT/Sint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/SINT/SintGfx.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/SINT/SintGfx.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/SINT/SintGfx2.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/SINT/SintGfx2.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/WORMS/Worms.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/WORMS/WormsGfx.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/Game Examples/WORMS/WormsGfx.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/bounce/bounce.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/bounce/bounceDraw.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/bounce/bounceDraw.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/bounce/bounceTypes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/bounce/bounceTypes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/clipboard viewer/clipboardview.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/compare/compare.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/counter/counter.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Help.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Help.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Highscore.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Highscore.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/ListBox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/ListBox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Notice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Notice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Random.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/gui utilities/Random.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/hanoi/Hanoi.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/hello world/hello.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/Life.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/Life.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/life/LifeGameExample.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/rgb selector/pickRGB.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/English/language.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/English/language.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Macintosh/systemsettings.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Macintosh/systemsettings.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Nederlands/language.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Nederlands/language.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Windows95/systemsettings.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/Windows95/systemsettings.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/board.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/board.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/dictionary.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/dictionary.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/graphics.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/graphics.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/scrabble.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/state.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/state.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/scrabble/types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/simple database/database.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/slidegame/slidegame.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/talk/talk.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/Turing.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/showtm.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/showtm.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tm.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tm.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tmdialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tmdialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tmfile.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/turing/tmfile.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/typist/monitor.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/typist/monitor.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/typist/typist.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/worm/worm.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/worm/wormshow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/worm/wormshow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/worm/wormstate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/ObjectIO/ObjectIO Examples/worm/wormstate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/acker.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/copyfile.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/e.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/fsieve.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/hamming.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/invperm.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/lqueen.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/mulmat.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/nfib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/pascal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/reverse.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/revtwice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/rfib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/sieve.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/squeen.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/str_arit.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/stwice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/tak.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/twice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/Small Examples/war_seq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/TCPIP/chat/chatClient.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/TCPIP/chat/chatServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/TCPIP/downloadHTTP/downloadHTTP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/TCPIP/echo/echoClient.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/TCPIP/echo/echoServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/CoffeeMachineDeLuxe/coffeemachine.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/ConfManager.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/confIData.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/confIData.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/loginAdmin.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/loginAdmin.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/loginAdminIData.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/loginAdminIData.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/stateHandling.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/stateHandling.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/stateHandlingIData.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Conf Management System/stateHandlingIData.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/Counter.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/IFL2005Examples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/NumberGuessingGame.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/arrow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/balanceTree.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/calculator.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/coffeemachine.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/helloworld.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/listTobalanceTree.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/mutual.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/spreadsheet.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/tree.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Examples/tree.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/coffeemachine.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/combinatorTest.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/date.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/deadline.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/delegate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/list.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/newsGroups.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/quotation.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/sum.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Simple Workflows/travel.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Utilities/Random.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Utilities/Random.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/CDdatabaseHandler.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/CDdatabaseHandler.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/StdWebshop.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/StdWebshop.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/cdShop.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/databaseHandler.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/databaseHandler.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/WebShopDeLuxe/webshop.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Webtest Examples/example1.icl
+$HOME/fixtures/clean-wide/clean-libraries/Examples/htmlGEC/Work Administration/projectAdmin.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ArgEnvUnix/ArgEnv.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ArgEnvWindows/ArgEnv.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ArgEnvWindows/ArgEnv.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ArgEnvWindows/printenv.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/OS_utilities.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/OS_utilities.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/appleevents.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/appleevents.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/codefragments.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/codefragments.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/colors.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/colors.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/controls.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/controls.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/desk.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/desk.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/dialogs.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/dialogs.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/events.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/events.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/files.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/files.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/fonts.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/fonts.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/initialise.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/initialise.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/mac_types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/mac_types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/memory.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/memory.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/menus.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/menus.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/my_scrap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/my_scrap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/navigation.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/navigation.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/notification.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/notification.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/palette.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/palette.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/palettes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/palettes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/pointer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/pointer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/print.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/print.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/quickdraw.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/quickdraw.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/resources.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/resources.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/scrap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/scrap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/standard_file.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/standard_file.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/structure.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/structure.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/textedit.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/textedit.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/windows.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CarbonInterface/windows.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/Semaphore.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/Semaphore.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/httpServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/httpSubServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/httpSubServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/httpUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/subservers_in_registry/registry.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/subservers_in_registry/registry.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/subservers_in_registry/remove_subservers_in_registry.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/CleanServer/subservers_in_registry/subservers_in_registry.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Directory/Directory.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Directory/Directory.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DataFile.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DataFile.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/Drup.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/Drup.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/Drup2.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/Drup2.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupBasic.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupBasic.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupDefault.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupDefault.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupDynamic.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupDynamic.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupGeneric.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/DrupGeneric.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/TestDrup.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/_SystemDrup.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Drup/_SystemDrup.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Email/Email.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Email/Email.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExceptionsWindows/StdException.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExceptionsWindows/StdException.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExceptionsWindows/exampleExceptions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/BigInt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/BigInt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/Complex.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/Complex.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/ExtendedArithBasics.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/ExtendedArithBasics.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/Linux/BigInt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/Rational.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/Rational.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/_SystemBigInt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/ExtendedArith/_SystemBigInt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ExtendedArith/pi.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/EstherInterFace.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/EstherInterFace.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/GECValue.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/GECValue.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/GenDefaultVal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/GenDefaultVal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdArrow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdArrow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdBimap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdBimap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdDynamicGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdDynamicGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdGECExt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdGECExt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdObjectIOExt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/StdObjectIOExt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/TRACE.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/TRACE.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/gec.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/gec.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/genericgecs.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/genericgecs.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/guigecs.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/guigecs.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/guiloc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/guiloc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/infragecs.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/infragecs.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/objectloc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/objectloc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/parseprint.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/parseprint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/store.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GEC Implementation/store.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GecArrow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/GecArrow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/ColourTextControl.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/ColourTextControl.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/LineControl.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/LineControl.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/WhiteBox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/WhiteBox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/ObjectIOExtensions/example_WhiteBox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/SparkleProofs/gecarrow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdCircuits.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdCircuits.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/StdGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/basicAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/basicAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/buttonGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/buttonGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/dynamicAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/dynamicAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/layoutGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/layoutGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/modeGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/modeGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/noObjectGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/noObjectGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/timedAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/timedAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/timedGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/timedGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/updownAGEC.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GEC/updownAGEC.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenBimap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenBimap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenCompress.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenCompress.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenDefault.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenDefault.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenEq.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenEq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenFMap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenFMap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenHylo.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenHylo.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenLexOrd.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenLexOrd.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenLib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenLib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMapSt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMapSt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMonad.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenMonad.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenParse.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenParse.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenPrint.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenPrint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenReduce.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenReduce.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenZip.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/GenZip.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/_Array.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/_Array.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/GenLib/gentest.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/GenericDatabase.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/Gerda.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/Gerda.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/odbc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/odbc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/odbccp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gerda/odbccp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_functions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_functions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_paths.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_paths.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_region.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_region.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_scaled_font.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_scaled_font.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_t.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_t.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_text.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_text.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/cairo_types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/fontconfig.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/fontconfig.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_convert.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_convert.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_mem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_mem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_object.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_object.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_signal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_signal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_str_funcs.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_str_funcs.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_value.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_value.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_value_types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/g_value_types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_display.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_display.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_display_manager.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_display_manager.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_dnd.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_dnd.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_drawable.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_drawable.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_drawing_context.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_drawing_context.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_events.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_events.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_gc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_gc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_keysyms.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_keysyms.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_monitor.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_monitor.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_rgb.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_rgb.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_selection.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_selection.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_threads.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_threads.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_window.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gdk_window.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/glib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/glib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_accel_group.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_accel_group.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_accel_label.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_accel_label.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_adjustment.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_adjustment.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_bin.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_bin.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_box.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_box.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_layout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_layout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_renderer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_renderer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_renderer_text.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_cell_renderer_text.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_check_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_check_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_clipboard.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_clipboard.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_color_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_color_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_color_chooser.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_color_chooser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_combo_box.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_combo_box.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_combo_box_text.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_combo_box_text.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_container.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_container.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_css_provider.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_css_provider.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_dialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_dialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_drag_dest.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_drag_dest.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_drawing_area.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_drawing_area.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_editable.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_editable.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_entry.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_entry.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_entry_buffer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_entry_buffer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_enums.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_enums.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_event_box.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_event_box.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_chooser.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_chooser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_chooser_dialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_chooser_dialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_filter.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_file_filter.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_frame.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_frame.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_functions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_functions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_grid.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_grid.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_hbox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_hbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_label.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_label.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_list_store.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_list_store.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_bar.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_bar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_item.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_item.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_shell.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_menu_shell.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_message_dialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_message_dialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_misc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_misc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_notebook.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_notebook.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_paned.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_paned.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_radio_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_radio_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_range.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_range.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_scrollbar.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_scrollbar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_scrolled_window.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_scrolled_window.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_selection.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_selection.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_separator.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_separator.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_settings.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_settings.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_spin_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_spin_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_stock.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_stock.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_style.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_style.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_style_context.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_style_context.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_toggle_button.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_toggle_button.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_model.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_model.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_path.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_path.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_selection.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_selection.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_store.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_store.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_view.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_view.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_view_column.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_tree_view_column.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_types.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_types.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_vbox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_vbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_viewport.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_viewport.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_widget.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_widget.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_window.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/gtk_window.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_context.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_context.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_fonts.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_fonts.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_layout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Gtk/pango_layout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/CleanTricks.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/CleanTricks.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/DynamicFileSystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Esther.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherBackend.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherBackend.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherFamkeEnv.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherFamkeEnv.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherParser.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherParser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherPostParser.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherPostParser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherScript.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherScript.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherStdEnv.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherStdEnv.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherTransform.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/EstherTransform.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeConcurrentClean.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeKernel.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeProcess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeRpc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeRpc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/FamkeTcpIp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesAssoc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesAssoc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesBatchedSeq.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesBatchedSeq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesColl.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesColl.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesCommon.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesCommon.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesKeyList.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesKeyList.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesListColl.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesListColl.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesListSeq.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesListSeq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesSeq.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Loes 0.2/LoesSeq.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Marshall.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/DynamicFileSystem/DynamicFileSystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/FamkeConcurrentClean.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/FamkeKernel.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/FamkeProcess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/FamkeTcpIp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/Marshall.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/NoDynamicFileSystem/DynamicFileSystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/Windows.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/Windows.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/OS Windows/YlseFileServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Parser combinators 2002/StdParsComb.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Parser combinators 2002/StdParsComb.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/Test.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/YlseFileServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/YlseServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Hilde/YlseServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/Http.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/Http.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpCGI.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpCGI.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpTextUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpTextUtil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/HttpUtil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/SubServer/HttpSubServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/SubServer/HttpSubServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/SubServer/SubServerUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Http/SubServer/SubServerUtil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/MersenneTwister/MersenneTwister.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/MersenneTwister/MersenneTwister.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/MersenneTwister/testMersenneTwister.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/GameFunctions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/GameFunctions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGSt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGSt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGame.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGame.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGameDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/StdGameDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/fixed.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/fixed.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gamehandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gamehandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameintrface_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameintrface_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameobjectutils.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameobjectutils.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameutils.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gameutils.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gst.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/gst.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/notes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/notes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/osgame.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/GameLib/osgame.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clCCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clipboardCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/clipboardCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuCCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/menuwindowmenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osactivaterequests.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osbeep.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osbitmap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osclipboard.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osclipboard.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osdocumentinterface.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osdocumentinterface.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osfileselect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osfont.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osfont.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osguishare.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/oskey.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osmenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osmenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osmouse.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ospicture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ospicture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osprint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osrgn.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/osrgn.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ossystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ossystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostick.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostime.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostime.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostoolbar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostoolbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostooltip.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostypes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/ostypes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/oswindow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/oswindow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/pictCCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/pictCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/processevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/processevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/receiverevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/receiverevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/rgnCCall.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/rgnCCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/rgnCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/timerevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/timerevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowCCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Linux/windowevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlclip.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlclip.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlkeyfocus.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlkeyfocus.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlmousedown.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlmousedown.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlmousedown1.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/controlmousedown1.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/inputtracking.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/inputtracking.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/keyboardevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/keyboardevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/memoryaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/memoryaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/menuevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/menuevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/menuwindowmenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/menuwindowmenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/mouseevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/mouseevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osactivaterequests.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osactivaterequests.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osbeep.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osbeep.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osbitmap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osbitmap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osclipboard.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osclipboard.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osdirectory.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osdirectory.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osdocumentinterface.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osdocumentinterface.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osfileselect.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osfileselect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osfont.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osfont.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osguishare.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osguishare.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/oskey.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/oskey.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osmenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osmenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osmouse.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osmouse.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ospicture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ospicture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osprint.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osprint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osrgn.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osrgn.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ossystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ossystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostick.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostick.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostime.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostime.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostoolbar.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostoolbar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostoolbox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostoolbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostooltip.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostooltip.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostypes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/ostypes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osutil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/osutil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/oswindow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/oswindow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/processevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/processevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/receiverevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/receiverevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/scrapaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/scrapaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/texteditaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/texteditaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/timerevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/timerevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowcursor.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowcursor.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowkeyio.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Mac Carbon/windowkeyio.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/clCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/clCrossCall_12.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/clCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/clipboardCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/menuCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/osdocumentinterface.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/osdocumentinterface.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/osevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/osfileselect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/osprint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/ossystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/ossystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/ostoolbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/oswindow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/windowCCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/windowCrossCall_12.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/OS Windows/windowevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdBitmap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdBitmap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdClipboard.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdClipboard.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControl.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControl.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlClass.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlClass.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlReceiver.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdControlReceiver.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdFileSelect.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdFileSelect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIO.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIO.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIOBasic.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIOBasic.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIOCommon.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdIOCommon.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdId.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdId.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdKey.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdKey.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuElement.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuElement.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuElementClass.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuElementClass.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuReceiver.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdMenuReceiver.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPSt.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPSt.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPStClass.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPStClass.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPicture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPicture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPictureDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPictureDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPrint.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPrint.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPrintText.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdPrintText.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcessAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcessAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcessDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdProcessDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiver.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiver.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiverAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiverAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiverDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdReceiverDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdSound.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdSound.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdSystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdSystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTime.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTime.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerElementClass.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerElementClass.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerReceiver.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdTimerReceiver.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindowAttribute.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindowAttribute.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindowDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/StdWindowDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/cast.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/cast.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/commondef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/commondef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlcreate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlcreate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controldefaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controldefaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controldraw.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controldraw.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlinternal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlinternal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controllayout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controllayout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlpos.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlpos.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlrelayout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlrelayout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlresize.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlresize.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlvalidate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/controlvalidate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/device.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/device.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/deviceevents.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/deviceevents.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/devicefunctions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/devicefunctions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/devicesystemstate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/devicesystemstate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/id.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/id.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/iostate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/iostate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/keyfocus.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/keyfocus.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/layout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/layout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menucreate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menucreate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menudefaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menudefaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menudevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menudevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuhandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuhandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuinternal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuinternal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuitems.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/menuitems.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/mstate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/mstate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processdevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processdevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processhandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processhandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processstack.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/processstack.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiveraccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiveraccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverdefaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverdefaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverdevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverdevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverhandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverhandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverid.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receiverid.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receivermessage.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receivermessage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receivertable.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/receivertable.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/relayout.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/relayout.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/roundrobin.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/roundrobin.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/scheduler.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/scheduler.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/sdisize.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/sdisize.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/semidynamic.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/semidynamic.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/systemid.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/systemid.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timeraccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timeraccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerdefaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerdefaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerdevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerdevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerhandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timerhandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timertable.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/timertable.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/toolbar.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/toolbar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowclipstate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowclipstate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowcontrols.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowcontrols.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowcreate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowcreate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdefaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdefaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdispose.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdispose.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdraw.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowdraw.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowhandle.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowhandle.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowupdate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowupdate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowvalidate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/windowvalidate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/world.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/world.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/wstate.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/wstate.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/wstateaccess.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/ObjectIO/wstateaccess.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/Macintosh/ostcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdEventTCP.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdEventTCP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdStringChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdStringChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCP.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCPChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCPChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCPDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/StdTCPDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/ostcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/ostcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/tcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/tcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/tcp_bytestreams.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/ObjectIO/Tcp/tcp_bytestreams.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/Castellano/ParserLanguage.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/Castellano/ParserLanguage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/Deutsch/ParserLanguage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/English/ParserLanguage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/For Testing/ParserLanguage.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/For Testing/ParserLanguage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/LanguageDependent/Nederlands/ParserLanguage.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/MetarDemo/MetarExamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/MetarDemo/MetarParser.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/MetarDemo/MetarParser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/MetarDemo/TestMetarParser.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/Parsers.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/Parsers.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersAccessories.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersAccessories.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersDerived.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersDerived.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersKernel.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersKernel.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/Parsers/ParsersTestware.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdArrayExtensions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdArrayExtensions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdLib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdLib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdLibMisc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdLibMisc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdListExtensions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/StdLib/StdListExtensions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/Linux_C/ostcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/Linux_C/ostcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/Linux_C/tcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/Linux_C/tcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdEventTCP.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdEventTCP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdStringChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdStringChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCP.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCPChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCPChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCPDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/StdTCPDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/ostcptoolbox.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ObjectIO/ostcptoolbox.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPChannelClass.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPChannelClass.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPEvent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPEvent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPIP.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPIP.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPStringChannels.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPStringChannels.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPStringChannelsInternal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/TCPStringChannelsInternal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ostcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/ostcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/tcp.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/tcp.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/tcp_bytestreams.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/TCPIP/tcp_bytestreams.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureDebug.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureDebug.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureExamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureShowWrapped.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureShowWrapped.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureWrap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ClosureWrap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/Debug.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/Debug.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/DebugExamples.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ShowWrapped.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/ShowWrapped.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/Wrap.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/WrapDebug/Wrap.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/dynamic_string.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/dynamic_string.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_copy.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_copy.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_copy_with_names.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_copy_with_names.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_to_sapl_string.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/graph_to_string_and_descriptors.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/linux/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/macosx/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/graph_copy/win/symbols_in_program.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/EncodeDecode.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/EncodeDecode.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/confSM.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/confSM.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/gast.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/gast.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/gen.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/gen.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/genLibTest.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/genLibTest.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/stdProperty.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/stdProperty.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/testable.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/Gast/testable.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/PrintUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/PrintUtil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/StdHtml.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/StdHtml.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/graph_copy/dynamic_string.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/graph_copy/dynamic_string.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlArrow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlArrow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlButtons.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlButtons.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDataDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDataDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDatabase.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDatabase.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDefault.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlDefault.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlExceptions.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlExceptions.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlFormData.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlFormData.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlFormlib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlFormlib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlHandler.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlHandler.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlMonad.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlMonad.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlRefFormlib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlRefFormlib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlSettings.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlSettings.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlStyleDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlStyleDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlStylelib.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlStylelib.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTask.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTask.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTest/htmlTestHandler.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTest/htmlTestHandler.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTest/webServerTest.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTest/webServerTest.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTrivial.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/htmlTrivial.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpSubServer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpSubServer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpUtil.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/httpUtil.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/iDataState.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/htmlGEC/iDataState.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/commonDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/commonDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/cursorInternal.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/cursorInternal.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaControls.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaControls.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaDialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaDialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaEventIO.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaEventIO.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaFileSelect.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaFileSelect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaFont.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaFont.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaIOState.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaIOState.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaIOSystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaIOSystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaMenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaMenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaPicture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaPicture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaSystem.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaSystem.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaTimer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaTimer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaWindow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/deltaWindow.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/dialogDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/dialogDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/dialogDevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/dialogDevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/ioState.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/ioState.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/menuDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/menuDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/menuDevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/menuDevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/misc.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/misc.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/picture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/picture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/scrollList.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/scrollList.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/sliderBar.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/sliderBar.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/timerDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/timerDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/timerDevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/timerDevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/windowDef.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/windowDef.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/windowDevice.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/windowDevice.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xcursor.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xcursor.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xdialog.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xdialog.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xevent.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xevent.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xfileselect.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xfileselect.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xkernel.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xkernel.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xmenu.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xmenu.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xpath.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xpath.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xpicture.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xpicture.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xtimer.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xtimer.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xtypes.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xtypes.icl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xwindow.dcl
+$HOME/fixtures/clean-wide/clean-libraries/Libraries/iolib/xwindow.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Adjoxo.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Braun.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Cichelli.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Clausify.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/CountDown.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Fib.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Flite.dcl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Flite.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/KnuthBendix.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/MSS.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Mate.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/OrdList.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/PermSort.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Queens.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Queens2.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/SumPuz.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/Taut.icl
+$HOME/fixtures/clean-wide/clean-sapl/platforms/Clean/test/While.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/FastString.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/FastString.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Linker/LazyLinker.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Linker/LazyLinker.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Linker/SaplLinkerShared.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Linker/SaplLinkerShared.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Optimization/StrictnessPropagation.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Optimization/StrictnessPropagation.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplParser.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplParser.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplStruct.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplStruct.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplTokenizer.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/SaplTokenizer.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/CleanFlavour.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/CleanFlavour.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/Flavour.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/Flavour.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/JS/CodeGeneratorJS.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/JS/CodeGeneratorJS.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/JS/Lifting.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Target/JS/Lifting.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/AddSelectors.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/AddSelectors.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/Let.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/Let.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/TailRecursion.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/TailRecursion.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/VarReferences.dcl
+$HOME/fixtures/clean-wide/clean-sapl/src/Sapl/Transform/VarReferences.icl
+$HOME/fixtures/clean-wide/clean-sapl/src/saplcg.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Command.dcl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Command.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Manifest.dcl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Manifest.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Module.dcl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Module.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Package.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Parsers.dcl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Parsers.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Types.dcl
+$HOME/fixtures/clean-wide/clean-scrub/src/Development/Scrub/Types.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Main.icl
+$HOME/fixtures/clean-wide/clean-scrub/src/Scratch.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_bibliography.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_bibliography.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_compiler_extensions.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_compiler_extensions.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_defining_types.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_defining_types.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_dynamics.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_dynamics.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_foreign_interface.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_foreign_interface.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_functions.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_functions.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_generics.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_generics.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_graphics.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_graphics.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_lexical_syntax.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_lexical_syntax.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_modules_scopes.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_modules_scopes.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_overloading.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_overloading.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_predefined_types.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_predefined_types.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_preface.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_preface.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_semantics.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_semantics.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_strictness_macros.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_strictness_macros.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_styles.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_styles.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_syntax.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_syntax.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_text.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_text.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_uniqueness_typing.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/clean_manual_uniqueness_typing.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/parse_ttf.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/parse_ttf.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_fonts.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_fonts.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_graphics.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_graphics.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_main.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_main.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_outline.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_outline.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_text.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/pdf_text.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/split_html2.dcl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/split_html2.icl
+$HOME/fixtures/clean-wide/language-report/write_clean_manual/write_clean_manual.icl
+$HOME/fixtures/repositories/Clyde/Clyde.icl
+$HOME/fixtures/repositories/Clyde/Clyde/ClydeApplicationController.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/ClydeApplicationController.icl
+$HOME/fixtures/repositories/Clyde/Clyde/Console.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/Console.icl
+$HOME/fixtures/repositories/Clyde/Clyde/DebugClyde.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/DebugClyde.icl
+$HOME/fixtures/repositories/Clyde/Clyde/Link.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/Link.icl
+$HOME/fixtures/repositories/Clyde/Clyde/Process.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/Process.icl
+$HOME/fixtures/repositories/Clyde/Clyde/coloured_line.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/coloured_line.icl
+$HOME/fixtures/repositories/Clyde/Clyde/controls.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/controls.icl
+$HOME/fixtures/repositories/Clyde/Clyde/menus.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/menus.icl
+$HOME/fixtures/repositories/Clyde/Clyde/outlineviewcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/outlineviewcontroller.icl
+$HOME/fixtures/repositories/Clyde/Clyde/projactions.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/projactions.icl
+$HOME/fixtures/repositories/Clyde/Clyde/projdocument.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/projdocument.icl
+$HOME/fixtures/repositories/Clyde/Clyde/projwindowcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/projwindowcontroller.icl
+$HOME/fixtures/repositories/Clyde/Clyde/tableviewcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/tableviewcontroller.icl
+$HOME/fixtures/repositories/Clyde/Clyde/textdocument.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/textdocument.icl
+$HOME/fixtures/repositories/Clyde/Clyde/textviewcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/textviewcontroller.icl
+$HOME/fixtures/repositories/Clyde/Clyde/textwindowcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/textwindowcontroller.icl
+$HOME/fixtures/repositories/Clyde/Clyde/timeprofile.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/timeprofile.icl
+$HOME/fixtures/repositories/Clyde/Clyde/windows.dcl
+$HOME/fixtures/repositories/Clyde/Clyde/windows.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/Foundation.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/Foundation.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/Logging.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/Logging.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/UserDefaults.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/UserDefaults.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/dyncall.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/dyncall.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/layout.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/layout.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/msg.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/msg.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/objc.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/objc.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/tabview.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/tabview.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/toolbar.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/toolbar.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/viewcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/viewcontroller.icl
+$HOME/fixtures/repositories/Clyde/Cocoa/windowcontroller.dcl
+$HOME/fixtures/repositories/Clyde/Cocoa/windowcontroller.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/IdeState.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/IdeState.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/PmCallBack.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/PmCallBack.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/PmDialogues.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/PmDialogues.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/errwin.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/errwin.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/messwin.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/messwin.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/projwin.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/projwin.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/typeatt.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/typeatt.icl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/typewin.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/BatchBuild/typewin.icl
+$HOME/fixtures/repositories/Clyde/cleantools/MacOSX/PmCleanSystem.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/MacOSX/PmCleanSystem.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmAbcMagic.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmAbcMagic.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmCompilerOptions.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmCompilerOptions.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmDirCache.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmDirCache.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmDriver.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmDriver.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmEnvironment.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmEnvironment.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmFileInfo.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmFileInfo.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmFiles.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmFiles.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmParse.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmParse.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmPath.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmPath.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmProject.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmProject.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmTypes.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Pm/PmTypes.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/StdPathname.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/StdPathname.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilDate.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilDate.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilOptions.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilOptions.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilStrictLists.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/UtilStrictLists.icl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/logfile.dcl
+$HOME/fixtures/repositories/Clyde/cleantools/Util/logfile.icl
+$HOME/fixtures/repositories/Prelude/Control/Applicative.dcl
+$HOME/fixtures/repositories/Prelude/Control/Applicative.icl
+$HOME/fixtures/repositories/Prelude/Control/Monad.dcl
+$HOME/fixtures/repositories/Prelude/Control/Monad.icl
+$HOME/fixtures/repositories/Prelude/Data/Array.dcl
+$HOME/fixtures/repositories/Prelude/Data/Array.icl
+$HOME/fixtures/repositories/Prelude/Data/Bool.dcl
+$HOME/fixtures/repositories/Prelude/Data/Bool.icl
+$HOME/fixtures/repositories/Prelude/Data/Char.dcl
+$HOME/fixtures/repositories/Prelude/Data/Char.icl
+$HOME/fixtures/repositories/Prelude/Data/Enum.dcl
+$HOME/fixtures/repositories/Prelude/Data/Enum.icl
+$HOME/fixtures/repositories/Prelude/Data/Eq.dcl
+$HOME/fixtures/repositories/Prelude/Data/Eq.icl
+$HOME/fixtures/repositories/Prelude/Data/Function.dcl
+$HOME/fixtures/repositories/Prelude/Data/Function.icl
+$HOME/fixtures/repositories/Prelude/Data/Functor.dcl
+$HOME/fixtures/repositories/Prelude/Data/Functor.icl
+$HOME/fixtures/repositories/Prelude/Data/Int.dcl
+$HOME/fixtures/repositories/Prelude/Data/Int.icl
+$HOME/fixtures/repositories/Prelude/Data/List.dcl
+$HOME/fixtures/repositories/Prelude/Data/List.icl
+$HOME/fixtures/repositories/Prelude/Data/Num.dcl
+$HOME/fixtures/repositories/Prelude/Data/Num.icl
+$HOME/fixtures/repositories/Prelude/Data/Option.dcl
+$HOME/fixtures/repositories/Prelude/Data/Option.icl
+$HOME/fixtures/repositories/Prelude/Data/Ord.dcl
+$HOME/fixtures/repositories/Prelude/Data/Ord.icl
+$HOME/fixtures/repositories/Prelude/Data/Semigroup.dcl
+$HOME/fixtures/repositories/Prelude/Data/Semigroup.icl
+$HOME/fixtures/repositories/Prelude/Data/String.dcl
+$HOME/fixtures/repositories/Prelude/Data/String.icl
+$HOME/fixtures/repositories/Prelude/Data/_Enum.dcl
+$HOME/fixtures/repositories/Prelude/Data/_Enum.icl
+$HOME/fixtures/repositories/Prelude/Prelude.dcl
+$HOME/fixtures/repositories/Prelude/Prelude.icl
+$HOME/fixtures/repositories/Prelude/System/IO.dcl
+$HOME/fixtures/repositories/Prelude/System/IO.icl
+$HOME/fixtures/repositories/Prelude/System/Misc.dcl
+$HOME/fixtures/repositories/Prelude/System/Misc.icl
+$HOME/fixtures/repositories/Prelude/Text/Show.dcl
+$HOME/fixtures/repositories/Prelude/Text/Show.icl
+$HOME/fixtures/repositories/clean-stdlib/StdArray.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdArray.icl
+$HOME/fixtures/repositories/clean-stdlib/StdBool.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdBool.icl
+$HOME/fixtures/repositories/clean-stdlib/StdChar.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdChar.icl
+$HOME/fixtures/repositories/clean-stdlib/StdCharList.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdCharList.icl
+$HOME/fixtures/repositories/clean-stdlib/StdClass.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdClass.icl
+$HOME/fixtures/repositories/clean-stdlib/StdDebug.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdDebug.icl
+$HOME/fixtures/repositories/clean-stdlib/StdDynamic.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdDynamic.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnum.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnum.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdFile.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdFile.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdInt.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdReal.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdReal.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdString.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/StdString.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/_SystemStrictLists.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv 64 Changed Files/_SystemStrictMaybes.icl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdEnv.icl
+$HOME/fixtures/repositories/clean-stdlib/StdFile.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdFile.icl
+$HOME/fixtures/repositories/clean-stdlib/StdFile_solaris.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdFile_solaris.icl
+$HOME/fixtures/repositories/clean-stdlib/StdFunc.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdFunc.icl
+$HOME/fixtures/repositories/clean-stdlib/StdFunctions.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdFunctions.icl
+$HOME/fixtures/repositories/clean-stdlib/StdGeneric.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdGeneric.icl
+$HOME/fixtures/repositories/clean-stdlib/StdInt.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdInt.icl
+$HOME/fixtures/repositories/clean-stdlib/StdList.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdList.icl
+$HOME/fixtures/repositories/clean-stdlib/StdMaybe.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdMaybe.icl
+$HOME/fixtures/repositories/clean-stdlib/StdMisc.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdMisc.icl
+$HOME/fixtures/repositories/clean-stdlib/StdOrdList.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdOrdList.icl
+$HOME/fixtures/repositories/clean-stdlib/StdOverloaded.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdOverloaded.icl
+$HOME/fixtures/repositories/clean-stdlib/StdOverloadedList.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdOverloadedList.icl
+$HOME/fixtures/repositories/clean-stdlib/StdReal.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdReal.icl
+$HOME/fixtures/repositories/clean-stdlib/StdStrictLists.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdStrictLists.icl
+$HOME/fixtures/repositories/clean-stdlib/StdString.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdString.icl
+$HOME/fixtures/repositories/clean-stdlib/StdTuple.dcl
+$HOME/fixtures/repositories/clean-stdlib/StdTuple.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemArray.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemArray.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemDynamic.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemDynamic.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemEnum.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemEnum.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemEnumStrict.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemEnumStrict.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemStrictLists.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemStrictLists.icl
+$HOME/fixtures/repositories/clean-stdlib/_SystemStrictMaybes.dcl
+$HOME/fixtures/repositories/clean-stdlib/_SystemStrictMaybes.icl
+$HOME/fixtures/repositories/clean-stdlib/_library.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/ABC.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/ABC.icl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/Predef.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/Predef.icl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/Syntax.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Builtin/Syntax.icl
+$HOME/fixtures/repositories/cloogle.org/backend/CloogleServer.icl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/Cache.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/Cache.icl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/Memory.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/Memory.icl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/SimpleTCPServer.dcl
+$HOME/fixtures/repositories/cloogle.org/backend/Util/SimpleTCPServer.icl
+$HOME/fixtures/repositories/cloogle.org/backend/builddb.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Compiler.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Compiler.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Config.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Config.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Constants.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Constants.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/EastwoodCleanLanguageServer.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoDeclaration.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoDeclaration.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoDefinition.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoDefinition.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoUtil.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/GotoUtil.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Hover.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Hover.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/LockFile.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/LockFile.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/SemVer.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/SemVer.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Symbol.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Symbol.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Target.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Target.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/TextDocumentUtil.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/TextDocumentUtil.icl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Util.dcl
+$HOME/fixtures/repositories/eastwood/src/languageServer/Util.icl
+$HOME/fixtures/repositories/eastwood/src/linter/EastwoodLint.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Linter.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Linter.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/BasicValueCAFs.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/BasicValueCAFs.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/DocError.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/DocError.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/TrailingWhitespace.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Pass/TrailingWhitespace.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Util/Configuration.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Util/Configuration.icl
+$HOME/fixtures/repositories/eastwood/src/linter/Util/SyntaxTree.dcl
+$HOME/fixtures/repositories/eastwood/src/linter/Util/SyntaxTree.icl
+$HOME/fixtures/repositories/eastwood/src/sharedUtil/Diagnostic.dcl
+$HOME/fixtures/repositories/eastwood/src/sharedUtil/Diagnostic.icl
+$HOME/fixtures/repositories/eastwood/src/sharedUtil/Range.dcl
+$HOME/fixtures/repositories/eastwood/src/sharedUtil/Range.icl
+$HOME/fixtures/repositories/eastwood/test/Common.dcl
+$HOME/fixtures/repositories/eastwood/test/Common.icl
+$HOME/fixtures/repositories/eastwood/test/LanguageServerTests.icl
+$HOME/fixtures/repositories/eastwood/test/LinterTests.icl
+$HOME/fixtures/repositories/eastwood/test/suite-config-empty-paths/ok.icl
+$HOME/fixtures/repositories/eastwood/test/suite-config-missing-stdenv/GoToModule1.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-config-missing-stdenv/GoToModule1.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/DclErrors.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-default/DclErrors.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/GoToModule1.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-default/GoToModule1.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/GoToModule2.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-default/GoToModule2.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/Linter.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/LinterAndCompiler.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/UrlEncodedModuleName`.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-default/UrlEncodedModuleName`.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/WrongModuleName.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/errors.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/errorsInImportedDcl.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/ok.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/otherLib/IncorrectModuleHeader.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/someLib/MainModule.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/someLib/TestModule.dcl
+$HOME/fixtures/repositories/eastwood/test/suite-default/someLib/TestModule.icl
+$HOME/fixtures/repositories/eastwood/test/suite-default/tooLarge.icl
+$HOME/fixtures/repositories/eastwood/test/suite-without-config/NoEastwoodYml.icl
+$HOME/fixtures/repositories/eastwood/test/symbol-map-example/SymbolMapExample.dcl
+$HOME/fixtures/repositories/eastwood/test/symbol-map-example/SymbolMapExample.icl

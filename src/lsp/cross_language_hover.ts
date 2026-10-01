@@ -198,7 +198,25 @@ export interface CrossLanguageAgentFact {
   relationshipType: string
   /** the stored row id — traceability, the same field bb_graph returns */
   rowId: string
+  /** `exact` when the stored row names this symbol; `owner-cascade` when the
+   *  row names one of its members and is reported as the MEMBER's edge, never
+   *  the owner's. The same vocabulary bb_graph uses, so a reader comparing the
+   *  two tools is not decoding two schemes. */
+  match: CrossLanguageMatch
+  /** present only for `owner-cascade`: the member the row actually named, and
+   *  its stored id. This is what makes the attribution reversible AND checkable
+   *  by a reader — a cascade reported only as a name is a claim; a cascade
+   *  reported as a name plus the id of a symbol whose `owner_symbol_id` is one
+   *  of the copies is a fact a consumer can verify without trusting the tool. It
+   *  rides the cascaded facts only: an exact fact is trivially attributable
+   *  (its `self` IS the copy), so an id there would be 80 bytes of payload per
+   *  fact restating what `self` already says. */
+  matchedMember?: CrossLanguageEnd
+  matchedMemberId?: string
 }
+
+/** How a stored row was attributed to the asked name. */
+export type CrossLanguageMatch = "exact" | "owner-cascade"
 
 /** One indexed symbol that carries the requested name. */
 export interface CrossLanguageNameCopy {
@@ -217,13 +235,19 @@ export interface CrossLanguageNameResult {
   /** distinct non-empty languages across the copies, sorted */
   languages: string[]
   ambiguous: boolean
+  /** rows on the copies themselves */
   facts: CrossLanguageAgentFact[]
-  /** stored cross-language rows matched across every copy */
+  /** rows on the MEMBERS of the copies, each marked `owner-cascade` and naming
+   *  the member. Reported, never counted as the owner's own. */
+  memberFacts: CrossLanguageAgentFact[]
+  /** stored cross-language rows matched across every copy (own + member) */
   storedRowCount: number
   /** rows that matched but cannot name a pair (unknown/equal languages) */
   unpairableRowCount: number
   /** rows dropped because the same row id was matched from both directions */
   collapsedRowCount: number
+  /** distinct members that contributed a member fact */
+  memberCount: number
 }
 
 /** The declared default and ceiling for the agent door. The hover is a card
@@ -249,6 +273,18 @@ interface AgentFactRow {
   other_file: string | null
   other_language: string | null
   other_line: number | null
+}
+
+/** A member row: the own-row columns, plus which member the row actually named.
+ *  The `pair` is computed from the MEMBER's file language and the other end's,
+ *  because the member is the endpoint the row names — the owner's language is
+ *  usually the same file, and using the owner's would be an assumption. */
+interface MemberFactRow extends AgentFactRow {
+  member_id: string
+  member_name: string
+  member_file: string | null
+  member_language: string | null
+  member_line: number | null
 }
 
 /** The two directions in one statement, ordered so the answer is
@@ -295,18 +331,144 @@ JOIN brain_file f ON f.id = s.file_id
 WHERE s.project_id = ? AND s.name = ?
 ORDER BY f.relative_path, s.line_start, s.id`
 
-/** Every stored cross-language row touching ANY symbol with this name, with
- *  both ends named, filtered by project.
+/** The cross-language rows held by the MEMBERS of the copies — reported, and
+ *  never counted as the owner's own.
+ *
+ *  MEASURED (jvm-interop, post-analyzer index): 1,566 of 1,642 stored
+ *  cross-language rows — 95.4% — target a symbol that has an `owner_symbol_id`.
+ *  A by-name answer for the OWNER therefore finds almost nothing while the
+ *  index is full of edges about it, and the tool was declaring that absence:
+ *
+ *      owner                onItself   onMembers   the tool said
+ *      Iterate                    0          109   declaredAbsent: true
+ *      ConstantDynamic            0           92   declaredAbsent: true
+ *      clojure.set                0           35   declaredAbsent: true
+ *      Numbers                    0           25   declaredAbsent: true
+ *      PersistentTreeMap          0           24   declaredAbsent: true
+ *
+ *  And it was not merely this tool's private gap — `bb_graph` answers the SAME
+ *  question the other way. Its owner-cascade attributes member edges to the
+ *  owner, and on 7 of 10 such owners it reported cross-language edges while this
+ *  tool declared absence. Two tools, opposite answers, same symbol, same index.
+ *
+ *  WHY THIS REPORTS RATHER THAN CASCADES. `bb_graph` cascades member edges onto
+ *  the owner and MARKS them (`match: "owner-cascade"`, `matchedMember`), and
+ *  its own docs call the set "a superset of naive exact-target SQL" — its
+ *  cascade is a lexical id-prefix range (graph-engine `cascadeBounds`), not the
+ *  store's ownership edge. This tool will not import that heuristic: an edge on
+ *  `Label.newLabel` is not an edge on `Label`, and presenting it as one is the
+ *  quiet over-claim this tool exists to avoid. So the member rows are REPORTED
+ *  as the member's, in their own section, and the envelope says how many there
+ *  are. The reader gets the truth about the name without a claim about the
+ *  owner.
+ *
+ *  Membership is the store's `owner_symbol_id` — the real ownership edge — and
+ *  NOT the id-prefix range, which is why this count is lower than bb_graph's
+ *  cascaded count. That difference is declared, not smoothed over.
+ *
+ *  A member that is ALSO a copy of the asked name is excluded: its rows are own
+ *  rows, and counting them twice would inflate every number in the envelope. */
+const MEMBER_FACTS_SQL = `
+SELECT r.id AS row_id, r.relationship_type AS relationship_type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge_mechanism, r.metadata AS metadata, 'caller' AS direction,
+       owner.id AS self_id, owner.name AS self_name, ofile.relative_path AS self_file,
+       ofile.language AS self_language, owner.line_start AS self_line,
+       ss.id AS other_id, ss.name AS other_name, sf.relative_path AS other_file,
+       sf.language AS other_language, ss.line_start AS other_line,
+       m.id AS member_id, m.name AS member_name, mfile.relative_path AS member_file,
+       mfile.language AS member_language, m.line_start AS member_line
+FROM brain_relationship r
+JOIN brain_symbol m ON m.id = r.target_symbol_id
+JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+JOIN brain_file ofile ON ofile.id = owner.file_id
+JOIN brain_file mfile ON mfile.id = m.file_id
+JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+JOIN brain_file sf ON sf.id = ss.file_id
+WHERE r.project_id = ? AND r.is_cross_language = 1 AND owner.name = ?
+  AND m.name <> owner.name
+UNION ALL
+SELECT r.id AS row_id, r.relationship_type AS relationship_type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge_mechanism, r.metadata AS metadata, 'callee' AS direction,
+       owner.id AS self_id, owner.name AS self_name, ofile.relative_path AS self_file,
+       ofile.language AS self_language, owner.line_start AS self_line,
+       ts.id AS other_id, ts.name AS other_name, tf.relative_path AS other_file,
+       tf.language AS other_language, ts.line_start AS other_line,
+       m.id AS member_id, m.name AS member_name, mfile.relative_path AS member_file,
+       mfile.language AS member_language, m.line_start AS member_line
+FROM brain_relationship r
+JOIN brain_symbol m ON m.id = r.source_symbol_id
+JOIN brain_symbol owner ON owner.id = m.owner_symbol_id
+JOIN brain_file ofile ON ofile.id = owner.file_id
+JOIN brain_file mfile ON mfile.id = m.file_id
+JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+JOIN brain_file tf ON tf.id = ts.file_id
+WHERE r.project_id = ? AND r.is_cross_language = 1 AND owner.name = ?
+  AND m.name <> owner.name
+ORDER BY self_file, self_line, member_file, member_line, direction, other_file, other_line, row_id`
+
+/** Build one fact from a stored row, or `null` when the row cannot name a pair.
+ *  Shared by the own and member scans so the two sections cannot drift: the
+ *  tier rule, the bridge default, the pair rule and the identity fields are
+ *  derived in exactly one place. A member row that returned a differently
+ *  shaped fact would be the same class of bug as two tier rules.
+ *
+ *  `pairFromLanguage` is the language of the endpoint the STORED ROW NAMES. For
+ *  an own row that is the symbol itself; for a member row it is the member, not
+ *  the owner — an owner and its members are usually in one file, so the two
+ *  agree in practice, and deriving the pair from the owner anyway would be an
+ *  assumption that happens to hold rather than a fact. */
+function factFromRow(
+  row: AgentFactRow,
+  match: CrossLanguageMatch,
+  counters: { unpairable: number },
+  matchedMember?: CrossLanguageEnd,
+  pairFromLanguage?: string | null,
+  matchedMemberId?: string,
+): CrossLanguageAgentFact | null {
+  const selfLang = pairFromLanguage === undefined ? row.self_language : pairFromLanguage
+  const otherLang = row.other_language
+  const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()
+    ? `${selfLang} → ${otherLang}`
+    : null
+  if (pair === null) { counters.unpairable++; return null }
+  const fact: CrossLanguageAgentFact = {
+    self: { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line },
+    direction: row.direction,
+    other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line },
+    pair,
+    bridge: row.bridge_mechanism ?? UNNAMED_BRIDGE,
+    tier: tierForCrossLanguageEdge({
+      relationship_type: row.relationship_type,
+      confidence: row.confidence,
+      evidence_class: parseEvidenceClass(row.metadata),
+    }),
+    confidence: row.confidence ?? 0,
+    relationshipType: row.relationship_type,
+    rowId: row.row_id,
+    match,
+  }
+  if (matchedMember) {
+    fact.matchedMember = matchedMember
+    if (matchedMemberId !== undefined) fact.matchedMemberId = matchedMemberId
+  }
+  return fact
+}
+
+/** Every stored cross-language row about ANY symbol with this name — the copies
+ *  themselves and, separately, their members — with both ends named, filtered
+ *  by project.
  *
  *  This is the agent door's single source. It never guesses: a row whose ends
- *  cannot name a pair is counted in `unpairableRowCount` and not emitted, and
- *  a row matched from both directions is collapsed once and counted. */
+ *  cannot name a pair is counted in `unpairableRowCount` and not emitted, a row
+ *  matched from both directions is collapsed once and counted, and a member row
+ *  is never emitted as the owner's own. */
 export function storedCrossLanguageFactsByName(
   db: CrossLanguageDb,
   projectId: string,
   name: string,
 ): CrossLanguageNameResult {
   const rows = db.prepare(AGENT_FACTS_SQL).all(projectId, name, projectId, name) as unknown as AgentFactRow[]
+  const memberRows = db.prepare(MEMBER_FACTS_SQL).all(projectId, name, projectId, name) as unknown as MemberFactRow[]
   const allCopies = db.prepare(ALL_COPIES_SQL).all(projectId, name) as unknown as Array<{
     id: string; name: string; file: string | null; language: string | null; line: number | null
   }>
@@ -319,7 +481,9 @@ export function storedCrossLanguageFactsByName(
   }
   const seenRows = new Set<string>()
   const facts: CrossLanguageAgentFact[] = []
-  let unpairable = 0
+  const memberFacts: CrossLanguageAgentFact[] = []
+  const members = new Set<string>()
+  const counters = { unpairable: 0 }
   let collapsed = 0
 
   for (const row of rows) {
@@ -337,28 +501,21 @@ export function storedCrossLanguageFactsByName(
     if (seenRows.has(row.row_id)) { collapsed++; continue }
     seenRows.add(row.row_id)
 
-    const selfLang = row.self_language
-    const otherLang = row.other_language
-    const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()
-      ? `${selfLang} → ${otherLang}`
-      : null
-    if (pair === null) { unpairable++; continue }
+    const fact = factFromRow(row, "exact", counters)
+    if (fact) facts.push(fact)
+  }
 
-    facts.push({
-      self: { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line },
-      direction: row.direction,
-      other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line },
-      pair,
-      bridge: row.bridge_mechanism ?? UNNAMED_BRIDGE,
-      tier: tierForCrossLanguageEdge({
-        relationship_type: row.relationship_type,
-        confidence: row.confidence,
-        evidence_class: parseEvidenceClass(row.metadata),
-      }),
-      confidence: row.confidence ?? 0,
-      relationshipType: row.relationship_type,
-      rowId: row.row_id,
-    })
+  // Member rows. A row already emitted as an own row is skipped rather than
+  // re-reported as a cascade: that is the member-is-also-a-copy case, and
+  // counting it twice would inflate every number in the envelope.
+  for (const row of memberRows) {
+    if (seenRows.has(row.row_id)) { collapsed++; continue }
+    seenRows.add(row.row_id)
+    members.add(row.member_id)
+    const fact = factFromRow(row, "owner-cascade", counters, {
+      symbol: row.member_name, file: row.member_file, language: row.member_language, line: row.member_line,
+    }, row.member_language, row.member_id)
+    if (fact) memberFacts.push(fact)
   }
 
   const copyList = [...copies.values()].sort((a, b) =>
@@ -371,9 +528,11 @@ export function storedCrossLanguageFactsByName(
     languages,
     ambiguous: copyList.length > 1,
     facts,
-    storedRowCount: rows.length,
-    unpairableRowCount: unpairable,
+    memberFacts,
+    storedRowCount: rows.length + memberRows.length,
+    unpairableRowCount: counters.unpairable,
     collapsedRowCount: collapsed,
+    memberCount: members.size,
   }
 }
 
@@ -382,8 +541,25 @@ export function storedCrossLanguageFactsByName(
  *  replacing the string literal at the assignment site (script/m26). */
 export const UNNAMED_BRIDGE = "unnamed bridge (stored row carries no mechanism)"
 
-/** Fetch the stored cross-language rows for one symbol, both directions,
- *  with the opposite side's file language. Single query per direction. */
+/**
+ * Fetch the stored cross-language rows for one symbol, both directions, with the
+ * opposite side's file language. Single query per direction.
+ *
+ * PROJECT SCOPE IS PART OF THE CONTRACT, not of the caller. M63.CL3: the JOIN
+ * pinned the SOURCE symbol's project to the row's (`ss.project_id =
+ * r.project_id`), which reads like a project filter and is not one — the row
+ * itself was never constrained, and the function's only key was the symbol id.
+ * A relationship row belonging to another project and pointing at this symbol
+ * was returned as a fact about it (reproduced against the real handler in CL1:
+ * `LEAKED: true`, `toolFactsMentionLeak: true`).
+ *
+ * The obvious fix is a `projectId` parameter. This does not take one, on
+ * purpose: `hover()` has no project in scope — it resolves by file path — so
+ * threading one would touch the LSP surface for a property the SQL can carry
+ * itself, and a parameter a caller can forget is a weaker guarantee than a
+ * filter that cannot be omitted. The row is tied to the project of the symbol
+ * being asked about, derived from that symbol's id.
+ */
 export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): CrossLanguageEdgeRow[] {
   const rows: CrossLanguageEdgeRow[] = []
   // Callers: edges INTO the symbol; the other side is the source file's language.
@@ -393,9 +569,10 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
        FROM brain_relationship r
        JOIN brain_symbol ss ON ss.id = r.source_symbol_id AND ss.project_id = r.project_id
        JOIN brain_file sf ON sf.id = ss.file_id
-       WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?`,
+       WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?
+         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
-    .all(symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
   for (const r of callers) rows.push({ ...r, direction: "caller", evidence_class: parseEvidenceClass(r.metadata) })
   // Callees: edges OUT of the symbol; the other side is the target file's language.
   const callees = db
@@ -404,9 +581,10 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
        FROM brain_relationship r
        JOIN brain_symbol ts ON ts.id = r.target_symbol_id AND ts.project_id = r.project_id
        JOIN brain_file tf ON tf.id = ts.file_id
-       WHERE r.is_cross_language = 1 AND r.source_symbol_id = ?`,
+       WHERE r.is_cross_language = 1 AND r.source_symbol_id = ?
+         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
-    .all(symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
   for (const r of callees) rows.push({ ...r, direction: "callee", evidence_class: parseEvidenceClass(r.metadata) })
   return rows
 }

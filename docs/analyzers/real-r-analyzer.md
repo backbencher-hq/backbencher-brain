@@ -5,16 +5,28 @@
 - Analyzer: `src/ast/real-r-analyzer.ts`
 - Grammar: `grammars/tree-sitter-r/grammar.js` (vendored), built to
   `wasm/tree-sitter-r.wasm`
+- Parser: pinned `tree-sitter-r` WASM at `wasm/tree-sitter-r.wasm`
 - Wiring: `ASTEngine.getAnalyzer("r")` -> `RealRAnalyzer`
 - Corpora: `dplyr@d5e94e7`, `Matrix@d598862`, `ggplot2@313d090`, `shiny@8184460`,
   `testthat@09dcd88` under `$HOME/fixtures/repositories` — 1,174 tracked
   `.R`/`.r` files
+  <!-- provenance: find-grammar-provenance -->
+  Provenance of the shipped bytes: the shipped grammar is a **PATCHED** build, so it
+  is no longer byte-identical to any published artifact. Its **base** was established by
+  byte-identity before the patch: the bytes this repo shipped were byte-identical to
+  `@eagleoutice/tree-sitter-r@1.1.2` (sha256 `b11a872a88ad8a9e…`). The hex-float rule
+  below was then changed and the grammar rebuilt, which is why a fresh
+  `find-grammar-provenance` run now reports no byte match — and that is the correct
+  result, not a regression. Evidence: `validation/m60/results/G-PROVENANCE.json`.
+- Corpus: clean `dplyr@d5e94e7f` tracked R sources
 
 The shipped grammar is a **patched** tree-sitter-r. The base is
 `@eagleoutice/tree-sitter-r@1.1.2` (its published `tree-sitter-r.wasm` was
+
 byte-identical to the one this repo shipped). **Two** rules were changed — the
 hex-float literal and the `..N` identifier — both because the grammar mis-parsed
 code R itself accepts. See [Grammar](#grammar-two-patches) below.
+
 
 ## Grammar: two patches
 
@@ -24,8 +36,8 @@ _hex_literal: $ => /0[xX][0-9a-fA-F]+/          # before
 
 R parses every numeric literal with `strtod(3)`, so it accepts the C99
 hexadecimal-float form `0x<hexdigits>[.<hexdigits>]p[+-]<decimals>` — where the
-binary exponent is mandatory. The rule above knew only the integer-hex form, so
-the lexer stopped at `0x1` and the remainder was re-read as an identifier plus an
+binary exponent is mandatory. The rule above knew only the integer-hex form, so the
+lexer stopped at `0x1` and the remainder was re-read as an identifier plus an
 addition. Two failure shapes, both wrong:
 
 | Source | Before | After |
@@ -297,6 +309,45 @@ and `token` at 16:5, so `4:12-4:14` (the value alone) was never right. **The exp
 was corrected to match R, not the analyzer** — and the reason is recorded in the ground
 truth's own notes.
 
+### Call coverage — the largest gap, finally a number
+
+Every other check in this lane measures what the analyzer **produced**. None measured what
+it did not, and in R that difference is the biggest number here. The denominator is counted
+by walking the parse tree for `call` nodes, independently of the analyzer, so the ratio
+cannot be moved by changing the numerator.
+
+| | |
+|---|---|
+| call sites in the parse tree | **107,534** |
+| …at file scope | **59,840** (55.6%) |
+| …inside a function | 47,694 (44.4%) |
+| `calls` edges emitted | **27,753** |
+| edge per call site | **25.8%** |
+| calls the analyzer could not attribute to any symbol | **66,592** |
+
+R packages are mostly top-level code, so more than half of all calls have no enclosing
+function, and `source` in this framework's relationship model is a symbol name — there is
+no symbol to name. Those calls get no edge. **That is a design limitation, not a bug**, and
+it is now recorded as one with its number attached.
+
+Per repo, the file-scope share runs 49–74%: dplyr is 74% top-level, shiny 49%.
+
+**The interesting part is how invisible this was.** The analyzer has counted
+`callsUnresolvedScope` on every call since the counter was introduced, and the comment on
+its own declaration says:
+
+> Ambiguity counters, surfaced in metadata so a claim of completeness can be audited.
+
+They were not surfaced. The object was created, incremented, and dropped on the floor of the
+function. The number that would have exposed the lane's largest completeness gap was being
+discarded on the way out. That is worse than an unrecorded limitation: a comment asserting
+an auditability the code did not provide, which reads as a guarantee to anyone who greps
+for the word.
+
+The counters are now attached to `metadata.callAttribution`, and the coverage harness
+**fails** if any file stops surfacing them — so the gap cannot quietly go dark a second
+time. A completeness claim that cannot be read is not auditable.
+
 ### The production path — the check every other harness here is blind to
 
 Every other R check constructs `new RealRAnalyzer()` and loads `wasm/tree-sitter-r.wasm`
@@ -367,10 +418,34 @@ a byte offset, and a remedy has to convert the range itself. The number is in th
 record under `unitFinding.REFUTED`, because a refuted hypothesis with a number attached is
 worth more than a plausible story, and it is what stopped the wrong fix being proposed.
 
-**Not fixed here.** The remedy is additive — `byteStart`/`byteEnd` alongside the existing
-fields, or one conversion at the engine boundary — and that touches a shared contract that
-~15 lanes and every downstream consumer read while other lanes are actively being worked
-on. It is a cross-lane decision, not this lane's to take alone.
+**Resolved, additively.** The decision was to add `byteStart`/`byteEnd` *alongside* the
+existing fields rather than convert them, so nothing that already reads
+`startIndex`/`endIndex` moves. `src/ast/engine.ts` declares them as optional, the unit of
+the existing fields is documented where they are declared, and
+`src/types/web-tree-sitter.d.ts` now states plainly that the library reports **UTF-16 code
+units** — which is the single most load-bearing fact in that file and was previously
+unstated.
+
+The result is measured on the same symbols with the same query, differing only in the unit:
+
+| range used | symbols located correctly |
+|---|---|
+| existing `startIndex`/`endIndex` (UTF-16) | 16,283 of 16,290 |
+| new `byteStart`/`byteEnd` (bytes) | **16,290 of 16,290** |
+
+All 16,290 symbols carry the byte fields, and every one resolves. **So the unit was the
+whole defect**, not a contributing factor — which the refuted hypothesis above had made
+uncertain, and which no amount of reasoning would have settled.
+
+The 7 non-ASCII symbols still fail through the *existing* fields. That is a decision, not
+an oversight: ~15 lanes read those fields today, and changing them is a breaking change
+made while other lanes are mid-flight. A consumer that needs a correct byte offset now has
+one.
+
+**One thing found on the way:** a second, near-identical `UniversalSymbol` exists in
+`src/ast/types.ts` and is imported by **nothing**. The first edit landed there, had no
+effect, and produced a type error that looked like the change was wrong. Two declarations of
+one contract is how they drift; the live one now says which it is.
 
 The existing range audit cannot see this: it recomputes offsets in the same unit the
 analyzer reports, so it is self-consistent by construction. **Two harnesses sharing a
@@ -419,6 +494,27 @@ its import paths rewritten so the snapshot loads, and the commit printed in the 
 baseline that fails to load aborts the run, because a baseline that silently analyzes zero
 files reports "nothing was removed" — the most flattering possible false result.
 
+## The red-team pass
+
+`reviews/r/adversarial-2026-09-28.md` is the full record. The short version: the
+differential's 1.000000 was *agreement*, because the oracle that produced it shares an
+author with the analyzer. Asking R a different question — evaluate the file, then ask the
+environment what it holds — found three classes no amount of fixture work would have:
+
+- a **quoted assignment target** (`"%+replace%" <- …`, which ggplot2 writes) published
+  nothing at all;
+- a **statically dead `if (FALSE)` branch** published declarations R never makes;
+- a **top-level `rm()`** left the removed helper published, 59 names across the corpora.
+
+With the oracle corrected to stop sharing those blind spots, precision read **0.990219** —
+not 1.0 — and the binding count fell 8,798 → 8,707. All three are fixed, pinned by
+`F16-runtime-semantics.R` and four new mutants (30/30 caught), and the 1.0 is now earned:
+an oracle cross-checked against R's own runtime on 321 files with 0 disagreements.
+
+The pass is **self-directed, not independent**, and the log says so. It covers 27% of the
+corpus, checks only bindings rather than `imports`/`exports`/`overrides`, and the exec
+oracle's own assumptions are unexamined. Those are the honest limits of the result.
+
 ## Text operations (the complete inventory)
 
 There are **no regex literals** in the analyzer. Every text-level operation is
@@ -442,6 +538,20 @@ tests. Namespace collapsing uses the `rhs` **field** of `namespace_operator`, so
 Regenerate with `bun run script/m12/r-evidence.ts`; every record is sealed and
 refuses a hand edit.
 
+- **fixture set (pinned)** — `validation/m12/results/r-fixture-set.json`: the 15 fixture
+  sources and the ground truth they are scored against, both committed and hashed, so the
+  two headline numbers below can be re-run rather than believed. `setSha256` covers the
+  whole set; each fixture carries its own digest. The set lives in
+  `validation/m14/fixtures/r/`, which is where `script/m14/owner-spot-check.ts` inventories
+  a lane's fixtures from — one canonical copy, because two copies of a fixture set is how
+  they drift. `validation/m12/results/SPOT-CHECK-PACK-r.md` is the human-sampling pack.
+
+  These lived only in an unversioned scratch directory until now, which meant **251/251 and
+  26/26 were assertions rather than results** — the same defect already fixed for the two
+  oracle scripts, and missed here until the closure step went looking for them. Both
+  harnesses now prefer the committed paths and *report which they used*, so a future run
+  against the scratch copy cannot be mistaken for a reproducible one.
+
 - **R-oracle differential (the strongest check in this lane)** —
   `validation/m12/results/r-oracle-differential.json`: **R 4.4.3 itself decides
   which top-level names each of the 997 comparable corpus files binds, and the
@@ -456,6 +566,15 @@ refuses a hand edit.
   This is the check that earned its place: it found **two errors a fixture suite
   structurally could not** — a wrong belief about `->` that the fixtures had been
   written to match, and an identifier the grammar split in half.
+
+  **But its 1.000000 was agreement, not verification** — see
+  [the red-team pass](../reviews/r/adversarial-2026-09-28.md). The oracle is a walk over
+  R's AST written by the same author as the analyzer, so it can share a wrong belief about
+  R's *semantics* even while being immune to a wrong belief about the *grammar*. A second
+  R method that EVALUATES each file and asks the environment what it holds disagrees with
+  the oracle on 8 of 321 overlapping files, and all 8 were the oracle reporting names R
+  never binds. Three real defect classes came out of it, and the honest precision before
+  they were fixed was **0.990219**, not 1.0.
 
 - **Grammar conformance (L2)** — `validation/m12/results/r-grammar-conformance.json`:
   **0 unknown node types, 0 unknown fields, 0 regex literals**, against node types

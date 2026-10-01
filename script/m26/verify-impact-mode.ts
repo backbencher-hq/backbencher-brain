@@ -134,6 +134,30 @@ async function makeFixture(): Promise<{
   // Unrelated edges that must not enter the impact set.
   rel.run("w5-rel-5", projectId, "sym:root", "sym:other", "calls", 0.9)
   rel.run("w5-rel-6", projectId, "sym:caller1", "sym:caller2", "calls", 0.7)
+
+  // M63.T1 — the three shapes the OLD flat COUNT could not tell apart, seeded
+  // on their own roots so the rootFn differential above stays untouched. The
+  // corpus lane (fixtures/impact) found the real defects; these make the
+  // in-repo gate able to see them too:
+  //   hub2      a TRANSITIVE dependent (other → hub2mid → hub2): a depth-0
+  //             count answers 1 where the set is 2
+  //   hub2 cyc  a cycle (hub2 → hub2mid): the root is a dependent of itself
+  //   klass     an OWNER CASCADE (other → mem, where mem belongs to klass):
+  //             a count that forgets the cascade answers 0
+  //   nondep    a `contains` row aimed at the class: a count with no
+  //             relationship-kind filter answers 2 where the rule says 1
+  const owned = raw.prepare(
+    `INSERT INTO brain_symbol (id, project_id, file_id, name, symbol_type, line_start, line_end, byte_start, byte_end, gravity_score, owner_symbol_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+  )
+  sym.run("sym:hub2", projectId, "file-1", "hub2", "function", 8, 8, 27, 31, 8)
+  sym.run("sym:hub2:mid", projectId, "file-1", "hub2mid", "function", 9, 9, 32, 37, 7)
+  sym.run("sym:klass", projectId, "file-1", "Klass", "class", 10, 12, 38, 46, 6)
+  owned.run("sym:klass:mem", projectId, "file-1", "mem", "method", 11, 11, 39, 42, 5, "sym:klass")
+  sym.run("sym:other2", projectId, "file-1", "otherFn2", "function", 13, 13, 47, 51, 1)
+  rel.run("w5-rel-7", projectId, "sym:hub2:mid", "sym:hub2", "calls", 0.9)
+  rel.run("w5-rel-8", projectId, "sym:other", "sym:hub2:mid", "calls", 0.9)
+  rel.run("w5-rel-9", projectId, "sym:hub2", "sym:hub2:mid", "calls", 0.9)
+  rel.run("w5-rel-10", projectId, "sym:other", "sym:klass:mem", "calls", 0.9)
   return {
     projectId,
     raw,
@@ -153,7 +177,7 @@ async function main(): Promise<void> {
   const mod = await import(IMPACT)
   const impact = mod as {
     computeImpact: (db: any, projectId: string, name: string, deps?: any) => Promise<any>
-    totalImpactCountIfKnown: (db: any, id: string) => number | null
+    countImpactDependents: (db: any, projectId: string, id: string, opts?: any) => { total: number | null; direct: number; rowsScanned: number; expansions: number; hitScanCeiling: boolean }
     IMPACT_BUDGET: { maxNodes: number; maxDepth: number }
   }
   const coreMod = await import(CORE)
@@ -190,9 +214,13 @@ async function main(): Promise<void> {
     check("R2: nested caller counts in impact (cascade) — declared containment rule", names.includes("nested1"))
     check("R2: containment delta documented in the component", source.includes("owner cascade") && source.includes("flat reference counts"))
 
-    // --- G2: total via the independent COUNT query ------------------------------
-    const total = impact.totalImpactCountIfKnown(fx.raw, "sym:root")
-    check("G2: independent COUNT agrees with traversal total", total === 4, `count=${total}`)
+    // --- G2: total via the independent counting walk ----------------------------
+    // M63.T1: the total is measured under the walk's own rule (kinds, cascade,
+    // noise, depth) with no node budget — the same reason the flat COUNT it
+    // replaced could not be trusted on a real corpus.
+    const counted = impact.countImpactDependents(fx.raw, fx.projectId, "sym:root")
+    check("G2: independent counting walk agrees with the traversal total", counted.total === 4, `total=${counted.total}`)
+    check("G2: the counting walk reports its own cost (declared, never hidden)", counted.rowsScanned > 0 && counted.expansions > 0 && counted.hitScanCeiling === false, JSON.stringify(counted))
 
     // --- G4: in-UI rendering with declared counts --------------------------------
     // The renderer under law is the ONE core (M42.H4 home); the DOM contract
@@ -225,6 +253,42 @@ async function main(): Promise<void> {
     const domNE = makeDom()
     core.renderImpact(result, domNE as never)
     check("G4: non-empty impact set renders no absence note", domNE.el.find("bb-impact-empty") === null)
+
+    // --- G4b: a NON-EXACT name is a substitution and the panel says so --------
+    // M63.T1. Measured on the bb_impact corpus lane: asked about graphql-js
+    // `push` (141 stored relationships point at a `push`), the answer is an
+    // empty set about a different `push`. A panel that renders only the
+    // numbers is indistinguishable from "nothing depends on this".
+    const domFuzzy = makeDom()
+    core.renderImpact(
+      { ...result, root: { ...result.root, file: "lib/push.js" }, rootMatch: { requested: "rootFnX", via: "fuzzy-containment", nameMatches: 0 } } as never,
+      domFuzzy as never,
+    )
+    const fuzzyNote = domFuzzy.el.find("bb-root-match-note") as El | null
+    check(
+      "G4b: a containment match renders a visible substitution note",
+      fuzzyNote !== null && fuzzyNote!.textContent.includes("rootFnX") && fuzzyNote!.textContent.includes("rootFn") && fuzzyNote!.textContent.includes("lib/push.js"),
+      fuzzyNote?.textContent ?? "no note",
+    )
+    check(
+      "G4b: the note rides machine-readable attributes",
+      domFuzzy.el.attrs["data-root-match"] === "fuzzy-containment" && domFuzzy.el.attrs["data-root-requested"] === "rootFnX" && domFuzzy.el.attrs["data-root-name-matches"] === "0",
+      JSON.stringify(domFuzzy.el.attrs),
+    )
+    // An EXACT match renders no such note (declared absence), and neither does
+    // the owning-declaration case, which has its own resolution note.
+    const domExact = makeDom()
+    core.renderImpact({ ...result, rootMatch: { requested: "rootFn", via: "exact", nameMatches: 1 } } as never, domExact as never)
+    check("G4b: an exact match renders no substitution note", domExact.el.find("bb-root-match-note") === null)
+    const domOwner = makeDom()
+    core.renderImpact(
+      { ...result, resolution: { through: "owning-declaration", memberName: "ctor", ownerName: "rootFn" }, rootMatch: { requested: "ctor", via: "owning-declaration", nameMatches: 2 } } as never,
+      domOwner as never,
+    )
+    check(
+      "G4b: the owning-declaration case keeps its own note and gains no second one",
+      domOwner.el.find("bb-impact-resolution-note") !== null && domOwner.el.find("bb-root-match-note") === null,
+    )
 
     // --- Latency (contract §3 render budget, headless regime) --------------------
     const samples: number[] = []
@@ -304,11 +368,75 @@ async function main(): Promise<void> {
         },
       },
       {
-        name: "M4 differential break (containment dropped from total)",
+        name: "M4 differential break (cascade dropped from the total count)",
         home: "component",
-        from: "OR (r.target_symbol_id IN (\n              SELECT m.id FROM brain_symbol m\n              WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ?\n            ) AND r.target_symbol_id IS NOT NULL)",
-        to: "AND r.target_symbol_id IS NOT NULL AND 1=0",
-        probe: (m) => m.totalImpactCountIfKnown(fx.raw, "sym:root") !== 4 // cascade branch gone => count diverges from the honest 4
+        from: 'new Array(batchSize).fill("(m.id = ? OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?))")',
+        to: 'new Array(batchSize).fill("(m.id = ?)")',
+        // sym:klass is reached only through its member (other → mem): with
+        // the cascade gone the declared total of a class drops from 1 to 0.
+        probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:klass").total !== 1
+      },
+      {
+        name: "M4b kinds dropped from the total count (a contains row counts as a dependency)",
+        home: "component",
+        from: '"WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") "',
+        to: '"WHERE r.project_id = ? AND 1=1 "',
+        probe: (m) => {
+          // A `contains` row aimed at the class is NOT a dependency. With the
+          // kind filter the class still answers 1 (through its member); with
+          // it gone the answer becomes 2 — the defect the corpus measured
+          // (GraphQLList: 57 declared, 8 real).
+          const before = m.countImpactDependents(fx.raw, fx.projectId, "sym:klass").total
+          fx.raw
+            .prepare(`INSERT INTO brain_relationship (id, project_id, source_symbol_id, target_symbol_id, relationship_type, confidence) VALUES (?,?,?,?,?,?)`)
+            .run("w5-rel-nondep", fx.projectId, "sym:other2", "sym:klass", "contains", 0.9)
+          const after = m.countImpactDependents(fx.raw, fx.projectId, "sym:klass").total
+          return after !== before && after !== null
+        },
+      },
+      {
+        name: "M4c transitive collapse (the count stops at depth 0)",
+        home: "component",
+        from: "if (frontier[0]!.depth + 1 < maxDepth) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })",
+        to: "if (false) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })",
+        // hub2 has one direct dependent and one through it: a depth-0 count
+        // answers 1 where the set is 2. This is the defect that made the
+        // surface say "showing 200 of 145".
+        probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:hub2").total !== 2
+      },
+      {
+        name: "M6 root listed as its own dependent (cycle)",
+        home: "component",
+        from: "if (nodeId === result.root.id) continue",
+        to: "if (false) continue",
+        probe: async (m) => {
+          // hub2 calls hub2mid and hub2mid calls hub2: without the guard the
+          // root appears in its own impact set.
+          const r = await m.computeImpact(fx.raw, fx.projectId, "hub2")
+          return r.impact.some((d: any) => d.id === r.root.id)
+        },
+      },
+      {
+        name: "M7 fabricated total when the ceiling is hit (a partial count as a total)",
+        home: "component",
+        // Anchored on ONE expression, not the whole return literal: the literal
+        // grows every time a measurement is added, and an anchor that spans it
+        // silently stops matching — which is reported as SKIP and counted as a
+        // pass by a suite that only compares caught === total.
+        from: "total: hitScanCeiling ? null : found.size",
+        to: "total: found.size",
+        probe: (m) => m.countImpactDependents(fx.raw, fx.projectId, "sym:hub2", { expansionCeiling: 1 }).total !== null
+      },
+      {
+        name: "M8 non-exact name rendered as an exact hit (silent substitution in the panel)",
+        home: "core",
+        from: 'if (match && match.via !== "exact" && match.via !== "owning-declaration") {',
+        to: "if (false) {",
+        probe: (m) => {
+          const d = makeDom()
+          m.renderImpact({ ...result, rootMatch: { requested: "rootFnX", via: "fuzzy-containment", nameMatches: 0 } }, d as never)
+          return d.el.find("bb-root-match-note") === null // the substitution became invisible
+        },
       },
       {
         name: "M5 truncation state lost",
@@ -332,14 +460,23 @@ async function main(): Promise<void> {
       },
     ]
 
+    // The roster, stated. A mutant that cannot be planted has STOPPED being
+    // tested, and a suite that only compares caught === total cannot tell that
+    // from a pass: the skipped mutant is dropped from the denominator, the
+    // equality still holds, and the summary reads BETTER than before while
+    // testing less. (Measured: the M7 anchor was invalidated by a field added
+    // to a return literal, the suite reported 10/10, and nothing failed.)
+    const EXPECTED_MUTANTS = 11
     let caught = 0
     let mutantsTotal = 0
+    let skipped = 0
     for (const mutant of mutants) {
       // Render mutants plant into the ONE core (their home); compute mutants
       // plant into the impact component. The anchor must exist in the home.
       const base = mutant.home === "core" ? coreSource : source
       if (!base.includes(mutant.from)) {
-        console.log(`  SKIP (anchor not found): ${mutant.name}`)
+        console.log(`  ANCHOR NOT FOUND (a defect this suite no longer tests): ${mutant.name}`)
+        skipped++
         continue
       }
       mutantsTotal++
@@ -367,7 +504,11 @@ async function main(): Promise<void> {
         console.log(`  SURVIVED: ${mutant.name}`)
       }
     }
-    check("mutation suite: every planted defect is caught", caught === mutantsTotal && mutantsTotal >= 4, `${caught}/${mutantsTotal}`)
+    check(
+      "mutation suite: every planted defect is caught, and the whole roster ran",
+      skipped === 0 && caught === mutantsTotal && mutantsTotal === EXPECTED_MUTANTS,
+      `${caught}/${mutantsTotal} caught, ${skipped} anchor(s) not found, ${EXPECTED_MUTANTS} expected`,
+    )
 
     // --- Persist evidence ------------------------------------------------------------
     const failed = checks - passed
