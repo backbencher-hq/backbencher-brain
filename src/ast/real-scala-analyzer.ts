@@ -1031,22 +1031,24 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractScalaDoc(node: Node): string | undefined {
     // KAD2 twin (M37 #597 sweep): dead `sibling === node` stop leaked the
     // first ScalaDoc in the file onto every doc-less declaration.
-    // Span-locate + backward scan, strict adjacency (kotlin KAD2 contract).
-    const parent = node.parent
-    if (!parent) return undefined
-    let selfIdx = -1
-    for (let i = 0; i < parent.namedChildCount; i++) {
-      const c = parent.namedChild(i)
-      if (c && c.startIndex === node.startIndex && c.endIndex === node.endIndex) { selfIdx = i; break }
-    }
-    for (let i = selfIdx - 1; i >= 0; i--) {
-      const sibling = parent.namedChild(i)
-      if (!sibling) continue
-      // scala grammar types doc comments as block_comment (kotlin uses
-      // multiline_comment - each grammar names them differently)
-      if (sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
-      break
-    }
+    // Strict adjacency (kotlin KAD2 contract).
+    //
+    // M60: this used to LOCATE its own index by scanning every named sibling
+    // forward, comparing spans. The backward loop below that scan then examined
+    // exactly ONE sibling before its unconditional `break` — so the whole
+    // quadratic was computing the answer `previousNamedSibling` gives directly.
+    // It was measured at 88% of all scala analysis time (7,792ms of 8,839ms on a
+    // 2,500-definition file, profiled: ts_node__child 3.9s inside
+    // extractScalaDoc), superlinear at exponent 1.53 — doubling a file's
+    // definition count cost 2.89x the time. The cost is Node WRAPPER allocation:
+    // web-tree-sitter does not intern nodes (`root.namedChild(0) ===
+    // root.namedChild(0)` is false), so each `namedChild(i)` builds a new object.
+    // The corpus consequence was tests/pos/large.scala at 156s, 30x worse per
+    // byte than the next-worst large file, against a 317-byte median of 2.7ms.
+    const sibling = node.previousNamedSibling
+    // scala grammar types doc comments as block_comment (kotlin uses
+    // multiline_comment - each grammar names them differently)
+    if (sibling && sibling.type === "block_comment" && sibling.text.startsWith("/**")) return sibling.text
     return undefined
   }
 
