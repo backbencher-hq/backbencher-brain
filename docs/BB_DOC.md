@@ -234,6 +234,47 @@ analyzer lane, which knows each grammar. Where it matters for a verdict, the
 `unsupported` section now reports it per language and counts the symbols it
 affects.
 
+## Prose Rules
+
+Prose adds orientation. It never restates the facts, and a gate checks it:
+`no section prose is its facts joined by spaces`.
+
+**A section says what its evidence IS, not how much of it there is.** The prose
+used to be `N cited items from M sources.`, which tells a reader nothing they
+could not count, and the classification on every fact — read directly, inferred
+because the index did not resolve something, recorded as unknown — was never
+surfaced anywhere in the document. It is now, because it is what a reader
+deciding whether to trust a section needs:
+
+```
+API          2 claims, 2 read directly from the index, resting on 1 source (1 symbol).
+Dependencies 20 claims, 17 read directly from the index; 3 inferred because the
+             index did not resolve the target, resting on 20 sources (1 relationship).
+```
+
+**A section that is empty says why, in its own words.** The reason was already
+written, per section, and cited — it just lived in the footer, where a reader
+looking at that section does not look. So an empty section's prose IS its
+explanation:
+
+```
+Tests   No indexed test relationship for ServeHTTP, and no indexed test file names it.
+```
+
+against the previous `No indexed evidence was found for tests.`
+
+That leaves the same sentence in the `Unknowns` appendix, and that overlap is
+accepted rather than engineered away: the appendix is a complete inventory of
+every gap and the section is where a reader arrives looking for one. Removing a
+gap from the appendix because a section already mentions it would make the
+appendix quietly incomplete, which is the failure this document exists to avoid.
+
+**The sweep writes its explanations after assembly, so the prose is rebuilt
+afterwards.** The sweep judges the RENDERED section, which is why it cannot run
+before sections exist — and that ordering left the prose describing a section
+before the very sentence explaining it had been written. Only sections with no
+facts can have changed, so only those are rebuilt.
+
 ## Fact And Prose Rules
 
 - **Extracted** facts are directly present in indexed source or tables: names,
