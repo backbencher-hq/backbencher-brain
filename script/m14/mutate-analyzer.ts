@@ -12204,10 +12204,10 @@ export const MUTANTS: Mutant[] = [
       "`confidenceMin: 0.9` precisely so a demotion fails it. " +
       "Why it is worth a mutant when the obvious reverts already exist: dropping the companion read " +
       "altogether and dropping its RESULT are different defects with different consequences. The first " +
-      "changes the edge SET — and a set comparison catches it immediately. The second leaves the set " +
-      "perfect and corrupts only the ranking, which is the failure a graph consumer cannot detect by " +
-      "looking at what is there. 855 corpus edges are in exactly this state today, and the census that " +
-      "found them had to compare confidences rather than members to see it.",
+      "changes the edge SET — and a set comparison catches it immediately. The second leaves the edge " +
+      "set byte-for-byte intact and corrupts only the ranking, which is the failure a graph consumer " +
+      "cannot detect by looking at WHAT is there. 855 corpus edges sit in exactly this state today, and " +
+      "the census that found them had to compare confidences rather than members to see it at all.",
     transform: r => ({
       ...r,
       relationships: ((r.relationships ?? []) as any[]).map((x: any) => {

@@ -66,7 +66,11 @@ const isDunder = (n: string): boolean => n.length > 4 && n.startsWith("__") && n
  */
 function calleeLeaf(text: string): string {
   const t = text.trim()
-  const cut = t.search(/[(]/)
+  // Char walk, not regex (M49.R2): find the first `(`. A regex here is not the issue — the
+  // issue is that an instrument which derives TRUTH should not be doing language work with a
+  // pattern while the lane it checks is held to a stricter standard than the letter of the rule
+  // requires. `indexOf` says exactly this and cannot be misread.
+  const cut = t.indexOf("(")
   const head = (cut === -1 ? t : t.slice(0, cut)).trim()
   const dot = head.lastIndexOf(".")
   return (dot === -1 ? head : head.slice(dot + 1)).trim()
@@ -463,9 +467,24 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // instrument reading the wrong field.
     const stringContent = (n: any): string => {
       const t = String(n.text ?? "")
-      const m = /^([rubfRUBF]*)(.*)$/.exec(t)
-      const body = m && m[2] !== undefined ? m[2] : t
-      return body.replace(/^["']/, "").replace(/["']$/, "")
+      // Strip a python string PREFIX by char walk, then the quotes. The prefix set is
+      // {r,u,b,f,R,U,B,F} in any order and any combination, so a loop over the leading
+      // characters is both simpler and more obviously correct than a capture group — and this
+      // function decides what an `exports`/`references` edge is *named*, so a mistake here is a
+      // disagreement with the analyzer that looks like the analyzer being wrong.
+      let i = 0
+      while (i < t.length) {
+        const c = t.charAt(i)
+        const isPrefix = c === "r" || c === "u" || c === "b" || c === "f" ||
+          c === "R" || c === "U" || c === "B" || c === "F"
+        if (!isPrefix) break
+        i++
+      }
+      const body = t.slice(i)
+      const q = body.charAt(0)
+      const unquoted = q === '"' || q === "'" ? body.slice(1) : body
+      const last = unquoted.charAt(unquoted.length - 1)
+      return last === '"' || last === "'" ? unquoted.slice(0, unquoted.length - 1) : unquoted
     }
     const walkExports = (n: any, scopeDepth = 0): void => {
       // `__all__` is the MODULE's export contract and nothing else. A class body may assign one —
