@@ -47,15 +47,15 @@ import { readFileSync, writeFileSync, statSync } from "node:fs"
 import { dirname, join, resolve as pathResolve } from "node:path"
 import { fileURLToPath } from "url"
 
-const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..")
+const ROOT_HERE = pathResolve(dirname(fileURLToPath(import.meta.url)), "..") // script/m12/
 import { Parser, Language } from "web-tree-sitter"
 import { ASTEngine } from "../../src/ast/engine"
 
 const REPOS = process.env.XML_CORPUS_ROOT ?? "$HOME/fixtures/xml/repos"
-const OUT_DEFAULT = process.env.XML_DIFF_OUT ?? join(ROOT_HERE, "..", "..", "validation", "m12", "results")
+const OUT_DEFAULT = process.env.XML_DIFF_OUT ?? join(ROOT_HERE, "..", "validation", "m12", "results")
 const EXTS = (process.env.XML_EXTS || "*.xml *.xsd *.dtd").split(/\s+/).filter(Boolean)
 const LIMIT = Number(process.env.XML_LIMIT || "0")
-const WASM = process.env.XML_WASM || join(ROOT_HERE, "..", "..", "wasm", "tree-sitter-xml.wasm")
+const WASM = process.env.XML_WASM || join(ROOT_HERE, "..", "wasm", "tree-sitter-xml.wasm")
 const SEP = "\u0000"
 
 await Parser.init()
