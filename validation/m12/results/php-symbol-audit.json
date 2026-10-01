@@ -26,5 +26,5 @@
   "suspicious": 0,
   "suspiciousDetail": [],
   "history": "php has had phantom symbols removed before (Laravel Eloquent getAttribute/setAttribute, WordPress wp_add_* hooks) — see validation/m12/corpus-manifest.json. A phantom is invisible to precision/recall when the oracle is wrong the same way, which is why this check exists separately.",
-  "generatedAt": "2026-09-30T07:15:35.626Z"
+  "generatedAt": "2026-09-30T08:29:47.063Z"
 }
