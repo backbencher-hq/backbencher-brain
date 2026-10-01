@@ -87,6 +87,29 @@
  * pretending otherwise would produce another oracle that agrees only where nothing
  * interesting happens.
  *
+ * ## Scoping answer: a cross-repository oracle IS tractable, and by how much
+ *
+ * Measured, because "needs a cross-repo oracle" is only useful if someone has
+ * checked whether one can reach the rows. Built a companion index — class name ->
+ * declared member names — over **2,671 .dart files** of `ProxiCall/lib` plus
+ * `flutter/packages/flutter/lib/src`, giving **7,426 classes**, and asked how many
+ * of the analyzer's rows name a base that index knows:
+ *
+ *   **228,900 of 229,416 — 99.8% — are RESOLVABLE.**
+ *
+ *   516 rows (0.2%) are not, and all four bases behind them are named exactly:
+ *   `Equatable` 451, `Cubit` 37, `Exception` 26, `Bloc` 2. Every one is a **pub
+ *   package or the SDK**, not Flutter and not ProxiCall — `equatable` and `bloc`
+ *   come from the pub cache and `Exception` from the Dart core library. Adding
+ *   those three sources would close the remainder, so the surface is fully
+ *   reachable and the build is bounded rather than open-ended.
+ *
+ * So the cross-repo oracle is the right next build and it is a known size: index
+ * three source roots, apply rule 4 with the companion standing in for "declared in
+ * this file", and the in-file and cross-file halves become one surface measured the
+ * same way. That is recorded here as a measurement rather than attempted, because
+ * an oracle left half-built and wired is worse than one not started.
+ *
  * The 110 EXTRA are one shape and they are oracle-side: freezed emits
  * `class _$SessionAnalyticsInitial extends SessionAnalyticsInitial` with the members
  * on the PRIVATE impl, and the analyzer attributes those members to the PUBLIC
