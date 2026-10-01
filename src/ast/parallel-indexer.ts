@@ -607,14 +607,71 @@ function tokenizeCodeForEmbedding(snippet: string, name: string): { token: strin
     .map(([token, count]) => ({ token, weight: count / total }))
 }
 
+/**
+ * M64.C: the files this project WOULD index, under the indexer's own rules.
+ *
+ * Exported for bb_health, which needs to answer "is my new file in the index?"
+ * and cannot answer it from the index alone: an absent file is indistinguishable
+ * from an unindexed one without asking the indexer what it considers a file.
+ *
+ * Read-only by construction. It performs no database write, does not open the
+ * project database at all, and the `eligible-only` mode suppresses the stale-file
+ * cleanup that the indexing path performs — a health read must not delete index
+ * rows to answer a question.
+ *
+ * The rules are the indexer's, not a copy: .gitignore, .bbignore, the skip
+ * directories, the compiled-mode path filter, nested `.git` boundaries, the
+ * depth cap, the extension and shell-shebang gates, and the >5MB size skip. A
+ * second implementation would report gitignored files, `node_modules` and
+ * binaries as unindexed, and would drift the first time a rule was added here.
+ *
+ * Cost is the same as one index run's discovery phase — a stat per eligible
+ * file and no parsing — so callers should treat it as opt-in rather than part of
+ * a default health call.
+ */
+export async function discoverIndexableFiles(
+  projectPath: string,
+  excludePatterns?: string[],
+): Promise<string[]> {
+  const throwaway = {
+    totalFiles: 0, processedFiles: 0, skippedFiles: 0, failedFiles: 0,
+    totalSymbols: 0, totalRelationships: 0, workerBatchSize: 0, dbBatchSize: 0,
+    retries: 0, noop: false,
+  } as unknown as ParallelIndexingStats
+  return discoverAndFilterFiles("" as ProjectID, projectPath, throwaway, undefined, excludePatterns, "eligible-only")
+}
+
 async function discoverAndFilterFiles(
   projectId: ProjectID,
   projectPath: string,
   stats: ParallelIndexingStats,
   filesOverride?: string[],
   excludePatterns?: string[],
+  /**
+   * M64.C: "eligible-only" answers a different question from "changed", using
+   * the SAME rules.
+   *
+   * "index" (default, unchanged) returns the files that need re-parsing: the
+   * eligible set minus whatever the mtime+size check calls untouched. That is
+   * the right answer for an index run and the wrong one for a health question.
+   *
+   * "eligible-only" returns every file the indexer WOULD write, changed or not.
+   * bb_health needs that set to answer "is my new file in the index?", and there
+   * must be exactly ONE implementation of "what counts as an indexable file" —
+   * this one, which knows .gitignore, .bbignore, the skip directories, the
+   * compiled-mode path filter, nested .git boundaries, the depth cap, the
+   * extension and shebang gates, and the size tiers. A second copy of those rules
+   * inside the health provider would report gitignored files, node_modules and
+   * .pngs as unindexed, and would begin lying the moment anyone added a rule
+   * here.
+   *
+   * It is an early branch, not a move: not one line of the walk changes, so the
+   * indexer's own path is unchanged by construction.
+   */
+  mode: "index" | "eligible-only" = "index",
 ): Promise<string[]> {
   const files: string[] = []
+  const eligibleOnly = mode === "eligible-only"
   const startTime = Date.now()
   const { readFile, stat: statFile } = await import("fs/promises")
   const { createHash } = await import("crypto")
@@ -639,11 +696,19 @@ async function discoverAndFilterFiles(
     }
   }
 
-  // Fetch existing stats for incremental checking
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
-  let existingRecords = []
+  // Fetch existing stats for incremental checking.
+  // M64.C: an eligible-only run never consults them, so it does not open the
+  // project database at all — a health read must not create or migrate one.
+  const rawDb = eligibleOnly ? null : await BrainDatabase.getRawInstance(projectId)
+  let existingRecords: { path: string; last_modified: number; size_bytes: number }[] = []
 
-  if (filesOverride && filesOverride.length > 0) {
+  if (eligibleOnly) {
+    // M64.C: nothing below needs the index, and `rawDb` is deliberately null
+    // here. The guard has to be a branch rather than a `rawDb &&` on each use:
+    // the first version assigned null and then dereferenced it two lines later,
+    // so the whole walk threw and bb_health reported UNKNOWN_SCAN_FAILED on
+    // every call.
+  } else if (filesOverride && filesOverride.length > 0) {
     // Only fetch stats for the specific files being overridden
     const placeholders = filesOverride.map(() => "?").join(",")
     existingRecords = rawDb
@@ -694,7 +759,14 @@ async function discoverAndFilterFiles(
         // Send to fallback extraction which handles large files gracefully
       }
 
-      // Incremental check: skip unchanged files
+      // Incremental check: skip unchanged files.
+      // M64.C: in eligible-only mode the caller wants the whole eligible set —
+      // "would the indexer write this file?" — and not "does it need
+      // re-parsing?", so the mtime+size shortcut must not narrow the answer.
+      if (eligibleOnly) {
+        files.push(fullPath)
+        return
+      }
       const existing = existingStats.get(fullPath)
       const mtimeMs = Math.floor(fileStat.mtimeMs)
 
@@ -827,8 +899,11 @@ async function discoverAndFilterFiles(
   }
 
   // Cleanup stale files (files in DB but no longer on disk)
-  // Only do this for a full run (when there are no filesOverride)
-  if (!filesOverride || filesOverride.length === 0) {
+  // Only do this for a full run (when there are no filesOverride).
+  // M64.C: NEVER on an eligible-only run. That caller is asking what is on disk,
+  // and deleting index rows to "answer" a health question would make the
+  // question destructive — a read-only tool that mutated the index.
+  if (!eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
     const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
