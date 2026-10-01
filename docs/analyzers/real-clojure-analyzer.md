@@ -316,15 +316,6 @@ position, so the `fn` owner rule applies there too. `#(% 1)` is the mirror case 
 reason the head needs a *name* test rather than a shape test: it applies its argument
 rather than calling it, with identical node shape.
 
-**The shorthand routes too (CLJ-D46).** `#(.getName %)` took the shorthand's head
-path and pushed `calls: lambda → .getName`, while plain `(.getName o)` correctly emits
-`uses: getName`. A call edge to a name that starts with a dot — not a var, not an
-export, not resolvable — and 19 of them. It was invisible to the differential because
-the truth *also* files these under `uses`: **the two implementations agreed on the
-ontology and disagreed only on whether the shorthand had been analysed at all.** That
-is why it read as an open policy question and was not one. The convention was already
-settled and already implemented on the list path; the shorthand skipped it.
-
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with
