@@ -541,8 +541,25 @@ export function storedCrossLanguageFactsByName(
  *  replacing the string literal at the assignment site (script/m26). */
 export const UNNAMED_BRIDGE = "unnamed bridge (stored row carries no mechanism)"
 
-/** Fetch the stored cross-language rows for one symbol, both directions,
- *  with the opposite side's file language. Single query per direction. */
+/**
+ * Fetch the stored cross-language rows for one symbol, both directions, with the
+ * opposite side's file language. Single query per direction.
+ *
+ * PROJECT SCOPE IS PART OF THE CONTRACT, not of the caller. M63.CL3: the JOIN
+ * pinned the SOURCE symbol's project to the row's (`ss.project_id =
+ * r.project_id`), which reads like a project filter and is not one — the row
+ * itself was never constrained, and the function's only key was the symbol id.
+ * A relationship row belonging to another project and pointing at this symbol
+ * was returned as a fact about it (reproduced against the real handler in CL1:
+ * `LEAKED: true`, `toolFactsMentionLeak: true`).
+ *
+ * The obvious fix is a `projectId` parameter. This does not take one, on
+ * purpose: `hover()` has no project in scope — it resolves by file path — so
+ * threading one would touch the LSP surface for a property the SQL can carry
+ * itself, and a parameter a caller can forget is a weaker guarantee than a
+ * filter that cannot be omitted. The row is tied to the project of the symbol
+ * being asked about, derived from that symbol's id.
+ */
 export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): CrossLanguageEdgeRow[] {
   const rows: CrossLanguageEdgeRow[] = []
   // Callers: edges INTO the symbol; the other side is the source file's language.
@@ -552,9 +569,10 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
        FROM brain_relationship r
        JOIN brain_symbol ss ON ss.id = r.source_symbol_id AND ss.project_id = r.project_id
        JOIN brain_file sf ON sf.id = ss.file_id
-       WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?`,
+       WHERE r.is_cross_language = 1 AND r.target_symbol_id = ?
+         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
-    .all(symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
   for (const r of callers) rows.push({ ...r, direction: "caller", evidence_class: parseEvidenceClass(r.metadata) })
   // Callees: edges OUT of the symbol; the other side is the target file's language.
   const callees = db
@@ -563,9 +581,10 @@ export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): 
        FROM brain_relationship r
        JOIN brain_symbol ts ON ts.id = r.target_symbol_id AND ts.project_id = r.project_id
        JOIN brain_file tf ON tf.id = ts.file_id
-       WHERE r.is_cross_language = 1 AND r.source_symbol_id = ?`,
+       WHERE r.is_cross_language = 1 AND r.source_symbol_id = ?
+         AND r.project_id = (SELECT s2.project_id FROM brain_symbol s2 WHERE s2.id = ?)`,
     )
-    .all(symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
+    .all(symbolId, symbolId) as Array<{ relationship_type: string; confidence: number | null; bridge_mechanism: string | null; other_language: string | null; metadata: string | null }>
   for (const r of callees) rows.push({ ...r, direction: "callee", evidence_class: parseEvidenceClass(r.metadata) })
   return rows
 }

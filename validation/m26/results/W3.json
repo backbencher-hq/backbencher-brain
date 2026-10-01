@@ -8,11 +8,11 @@
   "failed": 0,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "564eacb42247e10642feb0fb2e1b409deafc1a62",
+  "currentCommit": "ac79a36def95f26dc87cb0cd8b1b8a6b44448f99",
   "verifierCommand": "npx tsx script/m26/verify-cross-language-hover.ts",
   "evidenceFile": "W3.json",
   "pairsFile": "W3-pairs.json",
-  "generatedAt": "2026-09-29T04:36:15.487Z",
+  "generatedAt": "2026-09-30T01:52:10.393Z",
   "fixturePairs": [
     {
       "source": "kotlin",
@@ -32,7 +32,7 @@
   "machineReality": {
     "dir": "$HOME/.bb/projects",
     "present": true,
-    "scanned": 4,
+    "scanned": 61,
     "skipped": 0
   },
   "storedPairs": [
@@ -241,6 +241,78 @@
       "sampleBridge": "name-resolution",
       "database": "818db37d8f54173ad1357ab24627373da2e9418c",
       "origin": "real project index"
+    },
+    {
+      "source": "graphql",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 6,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "javascript",
+      "target": "json",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "javascript",
+      "target": "typescript",
+      "edgeCount": 239,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "javascript",
+      "target": "yaml",
+      "edgeCount": 166,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "javascript",
+      "edgeCount": 75,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 16,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "xml",
+      "edgeCount": 13,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
+    },
+    {
+      "source": "typescript",
+      "target": "yaml",
+      "edgeCount": 207,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549",
+      "origin": "real project index"
     }
   ],
   "realPairRows": [
@@ -411,9 +483,72 @@
       "edgeCount": 5349,
       "sampleBridge": "name-resolution",
       "database": "818db37d8f54173ad1357ab24627373da2e9418c"
+    },
+    {
+      "source": "graphql",
+      "target": "json",
+      "edgeCount": 1,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "graphql",
+      "target": "yaml",
+      "edgeCount": 6,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "javascript",
+      "target": "json",
+      "edgeCount": 40,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "javascript",
+      "target": "typescript",
+      "edgeCount": 239,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "javascript",
+      "target": "yaml",
+      "edgeCount": 166,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "typescript",
+      "target": "javascript",
+      "edgeCount": 75,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "typescript",
+      "target": "json",
+      "edgeCount": 16,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "typescript",
+      "target": "xml",
+      "edgeCount": 13,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
+    },
+    {
+      "source": "typescript",
+      "target": "yaml",
+      "edgeCount": 207,
+      "sampleBridge": "name-resolution",
+      "database": "a62a961ac58d2fc27f5083f1d280bee5400ad549"
     }
   ],
-  "realDbsScanned": 4,
+  "realDbsScanned": 61,
   "limitations": [
     "Launch-language pairs with no stored rows are declared absent; per-machine reality is recorded here, not in the byte-gated doc.",
     "Coverage scan reads real project dbs read-only; unreadable/absent dbs are skipped and counted in machineReality.",
@@ -421,7 +556,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:36:15.489Z",
-    "contentSha256": "beedefc9245c790c7f68e4ad33072671c0f7c1bbb875f4542e298a915b2ffede"
+    "sealedAt": "2026-09-30T01:52:10.397Z",
+    "contentSha256": "41e118fd48f724a3ad7eac8125e356eaf995c33139ef8e60eb71c623d9e1a20a"
   }
 }
