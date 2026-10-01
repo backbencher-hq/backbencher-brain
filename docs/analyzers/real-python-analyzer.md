@@ -231,8 +231,8 @@ comparison can see. That is the whole argument for having built the instrument: 
 | Claim | Artefact |
 | --- | --- |
 | grammar bytes, sha256, both-direction drift | `validation/m14/grammar-pins.json` (lane `python`) |
-| 17 fixtures | `validation/m14/fixtures/python/` |
-| 29 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
+| 19 fixtures | `validation/m14/fixtures/python/` |
+| 30 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
 | node-type classification, 0 unclassified | `script/m14/spec/python-completeness.json` |
 | independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
 | the measurements and the defects | `reviews/python/master-review.md` |
