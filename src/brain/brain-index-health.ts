@@ -103,6 +103,24 @@ export interface IndexHealthOptions {
    * no estimate between them.
    */
   diskScan?: "sample" | "complete"
+  /**
+   * M64.A4: freshness verdicts the caller already computed over EVERY indexed
+   * file, so the two disk-touching checks do not read the corpus a second time.
+   *
+   * Round 1 made this battery run `complete` to make it agree exactly with
+   * `freshness: "complete"`, and did not notice that both were then
+   * content-hashing the whole corpus inside one `bb_health` call — two full
+   * passes to produce one number, and on a 264k-file index two full passes
+   * where there should be one. The gate caught it as an integrity phase that
+   * was not the dominant phase despite hashing everything.
+   *
+   * `{ total, reasons }` is the counted form `bb_health` already holds, so
+   * passing it costs nothing. When it is absent — the indexer's own hot-path
+   * call, which uses a sampled mode — the battery reads the disk itself and its
+   * cost is exactly what it was before. `total` is checked against the live row
+   * count rather than trusted, so a stale map is ignored rather than believed.
+   */
+  preResolved?: { total: number; reasons: Record<string, number> } | null
 }
 
 export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHealthOptions = {}): Promise<IndexHealthReport> {
@@ -127,10 +145,15 @@ export async function runIndexHealthCheck(projectId: ProjectID, options: IndexHe
   checks.push(...(await checkOrphanOwners(rawDb, projectId)))
 
   // 6. Stale file hashes (file_hash vs actual file content)
-  checks.push(await checkHashDrift(rawDb, projectId, diskScan))
+  // M64.A4: when the caller already resolved every file's verdict, these two
+  // checks are arithmetic over that map instead of a second corpus read. The
+  // `total` is re-checked against the live row count so a stale map is
+  // discarded rather than trusted.
+  const preResolved = options.preResolved && options.preResolved.total === totalFiles(rawDb, projectId) ? options.preResolved : null
+  checks.push(await checkHashDrift(rawDb, projectId, diskScan, preResolved))
 
   // 7. Files missing from disk
-  checks.push(await checkMissingFiles(rawDb, projectId, diskScan))
+  checks.push(await checkMissingFiles(rawDb, projectId, diskScan, preResolved))
 
   // 8. Embedding coverage
   checks.push(await checkEmbeddingCoverage(rawDb, projectId))
@@ -355,7 +378,11 @@ async function checkOrphanOwners(rawDb: any, projectId: ProjectID): Promise<Heal
   ]
 }
 
-async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete"): Promise<HealthCheck> {
+function totalFiles(rawDb: any, projectId: ProjectID): number {
+  return (rawDb.prepare(`SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?`).get(projectId) as any)?.count ?? 0
+}
+
+async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete", preResolved: { total: number; reasons: Record<string, number> } | null): Promise<HealthCheck> {
   // M64.N1: this sampled with `ORDER BY RANDOM()`, which made the check's own
   // verdict non-reproducible. Proven on a 400-file fixture with exactly 40
   // files (10.0%) staled on disk, five consecutive integrity runs on the SAME
@@ -374,10 +401,29 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sampl
   // selection, one method: these two checks now measure the same thing and
   // cannot disagree by construction. See M64 in src/brain/freshness.ts for why
   // a stride was tried and rejected.
-  const totalRow = rawDb.prepare(`
-    SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?
-  `).get(projectId) as any
-  const total = totalRow?.count ?? 0
+  const total = totalFiles(rawDb, projectId)
+
+  // M64.A4: the caller already resolved every file against disk and counted the
+  // reasons. Re-deriving the same verdict here would be a second content hash of
+  // the whole corpus inside one `bb_health` call, so the map is used as-is. The
+  // `hash-differs` count IS this check's answer — the resolver applies the
+  // identical mtime+size fast path and the identical SHA-256-16 comparison, so
+  // this is the same measurement, not an approximation of it.
+  if (preResolved) {
+    const drift = preResolved.reasons["hash-differs"] ?? 0
+    const byContent = preResolved.reasons["hash-match"] ?? 0
+    const pctAll = total > 0 ? (drift / total) * 100 : 0
+    return {
+      name: "Hash Drift (Stale Files)",
+      status: pctAll > 10 ? "error" : pctAll > 3 ? "warn" : "ok",
+      value: drift,
+      total,
+      percentage: Math.round((100 - pctAll) * 10) / 10,
+      threshold: { warn: 3, error: 10 },
+      description: `${drift} of ${total} indexed files have changed on disk since indexing. EXACT: every indexed file was resolved against disk, and these verdicts are the SAME ones bb_health's own freshness scan just produced — this check reads no files of its own, so the two can never disagree and the corpus is not hashed twice. ${byContent} file(s) were verified by content hash; the rest by mtime+size.`,
+      remediation: drift > 0 ? "Run bb_health with refresh=true to reindex changed files." : undefined,
+    }
+  }
 
   const allFiles = rawDb.prepare(`
     SELECT id, path, relative_path, file_hash FROM brain_file WHERE project_id = ?
@@ -419,7 +465,7 @@ async function checkHashDrift(rawDb: any, projectId: ProjectID, diskScan: "sampl
   }
 }
 
-async function checkMissingFiles(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete"): Promise<HealthCheck> {
+async function checkMissingFiles(rawDb: any, projectId: ProjectID, diskScan: "sample" | "complete", preResolved: { total: number; reasons: Record<string, number> } | null): Promise<HealthCheck> {
   // M64.I1: the comment here said "test 100 random files" and the SQL was an
   // unordered `LIMIT 100` — a prefix, not a random draw — and the verdict was
   // then extrapolated over the whole project (x16.5 on this repo's index). Same
@@ -427,10 +473,26 @@ async function checkMissingFiles(rawDb: any, projectId: ProjectID, diskScan: "sa
   // comment that misdescribed the method. Now the same deterministic,
   // order-independent selection as every other sampled check here, and the
   // description names the method so a reader can tell an estimate from a count.
-  const totalRow = rawDb.prepare(`
-    SELECT COUNT(*) as count FROM brain_file WHERE project_id = ?
-  `).get(projectId) as any
-  const total = totalRow?.count ?? 0
+  const total = totalFiles(rawDb, projectId)
+
+  // M64.A4: same reuse as Hash Drift. `file-gone` and `unreadable` are exactly
+  // the two conditions this check looks for, already counted by the caller's
+  // freshness scan over the same population.
+  if (preResolved) {
+    const gone = preResolved.reasons["file-gone"] ?? 0
+    const denied = preResolved.reasons["unreadable"] ?? 0
+    const missing = gone + denied
+    return {
+      name: "Files Missing from Disk",
+      status: missing > 10 ? "error" : missing > 2 ? "warn" : "ok",
+      value: missing,
+      total,
+      percentage: total > 0 ? Math.round((1 - missing / total) * 1000) / 10 : 100,
+      threshold: { warn: 2, error: 10 },
+      description: `${missing} of ${total} indexed files no longer exist on disk. EXACT: ${gone} deleted, ${denied} unreadable, both from the freshness scan this report already ran. Tools will fail when trying to read these.`,
+      remediation: missing > 0 ? "Run bb_health with refresh=true to remove deleted files from the index." : undefined,
+    }
+  }
 
   const allFiles = rawDb.prepare(`
     SELECT id, path, relative_path FROM brain_file WHERE project_id = ?
