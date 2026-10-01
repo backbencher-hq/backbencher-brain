@@ -158,7 +158,18 @@ export async function completeAnalysisRun(projectId: string, runId: string, find
         report.newFindings++
       } else {
         findingId = existing.id
-        raw.prepare(`UPDATE brain_analysis_finding SET state=?, confidence=?, evidence=?, location=?, limitations=?, evidence_class=?, engine=?, engine_version=?, last_seen_at=?, occurrence_count=occurrence_count+1, resolved_at=?, suppressed_at=?, mitigated_at=?, time_updated=? WHERE id=?`).run(nextState, input.confidence ?? existing.confidence ?? null, json(input.evidence), input.location ?? existing.location ?? null, json(input.limitations ?? (existing.limitations ? parseJsonStringArray(existing.limitations) : [])), evidenceClass ?? existing.evidence_class ?? null, engine ?? existing.engine ?? null, engineVersion ?? existing.engine_version ?? null, timestamp, nextState === "resolved" ? timestamp : existing.resolved_at, nextState === "suppressed" ? timestamp : existing.suppressed_at, nextState === "mitigated" ? timestamp : existing.mitigated_at, timestamp, findingId)
+        // `rule`, `title` and `severity` are refreshed on repeat. They were NOT
+        // in this UPDATE, so a persisted severity was frozen at the value it
+        // held on FIRST observation: re-grading a flow from `high` to `critical`
+        // (the indexer rewrites `brain_taint_flow.severity` on every reindex)
+        // left history reporting `high` forever. Found by the bb_security XR4
+        // regression check, which asserts a re-grade is visible in place — a
+        // history that cannot report a changed grade is not a history of the
+        // current state.
+        //
+        // `input.X ?? existing.X` keeps the prior value when a caller omits the
+        // field, so a sparse update cannot blank a stored one.
+        raw.prepare(`UPDATE brain_analysis_finding SET state=?, rule=?, title=?, severity=?, confidence=?, evidence=?, location=?, limitations=?, evidence_class=?, engine=?, engine_version=?, last_seen_at=?, occurrence_count=occurrence_count+1, resolved_at=?, suppressed_at=?, mitigated_at=?, time_updated=? WHERE id=?`).run(nextState, input.rule ?? existing.rule, input.title ?? existing.title, input.severity ?? existing.severity, input.confidence ?? existing.confidence ?? null, json(input.evidence), input.location ?? existing.location ?? null, json(input.limitations ?? (existing.limitations ? parseJsonStringArray(existing.limitations) : [])), evidenceClass ?? existing.evidence_class ?? null, engine ?? existing.engine ?? null, engineVersion ?? existing.engine_version ?? null, timestamp, nextState === "resolved" ? timestamp : existing.resolved_at, nextState === "suppressed" ? timestamp : existing.suppressed_at, nextState === "mitigated" ? timestamp : existing.mitigated_at, timestamp, findingId)
         if (nextState === "reopened") report.reopenedFindings++
         else report.repeatedFindings++
       }

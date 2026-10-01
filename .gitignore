@@ -238,3 +238,8 @@ validation/m55/profile/
 # difference was deliberate it belongs committed in `ide/vscode/`, where a reader
 # will look — not as a build artefact inside a profiling capture. Flagged for the
 # m55 lane rather than silently resolved here.
+
+# scratch artifacts: not project source, kept on disk only
+.bb-tmp*.ts
+which2.ts
+_data2_poly/
