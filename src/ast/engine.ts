@@ -227,7 +227,11 @@ export namespace ASTEngine {
 
     // === LANGUAGES WITHOUT DEDICATED PARSER (fallback to GenericAnalyzer) ===
     nim: "__generic__",
-    protobuf: "__generic__",
+    // Protobuf: the vendored, patched tree-sitter-proto. See
+    // grammars/tree-sitter-proto/README.md — the node surface is snake_case and
+    // is a contract, and this is the ONE routed language whose grammar had to
+    // be cloned and patched because no protobuf grammar is published on npm.
+    protobuf: "tree-sitter-protobuf",
   } as const
 
   type SupportedLanguage = keyof typeof SUPPORTED_LANGUAGES
@@ -241,8 +245,23 @@ export namespace ASTEngine {
       startColumn: number
       endLine: number
       endColumn: number
+      /**
+       * Start of the range as reported by the parser. For web-tree-sitter this is a UTF-16
+       * CODE-UNIT offset, NOT a byte offset -- the two coincide for ASCII and diverge by
+       * the surplus UTF-8 bytes before the position otherwise, and upstream tree-sitter
+       * reports bytes. Passed through unchanged so existing consumers do not move; use
+       * `byteStart` when a byte offset is what is needed.
+       *
+       * NOTE: a second, near-identical `UniversalSymbol` exists in src/ast/types.ts and is
+       * imported by nothing. This declaration is the live one.
+       */
       startIndex?: number
+      /** End of the range, in the same unit as `startIndex`. */
       endIndex?: number
+      /** Start of the range in BYTES. Optional: populated per analyzer. */
+      byteStart?: number
+      /** End of the range in BYTES. Optional: populated per analyzer. */
+      byteEnd?: number
     }
     scope?: string // Class/namespace/module scope
     visibility?: "public" | "private" | "protected" | "internal" | "global" | "local" | string
@@ -256,6 +275,17 @@ export namespace ASTEngine {
     decorators?: string[]
     genericParameters?: string[]
     comments?: string[]
+    /**
+     * M60 (powershell, 2026-09-26): the declaration's own documentation, as one
+     * string. The field is emitted by java, python, ruby and now powershell, and
+     * `brain_symbol.docstring` has a column and a store binding
+     * (parallel-indexer.ts, the M35 pre-work) — but it was NOT declared here, so
+     * every consumer typing against `UniversalSymbol` saw it only through the
+     * index signature. That is how a field four producers write and the store
+     * reads can stay invisible to the type system: nothing errors, and nothing
+     * checks. Declared now; the index signature still carries the rest.
+     */
+    docstring?: string
     qualified_calls?: string[] // ProxiCall-style: raw calls extracted as-is ["service.createUser", "_auth.validate"]
     apiContractPath?: string // Deterministic mapping: Exact Route URL or Fetch URL for 100% accurate cross-language links
     ownerName?: string // Parent class/namespace name for nested symbols
@@ -635,8 +665,21 @@ export namespace ASTEngine {
           languageWasmPath = resolveWasm("tree-sitter-html/tree-sitter-html.wasm")
           break
         }
-        case "css":
-        case "scss":
+        case "css": {
+          languageWasmPath = resolveWasm("tree-sitter-css/tree-sitter-css.wasm")
+          break
+        }
+        // scss is its OWN grammar and its own lane, not a dialect flag on the CSS one.
+        // The two were conflated until this change and the conflation was measurable:
+        // 254 `.scss` files were routed to a grammar with no `$variables`, no
+        // `@mixin`/`@include` and no interpolation, and 43 of the 244 non-empty ones
+        // parsed clean. `.sass` (indented syntax, a genuinely different grammar) and
+        // `.less` stay on the CSS wasm and stay DECLARED — measured 0 files of each in
+        // 13 corpora, so neither is a claim this repo can support or refute.
+        case "scss": {
+          languageWasmPath = resolveWasm("tree-sitter-scss.wasm")
+          break
+        }
         case "sass": {
           languageWasmPath = resolveWasm("tree-sitter-css/tree-sitter-css.wasm")
           break
@@ -841,6 +884,10 @@ export namespace ASTEngine {
           languageWasmPath = resolveWasm("tree-sitter-make/tree-sitter-make.wasm")
           break
         }
+        case "protobuf": {
+          languageWasmPath = resolveWasm("tree-sitter-protobuf/tree-sitter-protobuf.wasm")
+          break
+        }
 
         default:
           throw new Error(`Language ${language} parser not yet implemented. Add the WASM loading case.`)
@@ -901,6 +948,94 @@ export namespace ASTEngine {
    * offsets) plus each block's language (`js`/`ts`) and body start position.
    * Pure AST — no source-text scanning of the file.
    */
+  /**
+   * M14 (#288 / HTML-G1): the inline `<script>` / `<style>` bodies of a plain
+   * HTML document, with exact byte offsets.
+   *
+   * A SEPARATE function rather than a flag on `extractSfcScriptBlocks`, because
+   * that one feeds vue/svelte and they must not suddenly receive CSS blocks they
+   * have no contract for. The grammar shape is the same for both languages — a
+   * `script_element` / `style_element` whose body is a single `raw_text` leaf —
+   * so this is the same walk with the style arm added and the lang dispatch
+   * widened.
+   *
+   * Why it exists at all: the polyglot path below (the `embeddedScriptContent`
+   * branch) keys on a metadata field NO analyzer in `src/ast/` has ever set, so it
+   * has never fired for anything; and the SFC sub-parse seam is gated
+   * `vue || svelte`. Measured across the html-bearing corpus repos, 5,389 of
+   * 6,094 files (88.4%) carry an inline block that produces zero symbols today.
+   */
+  export function extractHtmlEmbeddedBlocks(
+    rootNode: Node,
+    content: string
+  ): { body: string; lang: "js" | "ts" | "tsx" | "css"; startLine: number; startColumn: number; startIndex: number }[] {
+    const out: { body: string; lang: "js" | "ts" | "tsx" | "css"; startLine: number; startColumn: number; startIndex: number }[] = []
+    const stack: Node[] = [rootNode]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "script_element" || n.type === "style_element") {
+        const isStyle = n.type === "style_element"
+        let rawText: Node | null = null
+        let lang: "js" | "ts" | "tsx" | "css" = isStyle ? "css" : "js"
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (c.type === "raw_text") rawText = c
+          if (c.type === "start_tag") {
+            for (let j = 0; j < c.namedChildCount; j++) {
+              const a = c.namedChild(j)
+              if (a && a.type === "attribute") {
+                // `type="module"`/`type="text/typescript"`/`lang="ts"` are the
+                // three ways a document says which grammar its script is; an
+                // UNRECOGNISED type stays `js`, because the javascript grammar
+                // recovers from a type annotation and the typescript grammar
+                // rejects plain JS in ways that lose more than it gains.
+                const attrName = findAttributeName(a)
+                if (isStyle) {
+                  if (attrName === "lang") {
+                    const v = findAttributeValue(a)
+                    if (v === "css" || v === "text/css") lang = "css"
+                    else lang = "js" // a <style lang=…> that is not CSS is script
+                  }
+                } else if (attrName === "lang") {
+                  const v = findAttributeValue(a)
+                  if (v === "ts" || v === "typescript") lang = "ts"
+                  else if (v === "tsx") lang = "tsx"
+                } else if (attrName === "type") {
+                  const v = findAttributeValue(a)
+                  const lowered = v.toLowerCase()
+                  if (lowered === "module" || lowered === "text/javascript" || lowered === "application/javascript" || lowered === "text/ecmascript" || lowered === "module/javascript") lang = "js"
+                  else if (lowered === "text/typescript" || lowered === "application/typescript" || lowered === "ts") lang = "ts"
+                  else if (lowered === "text/tsx" || lowered === "tsx") lang = "tsx"
+                }
+              }
+            }
+          }
+        }
+        if (rawText) {
+          const body = content.substring(rawText.startIndex, rawText.endIndex)
+          // A body that is only whitespace carries no program, and handing it to
+          // a sub-parser would manufacture an empty symbol set and a per-file
+          // parse cost for nothing.
+          if (body.trim().length > 0) {
+            out.push({
+              body,
+              lang,
+              startLine: rawText.startPosition.row + 1,
+              startColumn: rawText.startPosition.column,
+              startIndex: rawText.startIndex,
+            })
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+    return out
+  }
+
   export function extractSfcScriptBlocks(
     rootNode: Node,
     content: string
@@ -1316,6 +1451,37 @@ export namespace ASTEngine {
         }
       }
 
+      // M14 (#288 / HTML-G1): pre-parse each inline <script>/<style> body of a
+      // plain HTML document and hand the trees to the analyzer via context. Same
+      // shape as the SFC seam above, and the same REASON it uses `getParser`
+      // rather than constructing one: a fresh Parser per file exhausted the
+      // fixed-size wasm heap mid-sweep at --sample 400 (M49 W12), so the parsers
+      // are the cached ones and this is a lookup, not an allocation.
+      if (language === "html" && tree?.rootNode) {
+        try {
+          const blocks = extractHtmlEmbeddedBlocks(tree.rootNode, content)
+          if (blocks.length > 0) {
+            const trees: Tree[] = []
+            for (const block of blocks) {
+              const subParser = await getParser(block.lang === "ts" ? "typescript" : block.lang === "tsx" ? "tsx" : block.lang === "css" ? "css" : "javascript")
+              trees.push(subParser.parse(block.body))
+            }
+            context = {
+              ...context,
+              htmlEmbeddedTrees: trees,
+              htmlEmbeddedLangs: blocks.map((b) => b.lang),
+              htmlEmbeddedStartLines: blocks.map((b) => b.startLine),
+              htmlEmbeddedStartColumns: blocks.map((b) => b.startColumn),
+              htmlEmbeddedStartIndices: blocks.map((b) => b.startIndex),
+            }
+          }
+        } catch (e) {
+          // A sub-parse failure must not lose the document: the html analyzer
+          // still runs, and HTML-G1's own accounting sees the shorter block list.
+          log.debug("html embedded sub-parse failed", { error: (e as Error)?.message })
+        }
+      }
+
       // MARKDOWN: pre-parse each inline node with the companion
       // tree-sitter-markdown-inline grammar and hand the trees to the
       // analyzer via context (the block grammar leaves `inline` opaque; the
@@ -1529,6 +1695,26 @@ export namespace ASTEngine {
           // inference input.")
           hasTypeInference: meta.hasTypeInference ?? true,
           hasFrameworkIntelligence: meta.hasFrameworkIntelligence ?? true,
+          // M14 (#888): FORWARD the analyzer's own scored metrics. This object is
+          // a fresh literal listing fifteen keys, so anything an analyzer computes
+          // and this list omits is computed and DISCARDED — silently, because
+          // `FileMetadata` carries an index signature and the extra key
+          // typechecks. The html analyzer measured exactly that: it computed
+          // accessibility / semantic / performance scores, a `score` breakdown and
+          // a `documentMetrics` census, none of which appeared in the parse result
+          // (verified `"accessibilityScore" in metadata === false`), and the three
+          // scores have no consumer anywhere in `src/` or `script/` besides this
+          // line. Each key below reads `undefined` for every other language, which
+          // is identical to the key being absent — so this is additive by
+          // construction, not a change to any other lane's payload.
+          accessibilityScore: (meta as any).accessibilityScore,
+          semanticScore: (meta as any).semanticScore,
+          performanceScore: (meta as any).performanceScore,
+          score: (meta as any).score,
+          documentMetrics: (meta as any).documentMetrics,
+          elementCount: (meta as any).elementCount,
+          addressableNodeCount: (meta as any).addressableNodeCount,
+          maxElementDepth: (meta as any).maxElementDepth,
           analysisVersion: meta.analysisVersion || "m10.06-cut",
         },
       }
@@ -1556,9 +1742,10 @@ export namespace ASTEngine {
       case "html":
         return new (await import("./real-html-analyzer")).RealHtmlAnalyzer()
       case "css":
-      case "scss":
       case "sass":
         return new (await import("./real-css-analyzer")).RealCssAnalyzer()
+      case "scss":
+        return new (await import("./real-scss-analyzer")).RealScssAnalyzer()
       case "json":
         return new (await import("./real-json-analyzer")).RealJsonAnalyzer()
       case "yaml":
@@ -1622,6 +1809,10 @@ export namespace ASTEngine {
         return new (await import("./real-hcl-analyzer")).RealHclAnalyzer()
       case "graphql":
         return new (await import("./real-graphql-analyzer")).RealGraphqlAnalyzer()
+      // Protobuf: the vendored, patched tree-sitter-proto (see the name map
+      // above and grammars/tree-sitter-proto/README.md).
+      case "protobuf":
+        return new (await import("./real-protobuf-analyzer")).RealProtobufAnalyzer()
       case "zig":
         return new (await import("./real-zig-analyzer")).RealZigAnalyzer()
       case "nim":
@@ -1638,6 +1829,8 @@ export namespace ASTEngine {
         return new (await import("./real-markdown-analyzer")).RealMarkdownAnalyzer()
       case "vb":
         return new (await import("./real-vb-analyzer")).RealVbAnalyzer()
+      case "toml":
+        return new (await import("./real-toml-analyzer")).RealTomlAnalyzer()
       default:
         return new GenericAnalyzer()
     }
@@ -1913,7 +2106,12 @@ export namespace ASTEngine {
       if ((r.byteStart == null || r.byteEnd == null || r.byteEnd <= r.byteStart) && r.fileId && r.lineStart != null) {
         try {
           const fs = require("fs")
-          const content = fs.readFileSync(r.fileId, "utf8")
+          // Decoded the same way the indexer decodes, or the offsets computed here
+          // are offsets into a DIFFERENT string than the one that was parsed — a
+          // UTF-16 file's offsets would be measured against NUL-interleaved text
+          // while the tree was built from the transcoded text, and every symbol in
+          // the file would be misplaced. See src/util/source-text.ts.
+          const content = decodeSourceText(fs.readFileSync(r.fileId)).text
           const lines = content.split("\n")
           let offset = 0
           for (let i = 0; i < Math.min(r.lineStart, lines.length); i++) {

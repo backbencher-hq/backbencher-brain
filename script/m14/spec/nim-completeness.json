@@ -82,6 +82,7 @@
       "template_declaration",
       "term_rewriting_pattern",
       "try",
+      "tuple_construction",
       "tuple_deconstruct_declaration",
       "tuple_type",
       "type_declaration",
@@ -101,7 +102,7 @@
     ]
   },
   "internal_silent": {
-    "description": "Container, literal, comment and payload nodes that correctly emit no symbol and no relationship: they are reached by the walk and carry nothing the taxonomy has a row for. Three of these deserve the reason spelled out, because \"unreferenced\" is not the same as \"ignored\": (1) field_declaration_list and variant_declaration \u2014 a `case` block's fields are field_declaration INSIDE the variant_declaration, and the field rule emits them, so the container itself is silent while its members are handled (verified: a variant object emits properties isCircle, radius, side, name, plainField); (2) pragma_expression \u2014 a pragma wrapped around an expression contributes only its arguments, and the declaration-level pragmas are read from the `pragmas` FIELD, so this node type is a second route to the same names rather than a missing one; (3) tuple_construction \u2014 an anonymous tuple value has no name to resolve, so there is nothing for `instantiates` to point at (a NAMED construction, `TypeName(field: v)`, is handled and is the shape the corpus exercises 93 times). The literal set (integer/float/char/nil/custom_numeric/generalized_string and their content and escape payloads) emits nothing by contract: a literal value is not a declaration and its text is not a name. The bare-statement set (assembly, bind, discard, mixin, raise, return, static, yield) declares nothing; `return`/`raise`/`yield` carry no reference the analyzer would invent a target for.",
+    "description": "Container, literal, comment and payload nodes that correctly emit no symbol and no relationship: they are reached by the walk and carry nothing the taxonomy has a row for. Three of these deserve the reason spelled out, because \"unreferenced\" is not the same as \"ignored\": (1) field_declaration_list and variant_declaration \u2014 a `case` block's fields are field_declaration INSIDE the variant_declaration, and the field rule emits them, so the container itself is silent while its members are handled (verified: a variant object emits properties isCircle, radius, side, name, plainField); (2) pragma_expression \u2014 a pragma wrapped around an expression contributes only its arguments, and the declaration-level pragmas are read from the `pragmas` FIELD, so this node type is a second route to the same names rather than a missing one; (3) an anonymous tuple VALUE has no name to resolve, so there is nothing for `instantiates` to point at (a NAMED construction, `TypeName(field: v)`, is handled and is the shape the corpus exercises 93 times). The `tuple_construction` NODE TYPE itself moved OUT of this bucket: in a type RHS it is the ordinary spelling of an unnamed tuple type (`type T = (int, string)`, which the compiler accepts with 0 errors), and the classifier reads it. It was misfiled here until the mutation run proved the rule behind the filing was false. The literal set (integer/float/char/nil/custom_numeric/generalized_string and their content and escape payloads) emits nothing by contract: a literal value is not a declaration and its text is not a name. The bare-statement set (assembly, bind, discard, mixin, raise, return, static, yield) declares nothing; `return`/`raise`/`yield` carry no reference the analyzer would invent a target for.",
     "types": [
       "assembly_statement",
       "bind_statement",
@@ -132,13 +133,12 @@
       "return_statement",
       "static_statement",
       "string_content",
-      "tuple_construction",
       "variant_declaration",
       "yield_statement"
     ]
   },
   "gap": {
-    "description": "No confirmed analyzer gap: every one of the 127 named types the pinned wasm declares is either handled or a silent container, and the differential reports MISSING=0 and unexplained=0 in both directions on both corpora. The OPEN work in this lane is a GRAMMAR gap, which is a different ledger: 11 named node types are never reached because the pinned grammar cannot parse the construct that would produce them (do-pragma is consumed as a block comment, so no pragma node appears; a multi-line leading-dot chain, nested bracket generics `f[A, seq[B]]`, a single-line `if cond: stmt`, a `$` inside a string literal, a command-style call with a multi-line argument, a qualified type in a declaration, a pragma on a generic parameter, `func(\u2026)` as a type, an empty tuple `(;)` and a bare-identifier tuple construction). Those are recorded in docs/analyzers/real-nim-analyzer.md with their site counts and named classes, and a 56-line do-pragma patch is preserved unapplied at $HOME/fixtures/nim/out/0001-nim-dopragma.patch because a rebuilt wasm has not yet passed the 72-case conformance suite, the 17-file compiler matrix and the corpus regression.",
+    "description": "No confirmed analyzer gap: every one of the 127 named types the pinned wasm declares is either handled or a silent container, and the differential reports MISSING=0 and unexplained=0 in both directions on both corpora. The mutation gate is the second line of defence and it is what found the last two defects: 40 mutants (one per symbol kind, per relationship kind, per ruled rule, and per payload row), 27 caught on the first run, and the 13 survivors were suite holes rather than weak mutants. Chasing them found that a tuple type was never published as a struct in EITHER of the two ways Nim spells one \u2014 the grammar wraps a type RHS in `type_expression` and the classifier read the wrapper \u2014 and that an unnamed tuple element published properties named after builtin types. Both are fixed and both are now pinned in both directions, so a half-fix fails: 40/40 caught. The OPEN work in this lane is a GRAMMAR gap, which is a different ledger: 11 named node types are never reached because the pinned grammar cannot parse the construct that would produce them (do-pragma is consumed as a block comment, so no pragma node appears; a multi-line leading-dot chain, nested bracket generics `f[A, seq[B]]`, a single-line `if cond: stmt`, a `$` inside a string literal, a command-style call with a multi-line argument, a qualified type in a declaration, a pragma on a generic parameter, `func(\u2026)` as a type, an empty tuple `(;)`, and a bare-identifier tuple construction). Those are recorded in docs/analyzers/real-nim-analyzer.md with their site counts and named classes, and a 56-line do-pragma patch is preserved unapplied at $HOME/fixtures/nim/out/0001-nim-dopragma.patch because a rebuilt wasm has not yet passed the 72-case conformance suite, the 17-file compiler matrix and the corpus regression.",
     "gaps": []
   },
   "design_decision": {
@@ -169,15 +169,15 @@
         "id": "NIMD4",
         "node_type": "nimble",
         "status": "RULED",
-        "question": "The grammar's own file-types declares `nimble`, and .nimble files are real NIM source. Route them to the nim analyzer?",
-        "resolution": "Not yet, and not on the strength of the grammar's file-types list. A .nimble is a package manifest with `requires`/`task`/`bin` blocks whose surface is not the module surface this analyzer models, and the corpus scan already shows what routing on grammar metadata alone buys: 171 tracked .nimble files whose parse health has never been measured. So the decision waits for a measurement, and the corpus record notes the 171 files as excluded from the complexity artifact (5,056 .nim/.nims files measured, 5,227 total in the parse record) rather than quietly reporting one number as if it covered both."
+        "question": "The grammar's own file-types declares `nimble`, and 171 tracked .nimble files exist in the corpus. Route them to the nim analyzer?",
+        "resolution": "YES, on measurement rather than on the grammar's file-types list \u2014 declaring a format is not evidence the analyzer models it, and routing on the declaration alone is the claim-without-coverage class. Measured over every tracked .nimble of all 12 pinned corpora: 171 files, 0 error files, 0 error nodes, 26 symbols, 315 relationships, 11 imports. 100% parse health, and a .nimble's `task`/`bin` blocks declare real things rather than being pure data, so it belongs in the symbol graph. The corpus parse record already covered these files (5,227 total, of which 5,056 are .nim/.nims); the complexity artifact measured the .nim/.nims subset and recorded the 171 .nimble share separately, so neither record silently claims the other's coverage."
       },
       {
         "id": "NIMD5",
         "node_type": "nims",
         "status": "RULED",
-        "question": "`.nims` is a Nim configuration script, in the grammar's file-types and produced by 35 tracked files in the corpus. Route it?",
-        "resolution": "Not in production yet, but it is measured: the differential lane's ext list carries `nim,nims` so the sweep does not silently skip it, and the corpus parse record counts its files. What is missing is a routing decision backed by a parse-health number for the extension alone, which is why it stays out of language-detection.ts rather than being guessed at. The measured `nim+nims` counts per repo are in the corpus artifact."
+        "question": "`.nims` is a Nim configuration script, in the grammar's file-types and 65 tracked files in the corpus. Route it?",
+        "resolution": "YES, and on the same measurement: 65 files, 0 error files, 0 error nodes, 43 symbols, 279 relationships, 96 imports. A .nims is NimScript \u2014 set_cmd, switch, buildFile, all procs and calls on a real stdlib \u2014 so it is Nim code by any reading that matters, and the analyzer extracts it like any other module. `src/ast/language-detection.ts` now routes .nims and .nimble to nim, and the differential and fixture lanes' ext lists were updated in the same change so the claim and the router cannot drift apart: a lane that swept an extension the router skips is the inert-pin class, and a lane that under-reports what the router now handles is the same defect wearing a hat."
       }
     ]
   }

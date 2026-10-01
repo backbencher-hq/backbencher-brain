@@ -208,10 +208,27 @@ async function main(): Promise<void> {
     .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND target_symbol_id = ? AND relationship_type IN ('calls','instantiates','extends','implements')`)
     .get(fx.projectId, ctor?.id) as { c: number }
   check("R0: the constructor has NO stored reverse call edges (rule 3 holds)", ctorInbound.c === 0, String(ctorInbound.c))
-  const containsRow = raw
-    .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND target_symbol_id = ? AND relationship_type = 'contains'`)
-    .get(fx.projectId, ctor?.id) as { c: number }
-  check("R0: the containment rows exist (Greeter → ctor, Registry → ctor)", containsRow.c === 2, String(containsRow.c))
+  // M63.T1: this check counted `contains` rows aimed at ONE constructor id and
+  // expected 2, which no correct index can satisfy — the fixture has two
+  // classes, so the indexer writes two DISTINCT constructor symbols, each with
+  // its own containment row. Measured on a live run: one row per constructor,
+  // two rows overall. The property that matters is the one the X1 closure
+  // turned on: each class's constructor has ITS OWN containment row, and the
+  // two are different targets.
+  const containsRows = raw
+    .prepare(
+      `SELECT r.target_symbol_id, r.source_symbol_id, s.name AS sourceName
+       FROM brain_relationship r
+       JOIN brain_symbol s ON s.id = r.source_symbol_id
+       WHERE r.project_id = ? AND r.relationship_type = 'contains'
+         AND r.target_symbol_id IN (SELECT id FROM brain_symbol WHERE project_id = ? AND name = 'constructor')`,
+    )
+    .all(fx.projectId, fx.projectId) as Array<{ target_symbol_id: string; source_symbol_id: string; sourceName: string }>
+  check(
+    "R0: each class's constructor has its OWN containment row (2 rows, 2 targets, both classes)",
+    containsRows.length === 2 && new Set(containsRows.map((r) => r.target_symbol_id)).size === 2 && new Set(containsRows.map((r) => r.sourceName)).size === 2,
+    JSON.stringify(containsRows),
+  )
   const instRow = raw
     .prepare(`SELECT COUNT(*) AS c FROM brain_relationship WHERE project_id = ? AND relationship_type = 'instantiates' AND target_symbol_id IN (SELECT id FROM brain_symbol WHERE name IN ('Greeter','Registry'))`)
     .get(fx.projectId) as { c: number }
@@ -406,10 +423,13 @@ async function main(): Promise<void> {
       },
     )
     // M3: silent relabel — the resolution field is dropped from the result.
+    // M63.T1 moved `rootMatch` into the same return object, so the anchor is
+    // the whole tail of the literal: a short anchor stops matching silently
+    // and the mutant is reported SKIPped, which reads like a pass.
     await withComponent(
       "silent relabel (resolution field dropped)",
-      "    resolution,\n  }",
-      "    resolution: { through: \"direct\" },\n  }",
+      "    resolution,\n    rootMatch: {",
+      "    resolution: { through: \"direct\" },\n    rootMatch: {",
       async (m) => {
         const r = await m.computeImpact(sfx.raw, sfx.projectId, "constructor", {}, "main.ts")
         return r.resolution?.through !== "owning-declaration" // relabeled => defect visible

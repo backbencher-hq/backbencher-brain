@@ -79,6 +79,40 @@ This makes "advertised === executable" a machine-checked invariant, not a hope.
   comment text in Python.
 - **bb_edit.codeMask** understands only `' " \` // /* */`, applied to all 41
   languages. Breaks `#` comments, `"""docstrings"""`, heredocs, `--`, `{- -}`, etc.
+  **PARTLY STALE (measured on yaml, M14 #286 lane, 2026-09-27).** The premise is out of
+  date: `src/ast/safety-primitives.ts` replaced the hand-rolled character scanner with
+  `buildSyntaxMask`, which derives comment/string ranges from the **grammar's own**
+  `comment`/string nodes. Measured on a yaml file with 4 comment nodes — a trailing
+  comment, a `# TODO:` comment naming the symbol to rename, a comment with no space after
+  `#` (`#replicas`), and a comment ending mid-token — the mask covered **100% of comment
+  bytes, 0 live bytes leaked**, and `extractIdentifierOccurrences` produced **no occurrence
+  inside any comment**, so a rename provably cannot reach comment text. The `identifierOffsets`
+  half of this bullet is stale **repo-wide**: that function has no definition and no call
+  site left in `src/`; it survives only as a word in the file's own header comment. What
+  remains unmeasured is every OTHER language on the list, which is the tool owner's claim to
+  make, not this lane's.
+- **bb_edit refactor is a silent no-op on every YAML symbol** (measured, M14 #286 lane,
+  2026-09-27). Same failure class as the stale-caller bullet above — a rename that renames
+  nothing and reports completion — but with a different and more total cause. In the yaml
+  grammar a mapping key is `block_mapping_pair > flow_node > plain_scalar > string_scalar`,
+  and `isIdentifierNodeType` (`src/ast/safety-primitives.ts:118`) accepts only `identifier`,
+  `*identifier`, and seven hand-listed per-language types (PHP/Bash/PowerShell/Haskell/Ruby)
+  — of which none is a yaml node type. So `extractIdentifierOccurrences` returns **0 for a
+  yaml file**, including for the live keys. Consequence, traced through
+  `src/intelligence/edit/edit-engine.ts`: `declStart` is `undefined` (line 542), the entire
+  in-file reference-rename block is skipped (line 555), no caller span yields a site, and
+  `if (sites.size === 0) continue` (line 582) returns
+  `{ changes: [], warnings: ["refactor X → Y: 0 site(s) across 0 file(s)"] }` — **no error is
+  thrown**. The declaration is never renamed and the call is not refused.
+  **Owner action, and it is expressible with data already carried:** a yaml
+  `plain_scalar`/`string_scalar` **in key position** is a reference site, and key position is
+  exactly what `IdentifierOccurrence.parentField` already records — the yaml grammar's entire
+  field surface is 2 fields, `key` and `value`. Renaming by `parentField === "key"` rather than
+  by node type would fix the lane without touching the value-position case, which must NOT be
+  renamed. A guard that **throws** when a refactor resolves zero sites would convert the whole
+  silent-no-op class into a refusal, and is worth more than the yaml entry: no language should
+  be able to report a completed rename that changed nothing.
+
 - **bb_edit** cross-file caller spans are not freshness-checked; stale callers are
   silently skipped → partial rename reported as success.
 - **bb_edit insert inside-*** requires `{ }` bodies (JS-only).

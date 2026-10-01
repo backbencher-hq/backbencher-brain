@@ -1,0 +1,120 @@
+{
+  "language": "json",
+  "grammar": {
+    "wasm": "wasm/tree-sitter-json.wasm",
+    "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+    "bytes": 5961,
+    "surface": {
+      "ids": 26,
+      "uniqueNames": 26,
+      "namedIds": 12,
+      "namedUnique": 12,
+      "anonIds": 14,
+      "anonUnique": 14,
+      "fieldCount": 2,
+      "idOrderDigest": "da24914332a93410f5c13ca48f5163ccc3173d2bfe17eccf051be64ac701bc74",
+      "typeSetDigest": "a0c126edd60cb121be0170036078df3b9afb579d3dba7209bc0e7f6eb19ca99c",
+      "fieldSetDigest": "402f4f3f4bc5b42eab2e60c632c8eeb791d5c9212491c479e9be04ec8f019562"
+    },
+    "namedTypes": [
+      "array",
+      "comment",
+      "document",
+      "escape_sequence",
+      "false",
+      "null",
+      "number",
+      "object",
+      "pair",
+      "string",
+      "string_content",
+      "true"
+    ],
+    "provenance": "unnamed-build-sha-only — two builds are in circulation and are NOT the same artifact (wired 5,961 B / 26 ids; ~/.bb/wasm 5,596 B / 25 ids). The NAMED vocabulary (12) and the field set (2) are identical, so an analyzer matching on type NAMES is immune; a pin comparing named types alone would pass the two as one, which is why the id-order digest is recorded. See reviews/json/m60-closure.md section 2."
+  },
+  "_authority": "f5_tree_oracle (script/m14/oracles/json.ts) — an independent walk of the tree that shares no rule table, key set, path helper or resolver with src/ast/real-json-analyzer.ts",
+  "_wave": "M14 / M60 lane wave, json — 2026-09-27",
+  "handled_verified": {
+    "object": "a `pair` under an `object` is contained by that object; the SOURCE is the parent SYMBOL's name, never its qualified path",
+    "pair": "the key/value unit; a value that is itself an object or array is descended into",
+    "array": "a LEAF of scalars but a CONTAINER of objects: an object element is a `class` symbol named `<array>[i]` and is contained by the array",
+    "string": "a leaf value; its `string_content` child is the name, never the quoted text",
+    "number": "a leaf value",
+    "true": "a leaf value",
+    "false": "a leaf value",
+    "null": "a leaf value",
+    "document": "the wrapper; may hold an object, an array, or SEVERAL values (concatenated documents are real input and every one is walked)",
+    "comment": "accepted and silent — a JSONC comment is a grammar construct with no identifier to name",
+    "escape_sequence": "inside `string_content`; never a symbol",
+    "string_content": "the declared NAME of a key or a value's text"
+  },
+  "internal_silent": {
+    "_description": "Nothing in the JSON grammar is a container that carries a relationship of its own. `document`, `pair`, `string_content` and `escape_sequence` are structure: a `pair` is reached through its enclosing `object`, a `string_content` supplies the name of the `string` above it, and an `escape_sequence` is text inside a string. Each was confirmed against the grammar's node list rather than assumed.",
+    "container_inventory": "The grammar yields 12 named types and 2 fields, and they are the complete vocabulary. There is no node type that is a declaration container independent of `object`."
+  },
+  "gap": {
+    "description": "JSON has no names. A key is unique only WITHIN its object, and the store resolves relationship endpoints by name, so 64.54% of the lane's endpoints are ambiguous and 1.97% name no symbol. This is a property of the LANGUAGE, not a defect, and it is NOT closed by a store-side change: measured, name resolves 32.92% uniquely, qualifiedName 5.25%, and EITHER only 34.92% — the two indexes barely compose because `contains` sources are bare names while `references` sources are full paths, so the information is not present in the edge.",
+    "status": "DECISION FOR THE OWNER — not taken by this lane. Closing it needs the analyzer either to name an ambiguous endpoint by its path or to disambiguate duplicated symbol names after the walk. Measured in reviews/json/m60-closure.md section 7."
+  },
+  "design_decision": {
+    "description": "Each construct's ruling, with the evidence that makes it falsifiable. A prose justification alone is not accepted: script/m14/ontology-coverage-gate.ts re-measures every ruling and fails when a ruled type's construct actually occurs.",
+    "decisions": [
+      {
+        "id": "BD-ontology",
+        "node_type": "(relationship ontology)",
+        "status": "RULED",
+        "question": "Which of the 10 relationship types does json emit, and why are the rest inapplicable?",
+        "resolution": "RULED, REVISED ONCE. FIVE are emitted — contains, uses, references, imports, exports. FIVE are excluded by the language. The revision is the point. `exports` was first ruled out on a GRAMMAR INVENTORY, exactly as `imports` was, and exactly as `imports` that reasoning is unsound: a grammar cannot see a CONVENTION. A Node manifest publishes entry points through `exports`, `main` and `bin`, and those are ordinary object keys — 1 of 36 manifests in the corpus carries `exports` and 1 carries `main`, and each published name is a real export. The mass is small and the principle is not, so the type is emitted. What remains excluded: `extends`, `implements`, `instantiates` and `calls`, on the same inventory — the pinned grammar yields 12 named types (array, comment, document, escape_sequence, false, null, number, object, pair, string, string_content, true) and none expresses a class declaration, a supertype clause, a constructor or a function, AND no convention in the corpus supplies one: `new Foo` invoked as a command appears once in 2,747 files and zero functions named `new` are defined, while the two apparent class declarations are both known false positives (`class voice` inside a telnet IAC word list, and `typedef` inside an embedded C snippet). The contrast with bash is the check on all of it: bash emits 7 of 10 and rules 3 on a 164-node-type inventory; json emits 5 of 10 and rules 5 on a 12-node-type inventory. Same ontology, same gate, and the difference between the two lanes is exactly what each language has."
+      },
+      {
+        "id": "BD-imports",
+        "node_type": "pair/string",
+        "status": "RULED",
+        "question": "JSON has no import statement, so is `imports` inapplicable?",
+        "resolution": "RULED: YES it applies, and the first ruling said no — which the ontology gate falsified. The original reasoning was that the grammar has no import node, and that is the WRONG QUESTION: a JSON Schema `$ref` is a STRING, and a grammar cannot see what a string names. Measured over the corpus, 58 `$ref`s across 12 files name another FILE (sigstore/rekor's `v0.0.1/dsse_v0_0_1_schema.json`, for one), and a file-to-file reference is a dependency. So a `$ref` whose value is a relative path ending in a document extension now emits `imports` AND `references`: it is both. A local pointer (`#/a/b`) and a URL are neither — a URL names a VOCABULARY (a JSON-Schema draft identifier), and 38 of the 50 external refs in the corpus are exactly that. Decided structurally, with no regex, so the lane's zero-regex contract holds."
+      },
+      {
+        "id": "BD-ref-target",
+        "node_type": "pair",
+        "status": "RULED",
+        "question": "Should a `$ref` edge target the symbol NAME at that location, or the LOCATION?",
+        "resolution": "RULED: the LOCATION. Nothing guarantees the name declared at a location is unique — kubernetes/hack/testdata holds two documents in one file that each declare `spec` — while the location itself is. The oracle resolved to the bare name first and disagreed with the analyzer on 7,653 edges, which is 91% of every `references` edge in the corpus; the analyzer was right. Related and the same principle: a JSON Pointer is RELATIVE TO THE DOCUMENT ROOT, so `#/components/schemas/X` names `<module>.components.schemas.X` and not `components/schemas/X`. Looking the raw pointer up against a module-keyed index skipped every kubernetes OpenAPI `$ref` and reported them as fabrications. A pointer is not a path in the document; it is a path FROM the document."
+      },
+      {
+        "id": "BD-array-identity",
+        "node_type": "array",
+        "status": "RULED",
+        "question": "How is an array element identified, and is an array a container or a leaf?",
+        "resolution": "RULED: an array element is identified by its index UNDER THE ARRAY, and the array is named by the key it was written under. Deriving the name from the item's PATH by taking the last dot-segment is correct only while the module name contains no dot, and a dotted filename is ordinary: `index.svelte.warnings.json` produced item owners of `warnings` instead of `index.svelte.warnings`, so every `contains` edge from such an item named no symbol. The analyzer AND the oracle had the identical bug, which is the strongest available evidence that it was a shared misreading rather than a slip. An array is a LEAF of scalars and a CONTAINER of objects, so the KIND follows the value's shape: an object is `class` (it has named children and `contains` edges come from it), everything else is `property` — including an array, which the analyzer previously called `variable`, importing a shell-shaped mutable-binding distinction JSON does not have."
+      },
+      {
+        "id": "BD-owner",
+        "node_type": "object",
+        "status": "RULED",
+        "question": "What is a symbol's owner, and what is a `contains` edge's source?",
+        "resolution": "RULED: the owner is the parent SYMBOL's NAME, never its qualified path. A path is a fine identity and a useless endpoint — the store resolves by name. The original code used the path, which was correct AT THE TOP LEVEL by accident (a top-level key's path prefix is the module name) and wrong one level down, so `inner`'s owner came out as `Basic.nested` while the symbol was named `nested` and the whole top-level corpus agreed with itself. The qualified path is kept in `qualifiedName` and in edge metadata, where it is useful and where nothing has to resolve it."
+      },
+      {
+        "id": "BD-lines",
+        "node_type": "(all)",
+        "status": "RULED",
+        "question": "Does every relationship carry a site line?",
+        "resolution": "RULED: yes, and it did not. The string `line_number` occurred ZERO times in the analyzer, so every json edge in the index was stored with a NULL line while symbols carried `range` throughout — the position was known and simply not published. M60 requires a site line on every edge. Now published at all five relationship sites (contains, references, imports, api-endpoint uses, package-dependency uses)."
+      },
+      {
+        "id": "BD-regex",
+        "node_type": "(analyzer source)",
+        "status": "RULED",
+        "question": "May the analyzer use a regular expression?",
+        "resolution": "RULED: no. Zero regex literals, enforced by script/m12/json-contract-probe.ts rather than asserted, and the check scans with comments and strings stripped — the bash lane's equivalent scanner matched its own `/* 0-9 */` comment and the implemented check contradicted its own stated contract. The analyzer also never reads the file as text: every decision comes from the tree, and `node.text` is a tree node's own text rather than the file body."
+      },
+      {
+        "id": "BD-audit-rulings",
+        "node_type": "(relationship ontology)",
+        "status": "RULED",
+        "question": "Are the remaining exclusions sound, or are they the same mistake twice?",
+        "resolution": "RULED: the remaining five were AUDITED rather than restated, because the lane had already been wrong once for the same reason. A grammar-inventory ruling says the PARSER cannot express a construct; it does not follow that the LANGUAGE lacks one, and a convention expressed as ordinary object keys is invisible to any grammar. Each surviving exclusion was therefore re-tested against the corpus for a CONVENTION that would satisfy it, not against the grammar again. `exports` FAILED that test and is now emitted. `calls` PASSED it: 0 functions named `new` are defined and 1 `new Foo` command invocation appears across 2,747 files. `extends`/`implements`/`instantiates` PASSED it: the two apparent class declarations in the whole corpus are both known false positives, one a telnet IAC option word list and one an embedded C `typedef`. `overrides` is unsupplied because a JSON key re-declared in the same object is a duplicate key rather than a redefinition, and the analyzer keeps both rather than replacing one. The general rule this leaves: an inapplicability ruling is only as strong as the instrument that could have found the construct, and for a convention-bearing language the instrument has to be the CORPUS."
+      }
+    ]
+  }
+}

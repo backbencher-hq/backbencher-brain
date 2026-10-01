@@ -367,6 +367,10 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (n === "Entity" || n === "Table") isEntity = true
           }
           let tableName = name.toLowerCase()
+          // Whether the table name is actually WRITTEN in this file. Only an
+          // explicit `@Table(name=...)` writes one; the bare lowercased class
+          // name is an ORM runtime convention, not a declaration.
+          let tableNameIsDeclared = false
           
           if (isEntity) {
             frameworks["jpa"] = true
@@ -375,17 +379,42 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             // for fully-qualified annotations), never by raw-text prefix match.
             if (inArray(annNames, "Table")) {
               const n = this.getAnnotationValue(node, "Table", "name")
-              if (n) tableName = n
+              if (n) { tableName = n; tableNameIsDeclared = true }
             }
             relationships.push({
               source: name,
               target: tableName,
               type: ASTEngine.RelationshipType.Uses,
-              confidence: 1.0,
+              // JD-J9 (M60 java deep review, 2026-09-27): a DECLARED table name
+              // is written in this file, so 1.0 is honest. The bare-`@Entity`
+              // default is not: `@Entity class Item` contains the string "item"
+              // nowhere, and JPA's documented default is the ENTITY NAME
+              // UNCHANGED (`AuctionItem`), so the lowercased form matches no
+              // standard naming strategy either. Publishing that at 1.0 with no
+              // marker states a certainty the source does not contain — and
+              // bb_graph, bb_impact and hover all repeat it verbatim as a real
+              // relationship to a table that may not exist.
+              //
+              // Measured consequence: it was also a standing FALSE FABRICATION in
+              // the corpus. `uses` joined java's compare set in this same wave
+              // (JD-J2), and the very first fresh draw reported
+              // `UNEXPLAINED Item.java :: uses Item -> item` at conf 1.0 — an
+              // unmatched CONFIDENT edge, which the harness counts as a
+              // fabrication, not a heuristic. No language-derived oracle can
+              // match it, because no language rule declares that name.
+              //
+              // So: declared stays 1.0; the inferred default drops below the
+              // 0.7 fabrication threshold and is marked, making it declared
+              // suspicion — visible in the heuristic bucket (surfaced by JD-J1)
+              // rather than counted as a relationship. Nothing is lost: the
+              // edge still exists, and a consumer can filter on `inferred`.
+              confidence: tableNameIsDeclared ? 1.0 : 0.6,
               // M59 (#825): the table is named inside `@Table`, so that is the
-              // line the name is written on.
+              // line the name is written on. Absent for the inferred default —
+              // there is no line to point at, and borrowing the class
+              // declaration's line would invent one (#823).
               ...(this.annotationLine(node, "Table") ? { line_number: this.annotationLine(node, "Table")! } : {}),
-              metadata: { isDatabase: true, relationshipType: "mapped_table", table: tableName },
+              metadata: { isDatabase: true, relationshipType: "mapped_table", table: tableName, inferred: !tableNameIsDeclared },
             })
           }
 
@@ -813,6 +842,46 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { nodeType: type },
           })
         }
+        // JD-J15 (M60 java deep review, 2026-09-27): this branch created the
+        // Constant SYMBOL and stored the field's type on it as `returnType` —
+        // but emitted no References edge for that type, so the GRAPH could not
+        // see it. An interface's constants are part of its public surface
+        // (JLS 9.3: public static final by definition), so
+        //   interface I { String IDENTITY = "id"; }
+        // published no reference to `String` at all, while every neighbouring
+        // position fired: a class field, an enum's `static final` field, a
+        // record component and an annotation element all publish their type.
+        //
+        // The symbol carrying a type the relationship graph omits is the same
+        // disagreement the M59 #825 line work exists to prevent, one level up:
+        // hover on the constant could report a type that no edge supports.
+        //
+        // The fix belongs HERE and not in the `field_declaration` branch below:
+        // this branch claims `constant_declaration` first, so adding the node
+        // type there is dead code — the first attempt at this fix changed nothing
+        // for exactly that reason, and a fix that provably does nothing needs
+        // explaining before it needs fixing.
+        //
+        // Found by the DIFFERENTIAL, which is worth recording: after nine
+        // defects in the four oracles this review wrote, the oracle is finally
+        // catching an analyzer defect rather than the other way round. It
+        // surfaced as the last two MISSING rows at 400 files
+        // (GormProperties.java -> String, clojure/asm/Opcodes.java -> Integer) —
+        // both ubiquitous types, both interface constants.
+        const constTypeNode = node.childForFieldName("type")
+        if (constTypeNode && parentContext) {
+          for (const { name: t, line } of this.collectJavaTypeNames(constTypeNode)) {
+            relationships.push({
+              source: parentContext.name,
+              target: t,
+              type: ASTEngine.RelationshipType.References,
+              confidence: 0.95,
+              // M59 (#825): the line the constant's TYPE is named on.
+              line_number: line,
+              metadata: { relationshipType: "declared_type", declaredOn: type },
+            })
+          }
+        }
       }
       else if (type === "field_declaration") {
         const modifiers = this.getJavaModifiers(node)
@@ -856,17 +925,27 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (dbMapping) {
               const explicit = this.getAnnotationValue(node, dbMapping, "name")
               const target = explicit ?? fieldName
+              // JD-J9, same defect as the `mapped_table` default above: an
+              // explicit `@Column(name="col_id")` WRITES the column name in this
+              // file, so 1.0 is honest. A bare `@Column` does not — the column
+              // name defaults to the field name by ORM convention, and that
+              // convention is not written anywhere in the source. Measured on
+              // grails-core: `UNEXPLAINED Watcher.java :: uses
+              // Watcher.auctionItem -> auctionItem` and `SecondTable.java ::
+              // uses SecondTable.secondName -> secondName`, both unmatched
+              // CONFIDENT edges, which the harness counts as fabrications.
+              const columnNameIsDeclared = !!explicit
 
               relationships.push({
                 source: localOwnerPrefix,
                 target,
                 type: ASTEngine.RelationshipType.Uses,
-                confidence: 1.0,
+                confidence: columnNameIsDeclared ? 1.0 : 0.6,
                 // M59 (#825): the column name is written inside its mapping annotation when explicit; the field line when implicit.
                 ...(explicit
                   ? { line_number: this.annotationLine(node, dbMapping, explicit) }
                   : { line_number: nameNode.startPosition.row + 1 }),
-                metadata: { isDatabase: true, relationshipType: "mapped_column" },
+                metadata: { isDatabase: true, relationshipType: "mapped_column", inferred: !columnNameIsDeclared },
               })
             }
 
@@ -1121,13 +1200,30 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (typeNode) {
           const typeName = typeNode.type === "type_identifier" ? typeNode.text : this.extractJavaTypeBaseName(typeNode)
           if (typeName && typeName !== "var") {
+            // JD-J12 (M60 java deep review, 2026-09-27): the array strip below
+            // removed the brackets but left the type ARGUMENTS attached, so
+            // `(Class<?>[])` published `Class<?>` while every other position
+            // published `Class` — the same type under two spellings, and a
+            // `Class<?>` row can never match the `Class` that `(Class<?>)` and a
+            // `Class<?> field` both emit. Measured on the pinned grammar:
+            //   (List<String>)      generic_type -> List        (arguments dropped)
+            //   (Class<?>[])        array_type   -> Class<?>    (arguments KEPT)
+            // The comment above already fixes the intent — the target is the
+            // ELEMENT type — and the element of an array of a generic is the
+            // generic's BASE, so the arguments come off with the brackets.
+            // No regex: a bounded index test plus slice, matching the `[]` strip
+            // it sits beside (M49.R2 — the AST regex census counts literals).
+            let castTarget = typeName
+            if (castTarget.endsWith("[]")) castTarget = castTarget.slice(0, castTarget.length - 2)
+            const lt = castTarget.indexOf("<")
+            if (lt > 0) castTarget = castTarget.slice(0, lt)
             relationships.push({
               source: parentContext?.name || parentContext?.symbolRef?.name || "global",
               // Cast arrays: `(String[]) o` — the EDGE TARGET is the element
               // type (String), not the JVM-erasure text with brackets
               // (probe 2026-09-08: `String[]` target joined nothing). The
               // declaredOn shape stays visible in metadata below.
-              target: typeName.endsWith("[]") ? typeName.slice(0, typeName.length - 2) : typeName,
+              target: castTarget,
               type: ASTEngine.RelationshipType.References,
               confidence: 0.95,
               // M59 (#825): the cast/instanceof/class-literal type is named by
@@ -1172,11 +1268,39 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       else if (type === "array_creation_expression") {
         // JLS 15.10.1: new T[n] references the element type T. Primitive
-        // element types (int[], double[]) are integral_type/floating_point_type
-        // nodes, never type_identifier, so they are correctly skipped.
+        // element types (int[], double[], char[], boolean[]) are integral_type /
+        // floating_point_type / boolean_type nodes, never type_identifier, so
+        // they are correctly skipped.
+        //
+        // JD-J14 (M60 java deep review, 2026-09-27): that comment stated an
+        // invariant the code did not hold. The test below was
+        // `elemNode.type === "type_identifier" ? … : extractJavaTypeBaseName(…)`,
+        // so a primitive fell to the ELSE branch — and `extractJavaTypeBaseName`
+        // returns the node's own text, so `new char[n]` published
+        // `references -> char` and `new int[n]` published `references -> int`.
+        // A primitive is not a named type and names nothing: the edge pointed at
+        // a type the JVM does not have.
+        //
+        // Found by the differential only because `references` became comparable
+        // for the first time (JD-J3). Measured on clojure, three such rows in one
+        // 60-file draw, every one an UNEXPLAINED confident edge — i.e. counted
+        // fabrications:
+        //   SymbolTable.java:177          char[] charBuffer = new char[...]
+        //   MethodWriter.java:607         (an int[] allocation)
+        //   LocalVariablesSorter.java:58   private int[] remappedVariableIndices
+        //
+        // Fixed by INVERTING the test rather than by enumerating primitive node
+        // types: only a type-bearing node is emitted at all. That is robust to
+        // the grammar's spelling of primitives (which could not be re-probed
+        // here — web-tree-sitter's bun loader fails on this wasm, see the commit
+        // note) and keeps `Widget` (type_identifier) and `List<X>` (generic_type)
+        // working exactly as before.
         const elemNode = node.childForFieldName("type")
         if (elemNode) {
-          const typeName = elemNode.type === "type_identifier" ? elemNode.text : this.extractJavaTypeBaseName(elemNode)
+          const typeBearing = elemNode.type === "type_identifier" || elemNode.type === "scoped_type_identifier" || elemNode.type === "generic_type"
+          const typeName = typeBearing
+            ? (elemNode.type === "type_identifier" ? elemNode.text : this.extractJavaTypeBaseName(elemNode))
+            : null
           if (typeName) {
             relationships.push({
               source: parentContext?.name || parentContext?.symbolRef?.name || "global",
@@ -1268,7 +1392,28 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
         type === "local_variable_declaration" ||
         type === "formal_parameter" ||
         type === "spread_parameter" ||
-        type === "catch_formal_parameter"
+        type === "catch_formal_parameter" ||
+        // JD-J10 (M60 java deep review, 2026-09-27): two MORE declared-variable
+        // positions were missing, so the branch above did not implement the rule
+        // its own comment states. Both name a type in a declaration:
+        //   `for (Widget b : xs)`      JLS 14.14 — the for-each variable
+        //   `try (Widget w = open())`  JLS 14.20.3 — a try-with-resources
+        // Both are `enhanced_for_statement` and `resource` in this grammar, and
+        // NEITHER was in the list, so neither emitted a References edge.
+        //
+        // Found by turning `references` comparable for the first time (JD-J3):
+        // the truth derives the for-each loop type, the analyzer had no edge for
+        // it, and the differential reported it as MISSING. Verified with controls
+        // so the finding could not be an artifact of the probe — `Widget` in a
+        // local, a formal parameter and a catch parameter all emit, and `Widget`
+        // appears ONLY in the loop variable and is silently absent. (An earlier
+        // probe of mine appeared to show the for-each working; it was wrong —
+        // the `Object` it saw came from a `List<Object>` in the method SIGNATURE,
+        // emitted as `formal_parameter`. The loop type was missing in both
+        // cases. Recording that because the first measurement was the misleading
+        // one.)
+        type === "enhanced_for_statement" ||
+        type === "resource"
       ) {
         // JLS 8.3/14.4/8.4.1: every declared variable references its type.
         // These edges were never emitted before M14 — the corpus oracle only
@@ -1390,11 +1535,37 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of symbols) {
       const _owner = s.ownerName || s.scope
       if (_owner) {
+        // JD-J13 (M60 java deep review, 2026-09-27): a PHANTOM member is
+        // synthesized, not declared. lombok `@Getter`/`@Setter` on a field
+        // manufactures `getX`/`setX`; Spring-Data repository methods carry the
+        // INTERFACE's range. Neither name is written anywhere in the file, so a
+        // containment edge naming one states a certainty the source does not
+        // contain — and this analyzer already knows it, which is what makes the
+        // confidence the odd one out: the line is omitted for a phantom (the
+        // code below says so, and #823 forbids inventing one) while the edge
+        // still claimed 1.0.
+        //
+        // Measured on grails-core, where `@Setter @Getter @Entity class
+        // FirstTable { Long id; String name; SecondTable secondTable; }` yields
+        // SIX such edges — getId, setId, getName, setName, getSecondTable,
+        // setSecondTable — all `isPhantom: true`, all line-less, all at
+        // confidence 1.0. They surfaced only once `contains` became comparable
+        // (JD-J4): the differential counted them as FABRICATIONS, because a
+        // language-derived containment oracle cannot state a member that is not
+        // declared, and being right about that is the oracle's whole job.
+        //
+        // Third instance of one defect shape in this review — an inference
+        // published as a certainty — after `mapped_table`/`mapped_column` and
+        // after javascript's `<module>:*` import targets. Same fix each time:
+        // keep the edge (the containment is real and useful), mark it, and
+        // demote below the fabrication threshold so it reads as declared
+        // suspicion and a consumer can filter on it.
+        const isPhantomMember = s.metadata?.isPhantom === true
         relationships.push({
           source: _owner,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
+          confidence: isPhantomMember ? 0.6 : 1.0,
           // M59 (#825): a containment edge has no call site, but it does have a
           // navigable one — the member's own declaration line, taken from the
           // symbol so the edge and the symbol cannot disagree. Omitted, never
@@ -1407,7 +1578,7 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // of the name. Same contract and same reasoning as kotlin's data-class
           // phantoms — the line is omitted, not guessed.
           ...(s.metadata?.isPhantom !== true && s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: { isContained: true },
+          metadata: { isContained: true, ...(isPhantomMember ? { inferred: true } : {}) },
         })
       }
     }

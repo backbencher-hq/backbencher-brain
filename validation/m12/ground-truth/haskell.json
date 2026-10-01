@@ -1,7 +1,7 @@
 {
  "schemaVersion": 1,
  "truthSource": "haskell-observed-dump.ts (audited against fixtures + FP-family contract)",
- "source": "validation/m12/fixtures/haskell/*.hs",
+ "source": "validation/m12/fixtures/haskell/ (Negative.hs, Service.hs) — hand-audited against Haskell semantics: module→module, data/newtype→type + constructor + record-field properties, class→class, instance/deriving→implements, function/method→function (multi-clause and pattern-head binds merged), operators (infix a +.+ b, prefix (<!>), backtick infix_id)→function; relationships: references (module→imported module), implements (instance/deriving target→class, incl. qualified and applied class heads), extends (class→superclass, from the context constraint tree: tuple lists, parens, applied heads), instantiates (body-position constructor application: bare, qualified M.Just, record construction — record UPDATE and all pattern positions excluded), calls (leaf sources; qualified heads taken VERBATIM, M.lookup; unqualified heads ONLY when the name is declared in-file — imported/Prelude names and parameters produce no edge; self-recursion IS emitted), contains (module→top-level symbol, class/interface→method). WHERE/LET-LOCALS (2026-09-25 adjudication of the HSD6/HSD19 wave): a local callable is NOT a symbol, but a call made inside a local's body attributes to the LOCAL itself — never leaked to the enclosing function, which does not make that call — and a local resolves as a call target; Negative.hs's where-clause therefore yields helper→helper.go and helper.go→helper.go. SCOPED LOCAL IDENTITY (2026-09-26, closes the limitation recorded here the day before): a local's edges carry its lexical owner chain — `owner.local`, nested `owner.inner.local` — so a module-level callable of the same name can never merge with it, and target resolution is LEXICAL (a local is a target only from inside its own scope; a shadowing binder wins for its whole RHS). Instrument correction, recorded rather than quietly fixed: the earlier '282 of 2,356 files carry a shadowing binder' count came from script/m14/tmp/haskell-local-calls-collision.ts, whose regex `(where|let)` + whitespace + NAME also matched INSTANCE/CLASS `where` clauses (their first member, e.g. `instance Show Account where showsPrec ...`), not only local binders — inflated. The tree-based re-measurement (script/m14/tmp/hs-local-identity.ts: direct children of local_binds/let/let_in, hledger+cabal full extent 2,356 files) is 16 files / 67 names with a shadowing binder, over 708 files / 11,487 local binder names; 12,309 source and 6,314 target calls endpoints were bare local attributions and are now scoped. The m14 fixture exercises the collision (module-level `go` vs a where-binder `go`, sibling `hop` locals, the out-of-scope negative), and haskell/local-identity-flat + haskell/local-scope-blind guard both halves of the revert.",
  "facts": [
   {
    "id": "symbol:Negative.hs:1:module:Negative",
@@ -151,6 +151,36 @@
    "evidence": {
     "authority": "manual_audit",
     "reference": "references Negative -> Data.List"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:calls:helper:helper.go",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "helper",
+   "targetId": "helper.go",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls helper -> helper.go (source text L21 `helper x = go x`: the call exists in the source; go is the where-clause callable of helper — no symbol by contract, but a real call target whose SCOPED identity is `helper.go` since 2026-09-26, so a module-level `go` in the same file could never be confused with it)"
+   }
+  },
+  {
+   "id": "rel:Negative.hs:calls:helper.go:helper.go",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Negative.hs",
+   "sourceId": "helper.go",
+   "targetId": "helper.go",
+   "attributes": {
+    "type": "calls"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "calls helper.go -> helper.go (source text L23 `go n = n + go (n - 1)`: self-recursion of the where-local, attributed to the LOCAL — attributing it to the enclosing helper would be a call helper never makes; since 2026-09-26 both endpoints carry the local's scoped identity)"
    }
   },
   {

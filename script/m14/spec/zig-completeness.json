@@ -8,11 +8,18 @@
       "enum_declaration",
       "union_declaration",
       "error_set_declaration",
+      "opaque_declaration",
       "container_field",
       "function_declaration",
+      "function_signature",
+      "test_declaration",
+      "comptime_declaration",
+      "using_namespace_declaration",
       "call_expression",
-      "field_expression"
-    ]
+      "field_expression",
+      "block"
+    ],
+    "note": "Z14 (deep review, 2026-09-28): `opaque_declaration` joins this list as a CONTAINER \u2014 `opaque {}` declares no fields but does declare functions and constants, and 123 opaque containers / 352 declarations in the pinned corpora were published with no owner, no `scope` and no `contains` edge before the fix (Z12). `function_signature` is the ANONYMOUS fn-type form (`f: *const fn (u8) void` \u2014 960 in the corpora); it is reached by the walk and mints no symbol because an fn type has no name identifier, which supersedes ZIGD2's claim below that no valid Zig source produces it. `test_declaration`/`comptime_declaration` are executable SCOPE (no declaration symbols), not declaration sites. `block` is listed because it is the structural executable-body marker (Z19)."
   },
   "internal_silent": {
     "types": [
@@ -102,19 +109,37 @@
     ]
   },
   "gap": {
-    "_description": "Zig declaration surface modeled from the pinched tree-sitter-zig AST (probe-verified 2026-08-29 against the upstream Zig compiler corpus, 2,950 .zig files). opaque_declaration and test_declaration parse cleanly but are NOT emitted as standalone symbols: opaque types have no members to surface (Zig models interfaces via vtables, not class inheritance), and `test` blocks are anonymous scoped bodies without a stable callable name. Their internal call/use edges ARE captured (source '(global)'). differential zig:zig is 0 missing / 0 unexplained at the pinned floor. No analyzer literal references a non-existent grammar node type (dead literals boolean_literal/char_literal/number_literal/type_identifier removed in the zig wave). ZGD-wave (M37 #600, 2026-09-04): ZGD1 write gate, ZGD3 test/comptime scope, ZGD4 usingnamespace imports, ZGD2 bare/qualified return-type declared-type refs, ZGD5/5b enum-literal + type-position uses suppression \u2014 all probe-verified, fixture-pinned, mutant-locked (4 new mutants).",
+    "_description": "Zig declaration surface modeled from the pinned tree-sitter-zig AST, re-measured 2026-09-28 over THREE corpora (zig 2,950 + zls 90 + ghostty 799 = 3,839 .zig files; 92 named node types, 140 anonymous token types, 16 field names). Prior ZGD-wave (M37 #600, 2026-09-04) rulings stand: ZGD1 write gate (AMENDED by Z15 \u2014 the gate tests the OPERATOR, so a compound assignment is a read-modify-write), ZGD2 bare/qualified return-type refs, ZGD3 executable scope (AMENDED by Z19 \u2014 the rule belongs on the `block`, which covers labeled blocks the two wrapper node types missed), ZGD4 usingnamespace imports, ZGD5/5b enum-literal and type-position uses suppression. Z14 wave: Z11 kind dispatch, Z12 opaque containers, Z13 declared-type leaf from the `type` field, Z14 the references oracle, Z15 compound assignment, Z16 the local annotation position, Z17 dead code, Z17b/Z17c declared-type payloads, Z18 the last regex, Z19 the executable body, Z20 export members. M12 ground truth (validation/m12/ground-truth/zig.json) is SYMBOLS-ONLY and predates the calls/uses contract; it is not contradicted by this wave, and the symbol facts it records still hold.",
     "gaps": [
       {
         "id": "ZIG.GAP.1",
         "node_type": "opaque_declaration",
-        "severity": "info",
-        "missing": "`opaque {}` types parse cleanly but emit no symbol. Zig models runtime interfaces via opaque types + function pointers (no class inheritance), so there are no fields/extends to surface; the type is intentionally not indexed."
+        "severity": "fixed-2026-09-28",
+        "missing": "CORRECTED. The gap used to read \"`opaque {}` types parse cleanly but emit no symbol ... the type is intentionally not indexed\", which was false on both halves: the analyzer emitted a `Type` symbol for every opaque, and it emitted the WRONG ones for what the type declares. An opaque type is now a container (Z12): 123 opaque containers and 352 declarations in the pinned corpora are owned, with `contains` edges, and their `pub fn` members are Methods."
       },
       {
         "id": "ZIG.GAP.2",
         "node_type": "test_declaration",
         "severity": "info",
         "missing": "`test \"name\" {}` blocks emit no function symbol (anonymous, unstable scope). Calls and field-uses inside a test body are still captured with source '(global)', so the code-intel graph does not lose them."
+      },
+      {
+        "id": "ZIG.GAP.3",
+        "node_type": "struct_initializer (construction)",
+        "severity": "counted-limitation",
+        "missing": "A type used in a VALUE position with no type annotation \u2014 `const p = Point{ .x = 1 };` \u2014 publishes no edge. The family alternative is `instantiates` with `isConstructor` (c/cpp, and the branch still sits unused in this file's own classifyEvidenceTier), which ZIG.D.1 rules out for Zig. Measured: 84 sites in 400 corpus files (~800 projected over the three pinned corpora). Ruled as a limitation with the count attached rather than silently absent, because deciding it would change a RULED design decision and needs the family."
+      },
+      {
+        "id": "ZIG.GAP.4",
+        "node_type": "parenthesized_expression, struct_initializer, call_expression (kind dispatch)",
+        "severity": "measured-limitation (ruled 2026-09-28)",
+        "missing": "Three RHS forms stay on the upper-case-name heuristic because the grammar cannot separate a type from a value without resolution: `const X = (SomeType)` (parenthesized), `const X = SomeStruct{ ... }` (a struct initializer) and `const X = someGeneric(u8)` (a call-shaped type application). MEASURED rather than assumed (script/m14/tmp/zigw-gap4.ts, 1,200 corpus files): of the 8,240 sites that ride the heuristic, the file can resolve only 2,951, and of those 29 (1.0%) disagree with the published kind - and every disagreement examined is a bug in the PROBE's resolver, not in the analyzer (Zig's generic type FUNCTIONS - `const Fixed = FixedPoint(i32, 16, 16)` where `fn FixedPoint(comptime T: type, ...)` yields a TYPE; `[_]struct { ... }` is an array of values, not a type). The other 5,289 sites are external names the file cannot speak about at all (@import aliases, `std.Build.Step.Run`), which no in-file resolution pass could ever reach. CONCLUSION: a per-file type-resolution pass is not worth building - the heuristic is not measurably wrong anywhere a file can resolve, and the population it would have to guess about is 64% unresolvable in principle. The limitation stands as a ruling, and the first version of the probe (which reported 64.6% wrong) is recorded here as the reason to calibrate a measurement before believing it."
+      },
+      {
+        "id": "ZIG.GAP.5",
+        "node_type": "labeled_type_expression (the TYPE form)",
+        "severity": "grammar-absent",
+        "missing": "The grammar has ONE node type for Zig's labeled block (`V = blk: { \u2026 break :blk v; }`) and its labeled type (`T = L: u32 { \u2026 return v; }`), and the TYPE form does not parse: probed as an ERROR node on the `u32`. All 9 corpus instances of the node are labeled blocks. The kind dispatch therefore reads the shape (breaks, never returns) rather than the node type, which is a rule with one measured outcome and a documented grammar limit rather than a grammar fact it cannot rely on."
       }
     ]
   },
@@ -144,9 +169,9 @@
       {
         "id": "ZIGD2",
         "node_type": "function_signature",
-        "status": "RULED",
-        "question": "Is function_signature a real, fixture-coverable shape in the pinned grammar?",
-        "resolution": "No. Probe-verified 2026-09-02: extern fn parses as function_declaration; comptime fn at container level parses as container_field + ERROR and poisons the rest of the file. The analyzer's function_signature branch is retained as defensive coverage for grammar variants but no valid Zig source produces it. Reclassified from handled_verified per the F6 gate (M14.0.F6)."
+        "status": "RULED \u2014 CORRECTED 2026-09-28",
+        "question": "Is function_signature a real, fixture-coverable shape in the pinned grammar? The original ruling said NO valid Zig source produces it.",
+        "resolution": "CORRECTION (Z14/Z17 wave, 2026-09-28): the original claim was FALSE against this grammar. A corpus census over 3,839 files found 960 function_signature nodes, all of them the ANONYMOUS fn-type form: `f: *const fn (u8) void` inside a container field, and `const Cb = fn (x: u32) void;` as a declaration RHS (8 upper-case sites). The CONCLUSION is unchanged and now rests on a grammar fact instead of a negative: an fn type has no name identifier, so the walk's name test finds nothing and mints no symbol. The negative claim was the kind of assertion nothing checks \u2014 a future grammar could have satisfied it without anyone noticing, and in the meantime it justified a `function_signature` branch in a code path no reviewer could confirm was reachable."
       },
       {
         "id": "ZIG.D.4",
@@ -231,8 +256,141 @@
         "status": "RULED",
         "question": "Extreme review (2026-09-12): an if/while capture is bound into the enclosing frame, so a same-named file value read in the ELSE arm is suppressed (probe-verified: else-branch `v` reads nothing though the capture is not in scope there).",
         "resolution": "DOCUMENTED LIMITATION, not changed: scoping captures out of else-arms needs arm-level frames the single-pass walk cannot place (the capture is bound before the then/else split is known), and pushing a construct-level frame would trade one false negative for another. Both sides behave identically (lane-stable), and the shape needs a file value colliding with a capture name plus a same-named else-arm read to be observable."
+      },
+      {
+        "id": "Z11",
+        "node_type": "symbol kind dispatch",
+        "status": "FIXED + GATED",
+        "question": "The kind of a container-scope `const` was decided by a five-node value list and then by the NAME's case, which published a bit-shift as a `type` (838 corpus sites), a negation (39), a null-coercion (18), an anonymous tuple (22), an index (4), a catch (4) and a labeled block (9) as types, and published a type ALIAS as a value: `builtin_type` sat in the value list, so `const Pos = c_long;` was a `constant` (440 sites, 160 upper-case), as were `pointer_type` (55), `nullable_type` (31) and `array_type` (10).",
+        "resolution": "FIXED: a node type that CAN be a type makes the declaration a Type; one that CANNOT makes it a value; only the two-sided forms (`identifier`, `field_expression`, `call_expression`, `if_expression`, `switch_expression`, `struct_initializer`, `parenthesized_expression`, `builtin_function`) keep the name heuristic, which is the pinned `pub const B = A` contract. One initializer IS a type \u2014 an array/slice of types (`[_]type{gtk.Scrollable}`) \u2014 and is tested on its element type. GATED: fixture zig/kinds-and-owners pins 13 kinds including the negative ones; mutants zig/type-alias-as-constant, zig/value-rhs-as-type, zig/labeled-block-as-type, zig/value-rhs-as-type (both directions) all CAUGHT. The remaining two-sided shapes are declared as ZIG.GAP.4 with their counts."
+      },
+      {
+        "id": "Z12",
+        "node_type": "opaque_declaration",
+        "status": "FIXED + GATED",
+        "question": "`opaque {}` is a container in Zig \u2014 no fields, but real declarations. The walk did not recognise it (`isContainer` named four node types), so every declaration inside came out as a free file-scope symbol: `pub fn create()` a `function` with no `scope`/`ownerName` and no `contains` edge. 123 opaque containers / 352 declarations in the pinned corpora; the kind guard was `container.kind !== Type`, a proxy for \"a type alias has no body\" that an opaque container (published as `Type`, because the shared SymbolKind has no Opaque member) did not satisfy.",
+        "resolution": "FIXED: `opaque_declaration` joins the container set and ownership, not the kind, decides Method-vs-Function. 90% of the 352 declarations are now owned; the residue is nested containers whose members are owned by the inner type. GATED: fixture zig/kinds-and-owners (kind `method`, ownerName `Handle`, three `contains` rows); mutant zig/opaque-not-a-container CAUGHT."
+      },
+      {
+        "id": "Z13",
+        "node_type": "declared-type leaf",
+        "status": "FIXED + GATED",
+        "question": "The leaf was \"the last identifier anywhere under the declaration, drop the first as the name\", and the grammar never agreed to that story: it hands the type over as a FIELD (`parameter.type` 78,895, `container_field.type` 49,424, `variable_declaration.type` 43,949, `function_declaration.type` 37,129 in the pinned corpora). The walk was wrong wherever a declaration has a default value (`size: Size = .byte` published the enum member `byte`; `weight: Weight = c.FC_WEIGHT_THIN` published a C constant; `normal = @sizeOf(u8)` published a builtin), and where a type names nothing (an anonymous struct type in a parameter position published its FIELD name; an error set published a member, because `!T` keeps its dependency in the `ok` half and the walk took the last identifier of the whole union).",
+        "resolution": "FIXED: the leaf is read from the `type` field, with the anonymous-container / error-set / `ok`-half / labeled-block cases returning nothing on purpose. No TYPE node carries a `type` field, so preferring it can never take the wrong side of a `!` (measured: `error_union_type` carries `ok` 21,353 and `error` 6,792, and no `type`). GATED: fixture zig/declared-type-leaf (7 expect rows, 8 forbid rows); mutants zig/default-value-as-type and zig/unnamed-type-publishes CAUGHT. Corpus effect measured by the oracle red-team: 702 phantom and 660 lost declared-type targets per 400 files under the pre-fix leaf."
+      },
+      {
+        "id": "Z14",
+        "node_type": "the references class had no oracle",
+        "status": "FIXED + GATED (gate blindness)",
+        "question": "The differential compared only `calls` and `uses` for this lane, and the allowlist dropped the analyzer's own `references` edges from the compared side \u2014 so the largest emitted class on the zig corpora (declared-type dependencies plus imports) was compared against NOTHING, and the lane reported 100% coverage with phantom type references in the graph. This is the class the M14 completeness ledger warns about: an ABSENT capability emits nothing, and here a PRESENT capability emitted nothing checkable.",
+        "resolution": "FIXED: `deriveZigReferenceEdges` derives the class from the tree (imports from `@import`/`@cImport` under a declaration RHS or a usingnamespace; declared types from the `type` field with the leaf rules), and `references` joins zig's compared labels. INDEPENDENCE: every position and leaf is re-derived; the only shared object is `ZIG_DECLARED_TYPE_BUILTINS`, the type-name vocabulary, imported from the analyzer per the #916 rule. RED-TEAM (M14 \u00a75.7): the same comparison run against a pre-fix leaf transcription convicts it \u2014 702 unexplained / 660 missing over 400 files \u2014 so the audit is not a tautology. Scope: the canonical M14.0.F5 artifact is emitted by the full ceremony sweep and is re-emitted there, as for the nim lane's join."
+      },
+      {
+        "id": "Z15",
+        "node_type": "compound assignment LHS",
+        "status": "FIXED + GATED",
+        "question": "The ZGD1 write gate tested the NODE and not the OPERATOR, so it also swallowed the READ of every compound assignment. `self.n += 1;` reads `self.n`; `while (i < n) : (i += 1)` is Zig's own read-modify-write idiom. Measured: 280 compound field/index/dereference assignments in the pinned corpora, plus 1,837 compound bare-identifier forms (mostly locals, which the resolvability rule already excludes).",
+        "resolution": "FIXED: a plain `=` is a write; every other operator is a read-modify-write, and the grammar separates them as distinct anonymous token types. Both surfaces moved together \u2014 the field-uses gate and the bare-identifier `isDefiningOccurrence` \u2014 because a global written with `+=` was invisible to the read graph in exactly the same way. GATED: zig/calls-uses-complexity now expects `uses bump -> n` and forbids only the plain write `uses set -> n`; mutant zig/compound-write-gate CAUGHT."
+      },
+      {
+        "id": "Z16",
+        "node_type": "declared-type local position",
+        "status": "FIXED + GATED",
+        "question": "The family declares four declared-type positions (field, parameter, return, local) and the collector covered three. A `variable_declaration` carries a `type` field 43,949 times in the pinned corpora, and a local annotation was simply not read.",
+        "resolution": "FIXED: the fourth position is collected, sharing the analyzer's per-file `emitted` dedupe with the other three so the overlap cannot become a second edge. GATED: fixture zig/declared-type-leaf uses a type named nowhere else in the file (`Only`) so the dedupe cannot hide the position; mutant zig/local-annotation-dropped CAUGHT."
+      },
+      {
+        "id": "Z17",
+        "node_type": "dead code and declared-type payloads",
+        "status": "FIXED + GATED",
+        "question": "Four helpers were defined and never called \u2014 `nameLine` (the C/C++ lanes' attribute-line-base helper, so the zig lane had no #920 line rule to claim), `zigTypeLeaf`, `zigCalleeLeaf`, `zigFieldLeaf` \u2014 and two payload paths asked for one of five node types where the grammar names the type as a FIELD: a property's `returnType` and a parameter's `type` were empty for every NAMED type, every array, every generic application and every qualified name.",
+        "resolution": "FIXED: the four dead helpers removed (dead code in a review wave is a claim about a contract that is not implemented); both payloads read the field, which is how the nim lane (the most recent) publishes a property's type. GATED: fixture zig/declared-type-leaf pins `returnType` on named/array/optional properties and `expectParameters` on qualified, anonymous-struct and quoted-identifier parameters; mutants zig/field-type-list and zig/param-type-list CAUGHT."
+      },
+      {
+        "id": "Z18",
+        "node_type": "the last regex in the analyzer",
+        "status": "REMOVED (zero-regex)",
+        "question": "`/[!*/\\s\\[\\]\\{\\}]+/g` sat on the declared-type path, where the receiver can only be an `identifier` node's text. On a plain identifier \u2014 `[A-Za-z_][A-Za-z0-9_]*`, with no `<or>` and no `=` \u2014 all three surgeries on that line (the junk strip, the `<or>` split, the `=` split) are provable no-ops. On a QUOTED identifier they corrupt a legitimate name: the pinned corpora hold 34,132 quoted identifiers (`@\"const\"`, `@\"or\"`, `@\"and\"`, `@\"enum\"`, `@\"zig lib\"`, `@\"weird function name\"`), of which 1,916 carry a character from the junk class, and the pre-fix target for `@\"zig lib\"` was `@\"ziglib\"`.",
+        "resolution": "REMOVED: the source spelling is published, which is what every other surface of this analyzer already publishes (symbol names, `uses` field leaves, call leaves), so edges resolve inside the index and the graph stays internally consistent. The two surviving tests are a `Set` membership and a character-code range. GATED: fixture zig/declared-type-leaf pins `@\"weird type\"` as the target and FORBIDS the corrupted `@\"weirdtype\"`; mutant zig/quoted-identifier-mangled CAUGHT. The lane is now zero-regex; the register row and the policy doc's declared count are re-emitted with the census."
+      },
+      {
+        "id": "Z19",
+        "node_type": "labeled block is an executable body",
+        "status": "FIXED + GATED",
+        "question": "ZGD3's rule \u2014 a `var`/`const` inside an executable body is an execution artifact \u2014 was written on the two node types that usually wrap a block (`test_declaration`, `comptime_declaration`). A LABELED BLOCK is the same kind of body reached by a different path, and its comptime locals were published as file-scope symbols: 70 symbols inside 35 block-shaped container-scope declarations over 400 corpus files, 27 of them `contains` edges attributing a block local to the enclosing container TWO levels above where it was written (`Action contains key_fields` for a local of a `cvalue: { \u2026 }` block inside an enum).",
+        "resolution": "FIXED: the rule moved onto the `block` itself \u2014 in tree-sitter-zig `{ \u2026 }` is a body, never a type and never a declaration scope \u2014 which covers test blocks, comptime blocks, labeled blocks and `comptime_expression` alike. A/B on 800 files: 161 spurious symbols removed, 10 added, 23 GENUINE `uses` edges gained (a labeled-block value is readable, and before the fix it was published as a `type`, which does not resolve as a value), 27 fabricated `contains` edges removed. GATED: fixture zig/kinds-and-owners forbids `scratch`/`total`/`step` and their `contains` edges; mutant zig/block-locals-leak CAUGHT."
+      },
+      {
+        "id": "Z20",
+        "node_type": "export array carried container members",
+        "status": "FIXED + GATED",
+        "question": "Every `pub const` at ANY level was pushed into the `exports` array. An export must name an IMPORTABLE unit; a member is reached as `Container.member`, which is the `contains` edge's job, so the entry invented a binding no importer can use. The class was latent until Z12 gave an opaque type its members \u2014 the fixture runner's export invariant caught it immediately (\"export(s) [\\\"tag\\\"] do not resolve to a top-level symbol\"), which is the honest way to find it.",
+        "resolution": "FIXED: only a file-scope declaration enters `exports`; the `pub` fact survives as the member's `visibility`. GATED: the export invariant in the runner is the check (it fails the fixture when the row returns); mutant zig/container-member-exported CAUGHT."
+      },
+      {
+        "id": "Z21",
+        "node_type": "struct_declaration/union_declaration/enum_declaration/error_set_declaration/opaque_declaration in an expression position",
+        "status": "FIXED + GATED",
+        "question": "A container declaration was only recognised as a container when it was a declaration's RIGHT-HAND SIDE. The same node reached as an EXPRESSION \u2014 an `if`/`switch` branch, a struct literal in a prune, a struct type inside a `nullable_type`/`array_type` \u2014 established no container, so its declarations were published as members of whatever enclosed them: a union variant's payload fields became members of the UNION, and two variants declaring the same field produced two symbols under ONE (owner, name) identity. Found as the residual of the Z19 A/B, not by a gate.",
+        "resolution": "FIXED with an explicit ANONYMOUS CONTAINER branch and a third piece of walk context, so the rule is container IDENTITY rather than a proxy. Measured over 900 corpus files: 693 expression-position containers, 412 symbols inside, 379 mis-owned. A/B over 800 files: 422 symbols and 311 relationships (308 fabricated `contains`, 3 `uses`) removed with 0 added. Reads, calls and imports inside such a container are deliberately untouched. GATED by zig/kinds-and-owners (4 forbidSymbols, 4 forbidRelationships, 2 new expectRelationships) and mutation zig/anonymous-container-owns. Declared cost: a callable member of an unnamed type (`RtPreExecInfo.init`) is no longer indexed, because publishing it would require choosing between two readings of the same shape that the grammar cannot separate \u2014 see master-review.md."
+      },
+      {
+        "id": "Z22",
+        "node_type": "struct_declaration/union_declaration/enum_declaration inside an executable body",
+        "status": "FIXED + GATED",
+        "question": "A CONTAINER declared inside an executable body is a LOCAL type, and the walk handed its declarations to the ENCLOSING container: `const Local = struct { pub fn helper(v: T) void }` inside a method of `Host` published `helper` as a Method owned by `Host`, with a `contains Host -> helper` edge. Found by the ownership verifier, not by a gate - and not by the differential, which CANNOT see it: its coverage match is `label + normTarget(target)` and the source is not part of the key, so an edge that keeps its member name and changes owner still reads as covered.",
+        "resolution": "FIXED: a container reached from an executable-body declaration is walked as an ANONYMOUS container, the same contract as the two sibling rulings (a container with no stable identity owns nothing), and the reads, calls and imports inside it are untouched. GATED by zig/kinds-and-owners (2 forbidSymbols, 2 forbidRelationships) and mutation zig/local-container-owns, and by the ownership verifier itself: 3,000 corpus files now report PHANTOM_OWN 0 and ORPHAN 0."
+      },
+      {
+        "id": "Z23",
+        "node_type": "ownerSymbolId resolution (indexer), not an analyzer node type",
+        "status": "RULED \u2014 FILED as issue #963, not fixed (owner decision)",
+        "question": "Ownership is carried as a container NAME and the indexer resolves it by NAME within a file (`nameToSymbol.get(ownerName)` in parallel-indexer.ts), so two same-named containers in one file conflate every member under one `owner_symbol_id`. Measured by the ownership verifier over 3,000 corpus files: 1,509 member sites in 93 files, 100% from same-named containers, 0 genuine duplicates; the worst file declares `pub const C = extern struct { key, value }` FIFTEEN times. The analyzer is faithful at its boundary - 15 distinct `C` symbols and 30 distinct `key` symbols, each with its own range and line - so the defect is the ownership TOKEN, not the extraction.",
+        "resolution": "NOT FIXED by the lane, and the reason is the boundary: both candidate fixes cross layers. (1) Indexer-side, smallest: when a name maps to more than one container in a file, resolve the owner by the nearest ENCLOSING declaration range - the mechanism already exists for the no-owner path (range-containment Tier 1, nearest-preceding-container Tier 2). (2) Analyzer-side: carry a unique owner identity (`Target.C`), which changes `scope`/`ownerName`, every `contains` edge source and every hover label - a family-visible contract change. Filed as #963 with the measurement; the lane gates the class it can fix and hands the owner the two options rather than choosing a contract unilaterally. Related: #924 (the quoted-name surface, same 'family contract, not a lane fix' shape)."
+      },
+      {
+        "id": "Z24",
+        "node_type": "n/a \u2014 a defect in the F5 GATE, not in the analyzer",
+        "status": "FIXED + GATED (the gate was wrong; the analyzer was right)",
+        "question": "F5 read 970 MISSING on one 200-file draw and 0 on another, with the same analyzer, the same corpus and the same comparison code \u2014 and the number moved with the DRAW. The bare-read truth's `isDefining` carried Z15's plain-`=` operator test as an early `return false` for EVERY parent, so it short-circuited its own declaration branch: the truth derived a `uses` row for the name of every function and field it walked, including the `pub fn init(` line itself. Every one of the phantom rows was provenance-checked to the declaration site, not to a use. Size: one phantom row per file-scope declaration, which is exactly why a rotating draw reported it as 0 on one run and 970 on the next.",
+        "resolution": "FIXED in the truth, not in the analyzer: the operator test belongs to the assignment-shaped parents (`variable_declaration`, `assignment_expression`, `compound_assignment_statement`, `assignment_statement`) and now runs inside that branch, so the declaration branch is reachable again. The analyzer was never wrong \u2014 it had never emitted those edges. GATED by a new assertion in the oracle red-team (case [3]): a truth `uses` row whose target is a file-scope declaration name must have a genuine bare read site for that name, computed from the tree. 0 violations on 200 files; the pre-Z24 shape SIMULATED on the same files raises 2,512, so the assertion can fail. WHY THIS MATTERS MORE THAN ITS SIZE: a gate that reports a class it has not adjudicated is worse than no gate, because the class is read as an analyzer defect and the fix goes into the wrong file. Z19/Z21/Z22 were all found by an independent instrument; this one was found by the instrument disagreeing with itself across draws, which is the only reason it was caught at all."
+      },
+      {
+        "id": "Z25",
+        "node_type": "n/a \u2014 a second defect in the F5 truth, same family as Z24",
+        "status": "FIXED + GATED (the analyzer was right in all 7 rows)",
+        "question": "After Z24, F5's residual was 7-8 UNEXPLAINED rows per 100-200-file draw, and all of them had one shape: a bare read of a FILE-SCOPE name in the VALUE position of a struct-literal field assignment - `.{ .id = base_id }`, `.{ .deinit = deinit, .parserHandler = parserHandler }`, `&.{ .concurrent = concurrent, .select = select }`. The truth's `isDefining` matched 'the first named child of type `identifier`', but in a struct literal the KEY is a `field_identifier`, so the first identifier child IS THE VALUE - and the truth read each of those as a definition and dropped the read. The analyzer published all of them, correctly.",
+        "resolution": "FIXED in the truth: the LHS test is now NODE IDENTITY with the first named child, which is the same rule the ZGD1 field-path mirror in the same file already used - one rule, two places. MEASURED: the oracle red-team's case 3 (a truth `uses` row whose target is a file-scope declaration name must have a genuine bare read site) went from 34 to 48 genuine reads on 200 files with violations still 0, i.e. the newly-derived rows are reads, not declarations. WHY IT MATTERS: this class was INVISIBLE in both directions - it could not read as a miss (the truth never derived it) nor as a defect (the analyzer's row looked like noise), and the natural reaction to unexplained rows is to delete them from the analyzer. Two gate defects in a row, both pointing at the analyzer, is what made the pattern worth chasing rather than dismissing."
+      },
+      {
+        "id": "Z26",
+        "node_type": "function_signature (a function-pointer TYPE)",
+        "status": "FIXED + GATED",
+        "question": "`contains` was 16.6% of everything this analyzer emits (5,521 of 33,266 relationships over 400 corpus files) and NOTHING had ever adjudicated it, for a structural reason: the analyzer derives containment from `symbol.ownerName`, a field its own walk sets, so the class is self-agreeing. The new gate found two fabrications of methods that DO NOT EXIST. A function-pointer type parses as container_field > pointer_type > function_signature, and a function_signature has no `declarator` field at all, so the old anyChild(identifier) name-picking took whatever identifier came first under the node: the RETURN TYPE (`contains MutableArray -> ComparisonResult`) or a qualified segment of a parameter type (`contains Options -> apprt`, out of `*apprt.ClipboardRequest`).",
+        "resolution": "FIXED: a `function_signature` is a TYPE, so it no longer goes on the declaration path; its children are still walked, because a function type's parameters and return type are declared-type facts the `references` collection reads on purpose. GATED by zig/kinds-and-owners (3 forbidSymbols, 2 forbidRelationships), mutation zig/function-signature-is-a-method, and the contains gate itself, which reads 0 PHANTOM / 0 MISSING over 400 files where it read 2 PHANTOM before the fix. THE METHODOLOGICAL PART, and the reason this is filed as a decision and not a chore: the ownership verifier could NOT find it, because its derivation used the same first-identifier rule and therefore AGREED with the bug. A mirror that reproduces the defect it exists to convict is self-agreeing, so the new truth was written from the GRAMMAR \u2014 which is also the only test of a mirror: a rule that needs the analyzer's own output to state is not a mirror."
+      },
+      {
+        "id": "Z27",
+        "node_type": "the `contains` audit itself",
+        "status": "RULED",
+        "question": "With a truth for `contains` written, the obvious move was to add the label to F5's compared set and call the class covered. Measured, that is half: the F5 matcher keys on `label + normTarget(target)` and the SOURCE is not part of the key, so `contains` is compared BY MEMBER NAME. It convicts a fabricated or missing edge whose NAME is wrong and is blind to one whose OWNER is wrong \u2014 and Z19 and Z21 each moved 335 edges to a different owner while keeping every member name.",
+        "resolution": "BOTH, with the split stated rather than implied. (1) `deriveZigContainment` walks the TREE and rebuilds the owner chain, and `contains` joins F5's compared set for zig: that catches fabrication and loss at name level, in the shared gate, on every lane-run. (2) `script/m14/tmp/zigw-contains.ts` keys on the OWNER and is BIDIRECTIONAL \u2014 it asks both directions: is every PUBLISHED owner justifiable (the ownership verifier's question, and how Z22 was found), and is a justifiable owner MISSING (a question the verifier could not ask, because it only ever iterated published symbols, so extra derived pairs were invisible). The second direction is what makes a dropped ownership detectable at all. (3) The store-identity collisions stay REPORTED and not failed: 1,509 member sites in 93 files, 100% same-named containers, filed as #963 \u2014 the defect is the store's name-keyed owner lookup and no analyzer change can fix it. Two instruments, one class, and the part neither covers is written down instead of inferred from a clean count."
+      },
+      {
+        "id": "Z28",
+        "node_type": "container_field / function_declaration name extraction",
+        "status": "FIXED + GATED",
+        "question": "The container-field extraction required `length < 50` and the function extraction `length < 100`, so a length test was acting as a junk filter on NAMES. Measured over 1,200 corpus files: 14 of 27,004 named container fields (0.05%) are 50 characters or longer and were dropped outright \u2014 an LSP capability flag 74 characters long (`supports_workspace_did_change_configuration_dynamic_registration`) and the aro `__builtin_amdgcn_wmma_*` shims at 50-52. The F5 `contains` truth found it as 1 MISSING row on zls, and it is a LOSS class: no count of published symbols can show a declaration that is absent.",
+        "resolution": "FIXED: the field name is read from the grammar's own `name` FIELD and the function name POSITIONALLY (this grammar has no `declarator` field on a function_declaration \u2014 measured: `function_declaration [fields: type]`, first named child is always the name). The field is read only when it is an identifier: an unnamed `extern struct` member hands over a TYPE there, and the first version of the change published four fields named after their own type (`usize`, `isize`, `c_short`, `c_int` in zls/src/analyser/InternPool.zig) \u2014 31 fabricated `contains` edges in one file, which the `contains` gate caught in the OPPOSITE direction from the one that found the loss. Caps remain (200 / 100) and are now stated as the guards they are: measured, 0 field names reach 100 characters. GATED by zig/kinds-and-owners (2 expectSymbols) and mutation zig/long-field-name-dropped. The deep `anyChild(identifier)` search is gone from both common paths, which is also what Z26 needed."
+      },
+      {
+        "id": "Z29",
+        "node_type": "isDefiningOccurrence (the write-vs-read predicate)",
+        "status": "FIXED + GATED",
+        "question": "The predicate that decides 'write or read' was spelled three different ways, and all three were wrong somewhere. In the differential's truth it was wrong twice (Z24, Z25). In the analyzer it tested 'the first named child of type `identifier`', which is not the LHS when the left side is a field expression: in `exe.stack_size = stack_size` (zig/build.zig:727) the first identifier child is the VALUE, so the read of a file-scope constant was declared a definition and no `uses` was published. One row in 1,200 files, and the analyzer's own `isWriteLhs` \u2014 600 lines away, on the field-read path \u2014 already had the correct form.",
+        "resolution": "FIXED: `isDefiningOccurrence` now uses node identity against the first named child, which is what `isWriteLhs` already did, so the two sites in the file are one rule instead of two spellings. Z15's compound-assignment behaviour is preserved by the `isPlainAssignment` guard above it. GATED by zig/kinds-and-owners (2 expectSymbols, 2 expectRelationships on the read side) and mutation zig/field-assignment-rhs-read. The general finding is the one worth keeping: a LOSS and a FABRICATION from ONE line, and each needed a different instrument \u2014 a `should be published` oracle for the first, a `contains` oracle for the second. Neither is visible to a count of what the analyzer emitted."
       }
     ],
-    "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by F6 fixture-coverage gate)"
+    "description": "Owner rulings \u2014 never silent absence (ZIGD2 added by the F6 fixture-coverage gate, CORRECTED 2026-09-28; Z11-Z20 added by the 2026-09-28 deep review, whose instrument set is script/m14/tmp/zigw-*.ts: a grammar census over 3,839 files in three corpora, a symbol-kind dispatch census (358 cells), a declared-type graph audit, a hostile synthetic battery, a dump-based A/B, and an oracle red-team. Every count in those entries is a measurement.)"
   }
 }

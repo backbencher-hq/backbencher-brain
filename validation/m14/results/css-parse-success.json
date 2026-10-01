@@ -1,0 +1,112 @@
+{
+  "instrument": "css-parse-success",
+  "purpose": "The CSS lane's parse-success floor, in the shape script/m14/verify-parse-success.ts pins. Measured with an instrument rather than the gate so the F5 lane is not enrolled before deriveCssEdges exists — a css F5 check whose only truth is deriveTreeEdges would be a vacuous green.",
+  "wasm": "wasm/tree-sitter-css.wasm",
+  "wasmSha256": "27331a97645d8140ed30db7a756b0c88a0793564074baadf79589a9fb27d414b",
+  "sampling": "hash-ordered then capped, per lane, one fresh wasm module per lane",
+  "discriminant": "rootNode.hasError (subsumes MISSING). A hand-rolled `type === \"ERROR\"` walk is NOT the criterion.",
+  "lanes": [
+    {
+      "lane": "svelte:css",
+      "repo": "svelte",
+      "repoPin": "26786e92985842a6d563c67049a43bc5857bf792",
+      "corpusFiles": 185,
+      "sampleLimit": 400,
+      "files": 185,
+      "sampleDigest": "4a05e58d2934dd84",
+      "eitherPct": 7.03,
+      "errPct": 7.03,
+      "missPct": 0,
+      "bothPct": 0,
+      "errorNodesMedian": 3,
+      "errorNodesMax": 54,
+      "topFirstErrorLineSignatures": [
+        [
+          "p[type='B' i].svelte-xyz {",
+          1
+        ],
+        [
+          "<!-- /* comment */ -->",
+          1
+        ],
+        [
+          "@container test-container (min-width: 410px) {",
+          1
+        ],
+        [
+          "&div {",
+          1
+        ],
+        [
+          "@media (width >= 600px) {",
+          1
+        ],
+        [
+          "& & {",
+          1
+        ],
+        [
+          "[data-foo='bar' i].svelte-xyz {",
+          1
+        ],
+        [
+          "selectedcontent:where(.svelte-xyz) &{",
+          1
+        ],
+        [
+          "content: \"{};[]\";",
+          1
+        ],
+        [
+          "@import url(chrome://communicator/skin/);",
+          1
+        ],
+        [
+          "@page :right {",
+          1
+        ],
+        [
+          "#\\31\\32\\33 .svelte-xyz{ color: green; }",
+          1
+        ]
+      ]
+    },
+    {
+      "lane": "grails-core:css",
+      "repo": "grails-core",
+      "repoPin": "a83f87480e0c0138caa5a7191a053b1e59a64066",
+      "corpusFiles": 191,
+      "sampleLimit": 400,
+      "files": 191,
+      "sampleDigest": "179516889403bc28",
+      "eitherPct": 20.94,
+      "errPct": 20.94,
+      "missPct": 0,
+      "bothPct": 0,
+      "errorNodesMedian": 6,
+      "errorNodesMax": 3418,
+      "topFirstErrorLineSignatures": [
+        [
+          "filter: progid:DXImageTransform.Microsoft.gradient(startColorStr = '#aaaaaa', EndColorStr ",
+          36
+        ],
+        [
+          "@import \"custom.css\";",
+          1
+        ],
+        [
+          "@page :left {",
+          1
+        ],
+        [
+          "font-family: \"Open Sans\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;;",
+          1
+        ],
+        [
+          "@font-face{font-family:'FontAwesome';src:url('../fonts/fontawesome-webfont.eot?v=4.1.0');s",
+          1
+        ]
+      ]
+    }
+  ]
+}

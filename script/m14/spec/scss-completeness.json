@@ -1,0 +1,558 @@
+{
+  "language": "scss",
+  "grammar": "tree-sitter-scss@1.0.0 (vendored, 2 local patches) — wasm wasm/tree-sitter-scss.wasm, sha256 729731fb83e4…, 195 ids / 84 named / 7 fields",
+  "generator": "script/m14/tmp/scss-spec-generate.ts",
+  "inherits": {
+    "from": "script/m14/spec/css-completeness.json",
+    "reason": "The SCSS grammar is `grammar(require('tree-sitter-css/grammar'), {…})` — a SUPERSET. Every CSS ruling applies here through the delegated walk in RealCssAnalyzer, and this spec deliberately does NOT restate them: 60 duplicated rulings would rot the moment either grammar moved and nobody would notice which half had gone stale."
+  },
+  "vocabulary": {
+    "declaredTypes": 86,
+    "namedTypesFromWasm": 84,
+    "universal": 2,
+    "corpusTypesObserved": 73,
+    "corpusFilesMeasured": 200,
+    "corpora": [
+      "element-plus",
+      "phpmyadmin",
+      "vue-core",
+      "vue-element-admin"
+    ]
+  },
+  "handled_verified": {
+    "count": 16,
+    "types": {
+      "each_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "as `if_statement`, plus `scssEachKey`/`scssEachValue` read from the `key`/`value` FIELDS — the only place a stylesheet says what it is iterating."
+      },
+      "extend_statement": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "a `uses` edge to the extended selector, named from the `class_selector`/`id_selector`/`plain_value` node's own text so the edge names the same symbol the file publishes."
+      },
+      "for_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "as `if_statement`, plus `scssForFrom`/`scssForThrough`."
+      },
+      "forward_statement": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "as `use_statement`, minus the namespace (Sass's `@forward … as ns` names a prefix, not a binding). Also grammar patch 1/2."
+      },
+      "function_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "as `mixin_statement`, plus `scssReturns` when its body contains a `@return`. Pinned by scss/functions-return-and-undeclared-uses."
+      },
+      "if_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "an `interface` symbol named from the construct's own collapsed text, with `scssCondition`. The same shape the CSS lane gives `@supports`, and for the same reason: a CONDITIONAL SCOPE, not a declaration of a callable."
+      },
+      "include_statement": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "a `uses` edge to a mixin THIS FILE declares, with the namespace resolved when the include is dotted (`map.get($k)`). Deliberately emits nothing for an undeclared mixin; pinned by a forbidRelationships row."
+      },
+      "mixin_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "publishes a `function` symbol named `@mixin <name>` with real `parameters` read from the `parameter` nodes and `defaultValue` from the `default` FIELD. Observed emitting across the corpus; pinned by scss/module-system-and-mixins and mutated by scss/callable-parameters-dropped."
+      },
+      "plain_value": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "carries the value of a declaration, a mixin argument, and an `@extend` target when the target is an ELEMENT selector (`@extend p`) — there is no `type_selector` node in this grammar, which the analyzer's first case list wrongly named."
+      },
+      "return_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "recorded as `scssReturns` on the enclosing function — NOT as an edge. The first implementation emitted `contains` from the function to ITSELF, a self-edge that makes a relationship count look like evidence while connecting nothing. Mutated by scss/return-self-edge."
+      },
+      "string_value": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "the module path of an `@use`/`@forward`, and a `@mixin`/`@function` name written in quotes."
+      },
+      "use_statement": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "an `imports` edge plus an ImportInfo carrying the `as` namespace, and a `namespace` symbol for the bound name. The construct is GRAMMAR PATCH 1/2 — the stock rule was `seq('@use', $._value, ';')` and the `as` clause was the largest residual class in the corpus at 277 error spans."
+      },
+      "variable": {
+        "inCorpus": true,
+        "reachedBy": "named",
+        "note": "an ASSIGNMENT publishes a `variable` symbol, deduplicated by NAME across reassignments — a Sass variable is assigned in several places by design. A READ publishes a `references` edge, and only for a variable this file declares. Measured 223/223 of this lane's own `references` edges resolve at both ends."
+      },
+      "while_statement": {
+        "inCorpus": false,
+        "reachedBy": "walked",
+        "note": "as `if_statement`. ZERO corpus occurrences — recorded as handled on the strength of a reproduction, which is a different claim from a corpus observation and is labelled as one."
+      },
+      "call_expression": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "a `@function` CALLED in a value (`width: double(4px)`), which is the same class of claim as a `$var` read and was silently unreached until the M12 independent hand audit of validation/m12/fixtures/scss/Theme.scss reported it MISSING (9 expected, 8 observed, recall 0.889). The call's NAME is the part that decides whether a call is real, and a name is looked up in what the file DECLARES: builtins (`calc`, `var`, `rgba`, `min`, `url`) are not referents and produce no edge, which is the both-ends-resolve rule and the reason this type is reached rather than always-fired."
+      },
+      "function_name": {
+        "inCorpus": true,
+        "reachedBy": "walked",
+        "note": "the CALLED name inside a `call_expression`. Reached only to decide whether a call resolves; a name this file does not declare as a `@function` is walked past, because the alternative is an edge to every CSS builtin in every stylesheet."
+      }
+    }
+  },
+  "internal_silent": {
+    "count": 70,
+    "types": {
+      "ERROR": {
+        "kind": "universal",
+        "inCorpus": true,
+        "note": "tree-sitter's own recovery node, not a grammar type. The SCSS lane's `error-recovery-is-reported` fixture pins that a file the grammar cannot read still REPORTS the failure — measured 11 errors for two named `@page` at-rules, pinned at `atLeast: 1` so the number cannot break when the grammar improves."
+      },
+      "MISSING": {
+        "kind": "universal",
+        "inCorpus": true,
+        "note": "tree-sitter's own recovery node, not a grammar type. The SCSS lane's `error-recovery-is-reported` fixture pins that a file the grammar cannot read still REPORTS the failure — measured 11 errors for two named `@page` at-rules, pinned at `atLeast: 1` so the number cannot break when the grammar improves."
+      },
+      "adjacent_sibling_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "argument": {
+        "inCorpus": true,
+        "note": "a mixin argument; `$var` inside one is a READ and is reached through it."
+      },
+      "arguments": {
+        "inCorpus": true,
+        "note": "a container for `argument` nodes."
+      },
+      "at_keyword": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "at_root_statement": {
+        "inCorpus": true,
+        "note": "no symbol: it ESCAPES a scope rather than declaring an entity, and a symbol for it would be a name with no referent. Recorded as the file-level `scssEscapesScope` flag instead, which is the fact a consumer can use."
+      },
+      "at_rule": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "attribute_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "attribute_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "binary_expression": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "binary_query": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "block": {
+        "inCorpus": true,
+        "note": "a container; its contents are reached by walking into it."
+      },
+      "charset_statement": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "child_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "class_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "class_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "color_value": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "comment": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "debug_statement": {
+        "inCorpus": false,
+        "note": "no entity; recorded as `scssHasDiagnostics`."
+      },
+      "declaration": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "descendant_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "else_clause": {
+        "inCorpus": true,
+        "note": "the `@else` arm of an `@if`; produces no separate scope symbol, which is a DECISION (one `if_statement` is one scope) rather than an omission."
+      },
+      "else_if_clause": {
+        "inCorpus": false,
+        "note": "The `@else if` arm. No separate scope: one `if_statement` is ONE scope, and its else-if and else arms publish their rules under that scope's name. Verified — `@if $a {} @else if $b {} @else {}` publishes one `interface` and three rules, and the else arms' rules are correctly attributed to it. A separate symbol per arm would make the same conditional three scopes."
+      },
+      "error_statement": {
+        "inCorpus": false,
+        "note": "as `debug_statement`. ZERO corpus occurrences."
+      },
+      "feature_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "feature_query": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "float_value": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "from": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "grid_value": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "id_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "id_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "identifier": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "import_statement": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "important": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "integer_value": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "interpolation": {
+        "inCorpus": true,
+        "note": "`#{$n}`. No node: the interpolation is a SPELLING of a name, and the name is published by the construct it appears in — `.a-#{$n}` is published verbatim, which is what makes the selector addressable at all. Producing a node for the `#{…}` wrapper would name the punctuation rather than the rule. `#{$x}px` does not parse; see SCSS-L3."
+      },
+      "js_comment": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "keyframe_block": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "keyframe_block_list": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "keyframes_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "keyframes_statement": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "keyword_query": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "list_value": {
+        "inCorpus": true,
+        "note": "A Sass list `(a, b, c)`. No node of its own: a list is an argument, and it is reached through the `each_statement` that iterates it. `@each $k in (a, b, c)` publishes the loop's `interface` and each interpolated selector."
+      },
+      "media_statement": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "namespace_name": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "namespace_selector": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "namespace_statement": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "nesting_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "parameter": {
+        "inCorpus": true,
+        "note": "read into the callable's `parameters`; produces no node of its own."
+      },
+      "parameters": {
+        "inCorpus": true,
+        "note": "a container for `parameter` nodes; the parameters ride on the callable's symbol."
+      },
+      "parenthesized_query": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "parenthesized_value": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "placeholder": {
+        "inCorpus": true,
+        "note": "A Sass placeholder selector `%ph`. REACHABLE and published — measured, `%ph { color: red }` yields `class:%ph` — because a placeholder is addressable by name for the same reason a class is. It carries no node of its own beyond the selector it heads. `@extend %ph` does NOT parse; see SCSS-L5."
+      },
+      "postcss_statement": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "property_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "pseudo_class_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "pseudo_element_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "rule_set": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "selector_query": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "selectors": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "sibling_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "stylesheet": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "supports_statement": {
+        "inCorpus": false,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "tag_name": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "to": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "unary_query": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "unit": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "universal_selector": {
+        "inCorpus": true,
+        "adjudicated": "inherited",
+        "inheritedFrom": "script/m14/spec/css-completeness.json",
+        "note": "CSS-INHERITED: declared by the CSS grammar, adjudicated there, and reached here through the delegated walk in RealCssAnalyzer. Not restated — see `inherits` in this spec."
+      },
+      "warn_statement": {
+        "inCorpus": true,
+        "note": "as `debug_statement`."
+      }
+    }
+  },
+  "gap": {
+    "count": 0,
+    "types": {},
+    "note": "Empty, and the search is recorded: every type the grammar declares is either reached or labelled, and the unadjudicated count is reported below rather than folded into a bucket."
+  },
+  "design_decision": {
+    "unadjudicatedCells": 0,
+    "unadjudicatedTypes": [],
+    "note": "Every declared type is adjudicated."
+  },
+  "limitations": [
+    {
+      "id": "SCSS-L1",
+      "construct": "the residual parse classes the grammar cannot represent",
+      "measured": "95 of 244 non-empty .scss files still fail. The residual is a LONG TAIL — largest class 24 error spans, most under 20 — against a single 277-span class before patch 1/2. The largest coherent group left is a namespaced function call, `map.merge($a, $b)`, at 12 spans.",
+      "artifact": "validation/m14/results/scss-grammar-ab.json"
+    },
+    {
+      "id": "SCSS-L2",
+      "construct": "`@forward 'x' as prefix-*;` — the PREFIX form of the `as` clause",
+      "measured": "0 occurrences in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. Supporting it needs `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression`. Carried in the A/B as `forward-as-dashed-prefix` with verdict `unchanged-broken`.",
+      "artifact": "validation/m14/results/scss-grammar-ab.json"
+    },
+    {
+      "id": "SCSS-L3",
+      "construct": "`#{$x}px` — interpolation followed by a unit",
+      "measured": "0 occurrences. The 33 interpolations followed by anything are inside names and strings (`#{$prefix}body-bg`). A fixture that pinned this form was written and then CORRECTED, because a fixture is supposed to pin constructs that exist.",
+      "artifact": "docs/analyzers/real-scss-analyzer.md"
+    },
+    {
+      "id": "SCSS-L4",
+      "construct": "a map literal in an `@each` list — `@each $k, $v in (a: 1)`",
+      "measured": "0 occurrences. `@each $k in (a, b)` parses. Pinned by `error-recovery-is-reported` at `atLeast: 1` so the failure stays visible rather than silent.",
+      "artifact": "validation/m14/fixtures/scss/error-recovery-is-reported.expectation.json"
+    },
+    {
+      "id": "SCSS-L5",
+      "construct": "`@extend` of an id, a placeholder, a comma list, or a pseudo-class",
+      "measured": "5 `@extend` in 40,521 lines: 1 targets an `#id` and ERRORS, 4 target a `%placeholder` and ERROR. 0 use a comma list, 0 use a pseudo-class. The placeholder case is the more interesting half: `%ph { … }` PARSES and publishes `class:%ph`, so the declaration is understood and the `@extend` of it is not — a rule that is addressable but not extendable. Declared rather than patched on 5 occurrences.",
+      "artifact": "docs/analyzers/real-scss-analyzer.md"
+    },
+    {
+      "id": "SCSS-L6",
+      "construct": "delegated CSS `var()` reads of externally-provided custom properties",
+      "measured": "14 of 220 resolve (6%) in the element-plus corpus, which consumes Element Plus theme tokens defined in another file. The behaviour is the CSS lane's own — verified by running identical input through both lanes — and this lane's own `$var` reads are 223/223 = 100%.",
+      "artifact": "validation/m14/results/scss-analyzer-census.json"
+    },
+    {
+      "id": "SCSS-L7",
+      "note": "A `@function` call is resolved ONLY against functions the same file declares. A call into a module (`@use 'tokens' as t` then `t.$brand`, or a function defined in another partial) has no local declaration to resolve against, so it publishes no edge — the same no-phantom rule that keeps an undeclared `$var` or `@include` silent. Cross-file call resolution is not implemented and is not claimed: on element-plus the full-extent floor stands at MISSING 60 / unexplained 4."
+    },
+    {
+      "id": "SCSS-L8",
+      "note": "A MAP LITERAL — `map.merge(('large': 22px), $default)` — does not parse, and this is the single largest parse-failure class in the corpus. A THREE-ATTEMPT patch was written, built and measured, and REVERTED rather than shipped; the evidence is recorded because the next attempt should start from it. First: a `map_value` rule in the general `_value` hierarchy beside `list_value`, which is where a Sass value belongs by rights. It fixed 5 files and regressed none — and drove ERROR nodes from 3,900 to 8,056 across 244 files. The file-level A/B reported '0 regressed' and saw none of it, because the files that gained errors were already failing and stayed in the same bucket: a metric that counts files cannot see a change in the quality of the recovery inside them. Second: scoping the rule to call arguments, overriding the inherited CSS `arguments` rule, which fixed 4 files and REGRESSED 9 — overriding that rule perturbs every function call, `translate()` and `rgba()` included. Third: the same override with `prec.dynamic` inside the argument choice, which was worse still. The trailing-comma half of the patch, taken alone, was clean but thin: 0 files fixed, 0 regressed, 54 fewer error nodes — below the bar patches 1/2 and 2/2 set, and not worth carrying a node type for. Conclusion: the gap is a grammar REDESIGN, not a patch. A single pair `('a': 1)` is ambiguous with the CSS `parenthesized_value` rule and loses to it, while two or more pairs parse — which is why the failure looked arbitrary. Doing this properly means changing how maps are represented in the value hierarchy, not adding one more rule beside `list_value`. The 92% of `map.merge` calls that are multi-pair (153 of 167 measured) are the prize; the ceiling stands where §9 records it until then."
+    }
+  ]
+}

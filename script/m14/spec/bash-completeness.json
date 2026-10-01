@@ -1,0 +1,212 @@
+{
+  "language": "bash",
+  "grammar": "tree-sitter-bash.wasm",
+  "_authority": "Every row below was derived, not remembered. `script/m12/bash-node-types-compare.ts` enumerates the pinned wasm's own node-type table (Language.nodeTypeForId) for the grammar universe, reads the analyzer's type-position literals by parsing src/ast/real-bash-analyzer.ts with the tree-sitter TypeScript grammar, and walks the pinned corpora for what actually occurs. The three agree by construction: the instrument refuses to pass when its literal count disagrees with `script/m14/audit-analyzer-grammar.ts` (F1). Types are placed by that classification; a `gap` may be reclassified only against a `design_decision` in this file, and the ruling text is published with it.",
+  "_wave": "M14 lane wave, bash (issue #277 'Analyzer bash: reach L5 SCOPED-VERIFIED'). The wave replaced the pre-wave analyzer wholesale; every decision below is pinned by a fixture in validation/m14/fixtures/bash and a regression mutant in script/m14/mutate-analyzer.ts.",
+  "handled_verified": {
+    "_description": "Node types the analyzer consults at a type position AND whose behaviour is pinned by a committed fixture or a measured probe. `arithmetic_expansion`, `postfix_expression`, `c_style_for_statement` and `array` are here because they were GAPS before this wave and are now measured, not assumed — see BD-gap-closure. `ERROR` is here for the same reason and by the same route: it is a UNIVERSAL tree-sitter node type (every parser produces it, and the wasm ABI's `nodeTypeForId` table does not list it, which is why F1 keeps an explicit universal pair), the analyzer consults it directly in the BD5 recovered-region guard, and it was gap BA-G2 until that guard landed. A type being in this bucket means the analyzer DECIDES on it, not that it is understood well — the pin for each is named in the `design_decision` that introduced it.",
+    "types": [
+      "ERROR",
+      "arithmetic_expansion",
+      "array",
+      "binary_expression",
+      "c_style_for_statement",
+      "case_item",
+      "command",
+      "command_name",
+      "command_substitution",
+      "compound_statement",
+      "concatenation",
+      "declaration_command",
+      "elif_clause",
+      "expansion",
+      "for_statement",
+      "function_definition",
+      "if_statement",
+      "list",
+      "pipeline",
+      "postfix_expression",
+      "program",
+      "raw_string",
+      "simple_expansion",
+      "special_variable_name",
+      "string",
+      "subscript",
+      "subshell",
+      "test_command",
+      "variable_assignment",
+      "variable_name",
+      "while_statement",
+      "word"
+    ]
+  },
+  "internal_silent": {
+    "_description": "Structural containers, literals, comments and grammar plumbing that correctly emit nothing. Two families deserve their reason stated rather than assumed. (1) REDIRECTS (`file_redirect`, `redirected_statement`, `herestring_redirect`, `heredoc_*`, `file_descriptor`): a redirect names a FILE or a file descriptor, not a project identifier, and the expansions inside one are reached through `simple_expansion`/`expansion`, which ARE consulted — so a redirect target that is a variable already produces its Uses edge and the container itself has nothing left to say. This was MEASURED, not assumed: the first version of the census counted a bare `word` redirect target as an unmeasured name and manufactured 43 phantom losses out of filename literals; `script/m14/tmp/bash-gap-shapes.ts` is the dump that refuted it. (2) TEST/ARITHMETIC OPERATORS (`unary_expression`, `test_operator`, `number`): an operator is not a name. Their operands are reached through the expansion nodes above. `MISSING` is here for a specific reason: it is a UNIVERSAL tree-sitter node type (the wasm ABI's `nodeTypeForId` does not list it, which is why F1 keeps an explicit universal pair and why two other instruments now share that pair), and the analyzer reads it as the `isMissing` PROPERTY on a node rather than comparing a node's `type` to the literal. BD5's guard therefore consults `ERROR` by type and `isMissing` by flag, and no `MISSING` node reaches a type comparison.",
+    "types": [
+      "MISSING",
+      "ansi_c_string",
+      "brace_expression",
+      "case_statement",
+      "comment",
+      "do_group",
+      "else_clause",
+      "extglob_pattern",
+      "file_descriptor",
+      "file_redirect",
+      "heredoc_body",
+      "heredoc_content",
+      "heredoc_end",
+      "heredoc_redirect",
+      "heredoc_start",
+      "herestring_redirect",
+      "negated_command",
+      "number",
+      "parenthesized_expression",
+      "process_substitution",
+      "redirected_statement",
+      "regex",
+      "string_content",
+      "ternary_expression",
+      "test_operator",
+      "translated_string",
+      "unary_expression",
+      "variable_assignments"
+    ]
+  },
+  "gap": {
+    "_description": "Confirmed unemitted semantics. An open gap is a tracked work item, never a gate failure — the gate fails when a gap exists that no `design_decision` below rules, and it also fails when a ruling names a type that is no longer a gap (a stale ruling), so a repaid gap cannot be left behind as a permanent claim. TWO gaps were opened by the census in this wave and BOTH are now resolved: BA-G1 (`unset_command`) is RULED as unemittable and stays open as a declared ruling; BA-G2 (`ERROR`) was REPAID — the analyzer now consults `ERROR` directly through the BD5 recovered-region guard, so the census reclassifies it from `gap` to `handled_verified` and the ruling moved into BD5 where the measurement lives. That transition is the gate working in both directions: it refused to let a repaid gap keep claiming to be one.",
+    "gaps": [
+      {
+        "id": "BA-G1",
+        "severity": "ruled",
+        "node_type": "unset_command",
+        "missing": "`unset VAR` names a real project variable and emits no relationship of any kind.",
+        "ruling": "RULED as BD6. No relationship type in the universal ontology expresses UNBINDING a binding. `uses` would assert a read that does not happen; `imports`/`references` would assert a dependency that does not exist; `contains` is a lexical relation and would be false. The analyzer therefore emits nothing and records the site in the file's pattern set. The name is still not lost to a reader: the variable it unbinds is declared elsewhere in the same file, so it is a `uses` target there. Emitting a new relationship type for this was considered and refused — a lane that invents an edge type the product cannot render is a worse failure than a declared absence."
+      }
+    ]
+  },
+  "design_decision": {
+    "description": "The bash lane's contract. Each decision names the question, the answer, and what pins it. Where a decision removed a behaviour, the removed behaviour and its measured cost are stated, because a ruling nobody can price is a preference.",
+    "decisions": [
+      {
+        "id": "BD1",
+        "node_type": "command,variable_assignment,simple_expansion,expansion,arithmetic_expansion,postfix_expression,declaration_command,function_definition",
+        "status": "RULED",
+        "question": "Is a relationship's site line optional? The pre-wave analyzer emitted none at all: 0 of 1,432 relationships on the pinned corpus carried a line, and the edge identity was the 3-field (source|type|target).",
+        "resolution": "RULED: a line is MANDATORY and joins the edge identity. Every relationship now carries `line_number`, 1-based, on the node that BEARS THE NAME — the `command_name` word for a call, the expansion node for a read, the declaration's own name line for `contains` (M60 #921's rule, because the store resolves a containment edge by exactly that line), the argument word for a `source`. The identity is (source|type|target|line). Two reasons this is not optional: the store's `relId` already keys on the line (M59/#822), so a line-less edge cannot be per-site no matter what the analyzer does; and the store's source-attribution fallback (M59/#855) is line-driven, so a line-less edge cannot be attributed either. Measured on the pinned corpus: 0/1,432 -> 3,074/3,074 relationships carry a line, 32/32 files go from every-edge-unlined to none, and 289 call sites that the 3-field dedupe had collapsed into other rows come back as their own edges. Pinned by fixtures bash/per-site-lines-821 and bash/contains-name-line-921; mutants bash/call-site-line-dropped and bash/contains-line-at-declaration-start."
+      },
+      {
+        "id": "BD2",
+        "node_type": "program",
+        "status": "RULED",
+        "question": "What is the owner of a top-level statement? The pre-wave analyzer wrote the literal string `global` onto every top-level edge (`relSource() || \"global\"`).",
+        "resolution": "RULED: the SCRIPT is the module, and it is a real symbol. Every bash file emits one `module` symbol named after its own basename WITH the extension (`eng/common/tools.sh` -> `tools.sh`), spanning the file, and every top-level declaration and every top-level edge is owned by it. This is a stronger answer than the ruby lane's declared `Global` sentinel, and deliberately so: a sentinel is still an endpoint no stored symbol can resolve, which is the exact failure this decision removes. Three properties forced the naming: (a) `isIndexArtifactName` (src/ast/analysis-exclusions.ts) REJECTS the name `global`, so no module could ever have carried the old spelling — the 621 pre-wave `global` edge sources were unresolvable by construction, not by accident; (b) the name must be deterministic across machines, because the index fingerprint depends on it, so an absolute path is inadmissible; (c) it must not collide with a shell identifier, and no shell name contains a `.`, which the extension-inclusive basename guarantees. Top-level declarations additionally receive `ownerName` = the module name, so `contains: tools.sh -> log` exists and the store can resolve it. Measured: edge sources that are not a symbol in their file 622 -> 0; edges with neither endpoint a symbol 274 -> 0; variables/constants with no owner 417 -> 0. Pinned by fixtures bash/module-owner-bd2 and bash/top-level-owner-contains; mutants bash/global-sentinel-reintroduced and bash/module-owner-dropped."
+      },
+      {
+        "id": "BD3",
+        "node_type": "command",
+        "status": "RULED",
+        "question": "What is the source of a `trap` handler edge? The pre-wave analyzer emitted `calls: EXIT -> cleanup` — a signal name as the caller.",
+        "resolution": "RULED: a signal is not code and never names a caller. `trap 'cleanup' EXIT` installs a handler in the scope that writes the trap, so the edge is `calls: <enclosing scope> -> <handler command name>`, carrying `viaTrap: true` and the signal list in metadata. A handler is one or more `;`-separated commands and each named command is its own call site; a leading `VAR=value` assignment is skipped so the command is found, and `name(args)` is recognised as a call rather than a command. A handler with no resolvable command name (`trap ':' EXIT`, a compound block) emits NO edge and is recorded as the `Signal Handler` pattern. A self-edge on the enclosing scope was considered and refused: a relationship whose source and target are the same symbol says nothing the pattern does not say better. The pre-wave target for a quoted handler was the whole string — `log \"WARN\" \"interrupted\"` — a name no symbol can ever have, and that shape is pinned as TRUTH in the pre-wave m12 ground truth; the truth is amended in the same commit as this ruling rather than left to certify the defect. Pinned by fixture bash/trap-handler-bd3; mutant bash/trap-signal-as-source."
+      },
+      {
+        "id": "BD4",
+        "node_type": "command",
+        "status": "RULED",
+        "question": "What is a Calls edge when the command word is an unexpanded expression? `${dotnetPath} --info` and `$pkg_mgr install` used to emit `calls: -> \"${dotnetPath}\"`, a target containing a dollar sign.",
+        "resolution": "RULED: a computed command is not a call to a name, so no Calls edge is emitted for it. What IS true is that the script READS the variable that decides the command, and that read is already emitted as a `uses` edge by the expansion walk — so the dependency survives in a form the graph can resolve, while the fabricated callee does not. The test is index arithmetic over character codes (`isIdentifierText`), not a source scan, and it is deliberately the same shape the repo's regex policy accepts for a non-syntactic classification. The file records a `Dynamic Command Name` pattern so the construct is visible even though the edge is not. Measured on the pinned corpus: `global -> ${dotnetPath}`, `global -> $pkg_mgr` and `initDistroRidGlobal -> \"${rootfsDir}/usr/bin/ldd\"` all disappear as targets and reappear as `uses` on the deciding variable. Pinned by fixture bash/dynamic-command-bd4; mutant bash/dynamic-command-call-emitted."
+      },
+      {
+        "id": "BD5",
+        "node_type": "ERROR",
+        "status": "RULED",
+        "question": "May anything be emitted from a grammar-damaged region?",
+        "resolution": "RULED, and IMPLEMENTED — this decision REPAIRED gap BA-G2. No call may be emitted from a grammar-damaged region, and the guard is scoped to the damaged NAME rather than to the file, so a real declaration inside a partially damaged file is still emitted (the C `#907` swallow class does not apply to a blanket refusal). Measurement that motivated it: before the guard the pinned corpus emitted `calls: Write-PipelineSetVariable -> ]/%5D}` from the `${value/]/%5D}` parameter expansion, in the very file `validation/m12/results/bash-corpus-errors.json` excludes from acceptance while its own policy states the analyzer 'never synthesizes phantom rows' — two committed artifacts contradicting each other. With the guard, `ERROR` is a type the analyzer consults, the census reclassifies it from `gap` to `handled_verified`, and the corpus-error artifact's policy becomes true rather than aspirational. Pinned by fixture bash/recovered-region-guard-bd5; mutant bash/recovered-command-emitted."
+      },
+      {
+        "id": "BD6",
+        "node_type": "unset_command",
+        "status": "RULED",
+        "question": "`unset VAR` names a real variable. Should it emit an edge?",
+        "resolution": "RULED: no. See BA-G1. Pinned by fixture bash/unset-ruled-bd6, which FORBIDS any relationship whose target is the unset name at the unset line, so a future 'helpful' edge fails rather than slips in."
+      },
+      {
+        "id": "BD7",
+        "node_type": "(ontology)",
+        "status": "RULED",
+        "question": "Which of the engine's ten relationship types can bash express, and which are excluded? The pre-wave analyzer emitted five (calls, uses, contains, imports, references) and emitted no `exports` at all, despite parsing `export` for years and setting `isExported` in metadata.",
+        "resolution": "RULED, WITH ONE CORRECTION FOUND LATE. bash emits SEVEN — calls, uses, contains, imports, references, exports, and (as of BD8b) overrides. `export VAR`, `export VAR=value` and `export -f fn` each emit an `exports` edge from the owning scope at the export line; `exports` is first-class in the ontology and seven peer lanes already emit it, so its absence was a defect and not a language limitation. THREE are excluded by the language itself, each on GRAMMAR-INVENTORY evidence rather than prose: the bash grammar yields 164 distinct node types across a 2,747-file corpus and NONE of them expresses a type declaration or a constructor, so `extends` and `implements` (no types to inherit) and `instantiates` (no constructors) cannot be derived. `overrides` WAS ALSO RULED OUT HERE AND THAT RULING WAS WRONG — see BD8b. The exclusions are now enforced by script/m14/ontology-coverage-gate.ts, which a prose justification alone could not have caught."
+      },
+      {
+        "id": "BD8",
+        "node_type": "case_item",
+        "status": "RULED",
+        "question": "Should commands inside a `case` arm be suppressed? The pre-wave analyzer carried a `caseDepth` counter and returned before emitting any Calls edge for a command at depth > 0, with the comment 'case-branch commands excluded as dispatch noise'.",
+        "resolution": "RULED: LIFTED. The suppression was defending against a problem that does not exist — a `case` arm's PATTERN is a `word` or `string` node, never a `command`, so no pattern was ever emitted as a call and the filter never suppressed one. What it did suppress was real work: `case $1 in install) apt-get install foo ;; esac` installs something, and the reader asking 'what does this script install?' must see it. Measured cost of the lift on the pinned corpus: 33 command nodes that were suppressed are now emitted, of which 14 were distinct (source,target) pairs that no other site produced — they were previously unreachable, not merely deduplicated. Pinned by fixture bash/case-arm-calls-bd8, which requires the arm's command; mutant bash/case-arm-suppressed."
+      },
+      {
+        "id": "BD9",
+        "node_type": "command",
+        "status": "RULED",
+        "question": "How is a `source`/`.` target named, and what happens when the path is built from a variable? The first ruling RESOLVED a relative path against the sourcing file's own directory, and that was wrong — see the resolution.",
+        "resolution": "RULED, and CORRECTED once. A `source`/`.` target is a FILESYSTEM PATH, and it is reported AS THE SHELL WILL READ IT: verbatim, de-quoted, never rewritten. The first version of this decision resolved a relative path against the sourcing file's own directory, on the reasoning that it made the target actionable. It is not actionable, it is WRONG: bash resolves a relative `source` against `$PWD` at RUN TIME, not against the script's own directory, so the rewrite turned `source ./eng/common/tools.sh` inside `eng/common/` into the nonexistent `eng/common/eng/common/tools.sh`. The F5 differential found it as three disagreeing rows on the pinned corpus, and the fixture now pins the corrected behaviour. A DYNAMIC path (`source $scriptroot/tools.sh`) names no file the analyzer can resolve, so the edge is kept and LABELLED `resolution: \"dynamic\"` — dropping it was considered and refused, because 16 of the lane's 23 pre-wave import edges were of this form and refusing would delete 70% of the import graph to remove an ambiguity that one metadata field states honestly. Two further rules, both measured: a path whose quoting wraps only PART of the expression (`source \"$(dirname \"$0\")\"/lib.sh`) is de-quoted, because a path cannot contain a quote character and the stray leading quote made the target unmatchable — that shape was the last disagreement on the corpus; and the analyzer emits NO machine-absolute path in metadata, because an absolute path makes analyzer output machine-specific and the index fingerprint with it. What is NOT done anywhere here is presenting a dynamic path as a resolved dependency: that is the fabrication this ruling exists to prevent. Pinned by fixture bash/source-path-resolution-bd9; mutants bash/source-resolution-label-dropped and bash/dynamic-source-edge-refused."
+      },
+      {
+        "id": "BD10",
+        "node_type": "command",
+        "status": "RULED",
+        "question": "How does the analyzer know a call is to a local function rather than an external binary? The pre-wave emitter set `isFunctionCall: true` AND `isExternalCommand: true` on EVERY call, so a call to a function defined three lines above claimed to be an external command.",
+        "resolution": "RULED: the two flags are mutually exclusive facts, and the local set is collected in ONE linear pre-pass over the file's `function_definition` nodes before the main walk. The pre-pass is not an optimisation, it is a correctness requirement: a pre-order walk reaches a `command` before the `function_definition` that declares it whenever a script calls a function defined further down — the normal shape of a shell script — so deciding from what the walk has seen made the flag depend on declaration order. An alias (`alias ll='ls -la'`) is callable too and joins the set. `localFunctions` is also maintained incrementally rather than rebuilt per command, which removes an O(symbols x commands) cost from the hot path (BD-perf). Pinned by fixture bash/call-identity-bd10; mutants bash/call-flags-always-both and bash/call-identity-order-dependent."
+      },
+      {
+        "id": "BD-gap-closure",
+        "node_type": "arithmetic_expansion,postfix_expression,c_style_for_statement,array",
+        "status": "RULED",
+        "question": "A variable read inside an arithmetic context is a read. The pre-wave analyzer consulted only `simple_expansion` and `expansion`, so `$((i + 1))`, `((count++))` and `for ((i=0; i<n; i++))` named real project variables that no edge mentioned. Separately, `extractAssignment` took an `isArray` parameter that its only caller passed as `false`, so `metadata.isArray` was constant-false on every plain assignment.",
+        "resolution": "RULED: arithmetic operands are read like any other operand, reached by consulting `arithmetic_expansion`, `postfix_expression` and `c_style_for_statement` alongside the two string expansion forms; `array` is read structurally for `isArray` rather than through a parameter every caller got wrong. A FOURTH arithmetic shape, `arithmetic_expression`, was added on the census's advice and the same day's F8 gate reported it as a dead branch — the pinned grammar has no such node type — and it was removed in the same round rather than registered as tolerated debt. That is recorded here because it is the clearest evidence in this wave that the gate is load-bearing. Pinned by fixtures bash/arithmetic-reads-gap-closure and bash/array-declaration-shape; mutants bash/arithmetic-read-dropped and bash/isarray-always-false."
+      },
+      {
+        "id": "BD-census-authority",
+        "node_type": "(instrumentation)",
+        "status": "RULED",
+        "question": "How is a node type classified as handled, silent or a gap — and who says so?",
+        "resolution": "RULED: the analyzer does not classify itself, and neither does a hand-written list. `script/m12/bash-node-types-compare.ts` derives the classification from the pinned wasm's own node-type table plus the analyzer's own type-position literals plus what the corpora actually contain, and a `gap` may only be reclassified against a `design_decision` in this file. The retired instrument (`bash-node-types-legacy-inventory.ts`, kept for audit) hardcoded a 35-entry 'referenced' list and computed only the intersection with what it observed, so it could not fail: it reported 35 live references where F1 independently measures the analyzer's literals, it accounted for 35 of the 56 node types the pinned corpus contains, and it named none of the other 21. Two further defects in the replacement were found by a number that contradicted an independent measurement rather than by inspection, and are recorded in the instrument's own `instrument.selfAudit` field: attributing a name to its own node type instead of to its nearest non-carrier ancestor (which made every container look empty and the gap count structurally zero), and searching for dead branches among OBSERVED types (a literal the grammar cannot produce never appears in a tree, so `identifier` was invisible to it while F1 was reporting it). A third defect was found the same way and is the reason the instrument now cross-validates its literal count against F1's: the replacement briefly disagreed with F1 by 6 and refused to publish either number alone."
+      },
+      {
+        "id": "BD-word-vs-identifier",
+        "node_type": "word",
+        "status": "RULED",
+        "question": "Is a bare `word` a name the graph could resolve?",
+        "resolution": "RULED: only in one position — directly under `command_name`, where it is the command being invoked. Everywhere else a `word` is a literal: a filename in `> \"$dir/f\"`, a path in `[[ -f somefile ]]`, an element in `arr=(a b c)`. This was measured rather than assumed: the first version of the census treated every `word` as a name and manufactured 63 'unmeasured names' out of filename literals, of which 43 were redirect targets; `script/m14/tmp/bash-gap-shapes.ts` is the structural dump that refuted it, and the honest figure is 3 real gaps with 0 unmeasured names."
+      },
+      {
+        "id": "BD-shell-defined-vars",
+        "node_type": "special_variable_name",
+        "status": "RULED",
+        "question": "Is `${BASH_SOURCE[0]}` a read of a project variable?",
+        "resolution": "RULED: no, and the edge says so. Reads of a name the shell itself defines carry `metadata.isShellDefined = true`, so a consumer can tell the 23 edges to `BASH_SOURCE` on the pinned corpus from a read of a project variable. The edge is still emitted — the script does read it — but it is not left looking like an undeclared project variable, which is what made the pre-wave target list unreadable. `metadata.isDeclaredGlobal` is set when the name is also declared at the file's top level, which is the cheap half of scope resolution and is enough for a consumer to tell a local read from a global one."
+      },
+      {
+        "id": "BD-perf",
+        "node_type": "(complexity)",
+        "status": "RULED",
+        "question": "What is the analyzer's time complexity, and what is it normalized against?",
+        "resolution": "RULED: one iterative pre-order walk, O(nodes), with a scope stack, a Map of function parameters, a Set of declared names and a Set of edge identities. Two O(n^2) costs were found and removed in this wave rather than documented: the edge-identity Set was previously 3-field, which is correct but was combined with a per-command O(symbols) rescan of the whole symbol list to decide `isFunctionCall`, so a file with S symbols and C commands spent O(S*C) on the hot path; and the collection of local function names is now a single linear pre-pass (BD10). No node is visited twice and no per-node work scans the symbol table. The measured envelope is in `validation/m60/results/analyzer-complexity.json`; the lane's own row is `bash` and it carries a load context, because a row measured under concurrent load is unscored rather than evidence (`#871`)."
+      },
+      {
+        "id": "BD-assigned-in-file",
+        "node_type": "variable_name",
+        "status": "RULED",
+        "question": "When a script READS a name, does this file assign it?",
+        "resolution": "RULED: yes, and the edge says so. `metadata.isAssignedInFile = true` is set when the read name is assigned anywhere in the same file, under ANY owner. The absence of the field MEANS false, exactly as for `isShellDefined` and `isDeclaredGlobal`; the contract is written here rather than left to be inferred from a pattern. This closes the lane's last unlabelled target class: the read is real, the name is honest, but before this nothing said whether `$TMPDIR` was a project variable a consumer simply could not see or an environment-supplied one it never will. A single-file analyzer cannot draw the corpus-level distinction between 'assigned in ANOTHER file' and 'supplied by the environment' — that needs the whole corpus — so the honest per-file fact is recorded here and the cross-file/environment split is measured by the verifier, which has the corpus. The suffix index over `declaredSymbols` is built once per file and memoized on the set's size, which only grows as declarations are collected. MEASURED over the 909-file corpus (`script/m14/tmp/bash-assigned-in-file.ts`): 19,417 `uses` edges, of which 14,551 (74.9%) are `isAssignedInFile: true` and 4,866 (25.1%) carry no field. The corpus-level split of those 4,866 — which a single-file analyzer cannot make, and therefore does not fake — is 2,437 assigned in ANOTHER file of the same repository, 121 a name the shell itself defines, and 2,308 assigned NOWHERE in the corpus and therefore environment-supplied (`ZSH_CACHE_DIR` 138, `ZSH_HIGHLIGHT_STYLES` 46, `CC_SH_DEBUG_LOG` 20). This supersedes the lane's earlier `407 unresolved reads` figure, which was measured on the narrower previously-routed surface and is not comparable with this denominator. Falsifiability: the `assigned-in-file` fixture satisfies 5/5 of its expectations against the real analyzer and 2/5 once the field is stripped, and it pins the ABSENT direction explicitly — which required teaching `run-fixtures.ts` that `meta.<key>: null` means ABSENT, the same unknown-state hole M59 closed for `line_number`, one level down."
+      },
+      {
+        "id": "BD8b",
+        "node_type": "function_definition",
+        "status": "RULED",
+        "question": "Is a re-declared function an `overrides` edge? (BD7 ruled this type inapplicable and the ruling did not hold.)",
+        "resolution": "RULED: YES, and BD7 was wrong to exclude it. Bash has no classes and no inheritance, so there is no superclass for `overrides` to point at — which is how this type came to be grouped with `extends`, `implements` and `instantiates` as language-inapplicable. But a SECOND declaration of a function REPLACES the first, and that is an override in the only sense the language has one. The edge runs from the later declaration to the earlier one, so both endpoints carry the same name; `metadata.overridesLine` names the prior declaration's line explicitly, because a consumer seeing `greet -> greet` cannot otherwise tell which is which without re-reading the file. `contains` already emitted both declarations as separate symbols, so the pair was always resolvable — the type was what was missing. MEASURED on the corpus: 57 redefinitions across 38 of 2,747 admitted files, e.g. otp/make/test_target_script.sh declaring `print_msg` four times. Counted on the PARSE TREE by `function_definition` nodes, not by text, so a string or an embedded heredoc cannot fake one. HOW IT WAS FOUND, which is the transferable part: the differential reported 99.9% coverage and 0 UNEXPLAINED across 73,961 edges for the entire wave and could not see this, because the oracle omitted `overrides` too. A differential is independent at the level of IMPLEMENTATION — two walkers over one grammar — so it catches them disagreeing, and it is structurally blind to a type BOTH omit, because two things that both say nothing agree perfectly. `script/m14/ontology-coverage-gate.ts` closes that class by measuring the LANGUAGE instead: every type in the ontology must be EMITTED with a count, or ruled with a corpus measurement showing its construct does not occur. Its first version used text regexes and produced two FALSE POSITIVES — `class voice` inside a telnet IAC word list and `new Map(` inside embedded JavaScript — which is why the gate now uses two instruments: a grammar inventory for types needing an absent NODE TYPE, and a parse-tree semantic count for types the language can express. Pinned by fixture bash/redefinition-overrides, which asserts BOTH directions — the edge for a redefinition, and a `forbidRelationships` row for a name declared once, so an analyzer that emitted the edge unconditionally could not pass. Mutant bash/overrides-edge-dropped."
+      }
+    ]
+  }
+}

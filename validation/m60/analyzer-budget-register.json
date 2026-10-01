@@ -1,0 +1,1106 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R6 — one line base for lines; R6's sibling here is dimension 9 of reviews/LANE-AUDIT-FORMULA.md: an analyzer's time-complexity envelope must be a measurement",
+  "instrument": "script/m60/analyzer-complexity-gate.ts",
+  "artifact": "validation/m60/results/analyzer-complexity.json",
+  "purpose": "M12's complexityContract requires `declared_budget_per_analyzer` and an envelope that carries its own frame; verify-m12-final-audit.ts asks only whether the artifact EXISTS, so 39 lanes' envelope cell reads green on a number #909 already ruled unscorable. This register makes the class un-recurrable (a lane that gets worse, or a new lane arriving with a claim, fails) while the debt is a worklist.",
+  "statuses": {
+    "open": "measured and reported; the lane's envelope is not yet a scored measurement",
+    "paid": "within its declared budget with a complete frame — a paid entry that regresses FAILS",
+    "ruled": "an owner ruling recorded here with the measurement behind it"
+  },
+  "severity": {
+    "within-budget": 0,
+    "over-budget": 1,
+    "count-mismatch": 2,
+    "no-budget-declared": 3,
+    "budget-unparsed": 4,
+    "unscorable": 5,
+    "absent": 6
+  },
+  "staging": {
+    "current": "unadjudicated debt is PRINTED as a worklist; the gate hard-fails only on a lane getting WORSE, a registered artifact vanishing, a paid entry regressing, a registered lane disappearing, and an unregistered lane arriving with a timed, declared budget",
+    "why": "the census is new and 39 of 41 lanes carry the debt; failing on it on day one would be the mirror of the 'gate that cannot fail' class this program keeps finding",
+    "next": "once every lane carries a scored row, the worklist becomes a hard failure"
+  },
+  "improvementsRequireStrict": "an improvement is printed and requires --strict to fail; the register must be re-emitted in the same commit that improves a lane",
+  "notBuilt": [
+    "the static quadratic-shape census (repeated full-tree queries inside a visitor, and per-symbol linear scans over symbol/relationship arrays) — owner-named in reviews/m60-oo-family-plan.md §3.7/R6, still absent",
+    "per-1k-node normalization: no complexity artifact in this repo records a node count, so ms/1k nodes — the number the formula compares against a sibling language — cannot be derived from any of them",
+    "a fixed size band for cross-lane comparison (the C audit's 8-40 KB band is a probe at script/m14/tmp/c-audit-band.ts, not an artifact)"
+  ],
+  "seededAt": "2026-09-25T19:29:36.855Z",
+  "_meta": {
+    "growthRule": "a severity increase, a vanished artifact, a regression out of `paid`, or an unregistered lane with a claim fails the gate; growth is never absorbed into the baseline",
+    "seededFrom": "the first census run at this commit; every entry's verdict is the census's own reading, not a hand ruling"
+  },
+  "entries": {
+    "bash": {
+      "lang": "bash",
+      "artifact": "validation/m12/results/bash-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "bash-corpus-production",
+        "files": 30,
+        "wallMs": 1020
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "c": {
+      "lang": "c",
+      "artifact": "validation/m12/results/c-complexity.json",
+      "verdict": "within-budget",
+      "severity": 0,
+      "status": "paid",
+      "reasons": [
+        "corpus row 6515 ms <= declared 120000 ms on 400 files"
+      ],
+      "budgetSource": "docs/analyzers/real-c-analyzer.md:116",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "07cb4b7f997b820c",
+        "extensionFiltered": true
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 6515
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "clean": {
+      "lang": "clean",
+      "artifact": "validation/m12/results/clean-complexity.json",
+      "verdict": "within-budget",
+      "severity": 0,
+      "status": "paid",
+      "reasons": [
+        "corpus row 4483 ms <= declared 60000 ms on 309 files"
+      ],
+      "budgetSource": "docs/analyzers/real-clean-analyzer.md:80",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "27935ec564834992",
+        "extensionFiltered": true
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 309,
+        "wallMs": 4483
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "clojure": {
+      "lang": "clojure",
+      "artifact": "validation/m12/results/clojure-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-clojure-analyzer.md:91",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 141,
+        "wallMs": 2048
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "cpp": {
+      "lang": "cpp",
+      "artifact": "validation/m12/results/cpp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "corpus row \"corpus_subset\" was measured on a busy box (loadQuiet=false)"
+      ],
+      "budgetSource": "docs/analyzers/real-cpp-analyzer.md:126",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": true,
+        "manifest": true,
+        "setDigest": "7cc6ab20ae1e737b",
+        "extensionFiltered": true
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 58,
+        "wallMs": 45006
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "csharp": {
+      "lang": "csharp",
+      "artifact": "validation/m12/results/csharp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-csharp-analyzer.md:101",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 10311
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "css": {
+      "lang": "css",
+      "artifact": "validation/m12/results/css-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-css-analyzer.md:117",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 181,
+        "wallMs": 2252
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "dart": {
+      "lang": "dart",
+      "artifact": "validation/m12/results/dart-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-dart-analyzer.md:100",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 399,
+        "wallMs": 281912
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "elixir": {
+      "lang": "elixir",
+      "artifact": "validation/m12/results/elixir-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 243,
+        "wallMs": 14676
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "erlang": {
+      "lang": "erlang",
+      "artifact": "validation/m12/results/erlang-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 225,
+        "wallMs": 7343
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "fsharp": {
+      "lang": "fsharp",
+      "artifact": "validation/m12/results/fsharp-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-fsharp-analyzer.md:103",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 376,
+        "wallMs": 219074
+      },
+      "note": "the lane's declared budget is prose-only (\"376-file corpus dominated by giant self-hosting compiler files (top sample files are 290–755 KB — `C\") — an owner ruling is owed: either a fixed numeric bound, or an accepted large-file/parse-bound ruling with the measurement behind it recorded here. Until then this lane can be neither failed nor passed."
+    },
+    "go": {
+      "lang": "go",
+      "artifact": "validation/m12/results/go-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 25067
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "graphql": {
+      "lang": "graphql",
+      "artifact": "validation/m12/results/graphql-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "graphql-corpus-production",
+        "files": 2,
+        "wallMs": 1238
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "groovy": {
+      "lang": "groovy",
+      "artifact": "validation/m12/results/groovy-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-groovy-analyzer.md:163",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 3636
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "haskell": {
+      "lang": "haskell",
+      "artifact": "validation/m12/results/haskell-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 637,
+        "wallMs": 16017
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "hcl": {
+      "lang": "hcl",
+      "artifact": "validation/m12/results/hcl-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "hcl-corpus-production",
+        "files": 2295,
+        "wallMs": 6137
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "html": {
+      "lang": "html",
+      "artifact": "validation/m12/results/html-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-html-analyzer.md:95",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 230,
+        "wallMs": 345
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "java": {
+      "lang": "java",
+      "artifact": "validation/m12/results/java-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-java-analyzer.md:86",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 4463
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "javascript": {
+      "lang": "javascript",
+      "artifact": "validation/m12/results/javascript-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-javascript-analyzer.md:83",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 14577
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "json": {
+      "lang": "json",
+      "artifact": "validation/m12/results/json-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "json-corpus-production",
+        "files": 119,
+        "wallMs": 45161
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "kotlin": {
+      "lang": "kotlin",
+      "artifact": "validation/m12/results/kotlin-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-kotlin-analyzer.md:83",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 300,
+        "wallMs": 8866
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "lua": {
+      "lang": "lua",
+      "artifact": "validation/m12/results/lua-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "lua-corpus-tracked",
+        "files": 162,
+        "wallMs": 10472
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "make": {
+      "lang": "make",
+      "artifact": "validation/m12/results/make-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "make-corpus-production",
+        "files": 7,
+        "wallMs": 1074
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "markdown": {
+      "lang": "markdown",
+      "artifact": "validation/m12/results/markdown-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "markdown-corpus-production",
+        "files": 734,
+        "wallMs": 13313
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "objective-c": {
+      "lang": "objective-c",
+      "artifact": "validation/m12/results/objective-c-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 7,
+        "wallMs": 208
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "perl": {
+      "lang": "perl",
+      "artifact": "validation/m12/results/perl-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "perl-corpus-tracked",
+        "files": 164,
+        "wallMs": 22808
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "php": {
+      "lang": "php",
+      "artifact": "validation/m12/results/php-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "php-corpus-tracked-sample",
+        "files": 400,
+        "wallMs": 5443
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "powershell": {
+      "lang": "powershell",
+      "artifact": "validation/m12/results/powershell-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "powershell-corpus-production",
+        "files": 34,
+        "wallMs": 997
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "python": {
+      "lang": "python",
+      "artifact": "validation/m12/results/python-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "python-corpus-tracked",
+        "files": 243,
+        "wallMs": 41630
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "r": {
+      "lang": "r",
+      "artifact": "validation/m12/results/r-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "r-corpus-tracked",
+        "files": 195,
+        "wallMs": 7347
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "ruby": {
+      "lang": "ruby",
+      "artifact": "validation/m12/results/ruby-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "corpus_tracked",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "ruby-corpus-tracked",
+        "files": 95,
+        "wallMs": 1284
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "rust": {
+      "lang": "rust",
+      "artifact": "validation/m12/results/rust-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-rust-analyzer.md:103",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 11140
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "scala": {
+      "lang": "scala",
+      "artifact": "validation/m12/results/scala-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-scala-analyzer.md:103",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 14952
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "sql": {
+      "lang": "sql",
+      "artifact": "validation/m12/results/sql-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "sql-corpus-production",
+        "files": 207,
+        "wallMs": 6870
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "svelte": {
+      "lang": "svelte",
+      "artifact": "validation/m12/results/svelte-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-svelte-analyzer.md:110",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 396,
+        "wallMs": 2292
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "swift": {
+      "lang": "swift",
+      "artifact": "validation/m12/results/swift-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 28414
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "typescript": {
+      "lang": "typescript",
+      "artifact": "validation/m12/results/typescript-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-typescript-analyzer.md:99",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 399,
+        "wallMs": 32206
+      },
+      "note": "the lane's declared budget is prose-only (\"The 399-file corpus subset is dominated by the TypeScript compiler's own self-hosting sources (the t\") — an owner ruling is owed: either a fixed numeric bound, or an accepted large-file/parse-bound ruling with the measurement behind it recorded here. Until then this lane can be neither failed nor passed."
+    },
+    "vue": {
+      "lang": "vue",
+      "artifact": "validation/m12/results/vue-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": "docs/analyzers/real-vue-analyzer.md:102",
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 400,
+        "wallMs": 7908
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "xml": {
+      "lang": "xml",
+      "artifact": "validation/m12/results/xml-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "xml-corpus-production",
+        "files": 154,
+        "wallMs": 2189
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "yaml": {
+      "lang": "yaml",
+      "artifact": "validation/m12/results/yaml-corpus-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "flat_corpus",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "yaml-corpus-production",
+        "files": 273,
+        "wallMs": 4738
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    },
+    "zig": {
+      "lang": "zig",
+      "artifact": "validation/m12/results/zig-complexity.json",
+      "verdict": "unscorable",
+      "severity": 5,
+      "status": "open",
+      "reasons": [
+        "no loadRule (#871: a row without load context is not scored)",
+        "no corpusManifest (#909: which files were measured is not recorded)",
+        "corpus row \"corpus_subset\" carries no loadAvg1",
+        "corpus row \"corpus_subset\" carries no userCpuMsPerFile (the load-stable number)"
+      ],
+      "budgetSource": null,
+      "frame": {
+        "shape": "per_analyzer",
+        "loadRule": false,
+        "manifest": false,
+        "setDigest": null,
+        "extensionFiltered": null
+      },
+      "comparedRow": {
+        "label": "corpus_subset",
+        "files": 398,
+        "wallMs": 22855
+      },
+      "note": "Seeded from the census at first landing (see the artifact). Debt here is a worklist, not a pass: re-measure with the shared harness so the row carries load context and a set digest, then re-emit this entry in the same commit."
+    }
+  }
+}
