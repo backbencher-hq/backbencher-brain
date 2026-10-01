@@ -1666,16 +1666,67 @@ const handlers: Record<string, ToolHandler> = {
     // enrichment, gravity, taints, health) WITHOUT re-parsing. The remediation
     // for stale derived data after agent edits or incremental indexing.
     if (mode === "post") {
+      // `path` is REQUIRED by the schema and the registry describes it as "the
+      // project whose derived phases should be re-run". It was then ignored
+      // entirely: `mode=post` with `path: "no/such/path/at/all"` re-derived all
+      // eight phases and reported success. A required parameter that is not
+      // read is a requirement that teaches a caller the wrong lesson.
+      const postAbs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
+      if (!existsSync(postAbs)) {
+        return textResult(`bb_index mode=post: no such path: ${postAbs} — mode=post re-derives the phases of THIS project, and the required \`path\` must name it.`, true)
+      }
       const { runPostProcessing } = await import("../ast/parallel-indexer")
       try {
         const post = await runPostProcessing(projectId as any, { logger: { log: () => {}, write: () => {} } })
-        return textResult(JSON.stringify({ mode: "post", phases: post.phases, totalMs: post.totalMs, integrityHealth: post.integrityHealth }, null, 2))
+        return textResult(JSON.stringify({ mode: "post", path: raw, phases: post.phases, totalMs: post.totalMs, integrityHealth: post.integrityHealth }, null, 2))
       } catch (e: any) {
         return textResult(`bb_index mode=post failed: ${e?.message}`, true)
       }
     }
     const abs = path.isAbsolute(raw) ? raw : path.resolve(projectPath, raw)
     if (!existsSync(abs)) return textResult(`bb_index: no such path: ${abs}`, true)
+    // The path must be INSIDE the project.
+    //
+    // `path.resolve(projectPath, raw)` happily walks out: `bb_index path: "../x.ts"`
+    // and an absolute path to any file on the machine both resolved and indexed.
+    // Measured on a scratch project, all three of these were accepted with
+    // `indexed: 1`:
+    //
+    //   an absolute path to a file in another directory
+    //   a relative `../other-dir/file.ts`
+    //   `mode: "dir"` on a whole directory OUTSIDE the project
+    //
+    // and the row it wrote has a "project-relative" path that is not one — the
+    // absolute path with its leading `/` stripped:
+    //
+    //   Users/…/secrets-cOJXSq/credentials.ts
+    //
+    // `relative_path` is the key for `bb_analyze filePath` scoping, for every
+    // file the graph modes name, and for freshness resolution by path, so those
+    // rows are invisible to scoped queries while still counted in `stats.files`
+    // (measured: a 2-file project reporting 3). It is a write tool, so the
+    // pollution persists. And the file is then discoverable by name through the
+    // read tools, with its out-of-tree location printed.
+    //
+    // The registry already says "Project-relative file (reindex only that
+    // file)"; this is the check that makes that sentence true. Both sides are
+    // resolved through `realpath` so a symlink inside the project pointing out
+    // of it is refused too — a lexical check alone would wave it through.
+    const rootReal = realpathSync(projectPath)
+    const absReal = realpathSync(abs)
+    const relToRoot = path.relative(rootReal, absReal)
+    // `relToRoot === ""` is the project root ITSELF, which is in bounds and is
+    // the documented way to reindex a whole project — `mode: auto` on a
+    // directory runs a dir index. Refusing it was my own bug on the first
+    // version of this guard, caught by the suite immediately.
+    const outsideRoot = relToRoot === "" ? false : relToRoot.startsWith("..") || path.isAbsolute(relToRoot)
+    if (outsideRoot) {
+      return textResult(
+        `bb_index: refusing a path outside the project. "${raw}" resolves to ${absReal}, which is not inside ${rootReal}. ` +
+          `bb_index indexes THIS project's files; an out-of-tree path would be stored with a "project-relative" path that is not relative to anything, and every scoped query, file name and freshness check in the index would then be wrong for it.`,
+        true,
+      )
+    }
     const isDir = statSync(abs).isDirectory()
     const effective = mode === "auto" ? (isDir ? "dir" : "file") : mode
     if (effective === "file" && isDir) return textResult("bb_index mode=file requires a file path", true)
@@ -1686,7 +1737,42 @@ const handlers: Record<string, ToolHandler> = {
         // M40.A3: derived-data telemetry surfaced — an agent can see whether
         // relationships/gravity were re-derived for the touched file, and how
         // many caller edges were repaired, without inspecting logs.
-        return textResult(JSON.stringify({ mode: "file", path: abs, indexed: r.indexed, deleted: r.deleted, errors: r.errors, derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 } }, null, 2))
+        // `indexed: 0, deleted: 0, errors: 0` reads as "nothing happened and
+        // nothing failed", and those are three different situations: the file
+        // was already current, the file is not indexable (a binary, say), or
+        // the indexer declined it for some other reason. Measured on a binary
+        // file: exactly that answer, with no way to tell it from a no-op.
+        // So when nothing happened, say which of the two it was.
+        const didNothing = r.indexed === 0 && r.deleted === 0 && r.errors === 0
+        const note = didNothing
+          ? {
+              outcome: "no-op",
+              skipped: r.skipped ?? 0,
+              reason:
+                r.skippedReason ??
+                (r.skipped
+                  ? `${r.skipped} file(s) hold nothing the indexer extracts`
+                  : "nothing changed: the file's content already matches the index"),
+            }
+          : { outcome: r.errors > 0 ? "partial" : "indexed" }
+        return textResult(
+          JSON.stringify(
+            {
+              mode: "file",
+              path: raw,
+              indexed: r.indexed,
+              deleted: r.deleted,
+              errors: r.errors,
+              // Which files failed and why, when any did. `errors` alone is a
+              // count, and a count is not something a caller can act on.
+              ...(r.errors > 0 ? { errorDetail: r.errorDetail ?? [] } : {}),
+              ...note,
+              derived: r.derived ?? { pass: "deferred", phases: [], repairedInEdges: 0, touchedSymbols: 0 },
+            },
+            null,
+            2,
+          ),
+        )
       } catch (e: any) {
         // M43.P1: another indexer holds the project lock — declared refusal,
         // never a thrown handler crash.
@@ -1700,10 +1786,25 @@ const handlers: Record<string, ToolHandler> = {
       const { collectDirChanges } = await import("../ast/parallel-indexer")
       const changes = await collectDirChanges(projectId as any, projectPath, abs)
       if (changes.length === 0) {
-        return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: 0, processed: 0, deleted: 0, errors: 0, unchanged: true }, null, 2))
+        return textResult(JSON.stringify({ mode: "dir", path: raw, candidates: 0, processed: 0, deleted: 0, errors: 0, unchanged: true }, null, 2))
       }
       const r = await reindexFilesParallel(projectId as any, projectPath, changes)
-      return textResult(JSON.stringify({ mode: "dir", path: abs, candidates: changes.length, processed: r.indexed, deleted: r.deleted, errors: r.errors }, null, 2))
+      return textResult(
+        JSON.stringify(
+          {
+            mode: "dir",
+            path: raw,
+            candidates: changes.length,
+            processed: r.indexed,
+            deleted: r.deleted,
+            errors: r.errors,
+            ...(r.errors > 0 ? { errorDetail: r.errorDetail ?? [] } : {}),
+            skipped: r.skipped ?? 0,
+          },
+          null,
+          2,
+        ),
+      )
     } catch (e: any) {
       return textResult(`bb_index mode=dir refused: ${e?.message}`, true)
     }
