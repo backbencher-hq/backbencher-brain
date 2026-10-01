@@ -395,8 +395,29 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // constructors, record → fields, class/instance → methods. Skip self-named
     // edges (data User = User {...} → the type and constructor share the name,
     // which would collapse into a self-loop in symbol-ID space).
+    // Names this module actually DECLARES at top level. A class, data/newtype,
+    // type synonym or interface owned by the module is a declaration; anything
+    // else an instance names is merely in scope.
+    const declaredHere = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.ownerName && s.ownerName !== ctx.currentModule) continue
+      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Type ||
+          s.kind === ASTEngine.SymbolKind.TypeAlias || s.kind === ASTEngine.SymbolKind.Interface ||
+          s.kind === ASTEngine.SymbolKind.Enum) declaredHere.add(s.name)
+    }
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || (s.scope && s.scope !== ctx.currentModule ? s.scope : undefined)
+      // Containment is only a fact about this module when the OWNER is declared
+      // here. An instance body is defined against a class that is very often
+      // imported (`instance Applicative Reference`, `instance Described (List
+      // sep)`), and `contains` is emitted from ownership alone -- so without this
+      // the module appears to DECLARE `Applicative` and `pure`, or `Described`
+      // and `describe`. Re-parenting those methods to the class (above) is only
+      // half the fix; the predicate "is the owner declared HERE" is the other
+      // half, and it is what keeps the true local case:
+      //   class Shape ... ; instance Shape Circle where area = ...
+      // still yields `contains Shape -> area`, because Shape is declared here.
+      if (_owner && _owner !== ctx.currentModule && s.kind === ASTEngine.SymbolKind.Method && !declaredHere.has(_owner)) continue
       // An `Instance` is named after the type it instantiates and is owned by the
       // module that instantiates it, so emitting containment here asserts the
       // module DECLARES that type:
@@ -1625,7 +1646,12 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
+    // Methods of an instance belong to the CLASS it instantiates, not to the
+    // type being instantiated. `instance (...) => Described (List sep)` defines
+    // `describe`: `describe` is a member of `Described`, and `List` is only what
+    // is being described. Ownership by the target type made every instance body
+    // claim its subject type as a declaration here.
+    scopeStack.push({ node, name: className || name, kind: ASTEngine.SymbolKind.Class })
     return true
   }
 
