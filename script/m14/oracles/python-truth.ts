@@ -754,7 +754,13 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // declaration, it is not a call the code makes, and an edge from a class to
     // `parametrize` says the class calls pytest, which is not what the source says.
     if (n.type === "decorator") return
-    if (n.type === "assignment" || n.type === "expression_statement") {
+    // `augmented_assignment` joins `assignment` for the THIRD time in this review, and the
+    // three are the same bug: `__doc__ += "..."` inside an `if` in a class body writes the
+    // class attribute again, the analyzer publishes it per-site as the contract requires, and
+    // this walk recognised only `=` — so `Cdef -> __doc__` came out at L45 here and L45 AND L86
+    // there. The instance-attribute rule above had already made this correction; this is the
+    // class-body rule, which is a different clause of the same sentence.
+    if (n.type === "assignment" || n.type === "augmented_assignment" || n.type === "expression_statement") {
       const left = n.childForFieldName("left")
       // An ANNOTATED declaration (`name: bytes`) is a member too, and in a TypedDict it
       // is the ONLY declaration there is — those fields are the class's whole surface.
