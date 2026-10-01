@@ -475,9 +475,21 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     if (cached) return cached
     try {
       const mod: any = await import("../../src/ast/project-index")
+      // PY-7: the index is only meaningful if it indexes the LANE's declarations, and the
+      // spec is what says which nodes those are. Solidity's is the default; python has its
+      // own (`PYTHON_DECLARATION_SPEC`) because its types are `class_definition` and its
+      // bases live in a `superclasses` field rather than an `ancestor` one. Without it the
+      // index came back EMPTY for python — no types, no members, no bases — which is a
+      // subtler failure than an error, because an empty index feeds every consumer a
+      // confident "nothing is declared anywhere".
+      const spec =
+        runLangLang === "python"
+          ? mod.PYTHON_DECLARATION_SPEC
+          : undefined
       const built = await mod.buildProjectIndexFromDisk(
         path.join(ROOT, "wasm", `tree-sitter-${runLangLang}.wasm`),
         subDirs.get(sub)!.map((f) => path.join(dir, sub, f)),
+        spec,
       )
       mod.buildResolutionTables(built)
       indexCache.set(sub, built)
@@ -525,11 +537,27 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // A sub-directory fixture gets its project's index; a flat one gets nothing,
       // which is the pre-SOL-21 contract and the reason every existing expectation
       // still holds unchanged.
+      // PY-7: `ProjectIndex.typeMembers` IS the companion shape — `Map<string, Set<string>>`
+      // of type name to the members IT declares — so the cross-file override index is not a
+      // second structure to build and maintain, it is this one, already computed, handed over
+      // under the name the `overrides` contract reads.
+      //
+      // OPT-IN BY STRUCTURE, same as `projectIndex` above: only a sub-directory fixture — a
+      // fixture that IS a multi-file project — gets it. Every flat fixture, including the
+      // `external-override` fixture that PINS the dead-tier behaviour by asserting the 0.5
+      // guess, is untouched and still gets no context. That is deliberate and it is the only
+      // honest way to test both states at once: production populates nothing today, so the
+      // flat fixtures describe production, and a sub-directory fixture describes what the tier
+      // does when it has data.
+      const subIndex = sub ? await projectIndexFor(sub) : null
+      const context: any = subIndex
+        ? { projectIndex: subIndex, overrideCompanion: subIndex.typeMembers }
+        : undefined
       result = await analyzer.analyze(
         tree.rootNode,
         content,
         `fixtures/${runLangLang}/${src}`,
-        sub ? { projectIndex: await projectIndexFor(sub) } : undefined,
+        context,
       )
     }
     const fixtureFilePath = `fixtures/${runLangLang}/${src}`

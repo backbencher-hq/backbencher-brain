@@ -42,7 +42,18 @@ import type { Node } from "web-tree-sitter"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-export type DeclarationKind = "contract" | "interface" | "library" | "struct" | "enum" | "unknown"
+export type DeclarationKind =
+  | "contract"
+  | "interface"
+  | "library"
+  | "struct"
+  | "enum"
+  // PY-7: python's type declaration. Added to the union rather than folded into "unknown",
+  // because a shared type is not the place to pretend one language's types are another's, and
+  // "unknown" would read as "we looked and could not tell" — which is a different and worse
+  // claim than "this is a class".
+  | "class"
+  | "unknown"
 
 export interface ProjectIndex {
   /** Declared type name -> its kind. Answers "is IFeed an interface?". */
@@ -70,6 +81,23 @@ export interface DeclarationSpec {
   memberNodesCallable?: string[]
   /** Node type that lists direct bases. */
   baseNodes?: string[]
+  /**
+   * Node types that OPEN A SCOPE, so a declaration inside one is not a member of the
+   * lexically enclosing type. python needs this and Solidity does not: a function nested in a
+   * function is not a method of the class around it, and without this the index attributes
+   * every closure to the class two levels up. For an override index that is not a cosmetic
+   * over-count — it makes a base class appear to declare a method it does not have, and the
+   * resolution then SUPPRESSES a real override on the strength of a fabricated member.
+   */
+  scopeNodes?: string[]
+  /**
+   * Read a declaration's DIRECT base names from its own node. Preferred over `baseNodes` when
+   * the grammar does not put bases in a node carrying an `ancestor` field: python's live in
+   * `class_definition.superclasses` -> `argument_list`, where an entry is an `identifier` or a
+   * dotted `attribute` whose own name is the LAST identifier of the path. Solidity's
+   * `inheritance_specifier.ancestor` predates this hook and keeps the older path unchanged.
+   */
+  baseResolver?: (node: Node) => string[]
 }
 
 export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
@@ -92,6 +120,55 @@ export const SOLIDITY_DECLARATION_SPEC: DeclarationSpec = {
   baseNodes: ["inheritance_specifier"],
 }
 
+/**
+ * The python declaration shapes, as the GRAMMAR names them.
+ *
+ * PY-7. This exists so the companion tier of the `overrides` contract has something to read.
+ * The tier is declared on `AnalyzeContext`, read by fifteen lanes, and populated by nobody in
+ * production, so the 0.5 `first-parent-guess` — designed as a last resort — absorbs 100% of
+ * external overrides. A census over 3,271 python files (`script/m14/python-companion-opportunity.ts`)
+ * scored that tier against a corpus-wide, tree-derived map of what each base really declares:
+ * of the guesses whose base IS present in the corpus, **76% name a method the base does not
+ * declare.** Those are fabricated edges at a confidence a reader cannot discount, and the lane
+ * had no way to know: until this change it did not accept an `AnalyzeContext` at all, and the
+ * one field it did read, `_overrideCompanion`, was spelled differently from the declared one
+ * and written by nobody.
+ *
+ * The suppression logic downstream needed no change: it already emits a guess only when
+ * `!overrideCompanion?.has(base)`. Only the data was missing.
+ */
+export const PYTHON_DECLARATION_SPEC: DeclarationSpec = {
+  typeNodes: {
+    class_definition: "class",
+  },
+  // Only functions are members. A class-level ASSIGNMENT is a member too, but it is not
+  // inheritable in the sense `overrides` describes — a class variable is not a method, and
+  // indexing it as one repeats PY-21 defect 4, where a base's class variable satisfied the
+  // "base declares this name" test and published fabricated overrides at 0.95. `memberNodesCallable`
+  // is left unset for the same reason: only callable members answer the question.
+  memberNodes: ["function_definition"],
+  scopeNodes: ["function_definition", "lambda"],
+  baseResolver: (node: Node): string[] => {
+    const out: string[] = []
+    const sup = node.childForFieldName("superclasses")
+    if (!sup) return out
+    for (let i = 0; i < sup.namedChildCount; i++) {
+      const c = sup.namedChild(i)
+      if (!c) continue
+      if (c.type === "identifier") {
+        out.push(c.text)
+      } else if (c.type === "attribute") {
+        // `pkg.mod.Base` — the ancestor's OWN name is the LAST identifier in the path, the same
+        // rule the Solidity path applies to `A.B.C`. Keying the FIRST segment instead would file
+        // every `unittest.TestCase`-shaped base under `unittest`.
+        const leaf = c.childForFieldName("attribute") ?? c.namedChild(c.namedChildCount - 1)
+        if (leaf && leaf.text) out.push(leaf.text)
+      }
+    }
+    return out
+  },
+}
+
 function addTo<K>(map: Map<K, Set<string>>, key: K, value: string): void {
   let set = map.get(key)
   if (!set) {
@@ -108,10 +185,17 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
   // a tree walk that resolved each member's owner by scanning the whole file is the
   // shape that turns an index build into quadratic work, and this runs once per file
   // for the whole project.
-  const stack: { node: Node; owner: string | null }[] = [{ node: root, owner: null }]
+  // `scopes` counts `scopeNodes` ancestors, so a declaration inside a nested function is not
+  // recorded as a member of the class around it. PY-7: without it the python spec indexes every
+  // closure as a class method, which makes a base appear to declare methods it does not have and
+  // the resolution then suppresses real overrides on the strength of those.
+  const stack: { node: Node; owner: string | null; scopes: number }[] = [
+    { node: root, owner: null, scopes: 0 },
+  ]
   while (stack.length > 0) {
-    const { node, owner } = stack.pop()!
+    const { node, owner, scopes } = stack.pop()!
     let nextOwner = owner
+    let nextScopes = scopes + (spec.scopeNodes?.includes(node.type) ? 1 : 0)
 
     const kind = spec.typeNodes[node.type]
     if (kind !== undefined) {
@@ -126,10 +210,13 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
         else if (prior !== kind) index.typeKinds.set(name, "unknown")
         index.symbolNames.add(name)
         nextOwner = name
+        // A class body starts its own member scope, so a class nested inside a method is
+        // indexed under its OWN name and not smeared onto the enclosing class.
+        nextScopes = 0
       }
     }
 
-    if (owner !== null && spec.memberNodes.includes(node.type)) {
+    if (owner !== null && scopes === 0 && spec.memberNodes.includes(node.type)) {
       const nameNode = node.childForFieldName("name")
       const name = nameNode?.text ?? ""
       if (name !== "") {
@@ -169,9 +256,25 @@ export function indexTree(root: Node, index: ProjectIndex, spec: DeclarationSpec
       }
     }
 
+    if (spec.baseResolver !== undefined && kind !== undefined) {
+      const nameNode = node.childForFieldName("name")
+      const ownerName = nameNode?.text ?? ""
+      if (ownerName !== "") {
+        for (const baseName of spec.baseResolver(node)) {
+          if (baseName === "") continue
+          let list = index.typeBases.get(ownerName)
+          if (!list) {
+            list = []
+            index.typeBases.set(ownerName, list)
+          }
+          if (!list.includes(baseName)) list.push(baseName)
+        }
+      }
+    }
+
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
-      if (c) stack.push({ node: c, owner: nextOwner })
+      if (c) stack.push({ node: c, owner: nextOwner, scopes: nextScopes })
     }
   }
 }
