@@ -757,7 +757,7 @@
         "Plans are estimates, not translated source",
         "Library mappings are advisory and unsupported routes remain explicit",
         "Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan",
-        "The index records no per-file imports, so a component's library dependencies are UNKNOWN rather than empty; this is stated on every affected plan",
+        "Library dependencies are read from the index's per-file import rows and split into standard library, third-party, local and unclassified; a third-party library with no registered mapping is named at confidence 0 and charged 6h of research, never claimed as supported",
         "A request names a bounded set of symbols, and the cited integration surface is usually much larger: measured 98.6-99.8% out of scope on cobra for requests of 1-16 symbols. The `scope` block reports this on every result",
         "56 of 486 dictionary rows (11.5%) are not import specifiers — API idioms, a framework, Flutter widget class names, display names with a space, and a mis-keyed dart->typescript block — so they cannot be reached by an import lookup. Audited by script/m20/verify-migration-dictionary.ts"
       ],
