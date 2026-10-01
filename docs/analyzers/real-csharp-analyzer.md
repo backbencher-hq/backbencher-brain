@@ -387,44 +387,72 @@ Two pieces interact:
   (relative line 117 of the function). Inside it, the enclosing class's own consts stop resolving,
   so an attribute's value fails the membership test before the designator rule is consulted at all.
 
-**The mechanism is `isTypePosition`, not scope — and that makes the class BROADER than the repro.**
-The `uses` push is gated by `!isTypePosition(n)`, and `isTypePosition` returns TRUE for the entire
-subtree of a `property_declaration`, because a property's declared type really is a type position.
-An attribute hanging off that property is not: `[Parameter(ParameterSetName = X)]` reads a const,
-and that read is a value. So the attribute's arguments are gated out along with the type.
+**CLOSED. The mechanism was neither scope nor `isTypePosition`.** Both were inferences from a
+narrow repro, and both were wrong; this section carried three stacked corrections saying so before.
+It is rewritten here as one account, because a fourth correction stacked on three is a document
+nobody can read and no less wrong.
 
-A one-line narrowing was tried and reverted. Making `attribute_list`/`attribute` return FALSE from
-`isTypePosition` fixed the synthetic case exactly as predicted — `uses Later` appeared on both sides
-— but the corpus residual did not move: a fresh powershell sample still reported 8 unexplained, all
-`uses`, and the new samples were the SAME SHAPE on OTHER DECLARATIONS, including one whose source is
-a `constructor` (`uses constructor -> DefaultBufferSize`, AsyncByteStreamTransfer.cs:37). So the
-class is attributes-on-declarations generally, not attributes-on-properties.
+The blocker was found by **instrumenting the oracle's push condition** and printing which predicate
+fired, not by reading sixteen predicates and reasoning about them:
 
-That is why the change was reverted rather than landed. It is correct in the narrow case, it is in
-shared code that three other agents are editing, it changes the truth count for a live lane, and it
-could not be shown to reduce the real residual — the cold-pool rotates between samples, so the
-before/after numbers are not comparable. A partial fix to shared code, unverified at corpus scale
-and late in a long session, is worse than a precise diagnosis: it looks like the problem is closed
-without being closed. The narrowed repro is kept in `cs-deep-63` so the next attempt starts from a
-case that is known to work rather than rediscovering which shape is real.
+    blocked_by=[isEntityName]  chain=variable_declarator<variable_declaration<field_declaration<…
 
-**The fix, properly stated:** `isTypePosition` must not classify an attribute's argument list as a
-type position, on ANY declaration — property, constructor, parameter or field. The declared type
-itself must keep its existing classification. The open question left for whoever writes it is
-whether the narrowest correct guard is "stop at `attribute_list` while climbing" or "consult the
-node's own position", and the second is very likely the better answer because the first has to be
-remembered at every declaration type added later.
+`isEntityName` decides "is this the declarator's own name" by asking `declaratorRole(n)`, which
+answers a **different question**: "is this identifier in MEMBER SCOPE" — it climbs and returns `member`
+on reaching a class/struct/interface/record/enum. The two coincide for a declarator's name and diverge
+for its initializer, so in
 
-Two things are deliberately NOT claimed here. The scope mechanism is inferred from the symptom,
-not read out of the code, so the fix is named rather than written. And a `uses`-labelled edge for
-a const read is a modelling judgement, not a proof — but it is the judgement the analyzer already
-makes everywhere else, and the oracle agrees with it in the method case, so the asymmetry is the
-defect rather than either answer.
+    internal int maxDepth = maxDepthAllowable;
+    ^^^^^^^^ declarator's name      ^^^^^^^^^^^^^^^^^^^ a READ of a declared const
 
-This is the third oracle-side defect this round, after CS-D9 and CS-D10, and the pattern is worth
-stating once: **every time this lane's `unexplained` number has been chased down, the truth
-turned out to be the defective party.** Three for three. A count nobody attributes is a count
-nobody should trust in either direction.
+the initializer was classified as the declaration publishing itself, and dropped. The sibling branch a
+few lines below already asks the name question correctly with `same(firstIdent(p), n)`; this branch now
+asks the same thing.
+
+| shape | before | after |
+| --- | --- | --- |
+| field initializer reads a class const | analyzer only | reconciles |
+| same, const declared after the use | analyzer only | reconciles |
+| field initializer reads a field | analyzer only | reconciles |
+| ctor body / method body / local declaration | reconciles | reconciles |
+| attribute named argument | reconciles | reconciles |
+
+**The added rows cannot be phantoms**, and that safety argument is structural rather than empirical:
+`resolvable(name)` gates the push and consults the members map built from the analyzer's own symbols,
+so every row this adds resolves to a real declaration. D10b's failure mode — a target that declares
+nothing — is unreachable from here by construction.
+
+**The A/B, on a pinned list.** Corpus runs rotate their sample by design — the same powershell command
+reported truth of 16,371, then 21,155, then 21,994, then 23,285 with no code change in between — so
+before/after cannot be concluded from two corpus runs. `cs-deep-65` pins 200 files, where
+`deriveCSharpBareUses` takes `symbols` as a parameter instead of reading module-local corpus state:
+**1458 → 1459** truth rows on powershell, **544 → 544** on roslyn, where the pattern is absent. All
+four corpora then re-run at 100% with MISSING=0; F3 18/18, F4 58/58.
+
+**No fixture could ever have seen this.** F3 asserts what the ANALYZER emits, so a perfect analyzer
+passes every fixture while the oracle judging it lies — the same blindness as CS-D9 and CS-D10.
+`field-initializer-read` pins the analyzer's half so the reads cannot be lost silently later, and
+deliberately includes four shapes that already worked, because the fix is about declarator-versus-
+initializer and an over-broad correction that starts dropping neighbours should be caught there rather
+than as a corpus regression. Replayed with a wrong expectation: 17 pass / 1 fail.
+
+**One case deliberately not bundled:** `new byte[DefaultBufferSize]` is blocked by `isTypePosition`,
+a different predicate, because the grammar models the array SIZE bracket as an `array_type`. Two
+oracle edits whose corpus effect can only be measured separately is how one becomes unverifiable.
+
+This is the fourth oracle-side defect this round, after CS-D9, CS-D10 and CS-D10b, and the pattern is
+worth stating once: **every time this lane's `unexplained` number has been chased down, the truth
+turned out to be the defective party.** Four for four. A count nobody attributes is a count nobody
+should trust in either direction.
+
+**How the shape was got wrong three times, since the method matters more than the defect.** Each
+attempt inferred the failing shape from the relationship label and the `source` name instead of reading
+the source line. `uses constructor -> DefaultBufferSize` looked like an attribute because the source
+said `constructor` and I had a theory about attributes; the line was `_buffer = new byte[DefaultBufferSize];`.
+One attempt also read `deriveCCalls` — the **C++** oracle — while believing it had read csharp's,
+because it located the walk by a line number derived from a function boundary its own earlier patch had
+truncated. `blocked_by=[…]` in a single run is worth more than an afternoon of plausible inference,
+and reading the source is worth more than reading the label.
 
 
 **How the breakdown was obtained, since two attempts to get it from outside the harness failed.**
