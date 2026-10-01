@@ -253,6 +253,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               ) {
                 importTarget = importTarget.substring(1, importTarget.length - 1)
               }
+              // Z53: an EMPTY module path names nothing, so the `imports` record and
+              // its `references` twin would both be edges into a name no consumer can
+              // resolve. `zig/test/cases/compile_errors/invalid_identifiers.zig` has
+              // `@import("")` and `@import("\x00")`, and the second produced
+              // `references (global) -> ` with an empty target — the only empty target
+              // in 3,839 files, and the last unexplained row the full-corpus run
+              // found. Suppressed rather than published: the file is deliberately
+              // invalid, but an unresolvable edge is not a fact about anything.
+              if (!importTarget) {
+                this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+                continue
+              }
               imports.push({
                 module: importTarget,
                 isDefaultImport: false,
@@ -434,6 +446,17 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               (importTarget.startsWith("'") && importTarget.endsWith("'"))
             ) {
               importTarget = importTarget.substring(1, importTarget.length - 1)
+            }
+            // Z53, second site: same guard as the plain @import branch above.
+            if (!importTarget) {
+              relationships.push({
+                source: "(global)",
+                target: "@import",
+                type: ASTEngine.RelationshipType.References,
+                confidence: 1.0,
+                metadata: { relationshipType: "zig_import", isImport: true, emptyImportPath: true },
+              })
+              return
             }
             imports.push({
               module: importTarget,
@@ -837,6 +860,44 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // scope stack (params + block/payload/short bindings shadow) and
     // resolvability required (file-scope const/var/fn/enum-members only).
     this.analyzeZigBareIdentifierUses(rootNode, relationships, symbols)
+
+    // Z52: the two `uses` passes dedupe INDEPENDENTLY -- `emittedUses` in
+    // analyzeZigCodeRelationships keyed `${source}->${field}`, and a separate
+    // `emitted` in analyzeZigBareIdentifierUses keyed `${src}::uses::${name}` -- so
+    // a name derivable BOTH ways is published TWICE at the same line with
+    // conflicting metadata: `zig_field_access` @ 0.75 and `identifier_usage` @ 1.0.
+    //
+    // `zig/test/standalone/dep_mutually_recursive/test.zig:5` publishes
+    // `uses main -> foo` twice for one syntactic occurrence, because `foo` is both a
+    // field-expression leaf and a name that resolves to a file-scope value. 16 such
+    // rows at full-corpus extent (3,839 files), in 7 files -- a number a 200-file
+    // draw never reaches, which is the whole argument for having run it.
+    //
+    // A consumer cannot resolve that edge: two rows, one relationship, two
+    // confidences, no rule for which wins. Resolved once, here, after both passes:
+    // one `uses` edge per (source, target), keeping the HIGHER confidence -- which
+    // is also the more accurate, since `identifier_usage` @ 1.0 means the name
+    // RESOLVES to a file-scope value (a fact) while `zig_field_access` @ 0.75 is the
+    // inference that the leaf is a member. The winner keeps its reason code, so the
+    // edge still says which derivation it came from.
+    {
+      const bestUses = new Map<string, ASTEngine.UniversalRelationship>()
+      const order: ASTEngine.UniversalRelationship[] = []
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Uses) { order.push(r); continue }
+        const key = `${r.source}|${r.target}`
+        const prior = bestUses.get(key)
+        if (!prior) {
+          bestUses.set(key, r)
+          order.push(r)
+        } else if ((r.confidence ?? 0) > (prior.confidence ?? 0)) {
+          order[order.indexOf(prior)] = r
+          bestUses.set(key, r)
+        }
+      }
+      relationships.length = 0
+      relationships.push(...order)
+    }
 
     // Declared-type reference graph (family standard — mirrors go/c/rust):
     // parameter types, return types, struct/union field types emit a
