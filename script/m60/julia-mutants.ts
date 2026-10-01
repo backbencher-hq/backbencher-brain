@@ -377,4 +377,70 @@ export const JULIA_MUTANTS: Mutant[] = [
       }),
     }),
   },
+  {
+    id: "julia/construction-before-declaration",
+    language: "julia",
+    defectClass: "misclassification",
+    description:
+      "REVERT: `declaredTypes` is filled DURING the walk, so a call to a type declared LATER in the " +
+      "file is a plain `calls` instead of `instantiates`. The pre-fix code consulted the set mid-walk; " +
+      "the comment on the variable already claimed the opposite ('consulted afterwards, so a type " +
+      "declared later in the file still counts'), which is why it survived review — the code said one " +
+      "thing and the comment the other, and the comment was believed. Found by the F5 `instantiates` " +
+      "oracle: `Compiler/test/EAUtils.jl` calls `GetEscapeCache()` on line 52 and declares it on line " +
+      "90. Reverted generically by demoting every `instantiates` edge whose line precedes the type's " +
+      "own declaration.",
+    transform: (r: any) => {
+      const firstDecl = new Map<string, number>()
+      for (const s of syms(r)) {
+        if (s.kind !== "class" && s.kind !== "interface") continue
+        // Symbols carry their line at `range.startLine`, NOT `startLine`. A first version read
+        // `s.startLine`, got undefined, skipped every symbol, and the transform quietly did nothing
+        // — reported as SURVIVING, which is indistinguishable from a fixture the suite cannot catch.
+        const line = Number(s.range?.startLine ?? s.startLine ?? 0)
+        if (line && (!firstDecl.has(s.name) || line < firstDecl.get(s.name)!)) firstDecl.set(s.name, line)
+      }
+      if (firstDecl.size === 0) return r
+      return {
+        ...r,
+        relationships: rels(r).map((x: any) =>
+          x.type === "instantiates" && firstDecl.has(x.target) && Number(x.line_number ?? 0) < firstDecl.get(x.target)!
+            ? { ...x, type: "calls" }
+            : x),
+      }
+    },
+  },
+  {
+    id: "julia/where-bound-extends-scope-guarded",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: a `where` clause's upper bound is a subtype edge from the type PARAMETER, and the emit " +
+      "was guarded by `scope` even though `scope` is not that edge's source. Copy-pasted from the " +
+      "`contains` cases, where the scope IS the source and the guard is the point — so it suppressed a " +
+      "valid edge wherever the bound appeared at FILE SCOPE, which is 71.9% of Julia files. Found by " +
+      "the F5 `extends` oracle: `base/rational.jl` publishes `T extends AbstractFloat` and " +
+      "`base/hashing.jl` `UTF8Units extends AbstractString`, neither of which the analyzer had. Reverted " +
+      "by dropping the `isWhereBound` edges, which is the pre-fix observable.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => !(x.type === "extends" && x.metadata?.isWhereBound === true)),
+    }),
+  },
+  {
+    id: "julia/braced-where-bound-invisible",
+    language: "julia",
+    defectClass: "omission",
+    description:
+      "REVERT: the `where`-bound scan looks only at the where_expression's DIRECT children, so the " +
+      "braced spelling `where {T<:Real}` is missed while the bare `where T<:Real` is found. Julia " +
+      "people write the braced form, so the common shape produced no `T extends Real` at all. Found " +
+      "because this mutant SURVIVED its first form: a fixture whose `where` bound was invisible to " +
+      "the analyzer could not catch the defect that hid it, and a fixture and an analyzer agreeing " +
+      "on nothing is not a test. Caught by the `T extends Real` assertion in dispatch-and-hierarchy.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: rels(r).filter((x: any) => !(x.type === "extends" && x.metadata?.isWhereBound === true)),
+    }),
+  },
 ]
