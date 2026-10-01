@@ -380,7 +380,7 @@
     {
       "name": "every reference edge declares HOW it resolves, and an external one names the file",
       "passed": true,
-      "detail": "12 reference edge(s), 2 external"
+      "detail": "16 reference edge(s), 2 external"
     },
     {
       "name": "a reference through a spec-bound implicit prefix resolves to its namespace",
