@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64f",
+  "tool": "bb_health",
+  "title": "bb_health embedding coverage: the per-symbol EXISTS must probe entity_id, and must still be project-scoped",
+  "verifiedState": "verified",
+  "layers": [
+    "integration",
+    "performance"
+  ],
+  "checks": [
+    {
+      "name": "the executable code still contains per-symbol embedding EXISTS probes (the queries under test exist)",
+      "pass": true,
+      "detail": "found 2 in code: EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.entit | EXISTS (SELECT 1 FROM brain_semantic_embedding e WHERE e.entit"
+    },
+    {
+      "name": "NOT ONE of them re-filters project_id inside the EXISTS",
+      "pass": true,
+      "detail": "0 clause(s) still carry e.project_id:  — that predicate is what makes SQLite scan every embedding of the project once per symbol (~2,770s at 304,926 symbols)"
+    },
+    {
+      "name": "and the comment does not claim the index probe again [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "that claim was measured FALSE on a real index: the plan uses brain_embed_health_idx (project_id=?) and filters entity_id"
+    },
+    {
+      "name": "nor does it claim the scan is avoided [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a comment asserting an unmeasured performance property is how this defect shipped with a gate suite green"
+    },
+    {
+      "name": "and the real-index measurement is recorded next to the fix",
+      "pass": true,
+      "detail": "a fix whose magnitude is unrecorded will be re-litigated as 'probably fine' by the next reader — the measurement is the argument"
+    },
+    {
+      "name": "the fixture indexed symbols to work with",
+      "pass": true,
+      "detail": "3 symbols"
+    },
+    {
+      "name": "the fixture's own embeddings are cleared, so only planted rows can match",
+      "pass": true,
+      "detail": "0 embeddings left for this project — a test that cannot see its own fixture is a test that measures the fixture"
+    },
+    {
+      "name": "byLanguage is populated (the query ran, it did not fall into the catch)",
+      "pass": true,
+      "detail": "1 languages — 0 would mean the try/catch swallowed a failure, which reads as 'no coverage data' rather than as an error"
+    },
+    {
+      "name": "another project's embeddings are NOT counted as ours",
+      "pass": true,
+      "detail": "embedded=0 against 3 symbols — a foreign entity_id must not match, and with the project_id predicate gone the entity_id IS the scope"
+    },
+    {
+      "name": "OUR OWN embedding IS counted — the fix did not over-correct",
+      "pass": true,
+      "detail": "embedded=1, expected exactly 1"
+    },
+    {
+      "name": "the cost fixture has enough symbols for a per-symbol scan to hurt",
+      "pass": true,
+      "detail": "8000 symbols, 8000 embeddings"
+    },
+    {
+      "name": "the plan probes the embedding table by ENTITY_ID, not by project_id",
+      "pass": true,
+      "detail": "plan: SCAN s | CORRELATED SCALAR SUBQUERY 1 | SEARCH e USING COVERING INDEX brain_embed_entity_idx (entity_id=?)"
+    },
+    {
+      "name": "the plan assertion above is the load-bearing one, and it passed on entity_id",
+      "pass": true,
+      "detail": "plan: SCAN s | CORRELATED SCALAR SUBQUERY 1 | SEARCH e USING COVERING INDEX brain_embed_entity_idx (entity_id=?) — the ratio is scale-dependent and is recorded, not asserted"
+    },
+    {
+      "name": "the report is still correct at that scale",
+      "pass": true,
+      "detail": "byLanguage symbols total=8000 vs 8000 indexed — a fast query that returns the wrong number is worse than a slow one"
+    }
+  ],
+  "negativeCases": 2,
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "decisions": {
+    "why": "a default call took >15 minutes on a real 6,507-file index because the per-symbol EXISTS re-filtered project_id and so scanned every embedding once per symbol",
+    "fix": "drop the redundant project_id predicate; entity_id is minted as `${projectId}:...` for both brain_symbol.id and brain_semantic_embedding.entity_id, so the predicate cannot change the answer",
+    "gate": "shape, scope and plan — never a clock, because a timing assertion is decided by contention and a fixture big enough to expose this honestly would be too slow to run every time"
+  },
+  "limitations": [
+    "The real-index numbers (10.2ms/symbol, ~2,770s extrapolated, 513x speedup) came from the 1.6GB index at ~/.bb/projects/818db37d.../ and are NOT reproduced by this gate, which runs on a small fixture. The gate pins the query shape and the plan; the magnitude lives in reviews/health/master-review.md and is not re-measured on every run.",
+    "The equivalence of dropping project_id depends on the id convention `${projectId}:${rest}`. This gate pins that convention by planting a foreign-project embedding and requiring it to be ignored; it cannot prove the convention holds for code that does not exist yet."
+  ],
+  "generatedAt": "2026-10-01T08:17:31.284Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-01T08:17:39.796Z",
+    "contentSha256": "42da8bb11befacb59b9e9188700854e3c9c49011e1086623336cac876030dd44"
+  }
+}

@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64d",
+  "tool": "bb_health",
+  "title": "bb_health paths: five states, no fabrication, no mixed scope, no silent omission",
+  "verifiedState": "verified",
+  "layers": [
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "an untouched indexed file is `fresh`",
+      "pass": true,
+      "detail": "src/f1.ts -> fresh (verified by mtime+size only (file not read))"
+    },
+    {
+      "name": "an edited indexed file is `stale`",
+      "pass": true,
+      "detail": "src/f0.ts -> stale reason=hash-differs"
+    },
+    {
+      "name": "a deleted indexed file is `gone`",
+      "pass": true,
+      "detail": "src/doomed.ts -> gone reason=file-gone"
+    },
+    {
+      "name": "a file the index has NEVER seen is `not-indexed`, never `fresh`",
+      "pass": true,
+      "detail": "src/fresh-new.ts -> not-indexed — reporting \"fresh\" here is the fabrication this design exists to prevent"
+    },
+    {
+      "name": "a path that does not exist is `absent`, not `not-indexed`",
+      "pass": true,
+      "detail": "src/never-existed.ts -> absent — \"the indexer has not run\" and \"no such file\" are different"
+    },
+    {
+      "name": "all five states are reachable and distinct",
+      "pass": true,
+      "detail": "src/f1.ts=fresh src/f0.ts=stale src/doomed.ts=gone src/fresh-new.ts=not-indexed src/never-existed.ts=absent"
+    },
+    {
+      "name": "a row exists for EVERY path asked about, with no omissions",
+      "pass": true,
+      "detail": "5 rows for 5 asked: src/f1.ts, src/f0.ts, src/doomed.ts, src/fresh-new.ts, src/never-existed.ts"
+    },
+    {
+      "name": "each row echoes what the caller actually asked for",
+      "pass": true,
+      "detail": "src/f1.ts, src/f0.ts, src/doomed.ts, src/fresh-new.ts, src/never-existed.ts"
+    },
+    {
+      "name": "the text form prints the scoped block FIRST",
+      "pass": true,
+      "detail": "SCOPED ANSWER for 5 path(s) you named — everything below this block is PROJECT-WIDE:"
+    },
+    {
+      "name": "and states that everything after it is project-wide",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the not-indexed row is legible in the text with its reason",
+      "pass": true,
+      "detail": "  not-indexed  src/fresh-new.ts — on disk but not in the index — the indexer would index this, so it has not run since the file ap"
+    },
+    {
+      "name": "a warning names the not-indexed paths and the fix",
+      "pass": true,
+      "detail": "1 of the 5 path(s) you named exist on disk but are NOT in the index: src/fresh-new.ts. A freshness answer about a file the index has never s"
+    },
+    {
+      "name": "indexing it flips `not-indexed` to `fresh`",
+      "pass": true,
+      "detail": "-> fresh (proves the state is measured, not assigned)"
+    },
+    {
+      "name": "scoping does NOT change counts.files",
+      "pass": true,
+      "detail": "project=12 scoped=12"
+    },
+    {
+      "name": "nor counts.symbols",
+      "pass": true,
+      "detail": "project=12 scoped=12"
+    },
+    {
+      "name": "nor the project-wide freshness verdict",
+      "pass": true,
+      "detail": "project checked=12/12 scoped=12/12"
+    },
+    {
+      "name": "the scope block says so IN THE PAYLOAD, not only in prose [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "This block answers the paths you named. Every other line in this report — counts, embeddings, freshness, index"
+    },
+    {
+      "name": "scope names the paths it is scoped to",
+      "pass": true,
+      "detail": "[\"src/f0.ts\",\"src/f1.ts\"]"
+    },
+    {
+      "name": "a per-path symbol count is present and per-path",
+      "pass": true,
+      "detail": "src/f0.ts=1s src/f1.ts=1s"
+    },
+    {
+      "name": "without `paths`, both scoped fields are null (NOT empty objects)",
+      "pass": true,
+      "detail": "pathChecks=null scope=null"
+    },
+    {
+      "name": "and the default output has no scoped block [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "every spelling of one file resolves to the same indexed row",
+      "pass": true,
+      "detail": "src/a.ts -> src/a.ts:fresh | ./src/a.ts -> src/a.ts:fresh | src//a.ts -> src/a.ts:fresh | src/./a.ts -> src/a.ts:fresh | /var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/bb-h64d-paths-M0zJi8/src/a.ts -> src/a.ts:fresh"
+    },
+    {
+      "name": "and they all normalise to one project-relative path",
+      "pass": true,
+      "detail": "src/a.ts"
+    },
+    {
+      "name": "while each row still echoes its own spelling",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "paths escaping the project are REFUSED, not answered",
+      "pass": true,
+      "detail": "refused=3: ../outside.ts, /etc/hosts, src/../../outside.ts"
+    },
+    {
+      "name": "a refused path produces NO row (it was not checked, and is not clean)",
+      "pass": true,
+      "detail": "0 rows"
+    },
+    {
+      "name": "refusal is an ERROR-severity warning, not a warning",
+      "pass": true,
+      "detail": "a refused path must not read as a quiet success"
+    },
+    {
+      "name": "and it says the path was NOT checked",
+      "pass": true,
+      "detail": "3 path(s) were REFUSED and are NOT checked: ../outside.ts (path escapes project root: ../outside.ts); /etc/hosts (path e"
+    },
+    {
+      "name": "the text form never prints a refused path as fresh [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "it prints them under REFUSED instead",
+      "pass": true,
+      "detail": "  REFUSED (not checked): ../outside.ts — path escapes project root: ../outside.ts; /etc/hosts — path escapes p"
+    },
+    {
+      "name": "a symlink pointing out of the project is refused, not followed",
+      "pass": true,
+      "detail": "status=undefined refused=1 — a realpath escape must not be resolved into someone else's file"
+    },
+    {
+      "name": "an empty list is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health paths must name at least one file — an empty list would check nothing while looking like a completed check; om"
+    },
+    {
+      "name": "a duplicate is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health paths contains duplicate entries: src/a.ts — each file is checked once, and a duplicate would report it twice"
+    },
+    {
+      "name": "a blank entry is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health paths entries must be non-empty strings"
+    },
+    {
+      "name": "a bare string is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health: paths must be array"
+    },
+    {
+      "name": "more than 50 is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health paths accepts at most 50 files (got 51) — for a whole-project census use freshness=\"complete\" instead of namin"
+    },
+    {
+      "name": "a normal list is accepted",
+      "pass": true,
+      "detail": "[\"src/a.ts\",\"src/b.ts\"]"
+    },
+    {
+      "name": "the scoped answer is O(files named), not O(project)",
+      "pass": true,
+      "detail": "1 path resolved; the project scan still ran separately and is reported as such"
+    },
+    {
+      "name": "and its own cost is measured and reported separately from the corpus scan",
+      "pass": true,
+      "detail": "pathsMs=2 (the named path) vs freshnessMs=0 (the project scan it did not replace) — both reported, neither asserted to be ordered"
+    }
+  ],
+  "negativeCases": 3,
+  "summary": {
+    "total": 39,
+    "passed": 39,
+    "failed": 0
+  },
+  "decisions": {
+    "states": "fresh | stale | gone | not-indexed | absent — a boolean would destroy the last three",
+    "scope": "a separate self-describing block; project-wide counts are untouched so the two cannot be merged",
+    "resolution": "the same realpath-based primitive bb_edit uses, so the two tools agree on what a path IS",
+    "bounds": "at most 50, validated at the boundary, because the whole point is O(files named)"
+  },
+  "limitations": [
+    "The `absent` case is asserted with a path that does not exist. A caller who misspells an EXISTING file gets `not-indexed` rather than `absent`, because the two are genuinely indistinguishable from the filesystem alone; the reason string says which case it is."
+  ],
+  "generatedAt": "2026-10-01T08:14:20.192Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-01T08:17:39.788Z",
+    "contentSha256": "6a2f1286364c4ae94d426283da44c0bd92bbe305e8274f754481bda86fb31a91"
+  }
+}
