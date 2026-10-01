@@ -118,6 +118,33 @@ function isMacroDecoratedClassFunction(node: Node): boolean {
  * separates them: in `class X f() {…}` the `f` sits inside a `function_declarator`, never
  * as a bare sibling of the specifier.
  */
+/**
+ * Is this identifier a MACRO SPELLING rather than a class's own name?
+ *
+ * Spelled out in char codes rather than as a pattern because D6 holds the analyzer to
+ * ZERO regular expressions in its own source — the regex census is the honesty
+ * artifact, and a doc's claim of zero has to be true rather than asserted. The first
+ * character must be `A`-`Z`; the rest `A`-`Z`, `0`-`9` or `_`. This is exactly
+ * `/^[A-Z][A-Z0-9_]*$/`, which is how the register states it independently.
+ *
+ * It was written, verified against D6 (0 hits), lost to a file restore during the
+ * differential A/B, and committed as the pattern instead — which is how D6 read 1
+ * for a whole run after a green check said 0. The check was right; the file that got
+ * committed was not the file that had been checked.
+ */
+function isMacroSpelling(s: string): boolean {
+  if (s.length < 1) return false
+  const first = s.charCodeAt(0)
+  if (first < 65 || first > 90) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    const upper = c >= 65 && c <= 90
+    const digit = c >= 48 && c <= 57
+    if (!upper && !digit && c !== 95) return false
+  }
+  return true
+}
+
 function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; body: Node; owner: Node } | null {
   if (spec.type !== "class_specifier" && spec.type !== "struct_specifier" && spec.type !== "union_specifier") return null
   // (a) a real specifier carries its own body and needs none of this
@@ -127,7 +154,7 @@ function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; bo
   }
   // (1) the name field must read as a MACRO, not as the class's own name
   const nameField = spec.childForFieldName?.("name")?.text?.trim()
-  if (!nameField || !/^[A-Z][A-Z0-9_]*$/.test(nameField)) return null
+  if (!nameField || !isMacroSpelling(nameField)) return null
   const parent = spec.parent
   if (!parent || parent.type !== "function_definition") return null
   // (3) the parent's compound_statement is the class body
