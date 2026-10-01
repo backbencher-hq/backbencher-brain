@@ -6593,7 +6593,28 @@ export function deriveCSharpBareUses(
     // reads of themselves, and the first fix appeared to do nothing at all because it was in the
     // dead branch too. An unchanged count after a fix is information: it means the fix was never
     // executed, which is worth more than the fix was.
-    if (p.type === "variable_declarator") return declaratorRole(n) === "member"
+    // CS-D11. `declaratorRole` answers "is this identifier in MEMBER SCOPE" -- it climbs and
+    // returns "member" on reaching a class/struct/interface/record/enum. That is the right question
+    // for deciding whether a declarator publishes itself, and it is what the 742-row fix above
+    // needed. It is NOT the question `isEntityName` is asking, which is "is this identifier the
+    // declarator's own NAME".
+    //
+    // Using it as a proxy conflates the declarator's name with its INITIALIZER, so for
+    //     internal int maxDepth = maxDepthAllowable;
+    //     ^^^^^^^^ declarator's name      ^^^^^^^^^^^^^^^^^^^ a READ of a declared const
+    // the initializer was classified as the declaration publishing itself and dropped. Every const
+    // or field read from a class-level field initializer was lost, on the `uses` label, in all four
+    // C# corpora -- invisible to F3 and F4, since no fixture places a read in a field initializer.
+    //
+    // The sibling branch below already answers the name question correctly with
+    // `same(firstIdent(p), n)`; this branch now asks the same thing. `declaratorRole` keeps doing
+    // its own job, because a MEMBER declarator's own name still must not read itself.
+    //
+    // The added rows cannot be phantoms: `resolvable(name)` gates the push, and it consults the
+    // members map built from the analyzer's own symbols, so every row this adds resolves to a real
+    // declaration. That is what makes it safe -- the D10b failure mode (a target that declares
+    // nothing) is structurally unreachable from here.
+    if (p.type === "variable_declarator") return declaratorRole(n) === "member" && same(firstIdent(p), n)
     const entities = /_(declaration|declarations)$/
     if (!entities.test(p.type) && p.type !== "constructor_initializer") return false
     if (p.type === "variable_declaration") return false
