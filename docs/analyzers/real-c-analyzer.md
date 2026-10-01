@@ -337,6 +337,57 @@ measurement.)
   (`int (*f)(int)`, `void *(*f)(size_t)`, `void (*fns[3])(int)`,
   `void (*(*cb)(int))(void)`) are all kept.
 
+- **A `calls` edge must name a function, and a function name is not a macro** — the
+  second half of that sentence turned out to be a **pinned contract, not a defect**,
+  and the wrong turn is recorded because it was the obvious one.
+  `script/m14/tmp/c-audit/call-edge-fidelity.ts` compares every `calls` edge against
+  the **parse**, per (callee, line), in both directions. It exists to adjudicate the
+  census's `sameSiteDuplicates` (1447 redis / 129 curl / 291 libgit2, all
+  `calls/c_function_call`), which had never been classified.
+
+  **The census number is correct.** A line is not a site: `x = f(1) + f(2)` is two
+  real calls to one callee, and C-D14's ruling is one edge per **occurrence**. With
+  like compared to like, that class went to zero unexplained rows on all three
+  corpora. It was never a defect and never needed a ruling.
+
+  **What the probe got wrong.** Its first run reported ~4,000 "phantom" call edges
+  whose callee is a file-local macro, and the suppression looked obviously right: the
+  lane already refuses macro-named members (#928) and macro-named enumerators (#931),
+  so a macro-named callee looked like the same rule a third time. The fix was
+  implemented and measured at removing 4,000 edges — and **reverted one run later**,
+  because it contradicts a pinned fixture. #908's ruling, in
+  `c/function-like-macro-not-a-binding-908` and derived from the M12 **truth**, is
+  explicit: *"the truth counts a macro invocation as `calls (expr)` AND `uses (expr)`"*,
+  and that fixture expects `calls c908_read -> YY_INITIAL_VALUE` by name. Deleting the
+  edge would have removed a fact the oracle demands.
+
+  The two pinned fixtures draw a sharp distinction, and it is not in the analyzer's
+  favour everywhere: a **real function-like macro invocation** gets a `calls` edge
+  (#908, truth-driven), while a `#define` **replacement list** that recovery reads as
+  a call gets **neither**, because a definition site is not an invocation (#912). So
+  the macro rule is about *definition sites*, not *callees* — and the analyzer was
+  already right on both counts. The probe's model was the defect: it took the literal
+  parse as ground truth, so a documented divergence read as a bug.
+
+  **#954, which stands.** libgit2's `pcre2_dfa_match.c:3604` reads
+  `while (check_subject > subject &&`, then `#if PCRE2_CODE_UNIT_WIDTH == 8`, then
+  `(*check_subject & 0xc0) == 0x80)`. A directive **in the middle of an expression**
+  costs the parser the expression's structure, and it glues the `8` ending the
+  directive line to the `(` starting the next: `call(callee: number_literal "8")`. The
+  analyzer faithfully reported the parse as `calls pcre2_dfa_match -> "8"`. A numeric
+  literal is not callable, so the edge is noise whatever produced it — and refusing it
+  is strictly better than publishing it, because a consumer cannot tell a damaged
+  parse from a real call. Every earlier guard on that branch listed the shapes it
+  **recognised** and let everything else fall through to the callee's text, so an
+  unrecognised callee became a call target *by default*. The test is the node type,
+  not a pattern on the text, because P11 holds this file to zero regex literals on its
+  hottest path.
+
+  After both changes, judged against the parse with macro invocations and casts
+  classified rather than guessed: **redis 7 over / 0 under** of 37,676 judged call
+  sites, libgit2 2 / 1, curl 30 / 6. The macro-callee class — 1,983 / 1,303 / 622
+  sites — is reported as **required by #908**, not as an error.
+
 - **`layoutUnknownMembers` — a number that was partly invented is now marked.**
   Every remaining disagreement with clang is a width the model **declines to
   guess**, and before this wave it was published as if it had been computed: one
@@ -558,10 +609,10 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
-| M14.0.F3 fixtures | **26/26 pass** (18 pre-existing + 8 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F3 fixtures | **27/27 pass** (18 pre-existing + 9 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
-| C-lane gate (properties + mutants + cost) | **14 properties, 33/33 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| C-lane gate (properties + mutants + cost) | **14 properties, 34/34 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |
@@ -735,7 +786,7 @@ lane's record or lose an hour, whichever comes first.
 
 ## Evidence pointers
 
-- Lane fixtures: `validation/m14/fixtures/c/` (26 pairs, 8 added this wave)
+- Lane fixtures: `validation/m14/fixtures/c/` (27 pairs, 9 added this wave)
 - Lane gate: `script/m14/tmp/c-audit/verify-c-lane.ts` + `p13-baseline.json`
 - Lane probes (all re-runnable): `script/m14/tmp/c-audit/` —
   `census.ts` (the 2,498-file census), **`layout-vs-clang.ts`** (the layout payload
@@ -746,6 +797,9 @@ lane's record or lose an hour, whichever comes first.
   `truncation-shape.ts` (the parse shapes behind the removed regex),
   `c-grammar-pin.ts` (the grammar pin: is the local patch live in the wired bytes,
   and are those bytes a build of the committed source),
+  `call-edge-fidelity.ts` (every `calls` edge against the parse, per (callee, line),
+  in BOTH directions — the adjudicator for the census's `sameSiteDups`, and the
+  instrument that adjudicated the `sameSiteDuplicates` class to zero unexplained),
   `macro-field-probe.ts`, `perf-attribution.ts`, `line-index-parity.ts`
 - Corpus census artifact: `validation/m12/results/c-corpus-census.json`
 - M12 ground truth: `validation/m12/ground-truth/c.json`

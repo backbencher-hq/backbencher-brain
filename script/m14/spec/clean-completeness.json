@@ -9,8 +9,8 @@
     "design_decision": "an owner ruling, with the reason. Never a silent absence."
   },
   "_population_check": {
-    "declared_named_types": 137,
-    "classified": 137,
+    "declared_named_types": 141,
+    "classified": 141,
     "in_corpus": 136,
     "never_in_corpus": [
       "lazy_pattern",
@@ -24,10 +24,11 @@
       "gap": 1,
       "design_decision": 8
     },
-    "declared_grammar_slots": 139
+    "declared_grammar_slots": 143,
+    "_note_2026_09_29_grammar_wave": "The declared population moved 137 -> 141 with the grammar wave of 2026-09-29, which closed three corpus gaps and therefore added node types: foreign_code_import + foreign_code_item (an FCI names a linker input, not a module), let_group (`let { (C p) = gtk; }` is a group of bindings, not a record pattern), and record_binding (the record-pattern binding, split out of local_binding so that a brace inside a `let` is unambiguously the group). 143 slots = 141 named + 2. The wave also moved the wired grammar's parse health over the 2,179-file union corpus from 1,526 parse-clean files (70.0%) to 1,656 (76.0%), which is the ceiling every percentage in this lane is a percentage OF."
   },
   "handled_verified": {
-    "_description": "99 types. Each one is named by real-clean-analyzer.ts AND occurs in the parse tree of at least one committed clean fixture, which is the F6 conjunction. The three fixtures that made the difference are `declaration-forms.icl` (the Clean-only declaration forms), `qualified-names.icl` (both qualified-name spellings) and `type-and-expression-shapes.icl` (the type and expression spine plus every operator and pattern spelling). 11 of these 99 were handled but unverified before this round.",
+    "_description": "102 types. Each one is named by real-clean-analyzer.ts AND occurs in the parse tree of at least one committed clean fixture, which is the F6 conjunction. The three fixtures that made the difference are `declaration-forms.icl` (the Clean-only declaration forms), `qualified-names.icl` (both qualified-name spellings) and `type-and-expression-shapes.icl` (the type and expression spine plus every operator and pattern spelling). 11 of these 99 were handled but unverified before this round.",
     "types": [
       "application",
       "array_comprehension",
@@ -56,6 +57,7 @@
       "field_access",
       "fixity_annotation",
       "fixity_declaration",
+      "foreign_code_import",
       "foreign_export",
       "function_declaration",
       "generic_case_definition",
@@ -68,6 +70,7 @@
       "instance_declaration",
       "lambda_expression",
       "let_expression",
+      "let_group",
       "line_comment",
       "list_comprehension",
       "list_pattern",
@@ -96,6 +99,7 @@
       "qualified_identifier",
       "question_type",
       "range_operator",
+      "record_binding",
       "record_definition",
       "record_expression",
       "record_field",
@@ -143,6 +147,7 @@
       "comprehension_sep",
       "continuation_binding",
       "float",
+      "foreign_code_item",
       "generator",
       "generator_sep",
       "guard_binding",
