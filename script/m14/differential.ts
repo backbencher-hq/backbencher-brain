@@ -986,7 +986,28 @@ function rustImplSelfTypeName(t: any): string | null {
 export function normTarget(t: string): string {
   // scala type args use square brackets; multi-line constructs can leave a
   // trailing unbalanced "[" in raw-text targets (List[ -> List)
-  return lastSegment(t.replace(/<.*$/, "").replace(/\[.*$/, "").trim())
+  //
+  // M60/SDJ-10: the strip used to be UNCONDITIONAL, so it ate any name whose first
+  // character is "<" or "[". That is not a corner case — it is a whole family of
+  // real Scala (and Java) member names, and it collapsed seven of them onto the
+  // EMPTY string:
+  //     <=  <  <:<  <<  <<=  <-  <%      ->  ""
+  // Measured on scala3 (script/m14/tmp/scala-empty-target.ts): 259 published edges
+  // normalize to nothing this way — 224 `contains` and 35 `references`.
+  //
+  // Why that is not cosmetic: coverage matches on `label + normTarget(target)`. So a
+  // `contains` edge for `<` was satisfiable by a truth row for `<=`, and the harness's
+  // own dedupe key collapsed all seven operators onto one identity. A lane can
+  // therefore report a row as COVERED by an edge that names a different operator, and
+  // the missing-row diagnostic prints an empty identity. On the java side the same
+  // rule ate `<init>`/`<clinit>`.
+  //
+  // A type-argument or parameter list can never start at index 0, so only strip from
+  // a bracket that has something in front of it.
+  const s = t.trim()
+  const cut = s.search(/[[<]/)
+  const head = cut > 0 ? s.slice(0, cut) : s
+  return lastSegment(head)
 }
 // M60 oracle sharpness (2026-09-25; report-only behind BB_F5_STRICT=1). The
 // coverage match below is `label + normTarget(target)`, and normTarget is the
@@ -20000,6 +20021,55 @@ async function main() {
       for (const nm of SWIFT_PROTOCOLS) SWIFT_TYPE_KINDS.set(nm, "interface")
     }
 
+    // The dependency roots a dart project actually resolves to, read from the
+    // package config rather than by scanning a cache. `direct` filters to the
+    // names in pubspec.yaml's `dependencies:` block.
+    const dartDependencyRoots = (projectDir: string, mode: "direct" | "all"): string[] => {
+      const cfg = path.join(projectDir, ".dart_tool", "package_config.json")
+      if (!fs.existsSync(cfg)) return []
+      let names: Set<string> | null = null
+      if (mode === "direct") {
+        names = new Set()
+        const yml = path.join(projectDir, "pubspec.yaml")
+        try {
+          const txt = fs.readFileSync(yml, "utf8")
+          const block = /^dependencies:\s*$/m.exec(txt)
+          if (block) {
+            for (const line of txt.slice(block.index).split("\n").slice(1)) {
+              const nm = /^  ([a-z0-9_]+):/.exec(line)
+              if (nm) names.add(nm[1])
+              else if (/^\S/.test(line)) break
+            }
+          }
+        } catch { names = null }
+      }
+      const out: string[] = []
+      try {
+        const cfgJson = JSON.parse(fs.readFileSync(cfg, "utf8"))
+        const toolDir = path.dirname(cfg)
+        for (const p of cfgJson.packages ?? []) {
+          if (names && !names.has(p.name)) continue
+          const ru = String(p.rootUri ?? "")
+          const root = ru.startsWith("file://") ? decodeURIComponent(ru.slice(7))
+            : ru ? path.resolve(toolDir, ru) : ""
+          if (!root) continue
+          const lib = path.join(root, "lib")
+          if (fs.existsSync(lib)) out.push(lib)
+        }
+      } catch { return out }
+      return out
+    }
+    const walkDartFiles = (dir: string, out: string[] = []): string[] => {
+      let es: fs.Dirent[]
+      try { es = fs.readdirSync(dir, { withFileTypes: true }) } catch { return out }
+      for (const e of es) {
+        const p = path.join(dir, e.name)
+        if (e.isDirectory()) { if (e.name !== ".dart_tool") walkDartFiles(p, out) }
+        else if (e.name.endsWith(".dart")) out.push(p)
+      }
+      return out
+    }
+
     // M60: dart reads `AnalyzeContext.projectIndex` for DARTD16's cross-file
     // override pass. Built over `files` — the WHOLE corpus, not `sample` — because a
     // subset index would resolve a file differently depending on what else happened
@@ -20016,8 +20086,56 @@ async function main() {
     if (lang === "dart") {
       try {
         const mod: any = await import("../../src/ast/project-index")
-        dartProjectIndex = await mod.buildProjectIndexFromDisk(
-          path.join(ROOT, "wasm", "tree-sitter-dart.wasm"), files, mod.DART_DECLARATION_SPEC,
+        // DEPENDENCY SOURCES, OPTIONAL AND OFF BY DEFAULT. Dart's `overrides`
+        // resolution needs to know what a base DECLARES, and the bases that matter
+        // most are not in the project: `Equatable`, `StatelessWidget`, `State` and
+        // `Cubit` live in the pub cache and the Flutter SDK. Without them the
+        // analyzer has no evidence and falls back to its first-parent guess at
+        // confidence 0.8 — truthfully labelled, and correctly absent from the
+        // oracle, which is why a `0.8` row shows up as UNEXPLAINED rather than
+        // agreed.
+        //
+        // `.dart_tool/package_config.json` resolves every dependency to a PINNED
+        // version, so the set is knowable exactly. It matters that it is pinned: the
+        // pub cache on this machine holds both equatable 2.0.8 and 2.1.0, and an
+        // index built by scanning the cache would answer with whichever it saw.
+        //
+        //   none    (default) corpus only. ~0 added cost, and the fallback 0.8 claim.
+        //   direct  + the 68 DIRECT dependencies' lib/ — 2,027 files, measured
+        //           ~11 min per corpus, and it resolves equatable/flutter/flutter_bloc.
+        //   all     + all 324 resolved packages — 10,843 files, ~30 min per corpus,
+        //           and it also resolves TRANSITIVE bases like `bloc` (Cubit.close).
+        //
+        // Default is `none` deliberately. This is a per-corpus, per-run parse cost
+        // imposed on a shared harness, and project-index.ts's own header says
+        // decisions at the dispatch path are not one lane's to make unilaterally. It
+        // is a flag with a measured number, not a default nobody asked for.
+        const depsMode = (() => {
+          const a = process.argv.find((x) => x.startsWith("--dart-deps="))
+          const v = a ? a.slice("--dart-deps=".length) : "none"
+          return (["none", "direct", "all"] as const).includes(v as any) ? v : "none"
+        })()
+        const indexFiles = [...files]
+        let depFiles = 0
+        if (depsMode !== "none") {
+          // The LIVE checkout, not `repoDir`. `repoDir` is a frozen worktree when
+          // the pin has drifted, and a frozen worktree has no `.dart_tool` — it is
+          // gitignored — so asking it for a package config finds nothing. That is
+          // also the right split of concerns: the frozen tree exists so the SOURCE
+          // UNDER TEST is the pinned commit, while the package config describes the
+          // ENVIRONMENT (which versions are installed and where), and the environment
+          // is not what the pin is asserting. Resolving dependencies from the tree
+          // under test would make a clean measurement report zero dependencies.
+          for (const root of dartDependencyRoots(path.join(CORPUS_ROOT, langRepo), depsMode)) {
+            for (const f of walkDartFiles(root)) { indexFiles.push(f); depFiles++ }
+          }
+          console.log(`  [project-index] dart deps=${depsMode}: +${depFiles} dependency files`)
+        }
+        // STREAMING, not the collecting form: this corpus is 4,378 files with
+        // dependencies attached, and `buildProjectIndexFromDisk` retains every parse
+        // tree at once, which aborts the wasm module at that size.
+        dartProjectIndex = await mod.buildProjectIndexStreaming(
+          path.join(ROOT, "wasm", "tree-sitter-dart.wasm"), indexFiles, mod.DART_DECLARATION_SPEC,
         )
         mod.buildResolutionTables(dartProjectIndex)
         // The ORACLE is handed the same closed member sets the ANALYZER derives its
