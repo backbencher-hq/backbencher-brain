@@ -204,10 +204,10 @@
   "limitations": [
     "The >5MB size skip and the shell-shebang gate are properties of the indexer's discovery; this gate proves they are SHARED by asserting a >5MB file is excluded, but does not re-derive the threshold."
   ],
-  "generatedAt": "2026-10-01T03:23:47.896Z",
+  "generatedAt": "2026-10-01T05:28:02.539Z",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-10-01T04:33:12.633Z",
-    "contentSha256": "3efda2a467583040acefd950eb10d87561d9af6f72342ac632fefa87e98ce7b7"
+    "sealedAt": "2026-10-01T05:29:32.330Z",
+    "contentSha256": "4fe28b7cc7fb8d7865534c03a72c43890b5234ad2c3f1c012d32856c369d095c"
   }
 }
