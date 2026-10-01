@@ -18,7 +18,7 @@ import path from "node:path"
 import { getProjectId } from "../../src/cli/index"
 import { indexProjectParallel } from "../../src/ast/parallel-indexer"
 import { BrainDatabase } from "../../src/brain/database"
-import { generateDocumentation, formatDocumentation, explainEmptyRequiredSections, assertUnknownsNameRenderedSections, resolveUnknownSections, type DocRequest, type DocResult, type DocSection, type DocUnknown, type SectionDraft } from "../../src/intelligence/documentation/doc-engine"
+import { generateDocumentation, formatDocumentation, buildProse, explainEmptyRequiredSections, assertUnknownsNameRenderedSections, resolveUnknownSections, type DocRequest, type DocResult, type DocSection, type DocUnknown, type SectionDraft } from "../../src/intelligence/documentation/doc-engine"
 import { createToolHandlers } from "../../src/mcp/tool-handlers"
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { docSourceFingerprint, docRelevantWorkingTreeChanges } from "../../src/intelligence/documentation/evidence"
@@ -1027,6 +1027,48 @@ try {
     check("T32: escaping did not break the citation markers", markerLines.length > 0,
       `${markerLines.length} bullet(s) still carry an inline citation marker after escaping; first: ${markerLines[0]?.slice(0, 110) ?? "(none)"}`)
     raw.prepare("DELETE FROM brain_symbol WHERE id=?").run("gate-md-star")
+  }
+
+  // ── T33: prose describes the evidence, and an empty section says why ─────
+  // The prose was `N cited items from M sources.` — a count a reader could
+  // compute — and `No indexed evidence was found for X.` for an empty section,
+  // while the precise reason sat in the footer where a reader looking at that
+  // section does not look.
+  {
+    const symbolDoc = await doc({ mode: "symbol", target: "add", detail: "deep", limit: 20 })
+    // A section with facts must say HOW they were obtained and what they rest
+    // on, because the classification on every fact was never surfaced anywhere.
+    const withFacts = symbolDoc.sections.filter((section) => section.facts.length > 0)
+    const saysHow = withFacts.filter((section) => /read directly from the index|inferred|recorded as unknown/.test(section.prose))
+    const saysWhat = withFacts.filter((section) => section.prose.includes("resting on"))
+    check("T33: a populated section says how its claims were obtained and what they rest on",
+      withFacts.length > 0 && saysHow.length === withFacts.length && saysWhat.length === withFacts.length,
+      `${withFacts.length} populated section(s); ${saysHow.length} name how the claims were obtained, ${saysWhat.length} name what they rest on. e.g. ${withFacts[0]?.prose.slice(0, 130) ?? "(none)"}`)
+    // And it must not have become a restatement of the facts to get there.
+    const verbatim = symbolDoc.sections.filter((section) => section.facts.some((fact) => fact.statement.length > 24 && section.prose.includes(fact.statement)))
+    check("T33: the richer prose still does not restate a fact", verbatim.length === 0,
+      `${verbatim.length} section(s) quote a fact verbatim in their prose; orientation and restatement are different jobs and the spec separates them`)
+    // An empty section must carry ITS OWN reason rather than the generic absence.
+    const emptySections = symbolDoc.sections.filter((section) => section.facts.length === 0)
+    const explained = emptySections.filter((section) => !section.prose.startsWith("No indexed evidence was found"))
+    check("T33: an empty section's prose is its own explanation",
+      emptySections.length > 0 && explained.length === emptySections.length,
+      `${emptySections.length} empty section(s), ${explained.length} carrying a reason rather than the generic absence. e.g. ${explained[0]?.prose.slice(0, 130) ?? "(none)"}`)
+    // The predicate, driven directly with synthetic drafts so it can be shown to
+    // convict both shapes.
+    const cites: DocResult["citations"] = [{ id: "c1", kind: "symbol", evidence: "e", freshness: "fresh", confidence: 1 }]
+    const fact = (statement: string, classification: DocSection["facts"][number]["classification"] = "extracted"): DocSection["facts"][number] =>
+      ({ classification, statement, confidence: 1, citationIds: ["c1"] })
+    const draft = (facts: DocSection["facts"], lead?: string): SectionDraft => ({ id: "x", heading: "X", required: true, audience: "all", facts, lead })
+    const countOnly = (prose: string): boolean => /cited items? from \d+ sources?/.test(prose)
+    const saysWhy = (prose: string): boolean => !prose.startsWith("No indexed evidence was found") && prose.length > 0
+    negative("T33 the prose predicates convict every shape they exist for",
+      countOnly(buildProse(draft([fact("a"), fact("b")]), cites, [])) === false
+        && saysWhy(buildProse(draft([]), cites, [{ statement: "no test names it", reason: "not-observed", affectedSection: "x" }])) === true
+        && saysWhy(buildProse(draft([]), cites, [])) === false
+        && /2 claims/.test(buildProse(draft([fact("a"), fact("b")]), cites, [])) === true
+        && /inferred/.test(buildProse(draft([fact("a", "inferred")]), cites, [])) === true,
+      "the old count-only phrasing is rejected; an empty section with a note gets its reason; an empty section with no note keeps the honest absence and is NOT counted as explained; a populated section states the claim count; and an inferred claim is named as inferred rather than folded into a total")
   }
 
   // ── T26: the announced evidence bounds ARE the applied bounds ─────────────
