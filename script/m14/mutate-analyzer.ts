@@ -5332,6 +5332,51 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "xml/predefined-entities-unresolvable",
+    language: "xml",
+    defectClass: "wrong-edge",
+    description:
+      "M18 regression: the five predefined entities go back to being UNRESOLVED. `&lt; &gt; &amp; &apos; &quot;` are declared by the XML specification itself, in every document, whether or not a DTD mentions them (XML 1.0 §4.6) — the same argument X8 settled for the `xml` and `xmlns` prefixes. The grammar reports each as an `EntityRef` and the resolver had exactly two answers, so all of them took the second: 4,575 sites across 180 files were stamped `resolvable: \"unresolved\"` with `danglingEntityReference: true`, which is the analyzer asserting that a well-formed document references an entity nothing defines. Reverted by removing `builtin` from the three-way label. `&nbsp;` is NOT in the set and must stay unresolved — an XML document using an undeclared HTML entity really does reference something undefined, so a fix that widened the set to make the other five pass would be the wrong fix.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if ((x.metadata as any)?.role !== "entity_reference") return x
+        if ((x.metadata as any)?.resolvable !== "builtin") return x
+        return { ...x, metadata: { ...x.metadata, resolvable: "unresolved", danglingEntityReference: true } }
+      }),
+    }),
+  },
+  {
+    id: "xml/entity-replacement-text-ownership-dropped",
+    language: "xml",
+    defectClass: "wrong-edge",
+    description:
+      "M18 regression: an entity reference inside ANOTHER ENTITY'S REPLACEMENT TEXT goes back to being unowned. `<!ENTITY shout \"&greeting; THERE\">` is a real dependency — shout cannot be expanded without greeting — and it was dropped, because an `EntityRef` was only collected under an OWNING ELEMENT and replacement text has no element above it. 611 of the then-651-site shortfall sat in this shape over 16 files; libxml2's `test/recurse/lol_ig_content.xml` was the extreme at 147 sites and 1 edge. Reverted by re-anchoring each such edge to the DTD that holds the declaring entity, which is the owner that existed before the fix and the wrong one.",
+    transform: (r) => {
+      // The DTD that holds a declaration is recoverable from the owning
+      // `contains` edge's source, so the pre-fix owner can be reconstructed
+      // rather than guessed.
+      const dtdOf = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if (x.type === "contains" && (x.metadata as any)?.role === "dtd_entity_declaration") {
+          dtdOf.set(String(x.target), String(x.source))
+        }
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) => {
+          if ((x.metadata as any)?.role !== "entity_reference") return x
+          const src = String(x.source)
+          // only the entity-owned edges move; element-owned ones have no dtdOf entry
+          if (!dtdOf.has(src)) return x
+          const dtd = dtdOf.get(src)!
+          if (dtd === src) return x
+          return { ...x, source: dtd, metadata: { ...x.metadata, entityOwnerIsDtd: true } }
+        }),
+      }
+    },
+  },
+  {
     id: "xml/declared-name-anchored-to-the-tag",
     language: "xml",
     defectClass: "line-attribution",
@@ -8929,6 +8974,210 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, symbols: (r.symbols ?? []).map((s: any) => (s.name === "go" ? { ...s, ownerName: undefined } : s)) }),
   },
   {
+    id: "vue/options-contract-binding-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "F12 regression, THIRD path: the OPTIONS-API hoist stops resolving — `props: optionProps` / `emits: optionEmits` naming a declaration declared in the same file go back to extracting nothing. Distinct from vue/named-contract-drop, which reverts the script-setup binding only: both were broken by the same shape (Vue hoists the contract to a const in either style) and both need their own mutant, or a fixture that pins one half leaves the other unpinned. Caught by vue/options-named-contract's four component-owned symbol rows and their four contains rows.",
+    transform: r => {
+      // `contractSource` records which shape produced each contract symbol, so
+      // this reverts the OPTIONS hoist alone. An earlier revision matched on
+      // `isProp/isEmit` without a `contractSource` guard and also removed the
+      // INLINE Options props, taking prop-default-factory-calls and
+      // template-lines-825 down with it — a mutant that fails for a second
+      // reason proves less, not more.
+      const isHoisted = (s: any) =>
+        (s?.metadata?.isProp === true || s?.metadata?.isEmit === true) &&
+        s?.metadata?.contractSource === "binding" &&
+        s?.metadata?.isScriptSetup !== true
+      const drop = new Set((r.symbols ?? []).filter(isHoisted).map((s: any) => s.name))
+      if (drop.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !isHoisted(s)),
+        relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && drop.has(String(x.target)))),
+      }
+    },
+  },
+  {
+    id: "vue/inheritance-edge-drop",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "F1 regression: Options-API INHERITANCE stops producing a relationship, so `extends:`/`mixins:` are invisible again and the base component falls back to the bare `uses` a name mention earns — the exact pre-fix state, where the SAME text as a .ts file emitted a real `extends` and vue emitted none. Caught by vue/options-inheritance's three `extends` rows. Distinct from vue/mixin-label-swap: one mutant reverting both would pass if either half were pinned, which is the M49 T6 lesson.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => !(x.metadata?.isOptionsApi === true && x.metadata?.isMixin !== undefined && String(x.type) === "extends")),
+    }),
+  },
+  {
+    id: "vue/mixin-label-swap",
+    language: "vue",
+    defectClass: "symbol-identity",
+    description: "F1 regression, the DISTINCTION half: every heritage row is labelled `isMixin: true`, so `extends: BasePanel` (class inheritance) and `mixins: [M1]` (an options merge) become indistinguishable in the payload. Caught ONLY by the negative rows in vue/options-inheritance, which pin isMixin:false on the `extends` row — a fixture that pinned only presence would pass this mutant unchanged. This is the vue-side twin of the family's same-shape defect (a label computed from a substring rather than the construct).",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) =>
+        x.metadata?.isOptionsApi === true && x.metadata?.isMixin !== undefined && String(x.type) === "extends"
+          ? { ...x, metadata: { ...(x.metadata ?? {}), isMixin: true } }
+          : x,
+      ),
+    }),
+  },
+  {
+    id: "vue/template-object-key-revert",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "F10 regression: an unquoted object-literal KEY reads as a component member again — `{{ { count: 1 } }}` emits Uses(count) when nothing in that expression reads the member. Measured at 432 of the 1,150 restored corpus files. Caught by vue/template-object-key's two forbid rows; the fixture declares no `count` and no `label` in its data, so any Uses of either there can only be the defect.",
+    transform: r => {
+      // Put the object-key reads back — the exact pre-fix state. `count` and
+      // `label` are REAL members of vue/template-object-key, which is what makes
+      // the restore observable: the FIRST version of this mutant added the rows
+      // only for names that had a symbol, and the fixture that omitted them made
+      // the mutant SURVIVE. A gate that cannot fail is decoration, and the way
+      // this one was caught was the mutant, not a review.
+      const keys = ["count", "label"]
+      const have = keys.filter((n) => (r.symbols ?? []).some((s: any) => s.name === n))
+      if (have.length === 0) return r
+      const src = (r.symbols ?? []).find((s: any) => s.kind === "class")?.name
+      return {
+        ...r,
+        relationships: [
+          ...(r.relationships ?? []),
+          ...have.map((n) => ({
+            source: src,
+            target: n,
+            type: "uses",
+            confidence: 0.95,
+            metadata: { isTemplateExpression: true },
+          })),
+        ],
+      }
+    },
+  },
+  {
+    id: "vue/template-ternary-value-drop",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "F10's TRAP, and the reason the fix tracks a pending `?` per brace depth: the naive key rule — an identifier followed by a colon is a key — deletes the VALUE side of every ternary. In `show ? count : total` the `count` is what the `?` selected and the colon is the ternary's own. Caught ONLY by vue/template-ternary-value, whose every row is a require; vue/template-object-key's forbid rows would score this mutant as a clean pass, which is precisely why the two halves are separate fixtures. This mutant is the FALSE NEGATIVE the F10 fix exists to avoid, and it is silent: fewer edges, no error, every gate that forbids rather than requires still green.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "uses" && ["count", "total", "label"].includes(String(x.target)) && x.metadata?.isTemplateExpression === true),
+      ),
+    }),
+  },
+  {
+    id: "vue/component-split-identity",
+    language: "vue",
+    defectClass: "symbol-identity",
+    description: "F8 regression: the split component identity returns — a `name:` option pushes a SECOND Class symbol beside the SFC's own instead of renaming it. Measured through the store on `WidgetFile.vue` declaring `name: 'ActualName'`: 6 edges sourced the file stem and 2 contained edges sourced the option name, neither reachable as a target, so one component had two answers and no edge unified them. Caught by vue/options-rename-identity's forbidSymbols row (the file-stem Class) plus its two meta rows on the surviving symbol (meta.moduleName / meta.isOptionsComponent) — a bare count assertion would pass with the second symbol still there under a different name.",
+    transform: r => {
+      const named = (r.symbols ?? []).find(
+        (s: any) => s?.kind === "class" && typeof s?.metadata?.moduleName === "string",
+      )
+      if (!named) return r
+      const stem = named.metadata.moduleName
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).flatMap((s: any) =>
+          s === named
+            ? [s, { ...s, name: stem, range: { ...(s.range ?? {}) }, metadata: { isVueComponent: true, isSfc: true } }]
+            : [s],
+        ),
+      }
+    },
+  },
+  {
+    id: "vue/identity-edge-source-unrepointed",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "F8 regression, the EDGE half: the single Class symbol is correct but the edges still source the file stem, so the one component symbol is unreachable from every script and template edge — the exact half a symbol-count assertion cannot see. Caught ONLY by vue/options-rename-identity's four `from: ActualName` relationship rows, and its four mirrored `from: <file-stem>` forbid rows, which are what pin the template `instantiates` edge specifically: the first version of this fix re-pointed only the DELEGATED rows in the merge loop and left every template edge on the file stem.",
+    transform: r => {
+      const named = (r.symbols ?? []).find(
+        (s: any) => s?.kind === "class" && typeof s?.metadata?.moduleName === "string",
+      )
+      if (!named) return r
+      const stem = named.metadata.moduleName
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).map((x: any) =>
+          x.source === named.name ? { ...x, source: stem } : x,
+        ),
+      }
+    },
+  },
+  {
+    id: "vue/provide-inject-edge-drop",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "F2 regression: the provide/inject CONTRACT edges are dropped, so a provider and a consumer of one key are not joinable — the exact pre-fix state, where the corpus's 79 call sites emitted only the bare `calls` edge the sub-analyzer makes and the relationship between them did not exist. Caught by vue/provide-inject-contract's four `references` rows. Distinct from vue/provided-owner-drop: one mutant reverting both would pass if either claim were pinned, which is the M49 T6 lesson.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata?.isProvideContract === true || x.metadata?.isInjectContract === true),
+      ),
+    }),
+  },
+  {
+    id: "vue/provided-owner-drop",
+    language: "vue",
+    defectClass: "symbol-identity",
+    description: "F2 regression, the OWNERSHIP half: the keys of an inline `provide(K, { … })` value go back to being ownerless symbols — indistinguishable in the graph from module-level functions, which the corpus census measured as 4 real rows on element-plus tour.vue (updateModelValue, onClose, onFinish). Caught ONLY by vue/provide-inject-contract's two ownerName + meta.isProvided symbol rows. This is also the mutant that proves the ANNOTATION was necessary: re-PUSHING the symbols instead of annotating them would collide on the store's owner-blind symbol key and silently replace the sub-analyzer's row (VSD25), which is why the fix annotates in place.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s?.metadata?.isProvided === true ? { ...s, ownerName: undefined, ownerKind: undefined, metadata: { ...(s.metadata ?? {}), isProvided: false } } : s,
+      ),
+    }),
+  },
+  {
+    id: "vue/type-inference-hardcoded-false",
+    language: "vue",
+    defectClass: "metadata-fabrication",
+    description: "F7 regression: `hasTypeInference` goes back to the hardcoded `false`, so every SFC reports the same thing regardless of which grammar parsed its script. Caught by vue/ts-type-inference (a lang=\"ts\" SFC whose interface/annotation members the TypeScript analyzer extracted correctly while the flag denied it). Its negative twin vue/js-type-inference is what makes this pair a gate rather than a claim — see vue/type-inference-always-true for the other direction.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), hasTypeInference: false } }),
+  },
+  {
+    id: "vue/type-inference-always-true",
+    language: "vue",
+    defectClass: "metadata-fabrication",
+    description: "F7 regression, the OTHER direction: `hasTypeInference` is flipped to `true` unconditionally, which passes a one-sided fixture and is exactly as false as the original constant. Caught ONLY by the negative half, vue/js-type-inference — a plain `<script>` SFC whose block goes to the JavaScript analyzer, where no type inference was available. Recorded because it is the mutant a ts-only fixture cannot see, and the reason the fixture pair exists.",
+    transform: r => ({ ...r, metadata: { ...(r.metadata ?? {}), hasTypeInference: true } }),
+  },
+  {
+    id: "vue/named-contract-drop",
+    language: "vue",
+    defectClass: "symbol-loss",
+    description: "F12 regression: the macro extraction goes back to INLINE literals only — the same-file BINDING form stops resolving, so `defineProps(boundProps)` / `defineEmits(boundEmits)` emit no Property/Event symbols. This is the exact pre-fix state: on the restored corpus it cost 22 of 22 `defineProps(binding)` and 67 of 67 `defineEmits(binding)` sites their whole contract. Caught by vue/named-contract's four component-owned symbol rows and their four contains rows. The named/imported EDGE half is deliberately NOT removed here — that is the second mutant below, because one mutant that reverts both halves proves only that ONE of them is pinned, which is how the M49 T6 lesson (a claim with no fixture) starts.",
+    transform: r => {
+      // The payload records WHICH shape produced each contract symbol, so this
+      // reverts the BINDING resolution alone. An earlier revision of this mutant
+      // matched on `isScriptSetup && isProp/isEmit`, which also removed the INLINE
+      // form's symbols and took 4 unrelated fixtures with it — a mutant that
+      // fails for a second reason proves less, not more.
+      const drop = new Set(
+        (r.symbols ?? []).filter((s: any) => s?.metadata?.contractSource === "binding").map((s: any) => s.name),
+      )
+      if (drop.size === 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !(s?.metadata?.contractSource === "binding")),
+        relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "contains" && drop.has(String(x.target)))),
+      }
+    },
+  },
+  {
+    id: "vue/contract-edge-drop",
+    language: "vue",
+    defectClass: "relationship-loss",
+    description: "F12 regression, second half: the contract EDGE is dropped — `defineProps<Named>()` / `defineEmits<Named>()` and any unresolvable binding stop pointing at the declaration that carries their members, so a component's public contract is unanswerable from the component. Distinct from vue/named-contract-drop on purpose: one mutant reverting both halves would pass if EITHER half were pinned, which is exactly the coverage hole the M49 T6 lesson names. Caught by vue/named-contract's four `references` rows with meta.isPropContract / meta.isEmitContract.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.metadata?.isPropContract === true || x.metadata?.isEmitContract === true),
+      ),
+    }),
+  },
+  {
     id: "groovy/drop-class-symbols",
     language: "groovy",
     defectClass: "symbol-loss",
@@ -11359,6 +11608,221 @@ export const MUTANTS: Mutant[] = [
       ...r,
       relationships: [...(r.relationships ?? []), { type: "calls", source: "dispatch", target: "handler", isExternal: true, weight: 1, confidence: 0.9, metadata: { phpSpecific: true } }],
     }),
+  },
+  {
+    id: "php/error-report-dropped",
+    language: "php",
+    defectClass: "error-handling",
+    description:
+      "M60 php F3 round, part 1 of the three-part error contract: the broken region is no longer REPORTED. A regression in the analyzer's `rootNode.hasError` walk — the block that pushes a `ParseError` per ERROR / isMissing node — reads as a file that parsed cleanly. Caught by php/error-recovery alone, and this is the only fixture in the lane whose subject is a MALFORMED file: the other 17 are well-formed by construction, so a lane that lost error reporting entirely would have passed every one of them. The spec's `ERROR: handled_verified` row is what made the gap nameable in the first place (verify-fixture-coverage read `uncovered: ERROR` and blocked release), and this mutant is what stops the fix being only a fixture.",
+    transform: r => ({ ...r, errors: [] }),
+  },
+  {
+    id: "php/error-recovery-stops",
+    language: "php",
+    defectClass: "error-handling",
+    description:
+      "M60 php F3 round, part 3 of the three-part error contract — the part that carries the weight: degradation becomes TOTAL instead of partial. Every symbol and relationship at or after the first reported error position is dropped, which is exactly what a walk that gave up at the recovery node would produce. The failure this models is invisible to a reader, and that is the point: the file still publishes the declarations BEFORE the error, so it still looks analysed, and only a symbol written BELOW the broken region catches it. php/error-recovery writes `After` and `survivesAfter` below the broken statement for this reason. No other php fixture can catch it — a partial parse that publishes a prefix passes every assertion a well-formed file can carry.",
+    transform: r => {
+      const first = [...(r.errors ?? []), ...(r.metadata?.errors ?? [])]
+        .map((e: any) => e?.range?.startLine)
+        .filter((n: any) => typeof n === "number")
+        .sort((a: number, b: number) => a - b)[0]
+      if (first === undefined) return r
+      const keep = (line: any) => typeof line !== "number" || line < first
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => keep(s?.range?.startLine)),
+        relationships: (r.relationships ?? []).filter((x: any) => keep(x?.line_number)),
+      }
+    },
+  },
+  {
+    id: "php/typed-class-const-dropped",
+    language: "php",
+    defectClass: "capability-revert",
+    description:
+      "M60 php F4: the PHP 8.3 typed-class-constant position in the declared-type reference graph is reverted — `const Dep X = 1;` writes no `references` edge again, which is exactly what the lane did before this round because the position sat on `phpDeclaredTypeRefs`' own 'BOUNDARIES, DISCLOSED' list with no spec decision ruling on it. Caught by php/typed-class-const ALONE, and that isolation is the point: the two pinned corpora contain 243 `const_declaration` nodes of which 81 are typed, but every one of those 81 is a `primitive_type` (`private const string PAGE_HEADER`) which is silent BY DESIGN, so a NAMED type — the only shape that produces an edge — occurs ZERO times. The capability is therefore invisible to the differential, to the depth draws, to every other fixture, and to the full-extent corpus: the absence of `const Dep` references read identically whether the rule worked or did not exist. Same class as the grouped-`use` defect that 4,139 files and 95,231 edges reported clean while missing the construct entirely — 100% coverage is a statement about the corpus, not about the language. A pin with no mutant is a comment; this is the mutant that makes php/typed-class-const evidence rather than prose.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        const md = x?.metadata ?? {}
+        if (md.declaredOn === "const_declaration") return false
+        return true
+      }),
+    }),
+  },
+  {
+    id: "php/override-fires-without-base-method",
+    language: "php",
+    defectClass: "fabrication",
+    description:
+      "M60 php F5: the `overrides` rule regresses to the shape M12.PHP-OVERRIDE-AUDIT removed — an override edge is published for EVERY method of a class whose declared base is in the same file, WITHOUT checking that the base declares that method. The 0.5 first-parent guess this replaces was measured 66.7% false on phpunit@c8d6921f (12 of 18 decidable edges), and its two halves are pinned separately here: the external-base half by the pre-existing forbid rows, and this one, the in-file half, which php/external-override only gained in this round. It is the more dangerous of the two, because an in-file base LOOKS verified — the class is right there — so a rule that stops at 'the base is visible' is one step from a fabrication that reads as verified, at 0.95 and evidenceClass `structural`, i.e. indistinguishable from a real override in every downstream consumer. Caught by the `LocalChain.notOverridden` and `LocalMiddle.shared` forbid rows, which is the only reason this mutant is catchable at all: nothing in the differential can see it. Over both pinned corpora `overrides` has a sample size of ONE (both sides derive a single row, in a vendored phpstan fixture under tools/.phpstan/vendor/ that is in neither canonical draw), so the corpus audits nothing here and the label reads PASS on 0 rows vs 0 rows.",
+    transform: r => {
+      const classes = new Set<string>((r.symbols ?? []).filter((s: any) => s.kind === "class" && s.metadata?.baseClass).map((s: any) => String(s.name)))
+      const bases = new Map<string, string>((r.symbols ?? []).filter((s: any) => s.kind === "class").map((s: any) => [String(s.name), s.metadata?.baseClass ? String(s.metadata.baseClass) : ""]))
+      const methods: Array<{ owner: string; name: string; line: number | undefined }> = []
+      for (const s of r.symbols ?? []) {
+        if (s.kind === "method" && s.ownerName) methods.push({ owner: String(s.ownerName), name: String(s.name), line: s.range?.startLine })
+      }
+      const fabricated = methods
+        .filter((m) => classes.has(m.owner) && bases.get(m.owner))
+        .map((m) => ({
+          source: `${m.owner}.${m.name}`,
+          target: `${bases.get(m.owner)}.${m.name}`,
+          type: "overrides",
+          relationshipType: "overrides",
+          confidence: 0.95,
+          ...(m.line !== undefined ? { line_number: m.line } : {}),
+          metadata: { phpSpecific: true, isOverride: true },
+        }))
+      return { ...r, relationships: [...(r.relationships ?? []), ...fabricated] }
+    },
+  },
+  {
+    id: "php/override-chain-walked-transitively",
+    language: "php",
+    defectClass: "fabrication",
+    description:
+      "M60 php F5, the second untested half: `overrides` resolution becomes TRANSITIVE. The real rule compares a class only against the base it DECLARES, so on `LocalChain extends LocalMiddle extends LocalBase` the only edges are `LocalMiddle.handle -> LocalBase.handle` and `LocalChain.handle -> LocalMiddle.handle`. This mutant additionally publishes `LocalChain.handle -> LocalBase.handle` by walking the whole ancestor chain. It is a fabrication of the same class as the first-parent guess but aimed at the TARGET rather than the method: `overrides` targets a METHOD of a named class, so flattening the chain names a method on a class that never declared the overriding method, and it breaks the question the label answers — which class's declaration is being replaced. Caught by the transitivity forbid row in php/external-override, which is why the fixture grew a three-level chain in this round; the previous two-class fixture could not express the distinction at all.",
+    transform: r => {
+      const bases = new Map<string, string>()
+      for (const s of r.symbols ?? []) if (s.kind === "class" && s.metadata?.baseClass) bases.set(String(s.name), String(s.metadata.baseClass))
+      const declared = new Map<string, Set<string>>()
+      for (const s of r.symbols ?? []) if (s.kind === "method" && s.ownerName) {
+        const o = String(s.ownerName); if (!declared.has(o)) declared.set(o, new Set()); declared.get(o)!.add(String(s.name))
+      }
+      const extra: any[] = []
+      for (const [owner, base] of bases) {
+        const seen = new Set<string>()
+        let cur: string | undefined = base
+        while (cur && !seen.has(cur)) {
+          seen.add(cur)
+          if (cur !== base && declared.get(cur)) {
+            for (const m of declared.get(owner) ?? []) {
+              if (declared.get(cur)!.has(m)) {
+                extra.push({
+                  source: `${owner}.${m}`, target: `${cur}.${m}`,
+                  type: "overrides", relationshipType: "overrides", confidence: 0.95,
+                  metadata: { phpSpecific: true, isOverride: true },
+                })
+              }
+            }
+          }
+          cur = bases.get(cur)
+        }
+      }
+      return { ...r, relationships: [...(r.relationships ?? []), ...extra] }
+    },
+  },
+  {
+    id: "php/cross-file-override-ignored",
+    language: "php",
+    defectClass: "capability-revert",
+    description:
+      "M60 php round: the CROSS-FILE override path is reverted — the analyzer behaves as if no " +
+      "`AnalyzeContext.overrideCompanion` were ever passed, verifying only same-file inheritance. That is " +
+      "exactly the lane's state for its whole life until the M60 round, and it is why the label's audited " +
+      "sample size over the two pinned corpora was ONE: a single row, in a vendored phpstan test fixture, " +
+      "absent from both canonical 60-file draws, so on both published draws `overrides` compared 0 rows to 0 " +
+      "rows and read PASS. Measured with a corpus companion built: phpunit 527 edges and phpmyadmin 553, " +
+      "against 1 and 0 — and 527/527 and 553/553 exact agreement with an independently-written oracle, so the " +
+      "cross-file path is now a COMPARED label rather than one nobody was looking at. Caught by " +
+      "php/cross-file-override, which is the ONLY fixture that can catch it: every other php fixture is a " +
+      "single file, and the runner passes no companion unless the expectation declares `crossFileOverride`. " +
+      "That is why the runner grew the opt-in key — a capability carrying 1,080 edges, 11% of the lane's " +
+      "relationship volume, had no pin of any kind.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => {
+        // Drop only what the companion could have produced. The marker is the BASE, not
+        // the subclass: `SubContract` IS declared in this file, so keying on the source
+        // kept every edge and the mutant was a no-op — which is exactly what the suite
+        // reported when this was first written ("SURVIVED, 0 -> 0 failures"). An
+        // override edge names `Base.method`; if `Base` is not among this file's own
+        // classes then the edge can only have come from the companion.
+        if (x?.type !== "overrides") return true
+        const target = String(x.target ?? "")
+        const at = target.lastIndexOf(".")
+        if (at < 0) return true
+        const base = target.slice(0, at)
+        const declaredHere = (r.symbols ?? []).some((s: any) => s.kind === "class" && String(s.name) === base)
+        return declaredHere
+      }),
+    }),
+  },
+  {
+    id: "php/override-private-emitted",
+    language: "php",
+    defectClass: "fabrication",
+    description:
+      "M60 php round: the PRIVATE-METHOD rule is reverted — an `overrides` edge is published for a subclass " +
+      "method whose name matches a `private` method on the base. PHP does not inherit a private method, so " +
+      "`Sub::privateHelper` and `Base::privateHelper` are two unrelated methods and the edge asserts a " +
+      "relationship the language forbids. This is a FABRICATION, not a gap, and it was published at 0.95 " +
+      "with `evidenceClass: structural` — indistinguishable from a real override to every downstream consumer, " +
+      "which is the worst way to be wrong. It was PRE-EXISTING: the same-file prescan collected every `method` " +
+      "symbol regardless of modifiers, so `class A { private function p(){} } class B extends A { private " +
+      "function p(){} }` published `B.p -> A.p` long before this round. A corpus sweep DOES see it, but only " +
+      "with correct visibility reading: measured over both pinned repos with the companion built, of phpunit's " +
+      "527 and phpmyadmin's 553 `overrides` edges, exactly 2 name a private base method and are now correctly " +
+      "suppressed — and one of the two is phpunit's OWN `tests/_files/CoveredClass.php`, a fixture whose whole " +
+      "purpose is to assert that a private method is not overridden, which the analyzer was failing. An earlier " +
+      "measurement of this said ZERO and was WRONG: it read the visibility modifier as an anonymous child of " +
+      "`method_declaration` when the grammar nests it inside a named `visibility_modifier` — the same mistake " +
+      "the index builder made, and the reason it found nothing. `php/override-fires-without-base-method` cannot " +
+      "catch this one: that mutant reads the analyzer's method symbols, and a private base method is not among " +
+      "the methods it enumerates.\n\n" +
+      "SAME-FILE ONLY, and that is the rule's actual scope rather than a limit of the mutant. Cross-file " +
+      "visibility is deliberately NOT acted upon by the analyzer, because php keys edges on the leaf name and a " +
+      "name-keyed index is ambiguous — phpunit declares three `TestSuite` classes and two `Assert` classes, one " +
+      "of them a vendored library — and two ambiguity rules were tried, each of which SUPPRESSED correct edges. " +
+      "So this mutant fabricates the defect on the path where identity is exact.\n\n" +
+      "TWO DRAFTS, both no-ops, and the suite said so both times (\"SURVIVED, 0 -> 0 failures\"), which is the " +
+      "only reason this reads as a note rather than a changelog. (1) It re-labelled an EXISTING verified edge " +
+      "onto a private name pair — but no such edge exists, because their correct absence IS the rule, so it " +
+      "could only ever fire once the defect was already present. (2) It read `r.rawContent`, a field the " +
+      "analyzer's result does not carry (`Mutant`'s second parameter is the file text; only the engine's " +
+      "`parseFile` adds `rawContent`). This draft fabricates from the RESULT's own two facts — the class " +
+      "symbols' `visibility`, and the `extends` edges — so it needs no file text at all.",
+    transform: r => {
+      const bases = new Map<string, string>()
+      for (const x of r.relationships ?? []) {
+        if (x?.type !== "extends") continue
+        const s = String(x.source ?? "")
+        const t = String(x.target ?? "")
+        if (s && t) bases.set(s, t)
+      }
+      const added: any[] = []
+      const localBases = new Set<string>()
+      for (const sym of r.symbols ?? []) if (String(sym?.kind ?? "") === "class") localBases.add(String(sym.name))
+      for (const sym of r.symbols ?? []) {
+        if (String(sym?.kind ?? "") !== "method") continue
+        if (String(sym?.visibility ?? "") !== "private") continue
+        const owner = String(sym?.ownerName ?? "")
+        const meth = String(sym?.name ?? "")
+        const base = bases.get(owner)
+        if (!owner || !meth || !base) continue
+        // The base must be declared in THIS result for the identity to be exact — which is
+        // precisely the scope of the rule the analyzer implements.
+        if (!localBases.has(base)) continue
+        const basePrivate = (r.symbols ?? []).some((x: any) =>
+          String(x?.kind ?? "") === "method" && String(x?.ownerName ?? "") === base &&
+          String(x?.name ?? "") === meth && String(x?.visibility ?? "") === "private")
+        if (!basePrivate) continue
+        added.push({
+          source: `${owner}.${meth}`,
+          target: `${base}.${meth}`,
+          type: "overrides",
+          relationshipType: "overrides",
+          confidence: 0.95,
+          ...(sym?.range?.startLine !== undefined ? { line_number: sym.range.startLine } : {}),
+          metadata: { phpSpecific: true, isOverride: true, evidenceClass: "structural" },
+        })
+      }
+      if (!added.length) return r
+      return { ...r, relationships: [...(r.relationships ?? []), ...added] }
+    },
   },
   {
     id: "php/lines-dropped",
@@ -16523,6 +16987,53 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).map((e: any) => (e.type === "implements" && typeof e.line_number === "number" ? { ...e, line_number: Math.max(1, e.line_number - 1) } : e)),
+    }),
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // PERL-MR4 — what counts as an IMPORTED NAME. All four mutants are the
+  // pre-fix behaviour, and each was measured against BOTH grammar generations
+  // over the seven corpora before being fixed, because 2.0.0 was the CORRECT side
+  // of all of them: a grammar bump would have hidden every one of these.
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: "perl/import-harvests-fat-comma-payload",
+    language: "perl",
+    defectClass: "false-positive",
+    description: "PERL-MR4: a `use` argument list containing a top-level `=>` is a key/value SPECIFICATION, not a list of names to import. `use overload (q{\"\"} => 'as_string', bool => sub () { 1 }, fallback => 1)` was recorded as items [\"\\\"\\\"\",\"as_string\",\"bool\",\"fallback\"] -- a slot name, the handler the file must define, another slot, and a number. The `=>` is an anonymous token between the list's children and not a `fat_comma` node, which is why guarding `fat_comma` first changed nothing. Caught by perl/import-argument-items.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => (i.items?.length === 1 && i.items[0] === "*" ? { ...i, items: ["harvested-key", "harvested-handler"] } : i)),
+    }),
+  },
+  {
+    id: "perl/import-harvests-conditional-branch",
+    language: "perl",
+    defectClass: "false-positive",
+    description: "PERL-MR4: CODE IS NOT NAMES. A `?:` branch computes a value; it does not declare an import. In `use PluginList ('Plain::Plugin', '+Prefixed::Plugin', (eval { 1 } ? ('Conditional::Plugin' => { method_name => 'affe' }) : ()))` the branch contributed a plugin key plus two hash values alongside the two real plugins. Distinct from the fat-comma rule: that outer list has no top-level `=>`, so the argument COUNT was right and only the descent into the branch was wrong. Caught by perl/import-argument-items.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => (i.items?.length === 2 ? { ...i, items: [...i.items, "Conditional::Plugin", "affe"] } : i)),
+    }),
+  },
+  {
+    id: "perl/import-drops-parenthesized-args",
+    language: "perl",
+    defectClass: "edge-absence",
+    description: "PERL-MR4: 2.0.0 inserts `parenthesized_expression` between a statement and its `list_expression`, so a direct-child lookup finds no list and EVERY parenthesised `use` loses its arguments under a grammar bump -- real ones like Catalyst's two plugins, `use metaclass ('MyMetaclass')` and `use Encode ':all'`. The wrapper is a grouping paren and must stay transparent for FINDING arguments. Reproduces the 2.0.0-side loss. Caught by perl/import-argument-items.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => (i.items?.length === 2 ? { ...i, items: ["*"] } : i)),
+    }),
+  },
+  {
+    id: "perl/import-harvests-call-format-string",
+    language: "perl",
+    defectClass: "false-positive",
+    description: "PERL-MR4: CODE IS NOT NAMES, for a call's arguments. `use feature (sprintf(\":%vd\", $^V))` recorded [\":%vd\"] -- sprintf's FORMAT STRING, whose `%v` is a version conversion, while the bundle name itself is decided at runtime. This was the last disagreement between the two grammars in the whole 5,774-file corpus, and it was introduced by this milestone's own reachability fix: making the wrapper transparent is what let the walk reach into the sprintf at all. Caught by perl/import-argument-items.",
+    transform: r => ({
+      ...r,
+      imports: (r.imports ?? []).map((i: any) => (i.module === "feature" && i.items?.[0] === "*" ? { ...i, items: [":%vd"] } : i)),
     }),
   },
 

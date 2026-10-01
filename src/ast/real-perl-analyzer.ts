@@ -202,6 +202,28 @@ export function perlWordValues(node: Node): string[] {
   // `isArgumentSpecification` correctly says "this is a name list" and the
   // argument count is right. Only the descent into the branch is wrong.
   if (node.type === "conditional_expression" || node.type === "match_expression") return []
+
+  // PERL-MR4, fourth clause -- the same "code is not names" rule, now for a CALL's
+  // own arguments. This was the last disagreement between the two grammars in the
+  // whole corpus, at perl5/lib/B/Deparse-core.t:42:
+  //
+  //   use feature (sprintf(":%vd", $^V));   # to avoid relying on the feature
+  //
+  // The argument is a COMPUTED value. The bundle name is decided at runtime -- it
+  // is `:5.36` or whatever `$^V` renders to -- so there is no name here to import.
+  // 1.2.1 records ["*"], which is right. 2.0.0 recorded [":%vd"]: the FORMAT STRING
+  // of sprintf, whose `%v` is a version conversion, not a feature bundle.
+  //
+  // It is a false positive that MY OWN third fix introduced. Making
+  // `parenthesized_expression` transparent is correct, and it is also what let the
+  // walk reach into the sprintf at all. A reachability fix that stops honouring
+  // what the subtree CONTAINS ships that format string as an import name, so the
+  // wrapper has to be transparent for FINDING arguments and NOT transparent for
+  // READING them, and both halves need saying out loud.
+  //
+  // The callee name is not lost: this refuses only descending INTO the call, and
+  // `sprintf` is published by the ordinary call machinery.
+  if (node.type === "function_call_expression" || node.type === "method_call_expression" || node.type === "list_call_expression" || node.type === "list_operator_expression" || node.type === "function_call_list_expression") return []
   if (node.type === "binary_expression" || node.type === "logical_expression") {
     const op = node.childForFieldName("operator") ?? node.children.find((c: any) => !c.isNamed)
     const t = op ? op.type : ""
