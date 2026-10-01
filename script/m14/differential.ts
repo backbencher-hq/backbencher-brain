@@ -5475,7 +5475,31 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         const leaf = fn.namedChildren.find((c: any) => c.type === "field_identifier")
         name = leaf?.text
       } else name = fn?.text
-      if (name && !seen.has(name)) {
+      // #964 (C oracle mirror of the analyzer's #956 gate): a callee identifier
+      // inside PREPROCESSOR DIRECTIVE TEXT is not a call. Recovery splices these
+      // into real `call_expression` nodes -- zig's wasi libc mman.c:
+      //
+      //   #ifdef MAP_HUGETLB
+      //           (flags & MAP_HUGETLB) != 0 ||
+      //
+      // parses as
+      //
+      //   call_expression
+      //     identifier      "MAP_HUGETLB"        <- the #ifdef's tested macro
+      //     argument_list   "(flags & MAP_HUGETLB)"  <- the NEXT line
+      //
+      // because the directive's identifier is spliced into code and the following
+      // parenthesized expression becomes its argument list. The source contains no
+      // call; `#ifdef X` TESTS a macro, it does not invoke one -- which is the
+      // analyzer's #956 ruling, and #908/#912 beyond it.
+      //
+      // The oracle's USES derivation already guarded this with
+      // isDirectiveConditionText; the CALLS branch did not, so it published six
+      // fabricated `calls -> MAP_*` rows and the differential reported them as six
+      // MISSING -- convicting a correct analyzer. A superset oracle would have
+      // traded a fabrication for an unexplained edge, the same trade this file
+      // refuses for svelte (see deriveSvelteComponentUsages).
+      if (name && !seen.has(name) && !isDirectiveConditionText(fn)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
       }
