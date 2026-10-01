@@ -186,8 +186,24 @@
       ";",
       "..",
       "-",
-      "~"
-    ]
+      "~",
+      "$",
+      "$$",
+      "d",
+      "ERROR",
+      "%",
+      "'",
+      "''",
+      "#",
+      "stock",
+      "anyclass",
+      "nominal",
+      "default",
+      "e",
+      "p"
+    ],
+    "_m60hk_note": "M60-HK: `$`/`$$`/`d`/`ERROR` were classified after restoring the cabal corpus. `$` is the ordinary apply operator; `$$` and `d` are machinist template delimiters that appear because cabal ships .template.hs files, which are NOT valid Haskell (`$$name$$` placeholders); `ERROR` is the defensive parse-error node and only fires on those same 13 template/macro files. All four emit nothing, which is correct.",
+    "_m60hk_note2": "M60-HK, measured over the restored three-corpus sweep: %=65 '=34 stock=17 anyclass=17 ''=11 #=9 nominal=4 default=2 e=2 p=1. `%` and `'` are operators and type-level ticks and declare nothing. stock/anyclass/nominal are DeriveAnyClass strategies -- the same family as HS-G9's unhandled `via`, and likewise no symbol by design. `default` is a class default signature (HS-G7). ''/#/e/p occur only in cabal's machinist template files, which are not valid Haskell at all."
   },
   "gap": {
     "_description": "Advanced GHC-extension surfaces the analyzer does not model (declared limitations; bounded to extension syntax, not core Haskell). Differential floor target: Prelude/cabal corpora exercise few of these.",
@@ -207,8 +223,8 @@
       {
         "id": "HS-G3",
         "severity": "low",
-        "node_type": "type_family,type_instance,abstract_family,data_family,data_instance,associated_type,type_family_result,type_family_injectivity,equations",
-        "missing": "type/data family machinery emits no symbols or edges"
+        "node_type": "type_family,type_instance,abstract_family,data_family,data_instance,associated_type,type_family_result,type_family_injectivity,equations,family,infixl,infixr",
+        "missing": "type/data family machinery emits no symbols or edges The restored `cabal` corpus has family=5, infixl=8, infixr=5 \u2014 the type-family keyword and its injectivity annotations, which the postgrest substitute never exercised."
       },
       {
         "id": "HS-G4",
@@ -225,8 +241,8 @@
       {
         "id": "HS-G6",
         "severity": "low",
-        "node_type": "pattern_synonym,binding_list,constructor_synonym,constructor_synonyms",
-        "missing": "pattern synonyms emit no symbols"
+        "node_type": "pattern_synonym,binding_list,constructor_synonym,constructor_synonyms,pattern",
+        "missing": "pattern synonyms emit no symbols The restored `cabal` corpus has 96 `pattern` nodes across 50 files \u2014 the earlier \"0 occurrences\" was an artefact of the postgrest SUBSTITUTE corpus, which contains no pattern synonyms at all."
       },
       {
         "id": "HS-G7",

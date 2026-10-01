@@ -45,7 +45,8 @@ const ANALYZER_DOC = "docs/analyzers/real-haskell-analyzer.md"
 const REVIEW = "reviews/haskell/master-review.md"
 const SPEC = "script/m14/spec/haskell-completeness.json"
 const PIN = "validation/m14/grammar-pins.json"
-const CORPUS_ROOT = "$HOME/fixtures/repositories/postgrest"
+const CORPUS_ROOT = "$HOME/fixtures/repositories/cabal"
+const EXTRA_CORPORA = ["hledger", "postgrest"]
 const F5 = "validation/m14/results/M14.0.F5.json"
 const PRODUCT_TYPES = ["calls", "extends", "implements", "uses", "imports", "exports",
                        "contains", "references", "overrides", "instantiates"] as const
@@ -103,7 +104,7 @@ const FIXTURES = ["validation/m12/fixtures/haskell/Service.hs",
                   "validation/m12/fixtures/haskell/Negative.hs",
                   "validation/m14/fixtures/haskell/payload-and-complexity.hs"]
 const files = [
-  ...run("bash", ["-lc", `find ${CORPUS_ROOT} -name '*.hs' -not -path '*/.git/*' | sort`])
+  ...run("bash", ["-lc", `for d in ${CORPUS_ROOT} ${EXTRA_CORPORA.map((c) => `$HOME/fixtures/repositories/${c}`).join(" ")}; do find $d -name '*.hs' -not -path '*/.git/*'; done | sort`])
     .out.trim().split("\n").filter(Boolean),
   ...FIXTURES.filter((f) => existsSync(f)),
 ]
@@ -119,14 +120,32 @@ const truth = new Map<string, Set<string>>()
 const got = new Map<string, Set<string>>()
 for (const l of AUDITED) { truth.set(l, new Set()); got.set(l, new Set()) }
 
-const parser = await getParser("haskell")
+// Do NOT hold a parser reference across the sweep. The engine already recreates
+// the WASM parser every 500 parses precisely to stop memory accumulation
+// ("prevents WASM memory accumulation that causes hangs after ~9,000 parses",
+// engine.ts:623) — and holding a local reference means this loop keeps calling
+// `parse()` on the parser the engine has already deleted, which dies at EXACTLY
+// file 501 with `Out of bounds memory access` in `_ts_parser_parse_wasm`.
+//
+// It looked like a grammar crash: the file that fails parses fine in isolation
+// and with a freshly-created parser, and the native parser does not fault on it.
+// Asking the engine for the parser per file costs a Map lookup and lets its own
+// refresh do its job.
+//
+// Provenance: found by restoring the lane's ORIGINAL corpus (2,178 files). The
+// postgrest substitute has 207 and never reached the ceiling, which is exactly
+// the blind spot a substitute corpus carries.
 for (const f of files) {
   const src = readFileSync(f, "utf8")
   let tree: any, r: any
   try {
-    tree = (parser as any).parse(src)
+    tree = (await getParser("haskell") as any).parse(src)
     r = await parseFile(f, src)
-  } catch { crashed++; continue }
+  } catch (e: any) {
+    crashed++
+    if (crashed <= 3) console.log(`  unreadable: ${f.split("/").slice(-2).join("/")} — ${String(e?.message ?? e).slice(0, 60)}`)
+    continue
+  }
   swept++
 
   const lines = src.split("\n")
@@ -151,7 +170,30 @@ for (const f of files) {
     if (CONTRACT_TARGETS.has(String(x.target))) continue
     if (RESOLVED_TARGETS.has(String(x.target))) { resolved++; continue }
     const leaf = String(x.target).split(".").pop()!.split("(")[0]!.slice(-40)
-    if (leaf && !lines[ln - 1]?.includes(leaf)) {
+    // An FFI declaration's line carries the C spelling, not the Haskell binding:
+    //   foreign import capi unsafe "windows.h GetCurrentProcessId"
+    //   getCurrentProcessId :: IO DWORD
+    // The binding is DECLARED on the `foreign import` line -- which spells it
+    // `GetCurrentProcessId` -- so a case-sensitive search cannot succeed and
+    // reported 14 correct edges as wrong. Case matters for ordinary Haskell
+    // identifiers (`widget` and `Widget` are different names), so the relaxation
+    // is scoped to edges the analyzer marks as FFI rather than applied globally.
+    const text = lines[ln - 1] ?? ""
+    // An FFI declaration is DECLARED on the `foreign import` line, and that line
+    // spells the C symbol, not the Haskell binding -- which can differ by more
+    // than case:
+    //   foreign import capi unsafe "windows.h WaitForSingleObject"
+    //   waitForSingleObject_ :: Handle -> DWORD -> IO Bool
+    // The binding carries a trailing underscore precisely to avoid colliding with
+    // the C name, so neither an exact nor a case-insensitive search for it can
+    // succeed. The entity the analyzer stored is what the line actually says, so
+    // an FFI edge is checked against THAT. Ordinary identifiers keep the strict
+    // case-sensitive test, where `widget` and `Widget` are different names.
+    const entity = String(x.metadata?.foreignEntity ?? "")
+    const needle = entity || leaf
+    const isFfi = !!(x.metadata?.isForeignImport || x.metadata?.isForeignEntity || entity)
+    const hit = needle ? (isFfi ? text.toLowerCase().includes(needle.toLowerCase()) : text.includes(needle)) : true
+    if (!hit) {
       wrongLine++
       if (wrongSamples.length < 4) wrongSamples.push(`${x.type} ${x.source} -> ${x.target} @${ln}`)
     }

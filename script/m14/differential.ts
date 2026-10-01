@@ -34,7 +34,22 @@ import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
 import { CLOJURE_CORE_BUILTINS } from "../../src/ast/real-clojure-analyzer"
 import { csharpMemberDeclaredTypeText, csharpResolveTargetTypedNew, csharpTypeNameText, csharpDeclaredTypeRefs, csharpUsingDirectiveTarget } from "../../src/ast/real-csharp-analyzer"
-import { phpDeclaredTypeRefs, phpStaticIncludePath, phpStaticCallableName } from "../../src/ast/real-php-analyzer"
+// M60 php round (2026-09-30): php's differential now imports NO RULE from its
+// analyzer. The three functions it used to — `phpDeclaredTypeRefs` (the whole
+// declared-type graph), `phpStaticCallableName` (the callee-name rule) and
+// `phpStaticIncludePath` (the include-path rule) — are each replaced by an
+// INDEPENDENT derivation in this file, because a rule both sides call is a rule with
+// ONE implementation, and every one of the three had already been wrong with nothing
+// able to see it. `PHP_BUILTINS` above is still imported, and that is a deliberate
+// exception: it is a DATA SET of names, not a rule, and a hand-copied list drifts in
+// exactly the way that would fabricate or hide call edges.
+//
+// `phpDeclaredTypeRefs` remains imported ONLY so that the superseded
+// `derivePhpDeclaredTypeEdges` still runs — it is kept so the shared-vs-independent
+// comparison is reproducible from this file alone, and it is no longer on the truth
+// path. `phpStaticCallableName` and `phpStaticIncludePath` are no longer referenced
+// anywhere in this file.
+import { phpDeclaredTypeRefs } from "../../src/ast/real-php-analyzer"
 // #917: the macro-wrapped-heading SHAPE RULE is imported from the analyzer —
 // one rule for both sides, never a re-implementation (see isWrappedHeadingName).
 import {
@@ -1461,7 +1476,64 @@ export async function embeddedScriptParsers(): Promise<{ js: any; ts: any; tsx: 
 // SFC block is an input property of the pipeline, not a claim either side makes,
 // and the analyzer receives exactly these trees. The truth derivation over them
 // (deriveTypeScriptEdges) stays independent.
-export async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
+export /**
+ * F1: Options-API heritage truth — the bases an SFC's default-export object
+ * names via `extends` / `mixins`, in the three shapes Vue accepts (a bare
+ * name, an array, a string). Derived from the TREE, independently of the
+ * analyzer, by the same contract: only identifiers and string literals name a
+ * base, and an inline object is a merge whose members are extracted rather than
+ * a base class to inherit from.
+ */
+function deriveVueHeritageTruth(roots: any[] | any, from = ""): Array<{ label: string; from: string; target: string }> {
+  const out: Array<{ label: string; from: string; target: string }> = []
+  const stack: any[] = Array.isArray(roots) ? [...roots] : [roots]
+  let component = from
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "export_statement") {
+      // `default` is an ANONYMOUS token, so it is absent from `namedChildren` —
+      // the first version tested it there and the derivation never fired once
+      // (9 analyzer rows on vue-element-admin scored as fabrications with
+      // MISSING still 0, which is the differential working: an edge nothing
+      // could check). All children, not just named ones.
+      const isDefault = (n.children ?? []).some((c: any) => !c.isNamed && c.text === "default")
+      const obj = (n.namedChildren ?? []).find((c: any) => c.type === "object")
+      if (isDefault && obj) {
+        // The component's own identity: the `name:` option, else the module.
+        const namePair = (obj.namedChildren ?? []).find(
+          (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
+        )
+        const named = namePair?.childForFieldName("value")?.text?.replace(/['"]/g, "")
+        component = named || from
+        for (const c of obj.namedChildren ?? []) {
+          if (c.type !== "pair") continue
+          const key = c.childForFieldName("key")?.text
+          if (key !== "extends" && key !== "mixins") continue
+          const value = c.childForFieldName("value")
+          if (!value) continue
+          if (value.type === "object") continue // a merge, not a reference
+          const names: string[] = []
+          if (value.type === "identifier") names.push(value.text)
+          else if (value.type === "string") names.push(value.text.replace(/^['"]|['"]$/g, ""))
+          else if (value.type === "array") {
+            for (const el of value.namedChildren ?? []) {
+              if (el.type === "identifier") names.push(el.text)
+              else if (el.type === "string") names.push(el.text.replace(/^['"]|['"]$/g, ""))
+            }
+          }
+          for (const t of names) if (t) out.push({ label: "extends", from: component, target: t })
+        }
+      }
+    }
+    for (let i = 0; i < (n.namedChildCount ?? 0); i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+async function deriveEmbeddedScriptTrees(root: any, content: string, lang: string): Promise<any[]> {
   const { js: parser, ts: tsParser, tsx: tsxParser } = await embeddedScriptParsers()
   const out: any[] = []
   const eng = await import("../../src/ast/engine")
@@ -10291,16 +10363,20 @@ export function deriveObjcEdges(root: any): { label: string; from: string; targe
 }
 
 /**
- * R9 (#835): php's declared-type reference graph, as TRUTH.
+ * R9 (#835): php's declared-type reference graph, as TRUTH — the SHARED version.
  *
- * Derived from the analyzer's own `phpDeclaredTypeRefs` — deliberately not a second
- * implementation (CSD14's rule, and the csharp round's measured lesson: a truth that
- * re-implements the rule surfaces every new edge as analyzer-only).
- *
- * `parent` needs the enclosing class's declared base, and the analyzer PUBLISHES that on
- * its class symbols (`metadata.baseClass`), so the map is built from the analyzer's own
- * payload rather than from a second reading of the base clause.
- */
+ * SUPERSEDED 2026-09-30 by `derivePhpDeclaredTypeEdgesIndependent` below, which does
+  * NOT call the analyzer's rule. Kept, and kept working, so the comparison is
+  * reproducible from this file alone.
+  *
+  * Derived from the analyzer's own `phpDeclaredTypeRefs` — deliberately not a second
+  * implementation (CSD14's rule, and the csharp round's measured lesson: a truth that
+  * re-implements the rule surfaces every new edge as analyzer-only).
+  *
+  * `parent` needs the enclosing class's declared base, and the analyzer PUBLISHES that on
+  * its class symbols (`metadata.baseClass`), so the map is built from the analyzer's own
+  * payload rather than from a second reading of the base clause.
+  */
 export function derivePhpDeclaredTypeEdges(
   root: any,
   symbols: any[],
@@ -10315,6 +10391,357 @@ export function derivePhpDeclaredTypeEdges(
     from: ref.source,
     target: ref.target,
   }))
+}
+
+/**
+ * php's INCLUDE-PATH rule, independently. See the R10 note at the call site.
+ *
+ * THE RULE: a `require`/`include` path is a MODULE DEPENDENCY and belongs in the
+ * `imports` kind (src/lsp/graph_request.ts:256 keys the file-level reader on
+ * `relationship_type IN ('imports','exports')`), and it is emitted ONLY when the path
+ * is statically known. Two separate defects made this rule wrong once each, and both
+ * were invisible to the differential because both sides called the same function:
+ *
+ *   - it read the RAW TEXT of a `binary_expression`, so a concatenation with a runtime
+ *     part published a reconstructed EXPRESSION as the import module and as a
+ *     `references` target: `include $this->baseDir . 'revision-info.php'` became the
+ *     target `$this->baseDir.'revision-info.php'`, a string carrying `$`, `->`, `.`
+ *     and quotes that no php symbol can ever be named.
+ *   - the fix above was wrong the other way: returning `n.text` for a fully static
+ *     concatenation published `__DIR__.'/src/DeprecatedClass.php'` — the operator, the
+ *     quotes and the magic constant's spelling — on phpunit's autoloaders, and both
+ *     sides agreed on it.
+ *
+ * So the value is the CONCATENATION OF THE OPERANDS' VALUES, never the source text of
+ * the concatenation, and the decision (is this path static?) is separate from the
+ * rendering (how is it spelled?). Only `.` composes a path; any other operator is not a
+ * concatenation and yields nothing.
+ *
+ * THE SHAPES, from the pinned grammar (probe-verified; see the header of the
+ * A/B probe in `script/m60/tmp/php-include-ab.mts`):
+ *
+ *   string                      'a/b.php'              -> a/b.php
+ *   encapsed_string             'a/b.php'              -> a/b.php, UNLESS it interpolates
+ *   name / qualified_name       __DIR__                -> as written (static by definition)
+ *   binary_expression           __DIR__ . '/x.php'     -> the two VALUES composed
+ *   anything else                                    -> nothing
+ *
+ * MEASURED over the full git-tracked corpus of both pinned repos (4,463 files), 208
+ * include/require nodes: **189 accepted by BOTH rules, 0 accepted by only one, 19
+ * accepted by neither, 0 disagreements.** The 19 are 11 `variable_name` operands, 2
+ * `class_constant_access_expression` and 1 `member_access_expression` — a runtime value
+ * on one side of the concatenation, so the path is genuinely not fixed.
+ *
+ * `parenthesized_expression` (`require (__DIR__ . '/x.php')`) is NOT unwrapped, and
+ * occurs **0 times** in both corpora. Declining it publishes nothing, so it cannot
+ * fabricate; it may miss a statically knowable path, which is the honest direction for
+ * a rule whose target must be nameable. Disclosed for the same reason `relative_name`
+ * is on the callee rule: a construct the corpora do not contain cannot be validated by
+ * them, and an unexercised branch should be named rather than left to be discovered.
+ */
+export function phpIndependentStaticIncludePath(node: any): string | undefined {
+  const PATH_SHAPES = new Set(["string", "encapsed_string", "binary_expression", "name", "qualified_name"])
+  const stripQuotes = (t: string): string => {
+    if (t.length < 2) return t
+    const a = t.charCodeAt(0), b = t.charCodeAt(t.length - 1)
+    if ((a === 34 && b === 34) || (a === 39 && b === 39)) return t.substring(1, t.length - 1)
+    return t
+  }
+  const interpolates = (n: any): boolean => {
+    if (n.type === "variable_name" || n.type === "dynamic_variable_name") return true
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c && interpolates(c)) return true }
+    return false
+  }
+  const staticValue = (n: any): string | undefined => {
+    switch (n.type) {
+      case "string":
+        return stripQuotes(String(n.text ?? ""))
+      case "encapsed_string":
+        return interpolates(n) ? undefined : stripQuotes(String(n.text ?? ""))
+      case "name":
+      case "qualified_name":
+        return String(n.text ?? "")
+      case "binary_expression": {
+        const ops: any[] = []
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) ops.push(c) }
+        if (ops.length !== 2) return undefined
+        // The operator between the two operands. Only `.` composes a path.
+        const between = String(n.text ?? "").slice(ops[0].endIndex - n.startIndex, ops[1].startIndex - n.startIndex).trim()
+        if (between !== ".") return undefined
+        const l = staticValue(ops[0]), r = staticValue(ops[1])
+        return l === undefined || r === undefined ? undefined : l + r
+      }
+      default:
+        return undefined
+    }
+  }
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (!c || !PATH_SHAPES.has(c.type)) continue
+    return staticValue(c)
+  }
+  return undefined
+}
+
+/**
+ * php's CALLEE-NAME rule, independently. See the R10 note at the call site for why
+ * this is not the analyzer's `phpStaticCallableName`.
+ *
+ * THE RULE, from the pinned grammar's own callee shapes (probe-verified against
+ * `wasm/tree-sitter-php.wasm`, shape census in `script/m60/tmp/php-callee-ab.mts`).
+ * A `calls` target exists only when the callee is spelled as a NAME, because a target
+ * is a name a symbol can BE named by. Six callee shapes occur:
+ *
+ *   name                       strlen(...)         -> `strlen`
+ *   qualified_name             \Foo\Bar\baz(...)   -> `baz`   (the LEAF; a leading `\`
+ *                                                              is stripped, or a
+ *                                                              builtin escapes the filter
+ *                                                              and the target carries a
+ *                                                              separator no other php edge
+ *                                                              can spell)
+ *   variable_name              $fn(...)            -> nothing
+ *   parenthesized_expression   ($fn)(...)          -> nothing
+ *   array_creation_expression  [$fn](...)          -> nothing
+ *   member_call_expression     $c->cb()(...)       -> nothing
+ *   relative_name              namespace\f(...)    -> nothing (0 sites in both corpora)
+ *
+ * A non-name callee is a runtime VALUE and the VALUE is still read — by the variable
+ * pass, as `uses -> fn`. Publishing `calls -> $fn` would fabricate a name AND lose the
+ * honest edge at the same time, which is precisely the R10 defect this rule exists to
+ * prevent, and which this function's own predecessor did until R10 fixed it.
+ *
+ * `relative_name` (`namespace\f()`) is declined on purpose and the corpora cannot
+ * argue either way: it occurs **0 times** in phpunit and phpmyadmin. Declining it
+ * publishes nothing, so it cannot fabricate; declining it may MISS a real call, which
+ * is the honest direction for a rule whose target must be nameable. Disclosed here for
+ * the same reason `namespace_use_group` is: a construct the corpora do not contain
+ * cannot be validated by them.
+ *
+ * MEASURED over the full git-tracked corpus of both pinned repos (4,463 files):
+ * **16,164 call sites with a callee name and 325 without, on both sides; 0
+ * disagreements.**
+ */
+export function phpIndependentCallableName(fn: any): string | undefined {
+  if (!fn) return undefined
+  if (fn.type === "name") {
+    const t = String(fn.text ?? "").trim()
+    return t || undefined
+  }
+  if (fn.type === "qualified_name") {
+    // The LEAF is the text after the LAST separator — and the search must run from
+    // the END of the string, not from a position. `\Foo\Bar\baz` must yield `baz`.
+    //
+    // Written wrong first (`lastIndexOf(sep, i)` after advancing `i` past the leading
+    // separators), which searches BACKWARDS from index i and therefore finds the
+    // LEADING separator: the rule returned `Foo\Bar\baz` instead of `baz`. The
+    // differential still reported 0 unexplained and 100% coverage, because
+    // `normTarget` is the LAST SEGMENT and discarded the qualifier — so a bug in the
+    // TRUTH side is structurally invisible to the published match, which is the hazard
+    // the harness's own `BB_F5_STRICT` note records about groovy ("a truth row can be
+    // satisfied by an unrelated analyzer edge that happens to share its leaf").
+    //
+    // What actually caught it, stated exactly: the truth ROW COUNT moved (888 -> 901 on
+    // the phpunit draw) with no change to coverage, which is a shape no coverage figure
+    // reports. `BB_F5_STRICT=1` was then run to confirm the corrected rule, and it
+    // reads `strict-missing=0 hidden=0` on both corpora — identities hold, the published
+    // rule hid nothing. That is a confirmation, not the detection, and the difference is
+    // worth keeping: a coverage percentage cannot tell you the truth changed underneath it.
+    const text = String(fn.text ?? "")
+    const at = text.lastIndexOf("\\")
+    const leaf = (at >= 0 ? text.substring(at + 1) : text).trim()
+    return leaf || undefined
+  }
+  return undefined
+}
+
+/**
+ * R9 (#835): php's declared-type reference graph, as TRUTH — the INDEPENDENT version.
+ *
+ * WHY THIS EXISTS, and it is the single largest blind spot left in the lane.
+ * `derivePhpDeclaredTypeEdges` above calls the ANALYZER'S OWN `phpDeclaredTypeRefs`.
+ * The lane justifies sharing with CSD14's rule — "a truth that re-implements the rule
+ * surfaces every new edge as analyzer-only" — and the DRIFT half of that is real. The
+ * BLINDNESS half is the price, and it is not hypothetical: this lane has already paid
+ * it once. `phpStaticCallableName` was wrong for a long time (it published
+ * `calls -> $callable`, a target no php symbol can ever be named); the oracle agreed,
+ * because it called the same function; and no differential, at any sample size, could
+ * see it. R10's target-spelling census found it by reading the analyzer, not by
+ * comparing two implementations. A rule that both sides call is a rule with ONE
+ * implementation, and one implementation has nobody checking it.
+ *
+ * `references` is 8,030 edges over the two pinned corpora — php's 6th-largest label —
+ * and until now it was the largest label in the lane with no second implementation at
+ * all. That is the gap this closes.
+ *
+ * ON CSD14, because the objection is the right one and the resolution is procedural
+ * rather than rhetorical. An independent truth WILL read "analyzer-only" on the first
+ * draw after a rule changes — and that is the feature, not the cost: it is the
+ * differential announcing that a rule changed, which is exactly the announcement a
+ * shared truth cannot make by construction. CSD14 prices the drift as "every new edge
+ * reads as analyzer-only", which is true ONCE per rule change and is a five-minute
+ * deliberate act to resolve. It prices the blindness implicitly, and the blindness is
+ * paid on every bug that is ever introduced, forever. One pays once and gets a signal;
+ * the other pays always and gets none. So when the analyzer's declared-type rule next
+ * changes, expect new analyzer-only rows here, and treat them as the signal they are
+ * rather than as a false alarm to suppress.
+ *
+ * WRITTEN FROM THE PINNED GRAMMAR'S OWN SHAPES, not by reading the analyzer. The shape
+ * map is `script/m60/tmp/php-type-shapes.mts`, probe-verified against
+ * `wasm/tree-sitter-php.wasm`. What that map establishes, and what a first reading of
+ * the analyzer would not tell you:
+ *
+ *   - `never` parses as `bottom_type`, NOT `primitive_type` — so a rule that only
+ *     skips `primitive_type` is skipping `never` by accident, not by decision.
+ *   - `(Dep&IS)|null` is `disjunctive_normal_form_type` containing an
+ *     `intersection_type` AND a `primitive_type`, so a container-generic descent is
+ *     required; an allowlist of known wrappers would miss DNF types entirely.
+ *   - a qualified type is `named_type > qualified_name(namespace_name(...), name)`
+ *     and publishes its LEAF; a single-segment `\Dep` is ALSO a `qualified_name`, so
+ *     "qualified" cannot be detected by the presence of a backslash alone.
+ *   - a closure's and an arrow function's parameters and return types ARE typed
+ *     positions, but neither has a `name`, so there is no nameable source. The lane
+ *     declares that a boundary (the analyzer's own header lists it); this truth
+ *     honours it by emitting nothing rather than by attributing to a symbol that
+ *     does not exist.
+ *
+ * WHAT IT IS ALLOWED TO SHARE, and why that is not cheating: the enclosing class's
+ * DECLARED BASE, read from `metadata.baseClass` on the analyzer's own class symbol.
+ * That is a PUBLISHED FACT both sides read, not a rule either side computes — the
+ * shared version above does exactly the same, and R9's design note says so explicitly.
+ * Everything else here — the position table, the wrapper descent, the leaf
+ * extraction, the relative-type resolution, the attribution — is written from the
+ * shapes above and shares no code with `phpDeclaredTypeRefs`.
+ *
+ * MEASURED BEFORE THIS WAS WIRED IN, on the full git-tracked corpus of both pinned
+ * repos (4,463 files): **5,349 distinct targets on both sides, 0 target-only
+ * disagreements and 0 attribution disagreements.** Attribution is reported separately
+ * because the differential's coverage match is `(label, target)` only — it compares
+ * no `from` at all — so attribution drift would remain invisible to the harness even
+ * with this truth in place. Measured here rather than left implicit.
+ */
+export function derivePhpDeclaredTypeEdgesIndependent(
+  root: any,
+  symbols: any[],
+): { label: string; from: string; target: string }[] {
+  // --- the shape map, transcribed from script/m60/tmp/php-type-shapes.mts ---
+  // A declaration that WRITES a type name depends on the type it names. `owner` is
+  // whose dependency it is: a member's belongs to the enclosing TYPE, a parameter's
+  // and a return's to the enclosing CALLABLE, and a file-scope one to the compilation
+  // unit (published as `global`, the same owner php's read rules use).
+  const TYPE_POSITIONS: Array<{ node: string; field: string; owner: "type" | "callable" }> = [
+    { node: "property_declaration", field: "type", owner: "type" },
+    { node: "const_declaration", field: "type", owner: "type" },      // PHP 8.3 typed class constant
+    { node: "simple_parameter", field: "type", owner: "callable" },
+    { node: "variadic_parameter", field: "type", owner: "callable" },
+    { node: "property_promotion_parameter", field: "type", owner: "callable" },
+    { node: "method_declaration", field: "return_type", owner: "callable" },
+    { node: "function_definition", field: "return_type", owner: "callable" },
+  ]
+  /** Types that are TYPE but name no userland symbol. `bottom_type` is `never`. */
+  const NON_DEPENDENCY_TYPES = new Set(["primitive_type", "bottom_type"])
+  const RELATIVE = new Set(["self", "static", "parent"])
+  const NAMED_TYPES = new Set(["class_declaration", "interface_declaration", "trait_declaration", "enum_declaration"])
+  const CALLABLES = new Set(["method_declaration", "function_definition", "anonymous_function", "arrow_function"])
+
+  const declaredBase = new Map<string, string>()
+  for (const s of symbols ?? []) {
+    if (s?.kind === "class" && s?.metadata?.baseClass && s?.name) declaredBase.set(String(s.name), String(s.metadata.baseClass))
+  }
+
+  /** The trailing `name` of a `qualified_name` — the LEAF every other php edge keys on. */
+  const leafOf = (n: any): string | undefined => {
+    if (n?.type === "name") { const t = String(n.text ?? "").trim(); return t || undefined }
+    if (n?.type === "qualified_name") {
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c?.type === "name") { const t = String(c.text ?? "").trim(); if (t) return t }
+      }
+    }
+    return undefined
+  }
+  /** Drop every leading `\` — a char scan, char code 92. */
+  const unlead = (t: string): string => { let i = 0; while (i < t.length && t.charCodeAt(i) === 92) i++; return t.substring(i) }
+
+  const enclosingName = (from: any, kinds: Set<string>): string => {
+    let cur: any = from?.parent
+    while (cur) {
+      if (kinds.has(cur.type)) { const nm = cur.childForFieldName?.("name")?.text; if (nm) return String(nm) }
+      cur = cur.parent
+    }
+    return ""
+  }
+  /** A callable's OWN name. Starts AT the node: a `method_declaration` IS the callable,
+   *  so a parent-first search silently finds nothing for every method-scope position. */
+  const ownName = (n: any): string =>
+    CALLABLES.has(n.type) ? String(n.childForFieldName?.("name")?.text ?? "") : enclosingName(n, CALLABLES)
+
+  /** Every NAMED type inside one written type. Container-generic: an allowlist of
+   *  wrappers would miss `disjunctive_normal_form_type` and any wrapper the grammar
+   *  adds later, and the grammar is the thing being measured. */
+  const members = (typeRoot: any, ownerType: string): string[] => {
+    const acc: string[] = []
+    const walk = (n: any): void => {
+      if (!n) return
+      if (NON_DEPENDENCY_TYPES.has(n.type)) return
+      if (n.type === "named_type") {
+        let text: string | undefined
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          text = leafOf(c)
+          if (text) break
+        }
+        if (!text) return
+        if (RELATIVE.has(text)) {
+          // self/static name the ENCLOSING class; parent names its declared base, and
+          // an unresolvable parent emits nothing — a wrong edge is worse than no edge.
+          if (text === "parent") { const b = ownerType ? declaredBase.get(ownerType) : undefined; if (b) acc.push(b); return }
+          if (ownerType) acc.push(ownerType)
+          return
+        }
+        acc.push(text)
+        return
+      }
+      for (let i = 0; i < n.namedChildCount; i++) walk(n.namedChild(i))
+    }
+    walk(typeRoot)
+    return acc
+  }
+
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const pos = TYPE_POSITIONS.find((p) => p.node === n.type)
+    if (pos) {
+      const typeRoot = n.childForFieldName?.(pos.field)
+      if (typeRoot) {
+        const ownerType = enclosingName(n, NAMED_TYPES)
+        let source: string | null = null
+        if (pos.owner === "type") {
+          source = ownerType || "global"
+        } else {
+          const own = ownName(n)
+          // A closure or arrow function has no name, so there is no nameable source.
+          // That is the lane's DECLARED boundary; emit nothing rather than attribute to
+          // a symbol that does not exist.
+          if (!own && !ownerType) source = null
+          else source = own || ownerType || "global"
+        }
+        if (source) {
+          for (const target of members(typeRoot, ownerType)) {
+            const t = unlead(target)
+            const k = `${source}\u0000${t}`
+            if (seen.has(k)) continue
+            seen.add(k)
+            edges.push({ label: "references", from: source, target: t })
+          }
+        }
+      }
+    }
+    for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  return edges
 }
 
 export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
@@ -10646,12 +11073,34 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
     }
     return saw
   }
-  // R10 (#835): the include-path rule and the callee-name rule are NO LONGER
-  // mirrored here — both sides call the analyzer's own functions
-  // (`phpStaticIncludePath`, `phpStaticCallableName`), so a hand-written copy
-  // cannot drift from the rule it claims to state. The old locals
-  // (`cleanString`/`collapseWhitespace`) were deleted with the copies: dead code
-  // standing next to a comment about agreement is how a mirror grows back.
+  // R10 (#835), REVISED 2026-09-30. The reasoning here was that the include-path rule
+  // and the callee-name rule should NOT be mirrored, because both sides call the
+  // analyzer's own functions and "a hand-written copy cannot drift from the rule it
+  // claims to state". The drift half is right and the blindness half was not priced:
+  // both functions had ALREADY been wrong, and the shared call is why nothing saw it.
+  // `phpStaticCallableName` published `calls -> $callable` — a target no php symbol
+  // can ever be named — for a long time, and the oracle agreed because it called the
+  // same function, so R10's target-spelling census (which reads the analyzer) found it
+  // and no differential could. Same shape on the include path: `phpStaticIncludePath`
+  // published `$this->baseDir.'revision-info.php'` as a `references` target, and both
+  // sides agreed on it.
+  //
+  // So both rules are now INDEPENDENT here — `phpIndependentCallableName` and
+  // `phpIndependentStaticIncludePath` — and each carries the measurement that says
+  // the two agree. "A hand-written copy cannot drift" was true of the copy and false
+  // of the comparison: a copy that is generated from the rule cannot drift, and a
+  // comparison against a copy can always be wrong in a direction the shared call
+  // never reports. The old locals (`cleanString`/`collapseWhitespace`) were deleted
+  // with the first copies, and the point stands: dead code standing next to a comment
+  // about agreement is how a mirror grows back.
+  //
+  // MEASURED over the full git-tracked corpus of both pinned repos (4,463 files):
+  //   callee-name rule    16,164 call sites with a callee NAME and 325 without, on
+  //                       BOTH sides, 0 disagreements across all six callee shapes
+  //                       (`name`, `qualified_name`, `variable_name`,
+  //                       `parenthesized_expression`, `array_creation_expression`,
+  //                       `member_call_expression`).
+  //   include-path rule   see `phpIndependentStaticIncludePath`'s own header.
   // PHP-O2 (first review): verified in-file overrides. The analyzer emits
   // overrides[B.foo->A.foo] @0.95 when the in-file base declares the same
   // method; the oracle derived nothing, so every verified pair was an
@@ -10717,7 +11166,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
   // `$this->baseDir.'revision-info.php'` as a path, so the differential agreed
   // and could see nothing), and a hand-written mirror is how a narrowing on one
   // side becomes phantom "missing in analyzer" edges on the other.
-  const extractPhpIncludePath = (node: any): string | undefined => phpStaticIncludePath(node)
+  const extractPhpIncludePath = (node: any): string | undefined => phpIndependentStaticIncludePath(node)
 
   // PHP2 mirror: persistent value-scope frames (file prescan + per-scope
   // binds). Mirrors the analyzer's fileScope/universals/collectors exactly.
@@ -10828,7 +11277,7 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
       // callee (`$callable()`) has no callee NAME; both sides previously derived
       // `calls -> $callable` from the same raw text, so the differential agreed
       // and could not see it.
-      const target = phpStaticCallableName(n.childForFieldName?.("function"))
+      const target = phpIndependentCallableName(n.childForFieldName?.("function"))
       if (target) {
         // M37.13 mirror: the analyzer's processFunctionCall returns EARLY for
         // the WordPress hook registrars (framework detection only, no calls
@@ -18636,6 +19085,34 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       return out
     }
     const first = (n: any, t: string) => named(n, t)[0]
+    /**
+     * Every `Name` reachable under a node, for a DTD CONTENT MODEL.
+     *
+     * The members of a content model are `Name` nodes at arbitrary depth, because
+     * the model nests: `<!ELEMENT character (literal, codepoint+, (a|b)*)>` puts
+     * `literal` and `codepoint` one level down and `a`/`b` two. A direct-children
+     * read therefore finds the first group and silently loses the rest — which is
+     * the shape of defect this whole phase had to avoid, since a content model
+     * that quietly drops half its members produces plausible-looking truth.
+     */
+    const namesUnder = (n: any): string[] => {
+      const out: string[] = []
+      const stack: any[] = [n]
+      while (stack.length > 0) {
+        const cur = stack.pop()
+        if (!cur) continue
+        if (cur !== n && cur.type === "Name") {
+          const t = cur.text.trim()
+          if (t.length > 0) out.push(t)
+          continue
+        }
+        for (let i = cur.namedChildCount - 1; i >= 0; i--) {
+          const c = cur.namedChild(i)
+          if (c) stack.push(c)
+        }
+      }
+      return out
+    }
     const textOf = (n: any | undefined) => (n ? n.text : "")
     // first whitespace-delimited token, as a CHAR WALK. Not a regex: this file
     // must not contain one, and a name is a token exactly as often as it is a
@@ -18822,6 +19299,73 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const ownerName = nameOf.get(ownerKey) ?? ""
       if (ownerName.length === 0) continue
       push(ownerName, target, "contains")
+    }
+
+    // ---- phase 4: the DTD's OWN declarations
+    //
+    // This is the branch phases 1–3 could not reach, and its absence is why the
+    // lane's differential rested on one corpus. Every earlier phase is guarded by
+    // `if (n.type !== "element") continue`, and NONE of the four DTD declaration
+    // node types is an `element` — so a file whose declarations live in a DTD
+    // contributed almost no truth for the analyzer to be measured against, and the
+    // difference read as the analyzer inventing edges. Measured on libxml2's
+    // `result/intsubset2.xml`: the analyzer published 20 DTD edges from a 12-file
+    // declaration set and the oracle corroborated none of them.
+    //
+    // The owner rule is not uniform, and reading it off the corpus rather than
+    // assuming it is what makes this correct:
+    //
+    //   - `<!ELEMENT x …>`, `<!ENTITY x …>`, `<!NOTATION x …>` are owned by the
+    //     DOCTYPE'S OWN NAME — the thing the DTD is a grammar *for*. So
+    //     `<!DOCTYPE kanjidic2 [<!ELEMENT header (#PCDATA)>]>` says
+    //     `contains kanjidic2 -> header`, not `contains header -> header`.
+    //   - `<!ATTLIST elem a …>` is owned by THE ELEMENT IT DECLARES ATTRIBUTES
+    //     FOR, not by the DOCTYPE name: `<!ATTLIST cp_value cp_type CDATA
+    //     #REQUIRED>` says `contains cp_value -> cp_type`. This is the one that a
+    //     uniform rule gets wrong, and getting it wrong would have invented an
+    //     edge on the DOCTYPE instead of the element.
+    //   - a CONTENT MODEL is owned by the element being declared:
+    //     `<!ELEMENT header (file_version, …)>` says `contains header ->
+    //     file_version`.
+    //
+    // `contains kanjidic2 -> kanjidic2` — a DTD's root element declaration
+    // pointing at itself — is NOT a self-loop defect. The xml fixture
+    // `xml/dtd-declarations` pins it, and E1 in the review records why: a DTD and
+    // the element it declares routinely share a name (`<!DOCTYPE catalog
+    // [<!ELEMENT catalog (entry+)>]>` is the ordinary spelling) and those are two
+    // DISTINCT declarations.
+    for (const dt of nodes) {
+      if (dt.type !== "doctypedecl") continue
+      const dtdName = first(dt, "Name")?.text ?? ""
+      if (dtdName.length === 0) continue
+      for (let i = 0; i < dt.namedChildCount; i++) {
+        const decl = dt.namedChild(i)
+        if (!decl) continue
+        if (decl.type === "elementdecl") {
+          const elName = first(decl, "Name")?.text ?? ""
+          if (elName.length > 0) push(dtdName, elName, "contains")
+          // The content model names further elements, owned by THIS one. The
+          // members are `Name` nodes anywhere under `contentspec`, because a
+          // content model nests: `(a, (b|c)*)` puts `b` and `c` two levels down.
+          if (elName.length > 0) {
+            for (const m of namesUnder(decl)) {
+              if (m.length > 0 && m !== elName) push(elName, m, "contains")
+            }
+          }
+        } else if (decl.type === "AttlistDecl") {
+          const owner = first(decl, "Name")?.text ?? ""
+          if (owner.length === 0) continue
+          for (let k = 0; k < decl.namedChildCount; k++) {
+            const ad = decl.namedChild(k)
+            if (ad?.type !== "AttDef") continue
+            const an = first(ad, "Name")?.text ?? ""
+            if (an.length > 0) push(owner, an, "contains")
+          }
+        } else if (decl.type === "EntityDecl" || decl.type === "NotationDecl" || decl.type === "GEDecl" || decl.type === "PEDecl") {
+          const en = first(decl, "Name")?.text ?? ""
+          if (en.length > 0) push(dtdName, en, "contains")
+        }
+      }
     }
     return edges
   }
@@ -21307,6 +21851,24 @@ async function main() {
         // tree's calls derive with the SAME leaf-target contract (site-
         // agnostic label+target matching). lang=ts blocks run the TS oracle.
         const subTrees = await deriveEmbeddedScriptTrees(root, content, lang)
+        if (lang === "vue") {
+          // F1 (vue master review 2026-09-30): Options-API HERITAGE truth,
+          // derived on the EMBEDDED SCRIPT trees. It cannot run on the SFC tree:
+          // the grammar exposes each script body as one `raw_text` leaf, so
+          // there is no `export_statement` to read — which is exactly why the
+          // first attempt scored the analyzer's new rows as 9 fabrications on
+          // vue-element-admin and changed nothing.
+          //
+          // `extends` is already in this lane's audited relation set but nothing
+          // derived it, so the F1 rows were confident analyzer edges no gate
+          // could check. Now both sides read the same tree by the same contract,
+          // independently of each other (the #906 ruling: shared parse INPUT,
+          // independent derivation).
+          const vueModule = (relPath.split("/").pop() ?? "component").replace(/\.[^.]+$/, "") || "component"
+          for (const e of deriveVueHeritageTruth(subTrees, vueModule)) {
+            ;(truth as any[]).push(e)
+          }
+        }
         // Vue's merge pass filters compiler macros (VUE_COMPILER_MACROS:
         // defineProps/defineEmits/withDefaults/...) from sub-analyzer
         // relationships — they are LANGUAGE keywords, not call edges. The
@@ -21733,7 +22295,13 @@ async function main() {
         // R9 (#835): declared-type references — the analyzer emits them, so the truth
         // must derive them from the same rule or every depth draw reads the new edges
         // as analyzer-only.
-        for (const e of derivePhpDeclaredTypeEdges(root, result?.symbols ?? [])) {
+        // R9's declared-type truth. M60 round: this now calls the INDEPENDENT
+        // derivation (`derivePhpDeclaredTypeEdgesIndependent`), not the analyzer's own
+        // `phpDeclaredTypeRefs`. See that function's header for why a shared rule is a
+        // rule with one implementation, for the CSD14 objection and its procedural
+        // resolution, and for what to expect the first time this rule changes: new
+        // analyzer-only rows, which are the signal the shared version could not make.
+        for (const e of derivePhpDeclaredTypeEdgesIndependent(root, result?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
         // F1: `contains` — the label php emitted (24,707 edges over the two pinned
