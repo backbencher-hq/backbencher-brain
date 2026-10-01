@@ -121,8 +121,15 @@ export namespace CrossLanguageMigrationAssistant {
         /** Specifiers this tool cannot classify for its language. Not zero. */
         unclassified: number
         mapped: number
+        /** Third-party libraries with NO registered mapping. Charged, and named. */
         unmapped: number
         unmappedLibraries: string[]
+        /**
+         * Standard-library imports with no row. Visible, NOT charged, and NOT
+         * libraries: `fmt` is not a library a human must research.
+         */
+        stdlibWithoutRow: number
+        stdlibWithoutRowLibraries: string[]
         classification: "available" | "unavailable"
       }
       note: string
@@ -1055,7 +1062,56 @@ export namespace CrossLanguageMigrationAssistant {
     name: string | null
     /** Why it is not a library, when it is not one. */
     excluded?: "node-builtin" | "type-only" | "relative" | "malformed" | "absolute"
+    /**
+     * For a Go module path, which rule produced `name`. `fallback` means the host is
+     * unknown and the repository was guessed as the last segment — a name that MAY be
+     * a package rather than a library, so a row keyed by the real repository would not
+     * be reached. Declared rather than hidden, because this is the only remaining way
+     * a canonical Go name can be wrong.
+     */
+    hostRule?: "declared" | "fallback"
   }
+
+  /**
+   * Go hosts whose repository is NOT the last path segment.
+   *
+   * A module path is `<host>/<repo>[/<subpackage...>][/vN]` only for a few hosts.
+   * Everywhere else the repository sits at a fixed position, and taking the last
+   * segment yields a package name: `k8s.io/api/core/v1` is the `api` module's `core/v1`
+   * package, and `gonum.org/v1/gonum/stat` is the `gonum` module's `stat` package.
+   *
+   * Each entry states the layout it encodes, so the table can be audited rather than
+   * trusted. An entry is added when a measured import shows the last-segment rule is
+   * wrong for that host — which is also why hosts where the last segment IS the
+   * repository (`sigs.k8s.io/yaml`, `mvdan.cc/sh/v3`, `cloud.google.com/go/storage`,
+   * `go.yaml.in/yaml/v3`, `honnef.co/go/tools`) are deliberately absent.
+   */
+  const GO_MODULE_HOSTS: ReadonlyArray<{
+    host: string
+    /** Index into the version-stripped segments that names the repository. */
+    repoAt: (rest: string[]) => number
+    layout: string
+  }> = [
+    { host: "github.com", repoAt: (r) => 1, layout: "github.com/<org>/<repo>[/<subpkg>...]" },
+    { host: "gitlab.com", repoAt: (r) => 1, layout: "gitlab.com/<org>/<repo>[/<subpkg>...]" },
+    { host: "bitbucket.org", repoAt: (r) => 1, layout: "bitbucket.org/<org>/<repo>[/<subpkg>...]" },
+    { host: "codeberg.org", repoAt: (r) => 1, layout: "codeberg.org/<owner>/<repo>[/<subpkg>...]" },
+    { host: "gitea.com", repoAt: (r) => 1, layout: "gitea.com/<owner>/<repo>[/<subpkg>...]" },
+    { host: "sourceforge.net", repoAt: (r) => 1, layout: "sourceforge.net/<project>/<repo>[/<subpkg>...]" },
+    // `golang.org/x/<repo>` is a vanity import of a GitHub repository; any other
+    // `golang.org/<name>` path is the module itself.
+    { host: "golang.org", repoAt: (r) => (r[0] === "x" ? 1 : 0), layout: "golang.org/x/<repo> | golang.org/<repo>" },
+    { host: "k8s.io", repoAt: () => 0, layout: "k8s.io/<module>[/<pkg>...]" },
+    { host: "google.golang.org", repoAt: () => 0, layout: "google.golang.org/<repo>[/<pkg>...]" },
+    { host: "cloud.google.com", repoAt: (r) => (r[0] === "go" ? 1 : 0), layout: "cloud.google.com/go/<repo> | cloud.google.com/<repo>" },
+    { host: "go.uber.org", repoAt: () => 0, layout: "go.uber.org/<repo>[/<pkg>...]" },
+    { host: "go.opentelemetry.io", repoAt: () => 0, layout: "go.opentelemetry.io/<repo>[/<pkg>...]" },
+    { host: "gonum.org", repoAt: () => 0, layout: "gonum.org/vN/<repo>[/<pkg>...]" },
+    { host: "nhooyr.io", repoAt: () => 0, layout: "nhooyr.io/<repo>[/<pkg>...]" },
+    // `gopkg.in/<user>/<repo>` and `gopkg.in/<repo>` are both in use. The last segment
+    // is the repository in the two-segment form, which is the common one.
+    { host: "gopkg.in", repoAt: (r) => Math.max(0, r.length - 1), layout: "gopkg.in/<repo>[.vN] | gopkg.in/<user>/<repo>" },
+  ]
 
   /** Languages where a dotted/slashed path is itself the package name. */
   const PATH_NAMED_LANGUAGES: ReadonlySet<string> = new Set([
@@ -1134,31 +1190,52 @@ export namespace CrossLanguageMigrationAssistant {
         // subpackage, and the dictionary row is keyed `testify`. Last-segment gave
         // `assert`, so a real, extremely common import could never reach its row.
         //
-        // So the host decides, declared rather than guessed:
+        // So the HOST decides, and each host's rule is DECLARED with its evidence
+        // rather than guessed. The first version of this table listed three hosts,
+        // and probing 27 module paths taken from real `go.mod` files found four
+        // wrong answers — including one that made a registered dictionary row
+        // unreachable, which is the exact defect this branch exists to remove:
         //
-        //   github.com, gitlab.com, bitbucket.org   <host>/<org>/<repo>[/sub...]
-        //   golang.org/x                             <host>/x/<repo>[/sub...]
-        //   gopkg.in                                 <host>/<repo>[.vN]
+        //   k8s.io/api/core/v1                  -> core        (should be api)
+        //   google.golang.org/protobuf/types/...-> anypb       (should be protobuf)
+        //   gonum.org/v1/gonum/stat             -> stat        (should be gonum)
+        //   gopkg.in/src-d/go-git.v4            -> src-d       (should be go-git.v4)
         //
-        // An unrecognised host keeps the last-segment fallback, and the plan's
-        // `unclassified`-style counters are what would reveal it if that fallback
-        // ever became wrong often enough to matter.
+        // `gonum` is a dictionary row. A Go project importing `gonum.org/v1/gonum/stat`
+        // could not reach it, so round 9's fix was incomplete in the same shape as the
+        // bug it fixed.
+        //
+        // Every host below is one whose repository is NOT the last segment, which is
+        // the only reason it needs an entry. `sigs.k8s.io/yaml`, `mvdan.cc/sh/v3`,
+        // `honnef.co/go/tools` and `go.yaml.in/yaml/v3` all reduce correctly through
+        // the last-segment fallback, so they are not listed — a host is added here
+        // when measurement shows the fallback is wrong for it, not preemptively.
         const host = segments[0].toLowerCase()
         const rest = segments.slice(1)
-        const orgHosts = new Set(["github.com", "gitlab.com", "bitbucket.org", "codeberg.org", "gitea.com"])
-        const repoIndex = orgHosts.has(host) ? 1 : host === "golang.org" ? (rest[0] === "x" ? 1 : 0) : host === "gopkg.in" ? 0 : -1
-        if (repoIndex >= 0 && rest.length > repoIndex) {
-          const repo = rest[repoIndex]
-          // A trailing major-version segment is part of the module, not the repo:
-          // `github.com/foo/bar/v2` is `bar`.
-          return repo && !/^v\d+$/.test(repo) ? { name: repo } : { name: rest[repoIndex - 1] ?? repo }
+        // A major-version segment sits in different places per host, so the version
+        // is removed BEFORE the index is resolved rather than tested afterwards.
+        //
+        // The earlier guard `repo && !/^v\d+$/.test(repo)` was UNREACHABLE: every rule
+        // that set `repoIndex` pointed at a host layout where a bare `vN` cannot be
+        // the repository (`github.com/<org>/vN` is not a thing; `gonum.org` had no
+        // entry, so it used the fallback). It read like protection and did nothing,
+        // so it is deleted rather than kept as decoration.
+        const withoutMajor = rest.filter((segment) => !/^v\d+$/.test(segment))
+        const rule = GO_MODULE_HOSTS.find((entry) => entry.host === host)
+        if (rule) {
+          const index = rule.repoAt(withoutMajor)
+          const repo = index >= 0 && index < withoutMajor.length ? withoutMajor[index] : undefined
+          if (repo) return { name: repo, hostRule: "declared" }
         }
-        // Unknown host: strip a trailing major-version segment and take the last.
-        const trimmed = rest.slice()
-        while (trimmed.length > 1 && /^v\d+$/.test(trimmed[trimmed.length - 1])) trimmed.pop()
+        // UNKNOWN HOST: the repository cannot be known from the path alone, so take
+        // the last segment (minus a major-version suffix) and SAY the rule was a
+        // fallback. Reporting it matters because this branch is the remaining source
+        // of wrong names, and a silent fallback is how the four errors above survived
+        // in the first place.
+        const trimmed = withoutMajor.slice()
         const fallback = trimmed[trimmed.length - 1]
         if (!fallback) return { name: null, excluded: "malformed" }
-        return { name: fallback }
+        return { name: fallback, hostRule: "fallback" }
       }
       // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
       // type reference, and nothing in the dictionary is keyed by one.
@@ -1458,8 +1535,18 @@ export namespace CrossLanguageMigrationAssistant {
     // counts SPECIFIERS: a file that imports `gin` and `gin/render` declares two
     // specifiers for one library, and charging for both would bill the research
     // twice.
+    // The MEASURED third-party count, not a `max()` against the uncertain-dependency
+    // count. `Math.max` was wrong in a way that only showed up once the index's
+    // imports became readable: `dependencies` holds every canonicalized specifier,
+    // including standard library with no row, so the uncertain count re-introduced
+    // `fmt` as a "third-party library needing research" and charged 6h for it. The
+    // measurement is authoritative; the dependencies count is only the fallback for
+    // a caller that supplies no measurement at all.
     const measuredUnmapped = importEvidence.unmappedLibraries.length
-    const missingMappings = Math.max(measuredUnmapped, dependencies.filter((d) => d.confidence < 0.5).length)
+    const missingMappings =
+      typeof importEvidence.unmappedLibraries === "object"
+        ? measuredUnmapped
+        : dependencies.filter((d) => d.confidence < 0.5).length
     let effortEstimateHours = 4
     effortEstimateHours += charged.length * 2
     effortEstimateHours += missingMappings * 6
@@ -1584,9 +1671,9 @@ export namespace CrossLanguageMigrationAssistant {
           note: [
             evidenceAvailable
               ? importEvidence.unmapped > 0
-                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.`
+                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.${importEvidence.stdlibWithoutRow > 0 ? ` ${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} also ${importEvidence.stdlibWithoutRow === 1 ? "has" : "have"} no row (${importEvidence.stdlibWithoutRowLibraries.join(", ")}); those are not libraries to research and are not charged.` : ""}`
                 : importEvidence.thirdParty === 0
-                  ? `\`dependencies\` is empty because all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate. A MEASURED zero, not missing evidence.`
+                  ? `\`dependencies\` holds no LIBRARY: all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate${importEvidence.stdlibWithoutRow > 0 ? ` (${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} such as ${importEvidence.stdlibWithoutRowLibraries.join(", ")} have no registered row, and a standard-library name is not a library to research)` : ""}. A MEASURED zero, not missing evidence.`
                   : `\`dependencies\` comes from indexed imports: ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping.`
               : "The index holds no external import rows for this file, so its library dependencies are UNKNOWN rather than empty. A file indexed before per-file import recording began looks exactly like this.",
             hasRoute
@@ -1717,12 +1804,25 @@ export namespace CrossLanguageMigrationAssistant {
       /** Third-party imports with NO registered mapping: real libraries, unported. */
       unmapped: number
       unmappedLibraries: string[]
+      /** Standard-library imports with no row: visible, not charged, not libraries. */
+      stdlibWithoutRow: number
+      stdlibWithoutRowLibraries: string[]
+      /**
+       * Canonical names derived from the last-segment FALLBACK because the module
+       * host has no declared rule. The repository may not be the last segment, so
+       * these names may name a PACKAGE instead of a library, and a row keyed by the
+       * real repository would not be reached. Counted so the gap is measurable.
+       */
+      fallbackHostNames: number
+      fallbackHostLibraries: string[]
       classification: "available" | "unavailable"
     }
   } {
     const evidenced = new Set<string>()
     const inferred = new Set<string>()
     const unmappedLibraries = new Set<string>()
+    const stdlibWithoutRowLibraries = new Set<string>()
+    const fallbackHostLibraries = new Set<string>()
 
     // 1. THE IMPORTS THE INDEX ACTUALLY HOLDS.
     //
@@ -1753,7 +1853,7 @@ export namespace CrossLanguageMigrationAssistant {
     const supplied: string[] = Array.isArray((symbol as any)?.metadata?.imports) ? (symbol as any).metadata.imports : []
     const declared: string[] = [...new Set([...indexed.map((x) => String(x).trim()).filter(Boolean), ...supplied.map((x) => String(x).trim()).filter(Boolean)])]
     const suppliedOnly = declared.filter((specifier) => !indexed.some((row) => String(row).trim() === specifier))
-    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0 }
+    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, fallbackHostNames: 0 }
     const sourceLang = normalizeMigrationLanguage(String(symbol?.language ?? ""))
     const targetLang = normalizeMigrationLanguage(String(targetLanguage ?? ""))
     for (const entry of declared) {
@@ -1764,6 +1864,7 @@ export namespace CrossLanguageMigrationAssistant {
       else if (klass === "local-crate") importCounts.localCrate++
       else if (klass === "third-party") importCounts.thirdParty++
       else importCounts.unclassified++
+      const isLibrary = klass === "third-party" || klass === null
       // A LOCAL CRATE is this project's own code — a relative import is a graph
       // edge, not a library — and it is the only class that is skipped outright.
       //
@@ -1775,7 +1876,16 @@ export namespace CrossLanguageMigrationAssistant {
       // REPORTING — a reader needs to know 9 of 10 imports are stdlib — not for
       // suppression.
       if (klass === "local-crate") continue
-      const { name, excluded } = canonicalPackageName(specifier, symbol?.language)
+      const { name, excluded, hostRule } = canonicalPackageName(specifier, symbol?.language)
+      // A name produced by the last-segment FALLBACK is a guess about which segment
+      // names the repository, and the guess can be wrong (`k8s.io/api/core/v1` is the
+      // `api` module, not `core`). It is counted and named, because a canonical name
+      // this tool cannot vouch for must not look identical to one it derived from a
+      // declared host rule.
+      if (hostRule === "fallback") {
+        importCounts.fallbackHostNames++
+        fallbackHostLibraries.add(name ?? specifier)
+      }
       if (!name) {
         if (excluded) log.debug(`canonicalPackageName: excluded import "${specifier}" (${excluded})`)
         importCounts.unmapped++
@@ -1799,9 +1909,20 @@ export namespace CrossLanguageMigrationAssistant {
       evidenced.add(name)
       if (mapping) {
         importCounts.mapped++
-      } else {
+      } else if (isLibrary) {
+        // A third-party library with no registered mapping: a real research task,
+        // named and charged once per library.
         importCounts.unmapped++
         unmappedLibraries.add(name)
+      } else {
+        // A STANDARD-LIBRARY import with no row — `fmt`, `bytes`, `errors`. It is
+        // still listed in `dependencies` (visibility) and still visible here, but it
+        // is NOT a "third-party library needing research", and charging 6h per
+        // standard-library call turned a 5-import Go file into 30h of fictitious
+        // research. Counting it was my own error, caught by a claim asserting a
+        // measured zero.
+        importCounts.stdlibWithoutRow++
+        stdlibWithoutRowLibraries.add(name)
       }
     }
 
@@ -1850,6 +1971,10 @@ export namespace CrossLanguageMigrationAssistant {
         mapped: importCounts.mapped,
         unmapped: importCounts.unmapped,
         unmappedLibraries: [...unmappedLibraries].sort(),
+        stdlibWithoutRow: importCounts.stdlibWithoutRow,
+        stdlibWithoutRowLibraries: [...stdlibWithoutRowLibraries].sort(),
+        fallbackHostNames: importCounts.fallbackHostNames,
+        fallbackHostLibraries: [...fallbackHostLibraries].sort(),
         // No rule declared for this language, so the split cannot be trusted.
         classification: importCounts.unclassified > 0 && importCounts.thirdParty + importCounts.standardLibrary + importCounts.localCrate === 0
           ? "unavailable"
