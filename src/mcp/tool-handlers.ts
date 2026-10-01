@@ -29,7 +29,7 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import { makeProvenance } from "../intelligence/evidence"
@@ -65,19 +65,6 @@ function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | 
     summary,
   }
 }
-
-// bb_security response bounds. The two WINDOW values are what the agent sees;
-// the CENSUS cap is how many findings `recordRun` persists so that a capped
-// scan can never auto-resolve findings that were merely not looked at
-// (completeAnalysisRun resolves any prior `open` finding absent from the set).
-// Exported so the security verifiers can pin them rather than re-deriving
-// magic numbers that used to be inline literals.
-export const SECURITY_FINDINGS_WINDOW = 20
-export const SECURITY_SUSPICIOUS_WINDOW = 5
-/** Cap for the live (non-recording) scan. Matches the engine's own default. */
-export const SECURITY_SCAN_CAP = 500
-/** Cap for the recording scan — large enough that a real project is not truncated. */
-export const SECURITY_RECORD_RUN_CENSUS_CAP = 50_000
 
 export interface ToolContext {
   projectPath: string
@@ -492,15 +479,6 @@ const handlers: Record<string, ToolHandler> = {
             freshCount: results.freshCount ?? 0,
             truncated: results.truncated ?? false,
             ...(results.truncationReason ? { truncationReason: results.truncationReason } : {}),
-            // Which route matched, and how much of the corpus has a searchable
-            // body. Without these a caller cannot tell a phrase hit (the text
-            // says this verbatim) from a keyword coincidence (it discusses the
-            // same words), nor "nothing matched" from "nothing could match" on a
-            // database indexed before bodies were stored. Declared in
-            // SearchResults and populated by searchContent; carried here because a
-            // disclosure that stops at the search layer is not a disclosure.
-            ...(results.matchMode ? { matchMode: results.matchMode } : {}),
-            ...(results.bodyCoverage ? { bodyCoverage: results.bodyCoverage } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
           },
@@ -753,49 +731,9 @@ const handlers: Record<string, ToolHandler> = {
       // dependencies". That is a measurement claim, and it was never taken.
       return textResult("bb_analyze " + mode + ": limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer", true)
     }
-    // The floor is refused because an empty page is indistinguishable from a
-    // real answer; the CEILING is refused for the same reason in the other
-    // direction. `limit` had a floor and no ceiling, so the schema's "maximum
-    // items returned" named no maximum: `limit: 2147483648` was accepted and
-    // answered with the whole corpus, which on a large project is an answer too
-    // big to read rather than one too big to hold.
-    //
-    // It is refused, not clamped. Clamping would return a page that looks like
-    // the caller's request was honoured, which is the failure this whole
-    // parameter exists to prevent.
-    const LIMIT_CEILING: Record<string, number> = {
-      callers: 5_000,
-      callees: 5_000,
-      trace: 5_000,
-      dependencies: 2_000,
-      test_mapping: 2_000,
-      test_gaps: 2_000,
-      test_quality: 2_000,
-    }
-    if (args.limit !== undefined && Number(args.limit) > LIMIT_CEILING[mode]) {
-      return textResult(
-        `bb_analyze ${mode}: limit must be between 1 and ${LIMIT_CEILING[mode]} — refused rather than clamped, so a returned page always means the page asked for. Above this the answer stops being readable (measured on this repository's own src: 20 dependency files of 183 is already 75,911 bytes ~21k tokens, and the per-file edge lists are capped separately).`,
-        true,
-      )
-    }
-    // A target is echoed into the answer's `reason` and `target` fields. A
-    // 4,000-character target therefore produced a 9,409-byte "not found" —
-    // about 2.6k tokens spent on two words of information. The echo is kept,
-    // because it is how a caller tells WHICH name was looked up, and elided
-    // with its length stated so nothing is silently shortened.
-    const MAX_TARGET_ECHO = 200
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
-    // The search term and the ECHO are different things. A 4,000-character
-    // target produced a 9,409-byte "not found" (~2.6k tokens for two words of
-    // information) because it is echoed into `target` and `reason`. Truncating
-    // the SEARCH TERM to fix that would search for a different symbol than the
-    // caller asked for — a wrong answer instead of a long one. So the full
-    // string is resolved and only the echo is bounded, with its full length
-    // stated so nothing is silently shortened.
-    const echo = (t: string): string =>
-      t.length > MAX_TARGET_ECHO ? `${t.slice(0, MAX_TARGET_ECHO)}…(+${t.length - MAX_TARGET_ECHO} more characters)` : t
     const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
     // filePath scopes dependencies plus the three test-intel modes (path
     // prefix); stats stays project-wide and rejects filePath.
@@ -890,14 +828,12 @@ const handlers: Record<string, ToolHandler> = {
         return withFreshness(
           {
             mode,
-            target: echo(target),
+            target,
             found: false,
             notFoundReason: "absent",
-            reason: `bb_analyze ${mode}: symbol '${echo(target)}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
+            reason: `bb_analyze ${mode}: symbol '${target}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
             root: null,
             rootCandidates: 0,
-            // No root, so no step: null, not a guess.
-            rootMatch: null,
             callers: [],
             callees: [],
             nodes: {},
@@ -1016,34 +952,29 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "dependencies") {
-      // The scope is normalized ONCE, here, and the NORMALIZED value goes to
-      // both the engine and the denominator. Previously the engine stripped
-      // trailing slashes and this count did not, so `filePath: "src/wide/"`
-      // returned 20 of 68 files with `totalFiles: 0` and `truncated: false` —
-      // a false statement of completeness, 48 files hidden. There is no second
-      // copy of the rule to disagree with.
-      const rawScope = args.filePath ? String(args.filePath) : target || undefined
-      const scopePath = rawScope ? normalizeScopePath(rawScope) : null
-      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
+      const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
-        // Neither list ships a file id any more — a file id is
-        // `<40-hex project id>:<relative path>`, so it repeated the path it sat
-        // next to (56,540 of 121,340 bytes on a 20-file page of this repo's own
-        // src). The path is the locator; resolve it to a row id here, once.
-        ...d.dependencies.filter((x) => !x.external && x.resolution !== "unresolved").map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
-        ...d.dependents.map((x) => ({ fileId: relToFileId().get(x.path) ?? null })),
+        ...d.dependencies.filter((x) => !x.external && x.fileId).map((x) => ({ fileId: x.fileId! })),
+        ...d.dependents.map((x) => ({ fileId: x.fileId })),
       ])
       const first = deps[0]
       // Every other collection mode states how many items it returned; this
       // one returned 20 files of 90 with no summary at all. The total is
       // counted over the SCOPE — filePath is a path PREFIX, so the honest
       // denominator is the files under that prefix, not the whole project.
-      // The denominator comes from the engine, which computed the rows with the
-      // same normalization and the same segment boundary. A count written here
-      // is a second opinion about the same question, and it is how the scope
-      // came to disagree with itself.
-      const totalFiles = await scopeFileCount(projectId as any, scopePath)
+      const scopePath = args.filePath ? String(args.filePath) : null
+      const totalFiles = scopePath
+        ? Number(
+            (
+              raw
+                .prepare(
+                  "SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')",
+                )
+                .get(projectId, scopePath, scopePath.replace(/[\\%_]/g, (c) => "\\" + c) + "/%") as { c: number }
+            )?.c ?? 0,
+          )
+        : Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c)
       return withFreshness(
         {
           dependencies: deps,
@@ -1076,9 +1007,8 @@ const handlers: Record<string, ToolHandler> = {
           onRows: (statuses) => {
             for (const d of deps as any[]) {
               d.stale = statuses.get(d.fileId) !== "fresh"
-              for (const x of d.dependencies)
-                if (!x.external && x.resolution !== "unresolved") x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
-              for (const x of d.dependents) x.stale = statuses.get(relToFileId().get(x.path) ?? "") !== "fresh"
+              for (const x of d.dependencies) if (!x.external && x.fileId) x.stale = statuses.get(x.fileId) !== "fresh"
+              for (const x of d.dependents) x.stale = statuses.get(x.fileId) !== "fresh"
             }
           },
         },
@@ -1296,102 +1226,43 @@ const handlers: Record<string, ToolHandler> = {
       const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    // A1: `recordRun` persists a SNAPSHOT whose completeness decides whether
-    // still-real findings are auto-resolved. `completeAnalysisRun` marks every
-    // prior `open` finding that is absent from the persisted set as `resolved`,
-    // so a scan capped at the engine default (500) silently resolved everything
-    // past 500 on a project that really had them. `bb_patterns` already guards
-    // this with a census cap + a cap note (tool-handlers.ts:1174-1224); the
-    // security path had no guard at all. Recording asks for a census-sized
-    // scan; the DISPLAY still renders the ordinary window.
-    const recordRun = args.recordRun === true
-    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(
-      projectId,
-      { maxResults: recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP },
-    )
+    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
     const summary = result?.summary
     // M35.S2: a stale taint/flow finding says so — security honesty. History
     // paths (above) keep their recorded state; this is the live read.
-    //
-    // B3: the unvalidated-source rows are ALSO derived from indexed files, so
-    // they are resolved for freshness too. They were left out, which presented
-    // stale observations as current fact. `derivedStaleness` filters null, and
-    // `file` is now honestly `null` when neither endpoint resolved (it was the
-    // `"?"` sentinel, which resolved to nothing and counted as `missing`).
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, [...findings, ...suspicious].map((f: any) => f.file))
-    // A1: the engine's own census vs. what is on screen. Silence here is what
-    // made a 5000-flow project read as "20 findings" with no indication that
-    // 4980 were unseen — the same contract bb_visualize and bb_search use.
-    const capNote = result?.truncatedFindings > 0
-      ? ` — CAPPED at ${(recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP).toLocaleString("en-US")}; ${result.deduplicatedFlows} findings exist and ${result.truncatedFindings} were not examined`
-      : ""
-    const countLine =
-      `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} finding(s)` +
-      `${result?.truncatedFindings ? ` (${result.truncatedFindings} beyond the cap)` : ""};` +
-      ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} finding(s)` +
-      `${suspicious.length ? ` and ${Math.min(suspicious.length, SECURITY_SUSPICIOUS_WINDOW)} of ${suspicious.length} unvalidated observation(s)` : ""}]`
-    // B2: the severity counts are the indexer's, and `taint.ts` now normalizes
-    // severity into exactly these five buckets, so the head line cannot print
-    // "0 critical" above a list of critical findings.
+    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
     const head = summary
-      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
+      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
       : `security findings (${findings.length})`
-    const where = (f: any) => (f.file ? `${f.file}:${f.line ?? "?"}` : "<unresolved location>")
-    const lines = findings.slice(0, SECURITY_FINDINGS_WINDOW).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}${finding.sourceType ? ` <- ${finding.sourceType}` : ""}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${finding.file && derived.isStale(finding.file) ? " [stale]" : ""}`,
+    const lines = findings.slice(0, 20).map(
+      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
     )
-    // B1: the two observation states are DIFFERENT facts and were rendered with
-    // one sentence. `source_only` genuinely has no sink ("no sink reached").
-    // `unresolved` has a RESOLVED SINK and is missing the source — the old
-    // text claimed the opposite for it, on the exact rows the indexer's
-    // heuristic detectors produce (they write `source_symbol_id = NULL`).
-    // B2 again: these rows carry the indexer's real severity (an isolated
-    // command-injection sink is `critical`) and were all printed as `[info]`.
-    const sourceLines = suspicious.slice(0, SECURITY_SUSPICIOUS_WINDOW).map((source: any) => {
-      const isSourceOnly = source.state === "source_only"
-      return `  [${source.severity}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}${source.symbol ? ` ${source.symbol}` : ""} @ ${where(source)} (${isSourceOnly ? "no sink reached" : "sink found; source endpoint not resolved to an indexed symbol"})${source.file && derived.isStale(source.file) ? " [stale]" : ""}`
-    })
-    if (recordRun) {
+    const sourceLines = suspicious.slice(0, 5).map(
+      (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
+    )
+    if (args.recordRun === true) {
       const findingCount = findings.length
       const recorded = await executeAnalysis({
         projectId,
         kind: "security",
         input: { options: args },
         persist: () => findings.map((finding: any): AnalysisFindingInput => ({
-          // A7: the persisted identity must be stable across runs AND distinct
-          // per sink. The old key was `file:line:label`, which put a DISPLAY
-          // label in the identity: re-labelling a vulnerability type would
-          // resolve the old finding and mint a new one for a flow that never
-          // changed. The key is now the normalized type + sink type + location,
-          // so re-grading `severity` is a repeat and only a genuine move or
-          // change of vulnerability type produces a new row.
-          fingerprint: `taint:${finding.type}:${finding.sinkType ?? "?"}:${finding.file ?? "?"}:${finding.line ?? "?"}`,
-          rule: finding.type ?? "security",
+          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
+          rule: finding.label ?? finding.type ?? "security",
           title: finding.label ?? finding.type ?? "security finding",
           severity: finding.severity ?? "medium",
-          // A7: the engine calibrates 0.7/0.4/0.3 by state; the legacy mapping
-          // dropped it, so this read `?? null` and every persisted security
-          // finding recorded NULL confidence.
-          confidence: typeof finding.confidence === "number" ? finding.confidence : null,
-          // A7: likewise `evidence` was always `[]` — history recorded security
-          // findings with no evidence at all.
+          confidence: finding.confidence ?? null,
           evidence: finding.evidence ?? [],
-          limitations: finding.limitations ?? [],
-          evidenceClass: "static_finding",
-          engine: "taint@intelligence",
           location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
           state: finding.mitigated ? "mitigated" : undefined,
         })),
       })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded${capNote}` + (lines.length ? "\n" + lines.join("\n") : "") + countLine + (sourceLines.length ? `\n\nunvalidated sources (not persisted):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n${derived.footer}` : ""))
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
     }
-    // The zero-findings case still states the census. "clean" alone is
-    // indistinguishable from "found nothing" when the scan was capped or the
-    // index has no taint rows at all, and those are very different facts.
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  no findings with both endpoints resolved") + countLine + (sourceLines.length ? `\n\nunvalidated observations (leads, not confirmed exploitable paths):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
+    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
   },
 
   bb_visualize: async (args, { projectId }) => {
@@ -1761,12 +1632,6 @@ const handlers: Record<string, ToolHandler> = {
         // is > 1 the graph below is about ONE of them, so `root` is the thing
         // to confirm before reading the edges.
         candidates: result.rootCandidates ?? 1,
-        // WHICH step resolved the name. `containment` means the answer is about
-        // a symbol whose name CONTAINS the one asked for — measured on the
-        // atlas corpus, `target: "ub"` answers about `hub` and `target: "_"`
-        // about `build_registry`, with nothing else in the payload saying the
-        // name was not itself a symbol.
-        match: result.rootMatch ?? null,
       },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
@@ -1962,16 +1827,8 @@ const handlers: Record<string, ToolHandler> = {
             rule: impact.rule,
             budget: impact.budget,
             traversal: impact.traversal,
-            cascade: impact.cascade,
-            countVerification: impact.countVerification,
             ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
-            // The component's own bookkeeping does not ride the wire. `tracedId`
-            // is the walk node a cascade row was found at — deciding `via` needs
-            // it and a reader has no use for an opaque id, so the payload
-            // publishes the DECLARED fact (`via`, `viaMember`) and not the
-            // intermediate it was derived from. Everything else on a dependent is
-            // a fact about the stored row or about the file.
-            impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
+            impact: dependents,
             shownCount: impact.shownCount,
             directCount: impact.directCount,
             totalCountIfKnown: impact.totalCountIfKnown,
@@ -2091,17 +1948,8 @@ const handlers: Record<string, ToolHandler> = {
       // An empty answer now requires that NEITHER the copies NOR their members
       // hold a stored row.
       declaredAbsent: shownCount === 0,
-      // SCOPE, and it used to be wrong. M63.CL4: this read "anywhere in the
-      // index", but all three queries bind a projectId as their first parameter,
-      // so the search covered exactly one project. With the same name present in
-      // a second project that DOES hold cross-language rows for it, the sentence
-      // was false as written — measured, with both projects real
-      // (lane/cl-absence-scope.ts: CLAIM_IS_FALSE). An agent reads this instead of
-      // checking, so an overclaim here is worse than an overclaim in a count.
-      // Absence for THIS project is still correct and still declared; only the
-      // universality was wrong.
       absenceNote: shownCount === 0
-        ? `no stored cross-language rows anywhere in THIS PROJECT's index for '${symbol}' or for any of its members — absence declared, never guessed`
+        ? `no stored cross-language rows anywhere in the index for '${symbol}' or for any of its members — absence declared, never guessed`
         : null,
       // The symptom that produced this change, stated in the answer itself: the
       // symbol is silent and its members are not. A caller reading only
@@ -2141,12 +1989,6 @@ const handlers: Record<string, ToolHandler> = {
     // ENFORCED author class as though the two carried equal weight. It is also
     // unbounded, so it is an unbounded row. A declared bound, not a truncation.
     if ([...toolIdentity].length > 200) return textResult(`bb_annotate: toolIdentity exceeds the declared limit of 200 chars (got ${[...toolIdentity].length}) — declared refusal`, true)
-    // A tool identity is a NAME, not a document. Refusing line breaks and other
-    // control characters keeps "recorded verbatim" honest (verbatim never meant "may
-    // contain a newline") and keeps the stored label safe for every reader of it —
-    // the editor hover, the graph badge, and bb_annotations. Measured: a newline in
-    // this field rendered as a second provenance line that claimed to be a human note.
-    if (/[\u0000-\u001F\u007F]/.test(toolIdentity)) return textResult("bb_annotate: toolIdentity must not contain control characters or line breaks — it is a name, not a document (declared refusal)", true)
     const now = Date.now()
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     // The path is resolved to the ONE spelling the index stores, so `./x` and

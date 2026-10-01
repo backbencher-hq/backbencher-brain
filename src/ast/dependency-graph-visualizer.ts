@@ -11,19 +11,6 @@ export namespace DependencyGraphVisualizer {
     val: number // Size/Weight
     type: string // Symbol type
     filePath: string
-    /** The symbol's line, so a graph is NAVIGABLE: the index stores
-     *  line_start/line_end and the projection used to discard both, so a reader
-     *  could see a symbol in the graph and still have no way to reach it. */
-    line?: number
-    lineEnd?: number
-    /** The symbol's qualified name where the index publishes one, so a node can
-     *  be matched to the name a reader searched for. */
-    qualifiedName?: string
-    /** The index's own gravity score. The projection used to recompute importance
-     *  as a degree count while the index already stored a better notion of it. */
-    gravity?: number
-    /** Per-node staleness, attached by the handler after the freshness read. */
-    stale?: boolean
   }
 
   export interface GraphLink {
@@ -32,38 +19,11 @@ export namespace DependencyGraphVisualizer {
     type: string // Relationship type
     color: string
     label: string
-    /** The stored relationship row this edge came from. Without it an edge
-     *  cannot be audited against the index that justifies it. */
-    rowId?: string
-    confidence?: number
-    evidenceTier?: string
-    /** The relationship's line, when the index stored one. */
-    line?: number
-    /** Per-link staleness (worst-of-endpoints), attached by the handler. */
-    stale?: boolean
   }
 
   export interface GraphData {
     nodes: GraphNode[]
     links: GraphLink[]
-    /** What the filter removed, and why. A projection that drops rows MUST say
-     *  so: a partial graph that looks whole is the failure this documents. */
-    excluded?: {
-      symbols: number
-      byPattern: Record<string, number>
-      patterns: string[]
-      includesTestFiles: boolean
-    }
-  }
-
-  /** Caller control over what counts as noise. The filter has an opinion about
-   *  build output and VCS metadata; the caller can replace that opinion, and can
-   *  ask for test sources back. */
-  export interface GraphOptions {
-    /** Path SEGMENTS to exclude (matched on whole segments, never as substrings). */
-    excludePatterns?: string[]
-    /** Include test/spec sources. Default true: they are ordinary source. */
-    includeTests?: boolean
   }
 
   /**
@@ -72,7 +32,6 @@ export namespace DependencyGraphVisualizer {
   export function generateGraphData(
     symbols: any[], // Expected to contain id, name, language, type, file
     relationships: any[], // Expected to contain source_id, target_id, type
-    options: GraphOptions = {},
   ): GraphData {
     log.info("🌐 Generating Polyglot Dependency Graph Data...")
 
@@ -84,65 +43,32 @@ export namespace DependencyGraphVisualizer {
       linkCount[rel.target_id] = (linkCount[rel.target_id] || 0) + 1
     }
 
-    // MEASURED, cargo (2,071 files): the previous filter matched these as bare
-    // SUBSTRINGS of the id or path, so `dist` removed `src/util/edit_distance.rs`,
-    // `out` removed `src/compiler/layout.rs` and `src/compiler/output_depinfo.rs`,
-    // and `build` removed `crates/cargo-test-support/build.rs`. 225 of 1,787
-    // symbol-bearing files survived and the answer declared no exclusion at all.
-    //
-    // Two corrections. First, a pattern is a PATH SEGMENT, so collateral damage
-    // inside a longer word is impossible. Second, the list is the CALLER'S:
-    // `excludePatterns` overrides it, and whatever is dropped is reported on the
-    // result as `excluded` with a count and the patterns responsible, so a
-    // partial graph can never look like a whole one.
-    const DEFAULT_EXCLUDE_SEGMENTS = [
-      "node_modules", ".git", ".next", ".turbo", ".cache", "coverage",
-      "dist", "build", "out", "target", "vendor", "__pycache__",
+    const ignorePatterns = [
+      "node_modules",
+      ".next",
+      "dist",
+      ".git",
+      ".turbo",
+      "coverage",
+      ".cache",
+      "out",
+      "build",
+      ".DS_Store",
+      ".d.ts",
+      "/test",
+      "spec.ts",
+      "/migration",
+      "public/",
     ]
-    const DEFAULT_EXCLUDE_SUFFIXES = [".d.ts", ".min.js", ".map"]
-    // Test/spec/migration directories are separated from build output: they are
-    // ordinary source a reader may well want, so they are NOT excluded by
-    // default (the previous filter removed 1,589 of cargo's 2,071 files this way).
-    const excludeSegments = options?.excludePatterns
-      ? options.excludePatterns.map((p) => p.toLowerCase())
-      : DEFAULT_EXCLUDE_SEGMENTS
-    const includeTestFiles = options?.includeTests !== false
-
-    /** True when a path is inside one of the excluded SEGMENTS (or carries an
-     *  excluded suffix). A segment test, so `out` never matches `layout.rs`. */
-    const isExcluded = (candidate: string): boolean => {
-      const parts = candidate.toLowerCase().split("/").filter(Boolean)
-      for (const seg of excludeSegments) {
-        if (parts.includes(seg)) return true
-      }
-      const leaf = parts.length > 0 ? parts[parts.length - 1]! : ""
-      for (const suffix of DEFAULT_EXCLUDE_SUFFIXES) {
-        if (leaf.endsWith(suffix)) return true
-      }
-      if (!includeTestFiles) {
-        for (const seg of ["test", "tests", "spec", "specs", "__tests__", "testdata"]) {
-          if (parts.includes(seg)) return true
-        }
-        if (/(?:^|[._-])(?:test|spec)\\.[a-z0-9]+$/.test(leaf)) return true
-      }
-      return false
-    }
 
     // 2. Map and filter nodes
     let validNodes: GraphNode[] = []
-    let excludedCount = 0
-    const excludedByPattern = new Map<string, number>()
     for (const sym of symbols) {
       const filePath = sym.file || sym.filePath || ""
       const id = sym.id || ""
 
-      // Skip declared build/noise paths, and count them so the answer can say so.
-      if (isExcluded(filePath) || isExcluded(id)) {
-        excludedCount++
-        const culprit = excludeSegments.find((seg) => filePath.toLowerCase().split("/").includes(seg) || id.toLowerCase().split("/").includes(seg))
-        if (culprit) excludedByPattern.set(culprit, (excludedByPattern.get(culprit) ?? 0) + 1)
-        continue
-      }
+      // Skip noisy directories
+      if (ignorePatterns.some((p) => id.includes(p) || filePath.includes(p))) continue
 
       // Include all valid project codebase symbols to show absolute reality.
       // We will skip purely local anonymous variables to prevent garbage,
@@ -158,12 +84,6 @@ export namespace DependencyGraphVisualizer {
         val: 1 + (linkCount[id] || 0) * 0.5, // Scale node size by connections
         type: sym.symbol_type || "unknown",
         filePath: filePath || "unknown",
-        // Carried straight from the index rather than recomputed, so the graph
-        // keeps the same notion of importance and position the editor uses.
-        ...(sym.line_start != null ? { line: Number(sym.line_start) } : {}),
-        ...(sym.line_end != null ? { lineEnd: Number(sym.line_end) } : {}),
-        ...(sym.qualified_name ? { qualifiedName: String(sym.qualified_name) } : {}),
-        ...(sym.gravity_score != null ? { gravity: Number(sym.gravity_score) } : {}),
       })
     }
 
@@ -188,33 +108,16 @@ export namespace DependencyGraphVisualizer {
 
       // Only add links where both source and target exist in our filtered node map
       if (seenNodes.has(rel.source_id) && seenNodes.has(rel.target_id)) {
-        // The key includes the relationship TYPE. It used to be
-        // `${source}->${target}`, so two stored relationships of different types
-        // between one pair collapsed into a single link and the second was
-        // dropped without a word. Measured on cobra: 126 of 126 in-answer pairs
-        // carrying more than one stored type under-reported, while bb_analyze
-        // showed both edges from the same index. A visualisation is a LOSSY
-        // projection, and loss must be the declared kind, never silent.
-        const relType = rel.relationship_type || rel.type || "dependency"
-        const linkKey = `${rel.source_id}->${rel.target_id}::${relType}`
+        const linkKey = `${rel.source_id}->${rel.target_id}`
         if (!seenLinks.has(linkKey)) {
           seenLinks.add(linkKey)
-          const link: GraphLink = {
+          links.push({
             source: rel.source_id,
             target: rel.target_id,
-            type: relType,
-            color: getRelationshipColor(relType),
-            label: relType,
-          }
-          // Evidence the index already stores, so an edge can be traced and a
-          // proven edge can be told from an inferred one. The previous
-          // projection carried none of it, so no edge could be audited.
-          if (rel.row_id != null) link.rowId = String(rel.row_id)
-          if (rel.id != null && rel.row_id == null) link.rowId = String(rel.id)
-          if (rel.confidence != null) link.confidence = Number(rel.confidence)
-          if (rel.evidence_tier != null) link.evidenceTier = String(rel.evidence_tier)
-          if (rel.line_number != null) link.line = Number(rel.line_number)
-          links.push(link)
+            type: rel.relationship_type || rel.type || "dependency",
+            color: getRelationshipColor(rel.relationship_type || rel.type),
+            label: rel.relationship_type || rel.type || "dependency",
+          })
         }
       }
     }
@@ -224,12 +127,6 @@ export namespace DependencyGraphVisualizer {
     return {
       nodes: validNodes,
       links,
-      excluded: {
-        symbols: excludedCount,
-        byPattern: Object.fromEntries([...excludedByPattern.entries()].sort((a, b) => b[1] - a[1])),
-        patterns: excludeSegments,
-        includesTestFiles: includeTestFiles,
-      },
     }
   }
 

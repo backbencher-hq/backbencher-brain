@@ -993,41 +993,11 @@ export async function traverseGraph(
   }
 }
 
-/**
- * How the root symbol was found, from most to least specific.
- *
- * `found: true` used to mean only "a root was found", which is not the same
- * claim. The third step is a documented near-miss fallback — fuzzy CONTAINMENT
- * among structural kinds — and its result was indistinguishable from a hit in
- * the payload. Measured on the atlas corpus: `target: "ub"` answered
- * `found: true` with root `hub`, and `target: "_"` answered `found: true` with
- * root `build_registry` (no symbol is named `_`). An agent asking "who calls
- * `ub`?" got a confident answer about a different symbol and nothing saying so.
- *
- * `containment` is also how a CASE difference is resolved, which is not a near
- * miss at all and must not read like one: the exact step is `name = ?`
- * (case-sensitive) while the fallback is `LIKE '%…%'`, and SQLite's LIKE is
- * case-insensitive for ASCII. So `target: "HUB"` finds `hub` by containment.
- * Declaring the step makes both facts visible in one field.
- */
-export type RootMatch = "exact" | "exact-any-kind" | "containment"
-
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
-//
-// The winning step is returned, not just its row. `candidates` says how many
-// the step chose between; `match` says what the step WAS. A caller that reports
-// `found: true` without reporting this reports half the answer.
 export async function resolveGraphRootDetailed(
   projectId: ProjectID,
   name: string,
-):
-  // A discriminated union, so a caller that has a root also has a `match`
-  // without an assertion. The two are set together and are not independent:
-  // `match: null` means "no root", and a root without a step never happens.
-  | Promise<
-      | { root: null; candidates: 0; match: null }
-      | { root: SymbolRow; candidates: number; match: RootMatch }
-    > {
+): Promise<{ root: SymbolRow | null; candidates: number }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
   const base =
@@ -1050,8 +1020,6 @@ export async function resolveGraphRootDetailed(
   const exactStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
   const exactAnyKind = base + "AND s.name = ?"
   const fuzzyStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'`
-  // Set alongside `predicate`, so what is REPORTED cannot drift from what RAN.
-  let match: RootMatch = "exact"
 
   // 1) exact name among the structural kinds the graph can traverse
   let predicate = exactStructural
@@ -1067,7 +1035,6 @@ export async function resolveGraphRootDetailed(
     rows = raw.prepare(exactAnyKind + RANK).all(projectId, name) as SymbolRow[]
     predicate = exactAnyKind
     param = name
-    match = "exact-any-kind"
   }
   if (rows.length === 0) {
     // 3) documented near-miss fallback: fuzzy containment among structural kinds.
@@ -1084,14 +1051,13 @@ export async function resolveGraphRootDetailed(
     rows = raw.prepare(fuzzyStructural + RANK).all(projectId, pattern) as SymbolRow[]
     predicate = fuzzyStructural
     param = pattern
-    match = "containment"
   }
   const root = rows[0] ?? null
-  if (!root) return { root: null, candidates: 0, match: null }
+  if (!root) return { root: null, candidates: 0 }
   // How many stored symbols the winning step had to choose between, counted
   // with that step's own predicate and parameter.
   const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(projectId, param) as any
-  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)), match }
+  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)) }
 }
 
 /**
@@ -1119,7 +1085,7 @@ export async function graphTraversal(
   name: string,
   options: GraphTraversalOptions = {},
 ): Promise<GraphTraversalResult> {
-  const { root, candidates, match } = await resolveGraphRootDetailed(projectId, name)
+  const { root, candidates } = await resolveGraphRootDetailed(projectId, name)
   if (!root) throw new Error(`Symbol '${name}' not found`)
   const {
     callers,
@@ -1159,10 +1125,6 @@ export async function graphTraversal(
   return {
     root: rootNode,
     rootCandidates: candidates,
-    // WHICH step found the root, beside the root itself. Without this a
-    // containment match is indistinguishable from the symbol that was asked
-    // for, and the whole answer is confidently about the wrong symbol.
-    rootMatch: match,
     callers,
     callees,
     nodes,

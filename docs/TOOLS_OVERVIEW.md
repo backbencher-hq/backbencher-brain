@@ -63,9 +63,7 @@ Pattern and orphan detection over the indexed graph. **Category:** analysis. **M
 
 ### bb_security
 
-Static security findings over the index, driven by `brain_taint_flow`. **Category:** analysis. **Mutability:** read. **Requires index:** yes. **Modes:** `findings` (the only executable mode; `flow`, `summary` and `hotspots` are roadmap). A flow is a *finding* only when **both** endpoints resolve to indexed symbols; one-sided flows are reported separately as unvalidated observations and are never persisted. Every response carries a `[scan: …]` census line so a capped scan is distinguishable from a complete one. With `recordRun: true` it persists the **full** analysed finding set (never the display window) into `brain_analysis_run` / `brain_analysis_finding` / `brain_analysis_occurrence`, with evidence and calibrated confidence, for later `history: true` retrieval. The finding shape is shared with `bb_patterns` (see [Relations](#how-the-tools-relate)).
-
-Not detected: hardcoded secrets (no such finding type is emitted — that rule belongs to `bb_patterns`); genuine cross-*language* taint (the `crossLanguage` flag means "stitched across symbols", not "languages differ"); standalone weak-crypto use (emitted as a sink with no co-located source, so it stays an observation). See `docs/BB_SECURITY.md` § "What the tool does NOT detect".
+Cross-language static security findings over the index. **Taint flows persist into `brain_taint_flow`.** **Category:** analysis. **Mutability:** read. **Requires index:** yes. **Modes:** `findings`. With `recordRun: true` it persists findings into `brain_analysis_run` / `brain_analysis_finding` / `brain_analysis_occurrence` for later `history: true` retrieval. The finding shape is shared with `bb_patterns` (see [Relations](#how-the-tools-relate)).
 
 ### bb_visualize
 
@@ -149,7 +147,7 @@ Machine-readable: the overview gate parses this table and checks every row again
 | bb_ask | brain_symbol, brain_relationship, brain_semantic_embedding | — | bb_search |
 | bb_health | brain_index_status, brain_file, brain_project_health | brain_project_health (refresh) | bb_edit |
 | bb_patterns | brain_symbol, brain_relationship | brain_analysis_run, brain_analysis_finding, brain_analysis_occurrence (recordRun) | bb_security |
-| bb_security | brain_taint_flow (primary), brain_symbol, brain_file | brain_analysis_run, brain_analysis_finding, brain_analysis_occurrence (recordRun) | bb_patterns |
+| bb_security | brain_symbol, brain_relationship | brain_analysis_run, brain_analysis_finding, brain_analysis_occurrence, brain_taint_flow (recordRun) | bb_patterns |
 | bb_visualize | brain_symbol, brain_relationship | — | bb_analyze |
 | bb_migrate | brain_symbol, brain_relationship | — | bb_analyze |
 | bb_analyze | brain_symbol, brain_relationship, brain_file | — | bb_visualize |

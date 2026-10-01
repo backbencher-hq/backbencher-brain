@@ -16,7 +16,6 @@ import { BrainDatabase } from "../../src/brain/database"
 import { quickAnswer } from "../../src/intelligence/search/quick-answer"
 import { semanticVectorSearch } from "../../src/intelligence/search/semantic-search"
 import { Harness } from "./harness"
-import { noNanSimilarity } from "./harness"
 
 const harness = new Harness({
   issue: "M13.26",
@@ -103,7 +102,7 @@ let vectorPathSeen = false
   const res = await semanticVectorSearch(projectId, "request handling")
   harness.check("integration: keyword-fallback path engages with explicit reason", res.metadata?.method === "keyword-fallback" && typeof res.metadata?.fallbackReason === "string", JSON.stringify(res.metadata))
   harness.check("integration: fallback results resolve to indexed files", res.results.every((r) => r.file.length > 0), `results=${res.results.length}`)
-  harness.check("integration: fallback results carry no NaN similarity", res.results.every(noNanSimilarity))
+  harness.check("integration: fallback results carry no NaN similarity", res.results.every((r) => Number.isFinite(r.similarity)))
 }
 
 // ── 5. Refresh clears the stale flag — the loop closes ────────────────────

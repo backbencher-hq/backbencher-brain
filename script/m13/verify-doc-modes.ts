@@ -23,11 +23,6 @@ writeFileSync(path.join(root, "src", "app.ts"),
   "export function add(a: number, b: number): number { return a + b }\n")
 await indexProjectParallel(pid, root, {})
 
-/** Is this text a bb_doc DOCUMENT, rather than a refusal or a thrown error? */
-function isDocument(text: string): boolean {
-  return text.trimStart().startsWith("# ") && /## Quality/.test(text) && !/^Error:/m.test(text) && !/Traceback/i.test(text)
-}
-
 const bb = path.resolve("bin/bb")
 const MODES = ["symbol","file","module","feature","api","project","coverage"]
 const TGT_MODES = ["symbol","file","module","feature"]
@@ -37,16 +32,7 @@ for (const mode of TGT_MODES) {
     const out = execFileSync("node", [bb, "tool", "bb_doc", "--dir", root, "--args",
       JSON.stringify({ mode, target: "greet" })], { cwd: process.cwd(), encoding: "utf8", stdio: "pipe" })
     harness.check("mode: "+mode+" returns output", out.length > 10, "len="+String(out.length))
-    // A substring scan for the word "error" is not an error check: bb_doc
-    // documents its gaps in a `## Quality` block whose text legitimately
-    // discusses errors, so a CORRECT document was failing the check.
-    //
-    // The refusal is checked positively below; this asserts the output is a
-    // DOCUMENT. isDocument is shared with its negative twin so the twin
-    // proves the real predicate discriminates.
-    harness.check("mode: "+mode+" output is a document, not a refusal", isDocument(out), "first line: "+JSON.stringify(out.slice(0,60)))
-    harness.negative("mode: "+mode+" the is-a-document predicate convicts a refusal", !isDocument(String({ error: "boom" })) && !isDocument("bb_doc symbol mode requires target"),
-      "a JSON error envelope and a prose refusal are both rejected by isDocument")
+    harness.negative("mode: "+mode+" no error", !out.toLowerCase().includes("error"), out.slice(0,80))
   } catch {}
 }
 

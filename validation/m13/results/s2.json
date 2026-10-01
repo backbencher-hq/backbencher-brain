@@ -18,47 +18,47 @@
     {
       "name": "CLI content mode returns JSON with searchMode=content",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness"
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"results\": [\n    {\n      \"f"
     },
     {
       "name": "CLI symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/var/folders/4j/11tssyqj4kj0f8dfz06js"
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-hk0c1j/src/app.ts\""
     },
     {
       "name": "CLI file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "CLI rejects empty query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/"
+      "detail": "error: bb_search symbols mode requires a non-empty query\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --"
     },
     {
       "name": "CLI rejects file mode without filePath [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search file mode requires filePath\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/bin/bb tool "
+      "detail": "error: bb_search file mode requires filePath\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-"
     },
     {
       "name": "CLI rejects unindexed file [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-br"
+      "detail": "error: file is not indexed: src/not-indexed.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/b"
     },
     {
       "name": "CLI rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/escape.ts\nCommand failed: node /Use"
+      "detail": "error: path escapes project root: /tmp/escape.ts\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp"
     },
     {
       "name": "CLI rejects non-string query [negative]",
       "pass": true,
       "negative": true,
-      "detail": "error: bb_search: query must be string\nCommand failed: node $HOME/Documents/Default Project/ishaq/backbencher-brain/bin/bb tool bb_sea"
+      "detail": "error: bb_search: query must be string\nCommand failed: node $HOME/mcp/backbencher-brain/bin/bb tool bb_search --dir /tmp/bb-search"
     },
     {
       "name": "MCP symbols mode returns the symbol",
@@ -68,17 +68,17 @@
     {
       "name": "MCP content mode returns JSON with searchMode=content",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"returned\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness"
+      "detail": "{\n  \"searchMode\": \"content\",\n  \"query\": \"handleRequest\",\n  \"total\": 1,\n  \"staleCount\": 0,\n  \"freshCount\": 1,\n  \"truncated\": false,\n  \"freshness\": {\n    \"fresh\":"
     },
     {
       "name": "MCP symbol mode returns findSymbol matches",
       "pass": true,
-      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/var/folders/4j/11tssyqj4kj0f8dfz06js"
+      "detail": "{\n  \"matches\": [\n    {\n      \"id\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts:duplicateName:2\",\n      \"fileId\": \"/tmp/bb-search-e2e-hk0c1j/src/app.ts\""
     },
     {
       "name": "MCP file mode returns source envelope",
       "pass": true,
-      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"9b5aed4e5d39d8c5ab5b08c564d636ccc2cfcf18:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
+      "detail": "{\n  \"searchMode\": \"file\",\n  \"file\": \"src/app.ts\",\n  \"fileId\": \"a53eb767851216b3fd5bdffc25106fb68555825c:src/app.ts\",\n  \"language\": \"typescript\",\n  \"content\": \"e"
     },
     {
       "name": "MCP rejects empty query [negative]",
@@ -96,13 +96,13 @@
       "name": "MCP rejects unindexed file [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: file is not indexed: src/not-indexed.ts"
+      "detail": "error: file is not indexed: src/not-indexed.ts"
     },
     {
       "name": "MCP rejects path escape [negative]",
       "pass": true,
       "negative": true,
-      "detail": "bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/escape.ts"
+      "detail": "bb_search mode=file: path escapes project root: /tmp/escape.ts"
     },
     {
       "name": "MCP rejects non-string query [negative]",
@@ -126,5 +126,10 @@
     "The CLI transport reads the prebuilt bin/bb; run `npm run build` before this verifier.",
     "MCP stdio under Bun executes src/mcp/server.ts directly (no build needed for that path)."
   ],
-  "generatedAt": "2026-09-29T07:49:30.591Z"
+  "generatedAt": "2026-09-05T20:56:15.896Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.298Z",
+    "contentSha256": "0f34ba5835604c01dd888698e05f64589d0baef4c31fb1954148037e5e5e0669"
+  }
 }

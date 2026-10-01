@@ -48,7 +48,7 @@ export interface ToolDescriptor {
 const descriptors = [
   {
     name: "bb_search",
-    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block. Every response declares its match set: totalMatches is the number of matching symbols the page was cut from (not the page size) and truncated is true when a candidate cap or the noise filter kept matches out, so a short page is never mistaken for a complete one. Options a mode cannot honor are rejected with an error naming that mode's accepted options, never silently ignored. Content mode also declares HOW it matched: matchMode is phrase when the query appeared verbatim in the name, qualified name, docstring or symbol body, and terms when nothing matched verbatim and the query's content words were matched instead \u2014 a phrase hit means the code contains this text, a terms hit means it discusses the same words, which is weaker evidence. It declares bodyCoverage ({ withBody, symbols, ratio }) because a project indexed before bodies were stored has no searchable body at all, so 'nothing matched' from such a project means something different from 'nothing could match'. language and symbolKind are matched case-insensitively against the indexed vocabulary, and a value the index does not contain is reported as an error rather than as zero results.",
+    description: "Unified indexed retrieval for symbol lists, content, exact symbol source, or files. This is retrieval, not natural-language explanation or code analysis. Symbol/content/file modes carry a freshness block ({ fresh, stale, missing, staleRatio, mode, remediation }) stating whether results reflect the current files; rows may carry stale=true. Remediation names the exact reindex command. When a read finds stale/missing files within budget, the handler auto-refreshes exactly those files (reindexFilesParallel) before answering and declares it in an autoRefresh field; refresh=false opts out and answers from existing data with the staleness block. Every response declares its match set: totalMatches is the number of matching symbols the page was cut from (not the page size) and truncated is true when a candidate cap or the noise filter kept matches out, so a short page is never mistaken for a complete one. Options a mode cannot honor are rejected with an error naming that mode's accepted options, never silently ignored. language and symbolKind are matched case-insensitively against the indexed vocabulary, and a value the index does not contain is reported as an error rather than as zero results.",
     inputSchema: {
       type: "object",
       properties: {
@@ -113,15 +113,7 @@ const descriptors = [
   },
   {
     name: "bb_security",
-    // Corrected against the code, not paraphrased. The previous text claimed
-    // "hardcoded secrets" (no writer emits any secret vulnerability type — that
-    // rule lives in bb_patterns, not here) and "weak crypto" (emitted only as an
-    // isolated sink with no co-located source, so it is classified `unresolved`
-    // and reported as an unvalidated observation, never as a finding).
-    // "Cross-language" is retained because cross-file taint resolution exists
-    // and is reported, but docs/BB_SECURITY.md now states precisely what the
-    // flag does and does not mean.
-    description: "Taint-flow security scan over the indexed source-to-sink flows: SQL injection, XSS, command injection, path traversal, insecure deserialization, SSRF, open redirect and code execution. Flows whose endpoints both resolve to indexed symbols are findings; one-sided flows are reported separately as unvalidated observations, never as confirmed exploits. Findings whose underlying file changed after indexing carry a staleness marker.",
+    description: "Cross-language security scan: SQL injection, XSS, command injection, hardcoded secrets, weak crypto. Findings whose underlying file changed after indexing carry a staleness marker.",
     inputSchema: { type: "object", properties: { history: { type: "boolean", description: "return persisted security history" }, recordRun: { type: "boolean", description: "persist this scan as an analysis run" }, limit: { type: "number", description: "history run limit (default 20)" } } },
     mutability: "read",
     requiresIndex: true,
@@ -129,7 +121,7 @@ const descriptors = [
     plannedModes: ["flow", "summary", "hotspots"],
     aliases: [],
     deprecated: false,
-    documentation: { category: "analysis", summary: "Taint-flow findings over the index, with optional persisted run history. A flow is a finding only when both endpoints resolve to indexed symbols; one-sided flows are reported as unvalidated observations. Every response states the census so a capped scan is never mistaken for a complete one. Not detected: hardcoded secrets; genuine cross-language taint; standalone weak crypto.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
+    documentation: { category: "analysis", summary: "Cross-language findings with optional persisted run history.", defaults: { history: false, recordRun: false, limit: 20 }, examples: [{}, { recordRun: true }, { history: true }] },
   },
   {
     name: "bb_visualize",
