@@ -5098,6 +5098,17 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
   // container (any statement/declaration/declarator/specifier/enumerator
   // node). `#if (SQLITE_MAX_MMAP_SIZE>0)` → expression chain only → text;
   // `int eAccess = F_OK;` inside #ifndef → init_declarator on path → code.
+  // #964: TRUE iff `n` sits on a physical preprocessor DIRECTIVE line -- a line
+  // whose first non-space character is `#`. Exact, and it does not touch real code
+  // inside a conditional (see the note at the calls branch). `sourceText` is the
+  // whole file, so this is a byte lookup, not a tree walk.
+  const isDirectiveLineName = (n: any): boolean => {
+    if (!sourceText || typeof n?.startIndex !== "number") return false
+    const lineStart = sourceText.lastIndexOf("\n", n.startIndex - 1) + 1
+    const lineEnd = sourceText.indexOf("\n", n.startIndex)
+    const line = sourceText.slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
+    return line.trimStart().startsWith("#")
+  }
   const isDirectiveConditionText = (n: any): boolean => {
     // CGD13: the NAME identifier of a macro definition IS a declaration
     // (`#define FUNC_PERFECT_MATCH 6` — the analyzer's extractMacro emits a
@@ -5476,8 +5487,8 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         name = leaf?.text
       } else name = fn?.text
       // #964 (C oracle mirror of the analyzer's #956 gate): a callee identifier
-      // inside PREPROCESSOR DIRECTIVE TEXT is not a call. Recovery splices these
-      // into real `call_expression` nodes -- zig's wasi libc mman.c:
+      // on a PHYSICAL DIRECTIVE LINE is not a call. Recovery splices these into real
+      // `call_expression` nodes -- zig's wasi libc mman.c:
       //
       //   #ifdef MAP_HUGETLB
       //           (flags & MAP_HUGETLB) != 0 ||
@@ -5485,21 +5496,27 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
       // parses as
       //
       //   call_expression
-      //     identifier      "MAP_HUGETLB"        <- the #ifdef's tested macro
-      //     argument_list   "(flags & MAP_HUGETLB)"  <- the NEXT line
+      //     identifier    "MAP_HUGETLB"           <- the #ifdef's tested macro
+      //     argument_list "(flags & MAP_HUGETLB)" <- the NEXT line
       //
-      // because the directive's identifier is spliced into code and the following
-      // parenthesized expression becomes its argument list. The source contains no
-      // call; `#ifdef X` TESTS a macro, it does not invoke one -- which is the
-      // analyzer's #956 ruling, and #908/#912 beyond it.
+      // The source contains no call: `#ifdef X` TESTS a macro, it does not invoke
+      // one -- the analyzer's #956 ruling, extended by #908/#912. Measured across
+      // 2,600 corpus files this fabricated 36 rows the differential then reported
+      // as MISSING, convicting a correct analyzer.
       //
-      // The oracle's USES derivation already guarded this with
-      // isDirectiveConditionText; the CALLS branch did not, so it published six
-      // fabricated `calls -> MAP_*` rows and the differential reported them as six
-      // MISSING -- convicting a correct analyzer. A superset oracle would have
-      // traded a fabrication for an unexplained edge, the same trade this file
-      // refuses for svelte (see deriveSvelteComponentUsages).
-      if (name && !seen.has(name) && !isDirectiveConditionText(fn)) {
+      // The test is the PHYSICAL LINE, and that choice is load-bearing. The first
+      // version used the file's existing isDirectiveConditionText() and it
+      // OVER-SUPPRESSED: that predicate is true for any identifier whose ancestor
+      // chain reaches a preproc_* node without crossing a statement/declaration,
+      // which is also true of REAL calls and REAL macro invocations inside
+      // `#ifdef` blocks -- it ate 15 true rows (`strcmp`, `S_ISREG`, `strerror_s`,
+      // `sasl_choose_krb5`, ...), turning them into unexplained edges and trading
+      // one error class for the opposite one. The file's own comment on that
+      // predicate warns of exactly this: "the exclusion must not eat CONDITIONAL
+      // CODE". A directive line is physically a line starting with `#`, so checking
+      // the line is both exact and immune to that over-suppression: real code
+      // inside a conditional is never on a `#` line.
+      if (name && !seen.has(name) && !isDirectiveLineName(fn)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
       }
