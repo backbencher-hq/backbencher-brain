@@ -38,7 +38,24 @@ try {
   check("small display limit is honored", result.patterns.length === 1, `displayed=${result.patterns.length}`)
   check("late candidate was evaluated", result.scan.candidatesEvaluated >= 2, JSON.stringify(result.scan))
   check("scan reports truncation", result.scan.truncated === true, JSON.stringify(result.scan))
-  check("statistics describe displayed results", result.statistics.totalFound === result.patterns.length, JSON.stringify(result.statistics))
+  // This used to assert `totalFound === patterns.length`, which is what made
+  // the field the page length while byType / bySeverity / averageConfidence
+  // beside it described the census — one object reporting two universes, and a
+  // handler that printed the page length under the words "N found". The census
+  // is what "found" means, so the invariants are now stated against it, and the
+  // two universes are required to be consistent with each other.
+  check(
+    "statistics describe the census, and the page is a slice of it",
+    result.statistics.totalFound === result.scan.findingsBeforeDisplayLimit
+      && result.statistics.totalFound >= result.patterns.length
+      && result.scan.displayed === result.patterns.length,
+    JSON.stringify({ statistics: result.statistics, scan: result.scan }),
+  )
+  check(
+    "byType sums to the census, not to the page [negative]",
+    Object.values(result.statistics.byType).reduce((a, b) => a + b, 0) === result.statistics.totalFound,
+    JSON.stringify(result.statistics.byType),
+  )
   check("long-parameter finding carries indexed evidence", long.every((p) => p.evidence.some((e) => e.type === "indexed-parameters")))
 
   const raw = await BrainDatabase.getRawInstance(projectId)

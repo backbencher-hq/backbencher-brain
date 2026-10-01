@@ -242,7 +242,7 @@ for (const c of memberAccessCases) {
 }
 
 // ── INTEGRATION: full refactor on indexed projects ──────────────────────────
-async function runIntegration(label: string, file: string, code: string, symbol: string, assert: (after: string) => void): Promise<void> {
+async function runIntegration(label: string, file: string, code: string, symbol: string, assert: (after: string) => void, lineStart?: number): Promise<void> {
   const root = mkdtempSync(path.join(tmpdir(), `bb-e2-${label}-`))
   const dir = path.dirname(file)
   if (dir !== ".") mkdirSync(path.join(root, dir), { recursive: true })
@@ -250,7 +250,20 @@ async function runIntegration(label: string, file: string, code: string, symbol:
   const projectId = getProjectId(root)
   try {
     await indexProjectParallel(projectId, root, {})
-    const result = await executeEdit(root, projectId, { mode: "refactor", symbolName: symbol, filePath: file, newName: "renamedTarget", format: false })
+    // `lineStart` disambiguates. The TypeScript fixture deliberately contains
+    // same-name constructs — `{ target: 99 }`, `{ target(x) {...} }` — because the
+    // gate asserts they are NOT renamed. That makes the name genuinely ambiguous
+    // in that file, and bb_edit's documented answer is "provide filePath and
+    // lineStart". The call supplied filePath but not lineStart, so the tool
+    // correctly refused and the gate recorded a failure before reaching any of the
+    // assertions it was written to make.
+    //
+    // Verified rather than assumed: with lineStart:1 the same edit renames the
+    // declaration and its call site, and ALL SEVEN of this gate's own assertions
+    // hold — including every negative (property key, other-object method, member
+    // access, string literal and comment all left alone). The fixture was right;
+    // the CALL was wrong.
+    const result = await executeEdit(root, projectId, { mode: "refactor", symbolName: symbol, filePath: file, lineStart, newName: "renamedTarget", format: false })
     harness.check(`${label}: refactor produces exactly one change`, result.changes.length === 1, `got ${result.changes.length}`)
     const after = readFileSync(path.join(root, file), "utf8")
     assert(after)
@@ -271,7 +284,7 @@ await runIntegration("ts", "src/app.ts", tsFixture, "target", (after) => {
   harness.negative("TS: member access NOT renamed", after.includes("config.target"))
   harness.negative("TS: string NOT renamed", after.includes('"target in string"'))
   harness.negative("TS: comment NOT renamed", after.includes("// target in comment"))
-})
+}, 1)
 
 const pyFixture = `def target():\n    return 1\n\ndef caller():\n    config = {"target": 99}\n    return target() + config["target"] + "target in string"\n    # target in comment\n`
 await runIntegration("python", "app.py", pyFixture, "target", (after) => {
