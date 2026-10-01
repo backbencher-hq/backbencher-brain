@@ -336,6 +336,22 @@ out — the edge was derived and then thrown away. The fallback is the analyzer'
 half matters — the obvious fix, stopping at the namespace, still drops every call in a
 file with no `ns`, which is the smallest instance and is not contrived.
 
+**Where a type relation is anchored (CLJ-D48).** The source of an `implements` /
+`extends` edge is the analyzer's `activeFunction` — the innermost enclosing *function*
+form, else the namespace. `walk`'s owner is **not** it, because that tracks `def` too
+and a `def` creates a var, not a function. So `reify` inside `(defn future-call …)`
+anchors to `future-call`, while a `proxy` inside a `def` *initializer* has no active
+function and anchors to the namespace. Both appeared as **symmetric** misses and
+fabrications — 122/122 and 7/7 — where the counts matched exactly and every key was
+wrong, which is the most misleading failure a completeness gate can have.
+
+**Aliases survive two unread shapes (CLJ-D49).** `(ns ^{:no-doc true} …)` puts
+metadata where the name is expected, and a *prefix list*
+`[clj-kondo…node [protocols :as p]]` was detected by asking whether its first child is
+a symbol — which a prefix list also has. The symptom was an alias table of size 1 where
+two aliases existed. A libspec with no dot in its first segment is **relative** and
+resolves against the requiring namespace.
+
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with

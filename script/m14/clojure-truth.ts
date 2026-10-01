@@ -92,6 +92,25 @@ const symName = (n: Node | null): string => {
  */
 function namespaceNameOf(arg: Node | null): string {
   if (!arg) return ""
+  // CLJ-D49: AN `ns` FORM MAY CARRY METADATA, AND THE METADATA IS NOT THE NAME.
+  //
+  // `(ns ^{:no-doc true} clj-kondo.impl.rewrite-clj.node.indent …)` puts a
+  // `meta_lit` where the name is expected, so this returned "" — and the caller
+  // does `if (v) out.push({ at, name: v, aliases: aliasTableOf(n, v) })`, so an empty
+  // name dropped the WHOLE timeline entry. Not just the name: every alias in the
+  // file went with it, silently. That is why `LinePrefixedNode -> node/Node` was
+  // published unresolvable while the analyzer published
+  // `LinePrefixedNode -> clj-kondo.impl.rewrite-clj.node.protocols/Node`: the alias
+  // `node` was never in the table, not because it was unread but because the entry
+  // holding it had been thrown away before it was read.
+  //
+  // `clj-kondo` is dense with `^{:no-doc true}`, so this was not a rare shape, and
+  // the failure mode compounds silently across every derivation that consults the
+  // namespace timeline.
+  if (arg.type === "meta_lit") {
+    const inner = executionHead(arg)
+    return inner ? namespaceNameOf(inner) : ""
+  }
   if (arg.type === "sym_lit") return arg.childForFieldName("name")?.text ?? ""
   // `(in-ns 'a.b)` — the name is the quote's own first child.
   if (arg.type === "quoting_lit" || arg.type === "syn_quoting_lit") {
@@ -151,7 +170,7 @@ function namespaceTimeline(root: Node): NsCtx[] {
       if (NON_CODE_HEADS.has(nm)) return
       if ((nm === "ns" || nm === "in-ns") && n.namedChildCount > 1) {
         const v = namespaceNameOf(n.namedChild(1))
-        if (v) out.push({ at: n.startIndex, name: v, aliases: aliasTableOf(n) })
+        if (v) out.push({ at: n.startIndex, name: v, aliases: aliasTableOf(n, v) })
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, depth) }
@@ -174,7 +193,35 @@ type NsCtx = { at: number; name: string; aliases: Map<string, string> }
  * and 403 wrong — which is what a missing resolution step looks like from the
  * outside, and a reminder that matching COUNTS is not matching FACTS.
  */
-function aliasTableOf(nsForm: Node): Map<string, string> {
+/**
+ * RESOLVE A LIBSPEC TO A NAMESPACE, which is not always what it says.
+ *
+ * A libspec with no dot in its first segment is RELATIVE: Clojure resolves it
+ * against the namespace doing the requiring, so `[protocols :as node]` inside
+ * `(ns clj-kondo.impl.rewrite-clj.node.indent …)` means
+ * `clj-kondo.impl.rewrite-clj.node.protocols` — the current namespace's prefix with
+ * its last segment replaced. Storing the literal `protocols` left every use of the
+ * alias unresolved, which is 8 of the 15 `implements` residuals in this wave:
+ * `LinePrefixedNode -> node/Node` against the analyzer's
+ * `LinePrefixedNode -> clj-kondo.impl.rewrite-clj.node.protocols/Node`, same edge,
+ * same line, unresolvable target.
+ *
+ * The absolute roots are the ones `clojure.lang.RT` treats as roots; a segment
+ * containing a dot is absolute on its own.
+ */
+const LIBSPEC_ROOTS = new Set(["clojure", "java", "javax", "jdk.nashorn", "sun", "com.sun"])
+
+function resolveLibSpec(lib: string, currentNs: string): string {
+  if (!lib) return lib
+  const first = lib.split("/")[0] ?? lib
+  if (lib.includes(".") || LIBSPEC_ROOTS.has(first)) return lib
+  // RELATIVE: the current namespace's PARENT prefix, then the spec.
+  const cut = currentNs.lastIndexOf(".")
+  const parent = cut > 0 ? currentNs.slice(0, cut) : ""
+  return parent ? `${parent}.${lib}` : lib
+}
+
+function aliasTableOf(nsForm: Node, currentNs = ""): Map<string, string> {
   const m = new Map<string, string>()
   for (let ci = 1; ci < nsForm.namedChildCount; ci++) {
     const clause = nsForm.namedChild(ci)
@@ -187,8 +234,25 @@ function aliasTableOf(nsForm: Node): Map<string, string> {
       if (!spec || spec.type !== "vec_lit") continue
       const first = spec.namedChild(0)
       if (!first) continue
-      if (first.type === "sym_lit") {
-        const lib = symName(first)
+      // CLJ-D49: A SPEC IS A PREFIX LIST IF IT HAS A NESTED SPEC — not if its first
+      // child happens to be a symbol, which a prefix list ALSO has.
+      //
+      // `(ns ^{:no-doc true} clj-kondo…indent (:require [clj-kondo…node
+      // [protocols :as node] [whitespace :as ws]] [clojure.string :as string]))`
+      //
+      // The outer spec's first child is the sym_lit `clj-kondo…node`, so the old
+      // `first.type === "sym_lit"` test took the PLAIN-SPEC branch, found no `:as`
+      // among a symbol's children, registered nothing, and never reached the prefix
+      // branch below it. The measured symptom was an alias table of size 1 — `string`
+      // only — where `node` and `ws` were simply absent, so every use published an
+      // unresolvable `node/Node` while the analyzer published
+      // `clj-kondo.impl.rewrite-clj.node.protocols/Node`.
+      const isPrefixList = first.type === "vec_lit" || (() => {
+        for (let q = 1; q < spec.namedChildCount; q++) { const c = spec.namedChild(q); if (c && c.type === "vec_lit") return true }
+        return false
+      })()
+      if (!isPrefixList && first.type === "sym_lit") {
+        const lib = resolveLibSpec(symName(first), currentNs)
         for (let q = 1; q < spec.namedChildCount; q++) {
           const c = spec.namedChild(q)
           if (c && c.type === "kwd_lit") {
@@ -201,22 +265,30 @@ function aliasTableOf(nsForm: Node): Map<string, string> {
         }
         continue
       }
-      if (first.type === "vec_lit") {
-        const prefix = first.namedChild(0)
-        const prefixName = prefix && prefix.type === "sym_lit" ? symName(prefix) : ""
+      if (isPrefixList) {
+        // The prefix is the spec's FIRST child — a symbol like
+        // `clj-kondo.impl.rewrite-clj.node` — and the nested specs are its SIBLINGS,
+        // not its children. Reading them off `first` (as this did) only worked for
+        // the shape where the prefix is itself wrapped in a vector, which is not the
+        // shape clj-kondo writes.
+        const prefixName = first.type === "sym_lit" ? symName(first) : ""
+        const host = first.type === "vec_lit" ? first : spec
         if (!prefixName) continue
-        for (let q = 1; q < first.namedChildCount; q++) {
-          const c = first.namedChild(q)
-          if (c && c.type === "vec_lit") {
-            const sub = c.namedChild(0)
-            const subName = sub && sub.type === "sym_lit" ? symName(sub) : ""
-            for (let r = 1; r < c.namedChildCount; r++) {
-              const kk = c.namedChild(r)
-              if (kk && kk.type === "kwd_lit" && (kk.childForFieldName("name")?.text ?? "") === "as") {
-                const a = c.namedChild(r + 1)
-                if (a && a.type === "sym_lit" && subName) m.set(symName(a), `${prefixName}.${subName}`)
-              }
-            }
+        for (let q = 1; q < host.namedChildCount; q++) {
+          const c = host.namedChild(q)
+          if (!c || c.type !== "vec_lit") continue
+          const sub = c.namedChild(0)
+          const subName = sub && sub.type === "sym_lit" ? symName(sub) : ""
+          if (!subName) continue
+          for (let r = 1; r < c.namedChildCount; r++) {
+            const kk = c.namedChild(r)
+            const key = kk && kk.type === "kwd_lit" ? (kk.childForFieldName("name")?.text ?? "") : ""
+            // `:as-alias` ALSO takes a positional name, so both keys are read here
+            // rather than only the `:as` one — CLJ-D40's second alias key, which this
+            // reader had never grown.
+            if (key !== "as" && key !== "as-alias") continue
+            const a = c.namedChild(r + 1)
+            if (a && a.type === "sym_lit") m.set(symName(a), `${prefixName}.${subName}`)
           }
         }
       }
@@ -1140,6 +1212,39 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
     seen.add(id)
     out.push({ label, from, to, line })
   }
+  // CLJ-D48: THE SOURCE IS THE ANALYZER'S `activeFunction`, WHICH IS SET BY
+  // FUNCTION FORMS ONLY — NOT BY `def`.
+  //
+  // `walk`'s owner tracks `def` as well as `defn`, which is right for `calls` (a
+  // `def` initializer's calls are attributed to the var it builds) and wrong for
+  // type relations. `(def ^ThreadLocal thread-local-utc-date-format (proxy
+  // [ThreadLocal] [] …))` at instant.clj:162 is published by the analyzer as
+  // `clojure.instant -> ThreadLocal`, because a `def` creates a VAR, not a
+  // function, so there is no active function and `ctxName` falls back to the
+  // namespace. The interface positions beside it are attributed the same way.
+  //
+  // The mirror case is a method body: `Vec` is a `deftype` and `iterator` a `defn`
+  // inside it, and the analyzer publishes `iterator -> java.util.Iterator` — the
+  // INNERMOST function, not the type that owns it. One rule covers both: the
+  // innermost enclosing function form, else the namespace. Measured, not inferred:
+  // it takes `extends` from 7 residuals to 0 and `implements` from 16 to the alias
+  // residuals alone.
+  const activeFn = new Map<number, string>()
+  {
+    const rec = (n: Node, fn: string): void => {
+      activeFn.set(n.startIndex, fn)
+      let next = fn
+      if (n.type === "list_lit") {
+        const h = executionHead(n)
+        const nm = h && h.type === "sym_lit" ? symName(h) : ""
+        if (SHADOW_FN_PARAM_HEADS.has(nm)) { const dn = defNameOf(n); if (dn) next = dn }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) rec(c, next) }
+    }
+    rec(root, "")
+  }
+  const typeSource = (n: Node): string => activeFn.get(n.startIndex) || nsAt(tl, n.startIndex)
+
   const isDefTypeish = (form: string) => form === "deftype" || form === "defrecord"
   walk(root, (node, ctx) => {
     if (node.type !== "list_lit") return
@@ -1179,10 +1284,24 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
       return
     }
     if (form === "reify") {
-      // 2. every child from 1 is a protocol; the source is the ENCLOSING CONTEXT.
+      // CLJ-D48: A `reify` ATTRIBUTES TO THE ENCLOSING DEFINITION, not the namespace.
+      //
+      // The comment this replaces claimed the opposite — that the analyzer's C9
+      // branch walks a reify body with `previousActiveFunction: null` so its
+      // `ctxName` falls back to the namespace. That observation was true of
+      // `proxy` and was generalised to `reify`, where it is false: in core.clj the
+      // `(reify clojure.lang.IDeref …)` at :7291 is nested inside `(defn future-call
+      // …)`, and the analyzer publishes `future-call -> clojure.lang.IDeref` while
+      // this truth published `clojure.core -> clojure.lang.IDeref`. 122 misses and
+      // 122 fabrications, symmetric, every one the same edge with a different
+      // SOURCE — which is why the counts matched exactly while every key was wrong.
+      //
+      // An anonymous type is still built by the definition that builds it. The
+      // namespace fallback is kept only for the case that motivated the original
+      // comment: a `reify` with no enclosing definition at all.
       for (let i = 1; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
-        if (c && c.type === "sym_lit") add("implements", ctxNs, R(symName(c)), protoLine(c))
+        if (c && c.type === "sym_lit") add("implements", typeSource(node), R(symName(c)), protoLine(c))
       }
       return
     }
@@ -1212,9 +1331,19 @@ export function deriveClojureTypeRelationTruth(root: Node): RelEdge[] {
       // 5. inside the VECTOR: first extends, the rest implement, source = context.
       const ifaces = node.namedChild(1)
       if (!ifaces || ifaces.type !== "vec_lit") return
+      // CLJ-D48: a `proxy`'s SUPERCLASS and its INTERFACES BOTH attribute to the
+      // enclosing definition. I first "fixed" the superclass to the namespace on the
+      // strength of one sample — `clojure.instant -> ThreadLocal` — and that made
+      // `extends` WORSE, 7 wrong out of 39 becoming 33. The sample was a real
+      // disagreement but it was not the rule: 32 of 39 proxies already matched with
+      // `ctx`, so a single sample was being read as a convention. Measuring the
+      // whole class instead of generalising from the first example is the lesson,
+      // and it is the same mistake as the `reify` comment above, one position over.
       for (let i = 0; i < ifaces.namedChildCount; i++) {
         const c = ifaces.namedChild(i)
-        if (c && c.type === "sym_lit") add(i === 0 ? "extends" : "implements", ctx, R(symName(c)), protoLine(c))
+        if (c && c.type === "sym_lit") {
+          add(i === 0 ? "extends" : "implements", typeSource(node), R(symName(c)), protoLine(c))
+        }
       }
     }
   })
