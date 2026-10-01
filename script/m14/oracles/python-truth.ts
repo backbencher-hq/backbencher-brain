@@ -861,7 +861,13 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       // pattern is worth stating rather than leaving as four separate discoveries: a
       // definition's SCOPE and its CODE are different surfaces, and a walk that handles the
       // first and recurses for the rest will silently skip the second every time.
-      const retType = n.childForFieldName("type")
+      // The field is `return_type`, NOT `type`. Asking for `type` returns null, and a null here
+      // is indistinguishable from "this function has no return annotation" — so the walk did
+      // nothing at all and said nothing about it. That is the second time in this file that a
+      // wrong field name produced a SILENT no-op rather than an error: the conditional case, and
+      // now this. The lane's own `typeClauseOf` scans for a `type` child as a fallback, which is
+      // why the analyzer kept working while the oracle quietly stopped.
+      const retType = n.childForFieldName("return_type") ?? n.childForFieldName("type")
       if (retType) walkBody(retType, inner, ownerClass, inner)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
