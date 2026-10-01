@@ -1164,16 +1164,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (n.type === "struct_declaration" || n.type === "enum_declaration" || n.type === "union_declaration" || n.type === "opaque_declaration") {
         const p = n.parent
-        // Bind the child ONCE. `p.namedChild(0)` is a method call, so the
-        // `?.type === "identifier"` guard above cannot narrow the later
-        // `p.namedChild(0).text` — TypeScript reports the object as possibly null
-        // (TS2531) even though the guard proves it. Same value, one call, and the
-        // narrowing works. Caught by the pre-push review: this was the only type
-        // error anywhere in the tree that uncommitted work INTRODUCED; the other
-        // two sit outside every local hunk and predate this work.
-        const firstChild = p && p.type === "variable_declaration" && p.namedChildCount > 0 ? p.namedChild(0) : null
-        if (firstChild && firstChild.type === "identifier") {
-          typeNames.add(String(firstChild.text))
+        // Bound once: the guard below narrows on `p0?.type`, but TypeScript cannot carry that
+        // narrowing through to a second `p.namedChild(0)` call, so calling it again on the next
+        // line left `Object is possibly 'null'`. One binding is both the fix and cheaper.
+        const p0 = p?.namedChild(0)
+        if (p && p.type === "variable_declaration" && p.namedChildCount > 0 && p0?.type === "identifier") {
+          typeNames.add(String(p0.text))
         }
       }
       for (let i = 0; i < n.namedChildCount; i++) {
