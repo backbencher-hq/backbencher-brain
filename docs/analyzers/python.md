@@ -182,7 +182,14 @@ Filed in the review, not fixed, each with the reason:
   caller doing a name-only lookup should know this before trusting the result.
 - **PY-16** — no `dialect` field exists in any lane, so Cython cannot be recorded honestly.
 - **PY-17** — two python framework tables with five overlapping entries, free to drift.
-- **PY-18** — the perf "budget" gate only checks a recorded number is positive; nothing is
+- **PY-18** — the perf gate records a number and checks only that it is positive, so it cannot
+  fail. Measured properly (`script/m14/python-phase-profile.ts`), the lane is **84% analyzer /
+  16% parser** (58.7s vs 11.2s over 3,271 files, mean 21.4ms, p99 257ms), and every slow file is
+  85–92% analyzer. So the 1 MiB truncation limit guards a fifth of the cost, and the remaining
+  cost is structural: the tree is walked four times per file. Two provably-equivalent
+  micro-optimisations are in (a per-node `phantomKey` computed even when 96.7% of files have no
+  phantoms to match; a `parent.parent` re-read per attribute node). **No wall-clock gain is
+  claimed** — the machine ran at load 14.5 and identical code measured 18% apart twice.
   re-measured or compared. Python's recorded `cython:python` 67.2 ms/file was taken at **load
   average 41.85** and re-measures at ~193 ms/file at load 3.8. The distribution is skewed
   (p50 55 ms, p99 2,497 ms, 8 files = 41% of the time), so the mean describes no file in it.
