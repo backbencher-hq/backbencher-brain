@@ -92,6 +92,21 @@ function calleeLeaf(text: string): string {
  * Text is kept as the fallback for a callee expression with no `attribute`/`identifier`
  * shape, so an unusual form still yields a name rather than silently vanishing.
  */
+/**
+ * Every name a callee may have — which, under the M60 #902 ALLOWLIST, is at most one.
+ *
+ * Kept as a list because the shape of the rule is an allowlist rather than a single case, and a
+ * second shape added to it later is a decision someone has to make in one visible place. The
+ * `conditional_expression` case that used to live here was removed: `python/callee-shapes` pins
+ * that a conditional callee names NOTHING, because `(f if flag else g)()` asserting `calls -> f`
+ * names a call site that exists only when the condition is true. The `call` recursion for
+ * `f()()` went with it, for the same reason — that fixture pins it as unadjudicated-but-absent.
+ */
+function calleeNames(fn: any): string[] {
+  const one = calleeName(fn)
+  return one ? [one] : []
+}
+
 function calleeName(fn: any): string {
   if (!fn) return ""
   if (fn.type === "identifier") return fn.text
@@ -99,9 +114,17 @@ function calleeName(fn: any): string {
     const attr = fn.childForFieldName("attribute")
     return attr ? attr.text : ""
   }
-  if (fn.type === "call") {
-    // `f()()` — the callee is another call's result; recurse to its function.
-    return calleeName(fn.childForFieldName("function"))
+  if (fn.type === "parenthesized_expression") {
+    // `(self._mgr.get_thing)(x)` — a PARENTHESIZED callee. `ansible/plugins/galaxy_api_proxy.py`
+    // writes one split across five lines with the dots at line ends:
+    //
+    //     return (self.\n    _concrete_art_mgr.\n    get_direct_collection_dependencies\n)(c)
+    //
+    // The text fallback then cut at the OPENING parenthesis of the wrapper, got an empty head,
+    // and returned no name at all. Unwrapping and recursing is the whole fix, and it is the
+    // third shape in this function that a text fallback cannot see — attribute, subscript, and
+    // now a wrapper — which is the argument for reading the tree instead of the source.
+    return calleeName(fn.namedChild(0))
   }
   if (fn.type === "subscript") {
     // `TABLE[key]()` CALLS WHATEVER THE SLOT HOLDS, and there is no name to record.
@@ -626,8 +649,8 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
       if (fn && scope) {
-        const leaf = calleeName(fn)
-        if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
+        for (const leaf of calleeNames(fn)) {
+          if (!leaf || PY_BUILTINS.has(leaf) || isDunder(leaf)) continue
           // PYTHON'S CONSTRUCTOR CONVENTION, stated rather than assumed: a call whose
           // callee is Capitalised and is declared as a class in THIS file is a
           // construction of it, and the graph should say `instantiates`. The two
@@ -743,8 +766,8 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     // declares as a class is an `instantiates` rather than a `calls`.
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
-      const leaf = calleeName(fn)
-      if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
+      for (const leaf of calleeNames(fn)) {
+        if (!leaf || PY_BUILTINS.has(leaf) || isDunder(leaf)) continue
         if (leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase() && classNames.has(leaf))
           add("instantiates", cls, leaf, n.startPosition.row + 1)
         else
@@ -805,9 +828,21 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
       // a missing relationship, so it is mirrored rather than silently changed.
       const params = n.childForFieldName("parameters")
       if (params) walkBody(params, inner, ownerClass, inner)
+      // ...AND SO IS THE RETURN ANNOTATION. `-> t.Annotated[..., ParamDesc(["lazy_type"])]` is a
+      // call written in the signature, in a subscript inside a type. Same omission as the two
+      // above and the same fix: `type` is a child of `function_definition` and not of its body.
+      //
+      // This is now the FOURTH child of a definition that had to be routed through `walkBody`
+      // by hand — body, parameters, superclasses, return type — because `walkScopes` derives
+      // definitions and not calls, and every other child of a definition fell through it. The
+      // pattern is worth stating rather than leaving as four separate discoveries: a
+      // definition's SCOPE and its CODE are different surfaces, and a walk that handles the
+      // first and recurses for the rest will silently skip the second every time.
+      const retType = n.childForFieldName("type")
+      if (retType) walkBody(retType, inner, ownerClass, inner)
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c !== body && c !== params) walkScopes(c, inner, ownerClass, inner)
+        if (c !== body && c !== params && c !== retType) walkScopes(c, inner, ownerClass, inner)
       }
       return
     }
@@ -833,8 +868,8 @@ export function derivePythonTruth(rootNode: any, moduleName?: string): TruthEdge
     if (n.type === "call") {
       const fn = n.childForFieldName("function")
       if (fn && scope === null) {
-        const leaf = calleeName(fn)
-        if (leaf && !PY_BUILTINS.has(leaf) && !isDunder(leaf)) {
+        for (const leaf of calleeNames(fn)) {
+          if (!leaf || PY_BUILTINS.has(leaf) || isDunder(leaf)) continue
           // The CONSTRUCTOR CONVENTION APPLIES AT MODULE SCOPE TOO, and this walk was the
           // one place it did not.
           //
