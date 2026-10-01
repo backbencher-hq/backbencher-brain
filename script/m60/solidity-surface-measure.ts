@@ -161,6 +161,9 @@ let complexityAboveOne = 0
 let maxComplexity = 0
 let symbolsWithQualifiedCalls = 0
 const qualifiedCallNames = new Set<string>()
+let moduleSymbols = 0
+let licensedModules = 0
+const licences = new Set<string>()
 let relationships = 0
 let withLine = 0
 const dupSeen = new Map<string, number>()
@@ -221,6 +224,13 @@ for (const f of files) {
     // SOL-20 — `qualified_calls`. Read under BOTH spellings: the analyzer writes both
     // and which one a consumer sees depends on which pool-worker builder ran, so the
     // census must not depend on that accident either.
+    if (s.kind === "module") {
+      moduleSymbols++
+      if (typeof (s as any).license === "string" && (s as any).license !== "") {
+        licensedModules++
+        licences.add(String((s as any).license))
+      }
+    }
     const qc = (s as any).qualified_calls ?? (s as any).qualifiedCalls
     if (Array.isArray(qc) && qc.length > 0) {
       symbolsWithQualifiedCalls++
@@ -383,6 +393,13 @@ const out = {
         max: maxComplexity,
         mean: complexitySymbols > 0 ? Number((complexityTotal / complexitySymbols).toFixed(3)) : 0,
         _note: "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live.",
+      },
+      licences: {
+        moduleSymbols,
+        licensed: licensedModules,
+        coveragePct: moduleSymbols > 0 ? Number(((licensedModules / moduleSymbols) * 100).toFixed(1)) : 0,
+        distinct: [...licences].sort(),
+        _note: "SOL-22. The licence lives on the MODULE symbol, and the module symbol is the one symbol SOL-16 could not document: `// SPDX-License-Identifier: MIT` is followed by the `pragma_directive`, which is not a DECLARATION, so the attachment rule had nothing to land on. Before SOL-22, ZERO of 5,976 symbols carried a licence on a corpus where essentially every file states one. Read from the file's FIRST comment run only — a licence buried on line 400 is a remark that happens to contain the word — and a file whose first comment is an ordinary remark gets no key at all rather than a guess.",
       },
       qualifiedCalls: {
         symbolsWithAValue: symbolsWithQualifiedCalls,

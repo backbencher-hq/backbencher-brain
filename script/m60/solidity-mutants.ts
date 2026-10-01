@@ -546,6 +546,40 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/licence-dropped",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-22 REVERT: stop reading the licence. Zero relationship, count or line changes \u2014 389 files simply stop saying which licence they are under, and nothing in the repository can tell, because a payload-only revert is invisible to every count-based gate. That was the pre-SOL-22 state: 0 of 5,976 symbols carried a licence on a corpus where 389 of 389 files state one. Caught by licence-sol22's module row.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (s.license === undefined) return s
+        const y: any = { ...s }
+        delete y.license
+        if (y.metadata) { const m = { ...y.metadata }; delete m.license; y.metadata = m }
+        return y
+      }),
+    }),
+    caughtBy: "solidity/licence-sol22",
+  },
+  {
+    id: "solidity/licence-scanned-whole-file",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-22 REVERT, the over-collection direction: scan the WHOLE file for the licence marker instead of only the first comment run. A licence buried on line 400 is a remark that happens to contain the word, and a file whose first comment is an ordinary remark would be reported as licensed when it declares nothing. Caught by licence-sol22, where the module row is MIT and every OTHER symbol is pinned `license: null` \u2014 so a rule that attached the file's licence to the declarations inside it fails on those rows.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        const mod = (r.symbols ?? []).find((x: any) => x.kind === "module")
+        if (!mod?.license) return s
+        return { ...s, license: mod.license }
+      }),
+    }),
+    caughtBy: "solidity/licence-sol22",
+  },
+  {
     id: "solidity/project-index-ignored",
     language: "solidity",
     defectClass: "coverage-loss",
