@@ -165,6 +165,34 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // deliberately use `.graphqls` and `.gql` so a regression that keys on one
   // extension cannot pass.
   graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
+  // --- from the m60 grammar-governance merge: two lanes the other laptop's wave had
+  // not registered. A fixture lane is not a directory, it is a directory this map
+  // NAMES — and `payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so an unregistered lane has no P1 row to convict it.
+  // M14 (#288 / M60.LCM): html joins the fixture lane. html was the LAST
+  // ungated web-family language: its analyzer had an M12 corpus claim, a regex
+  // census row and a grammar-audit pass, and no fixture, no mutant, no
+  // differential oracle and no completeness spec. Every M14/M49/M60 cell read
+  // `n/a` — the gates could not ask the question, which is how 59.9% of its
+  // symbols were measured carrying a name that is not unique in their own file
+  // while every gate stayed green. The lane is what makes the rest possible:
+  // F4's runner throws `unknown language html` without it, and
+  // `script/m60/payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so html had no P1 row to convict it either.
+  // `ext` carries BOTH html spellings because `language-detection.ts` routes
+  // `.htm` to the same analyzer and a lane that only claimed `.html` would
+  // silently skip half its own routing.
+  // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
+  // runner entry, so nothing could have caught a regression in any of them —
+  // and the four are a differential whose truth was authored by the same hand
+  // as the analyzer (55 facts, all `authority: manual_audit`, 12 of which
+  // pinned the pre-wave `global` phantom endpoint and 2 of which pinned a trap
+  // edge whose SOURCE was a signal name and whose TARGET was a whole command
+  // string), a corpus measurement, a grammar-limit census, and a node-type
+  // "safety" check whose referenced-type list was hardcoded rather than
+  // measured (retired to `script/m12/bash-node-types-legacy-inventory.ts`,
+  // reasoning preserved, and replaced by a derived gate). A fixture lane is
+  // not a directory, it is a directory this map names.
   html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
   toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
@@ -626,6 +654,38 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+
+    for (const want of exp.expectTaintSinks ?? []) {
+      // Mirror of expectTaintSources, for the SINK payload. The source side got
+      // this gate with the TS T9 wave; the sink side had NONE, which is how
+      // `re.exec(input)` (RegExp.prototype.exec) and any project-local
+      // `execute(q)` stayed reported as command_injection / sql_injection for
+      // the whole life of the analyzer — the false positive was simply not
+      // checkable. { symbol, includes?, notIncludes?, includesVuln? } over
+      // taintSinks snippets (and optionally the vulnerability_type).
+      const sym = symbols.find((s: any) => s.name === want.symbol)
+      const tk: any[] = (sym as any)?.taintSinks ?? []
+      for (const tInc of want.includes ?? []) {
+        if (!tk.some((t: any) => (t.snippet ?? t) === tInc)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include "${tInc}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const tNot of want.notIncludes ?? []) {
+        if (tk.some((t: any) => (t.snippet ?? t) === tNot)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include "${tNot}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.includesVuln ?? []) {
+        if (!tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+      for (const v of want.notIncludesVuln ?? []) {
+        if (tk.some((t: any) => t.vulnerability_type === v)) {
+          problems.push(`expected ${want.symbol}.taintSinks NOT to include vulnerability_type "${v}"; got: ${JSON.stringify(tk)}`)
+        }
+      }
+    }
     for (const want of exp.expectSymbolRanges ?? []) {
       // Vue V1 wave (H3): pin line+byte coherence of a symbol range.
       // { symbol, ownerName?, startLine?, startColumn?, endLine?, endColumn?,
@@ -910,6 +970,19 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
           if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
+            // M14 (#888, html): an OBJECT payload compares by value. `range` is the one that
+            // matters — an import's line is what makes it checkable against the source, and
+            // the pre-fix html analyzer published the ELEMENT's range rather than the
+            // ATTRIBUTE's, so a multi-line start tag produced a wrong import line. With
+            // identity comparison a pin naming `range` could never match, which is exactly
+            // how that defect stayed unpinned. No existing pin names an object field on an
+            // import, so this changes no pin's existing meaning.
+            // Re-applied 2026-09-29 from origin/main during the merge. It is COMPLEMENTARY to
+            // the `note` clause above, not competing: upstream lacked the `note` clause
+            // (erlang ER3) and this side lacked the object comparison (html #888), so each side
+            // passed its own lane and failed the other's — the clearest evidence yet that a
+            // merge cannot be resolved by picking a side.
+            if (v !== null && typeof v === "object") return JSON.stringify(imp[k]) === JSON.stringify(v)
           return imp[k] === v
         }),
       )
@@ -1056,6 +1129,31 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       if (!errorsMatch(result, want)) {
         const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
         problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+      }
+    }
+
+    for (const want of exp.expectErrorCount ?? []) {
+      // M14 (#888, html): the only pre-existing channel for this was
+      // `expectErrors`, which is a >=1 match — so a lane that reported the SAME
+      // parse error twice passed it. That is exactly the html defect the parse
+      // walk carried: the analyzer walked for ERROR/MISSING nodes with an
+      // UNBOUNDED stack while the engine walks the same tree with a cap of 50,
+      // and a 300-line broken file published 350 warnings for 300 lines. Two
+      // copies of one error are indistinguishable to `expectErrors` and obvious
+      // to a count, so the count is the channel the class needed.
+      // `{ equals: N }` for the total, `{ atLeast: N }` / `{ atMost: N }` for a
+      // bound — the same shape `expectSymbolCount`'s `equals` uses, plus bounds
+      // because a cap is a bound and not a constant.
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const n = errList.length
+      if (want.equals !== undefined && n !== want.equals) {
+        problems.push(`expected ${want.equals} parse error(s); got ${n}`)
+      }
+      if (want.atLeast !== undefined && !(n >= want.atLeast)) {
+        problems.push(`expected at least ${want.atLeast} parse error(s); got ${n}`)
+      }
+      if (want.atMost !== undefined && !(n <= want.atMost)) {
+        problems.push(`expected at most ${want.atMost} parse error(s); got ${n}`)
       }
     }
     for (const want of exp.forbidSymbols ?? []) {
