@@ -178,7 +178,7 @@ passes every fixture while the oracle judging it lies.
 
 ## Complexity envelope
 
-> **RESTORED, with better evidence than the original claim had.** An earlier version of this section
+> **SCOPED, not simply restored — see the depth section below.** An earlier version of this section
 > said "no O(n²) or per-symbol O(n) scans" and cited a M12 table. This round WITHDREW that as
 > unsupported, because three identical runs reported per-symbol drift of 49%, 91% and 54%. The
 > withdrawal was right to be cautious and WRONG in its conclusion — the metric was confounded, and
@@ -208,7 +208,7 @@ came from `ASTEngine.parseFile`, which bundles a fixed-size wasm heap that JS GC
 the analyzer's own passes. The separation mattered: had it shown the drift in parse, the analyzer's
 claim would have survived untouched and the engine's heap would be the story. Both are flat.
 
-**So the claim stands, and the structural argument behind it still does:**
+**So on the FILE axis the claim stands, and the structural argument behind it does:**
 
 - single-pass iterative traversal (explicit stack, no recursion depth risk)
 - `symbolMap` for O(1) owner/name lookup — owner resolution is a Map lookup, not a scan
@@ -217,11 +217,76 @@ claim would have survived untouched and the engine's heap would be the story. Bo
 - relationship emission is therefore O(edges), not O(symbols × names); the bare-identifier pass, the
   only place that sees every name in a file, is one Map lookup per reference
 
-**What this does not establish.** Flat per-file cost over 50→400 files bounds growth in FILE COUNT.
-It says nothing about depth: a cost linear in files can still be quadratic in nesting depth, and a
-400-file sample of real code simply does not contain a 4,000-deep nest. A depth sweep is a separate
-measurement and has not been made. Nor does it cover the 1 MiB file cap, above which the engine
-truncates and the analyzer sees a prefix.
+…and **on the DEPTH axis it does not hold**, which the sweep below measures directly.
+
+## Nesting depth — a REAL super-linear term, found by synthesising the axis
+
+The depth sweep above was the gap this section used to admit to, and running it changed the answer.
+
+`--sample` cannot see depth at all: a file's nesting does not change when the sample grows, so no
+number of real files will ever expose cost that grows with depth. And real corpora cannot supply
+the axis either — roslyn's deepest nesting is in the low tens, so any quadratic with a small
+constant stays inside the noise forever. The only way to see the shape is to **synthesise files of
+known depth and hold symbol count constant**, so per-symbol cost is comparable and depth is the only
+variable (`cs-deep-68`).
+
+| depth | symbols | min ms | µs/symbol | × vs shallowest |
+| --- | --- | --- | --- | --- |
+| 4 | 3 | 0.73 | 734 | 1.00× |
+| 8 | 3 | 1.89 | 1,889 | 2.58× |
+| 16 | 3 | 3.98 | 3,981 | 5.43× |
+| 32 | 3 | 13.64 | 13,637 | 18.59× |
+| 64 | 3 | 38.66 | 38,657 | 52.69× |
+| 128 | 3 | 266.37 | 266,369 | **363.08×** |
+
+**Symbol count is constant at 3 across a 32× increase in depth.** Per-symbol cost rises 363×. Deep
+CLASS nesting over the same range is fine (1.00× → 8.22× for 32× depth, and symbols grow with depth
+there, so per-symbol is flatter still). The defect is specific to nested **blocks** — the shape that
+exercises the bare-identifier and shadowing paths rather than the scope stack.
+
+Separated from the parser, because the two have opposite consequences:
+
+| depth | parse ms | analyze ms | analyze/parse |
+| --- | --- | --- | --- |
+| 8 | 1.06 | 8.95 | 8.4× |
+| 32 | 3.16 | 29.62 | 9.4× |
+| 64 | 3.75 | **102.60** | **27.4×** |
+
+Parse stays flat; **the analyzer does not**. The 32→64 step is 3.46× for 2× depth, which is
+super-linear.
+
+**The mechanism is a COUNT explosion, not a long walk** — which is the opposite of the first
+guess and only a counter could tell them apart. Thirteen per-node ancestor-climb loops were
+instrumented to count invocations and iterations separately:
+
+| depth | nodes | climb calls | climb iterations | calls/node | calls ÷ (nodes×depth) |
+| --- | --- | --- | --- | --- | --- |
+| 8 | 68 | 421 | 421 | 6.2 | 0.77 |
+| 16 | 108 | 965 | 965 | 8.9 | 0.56 |
+| 32 | 188 | 2,821 | 2,821 | 15.0 | 0.47 |
+| 64 | 348 | 9,605 | 9,605 | 27.6 | 0.43 |
+
+Two readings, and they point at different fixes:
+
+- **calls == iterations, at every depth.** Not one of those loops ever iterates more than once — so
+  no single walk is long. The cost is **how many times the walks are started**, not how far they go.
+  A "memoise the ancestor chain" fix would address nothing.
+- **calls/node doubles as depth doubles** (6.2 → 27.6), so calls ≈ O(nodes × depth). Since nodes is
+  itself ≈ 5.4 × depth here, that is **O(depth²)** and it matches the measured 363× on the symbol
+  axis.
+
+The shape is therefore *per-node scope resolution over every enclosing scope*, and the fix is to
+resolve the enclosing scope once per subtree rather than once per node — hoisting, not caching.
+Which of the thirteen call sites dominates has **not** been isolated; the counts above locate the
+class precisely and the line not at all.
+
+**So the linearity claim, restored an hour ago on the strength of flat per-file cost, is too strong
+as written and is now scoped correctly: the analyzer is flat per file, and super-linear per unit of
+nesting depth.** That is a real defect and it is open. It does not affect any corpus measurement —
+roslyn's real depth never approaches where it bites — which is precisely why it survived every gate
+in this lane and why no amount of corpus work would have found it.
+
+
 
 Declared budget: fixtures < 2 s; 400-file corpus < 60 s. Observed at 400 files: ~30–39 ms/file
 analyze plus ~3.5 ms/file parse, i.e. ~14–17 s for the corpus, inside budget with room.
