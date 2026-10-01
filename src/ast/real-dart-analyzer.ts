@@ -510,7 +510,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     // --- Relationship passes -------------------------------------------------
     this.addContainmentRelationships(symbols, relationships, nameLines)
-    this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion, nameLines)
+    this.extractOverrideRelationships(symbols, relationships, context?.overrideCompanion, nameLines, (context as any)?.projectIndex)
     this.extractCallRelationships(rootNode, relationships, moduleName, symbols)
     // Deduplicate identical rows: calls/instantiates emit ONE row PER CALL
     // SITE, so N sites of the same callee in one function push N identical
@@ -1024,6 +1024,14 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     relationships: ASTEngine.UniversalRelationship[],
     overrideCompanion?: Map<string, Set<string>>,
     nameLines?: Map<string, number>,
+    // LAST, and it must stay last: this parameter was added after `nameLines`, and
+    // inserting it earlier silently swapped the two — `nameLines` landed in this
+    // slot, the name-line lookup started returning undefined, and every override
+    // edge fell back to the declaration's START line (the return type) instead of
+    // the signature's line. `dart/callsite-lines-825` caught it, pinning exactly
+    // that distinction. Optional parameters with different types are the worst kind
+    // of reorder: it compiles, it type-checks, and it is silently wrong.
+    projectIndex?: any,
   ): void {
     // DARTD16: the old engine only checked the DIRECT extends base — so a
     // chain (`A extends B extends C`, hello declared on C) emitted nothing,
@@ -1042,6 +1050,39 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       list.push(s)
       byName.set(s.name, list)
     }
+    let companionForPass2: Map<string, Set<string>> | undefined = overrideCompanion
+    if (!companionForPass2 && projectIndex?.typeMembers) {
+      companionForPass2 = new Map<string, Set<string>>()
+      const closure = (t: string, seen = new Set<string>()): Set<string> => {
+        const cached = (companionForPass2 as Map<string, Set<string>>).get(t)
+        if (cached) return cached
+        if (seen.has(t)) return new Set<string>()
+        seen.add(t)
+        const out = new Set<string>(projectIndex.typeMembers.get(t) ?? [])
+        for (const b of projectIndex.typeBases?.get(t) ?? []) for (const mm of closure(b, seen)) out.add(mm)
+        ;(companionForPass2 as Map<string, Set<string>>).set(t, out)
+        return out
+      }
+      for (const t of projectIndex.typeKinds?.keys() ?? []) closure(t)
+    }
+
+  // DARTD16's cross-file pass is implemented, documented, and — until now —
+  // unreachable: `overrideCompanion` is an OPTIONAL context field that no caller in
+  // src/ or script/ ever populated, so Pass 2 was dead code. The repo already ships
+  // the cross-file knowledge this needs, in `ProjectIndex` (`typeMembers`,
+  // `typeBases`) and `buildResolutionTables`, which the Solidity lane reads for the
+  // same reason. Deriving the companion from it here is additive: with no
+  // `projectIndex` in context the field is undefined and every pass below behaves
+  // exactly as before, byte for byte.
+  //
+  // `allMembers` is INHERITANCE-CLOSED, which is the semantics Pass 2 wants: it
+  // answers "does this base expose the member", not "does it declare it". That is
+  // also why it settles the freezed family. `sealed class TemplateState extends
+  // Equatable` does not declare `props` but does expose it, so
+  // `TemplateInitial.props` resolves against TemplateState — the nearest base whose
+  // interface the member actually replaces — instead of being left to the
+  // first-parent fallback, which had no way to tell a base that exposes a member
+  // from one that merely inherits it.
     // Heritage graph from extends/implements/uses edges (in-file knowledge).
     const heritageByClass = new Map<string, string[]>()
     const firstHeritage = new Map<string, string>()
@@ -1059,7 +1100,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const declares = (base: string, method: string): boolean => {
       const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
       if (inFile) return true
-      const companion = overrideCompanion?.get(base)
+      const companion = companionForPass2?.get(base)
       return !!companion && companion.has(method)
     }
     // Every type name DECLARED in this file, distinct from every member name. The
@@ -1107,7 +1148,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         let metadata: Record<string, unknown> = { isOverride: true, relationshipType: "method_override" }
         if (target) {
           // exact in-file resolution
-        } else if (overrideCompanion && heritage.length > 0) {
+        } else if (companionForPass2 && heritage.length > 0) {
           // Pass 2: cross-file companion declaring-parent resolution.
           const seen2 = new Set<string>()
           const q2 = [...heritage]
@@ -1115,7 +1156,7 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             const base = q2.shift()!
             if (seen2.has(base)) continue
             seen2.add(base)
-            if (this.companionHas(overrideCompanion, base, s.name)) {
+            if (this.companionHas(companionForPass2, base, s.name)) {
               target = base
               break
             }
