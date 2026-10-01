@@ -1,0 +1,211 @@
+/**
+ * verify-dart-overrides — the gate for the Dart `overrides` ORACLE.
+ *
+ * Fixtures pin the ANALYZER. Nothing pinned the oracle, and the oracle was where four
+ * of the six defects behind Dart's 78 unexplained rows lived — so all of them were
+ * invisible to a green suite and could have been reverted by any later change without
+ * a single test turning red. This file is the missing half.
+ *
+ * Each case below is a shape, and each defect is recorded with the corpus row that
+ * exposed it. The battery is deliberately written in the SHAPE the corpus contains,
+ * never in the shape the rule talks about: the `const` constructor in
+ * `dart-contains` was invisible to a battery written from a plain one because
+ * `class D { D({int? x}); }` and `class A { const A({int? x}); }` are the same source
+ * text modulo `const` and parse two different ways.
+ *
+ * Run: `bun run script/m14/verify-dart-overrides.ts`
+ */
+
+import * as fs from "fs"
+import * as path from "path"
+import * as WTS from "web-tree-sitter"
+import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
+import { deriveDartContainsTruth } from "./oracles/dart-contains"
+import { RealDartAnalyzer } from "../../src/ast/real-dart-analyzer"
+
+const ROOT = path.resolve(import.meta.dir, "..", "..")
+const WASM = path.join(ROOT, "wasm", "tree-sitter-dart.wasm")
+
+type Case = {
+  label: string
+  src: string
+  /** class name -> declared member names, standing in for the cross-repository index. */
+  companion?: Map<string, Set<string>>
+  /** project-wide exposure, when the case is about the index rather than the file. */
+  expectTruth: string[]
+  expectAnalyzer: string[]
+  why: string
+}
+
+const M = (m: Record<string, string[]>): Map<string, Set<string>> =>
+  new Map(Object.entries(m).map(([k, v]) => [k, new Set(v)]))
+
+const CASES: Case[] = [
+  {
+    label: "static members are not overridable",
+    src: `class HasStatic { const HasStatic(); static Future<HasStatic> connect(String u) async => HasStatic(); }
+class Shadow extends HasStatic { static Future<Shadow> connect(String u) async => Shadow(); }`,
+    companion: M({ HasStatic: ["connect"] }),
+    expectTruth: [],
+    expectAnalyzer: [],
+    why: "Dart resolves a static call against the static type it was written on, so a subclass declaring the same static name shadows nothing. `@override` is not even legal on a static member. Published at 0.95 before the gate — measured on dart-http's BrowserWebSocket.connect -> WebSocket.connect, where BOTH sides were static.",
+  },
+  {
+    label: "an annotated field overrides an inherited accessor",
+    src: `abstract interface class ErrorState { String get message; }
+final class PlainError implements ErrorState { @override final String message; const PlainError(this.message); }`,
+    companion: M({ ErrorState: ["message"] }),
+    expectTruth: ["PlainError.message->ErrorState.message"],
+    expectAnalyzer: ["PlainError.message->ErrorState.message"],
+    why: "A field implicitly provides a getter, and `@override` says it is shadowing one. Measured on MusicControlError.message -> ConnectionErrorState.message, where the interface lives in a different file. The oracle collected only signature wrappers, so it saw no member called `message` at all.",
+  },
+  {
+    label: "a base field is a witness for an accessor override",
+    src: `class Wallet { final String walletId; const Wallet(this.walletId); }
+class WalletView implements Wallet { @override String get walletId => 'view'; }`,
+    companion: M({ Wallet: ["walletId"] }),
+    expectTruth: ["WalletView.walletId->Wallet.walletId"],
+    expectAnalyzer: ["WalletView.walletId->Wallet.walletId"],
+    why: "The base member is a FIELD and the subclass member is a GETTER. That is legal and it is the Wallet/_EmptyWallet case. The oracle excluded unannotated fields from the member set (python's class-variable defect) and so could not see the base declared anything.",
+  },
+  {
+    label: "an instance field DOES override an inherited getter",
+    src: `class Wallet { final String walletId; const Wallet(this.walletId); }
+class Shadow extends Wallet { final String walletId = 'x'; }`,
+    companion: M({ Wallet: ["walletId"] }),
+    expectTruth: ["Shadow.walletId->Wallet.walletId"],
+    expectAnalyzer: ["Shadow.walletId->Wallet.walletId"],
+    why: "I wrote this case expecting NO edge, on the reasoning that a Dart field cannot be overridden by another field. That is right for STATIC members and wrong for instance ones, and the analyzer was right to publish it. Pinned because the wrong reasoning is what gets reintroduced.",
+  },
+  {
+    label: "breadth, not depth: a known base lacking the member is not the end",
+    src: `class AlsoPlain { const AlsoPlain(); }
+interface class HasPreferredSize { int get preferredSize; }
+class BreadthFirst extends AlsoPlain implements HasPreferredSize { @override int get preferredSize => 72; }`,
+    companion: M({ AlsoPlain: [], HasPreferredSize: ["preferredSize"] }),
+    expectTruth: ["BreadthFirst.preferredSize->HasPreferredSize.preferredSize"],
+    expectAnalyzer: ["BreadthFirst.preferredSize->HasPreferredSize.preferredSize"],
+    why: "`AlsoPlain` is visited first, the companion knows it, and it declares nothing. The oracle had `break` where it needed `continue`, so `HasPreferredSize` was never considered. A flat companion map limits DEPTH — a known base's own bases are not in it — and says nothing about the other supertypes already in `direct`. Measured on SessionInfoHeader, where StatelessWidget precedes PreferredSizeWidget.",
+  },
+  {
+    label: "extends and with share one clause",
+    src: `class MixinBase { String describe() => 'base'; }
+mixin Describe { String describe() => 'mixin'; }
+class Both extends MixinBase with Describe { @override String describe() => 'both'; }`,
+    expectTruth: ["Both.describe->MixinBase.describe"],
+    expectAnalyzer: ["Both.describe->MixinBase.describe"],
+    why: "The `with` list lives INSIDE the `superclass` node beside `extends`, not beside the declaration. Nearest-wins takes the `extends` base; the point is that the clause is read at all, since reading only direct children loses every `with` on a class that also extends something.",
+  },
+  {
+    label: "a base this file proves lacks the member is refuted",
+    src: `class PlainBase { const PlainBase(); }
+class Real extends PlainBase { @override String build() => 'x'; }`,
+    expectTruth: [],
+    expectAnalyzer: [],
+    why: "The file itself is the evidence. Claiming `Real.build -> PlainBase.build` is a fabrication, not a guess, and the refutation gate is what distinguishes the two — 101 such rows on ProxiCall/lib, all freezed `props`/`hashCode`/`toString` against Equatable.",
+  },
+  {
+    label: "a genuinely external base still resolves",
+    src: `class C extends Cubit { @override void close() {} }`,
+    companion: M({ Cubit: ["close"] }),
+    expectTruth: ["C.close->Cubit.close"],
+    // The analyzer publishes this at 0.8 through its first-parent fallback, which is
+    // a legitimate labelled claim: there is no evidence AGAINST it, only no evidence
+    // for it. Asserting the analyzer publishes nothing here was my error when this
+    // battery was written — a weaker-but-labelled claim is not a fabrication, and a
+    // gate that refused everything would pass the refutation case and fail this one.
+    expectAnalyzer: ["C.close->Cubit.close"],
+    why: "The negative control for the gate above: `Cubit` is not in this file, so there is NO evidence against the claim and the fallback must still fire at its reduced confidence.",
+  },
+  {
+    label: "an unannotated external member is not claimed",
+    src: `class C extends Cubit { void close() {} }`,
+    companion: M({ Cubit: ["close"] }),
+    expectTruth: [],
+    expectAnalyzer: [],
+    why: "The `@override` gate on the external pass. Without it the oracle claimed every generated override — 81 `X.props -> Equatable.props` rows the analyzer correctly does not publish, since an unannotated member of a class whose base is in another repository cannot be proven to override anything from this file alone.",
+  },
+  {
+    label: "a generic supertype is still a supertype",
+    src: `class C extends Cubit<S> { @override void close() {} }`,
+    companion: M({ Cubit: ["close"] }),
+    expectTruth: ["C.close->Cubit.close"],
+    expectAnalyzer: ["C.close->Cubit.close"],
+    why: "`Cubit<S>` carries a type argument, so a resolver that reads the superclass node as a single name can lose it. The alias rules are adjacent: `extends _i2.A2` parses as two SIBLING type_identifiers where the first is the import alias, so only the LAST in a group is the real type name.",
+  },
+  {
+    label: "a three-deep in-file chain resolves transitively",
+    src: `class A { void close() {} }
+class B extends A {}
+class C extends B { @override void close() {} }`,
+    expectTruth: ["C.close->A.close"],
+    expectAnalyzer: ["C.close->A.close"],
+    why: "The walk must go through an intermediate that declares nothing, which is the in-file twin of the breadth case above. The old queue-append implementation also had an infinite loop here when a supertype matched no declaration.",
+  },
+  {
+    label: "containment: a const constructor is a member",
+    src: `class A { const A({int? x}); }`,
+    expectTruth: ["A->constructor"],
+    expectAnalyzer: ["A->constructor"],
+    why: "Not an overrides case, but the same failure mode as the overrides ones and it belongs in the same battery. `class D { D({int? x}); }` is the SAME SOURCE TEXT as `class A { const A({int? x}); }` and parses as the plain `constructor_signature` spelling, so a battery written from the plain form passes while the corpus fails. Measured: 2,548 rows, and most of a Flutter widget class.",
+  },
+]
+
+async function main(): Promise<void> {
+  const wts: any = WTS
+  const Parser: any = wts.Parser ?? wts.default ?? wts
+  const Language: any = wts.Language ?? wts.default?.Language
+  await Parser.init()
+  const lang = await Language.load(fs.readFileSync(WASM))
+  const parser = new Parser()
+  parser.setLanguage(lang)
+
+  let failures = 0
+  for (const c of CASES) {
+    const p1 = new Parser()
+    p1.setLanguage(lang)
+    const p2 = new Parser()
+    p2.setLanguage(lang)
+    const t1 = p1.parse(c.src)
+    const t2 = p2.parse(c.src)
+
+    const derived = [...new Set(deriveDartOverridesTruth(t1.rootNode, c.companion).map((e) => `${e.from}->${e.target}`))]
+    const contains = [...new Set(deriveDartContainsTruth(t1.rootNode).map((e) => `${e.from}->${e.target}`))]
+    const truth = c.label.startsWith("containment") ? contains : derived
+
+    const r: any = await new RealDartAnalyzer().analyze(t2.rootNode, c.src, "/tmp/verify-dart-overrides.dart")
+    const label = c.label.startsWith("containment") ? "contains" : "overrides"
+    const got = [...new Set((r.relationships ?? []).filter((e: any) => e.type === label).map((e: any) => `${e.source}->${e.target}`))].sort()
+
+    const problems: string[] = []
+    for (const want of c.expectTruth) if (!truth.includes(want)) problems.push(`truth missing ${want}; got [${truth.join(" ")}]`)
+    for (const wrong of truth) if (!c.expectTruth.includes(wrong)) problems.push(`truth has UNEXPECTED ${wrong}`)
+    for (const want of c.expectAnalyzer) if (!got.includes(want)) problems.push(`analyzer missing ${want}; got [${got.join(" ")}]`)
+    for (const wrong of got) if (!c.expectAnalyzer.includes(wrong)) problems.push(`analyzer has UNEXPECTED ${wrong}`)
+
+    // The analyzer is not expected to see a cross-repository companion, so a case
+    // whose truth needs one is allowed to diverge there. Record that explicitly
+    // rather than letting the battery imply the two were compared on equal footing.
+
+    if (problems.length === 0) {
+      console.log(`ok   ${c.label}`)
+    } else {
+      failures++
+      console.log(`FAIL ${c.label}`)
+      for (const p of problems) console.log(`       ${p}`)
+    }
+    try { t1.delete(); t2.delete() } catch { /* an aborted instance refuses politely */ }
+  }
+
+  console.log(`\nverify-dart-overrides: ${CASES.length - failures}/${CASES.length} shapes exact`)
+  if (failures > 0) {
+    console.log(`${failures} shape(s) disagreed`)
+    process.exit(1)
+  }
+  process.exit(0)
+}
+
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})
