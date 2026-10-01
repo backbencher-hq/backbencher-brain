@@ -53,7 +53,7 @@
  *   --list          print the baseline
  *
  * A new script rather than an extension of an existing gate, deliberately: it
- * READS shared files and writes none, so it cannot conflict with a lane that owns
+ * READS shared files, so it cannot conflict with a lane that owns
  * one of them.
  */
 import * as fs from "fs"
@@ -64,7 +64,14 @@ const ROOT = process.env.BB_M60_ROOT
   : path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
 
 const ENGINE = path.join(ROOT, "src", "ast", "engine.ts")
-const DIFFERENTIAL = path.join(ROOT, "script", "m14", "differential.ts")
+/** `differential.ts` is the shared, contended audited-label allowlist, and
+ *  `BB_DIFFERENTIAL` exists for the same reason `BB_RB_ORACLE` exists on the
+ *  corpus census: to point a lane's gate at a MIRRORED copy when the shared file
+ *  is mid-edit and does not parse. It changes where the truth is read from and
+ *  nothing else — never what the gate concludes. */
+const DIFFERENTIAL = process.env.BB_DIFFERENTIAL
+  ? path.resolve(process.env.BB_DIFFERENTIAL)
+  : path.join(ROOT, "script", "m14", "differential.ts")
 const GRAPH_ENGINE = path.join(ROOT, "src", "intelligence", "graph", "graph-engine.ts")
 const AST_GRAPH = path.join(ROOT, "src", "ast", "graph.ts")
 const VIZ_ENGINE = path.join(ROOT, "src", "intelligence", "visualization", "visualization-engine.ts")
@@ -152,30 +159,64 @@ function listLanes(enumValues: string[]): Lane[] {
  *    lane appends a term, which is exactly how a lane's audited set stopped
  *    matching its analyzer.
  * ------------------------------------------------------------------ */
-function readAuditedSets(langs: string[]): Map<string, Set<string>> {
-  const src = fs.readFileSync(DIFFERENTIAL, "utf8")
+export interface AuditedRead {
+  sets: Map<string, Set<string>>
+  /** Lanes whose audited set could not be evaluated, with the reason. */
+  failed: Array<{ lang: string; reason: string }>
+}
+
+/** Each language's audited label set, by EVALUATING differential.ts's own filter
+ *  expression. Restating it would be a copy that drifts the moment a lane appends
+ *  a term, which is exactly how a lane's audited set stopped matching its
+ *  analyzer.
+ *
+ *  A failure to evaluate is REPORTED, never swallowed. `differential.ts` is a
+ *  shared 21,000-line file under active edit by several lanes, and it has been
+ *  observed mid-edit with a syntax error. When that happens this extraction
+ *  throws inside `new Function`, and an earlier version caught it and returned an
+ *  EMPTY set — which the gate then reported as "ruby audits nothing: 8
+ *  un-audited", a confident and completely false claim derived from a file that
+ *  does not parse. An empty audited set is indistinguishable from a real one
+ *  only if nothing checks, so the caller is told which lanes are unreadable and
+ *  the gate reports an INPUT ERROR rather than a coverage finding. */
+export function readAuditedSets(langs: string[]): AuditedRead {
+  const sets = new Map<string, Set<string>>()
+  const failed: Array<{ lang: string; reason: string }> = []
+  let src = ""
+  try { src = fs.readFileSync(DIFFERENTIAL, "utf8") } catch (e) {
+    return { sets, failed: langs.map((l) => ({ lang: l, reason: `cannot read ${DIFFERENTIAL}: ${e}` })) }
+  }
   const HEAD = '.filter((r: any) => ["extends"'
   const i = src.indexOf(HEAD)
-  if (i < 0) return new Map()
+  if (i < 0) {
+    return { sets, failed: langs.map((l) => ({ lang: l, reason: `no audited-label filter found in ${DIFFERENTIAL} — its shape changed, so the extraction cannot be trusted` })) }
+  }
   const start = i + HEAD.length - '["extends"'.length
   const end = src.indexOf("].includes(r.label)", start)
-  if (end < 0) return new Map()
+  if (end < 0) {
+    return { sets, failed: langs.map((l) => ({ lang: l, reason: `the audited-label filter in ${DIFFERENTIAL} is unterminated — it does not parse` })) }
+  }
   // The literal carries explanatory line comments; strip them so it parses.
   const literal = src
     .slice(start, end + 1)
     .split("\n")
     .map((l) => l.replace(/^\s*\/\/.*$/, "").replace(/\s+\/\/[^\n]*$/, ""))
     .join("\n")
-  const out = new Map<string, Set<string>>()
   for (const lang of langs) {
+    let vals: string[]
     try {
-      const vals = new Function("lang", "return " + literal)(lang) as string[]
-      out.set(lang, new Set(vals))
-    } catch {
-      out.set(lang, new Set())
+      vals = new Function("lang", "return " + literal)(lang) as string[]
+    } catch (e) {
+      failed.push({ lang, reason: `audited-label filter does not evaluate: ${e instanceof Error ? e.message : String(e)}` })
+      continue
     }
+    if (!Array.isArray(vals) || vals.length === 0) {
+      failed.push({ lang, reason: "audited-label set evaluated EMPTY — indistinguishable from a real set only if unchecked" })
+      continue
+    }
+    sets.set(lang, new Set(vals))
   }
-  return out
+  return { sets, failed }
 }
 
 /* ------------------------------------------------------------------ *
@@ -214,18 +255,26 @@ export interface GateRun {
   lanes: Array<{ lang: string; emitted: string[]; audited: string[] }>
   graphDefault: string[]
   findings: Finding[]
+  /** Lanes whose audited set could not be read. A lane listed here is EXCLUDED
+   *  from the derivation check, and the gate reports an input error — because a
+   *  lane that cannot be read must never be reported as a lane that audits
+   *  nothing. */
+  inputErrors: Array<{ lang: string; reason: string }>
 }
 
 export function runGate(lanesIn?: string[]): GateRun {
   const enumValues = readEnumValues()
   const all = listLanes(enumValues)
   const lanes = lanesIn?.length ? all.filter((l) => lanesIn.includes(l.lang)) : all
-  const audited = readAuditedSets(lanes.map((l) => l.lang))
+  const read = readAuditedSets(lanes.map((l) => l.lang))
+  const audited = read.sets
+  const unreadable = new Set(read.failed.map((f) => f.lang))
   const graphDefault = readGraphDefault()
   const defaultSet = new Set(graphDefault)
   const findings: Finding[] = []
 
   for (const l of lanes) {
+    if (unreadable.has(l.lang)) { l.audited = new Set(); continue }
     l.audited = audited.get(l.lang) ?? new Set()
     // CHECK 1 — DERIVATION
     for (const t of [...l.emitted].sort()) {
@@ -277,6 +326,7 @@ export function runGate(lanesIn?: string[]): GateRun {
     lanes: lanes.map((l) => ({ lang: l.lang, emitted: [...l.emitted].sort(), audited: [...l.audited].sort() })),
     graphDefault,
     findings,
+    inputErrors: read.failed,
   }
 }
 
@@ -298,22 +348,53 @@ export function diffBaseline(current: string[], previous: string[]): { regressio
 /* ------------------------------------------------------------------ *
  * Negative tests. A gate nobody has watched fail is a claim.
  * ------------------------------------------------------------------ */
-export function selfTest(): { passed: number; failures: string[] } {
+export function selfTest(): { passed: number; failures: string[]; skipped: Array<{ name: string; reason: string }> } {
   const failures: string[] = []
+  const skipped: Array<{ name: string; reason: string }> = []
   let passed = 0
   const check = (name: string, cond: boolean) => { if (cond) passed++; else failures.push(name) }
+  /** An assertion that reads the shared audited-label filter. `differential.ts`
+   *  is under active edit by several lanes and has been observed mid-edit with a
+   *  syntax error; when that happens these assertions fail for a reason that has
+   *  nothing to do with the gate. A self-test that goes red when a neighbour's
+   *  file is malformed teaches its reader to ignore it, so those assertions are
+   *  SKIPPED with the reason stated — which is also the difference between "the
+   *  gate is broken" and "the gate could not read its input", and the gate's
+   *  whole subject is that those two must never be confused. */
+  const checkIfReadable = (name: string, cond: boolean, reason: string) => {
+    if (reason) { skipped.push({ name, reason }); return }
+    if (cond) passed++; else failures.push(name)
+  }
+
+  const live = runGate(["ruby"])
+  const auditedReadable = live.inputErrors.length === 0
+  const unreadableReason = auditedReadable ? "" :
+    `cannot read the audited-label filter in ${DIFFERENTIAL} — ${live.inputErrors[0]?.reason ?? "unknown"}`
 
   // 1. a real failure must be detected: pick a live finding from the real run.
-  const live = runGate(["ruby"])
-  check("the live ruby lane reports its derivation gap", live.findings.some((f) => f.check === "DERIVATION" && f.lang === "ruby"))
+  checkIfReadable("the live ruby lane reports its derivation gap",
+    live.findings.some((f) => f.check === "DERIVATION" && f.lang === "ruby"), unreadableReason)
 
   // 2. DERIVATION fires when a type is emitted and not audited.
-  const derived = runGate(["ruby"]).findings.filter((f) => f.check === "DERIVATION" && f.lang === "ruby")
+  const derived = live.findings.filter((f) => f.check === "DERIVATION" && f.lang === "ruby")
   const gapType = /emits `([a-z_]+)`/.exec(derived[0]?.detail ?? "")?.[1]
-  check("a derivation gap names a type the lane actually emits",
-    !!gapType && live.lanes.find((l) => l.lang === "ruby")!.emitted.includes(gapType))
-  check("a type that IS audited is not reported as a gap",
-    !live.findings.some((f) => f.check === "DERIVATION" && f.lang === "ruby" && f.detail.includes("`calls`")))
+  checkIfReadable("a derivation gap names a type the lane actually emits",
+    !!gapType && live.lanes.find((l) => l.lang === "ruby")!.emitted.includes(gapType), unreadableReason)
+  // Oracle-INDEPENDENT on purpose. This assertion used to hardcode "`calls` is
+  // not reported as a gap for ruby", which quietly restates a fact about one
+  // file: run the gate with BB_DIFFERENTIAL against a mirrored oracle and it fails,
+  // correctly but meaninglessly, because THAT mirror's ruby set omits `calls`.
+  // Asserting against a restated constant is the same drift the gate exists to
+  // prevent. So the assertion is derived instead: take whatever the oracle
+  // actually says is audited, and require that none of those types is reported.
+  const rubyLane = live.lanes.find((l) => l.lang === "ruby")
+  const auditedNow = new Set(rubyLane?.audited ?? [])
+  const reported = new Set(live.findings
+    .filter((f) => f.check === "DERIVATION" && f.lang === "ruby")
+    .map((f) => /emits `([a-z_]+)`/.exec(f.detail)?.[1] ?? "")
+    .filter(Boolean))
+  checkIfReadable("no type the oracle reports as audited is reported as a gap",
+    auditedNow.size > 0 && [...auditedNow].every((t) => !reported.has(t)), unreadableReason)
 
   // 3. REACHABILITY: construct a default that omits an emitted type and require
   //    the check to fire — proven by reasoning about the predicate, not by
@@ -342,8 +423,14 @@ export function selfTest(): { passed: number; failures: string[] } {
 
   // 7. the extraction must not silently return empty — the failure mode that
   //    made a census report a clean 0 for four rounds.
-  check("audited-set extraction is non-empty for a lane known to have one",
-    (readAuditedSets(["ruby"]).get("ruby")?.size ?? 0) > 0)
+  const auditedRead = readAuditedSets(["ruby"])
+  checkIfReadable("audited-set extraction is non-empty for a lane known to have one",
+    (auditedRead.sets.get("ruby")?.size ?? 0) > 0, unreadableReason)
+  // 10. An UNREADABLE audited set must be an explicit input error, never an empty
+  //     set that reads as "this lane audits nothing". This one runs either way —
+  //     it is the assertion that the other three are allowed to skip.
+  check("an unreadable audited set is reported as an input error, not an empty set",
+    auditedRead.sets.has("ruby") ? auditedRead.failed.length === 0 : auditedRead.failed.some((f) => f.lang === "ruby"))
   check("emitted-type extraction is non-empty", readEmittedTypes(path.join(ANALYZER_DIR, "real-ruby-analyzer.ts"), enumValues).size > 0)
   check("graph default extraction is non-empty", realDefault.length > 0)
 
@@ -362,16 +449,21 @@ export function selfTest(): { passed: number; failures: string[] } {
   const fakeEnum: string[] = []
   check("an unparseable enum yields no values rather than throwing silently", fakeEnum.length === 0 && readGraphDefault().length > 0)
 
-  return { passed, failures }
+  return { passed, failures, skipped }
 }
 
 /* ------------------------------------------------------------------ */
 function main() {
   if (process.argv.includes("--self-test")) {
     const r = selfTest()
-    console.log(`rel-type-coverage gate self-test: ${r.passed} passed, ${r.failures.length} failed`)
+    console.log(`rel-type-coverage gate self-test: ${r.passed} passed, ${r.failures.length} failed, ${r.skipped.length} skipped`)
     for (const f of r.failures) console.log(`  FAIL ${f}`)
-    process.exit(r.failures.length === 0 ? 0 : 1)
+    for (const k of r.skipped) console.log(`  SKIP ${k.name} — ${k.reason}`)
+    // Skips are not passes, so a run that skipped everything says so in the exit
+    // code too: exit 3 is "could not verify", which is neither green nor red.
+    if (r.failures.length) process.exit(1)
+    if (r.skipped.length) process.exit(3)
+    process.exit(0)
   }
 
   const onlyArg = process.argv.find((a) => a.startsWith("--langs="))
@@ -388,6 +480,13 @@ function main() {
   console.log("=".repeat(96))
   console.log("M60 — RELATIONSHIP-TYPE COVERAGE GATE")
   console.log("=".repeat(96))
+  if (run.inputErrors.length) {
+    console.log(`INPUT ERROR — ${run.inputErrors.length} lane(s) could not be read.`)
+    console.log("These lanes are EXCLUDED from check 1, not reported as auditing nothing:")
+    for (const e of run.inputErrors) console.log(`  ${e.lang.padEnd(12)} ${e.reason}`)
+    console.log("\nA lane that cannot be read is not a lane with zero coverage. Reporting it as")
+    console.log("un-audited would be a false claim derived from a file that does not parse.\n")
+  }
   console.log(`enum values: ${run.enumValues.length}  (${run.enumValues.join(", ")})`)
   console.log(`traversal default (parsed from graph-engine.ts): ${run.graphDefault.length} of ${run.enumValues.length}`)
   console.log(`lanes: ${run.lanes.length}\n`)
@@ -437,9 +536,27 @@ function main() {
     console.log(`\nbaseline recorded: ${current.size} findings`)
   }
 
+  // A SCOPED run must not overwrite the canonical artifact.
+  //
+  // Found by doing it: `--langs=php` rewrote `rel-type-coverage.json` from 43 lanes to
+  // ONE, and the 42 lanes simply vanished from the evidence while the gate still printed
+  // its baseline line as if nothing had happened. That is the same failure
+  // `differential.ts` and `lane-surface-audit.ts` already guard against in their own
+  // headers — "a scoped run writes no artifact, because either would shrink the
+  // milestone's claim to the lanes this run covered" — and this gate was the one that
+  // lacked the guard, so the discipline was documented at line 56 ("READS shared files
+  // and writes none") while line 540 wrote anyway. A header that contradicts its body is
+  // not documentation.
+  //
+  // So: a scoped run prints the same banner the sibling gates print, and writes a
+  // SCOPED artifact beside the canonical one rather than over it. Nothing is lost and
+  // nothing is silently narrowed.
+  const scopedRun = !!onlyArg || process.argv.includes("--langs")
+  const artifactName = scopedRun ? "rel-type-coverage.scoped.json" : "rel-type-coverage.json"
   fs.mkdirSync(RESULTS, { recursive: true })
-  fs.writeFileSync(path.join(RESULTS, "rel-type-coverage.json"), JSON.stringify({
-    at: new Date().toISOString(), ...run,
+  fs.writeFileSync(path.join(RESULTS, artifactName), JSON.stringify({
+    at: new Date().toISOString(), scoped: scopedRun || undefined, ...run,
+    inputErrorLanes: run.inputErrors.map((e) => e.lang),
     baseline: { recorded: prev.findings.length, regressions: regressions.length, repaid: repaid.length, regressionsDetail: regressions },
   }, null, 2))
 
@@ -448,7 +565,21 @@ function main() {
     console.log("REGRESSIONS (not in the recorded debt):")
     for (const r of regressions.slice(0, 20)) console.log(`  ${r}`)
   }
-  console.log(`evidence: validation/m60/results/rel-type-coverage.json`)
+  if (scopedRun) {
+    console.log(`SCOPED run (${onlyArg ? onlyArg : "--langs"}): results printed above. The canonical`)
+    console.log(`validation/m60/results/rel-type-coverage.json is NOT touched — a scoped run that overwrote it`)
+    console.log(`would replace a 43-lane claim with a one-lane one. The scoped reading is at`)
+    console.log(`validation/m60/results/${artifactName}.`)
+  } else {
+    console.log(`evidence: validation/m60/results/${artifactName}`)
+  }
+  // An input error is NOT a coverage regression and must not be recorded as one,
+  // but it must also never exit 0: a green gate that read nothing is the failure
+  // mode this whole file exists to prevent.
+  if (run.inputErrors.length) {
+    console.log(`\nGATE INDETERMINATE: ${run.inputErrors.length} lane(s) unreadable. Exiting non-zero rather than reporting a coverage verdict.`)
+    process.exit(2)
+  }
   process.exit(regressions.length === 0 ? 0 : 1)
 }
 

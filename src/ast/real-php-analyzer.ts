@@ -112,6 +112,7 @@ const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
  * grammar's documentation:
  *
  *     property_declaration.type              `private Dep $f;`  (incl. static, readonly)
+ *     const_declaration.type                 `const Dep X = 1;`  (PHP 8.3 typed class constant)
  *     method_declaration.return_type         `function m(): Dep`
  *     function_definition.return_type        a top-level `function m(): Dep`
  *     simple_parameter.type                  `function m(Dep $a)`
@@ -125,10 +126,15 @@ const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
  *
  * THREE RULES INHERITED FROM THIS LANE, not invented here:
  *
- *   source     a property's dependency belongs to the enclosing TYPE; a parameter's /
- *              return's to the enclosing CALLABLE — the same attribution the csharp
- *              round measured off java/kotlin/python and pinned. A promoted parameter is
- *              a PARAMETER (that is the position it is written in).
+ *   source     a property's / constant's dependency belongs to the enclosing TYPE; a
+ *              parameter's / return's to the enclosing CALLABLE — the same attribution
+ *              the csharp round measured off java/kotlin/python and pinned. A promoted
+ *              parameter is a PARAMETER (that is the position it is written in). A
+ *              FILE-SCOPE typed constant has no enclosing type and is attributed to
+ *              `global` — the same file-scope owner the read rules use when nothing
+ *              encloses the position (the trait-use precedent, PHP-O1) — rather than
+ *              dropped, because a written dependency is not less real for having no
+ *              owner symbol.
  *   marker     `declared_type`, except a return type, which the family publishes as
  *              `return_type` (java/kotlin/python/typescript all do).
  *   relative   `self` / `static` resolve to the ENCLOSING CLASS and `parent` to its
@@ -140,11 +146,23 @@ const PHP_MAGIC_CONSTANTS: ReadonlySet<string> = new Set([
  *
  * SILENT: `primitive_type` (`int`, `string`, `void`, `mixed`, ...) — the grammar tags
  * them, so no name test is needed (the exclusion java gets from its primitive_type node).
+ * That covers `const string S = "a"` as well as `private string $s`.
  *
- * BOUNDARIES, DISCLOSED: typed class constants (PHP 8.3 `const Dep X = ...`), `@var` /
- * `@return` docblock annotations (not syntax), closure/arrow-function return types whose
- * enclosing callable has no name in the file, and `catch (Dep $e)` clause types. Each is a
- * real position; each is unwritten rather than silently approximated.
+ * BOUNDARIES, DISCLOSED: `@var` / `@return` docblock annotations (not syntax),
+ * closure/arrow-function return types whose enclosing callable has no name in the file,
+ * and `catch (Dep $e)` clause types. Each is a real position; each is unwritten rather
+ * than silently approximated.
+ *
+ * TYPED CLASS CONSTANTS ARE NOT ON THAT LIST, and used to be. The M60 master review
+ * found the disclosure honest but UNRULED and the position not a boundary at all: the
+ * grammar carries the type as an ordinary `type` field on `const_declaration` (the
+ * `const_declaration` case below is the evidence), and the spec claims
+ * `const_declaration` is `handled_verified` with no decision naming typed class
+ * constants either way. Ruling it out would have manufactured a gap to avoid two lines
+ * of code, so it is HANDLED, attributed exactly like `private Dep $f`. The lesson worth
+ * keeping is the shape, not the constant: a boundary written only in a source comment,
+ * with no matching entry in the adjudication set, is not a recorded decision — it is an
+ * unexamined claim wearing a disclosure's clothes.
  *
  * ONE COPY, TWO CONSUMERS: the analyzer emits these edges and the differential oracle
  * derives its truth from this SAME function (a rule the truth does not share is a rule
@@ -274,6 +292,51 @@ export function phpDeclaredTypeRefs(
       case "property_declaration":
         push(ownerType, n.childForFieldName("type"), ownerType, "declared_type", "property_declaration")
         break
+      // M60 php F4: TYPED CLASS CONSTANTS (PHP 8.3) — `const Dep X = 1;`.
+      //
+      // This position was previously listed under BOUNDARIES, DISCLOSED as a
+      // deliberate non-handling. The master review found the disclosure honest but
+      // UNRULED: the spec claims `const_declaration` is handled_verified and carries
+      // no decision naming typed class constants, so the lane had a boundary that was
+      // documented in code, absent from the adjudication set, and — on the grammar's
+      // own evidence — not actually a boundary at all.
+      //
+      // The grammar carries the type as an ordinary child of the declaration
+      // (probe-verified against the pinned wasm):
+      //
+      //     const_declaration
+      //       const
+      //       named_type        <- `const Dep X = 1;`   the DEPENDENCY
+      //         name
+      //       const_element
+      //         name            <- `X`, the declaration's own name
+      //
+      // so the position is a sibling of the one `property_declaration` already
+      // handles, in the same declaration_list, naming the same kind of thing. A
+      // class that writes `const Dep X` depends on `Dep` exactly as it does when it
+      // writes `private Dep $f;`, and the two are attributed the same way — a
+      // member's dependency belongs to the enclosing TYPE. Ruling this out would
+      // have been a NEW gap created to avoid writing two lines; the family standard
+      // (R9) is that a declaration which WRITES a type name depends on the type it
+      // names, and this declaration writes one.
+      //
+      // `primitive_type` (`const string S = "a"`) is SILENT for the same reason it is
+      // silent on a property: the grammar tags it, and `int`/`string` are not
+      // dependencies on a userland symbol. The shared `leaves` walk already skips
+      // them, so this case adds no exclusion of its own.
+      //
+      // FILE-SCOPE CONSTANTS are the one judgement call. A top-level
+      // `const Dep TOP = 1;` has no enclosing type, and a `references` edge needs a
+      // source; it is attributed to `global`, the same file-scope owner the lane's
+      // read rules use when neither a callable nor a class encloses the position
+      // (the trait-use precedent, PHP-O1). The alternative — dropping file-scope
+      // typed constants — would leave a real, written dependency invisible for the
+      // sake of a source name, and `global` is a source the lane already publishes.
+      case "const_declaration": {
+        const owner = ownerType || "global"
+        push(owner, n.childForFieldName("type"), ownerType, "declared_type", "const_declaration")
+        break
+      }
       case "method_declaration":
       case "function_definition":
         push(
@@ -537,7 +600,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     type Frame = {
       node: Node
       owner: string | undefined
-      ownerKind: string | undefined
+      ownerKind: ASTEngine.SymbolKind | undefined
       ns: string | undefined
       inFunction: string | undefined
       scope: PhpValueScope
@@ -678,7 +741,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
         const body = this.findChildByType(node, "declaration_list")
         if (body) {
-          this.pushMembers(body, stack, className, "class", ns, scope)
+          this.pushMembers(body, stack, className, ASTEngine.SymbolKind.Class, ns, scope)
         }
         this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
@@ -724,7 +787,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { phpSpecific: true, fqn: ns ? `${ns}\\${ifaceName}` : ifaceName, namespace: ns, extendedInterfaces: extended },
         })
         const body = this.findChildByType(node, "declaration_list")
-        if (body) this.pushMembers(body, stack, ifaceName, "interface", ns, scope)
+        if (body) this.pushMembers(body, stack, ifaceName, ASTEngine.SymbolKind.Interface, ns, scope)
         this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
@@ -741,7 +804,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           metadata: { phpSpecific: true, isTrait: true, fqn: ns ? `${ns}\\${traitName}` : traitName, namespace: ns },
         })
         const body = this.findChildByType(node, "declaration_list")
-        if (body) this.pushMembers(body, stack, traitName, "trait", ns, scope)
+        if (body) this.pushMembers(body, stack, traitName, ASTEngine.SymbolKind.Trait, ns, scope)
         this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
         continue
       }
@@ -780,7 +843,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (list) {
           for (let i = 0; i < list.namedChildCount; i++) {
             const child = list.namedChild(i)
-            if (child) stack.push({ node: child, owner: enumName, ownerKind: "enum", ns, inFunction: undefined, scope })
+            if (child) stack.push({ node: child, owner: enumName, ownerKind: ASTEngine.SymbolKind.Enum, ns, inFunction: undefined, scope })
           }
         }
         this.pushNonBodyChildren(node, stack, undefined, undefined, ns, scope)
@@ -795,7 +858,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.EnumMember,
             range: this.nodeToRange(node),
             ownerName: owner,
-            ownerKind: ownerKind as any,
+            ownerKind,
             visibility: "public",
             metadata: { phpSpecific: true },
           })
@@ -854,7 +917,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
           kind: ASTEngine.SymbolKind.Method,
           range: this.nodeToRange(node),
           ownerName: owner,
-          ownerKind: owner ? (ownerKind as any) : undefined,
+          ownerKind: owner ? ownerKind : undefined,
           visibility,
           isStatic: modifiers.includes("static"),
           isAbstract: modifiers.includes("abstract"),
@@ -898,7 +961,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.Property,
             range: this.nodeToRange(varNode),
             ownerName: owner,
-            ownerKind: owner ? (ownerKind as any) : undefined,
+            ownerKind: owner ? ownerKind : undefined,
             visibility,
             isStatic: modifiers.includes("static"),
             returnType: propertyType,
@@ -922,7 +985,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
             kind: ASTEngine.SymbolKind.Constant,
             range: this.nodeToRange(nameNode),
             ownerName: owner,
-            ownerKind: owner ? (ownerKind as any) : undefined,
+            ownerKind: owner ? ownerKind : undefined,
             visibility: owner ? visibility : "public",
             metadata: { phpSpecific: true, isConstant: true },
           })
@@ -1570,9 +1633,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private pushNonBodyChildren(
     node: Node,
-    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
+    stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
     owner: string | undefined,
-    ownerKind: string | undefined,
+    ownerKind: ASTEngine.SymbolKind | undefined,
     ns: string | undefined,
     scope: PhpValueScope,
     callableHeader = false,
@@ -1649,9 +1712,9 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private pushMembers(
     body: Node,
-    stack: { node: Node; owner: string | undefined; ownerKind: string | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
+    stack: { node: Node; owner: string | undefined; ownerKind: ASTEngine.SymbolKind | undefined; ns: string | undefined; inFunction: string | undefined; scope: PhpValueScope }[],
     owner: string,
-    ownerKind: string,
+    ownerKind: ASTEngine.SymbolKind,
     ns: string | undefined,
     scope: PhpValueScope,
   ): void {
@@ -1678,6 +1741,18 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const methodsByOwner = new Map<string, Set<string>>()
+    // M60 round — VISIBILITY. A `private` method is not inherited, so a subclass method of
+    // the same name is a DIFFERENT method and never an override. This rule had no
+    // visibility filter at all, on EITHER path, and it was pre-existing rather than
+    // introduced here: the same-file prescan collected every `method` symbol regardless
+    // of modifiers, and `class A { private function p() {} } class B extends A { private
+    // function p() {} }` published `B.p -> A.p`. It stayed invisible because the corpora
+    // do not exercise it — MEASURED over both pinned repos with the cross-file companion
+    // built: of phpunit's 527 and phpmyadmin's 553 `overrides` edges, **0** name a private
+    // base method. A defect with a zero corpus footprint is exactly the class the
+    // hand-written fixture exists for, and the fixture that found it declares a private
+    // method on both sides on purpose.
+    const privateByOwner = new Map<string, Set<string>>()
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
       let names = methodsByOwner.get(s.ownerName)
@@ -1686,6 +1761,14 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         methodsByOwner.set(s.ownerName, names)
       }
       names.add(s.name)
+      if (s.visibility === "private") {
+        let priv = privateByOwner.get(s.ownerName)
+        if (!priv) {
+          priv = new Set<string>()
+          privateByOwner.set(s.ownerName, priv)
+        }
+        priv.add(s.name)
+      }
     }
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName) continue
@@ -1693,6 +1776,42 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!base) continue
       const inFileMethods = methodsByOwner.get(base)
       const baseMethods = inFileMethods ?? context?.overrideCompanion?.get(base)
+      // Same-file bases are filtered from the analyzer's OWN symbols, where the
+      // modifiers are known. A CROSS-FILE base is filtered from
+      // `overrideCompanionVisibility` when the caller supplies it; absent, visibility is
+      // genuinely unknown and the edge is published as it always was. That asymmetry is
+      // deliberate and recorded rather than guessed around — see the Known-gaps entry.
+      // …and ONLY from the same-file reading. The CROSS-FILE visibility channel is
+      // deliberately NOT consulted for this decision, and the reason is the most important
+      // thing this round found.
+      //
+      // php keys every edge on the LEAF name, so a NAME-keyed index is ambiguous whenever
+      // two namespaces declare the same class name — and phpunit does that four times:
+      // three `TestSuite` classes (one with a PRIVATE `__construct`, two public) and two
+      // `Assert` classes, one of them a VENDORED library at
+      // `tools/.phpstan/vendor/webmozart/assert/src/Assert.php` with a private
+      // `__construct` while phpunit's own `abstract class Assert` has none.
+      //
+      // Every ambiguity rule tried here produced a wrong answer:
+      //   - take the MOST RESTRICTIVE reading -> suppressed 7 correct overrides;
+      //   - require UNANIMITY among observations -> still suppressed 1, because the two
+      //     `Assert` classes do not disagree, there is only one observation of the key and
+      //     it comes from the wrong class.
+      //
+      // So a cross-file lookup here is a GUESS, and the rule is that a rule acting on a
+      // guess defaults to the permissive reading: the permissive reading never removes a
+      // true edge, and it is the pre-M60 behaviour for this path. The channel stays on
+      // `AnalyzeContext` because the index itself is correct and a consumer holding
+      // QUALIFIED identity can use it — this analyzer cannot, because `baseClass` is a leaf.
+      //
+      // Same-file bases ARE exact, because the base's own symbols are right here, and that
+      // half is real: it is what stopped `B.p -> A.p` for a private `A::p`.
+      const baseIsPrivateInFile = privateByOwner.get(base)?.has(s.name) === true
+      if (inFileMethods && baseIsPrivateInFile) continue
+      // Referenced only to document that the channel is deliberately unused; the `void`
+      // keeps the parameter meaningful and stops a future reader from adding a use by
+      // accident. See the note above.
+      void context?.overrideCompanionVisibility
       if (baseMethods?.has(s.name)) {
         relationships.push({
           source: `${s.ownerName}.${s.name}`,
@@ -1755,7 +1874,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
   private extractPromotedProperties(
     node: Node,
     owner: string | undefined,
-    ownerKind: string | undefined,
+    ownerKind: ASTEngine.SymbolKind | undefined,
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
     const paramsList = node.childForFieldName("parameters")
@@ -1774,7 +1893,7 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind: ASTEngine.SymbolKind.Property,
         range: this.nodeToRange(varNode),
         ownerName: owner,
-        ownerKind: ownerKind as any,
+        ownerKind,
         visibility,
         returnType: child.childForFieldName("type")?.text || this.findTypeChild(child)?.text,
         metadata: { phpSpecific: true, isPromoted: true },
@@ -2403,27 +2522,25 @@ export class RealPhpAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
-  /** Strip surrounding single/double quotes — pure char scan. */
-  private cleanString(text: string): string {
-    if (text.length >= 2) {
-      const first = text.charCodeAt(0)
-      const last = text.charCodeAt(text.length - 1)
-      if ((first === 34 && last === 34) || (first === 39 && last === 39)) {
-        return text.substring(1, text.length - 1)
-      }
-    }
-    return text
-  }
-
-  /** Remove all whitespace — pure char scan (binary include expressions). */
-  private collapseWhitespace(text: string): string {
-    let out = ""
-    for (let i = 0; i < text.length; i++) {
-      const c = text[i]
-      if (c !== " " && c !== "\t" && c !== "\n" && c !== "\r") out += c
-    }
-    return out
-  }
+  // `cleanString` and `collapseWhitespace` used to live here, as private methods.
+  // Both are GONE as of the M60 php master review, and the note is the reason rather
+  // than an empty space: nothing called them. When the R10 include-path rule moved
+  // out of the class to module scope (commit bdce721aa) so the analyzer and the
+  // differential oracle could share ONE implementation — `phpStaticIncludePath` /
+  // `phpStaticPathValue` / `phpCleanStringText` — these two private copies were left
+  // behind as orphans, each declared once and referenced nowhere.
+  //
+  // They survived because nothing can see them: `tsconfig.json` sets
+  // `noUnusedLocals: false`, so tsc reports 0 errors for this file, and the repo has
+  // no dead-code gate over analyzer sources. That is worth stating rather than
+  // quietly fixing, because "the compiler is green" was the only evidence available
+  // and it was evidence of nothing. The replacements are not identical and were not
+  // meant to be: `phpCleanStringText` also serves the `name`/`qualified_name` shapes
+  // (which `cleanString` never handled), and `phpStaticPathValue` composes the
+  // OPERAND VALUES of a concatenation rather than collapsing the source text, which
+  // is the fix that stopped `__DIR__.'/src/X.php'` being published as a `references`
+  // target. So these were not "the same functions, tidied" — they were two
+  // superseded drafts of a rule that has since been rewritten.
 
   private nodeToRange(node: Node): ASTEngine.UniversalSymbol["range"] {
     return {

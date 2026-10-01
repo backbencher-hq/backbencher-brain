@@ -393,7 +393,30 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
     docs: ["docs/analyzers/real-php-analyzer.md"],
     differentialCheck: "differential-php",
     perfKey: "phpunit:php",
-    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides"],
+    // M60 php F2 (2026-09-30): `imports` was MISSING here, and the row is the thing
+    // that certifies the relationship contract — so the contract was published at 8
+    // kinds while the analyzer published 9. `RealPhpAnalyzer` has emitted `imports`
+    // since M12.PHP-IMPORTS from two sites (`emitUseClause`, `emitInclude`) and it is
+    // the lane's 3rd-largest label by volume: 25,104 edges over the two pinned corpora
+    // (23,820 `use` clauses + 163 include/require paths on the full git-tracked
+    // universe). It is also the kind `src/lsp/graph_request.ts:256` keys its
+    // file-level reader on, so the omission was not cosmetic: the row that certifies
+    // the contract did not name the contract's own module-dependency edge.
+    //
+    // The row said the opposite in writing. `reviews/php/m60-closure.md` residual
+    // disclosure #6 claimed `imports` "is deliberately not a php relationship label
+    // (PHPD3)", that "`references` is reserved for include paths", and that `imports`
+    // is "absent from that row, as it is for no other OO lane". All three were false:
+    // the label exists and is large, include paths moved OFF `references` onto
+    // `imports` in the same commit that added the differential allowlist entry, and
+    // python, csharp and dart all name `imports` in their own rows. PHPD3 is a
+    // pre-M12.PHP-IMPORTS ruling being read as current.
+    //
+    // The omission was invisible because section B was one-way — it asked whether
+    // every kind in THIS row is pinned by a fixture and never whether the analyzer
+    // emits a kind the row omits. That is fixed in `verifySectionB` (same round), and
+    // it is what now catches this class instead of a human noticing.
+    requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "imports"],
     payloads: {
       complexity: { key: "expectComplexity", pin: "php/payload-and-complexity" },
     },
@@ -877,7 +900,7 @@ function readExpectations(cfg: LangConfig): any[] {
     .map((f) => JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")))
 }
 
-function verifySectionB(cfg: LangConfig): SectionCheck {
+async function verifySectionB(cfg: LangConfig): Promise<SectionCheck> {
   const pinned = new Set<string>()
   for (const exp of readExpectations(cfg)) {
     for (const rel of exp.expectRelationships ?? []) {
@@ -890,13 +913,100 @@ function verifySectionB(cfg: LangConfig): SectionCheck {
     }
   }
   const unpinned = cfg.requiredKinds.filter((k) => !pinned.has(k))
+  // --- the reverse direction, added 2026-09-30 (php F1/F2) -------------------
+  //
+  // Everything above is ONE-WAY: it asks whether every kind in `requiredKinds`
+  // is pinned by a fixture. It never asks whether the lane EMITS anything the
+  // row omits — so a kind the analyzer publishes in volume can be missing from
+  // `requiredKinds` and this section still reads pass. Two real instances:
+  //
+  //   php `imports`  25,104 edges over the two pinned corpora (its 3rd-largest
+  //                   label), emitted by `emitUseClause` and `emitInclude`, and
+  //                   ABSENT from the row. The row is the thing that certifies the
+  //                   relationship contract, so the contract was published at 8
+  //                   kinds while the analyzer published 9.
+  //   php `contains` 24,707 edges (4th largest). This one the row DID name — but
+  //                   the row naming a kind is not the same as auditing it, which
+  //                   is why `contains` had no oracle and sat outside the
+  //                   differential entirely. (That half is fixed in
+  //                   script/m14/differential.ts by derivePhpContainsEdges; this
+  //                   check is the half that would have caught the ROW being
+  //                   wrong.)
+  //
+  // The same shape the lane's own record names repeatedly: a gate that reads a
+  // different object than the consumer certifies a different program. This
+  // section was reading the expectation files and certifying the analyzer.
+  //
+  // The emitted side is measured by RUNNING the lane's own analyzer over the
+  // lane's own fixture sources — the same universe the pinned set comes from, so
+  // both halves of the section describe the same files. `requiredKinds` may
+  // legitimately name a kind no fixture exercises (the unpinned check above
+  // covers that); what must not happen is the reverse, because an emitted kind
+  // the row omits is published output no contract row accounts for.
+  const emitted = await emittedKinds(cfg)
+  // A kind the analyzer emits and the row omits is published output no contract row
+  // accounts for. There are exactly two honest answers — name the kind in the row,
+  // or write down why the row omits it — and this check cannot tell them apart
+  // automatically, because the spec's `node_type` field classifies GRAMMAR node
+  // types and a relationship kind has none. So it does not guess: it reports, and
+  // the remedy is stated in the message. A deliberate exclusion is legitimate; a
+  // silent one is the defect, and only the lane can say which it meant.
+  const unlisted = [...emitted].filter((k) => !cfg.requiredKinds.includes(k)).sort()
+  const fail = unpinned.length > 0 || unlisted.length > 0
+  const detail = [
+    unpinned.length ? `unpinned: ${unpinned.join(", ")}` : null,
+    unlisted.length
+      ? `EMITTED but absent from requiredKinds: ${unlisted.join(", ")} — the analyzer publishes these and the contract row does not name them; add the kind, or record why the row omits it`
+      : null,
+  ].filter(Boolean).join(" | ")
   return {
     id: "section-b-relationship-kinds",
-    description: `${cfg.requiredKinds.length} relationship kinds pinned by ${cfg.id} fixtures`,
-    status: unpinned.length ? "fail" : "pass",
-    detail: unpinned.length ? `unpinned: ${unpinned.join(", ")}` : `pinned: ${[...pinned].sort().join(", ")}`,
+    description: `${cfg.requiredKinds.length} relationship kinds pinned by ${cfg.id} fixtures; ${emitted.size} emitted and all accounted for`,
+    status: fail ? "fail" : "pass",
+    detail: fail ? detail : `pinned: ${[...pinned].sort().join(", ")}; emitted: ${[...emitted].sort().join(", ")}`,
   }
 }
+
+/**
+ * The relationship kinds the lane's analyzer actually emits over its own fixture
+ * sources, read by RUNNING the analyzer.
+ *
+ * Deliberately not read from the expectation files: those are hand-authored
+ * claims, and a hand-authored claim is exactly what the reverse check exists to
+ * audit. Deliberately not read from a corpus: the row is per-lane config, the
+ * fixtures are the lane's own sample, and a corpus walk here would make section
+ * B cost a full sweep for a check that is about the ROW, not the corpus.
+ *
+ * Returns an empty set when the lane cannot be exercised (no wasm, no analyzer
+ * file, no fixtures) so an unrelated lane's setup problem cannot manufacture a
+ * finding here — an unmeasurable direction reports nothing rather than guessing.
+ */
+async function emittedKinds(cfg: LangConfig): Promise<Set<string>> {
+  const out = new Set<string>()
+  const dir = path.join(ROOT, cfg.fixturesDir)
+  if (!fs.existsSync(dir)) return out
+  if (!fs.existsSync(path.join(ROOT, "src", "ast", `real-${cfg.id}-analyzer.ts`))) return out
+  const sources = fs.readdirSync(dir).filter((f) => {
+    if (f.endsWith(".json")) return false
+    try { return fs.statSync(path.join(dir, f)).isFile() } catch { return false }
+  })
+  if (!sources.length) return out
+  // The lane's own sample, which is also the universe `pinned` is read from, so
+  // both halves of this section describe the same files.
+  const { ASTEngine } = await import(path.join(ROOT, "src/ast/engine.ts"))
+  for (const f of sources) {
+    let src: string
+    try { src = fs.readFileSync(path.join(dir, f), "utf8") } catch { continue }
+    let res: any
+    try { res = await ASTEngine.parseFile(path.join(dir, f), src) } catch { continue }
+    for (const r of res?.relationships ?? []) {
+      const t = String(r.type ?? r.relationshipType ?? "")
+      if (t) out.add(t)
+    }
+  }
+  return out
+}
+
 
 function verifySectionC(cfg: LangConfig): SectionCheck {
   const exps = readExpectations(cfg)
@@ -1026,7 +1136,7 @@ async function runLang(cfg: LangConfig): Promise<{ checks: SectionCheck[]; summa
       status: unclassified.length === 0 ? "pass" : "fail",
       detail: `${types.length} types, ${handled.size} handled, ${silent.size} silent, ${spec.gap.gaps.length} gaps, ${spec.design_decision.decisions.length} decisions`,
     },
-    verifySectionB(cfg),
+    await verifySectionB(cfg),
     verifySectionC(cfg),
     verifySectionD(cfg),
     verifySectionE(cfg),

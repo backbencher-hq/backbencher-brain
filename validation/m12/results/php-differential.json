@@ -8,8 +8,8 @@
         "bytes": 9702
       },
       "src/ast/engine.ts": {
-        "sha256": "f64d5fa02f2cd9a41c8112119e88f3908914f7748f351183b08e51e11a028469",
-        "bytes": 91049
+        "sha256": "784110fdb7041a0481a473cf22243face9ce8136eb64c5c9db887cee1a480495",
+        "bytes": 96011
       },
       "src/ast/fingerprint.ts": {
         "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
@@ -32,8 +32,8 @@
         "bytes": 7047
       },
       "src/ast/real-php-analyzer.ts": {
-        "sha256": "a899cc80f31145e1486b0ccc4b4ebba256a0849920d4e7f5e7f259ed6896241e",
-        "bytes": 116401
+        "sha256": "73d523ff076aaf39ba4e420d6618bb63273807efa863f06e50d8864803016bc7",
+        "bytes": 128030
       },
       "src/ast/test-classification.ts": {
         "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
@@ -96,7 +96,7 @@
         "bytes": 19483
       }
     },
-    "digest": "4c647b37cb442f8693e87b0358a5c2654b694354bda603b5b80b7420df01f578",
+    "digest": "c05f72a29e5b632df10bbafeb54da0fc619f2d96540efec52868f9ca688c6c16",
     "parser": {
       "path": "/tmp/bb-wasm_tree-sitter-php_tree-sitter-php.wasm",
       "sha256": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7",
@@ -108,24 +108,24 @@
         "bytes": 73496
       },
       "src/ast/real-c-analyzer.ts": {
-        "sha256": "fa321d22b6918c33ba6c05fd1b26e871deb75c6166595649dc1817c24815c6fd",
-        "bytes": 291233
+        "sha256": "6306c1afd2bf044ab529b393ced6de57b7eeba3a5e7a1d0d5964e96949dd0b75",
+        "bytes": 296740
       },
       "src/ast/real-clean-analyzer.ts": {
         "sha256": "1e14aec9a5b1cee1ff27ec65c02c13ee3c245e011c6757d20f8ce3c3af463bb3",
         "bytes": 158335
       },
       "src/ast/real-clojure-analyzer.ts": {
-        "sha256": "5d294060c5b4e5585f239adfa330189222081f5b63f8c5d8850821fcd0b81ff4",
-        "bytes": 136120
+        "sha256": "4bbbbaece3242939e3f22844ebf2ca94d7f8bdb720384ed0bfedbed641a06fe9",
+        "bytes": 140727
       },
       "src/ast/real-cpp-analyzer.ts": {
         "sha256": "507ee1d59de689343282011458b5356b93891fc76d7ed0f9f3d469de638e5b19",
         "bytes": 187697
       },
       "src/ast/real-csharp-analyzer.ts": {
-        "sha256": "8154a968f2c68a47821004ccdb18ec77fe9873fb23104113355997ec1e49d451",
-        "bytes": 209756
+        "sha256": "ce53955ffa04e311d953cdad5f0c5c17868cbc0332e1626c2dded66d44d30b11",
+        "bytes": 210990
       },
       "src/ast/real-css-analyzer.ts": {
         "sha256": "ccf4f113549745d0f8309a87d01d51a2d69732eeafab9bb7d599bd5b36cbdb64",
@@ -140,28 +140,28 @@
         "bytes": 113455
       },
       "src/ast/real-erlang-analyzer.ts": {
-        "sha256": "7af585aafb086f2dd5712d17b7d6d3996a3c389965fea7ea36129bfa5a475395",
-        "bytes": 84643
+        "sha256": "f12c3133983ac51707c4f3f12f2305206495b0274ee6146bb6e102281bd7bf5f",
+        "bytes": 88509
       },
       "src/ast/real-fsharp-analyzer.ts": {
         "sha256": "40dd72d8ca66793620d90a3917aa05e1dbcf914bac31c0b9fdad1fd08fb916ce",
         "bytes": 92450
       },
       "src/ast/real-go-analyzer.ts": {
-        "sha256": "b243dc2ef4a5e003507e317129564959a80e495a8353b9bc8a808623b49df7eb",
-        "bytes": 194184
+        "sha256": "0cc22c5795dcf19a3007afcaab868b3f7baa58dd116420912513be9740d926a0",
+        "bytes": 196000
       },
       "src/ast/real-graphql-analyzer.ts": {
         "sha256": "fbfde1a96bbd9e597b069b7ebacdca6e232f6e99b46781a837555bff4e3794e8",
         "bytes": 78748
       },
       "src/ast/real-groovy-analyzer.ts": {
-        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
-        "bytes": 126319
+        "sha256": "f673784b72c2c95a4b33054c9cbc4f5dcf46349d38af2f837a4f1f3b83544530",
+        "bytes": 144470
       },
       "src/ast/real-haskell-analyzer.ts": {
-        "sha256": "943f0ce6d7b497f19ba0d77638a76ea5ff88a88b94fa90f6f1f7865adcfeb032",
-        "bytes": 71471
+        "sha256": "2d4cf36047233403416ab7d68ac8ce0f1a036b2bee5f5e8465a49bf60dbf99d6",
+        "bytes": 92647
       },
       "src/ast/real-hcl-analyzer.ts": {
         "sha256": "1394f4fa5b091691e69c558d135de69b563750b15cefda7281873623f80e9079",
@@ -172,28 +172,28 @@
         "bytes": 94338
       },
       "src/ast/real-java-analyzer.ts": {
-        "sha256": "6062af27f561c416b9629667121bfcca1e8d81e54d0cee46b9609ad1c5ac142a",
-        "bytes": 152024
+        "sha256": "9799cb589eb35c5f68e2c19a6f9e4a0b600d2f33492271a2e5f33e5c4b7cf882",
+        "bytes": 155656
       },
       "src/ast/real-javascript-analyzer.ts": {
         "sha256": "a1a0e79652c9f228e69aa99822222fd1be5ad7dfe20bf4269cff3a33f45d7632",
         "bytes": 136593
       },
       "src/ast/real-json-analyzer.ts": {
-        "sha256": "bf0f4f7ca0ce7709f0722af840634cfaf367b6c78cdbd0e60d6c8cea08161a1a",
-        "bytes": 33146
+        "sha256": "9d8801158b813fdd020c7938b79a120e3c19a20d69785a2a5ee729d93090a128",
+        "bytes": 35812
       },
       "src/ast/real-kotlin-analyzer.ts": {
-        "sha256": "67baabc66c2f02ea1e722ab7676781e2bbfe78825ed0d35e1fc2f9f36576378e",
-        "bytes": 170560
+        "sha256": "9b9a8dc717820dce53bb7a5c9b1dc40af1e5abda69cac97482b950df14c47ce4",
+        "bytes": 172230
       },
       "src/ast/real-lua-analyzer.ts": {
-        "sha256": "f2ccaad0061ebd25a5174cbfa6ad5eccfc50e950fb17a3363d22300b698594ec",
-        "bytes": 66658
+        "sha256": "603ea57311d6a3d4e5b352a724ccaa9cb043efdfd54dbc863eaa2700e890e5e5",
+        "bytes": 68774
       },
       "src/ast/real-makefile-analyzer.ts": {
-        "sha256": "39bd0c0de457ec48526f9b85c5de5e7db4923b8829a4a340f93a2d748ccb0ddb",
-        "bytes": 42433
+        "sha256": "44631b04ec0ab3506988f848a50b80b061b7d0cfb08486fe18dee5e0973c7c41",
+        "bytes": 46370
       },
       "src/ast/real-markdown-analyzer.ts": {
         "sha256": "ee5501ff69713e30385b5344d7d7210c39314def0684338ee6ad80536a30c60f",
@@ -208,16 +208,16 @@
         "bytes": 74340
       },
       "src/ast/real-perl-analyzer.ts": {
-        "sha256": "70f9f1dfe36a89e2ece35d15030ab1b5b40d1f792ee4af182a20d1f5dc242e95",
-        "bytes": 85613
+        "sha256": "a350cd129dd57df06b1b75a156736369f8194e56fb248422c5d236ac884f8362",
+        "bytes": 98946
       },
       "src/ast/real-powershell-analyzer.ts": {
         "sha256": "6102195cdb557ed4a91c8a2a5fca374fd17376ac9d12f34ec5daea801a76bb0e",
         "bytes": 126264
       },
       "src/ast/real-protobuf-analyzer.ts": {
-        "sha256": "b90b3c8e61443e36e65e3cfaa9e21bd529bd7c8283bacddf35d030dbc2428fa2",
-        "bytes": 37444
+        "sha256": "6f3fff77f5d7625efa7a12386c00fecfd4a483bad90964e9088521dfcfb90c71",
+        "bytes": 38710
       },
       "src/ast/real-python-analyzer.ts": {
         "sha256": "86610cb6ed08e4e79caab84adb4fc0a9381f5f6ff21b1bbb38f5c7ed230ec50b",
@@ -236,16 +236,16 @@
         "bytes": 107870
       },
       "src/ast/real-scala-analyzer.ts": {
-        "sha256": "8e5065ddde8ea25e1179debcf3c62e9b67c5acaafa2ff8ad5c9949013a32deea",
-        "bytes": 127225
+        "sha256": "aa2d9cc831b4f5b3afce204222e2fb7224182bfc4c8843ebf3ffefb9806e2c07",
+        "bytes": 128120
       },
       "src/ast/real-scss-analyzer.ts": {
         "sha256": "63d9dcf8228abbc0739eac066115dbbc91ff721d02d18a375e9c32dc67849c59",
         "bytes": 49130
       },
       "src/ast/real-sql-analyzer.ts": {
-        "sha256": "b0b33a389a10356c432844080321e380a47e222c2c295381924f94de662e03e8",
-        "bytes": 108746
+        "sha256": "a0539713649b2142c3a88ffdc9b1fa70b7f91a652cba65435b95832035968b47",
+        "bytes": 110121
       },
       "src/ast/real-svelte-analyzer.ts": {
         "sha256": "9628a39c8076741df933509f973682f44a175f6719ce693c0af0370f0071d5fa",
@@ -268,20 +268,20 @@
         "bytes": 76833
       },
       "src/ast/real-vue-analyzer.ts": {
-        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
-        "bytes": 58931
+        "sha256": "15f1caf7c298fcc22c53ba0942ae088a3cd770f2e102d343d4bc91370ef87cc8",
+        "bytes": 92981
       },
       "src/ast/real-xml-analyzer.ts": {
-        "sha256": "3c3d5c11aec0aa00a791b93736cf78abf4c55f10da9fc3c2f02626e3068cb7b5",
-        "bytes": 88560
+        "sha256": "88a3b304f4c5c5ab304e87c02eacb278948595c2984dd7fabea730001f8c1b29",
+        "bytes": 104884
       },
       "src/ast/real-yaml-analyzer.ts": {
         "sha256": "188c8ea1150d32f32538ab918e049ea13f0ba9dc3ff5f3a8cda9fcf9e0e7fcde",
         "bytes": 89051
       },
       "src/ast/real-zig-analyzer.ts": {
-        "sha256": "1b5877028c074c3d9c092f4c381ba0ce9db4ec9702ad056a95ce3492c6cb5ad8",
-        "bytes": 94225
+        "sha256": "481d61a6fd6795340fc105c2125973a97049d55b33b0e952f28bb016cddc8dfd",
+        "bytes": 111467
       }
     }
   },
@@ -405,11 +405,11 @@
   "measurements": [
     {
       "name": "verify-analyzer:php",
-      "wallTimeMs": 115.5077,
-      "userCpuMs": 102.468,
-      "systemCpuMs": 11.413,
-      "peakRssBytes": 203624448,
-      "rssDeltaBytes": 5713920,
+      "wallTimeMs": 48.880414,
+      "userCpuMs": 65.543,
+      "systemCpuMs": 7.086,
+      "peakRssBytes": 212209664,
+      "rssDeltaBytes": 4513792,
       "databaseBytes": null,
       "files": null,
       "symbols": null,

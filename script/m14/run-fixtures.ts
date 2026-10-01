@@ -21,6 +21,9 @@
  */
 import * as fs from "fs"
 import * as path from "path"
+import { mergeSymbolsIntoOverrideCompanion } from "../../src/ast/override-context"
+
+const { readdirSync, readFileSync, statSync } = fs
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
@@ -433,7 +436,75 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         result = (overrideAnalyzer as any).transform(result, content)
       }
     } else {
-      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
+      // M60 php round: the CROSS-FILE OVERRIDE companion, OPT-IN per fixture.
+      //
+      // Without it this runner calls `analyze()` with no context, so a fixture can
+      // only exercise SAME-FILE inheritance — which meant php's cross-file override
+      // path (1,080 edges over the two pinned corpora, 11% of the lane's relationship
+      // volume) had NO pin at all: not a fixture, not a mutant, and the differential's
+      // published match would not see a wrong target either, because `normTarget`
+      // compares last segments and `TestCase.__construct` is satisfied by any other
+      // `__construct` override. A capability that large and that unpinnable is the exact
+      // shape the lane's own doctrine warns about.
+      //
+      // OPT-IN, and deliberately so: building a companion for every multi-source
+      // fixture directory automatically would change results for every lane that emits
+      // cross-file overrides (java, kotlin, python, ruby, csharp, dart, javascript),
+      // mid-flight, with no pin on the change. So an expectation file that does not
+      // declare `crossFileOverride` gets exactly the old behaviour, and one that does
+      // gets a companion built from the OTHER sources in its own directory.
+      //
+      // The companion is built with the project's own `mergeSymbolsIntoOverrideCompanion`
+      // from the ANALYZER's symbol output for each sibling file — the same shape
+      // `verify-analyzer.ts` uses — so the mechanism under test is the real one rather
+      // than a stand-in.
+      let analyzeContext: any = undefined
+      if ((exp as any).crossFileOverride) {
+        // `crossFileOverride` is either `true` (every other source in the directory) or
+        // an ARRAY of sibling source names to draw the companion from. The array form is
+        // preferred and is what php uses: "every sibling" would hand the fixture an
+        // index carrying methods from all its neighbours, which is noise a reader has to
+        // reason about and which can mint override edges nobody wrote. Naming the sources
+        // makes the fixture self-describing — you can read which file declares the base.
+        const want: string[] | true = (exp as any).crossFileOverride
+        const companion = new Map<string, Set<string>>()
+        const companionVisibility = new Map<string, Map<string, string>>()
+        for (const sib of readdirSync(dir)) {
+          if (sib === src || sib.endsWith(".json")) continue
+          if (!exts.some((e: string) => sib.endsWith("." + e))) continue
+          if (want !== true && !want.includes(sib.slice(0, sib.lastIndexOf(".")))) continue
+          const sibPath = path.join(dir, sib)
+          let sibSt: any
+          try { sibSt = statSync(sibPath) } catch { continue }
+          if (!sibSt.isFile()) continue
+          let sibRes: any
+          try { sibRes = await analyzer.analyze(parser.parse(readFileSync(sibPath, "utf8")).rootNode, readFileSync(sibPath, "utf8"), `fixtures/${runLangLang}/${sib}`) } catch { continue }
+          mergeSymbolsIntoOverrideCompanion(companion, sibRes.symbols ?? [])
+          // The VISIBILITY channel, parallel to the name set. A name set cannot decide an
+          // override, because PHP does not inherit a private method: `Sub::privateHelper`
+          // is a different method from `Base::privateHelper`. Analyzer symbols carry
+          // `visibility`, so the companion built from them can supply it — without this,
+          // `php/cross-file-override` cannot pin the private rule across a file boundary,
+          // and its forbid row fails (which is exactly what happened the first time).
+          for (const sym of sibRes.symbols ?? []) {
+            if (!sym?.ownerName || !sym?.name || String(sym.kind ?? "") !== "method") continue
+            let byName = companionVisibility.get(String(sym.ownerName))
+            if (!byName) { byName = new Map<string, string>(); companionVisibility.set(String(sym.ownerName), byName) }
+            const vis = String(sym.visibility ?? "public")
+            // UNANIMITY, matching `buildPhpOverrideCompanionWithVisibility`: `private` is
+            // recorded only when EVERY observation of that name agrees, and disagreement
+            // becomes `ambiguous`, which suppresses nothing. php keys edges on the leaf
+            // name, so a name-keyed index is ambiguous whenever two namespaces declare the
+            // same class name — and resolving that by suppression fabricates gaps rather
+            // than closing them.
+            const key = String(sym.name)
+            const prev = byName.get(key)
+            byName.set(key, prev === undefined ? vis : prev === vis ? vis : "ambiguous")
+          }
+        }
+        analyzeContext = { overrideCompanion: companion, overrideCompanionVisibility: companionVisibility }
+      }
+      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`, analyzeContext)
     }
     const fixtureFilePath = `fixtures/${runLangLang}/${src}`
     const symbols: Entry[] = result.symbols ?? []
