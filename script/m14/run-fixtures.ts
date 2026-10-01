@@ -238,6 +238,8 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   // SOL-22: the file-level licence identifier (SPDX or otherwise), carried by the
   // module symbol. Allowlisted for the same cross-lane-parity reason as the rest.
   "license", "licenseId",
+  // SOL-23: the NatSpec-vs-signature findings.
+  "undocumentedParameters", "overDocumentedParameters", "returnDocumentedWithoutReturn",
   // relationship rows
   "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
   "line_number", "confidence", "contains", "symbol", "isImport", "isContained",

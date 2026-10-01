@@ -189,6 +189,13 @@ const allDeclaredNames = new Set<string>()
 const owners = new Set<string>()
 let getterSymbols = 0
 const callKindsTotal: Record<string, number> = {}
+let natSpecSymbolsUndocumented = 0
+let natSpecSymbolsOverDocumented = 0
+let natSpecReturnWithoutReturn = 0
+let natSpecUndocumentedTotal = 0
+let natSpecOverDocumentedTotal = 0
+const overDocSamples = new Set<string>()
+const retNoRetSamples = new Set<string>()
 let commentsRead = 0
 let commentsAttached = 0
 let documentedSymbols = 0
@@ -312,6 +319,14 @@ for (const f of files) {
   overridesEmitted += Number(md.overridesEmitted ?? 0)
   overridesUnresolved += Number(md.overridesUnresolved ?? 0)
   overridesEmittedExternal += Number(md.overridesEmittedExternal ?? 0)
+  const nsc = (md.natSpecCheck ?? {}) as Record<string, any>
+  natSpecSymbolsUndocumented += Number(nsc.symbolsWithUndocumentedParams ?? 0)
+  natSpecSymbolsOverDocumented += Number(nsc.symbolsWithOverDocumentedParams ?? 0)
+  natSpecReturnWithoutReturn += Number(nsc.returnDocumentedWithoutReturn ?? 0)
+  natSpecUndocumentedTotal += Number(nsc.undocumentedParams ?? 0)
+  natSpecOverDocumentedTotal += Number(nsc.overDocumentedParams ?? 0)
+  for (const smp of (nsc.overDocumentedSamples ?? [])) overDocSamples.add(String(smp))
+  for (const smp of (nsc.returnWithoutReturnSamples ?? [])) retNoRetSamples.add(String(smp))
   commentsRead += Number(md.commentsRead ?? 0)
   commentsAttached += Number(md.commentsAttached ?? 0)
   documentedSymbols += Number(md.documentedSymbols ?? 0)
@@ -393,6 +408,16 @@ const out = {
         max: maxComplexity,
         mean: complexitySymbols > 0 ? Number((complexityTotal / complexitySymbols).toFixed(3)) : 0,
         _note: "SOL-18. Before SOL-18 every Solidity symbol reported complexity 1, because pool-worker's default is `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither. The count is attributed through the FRAME stack as the walk goes, so it costs one increment per branch node and no second traversal. `aboveOne` is the number that matters: a metric that reports 1 for everything reads as configured rather than broken, which is exactly how the first attempt hid — `declareSymbol` called `pushSymbol` and discarded the result, so every frame carried `sym: null` and the feature measured nothing while looking live.",
+      },
+      natSpecCheck: {
+        symbolsWithUndocumentedParams: natSpecSymbolsUndocumented,
+        symbolsWithOverDocumentedParams: natSpecSymbolsOverDocumented,
+        undocumentedParams: natSpecUndocumentedTotal,
+        overDocumentedParams: natSpecOverDocumentedTotal,
+        returnDocumentedWithoutReturn: natSpecReturnWithoutReturn,
+        overDocumentedSamples: [...overDocSamples].slice(0, 10),
+        returnWithoutReturnSamples: [...retNoRetSamples].slice(0, 10),
+        _note: "SOL-23. Documentation checked against the signature. The undocumented-parameter count is a COVERAGE figure and is expected to be large — plenty of code documents only the interesting parameters. The other two are DEFECTS in the source: a `@param` naming a parameter the function does not have, and a `@return` on a function that returns nothing. Both are fully decidable per file because the documentation and the signature are in the same tree.",
       },
       licences: {
         moduleSymbols,
