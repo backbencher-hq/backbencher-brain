@@ -509,9 +509,15 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       }
     }
+    // `prePassForms` is an O(forms) walk. Calling it in the loop CONDITION and
+    // again in the loop BODY made the pre-pass O(forms^2) on every file — the
+    // quadratic term the performance review could not attribute through six
+    // ablations, because the ablations were ablating semantics rather than
+    // looking at how often this function is invoked. One call, one array.
+    const forms = this.prePassForms(rootNode)
     const stack: Node[] = []
-    for (let i = this.prePassForms(rootNode).length - 1; i >= 0; i--) {
-      const top = this.prePassForms(rootNode)[i]
+    for (let i = forms.length - 1; i >= 0; i--) {
+      const top = forms[i]
       if (top) stack.push(top)
     }
     while (stack.length > 0) {
