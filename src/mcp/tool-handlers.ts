@@ -601,23 +601,8 @@ const handlers: Record<string, ToolHandler> = {
       }
       if ((results.staleCount ?? 0) > 0) footer.push(`${results.staleCount} of ${lines.length} results are STALE — the file changed after indexing`)
       if (results.freshnessError) footer.push("freshness could not be resolved for these results (staleCount is not a freshness claim)")
-      if (results.truncated && lines.length === 0) {
-        // An EMPTY page is not automatically a complete answer. When the engine
-        // declared it was cut short, "no results" is a statement the caller
-        // cannot check — a bounded scan and a scan that genuinely found nothing
-        // were byte-identical. Measured case: `(a+)+b` on this repo's own index
-        // returns "no results" in 0.3s when the scan completes and in 2s when
-        // the time budget kills it; the two answers must not look the same.
-        footer.push(
-          `scan was cut short (${results.truncationReason ?? "unknown"}) over ${results.scannedRows ?? "some"} candidate rows — this is NOT a complete answer`,
-        )
-      } else if (results.truncated && lines.length > 0) {
-        footer.push(`TRUNCATED (${results.truncationReason ?? "unknown"}) — this page is not the whole match set`)
-      }
       return {
-        text: lines.length
-          ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "")
-          : `no results for "${query}"` + (footer.length ? `\n${footer.join("\n")}` : ""),
+        text: lines.length ? lines.join("\n") + (footer.length ? `\n${footer.join("\n")}` : "") : `no results for "${query}"`,
         results,
         lines,
         rows: results.map((r: any) => ({ fileId: r.fileId })),

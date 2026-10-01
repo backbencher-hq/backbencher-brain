@@ -633,6 +633,9 @@ export function ensureSchema(raw: any): void {
   // #612: additive symbol column (idempotent; the DDL above carries it for
   // fresh DBs, this covers DBs created by an older DDL).
   ensureSymbolDeclarationColumn(raw)
+  // The symbol body, so content search can reach a word that appears only
+  // inside a function. Idempotent; the DDL above carries it for fresh DBs.
+  ensureSymbolSourceTextColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}
