@@ -2,10 +2,10 @@
   "issue": "M28.U1",
   "code": "U1",
   "milestone": "M28",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 16,
-  "passed": 16,
-  "failed": 0,
+  "passed": 13,
+  "failed": 3,
   "mutantsCaught": 4,
   "mutantsTotal": 4,
   "mutantRecords": [
@@ -26,17 +26,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "a943047e5cc1e03967e619a9bbc8bf935ec6c369",
+  "currentCommit": "4900f3e49fe313d8129081437b7f51dfb1747e3a",
   "verifierCommand": "npx tsx script/m28/verify-union.ts",
   "evidenceFile": "U1.json",
-  "generatedAt": "2026-09-26T23:07:38.622Z",
+  "generatedAt": "2026-09-30T02:46:35.882Z",
   "claimLevel": "verified — MCP answers and IDE answers are machine-proven identical on the shared fixture",
   "limitations": [
     "Differential equality asserted on the polyglot fixture (graph, impact, cross-language, absence); the fixture is shared with T1's evidence."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-26T23:07:38.630Z",
-    "contentSha256": "f9b569b3af72a333827cfc9a803ce9e27811d02c68956d226e0b5b7d36f89835"
+    "sealedAt": "2026-09-30T02:46:35.883Z",
+    "contentSha256": "1e8f26b0f5367eee6f4bf535ea083ee3b0909dcfc70b9497f61525ef09b8c425"
   }
 }
