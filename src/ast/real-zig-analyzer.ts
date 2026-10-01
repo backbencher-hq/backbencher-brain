@@ -503,7 +503,22 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // no named container — they must not become file-scope functions.
         const isAnonymousContainerMember = anonContainer || (!container && inFunction)
 
-        if (fnName && fnName !== "_" && fnName.length < 100 && !isAnonymousContainerMember) {
+        // Z46: the blank-identifier refusal belongs to BINDINGS, not to declared
+        // names, and it was applied to both. `const _ = 1;` is a discard and must
+        // mint nothing (Z8/GO5, still enforced in the variable branch above) --
+        // but `pub fn _(msgid: [*:0]const u8) …` is a REAL, callable
+        // declaration: the gettext convention, and the entire i18n entry point of
+        // ghostty. Excluding it here left the analyzer publishing
+        // `calls (global) -> _` for a function it had declined to declare, which
+        // is a dangling edge: a call into a name the index will never resolve.
+        //
+        // One occurrence in 3,839 corpus files, and worth fixing anyway, because
+        // the cost of the rule is not one missing symbol but an edge that points
+        // at nothing. Reads of `_` stay suppressed by the bare-read guard
+        // (`name !== "_"`), so `_ = expr` remains a discard assignment and not a
+        // read -- the two positions are now decided separately, which is the
+        // whole of the fix.
+        if (fnName && fnName.length < 100 && !isAnonymousContainerMember) {
           const params: ASTEngine.Parameter[] = []
           const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
           if (paramsNode) {
@@ -644,14 +659,17 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // to publish, and a symbol named `usize` is a fabrication, so the field
         // is read only when it is an identifier and the search is the fallback.
         const nameField = node.childForFieldName?.("name")
+        // Z45: the `field_identifier` disjunct was DEAD. This grammar has no such
+        // node type -- a field's name is an `identifier` (probe-verified against
+        // the pinned wasm by zigw-dead-branches.ts), and the name of this very
+        // check is the kind of leftover that reads like coverage of a case that
+        // cannot occur. It was found by the F1 grammar audit, which flags a type
+        // literal in a comparison that the grammar does not declare, and which had
+        // been reporting `zig FAIL unknown=2` while the doc and the closure both
+        // claimed 0 unknown. The live disjunct is the first one, so removing the
+        // dead one changes no output -- which is the point: it was never load
+        // bearing, only misleading.
         const nameNode =
-          // Z45, restored: `field_identifier` is DEAD. This grammar has no such node
-          // type -- a field's name is an `identifier` (probe-verified against the
-          // pinned wasm by zigw-dead-branches.ts) -- and the dead disjunct was
-          // REINTRODUCED by a concurrent commit in another lane (86345f38), which
-          // put F1 back to `FAIL refs=52 unknown=2`. Seventh time this lane's work
-          // has been reverted by a commit elsewhere; the grammar audit caught it,
-          // which is the only reason it was caught rather than shipped.
           nameField && nameField.type === "identifier"
             ? nameField
             : this.anyChild(node, (n) => n.type === "identifier")
@@ -754,12 +772,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           // navigable one — the member's own declaration line. Omitted, never
           // written as 0, when the symbol carries no range (#820).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          // Z44, restored: the reason code, so every class in this analyzer answers
-          // "why does this edge exist?" the same way. `contains` is built from the
-          // SYMBOL TABLE at the end of the walk rather than at the member's site,
-          // which is why it carried an EMPTY metadata object -- and it is the
-          // LARGEST class in the corpus (176 rows in a 200-file draw), so the one
-          // that said nothing was the one with the most to say.
+          // Z44: a reason code, so every class in this analyzer answers the same
+          // question — "why does this edge exist?" — the same way. `contains` is
+          // built from the SYMBOL TABLE at the end of the walk rather than at the
+          // member's site, which is why it carried an EMPTY metadata object and
+          // was invisible to any consumer that reads the reason. It is the
+          // largest class in the corpus (261 of the 300-file draw) and it was the
+          // one that said nothing. `zigField`/`zigEnumMember` are already on the
+          // SYMBOL; here the reason is that the edge is ownership.
           metadata: { relationshipType: "zig_ownership" },
         })
       }
@@ -1268,10 +1288,13 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           push(enclosingName(n), String(callee.text), this.nodeLine(callee) ?? 0, { isGenericTypeApplication: true })
         }
       }
-      // Z45, restored: `struct_literal` is DEAD for the same reason and the same
-      // grammar rename -- a construction parses as `struct_initializer` (or
-      // `anonymous_struct_initializer`) and there is no `struct_literal` node to
-      // match. Reintroduced by the same concurrent commit.
+      // Z45: `struct_literal` was DEAD for the same reason and in the same grammar
+      // rename -- a construction parses as `struct_initializer` (or
+      // `anonymous_struct_initializer` for `.{ … }`), and there is no
+      // `struct_literal` node to match. The live disjunct carries the whole class
+      // (132 instantiations per 400 corpus files), so this is a leftover, not a
+      // gap; but it is a leftover that made the F1 audit red and that a reader
+      // would reasonably believe was a second supported spelling.
       if (n.type === "struct_initializer") {
         const first = n.namedChildCount > 0 ? n.namedChild(0) : null
         if (first) {
