@@ -28,6 +28,20 @@ Read-only single or batch migration planning with dependency order, explicit eff
       },
       "description": "one or more symbols to migrate"
     },
+    "paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "project-relative file or DIRECTORY paths; every indexed symbol in them joins the request, so a whole module can be planned in one call. UNION with symbolNames, not a replacement: naming a symbol AND a path that contains it plans it once"
+    },
+    "symbolIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "indexed symbol ids, the ONLY unambiguous way to name a component. Use this when a refusal reported that a name matches several symbols; a name is not an identity, and two components can share one name in two files"
+    },
     "targetLanguage": {
       "type": "string",
       "description": "e.g. rust, go, python"
@@ -49,9 +63,11 @@ Read-only single or batch migration planning with dependency order, explicit eff
 
 ## Returns
 
-- Dependency-ordered migration plans
+- Dependency-ordered migration plans, grouped into parallel-workable waves
+- Scope completeness: how much of the cited integration surface the request actually covers
+- Cohort rollup by source file and by wave
 - Effort methodology, library mappings, and risks
-- Explicit unsupported and truncation results
+- Explicit unsupported and truncation results, naming the symbols the cap dropped
 
 ## Examples
 
@@ -59,10 +75,15 @@ Read-only single or batch migration planning with dependency order, explicit eff
 
 `{"symbolNames":["parse","handle"],"targetLanguage":"rust","format":"json"}`
 
+`{"paths":["src/api"],"targetLanguage":"go"}`
+
+`{"symbolIds":["sym_01H..."],"targetLanguage":"go"}`
+
 ## Errors
 
 - Missing targetLanguage
-- No symbolName or symbolNames
+- No symbolName, symbolNames or paths
+- A path that matches no indexed file (the tool says so rather than returning an empty plan set)
 - Unknown option
 
 ## Limitations
@@ -70,10 +91,13 @@ Read-only single or batch migration planning with dependency order, explicit eff
 - Plans are estimates, not translated source
 - Library mappings are advisory and unsupported routes remain explicit
 - Dependency ordering and mapping depend on the analyzer-extracted symbol and relationship graph; edge cases that the analyzers cannot resolve (reflection, dynamic dispatch, or cross-file relations the grammar does not model) limit the completeness of the resulting plan
+- Library dependencies are read from the index's per-file import rows and split into standard library, third-party, local and unclassified; a third-party library with no registered mapping is named at confidence 0 and charged 6h of research, never claimed as supported
+- A request names a bounded set of symbols, and the cited integration surface is usually much larger: measured 98.6-99.8% out of scope on cobra for requests of 1-16 symbols. The `scope` block reports this on every result
+- 56 of 486 dictionary rows (11.5%) are not import specifiers — API idioms, a framework, Flutter widget class names, display names with a space, and a mis-keyed dart->typescript block — so they cannot be reached by an import lookup. Audited by script/m20/verify-migration-dictionary.ts
 
 ## Performance
 
-Requests are capped at 100 symbols and dependency traversal is bounded.
+Work is bounded by the requested symbols' own fan-in and fan-out, not by repository size. A request is capped at 100 symbols; the dropped names are reported in `truncation.cappedNames`.
 
 ## Safety
 
@@ -81,7 +105,7 @@ Read-only. It does not generate, replace, or compile target-language source.
 
 ## Evidence Semantics
 
-Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates.
+Dependency ordering comes from indexed relationships; effort and mappings are labeled methodology-driven estimates. Relationship line, confidence, cross-language flag and bridge mechanism are read from the index; none is synthesized.
 
 ## Relationship to other tools
 

@@ -145,7 +145,15 @@ async function indexAndRunPatterns(rootDir: string): Promise<string> {
 }
 
 // ── 3. Corpus sampling ─────────────────────────────────────────────────────
-const REPO_ROOT = "$HOME/fixtures/repositories"
+// Hard-coded to another developer's home directory, so this gate failed
+// everywhere else with "corpus cabal/Cabal/src (Haskell): present … missing",
+// which reads as "bb_patterns broke on real repositories" and is in fact "this
+// file names a path that does not exist here". BB_CORPUS_ROOT is the convention
+// the rest of the corpus lanes already use (script/m12/verify-corpus-claims.ts,
+// script/m12/zig-deep-review-evidence.ts, script/m15/verify-doc-deep.ts), and the
+// sibling gate script/m13/verify-edit-corpus.ts was fixed the same way in this
+// lane. An absent corpus is an absence of evidence, so it is recorded as a skip.
+const REPO_ROOT = process.env.BB_CORPUS_ROOT ?? path.join(process.env.HOME ?? "", "fixtures", "repositories")
 const SAMPLE: Array<[string, string, string]> = [
   ["rake", "lib/rake", "Ruby"],
   ["graphql-js", "src", "TypeScript"],
@@ -157,7 +165,7 @@ const SAMPLE: Array<[string, string, string]> = [
 for (const [repo, subPath, family] of SAMPLE) {
   const indexRoot = path.join(REPO_ROOT, repo, subPath)
   if (!existsSync(indexRoot)) {
-    harness.check(`corpus ${repo}/${subPath} (${family}): present`, false, `${indexRoot} missing`)
+    console.log(`  skip: corpus ${repo}/${subPath} (${family}) not present at ${indexRoot} (set BB_CORPUS_ROOT to run this lane)`)
     continue
   }
   const pid = getProjectId(indexRoot)
@@ -205,12 +213,42 @@ for (const [repo, subPath, family] of SAMPLE) {
     )
 
     // --- result types are honest (no fabricated evidence class) ---
+    //
+    // The intent is "no type string is invented". A hand-copied list cannot
+    // express that and had already drifted in both directions:
+    //
+    //   missing  "orphaned_file"  — a REAL rule. detectOrphans defaults its
+    //     `rules` set to orphaned_function | orphaned_class | orphaned_file, and
+    //     the comment at src/intelligence/patterns/orphans.ts:245 records that a
+    //     per-rule confidence constant once made the shipped default of 0.6
+    //     delete this whole rule — "a rule the documentation describes and no
+    //     user could reach". So omitting it here recorded a KNOWN-GAP against
+    //     correct product behaviour, on a real corpus, on graphql-js.
+    //
+    //   phantom  "orphaned-code" — emitted NOWHERE in src/. It made the list
+    //     look like it covered a `orphaned-code` category that does not exist,
+    //     which is the permissive direction: a real defect in that name would
+    //     have passed.
+    //
+    // So the check is structural instead, and cannot drift when a rule is added:
+    // the orphan family is a PREFIX, and the non-orphan families are the small
+    // closed set the rule engine really has. The exact orphan rule names are
+    // still asserted separately, one check lower, so "any string starting with
+    // orphaned_" is not a loophole.
+    const ORPHAN_RULES = ["orphaned_function", "orphaned_class", "orphaned_file"]
+    const NON_ORPHAN_TYPES = new Set(["high-complexity-function", "long-parameter-list", "god-class", "framework-detected"])
     const typeSet = new Set(allResult.patterns.map((p) => p.type))
-    const KNOWN_TYPES = new Set(["orphaned-code", "orphaned_function", "orphaned_class", "high-complexity-function", "long-parameter-list", "god-class", "framework-detected"])
+    const strayTypes = [...typeSet].filter((t) => !t.startsWith("orphaned_") && !NON_ORPHAN_TYPES.has(t))
     harness.check(
       `corpus ${tag}: pattern types are known categories`,
-      [...typeSet].every((t) => KNOWN_TYPES.has(t)),
-      [...typeSet].join(","),
+      strayTypes.length === 0,
+      strayTypes.length ? `unknown: ${strayTypes.join(",")} (saw ${[...typeSet].join(",")})` : [...typeSet].join(","),
+    )
+    const badOrphanRule = [...typeSet].filter((t) => t.startsWith("orphaned_") && !ORPHAN_RULES.includes(t))
+    harness.check(
+      `corpus ${tag}: every orphaned_* type is a real orphan rule`,
+      badOrphanRule.length === 0,
+      badOrphanRule.length ? `not a rule detectOrphans can emit: ${badOrphanRule.join(",")}` : [...typeSet].filter((t) => t.startsWith("orphaned_")).join(",") || "none emitted",
     )
 
     // --- framework detection: if framework_type exists in files, it must appear ---
