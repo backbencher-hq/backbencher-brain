@@ -89,8 +89,23 @@ if (registry) {
 
 // Generator verify mode: the tool-docs generator must validate bb_patterns.md
 // is byte-fresh from the registry.
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
-harness.check("docs: generator verify mode passes (bb_patterns.md byte-fresh)", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
+//
+// Spawns the CURRENT runtime rather than `bun`, for the reason recorded in the
+// sibling gate script/m13/verify-edit-docs.ts: a hardcoded `bun` fails with
+// ENOENT under Node and the assertion then reports STALE DOCUMENTATION for what
+// is actually a missing runtime. A freshness check that lies in the
+// regenerate direction is worse than no freshness check, because the operator's
+// correct response to it — regenerate — changes nothing.
+const runningUnderBun = typeof (globalThis as any).Bun !== "undefined"
+const generatorArgs = runningUnderBun
+  ? ["run", "script/verify-tool-docs.ts"]
+  : ["--import", "tsx", "script/verify-tool-docs.ts"]
+const gen = spawnSync(process.execPath, generatorArgs, { cwd: root, encoding: "utf8", timeout: 300_000 })
+harness.check(
+  `docs: generator verify mode passes (bb_patterns.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
+  gen.status === 0,
+  gen.status === 0 ? "" : `exit ${gen.status}: ${(gen.stderr || gen.stdout || "").slice(0, 200)}`,
+)
 
 // ── 2. Honesty: no stubs, planned modes honest ─────────────────────────────
 const toolsSrc = readFileSync(path.join(root, "src", "ast", "tools.ts"), "utf8")
