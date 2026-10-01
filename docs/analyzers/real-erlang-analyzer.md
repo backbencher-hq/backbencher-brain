@@ -132,30 +132,21 @@ Four shape facts the whole analyzer is built on, each measured:
 | a comprehension generator's `<-` is **inside a `generator` node** | `lc_or_zc_expr -> generator -> {LHS, <-, RHS}`. Reading `lc_or_zc_expr`'s own children finds no operator (ER-D25) |
 | a malformed `-record #r{...}` wraps the **whole file** in one `ERROR` node | `-module`, the record and the `-export` lists all become `ERROR`'s children (`rec_remote_unknown.erl`) |
 
-### The kind partition is 8 emitted + 17 ruled, and the 8 + 17 is the enum
-
-The store's `SymbolKind` has 25 distinct values (31 members, 6 backward-compat
-aliases). This analyzer emits 8 of them and rules the other 17 with a reason
-each, recorded in `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`.
-The audit exists because `macro` was in the enum, named by the LSP identity list,
-emitted by 8 analyzers — and emitted by no Erlang symbol at all until ER-D39.
-The same pass over the relationship enum found two more (`exports`, `imports`).
-Reading the analyzer for what looks missing finds none of those three; comparing
-it against the enum finds all three.
+## Symbol contract
 
 | field | supported | how it is derived |
 |---|---|---|
 | `name` | yes | `-module` -> module · `-record` -> record · `-define` -> macro (`var` child of `macro_lhs`) · `-type`/`-opaque`/`-nominal` -> type · `-callback` -> method · clause head -> function, **including a `?MODULE()` head** (ER-D25/D28) |
-| `kind` | yes | `module`, `struct` (a record), `property` (a record field), `macro` (a FUNCTION-LIKE `-define`), `constant` (an OBJECT-LIKE `-define`, which really is a compile-time value), `type`, `method` (a callback), `function` (ER-D39) |
+| `kind` | yes | `module`, `struct` (a record), `property` (a record field), `constant` (a macro), `type`, `method` (a callback), `function` |
 | `ownerName` | yes | the module for functions/methods/types/records/macros; **the record** for its fields |
 | `range` | yes | the declaration node; a function's range spans every clause of that (name, arity) |
 | `parameters` | yes | one per clause-head element. A head is a PATTERN, so each carries `name` (only for a plain variable) and always `pattern`, plus `type` when a `-spec` supplies it (ER-D21) |
 | `returnType` | yes | the `-spec` return expression. A `-spec` declares no symbol; the `fun_decl` does (ER-D3/D27) |
 | `complexity` | yes | per symbol: 1 + decision points (ER-D17) |
-| `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists: recorded on `ExportInfo` AND emitted as `exports` edges (ER-D40) |
+| `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists, recorded on `ExportInfo` |
 | `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
 | `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
-| `isCallback` / `isOpaque` / `isNominal` / `isMacro` / `isFunctionLike` | yes (metadata) | the declaration forms that are easy to lose; `isFunctionLike` is what splits `macro` from `constant` (ER-D39) |
+| `isCallback` / `isOpaque` / `isNominal` / `isMacro` | yes (metadata) | the three declaration forms that are easy to lose |
 
 **Function identity is (name, arity).** `pick/0` and `pick/1` are two functions;
 the second clause of either is the same function. A module that both declares
@@ -172,9 +163,8 @@ and defines a callback yields ONE symbol whose kind and line are the
 | `uses` | record member read (`S#r.f`, `#r.f`) and record update (`S#r{f=…}`) | java/kotlin member-read parity (ER-D24) |
 | `instantiates` | a record construction outside pattern position | an UPDATE is `uses`, never `instantiates` (ER-D4) |
 | `references` | include / include_lib / import; a `?MACRO` use; a fun VALUE (`fun f/1`, `fun m:f/2`); a type dependency from a `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` body, from a record field's type, and a record named in a type | a qualified TYPE keeps its module (ER-D31) |
-| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A (ER-D34; see `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`) |
-| `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name |
-| `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
+| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A |
+| `exports` (as a relationship) | **never** | the language export list is `ExportInfo`; no analyzer in the family emits an exports *relationship* for it |
 
 `confidence` is 1.0 for structural edges and 0.9 for name-resolved ones. **No
 edge is a heuristic guess** — the corpus dual lens reports a heuristic class of
@@ -304,18 +294,9 @@ Not every Erlang file is Erlang to this grammar. Two real classes in OTP are not
 
 A file with **no recoverable declaration of any kind** — no `fun_decl`,
 `module_attribute`, `pp_define`, `record_decl`, `type_alias`/`opaque`/`nominal`,
-`import_attribute`, `export_attribute`, `export_type_attribute`,
-`pp_include`, `pp_include_lib` — **and** ERROR/MISSING nodes present, therefore
-yields **no symbols and no relationships** and publishes its error count instead.
+`import_attribute`, `export_attribute`, `export_type_attribute` — therefore yields
+**no symbols and no relationships**, and publishes its error count instead.
 `metadata.grammarDamaged` says so.
-
-Both halves of that condition are load-bearing, and each was added because the probe
-caught the rule being wrong. Without the error requirement it labelled
-comment-only and directive-only headers "damaged" — a header holding a single
-`-compile({parse_transform, …})` is not a parse that went wrong. Without the include
-forms it labelled include-only headers unreadable, when `-include("other.hrl")` is a
-real dependency worth recording. Absence of a declaration is not evidence of damage;
-the presence of ERROR nodes is.
 
 Every edge recoverable from those fragments is fabricated: the lines and the nesting
 are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes
@@ -364,14 +345,13 @@ cowboy@c965d1a, 4,326 `.erl` files — not a sample.
 
 | what | measurement |
 |---|---|
-| files | 4,617 read (`.erl` AND `.hrl`), 4,617 examined, 139 grammar errors (3.01%), **0 unexamined** |
-| symbols | 209,247 |
-| relationships | 1,032,785 |
+| files | 4,326 read, 4,326 examined, 132 grammar errors (3.05%), **0 unexamined** |
+| symbols | 181,529 |
+| relationships | 994,670 |
 | relationship types emitted | `calls`, `references`, `contains`, `uses`, `instantiates`, `implements` |
 | dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
-| unknown symbols through the production entry | 4,617 files, **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members, all 26 symbol-free files accounted for with 0 suspect |
-| parse-error taxonomy | **20 named causes, 0 unclassified**; 112 of the 139 failing files are not defects in anything |
-| M60 line coverage (six dimensions) | 974,203 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
+| unknown symbols through the production entry | **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members |
+| M60 line coverage (six dimensions) | 974,192 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
 | regexes in the analyzer | **0** (verified with comments stripped: no `RegExp`, no `.match/.replace/.test/.search/.matchAll`, no regex literal) |
 
 Two deliberately-empty classes are counted rather than hidden:
@@ -379,7 +359,7 @@ Two deliberately-empty classes are counted rather than hidden:
 | class | count | ruling |
 |---|---|---|
 | remote call / fun value whose **module** is a macro | 3,324 | ER-D35 |
-| whole-file grammar damage, no declaration survived | 23 | ER-D38 |
+| whole-file grammar damage, no declaration survived | 12 | ER-D38 |
 
 ### Performance
 
