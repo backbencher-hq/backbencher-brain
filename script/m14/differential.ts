@@ -20550,12 +20550,25 @@ async function main() {
         }
       }
       if (lang === "erlang") {
-        // ER wave (M14 #275 F5): dedicated erlang
-        // calls/implements/instantiates oracle mirroring
-        // real-erlang-analyzer.ts — local calls gated on the file's declared
-        // functions, remote targets keep module qualification (ER-D1),
-        // record construction outside clause heads instantiates.
-        for (const e of deriveErlangEdges(root)) {
+        // ER wave: the lane's OWN truth oracle, the same mechanism
+        // ./fsharp-truth-oracle uses — NOT the inline `deriveErlangEdges` mirror
+        // that used to sit here.
+        //
+        // The mirror's own comment described it as "mirroring
+        // real-erlang-analyzer.ts", and script/m60/rel-type-coverage-gate.ts
+        // reported the consequence: `erlang 1 un-audited: ["contains"]`. A mirror
+        // derives seven labels and not `contains`, so ~202,000 of this lane's
+        // relationships were stored and compared against nothing by the shared gate.
+        //
+        // script/m14/erlang-truth-oracle.ts is written against the GRAMMAR and
+        // derives all of them, and it DISAGREES with the analyzer on four rules
+        // (ER-D34 a module named through a macro, ER-D35 only `?MODULE:f/1` names
+        // this module, ER-D36 a bare atom in type syntax is an atom literal, ER-D38
+        // yield nothing from a file whose parse went wrong). Each disagreement found
+        // a real defect in the analyzer; see that file's header and
+        // script/m14/spec/erlang-completeness.json.
+        const { deriveErlangEdges: deriveErlangEdgesLane } = await import("./erlang-truth-oracle")
+        for (const e of deriveErlangEdgesLane(root)) {
           ;(truth as any[]).push(e)
         }
       }
