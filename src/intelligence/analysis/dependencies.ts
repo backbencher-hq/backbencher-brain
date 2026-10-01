@@ -145,6 +145,45 @@ export function dependencyProvenance(projectId: string): EvidenceProvenance {
   })
 }
 
+/**
+ * The scope, as this engine applies it: trailing slashes removed, nothing else
+ * changed.
+ *
+ * This exists because the scope was being normalised in TWO places with TWO
+ * rules. The engine stripped trailing slashes before matching
+ * (`filePath.replace(/\/+$/, "")`) and the handler counted the denominator
+ * with the RAW string. The disagreement produced the worst kind of answer this
+ * tool can give — a false statement of completeness:
+ *
+ *   filePath: "src/wide"    -> returned 20 of 68 files, totalFiles: 68, truncated: true
+ *   filePath: "src/wide/"   -> returned 20 of 68 files, totalFiles: 0,  truncated: FALSE
+ *
+ * The second line is the defect: 48 files were hidden and the answer said it
+ * was not truncated, because `20 < 0` is false. One definition, exported, so a
+ * caller cannot apply a different one.
+ */
+export function normalizeScopePath(filePath: string): string {
+  return filePath.replace(/\/+$/, "")
+}
+
+/** How many indexed files the scope covers — the denominator the page is
+ *  measured against, computed with the SAME normalization and the SAME segment
+ *  boundary as the rows. */
+export async function scopeFileCount(projectId: ProjectID, filePath: string | null | undefined): Promise<number> {
+  const raw = await BrainDatabase.getRawInstance(projectId)
+  if (!filePath) {
+    return Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c)
+  }
+  const prefix = escapeLike(normalizeScopePath(filePath))
+  return Number(
+    (
+      raw
+        .prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')")
+        .get(projectId, normalizeScopePath(filePath), prefix + "/%") as { c: number }
+    ).c ?? 0,
+  )
+}
+
 export async function getFileDependencies(
   projectId: ProjectID,
   options: { filePath?: string; includeExternal?: boolean; limit?: number } = {},
@@ -242,7 +281,7 @@ export async function getFileDependencies(
     // filePath "src/util" returned the same two files — two different
     // questions, one answer. Escaped, so a % or _ in the caller's path is a
     // character and not a wildcard.
-    const prefix = escapeLike(options.filePath.replace(/\/+$/, ""))
+    const prefix = escapeLike(normalizeScopePath(options.filePath))
     fileRows = fileRows.filter((f) => f.relativePath === prefix || f.relativePath.startsWith(prefix + "/"))
   }
 
@@ -264,20 +303,13 @@ export async function getFileDependencies(
     results.push({
       file: file.relativePath,
       fileId: file.id,
-      // The dependent list carries the project-relative PATH only. It used to
-      // carry `fileId` as well, and a file id is
-      // `<40-hex project id>:<relative path>` — so every one of a file's
-      // dependents repeated the path it sat next to, and a 20-file page of
-      // backbencher-brain/src rendered 121,340 bytes (~34k tokens) of which a
-      // third was the duplicate. The path IS the locator: the handler resolves
-      // freshness from it, and the row above carries the id for the file the
-      // row is about.
       // Neither list carries `fileId`. A file id is
-      // `<40-hex project id>:<relative path>`, so it repeats the path the entry
-      // sits next to; the path IS the locator, and the row above carries the id
-      // for the file the row is about. On a 20-file page of
-      // backbencher-brain/src the two lists were 56,540 of 121,340 bytes.
-      // Resolution is kept — it is the part that is not derivable from a path.
+      // `<40-hex project id>:<relative path>`, so every edge repeated the path
+      // it sat next to: 506 edges carried 506 copies, 56,540 of 121,340 bytes on
+      // a 20-file page of backbencher-brain/src. The path IS the locator — the
+      // handler resolves freshness from it, and the row above carries the id for
+      // the file the row is about. `resolution` is kept: it is the part that is
+      // NOT derivable from a path.
       dependencies: deps.slice(0, MAX_ROW_ENTRIES).map((d) => ({
         path: d.path,
         external: d.external,

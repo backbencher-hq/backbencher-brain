@@ -18,17 +18,17 @@
       "caught": true
     }
   ],
-  "currentCommit": "dded1e64723aa37a1f2190cba2e93f1cb4c76b8e",
+  "currentCommit": "d1ad94bb83a1eba9ee067ae49575843bb983537e",
   "verifierCommand": "npx tsx script/m28/verify-mcp-tools.ts",
   "evidenceFile": "T1.json",
-  "generatedAt": "2026-09-29T05:35:01.042Z",
+  "generatedAt": "2026-09-30T03:47:35.915Z",
   "claimLevel": "verified — three MCP read tools over the real indexer's fixture, reusing the IDE components",
   "limitations": [
     "Fixture is java+scala (the M26.A1 polyglot pair); cross-language absence asserted on Warehouse (scala-side symbol with no stored incoming rows)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T05:35:01.042Z",
-    "contentSha256": "68bd671ec7e1afedadffd6826a15c0fd2b7aac0e062be93a9d0bdfcd56567bff"
+    "sealedAt": "2026-09-30T03:47:35.915Z",
+    "contentSha256": "62be4a013ec09dd60bd427a8d9529799436f2ce38c7118c8da578b77a27fcc3c"
   }
 }

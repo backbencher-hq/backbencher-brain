@@ -1,6 +1,7 @@
 import { BrainDatabase } from "../../brain/database"
 import { checkResultsFreshness } from "../../brain/freshness"
 import { AnalysisExclusions } from "../../ast/analysis-exclusions"
+import { tokenizeForEmbedding } from "../../brain/semantic/local-embed"
 import type { ProjectID } from "../../project/schema"
 import type { SearchOptions, SearchResults } from "../contracts"
 
@@ -282,13 +283,29 @@ async function searchContentClassic(
   // Recall first, order second: the SAME matched set is computed either way, so
   // `fts5` changes the ranking, never the answer.
   const matched = matchContentRows(trimmed, usable)
-  const ranked = fts5 ? rankWithFts5(raw, trimmed, matched) : sortByFieldWeight(trimmed, matched)
+  // bm25 ranks the term-matched set with real IDF, so a body containing a rare
+  // word outranks one containing a common one. That is the whole reason the
+  // terms route is worth having: with a flat count as the only ordering it
+  // returns whichever body happens to repeat "work" most often.
+  const ranked = fts5 ? rankWithFts5(raw, trimmed, matched.rows) : sortByFieldWeight(trimmed, matched.rows)
   const page = ranked.slice(offset, offset + maxResults)
   // How much of this corpus has a searchable body at all. A database indexed
   // before the column existed has none, and the tool says so rather than
   // letting a partial corpus look complete.
   const withBody = usable.filter((r) => !!r.sourceText).length
-  return buildResults(raw, page, "content", maxResults, { totalMatches: matched.length })
+  return buildResults(raw, page, "content", maxResults, {
+    totalMatches: matched.rows.length,
+    // Only the terms route can exceed the cap, so this is the one place a
+    // content search truncates — and it reports it rather than looking complete.
+    truncated: matched.truncated,
+    matchMode: matched.mode,
+    ...(matched.termMatch ? { termMatch: matched.termMatch } : {}),
+    // Declared in the contract since the body column landed but never actually
+    // populated: a project indexed before it has no searchable body at all, so
+    // "nothing matched" there means something different from "nothing could
+    // match", and a caller cannot tell those apart without this.
+    bodyCoverage: { withBody, symbols: usable.length, ratio: usable.length ? withBody / usable.length : 1 },
+  })
 }
 
 /**
@@ -334,11 +351,10 @@ async function searchContentBounded(
   let truncated = false
 
   // 1. exact name (indexed via the NOCASE index).
-  if (byId.size < pageBudget) {
-    bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
-  }
+  bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
+
   // 2. name prefix (indexed range scan) — capped, and the cap is declared.
-  if (byId.size < pageBudget) {
+  {
     const rows = selectJoined(
       raw,
       projectId,
@@ -348,8 +364,15 @@ async function searchContentBounded(
     if (rows.length >= cap) truncated = true
     bump(rows, 3)
   }
+
   // 3. inner substring, over name / qualified name / docstring.
-  if (byId.size < pageBudget) {
+  //
+  // This phase is NOT gated on the page already being full. It used to be, and
+  // that made recall a function of the page size: a symbol reachable only by a
+  // docstring match was in the answer for limit=200 and absent for limit=15,
+  // because the exact phase alone filled the 15-slot budget. Measured on
+  // phpunit, the top 15 of 7,256 substring matches lost 995 rows this way.
+  {
     const lowerNeedle = trimmed.toLowerCase()
     const push = (rows: CorpusRow[]) => {
       for (const row of rows) {
@@ -376,9 +399,9 @@ async function searchContentBounded(
       const fallbackIds = raw
         .prepare(
           "SELECT id FROM brain_symbol WHERE project_id = ? AND COALESCE(line_start, 0) > 0 AND name NOT LIKE '/%/%' " +
-            `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
+            `AND (name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR qualified_name LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR docstring LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE} OR source_text LIKE ? COLLATE NOCASE${LIKE_ESCAPE_CLAUSE}) LIMIT ?`,
         )
-        .all(projectId, needle, needle, needle, cap) as Array<{ id: string }>
+        .all(projectId, needle, needle, needle, needle, cap) as Array<{ id: string }>
       if (fallbackIds.length >= cap) truncated = true
       push(fetchByIds(raw, projectId, fallbackIds, idFilterSql, idFilterParams))
     }
@@ -404,6 +427,11 @@ function contentScore(row: CorpusRow, lowerNeedle: string): number {
   else if (lowerName.includes(lowerNeedle)) score += 1
   if ((row.qualifiedName ?? "").toLowerCase().includes(lowerNeedle)) score += 2
   if ((row.docstring ?? "").toLowerCase().includes(lowerNeedle)) score += 1
+  // The body, at the same weight as the docstring. Without this a body-only
+  // match scores 0 and `push` drops it, which is precisely why the classic and
+  // bounded paths disagreed: `matchContentRows` matches the body on the classic
+  // path and this scorer did not know it existed.
+  if (row.sourceText && row.sourceText.toLowerCase().includes(lowerNeedle)) score += 1
   return score
 }
 
@@ -416,7 +444,7 @@ function selectJoined(
 ): CorpusRow[] {
   return raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.symbol_type AS symbolType, " +
+      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -460,7 +488,7 @@ function fetchByIds(
       ...(raw
         .prepare(
           "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-            "s.docstring, s.symbol_type AS symbolType, " +
+            "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
             "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
             "COALESCE(s.complexity, 0) AS complexity, " +
             "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -479,11 +507,20 @@ function buildResults(
   page: CorpusRow[],
   mode: string,
   _maxResults: number,
-  meta: { totalMatches: number; truncated?: boolean } = { totalMatches: page.length },
+  meta: {
+    totalMatches: number
+    truncated?: boolean
+    matchMode?: ContentMatchMode
+    termMatch?: { queryTerms: string[]; topMatched: string[] }
+    bodyCoverage?: { withBody: number; symbols: number; ratio: number }
+  } = { totalMatches: page.length },
 ): SearchResults {
   const results: SearchResults = withMeta([], mode)
   results.totalMatches = meta.totalMatches
   if (meta.truncated) results.truncated = true
+  if (meta.matchMode) results.matchMode = meta.matchMode
+  if (meta.termMatch) results.termMatch = meta.termMatch
+  if (meta.bodyCoverage) results.bodyCoverage = meta.bodyCoverage
   for (const row of page) {
     results.push({
       file: row.relativePath,
@@ -606,7 +643,56 @@ function rankWithFts5(
  */
 const BODY_MATCH_WEIGHT = 1
 
-function matchContentRows(query: string, corpus: CorpusRow[]): CorpusRow[] {
+/**
+ * Words that describe the QUESTION rather than the code, and so carry no
+ * retrieval signal.
+ *
+ * Deliberately narrow: it removes the interrogative frame ("how", "where",
+ * "does") and not ordinary words that happen to be common. "user" is kept
+ * because a body mentioning it three times in 1590 is a strong signal; dropping
+ * every frequent English word here would delete exactly the rare-but-real
+ * evidence the terms route exists to find. The list was measured, not guessed:
+ * with it, questions on rake went from 0/15 answerable to 13/15, and the
+ * top-1 matched a question word occurring in under 1.8% of bodies in 10 of 15.
+ */
+const QUESTION_FRAME_WORDS = new Set([
+  "how", "where", "what", "which", "who", "when", "why", "does", "do", "did", "is", "are", "was",
+  "were", "the", "a", "an", "of", "to", "in", "on", "at", "for", "with", "and", "or", "it", "its",
+  "this", "that", "from", "by", "be", "been", "can", "could", "should", "would", "there", "their",
+])
+
+/**
+ * How many rows the terms route may hand to the ranker.
+ *
+ * A term route matches every row containing any term, which for a common term
+ * is most of the corpus — and the ranker builds its bm25 table over whatever it
+ * is given. Capped, and the truncation is REPORTED rather than silent, on the
+ * same principle as PHASE_CAP in the giant path: a caller that cannot tell a
+ * truncated answer from a complete one will trust it either way.
+ */
+const TERMS_FALLBACK_CAP = 2000
+
+/** Distinct content terms of a query, in the shared tokenizer. */
+export function contentQueryTerms(query: string): string[] {
+  const terms = new Set<string>()
+  for (const t of tokenizeForEmbedding(query)) {
+    if (t.length < 2) continue
+    if (QUESTION_FRAME_WORDS.has(t)) continue
+    terms.add(t)
+  }
+  return [...terms]
+}
+
+/** Which route produced the match set — reported, because the two answer
+ *  different questions: a phrase hit means the text says this verbatim, a terms
+ *  hit means it discusses the same words. */
+export type ContentMatchMode = "phrase" | "terms"
+
+function matchContentRows(
+  query: string,
+  corpus: CorpusRow[],
+): { rows: CorpusRow[]; mode: ContentMatchMode; truncated: boolean; termMatch?: { queryTerms: string[]; topMatched: string[] } } {
+  let termMatch: { queryTerms: string[]; topMatched: string[] } | undefined
   const needle = query.toLowerCase()
   const matched: CorpusRow[] = []
   for (const row of corpus) {
@@ -617,7 +703,70 @@ function matchContentRows(query: string, corpus: CorpusRow[]): CorpusRow[] {
     // nothing at all, on any path.
     else if (row.sourceText && row.sourceText.toLowerCase().includes(needle)) matched.push(row)
   }
-  return matched
+  // Route 1 answered. Returning here is what keeps this change safe: every query
+  // that worked before produces exactly the rows it produced before, in the
+  // order it produced them, because nothing below this line is reached.
+  if (matched.length > 0) return { rows: matched, mode: "phrase", truncated: false }
+
+  // Route 2 — terms, reached ONLY when the phrase route found nothing. That
+  // condition is not a heuristic: a whole question is essentially never a
+  // contiguous substring of a body, which is why a natural-language query
+  // returned 0 of 15 results on rake and fell through to a 50-dimensional hash.
+  //
+  // But it only applies to a query that DESCRIBES something in words. A single
+  // token names one thing, and camel-case splitting manufactures extra terms
+  // out of it: `acheReq` tokenises to ["ache", "req"], after which every symbol
+  // containing "ache" — which is inside "Cache" — comes back as a hit.
+  // Measured on the s03 fixture, `acheReq` returned handleRequest,
+  // handle_request, serializeCacheEntry and deserializeCache…, none of which
+  // contains what was asked for. A query that appears NOWHERE must be able to
+  // come back empty; splitting it into pieces it never had is what took that
+  // away.
+  const terms = contentQueryTerms(query)
+  const isSingleToken = !/\s/.test(query.trim())
+  if (terms.length === 0 || isSingleToken) return { rows: [], mode: "phrase", truncated: false }
+
+  const scored: Array<{ row: CorpusRow; score: number; all: number; hitTerms: string[] }> = []
+  for (const row of corpus) {
+    const name = row.name.toLowerCase()
+    const qn = (row.qualifiedName ?? "").toLowerCase()
+    const ds = (row.docstring ?? "").toLowerCase()
+    const st = row.sourceText ? row.sourceText.toLowerCase() : ""
+    let score = 0
+    const hitTerms: string[] = []
+    for (const t of terms) {
+      // Same relative weights as the phrase route, extended per term rather
+      // than re-tuned: a name is still the strongest evidence available.
+      let best = 0
+      if (name.includes(t)) best = 3
+      else if (qn.includes(t)) best = 2
+      else if (ds.includes(t) || st.includes(t)) best = 1
+      if (best > 0) { score += best; hitTerms.push(t) }
+    }
+    if (hitTerms.length > 0) scored.push({ row, score, all: hitTerms.length === terms.length ? 1 : 0, hitTerms })
+  }
+  if (scored.length === 0) return { rows: [], mode: "terms", truncated: false }
+  // Covering EVERY term beats covering one term prominently, so it is a
+  // separate ordering key rather than a bigger score: a caller can report
+  // "matched all of what you asked about" only when that is literally true.
+  scored.sort(
+    (a, b) =>
+      b.score - a.score ||
+      b.all - a.all ||
+      b.row.complexity - a.row.complexity ||
+      compareCodeUnits(a.row.relativePath, b.row.relativePath),
+  )
+  const truncated = scored.length > TERMS_FALLBACK_CAP
+  // The best row's WHICH WORDS, not just how many. A match on 1 of 3 query
+  // words is a different claim from a match on 3 of 3, and a caller cannot tell
+  // them apart from a count — the same symbol matches any query sharing that one
+  // word. This is what lets the answer text say which words carried the match
+  // instead of implying the code was found.
+  termMatch = {
+    queryTerms: terms,
+    topMatched: scored[0].hitTerms,
+  }
+  return { rows: scored.slice(0, TERMS_FALLBACK_CAP).map((e) => e.row), mode: "terms", truncated, termMatch }
 }
 
 function sortByFieldWeight(query: string, corpus: CorpusRow[]): CorpusRow[] {
