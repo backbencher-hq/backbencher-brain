@@ -576,10 +576,20 @@ export class RealJuliaAnalyzer {
           }
           // `Vector{T}` — the base type is a reference and T is a parameter, not a read.
           if (this.withinTypeHead(node)) break
-          const base = this.firstNamedChildOfType(node, "identifier")
+          // The base goes through `fieldPath`, not an identifier lookup: a QUALIFIED base
+          // (`Iterators.Filter{T}`) is a `field_expression`, so there is NO identifier child and the
+          // lookup returned null — no edge at all for any parameterised type in a namespace.
+          // `Iterators.Zip`, `Iterators.ProductIterator`, `Base.HasShape`, `Core.LLVMPtr` and
+          // `Dates.DatePart` were all missing for exactly that reason.
+          //
+          // THIRD site that read a dotted name by a rule of its own, after `typeHeadName` and the
+          // field-read member. All three now go through the one resolver, and that is the only reason
+          // the fourth cannot still be waiting for a corpus that happens to exercise it.
+          const baseNode = this.pos(node, 0)
+          const base = baseNode ? this.fieldPath(baseNode) : ""
           // `scope` IS this edge's source, so unlike the `where`-bound case it belongs in the guard —
           // with the file-scope fallback, or the reference vanishes in a module-less file.
-          if (base) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", base.text.trim(), node, 1.0, { juliaSpecific: true, isTypeReference: true }))
+          if (base) relationships.push(this.rel(scope || GLOBAL_SCOPE, "references", base, node, 1.0, { juliaSpecific: true, isTypeReference: true }))
           break
         }
 
