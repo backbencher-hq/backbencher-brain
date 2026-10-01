@@ -4812,6 +4812,151 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
   return edges
 }
 
+/**
+ * #978: `instantiates` truth for C — the last label the differential compares for this
+ * lane with no oracle behind it, so every analyzer edge of the kind was unexplained BY
+ * CONSTRUCTION rather than by defect.
+ *
+ * The rule (#962): `instantiates` targets the TYPE an allocation produces. Two
+ * carriers, because they disagree in practice about which one carries it:
+ *
+ *   1. an enclosing cast whose VALUE is the allocation -- `(struct Buf *)malloc(n)`
+ *   2. `sizeof(<type>)` DIRECTLY in the allocation's argument list
+ *
+ * "DIRECTLY" is load-bearing and was the whole bug in the first two attempts, which
+ * recursed into the argument list and over-derived by 11 rows. Measured:
+ *
+ *   zig/lib/libc/musl/src/regex/glob.c:22
+ *     struct match *new = malloc(sizeof(struct match) + len + 2);
+ *
+ * The `sizeof` is inside a binary_expression, so it is NOT a direct child of
+ * `arguments`, so the analyzer publishes nothing — correctly per #962's pinned rule
+ * even though the type is plainly named. A recursive oracle sees the type and
+ * manufactures a truth row the analyzer does not produce. Since a superset oracle
+ * trades a fabrication for an unexplained edge — the trade this file refuses
+ * everywhere else — the derivation here is deliberately SHALLOW and matches the
+ * analyzer's stated rule rather than its intent.
+ *
+ * Independent by construction: it collects its own declared types from the tree and
+ * does not read the analyzer's `allocatedTypeName`, `declaredTypes`, or its symbol
+ * payload.
+ */
+export function deriveCInstantiates(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+
+  // Declared types, this file's own collection: a tag with a name, or a typedef alias.
+  const declaredTypes = new Set<string>()
+  const t0: any[] = [root]
+  while (t0.length > 0) {
+    const n = t0.pop()!
+    if (n.type === "type_definition") {
+      // A typedef alias declares its name whatever the aliased type is. The name is
+      // NOT always in a `name` FIELD: for `typedef struct __mingwthr_key
+      // __mingwthr_key_t;` (zig/lib/libc/mingw/crt/tlsthrd.c:29) the grammar puts the
+      // ALIAS in the declarator, not in `name`, so reading the field alone collected
+      // nothing and left the file's one real `instantiates` edge unexplained. Both
+      // positions are read, and the declarator's leftmost identifier is taken so a
+      // pointer or array alias (`typedef int *IntPtr;`) still yields the alias name.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      if (nm) declaredTypes.add(nm)
+      let d: any = n.childForFieldName("declarator")
+      for (let depth = 0; d && depth < 6; depth++) {
+        if (d.type === "identifier" || d.type === "type_identifier") {
+          const alias = d.text?.trim()
+          if (alias) declaredTypes.add(alias)
+          break
+        }
+        d = d.childForFieldName("declarator") || d.namedChild(0)
+      }
+    } else if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier") {
+      // A tag qualifies only if it has a BODY. A forward declaration
+      // (`static _pthread_v *__pthread_self_lite(void);`, measured at
+      // zig/lib/libc/mingw/winpthreads/thread.c:45) declares nothing a consumer can
+      // resolve to a member list, so the analyzer declines it and so must this -- the
+      // analyzer's `declared()` consults its struct/union/enum maps, which only hold
+      // definitions. Without the body check this derived 1 truth row the analyzer does
+      // not produce, i.e. a fabrication.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+      const hasBody = kids.some((k) => k.type === "field_declaration_list" || k.type === "enumerator_list")
+      if (nm && hasBody) declaredTypes.add(nm)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) t0.push(c)
+    }
+  }
+
+  // A type NAME, whatever node carries it. One level per node type, as the rule reads:
+  // `type_descriptor` unwraps to its `type` field, and a descriptor's own text carries
+  // the keyword and any pointer, so matching the descriptor text would never hit.
+  const typeNameOf = (n: any, depth = 0): string | null => {
+    if (!n || depth > 3) return null
+    if (n.type === "type_identifier") return n.text?.trim() ?? null
+    if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier")
+      return n.childForFieldName("name")?.text?.trim() ?? null
+    if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"), depth + 1)
+    if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    return null
+  }
+  const declared = (name: string | null): string | null =>
+    name && declaredTypes.has(name) ? name : null
+  const emit = (name: string): void => {
+    if (seen.has(name)) return
+    seen.add(name)
+    edges.push({ label: "instantiates", from: "(expr)", target: name })
+  }
+
+  const ALLOCATORS = new Set([
+    "malloc", "calloc", "realloc", "kmalloc", "kcalloc", "krealloc", "vmalloc", "vmap",
+  ])
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "field_expression")
+      const leaf = fn?.type === "field_expression" ? fn.namedChildren.find((c: any) => c.type === "field_identifier")?.text : fn?.text
+      if (leaf && ALLOCATORS.has(leaf)) {
+        // Carrier 1: an enclosing cast whose VALUE is this call.
+        let p: any = n.parent
+        for (let depth = 0; p && depth < 4; depth++, p = p.parent) {
+          if (p.type !== "cast_expression") continue
+          const value = p.childForFieldName("value")
+          // SPAN comparison, not object identity. web-tree-sitter hands out FRESH
+          // node objects on every property access, so `value.id === call.id` can never
+          // be true and the cast carrier was silently DEAD -- every analyzer row that
+          // carries its type through a cast read as unexplained. This is the KAD2/TSD2
+          // hygiene rule the rest of this file already states, and I copied the
+          // analyzer's `id` comparison into an oracle where it cannot work.
+          if (value && value.startIndex === n.startIndex && value.endIndex === n.endIndex) {
+            const hit = declared(typeNameOf(p.childForFieldName("type")))
+            if (hit) emit(hit)
+          }
+          break
+        }
+        // Carrier 2: `sizeof(TYPE)` among the DIRECT children of the argument list.
+        const args = n.childForFieldName("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (a?.type !== "sizeof_expression") continue
+            const hit = declared(typeNameOf(a))
+            if (hit) emit(hit)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return edges
+}
+
 export function deriveCCalls(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -20304,6 +20449,12 @@ async function main() {
         // CGD40: the line-anchor gate needs the raw text (directive lines
         // spliced into code by parse recovery are physically '#' lines).
         for (const e of deriveCCalls(root, content)) {
+          ;(truth as any[]).push(e)
+        }
+        // #978: `instantiates` truth — the label the differential compares for C with
+        // no oracle behind it, so every analyzer edge of the kind was unexplained BY
+        // CONSTRUCTION rather than by defect.
+        for (const e of deriveCInstantiates(root, content)) {
           ;(truth as any[]).push(e)
         }
       }
