@@ -272,6 +272,30 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
   ])
 
   /**
+   * The five entities XML declares in EVERY document (XML 1.0 §4.6, "Entity
+   * declarations"), whether or not a DTD mentions them.
+   *
+   * The same shape of knowledge as `BUILTIN_NAMESPACE_URIS` above and the
+   * spec-bound prefixes below it, and needed for the same reason: the grammar
+   * reports each of them as an `EntityRef`, and a pass with only "declared or
+   * not" answers has to call all of them undefined. A document containing
+   * `&lt;` is well-formed in every conforming parser, so `unresolved` on it is
+   * not a cautious reading — it is a false claim about the document.
+   *
+   * Deliberately exactly five. `&nbsp;`, `&mdash;` and the rest of the HTML
+   * entity set are NOT predefined; an XML document that uses one without
+   * declaring it really does reference something undefined, and that stays
+   * `unresolved`.
+   */
+  private static readonly PREDEFINED_ENTITIES: ReadonlySet<string> = new Set([
+    "lt",
+    "gt",
+    "amp",
+    "apos",
+    "quot",
+  ])
+
+  /**
    * The two prefixes the Namespaces specification binds in EVERY document,
    * whether or not the document says so (XML Namespaces 1.0 §4, and the
    * Namespaces in XML 1.1 §2.2 which makes it a namespace name rather than a
@@ -408,6 +432,21 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * after it is used, and resolving on the spot would drop every forward use.
      */
     const entityReferenceCandidates: { ownerName: string; name: string; node: Node; textNode: Node }[] = []
+
+    /**
+     * PARAMETER ENTITY REFERENCES, collected not decided, for the same reason the
+     * `EntityRef` candidates are: a parameter entity may be declared after it is
+     * used, so resolving on the spot would drop every forward reference — and
+     * `%defroot;` before its `<!ENTITY % defroot …>` is a real thing documents do.
+     */
+    const parameterEntityReferences: {
+      ownerName: string
+      name: string
+      node: Node
+      textNode: Node
+      /** The site sat inside a region the parser could not read. */
+      recovery: boolean
+    }[] = []
 
     /**
      * Names a `contains` edge is about to point at that this document may not
@@ -909,6 +948,69 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
               })
             }
           }
+
+          // M18 (accounting round): AN ENTITY'S REPLACEMENT TEXT IS ITS OWN
+          // DOCUMENT. `<!ENTITY laugh1 "&laugh0;&laugh0;">` makes a real claim —
+          // `laugh1` cannot be expanded without `laugh0` — and the claim was being
+          // dropped, because an `EntityRef` was only collected when it sat under
+          // an OWNING ELEMENT (`if (node.type === "EntityRef" && ownerName)`) and
+          // the replacement text of a DTD declaration has no element above it.
+          //
+          // Found by `script/m12/xml-entity-accounting.mts`, the accounting check
+          // that exists precisely because the collapse count and the site count
+          // were never connected: 11,940 `EntityRef` sites, 11,289 accounted for,
+          // and a **651-site shortfall concentrated in exactly this shape** — 611
+          // of them (16 files) inside entity replacement text. libxml2's
+          // `test/recurse/lol_ig_content.xml` is the extreme: 147 sites, 1 edge.
+          //
+          // The owner is the DECLARING ENTITY — not the DTD, and not an element —
+          // because the dependency belongs to the entity: `laugh1` uses `laugh0`.
+          // Collected here rather than left to the generic walk, which is correct
+          // about what it sees and has no owner to give it in this position.
+          // A parameter entity is excluded: `%pe;` in a replacement text is a
+          // `PEReference`, a different construct with a different ruling, and
+          // conflating the two would be the same defect one level down.
+          // NOT restricted to general entities. The first version guarded this
+          // with `!isParameter` to avoid conflating an `EntityRef` with a
+          // `PEReference`, and the guard was over-broad: an `EntityRef` inside a
+          // PARAMETER entity's replacement text is still an `EntityRef`, and it is
+          // still a real reference from that entity — libxml2's `test/valid/t8a.xml`
+          // writes `<!ENTITY % deftest '&lt;!ELEMENT test (#PCDATA) >'>`, whose
+          // `&lt;` is a predefined reference the document genuinely makes. The
+          // construct that needed separating is `%pe;`, which arrives as a
+          // `PEReference` node and is not collected here at all.
+          {
+            const value = this.findDirectChild(node, "EntityValue")
+            if (value) {
+              const stack: Node[] = [value]
+              while (stack.length > 0) {
+                const n = stack.pop()!
+                if (n.type === "EntityRef") {
+                  const text = n.text.trim()
+                  if (text.length > 2 && text.startsWith("&") && text.endsWith(";")) {
+                    const ref = text.slice(1, -1)
+// The name is a SUBSTRING OF A FILE ALREADY IN MEMORY, so it needs no length
+                  // cap of its own: a cap here cannot bound anything the file size has
+                  // not already bounded. The 256 that used to be here dropped legal
+                  // names while the DECLARATION of the same name was published with no
+                  // cap at all, so the graph carried `<!ENTITY very_long…>` as a symbol
+                  // and none of its uses — libxml2's `result/bigentname.xml` names one
+                  // 3,965 characters long, and both its uses vanished. A guard whose only
+                  // effect is to disagree with the guard on the other side of the same
+                  // fact is a defect, not a defence.
+                  if (ref.length > 0) {
+                      entityReferenceCandidates.push({ ownerName: name, name: ref, node: n, textNode: n })
+                    }
+                  }
+                  continue
+                }
+                for (let i = n.namedChildCount - 1; i >= 0; i--) {
+                  const c = n.namedChild(i)
+                  if (c) stack.push(c)
+                }
+              }
+            }
+          }
         }
       }
 
@@ -998,7 +1100,82 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // M60 rule is satisfied by construction rather than by a convention.
         if (text.length > 2 && text.startsWith("&") && text.endsWith(";")) {
           const name = text.slice(1, -1)
-          if (name.length > 0 && name.length <= 256) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+          // Same reasoning as the entity-replacement-text path: no length cap,
+          // because the name is bounded by the file and the declaration side has
+          // none either.
+          if (name.length > 0) entityReferenceCandidates.push({ ownerName, name, node, textNode: node })
+        }
+      }
+
+      // M18 (PEReference round): A PARAMETER ENTITY REFERENCE IS A USE, and the
+      // 24 corpus sites are not a corner.
+      //
+      // `<!DOCTYPE root [ <!ENTITY % defroot '…'> %defroot; ]>` is how a DTD pulls
+      // in another one: `%defroot;` expands, and the expansion's markup becomes part
+      // of this DTD. That is the same fact `entity_external_id` already records for
+      // `<!ENTITY % pe SYSTEM "common.dtd">`, reached by reference instead of by
+      // ExternalID — and it was recorded only for the ExternalID form. So the graph
+      // could say "this document imports common.dtd" and nothing at all about
+      // `%defroot;`, which is the dependency the author actually wrote.
+      //
+      // The OWNER is the DOCTYPE's name, not an element: a parameter reference in
+      // the internal subset has no element above it, exactly as an `EntityRef` in
+      // replacement text had none. That was the X7 shape — a claim the document
+      // makes, dropped because there was nothing obvious to attach it to — and it
+      // is why these 24 sites produced no edge at all.
+      //
+      // The three shapes the corpus actually contains, and the ruling for each:
+      //
+      //   - 21 sites are a PEReference that is a DIRECT CHILD of `doctypedecl`.
+      //     That position is precisely "the external subset is being pulled in
+      //     here", so these are references and are published. Measured across
+      //     t8/t8a/t9/t9a/index/huge/pe-latin1/lol_param/lol_ep and one
+      //     PEDecl-nested case.
+      //   - 1 site is `%global-attributes;` inside a `PEDecl`'s `EntityValue`: a
+      //     parameter entity's replacement text invoking another. Also a real use,
+      //     and the owner is the DECLARING ENTITY for the same reason an
+      //     `EntityRef` in a `GEDecl`'s replacement text is.
+      //   - 5 sites are under an `ERROR` root in libxml2's deliberately malformed
+      //     corpus (`%xx;`, `% zz '&#60;`, `%a;`, `%elem;`, `%z;`). These are
+      //     conformance probes for broken input, and the repair-labelling contract
+      //     — `xml/recovery-labelling`, which pins that a symbol or edge from a
+      //     damaged file is KEPT and LABELLED — is why they are not simply
+      //     skipped. They are published with `recovery: true`, so a consumer can see
+      //     a document asserted a dependency it never validly expressed.
+      if (node.type === "PEReference") {
+        const text = node.text.trim()
+        if (text.length > 1 && text.startsWith("%")) {
+          // `%name;` is a reference; `% name` followed by a quoted replacement is
+          // the parameter-entity VALUE form and names nothing, which is why the
+          // corpus contains both `%xx;` and `% zz '&#60;` and only the first is a
+          // use. The semicolon is the discriminator, and requiring it is what stops
+          // a literal `%` in replacement text becoming a name.
+          const semi = text.indexOf(";")
+          if (semi > 1) {
+            const ref = text.slice(1, semi).trim()
+            const isValueForm = ref.length === 0 || /\s/.test(ref)
+            // Is this reference inside an ENTITY'S REPLACEMENT TEXT? It has to be
+            // answered by walking UP — the first version asked the `PEReference`
+            // node for a direct `EntityValue` child, which a reference never has,
+            // so the test was always false and every replacement-text reference
+            // silently took the DOCTYPE as its owner. libxml2's
+            // `result/valid/index.xml` has `%global-attributes;` inside a `PEDecl`
+            // and was published as `NewsML -> global-attributes` when the owner
+            // should be the entity that uses it.
+            const inEntityValue = this.withinEntityValue(node)
+            if (!isValueForm && ref.length > 0) {
+              const ownerForRef = inEntityValue ? (this.enclosingDeclaredName(node) ?? dtdName ?? "") : (dtdName ?? "")
+              if (ownerForRef.length > 0) {
+                parameterEntityReferences.push({
+                  ownerName: ownerForRef,
+                  name: ref,
+                  node,
+                  textNode: node,
+                  recovery: !!this.withinErrorRegion(node),
+                })
+              }
+            }
+          }
         }
       }
 
@@ -1205,6 +1382,25 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
     // ── entity uses, decided now that every declaration is known ─────────────
     for (const cand of entityReferenceCandidates) {
       const declared = declaredNames.has(cand.name)
+      // THE FIVE PREDEFINED ENTITIES ARE BUILTIN, and getting this wrong is a
+      // false claim about the document rather than a missed edge.
+      //
+      // `&lt; &gt; &amp; &apos; &quot;` are declared by the XML specification
+      // itself, in every document, whether or not a DTD says so — the same
+      // argument X8 settled for the `xml` and `xmlns` namespace prefixes. The
+      // grammar hands them over as `EntityRef` nodes, and this pass had exactly
+      // two answers, `declared` or nothing, so all of them took the second and were
+      // stamped `resolvable: "unresolved"` with `danglingEntityReference: true`:
+      // the analyzer asserting that a document references an entity nothing
+      // defines, for text that is well-formed in every conforming parser.
+      //
+      // Measured by `script/m12/xml-entity-accounting.mts`: **4,575 sites across
+      // 180 files** name one of the five — 2,175 `&lt;`, 1,683 `&gt;`, 426
+      // `&amp;`, 160 `&quot;`, 131 `&apos;`. `&d;` (4,370) and `&nbsp;` (1,381)
+      // are NOT predefined and stay unresolved unless the document declares them,
+      // which is the correct reading: an undeclared HTML entity in an XML document
+      // really is undefined.
+      const builtin = RealXmlAnalyzer.PREDEFINED_ENTITIES.has(cand.name)
       // Dangling uses are RECORDED, not refused: `&undefined;` is a claim the
       // document makes about itself, and refusing it is what made 4,423 of them
       // invisible. Same ruling as X13's `unresolved` class, for the same reason,
@@ -1212,7 +1408,31 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       addRelationship(cand.ownerName, cand.name, ASTEngine.RelationshipType.References, {
         role: "entity_reference",
         entityName: cand.name,
+        resolvable: declared ? "in-document" : builtin ? "builtin" : "unresolved",
+        ...(declared || builtin ? {} : { danglingEntityReference: true }),
+      }, cand.textNode)
+    }
+
+    // ── parameter entity references, decided now that every declaration is known ──
+    //
+    // A parameter entity has no builtin form — there is no `%lt;` — so the answer
+    // is binary: the document's own DTD declares it, or nothing does. There is no
+    // third class here, which is the difference from `EntityRef` and worth stating
+    // because the shape of the code invites copying it.
+    for (const cand of parameterEntityReferences) {
+      const declared = declaredNames.has(cand.name)
+      addRelationship(cand.ownerName, cand.name, ASTEngine.RelationshipType.References, {
+        role: "parameter_entity_reference",
+        entityName: cand.name,
+        isParameterEntity: true,
         resolvable: declared ? "in-document" : "unresolved",
+        // Kept and LABELLED rather than dropped, which is the recovery-labelling
+        // contract `xml/recovery-labelling` already pins for symbols and edges out
+        // of a damaged file. libxml2's `test/errors/*` is a corpus of deliberately
+        // malformed documents; a parameter reference recovered out of one is a claim
+        // the bytes make that no processor would honour, and saying so is more
+        // useful than silence.
+        ...(cand.recovery ? { recovery: true, reasonCode: "parameter-entity-reference-in-damaged-region" } : {}),
         ...(declared ? {} : { danglingEntityReference: true }),
       }, cand.textNode)
     }
@@ -1735,6 +1955,71 @@ export class RealXmlAnalyzer implements ASTEngine.LanguageAnalyzer {
       default:
         return false
     }
+  }
+
+  /**
+   * The DECLARATION a node sits inside, for a reference inside replacement text.
+   *
+   * `<!ENTITY % shared "… %other; …">` makes `shared` depend on `other`, and the
+   * owner of that use is `shared` — not the DOCTYPE, and not an element. Same
+   * reasoning as the `GEDecl` EntityValue case, reached by walking up to the
+   * nearest declaration rather than by descending into it, because the reference
+   * may be nested inside arbitrary markup in the replacement text.
+   */
+  private enclosingDeclaredName(node: Node): string | null {
+    let cur: Node | null = node.parent
+    let depth = 0
+    while (cur && depth < 12) {
+      if (cur.type === "GEDecl" || cur.type === "PEDecl" || cur.type === "NotationDecl") {
+        const name = this.findDirectChild(cur, "Name")?.text.trim()
+        return name && name.length > 0 ? name : null
+      }
+      cur = cur.parent
+      depth++
+    }
+    return null
+  }
+
+  /**
+   * Is this node inside a region the PARSER could not read?
+   *
+   * Walks up rather than asking the file: `errorNodes` is a whole-file count and
+   * would label every edge in a partly-damaged document, which is the opposite of
+   * what `recovery` is for. libxml2's `test/errors/*` is a corpus of
+   * deliberately malformed documents whose only purpose is to be malformed, and
+   * their parameter references are assertions about bytes no processor would accept.
+   */
+  /**
+   * Is this node inside an entity's replacement text?
+   *
+   * Walks UP, deliberately: the question is about a node's POSITION, and asking
+   * the node itself for an `EntityValue` child cannot answer it. See the call site
+   * for what the first version got wrong.
+   */
+  private withinEntityValue(node: Node): boolean {
+    let cur: Node | null = node.parent
+    let depth = 0
+    while (cur && depth < 12) {
+      if (cur.type === "EntityValue") return true
+      // A declaration boundary ends the question: replacement text cannot contain
+      // a nested declaration, so nothing further up is this reference's business.
+      if (cur.type === "GEDecl" || cur.type === "PEDecl" || cur.type === "NotationDecl") return false
+      cur = cur.parent
+      depth++
+    }
+    return false
+  }
+
+  private withinErrorRegion(node: Node): boolean {
+    let cur: Node | null = node
+    let depth = 0
+    while (cur && depth < 24) {
+      if (cur.type === "ERROR") return true
+      if ((cur as any).isMissing) return true
+      cur = cur.parent
+      depth++
+    }
+    return false
   }
 
   private findDirectChild(node: Node, type: string): Node | null {
