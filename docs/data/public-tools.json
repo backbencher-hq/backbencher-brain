@@ -202,17 +202,17 @@
     },
     {
       "name": "bb_health",
-      "description": "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, and file freshness. Use verbose=true for per-language breakdown and stale-file names, refresh=true to reindex before reporting, force=true to force a full in-place reindex before reporting, integrity=true for the 12-point index health check, complete=true for full (not sampled) freshness, includeAnalysisRuns=true for persisted run/finding totals, history=true for persisted analysis history.",
+      "description": "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, file freshness, and what this call cost. The default output names WHY each file was classified: `freshness why` separates fresh-verified-by-content-hash from fresh-verified-by-mtime+size-only (the file was not read), and names content-changed, deleted-from-disk, unreadable and unindexed separately, because those need different fixes and a single 'N stale' number is not actionable. Every report also carries a top-level `healthy` boolean. Use verbose=true for a per-language breakdown, PER-LANGUAGE SEARCHABILITY (the share of each language's symbols a semantic query can reach — a language at 0% is invisible to bb_ask), the embedded/unembedded symbol kinds, and stale-file names; refresh=true to reindex before reporting; force=true to force a full in-place reindex (this WIPES the index before rebuilding it); integrity=true for the index integrity check battery, which NAMES each non-ok check with its remediation rather than only a score; freshness=\"complete\" (not a `complete` option) to check every indexed file instead of a sample; includeAnalysisRuns=true for persisted run/finding totals; history=true for persisted analysis history. Freshness defaults to a DETERMINISTIC sample spread across the whole index: `stale` is then a lower bound on the project, not a total, and the report says so — pass freshness=\"complete\" when you need the exact count.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "verbose": {
             "type": "boolean",
-            "description": "include stale/missing file names (default false)"
+            "description": "include stale/missing file names and the embedded/unembedded symbol kinds (default false)"
           },
           "history": {
             "type": "boolean",
-            "description": "return persisted analysis history (default false)"
+            "description": "return persisted analysis history (default false). CHANGES THE OUTPUT SHAPE: this mode answers with a JSON object { health, history } instead of the text report, so a caller must not parse the text form when asking for it. Every other option still applies, and the result carries the same top-level `healthy` boolean as the text form (false when the report contains an error-severity finding)"
           },
           "limit": {
             "type": "number",
@@ -224,11 +224,11 @@
           },
           "force": {
             "type": "boolean",
-            "description": "force a full in-place reindex before reporting"
+            "description": "force a full in-place reindex before reporting — DESTRUCTIVE: the index is wiped before it is rebuilt, so a failure leaves it empty"
           },
           "wait": {
             "type": "boolean",
-            "description": "wait for refresh to finish (default true)"
+            "description": "wait for refresh to finish (default true); wait=false detaches it and the NEXT call reports whether it completed"
           },
           "freshness": {
             "type": "string",
@@ -236,19 +236,30 @@
               "sampled",
               "complete"
             ],
-            "description": "freshness mode (default sampled)"
+            "description": "freshness mode (default sampled — a deterministic, unbiased sample spread over every indexed file, NOT the first N)"
           },
           "sampleSize": {
             "type": "number",
-            "description": "freshness sample count (default 200)"
+            "description": "freshness sample count (default 200); must be >= 1"
           },
           "integrity": {
             "type": "boolean",
-            "description": "run the 12-point index integrity check"
+            "description": "run the index integrity check battery"
           },
           "includeAnalysisRuns": {
             "type": "boolean",
             "description": "include persisted analysis run/finding totals"
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "report the state of these project-relative files INSTEAD of a project-wide freshness answer — for the question an agent actually has after an edit, at O(files named) rather than O(project). At most 50. The answer is a SEPARATE self-describing block, so every other number in the report stays project-wide and the two can never be read as one. Each path is FIVE-state, not a boolean: fresh (indexed, on disk, unchanged), stale (content changed), gone (indexed but deleted from disk), NOT-INDEXED (on disk, the indexer has not run since it appeared — a freshness verdict here would be meaningless), or absent (no such path). Paths that resolve outside the project, or through a symlink out of it, are REFUSED and reported as unchecked rather than answered"
+          },
+          "checkUnindexed": {
+            "type": "boolean",
+            "description": "WALK the project and report files on disk that the indexer would index but the index does NOT contain — the direction freshness cannot see (freshness reports files IN the index and gone from disk). Costs a stat per eligible file, i.e. the discovery phase of an index run, so it is opt-in. Uses the INDEXER'S OWN discovery rules, so gitignored files, node_modules, unsupported extensions and >5MB files are correctly NOT counted, and the output names that population. Without this option, index completeness is not asserted at all"
           }
         }
       },

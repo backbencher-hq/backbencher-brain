@@ -88,6 +88,18 @@ export type ToolArguments = Record<string, any>
 export type ToolResult = {
   content: Array<{ type: "text"; text: string }>
   isError?: boolean
+  /**
+   * M64.P2: for tools that REPORT a condition rather than failing at it.
+   * `false` means the answer contains error-severity findings.
+   *
+   * bb_health is the first user. It answers "is the index healthy?" — a broken
+   * index is the ANSWER, not a tool failure, so it must not set isError (see
+   * the handler for the full argument). But without a machine-readable channel
+   * a caller could only learn the index is broken by parsing prose, and the
+   * MCP surface had no way to say it at all. `isError` means "the tool could
+   * not do its job"; this means "the job succeeded and here is what it found".
+   */
+  healthy?: boolean
 }
 export type ToolHandler = (args: ToolArguments, context: ToolContext) => Promise<ToolResult>
 
@@ -1203,12 +1215,43 @@ const handlers: Record<string, ToolHandler> = {
 
   bb_health: async (args, { projectId, projectPath }) => {
     const refreshRequested = args.refresh === true || args.force === true
-    const report = await getUnifiedHealth(projectId, projectPath, { refresh: refreshRequested, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true, verbose: args.verbose === true, logger: { log: (..._a: any[]) => {}, write: (_s: string) => {} } })
+    const report = await getUnifiedHealth(projectId, projectPath, { refresh: refreshRequested, force: args.force === true, wait: args.wait !== false, freshness: args.freshness === "complete" ? "complete" : "sampled", sampleSize: args.sampleSize != null ? Number(args.sampleSize) : undefined, integrity: args.integrity === true, includeAnalysisRuns: args.includeAnalysisRuns === true, checkUnindexed: args.checkUnindexed === true, paths: Array.isArray(args.paths) ? args.paths.map((p: unknown) => String(p)) : undefined, verbose: args.verbose === true, logger: { log: (..._a: any[]) => {}, write: (_s: string) => {} } })
     if (args.history === true) {
       const history = await getAnalysisHistory(projectId, undefined, Number(args.limit ?? 20))
-      return textResult(JSON.stringify({ health: report, history }, null, 2))
+      // M64.P3: this branch returned a bare textResult, so it carried no
+      // `healthy` — the ONE mode that answers in raw JSON, where a consumer is
+      // most likely to branch programmatically, was the one mode without the
+      // machine-readable channel. Round 2 added the field for exactly the
+      // purpose of not having to parse prose, and then left it off the branch
+      // that needs it least prose. Both branches now derive it from the same
+      // predicate; a caller does not have to remember which shape it asked for.
+      return {
+        ...textResult(JSON.stringify({ health: report, history }, null, 2)),
+        healthy: !report.warnings.some((w) => w.severity === "error"),
+      }
     }
-    return textResult(formatUnifiedHealth(report))
+    const rendered = formatUnifiedHealth(report)
+    // M64.P2: this tool now reports conditions that are genuinely ERRORS —
+    // EMPTY_INDEX (the index holds nothing), INCOMPLETE_INDEX (the last run
+    // wrote fewer files than it found), REFRESH_FAILED_ASYNC (a detached
+    // rebuild did not finish), REFRESH_IN_PROGRESS (a wipe is mid-flight). The
+    // CLI has always mapped an error-severity warning to a non-zero exit code.
+    //
+    // MCP deliberately does NOT set isError for them, and that is a decision
+    // rather than an oversight. `isError` means "the tool could not do its
+    // job" — an agent should not be handed a protocol-level failure when the
+    // tool succeeded at its job, which is REPORTING that the index is broken.
+    // The findings are in the payload, at the top level, as `error:` lines and
+    // as severity-carrying warning objects; an agent that ignores all of that
+    // would also ignore an isError it did not read. Every other tool here uses
+    // isError for bad INPUT (an unknown scope, a missing target), never for bad
+    // DATA — and an index's contents are data.
+    //
+    // So the divergence is intentional, and the thing that was actually missing
+    // is a machine-readable channel for "the report contains errors", which a
+    // caller can act on without parsing prose. `healthy: false` is that
+    // channel: it is false exactly when an error-severity warning is present.
+    return { ...textResult(rendered), healthy: !report.warnings.some((w) => w.severity === "error") }
   },
 
   bb_patterns: async (args, { projectId }) => {
