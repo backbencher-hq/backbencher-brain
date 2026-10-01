@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Pinned XML corpora for the XML analyzer lane. Every record names an exact revision so a measurement can be re-run and get the same bytes. A corpus without a revision is an anecdote.",
+  "establishedAt": "2026-09-27",
+  "restoredCorpus": {
+    "path": "$HOME/fixtures/repositories/grails-core",
+    "status": "VANISHED",
+    "note": "script/m12/xml-corpus-errors.ts and xml-corpus-measure.ts both pinned this path by default, and the directory does not exist on this machine. So the XML lane's M12 corpus results were unreproducible: validation/m12/results/xml-corpus-errors.json named a corpus nobody could read, and its globs (`*.xml`, `*.xsd`) covered 314 of the repository's 467 XML-family files. The corpus is restored below at a new path, the scripts' default now names it, and their globs now cover every file type the wired grammar's own tree-sitter.json declares.",
+    "evidenceAffected": [
+      "validation/m12/results/xml-corpus-errors.json",
+      "validation/m12/results/xml-corpus-complexity.json",
+      "validation/m12/results/xml-corpus-shapes.json"
+    ]
+  },
+  "wiredGrammar": {
+    "upstream": "tree-sitter-grammars/tree-sitter-xml",
+    "revision": "5000ae8f22d11fbe93939b05c1e37cf21117162d",
+    "version": "0.7.0",
+    "patched": true,
+    "note": "The wired bytes are a local rebuild of a PATCHED vendored copy of this revision. The two repairs and their corpus evidence are in grammars/tree-sitter-xml/PIN.md and reviews/xml/master-review.md."
+  },
+  "fileTypeRouting": {
+    "grammarDeclares": [
+      "xml",
+      "svg",
+      "xsd",
+      "xslt",
+      "xsl",
+      "rng"
+    ],
+    "routerWires": [
+      "xml",
+      "xsd",
+      "dtd",
+      "svg",
+      "xsl",
+      "xslt",
+      "rng"
+    ],
+    "mismatch": "`.dtd` is wired but NOT declared by the grammar's `file-types`, and a standalone `.dtd` document is not representable by the `xml` grammar at all (measured root node type ERROR under every build; upstream's separate `dtd` grammar parses these files with 0 ERROR nodes). The mismatch is why `*.dtd` appears in the corpus globs AND in `knownNegativeFixtures`: including them is how the gap stays visible instead of being excluded by a glob nobody reads."
+  },
+  "corpora": [
+    {
+      "name": "grails-core",
+      "path": "$HOME/fixtures/xml/repos/grails-core",
+      "url": "https://github.com/grails/grails-core",
+      "revision": "334007a8b5622a3c428c009ef1e19569ce9135d9",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 314,
+      "whyThisOne": "It is the corpus the lane's own scripts already named, so restoring it makes the existing evidence reproducible instead of replacing it. It is also the only repository in this set with substantial SVG (155 files) and the four JSP DTDs that expose the standalone-`.dtd` gap.",
+      "knownNegativeFixtures": [
+        {
+          "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_2.dtd",
+          "measured": "50 ERROR nodes, 0 MISSING",
+          "verdict": "CORRECT BEHAVIOUR FOR A ROUTED EXTENSION THE GRAMMAR CANNOT REPRESENT, NOT AN ANALYZER DEFECT",
+          "why": "A standalone DTD has no document element, and the wired `xml` grammar's `document` rule is `O(_S), O(prolog), field(root, element), repeat(_Misc)` \u2014 a document element is REQUIRED. The file therefore parses to a root `ERROR` node, and the analyzer correctly publishes nothing from it. Upstream 0.7.0's SEPARATE `dtd` grammar parses the same file with 0 ERROR nodes (fixtures/xml/out/regression-adjudication.json), which is filed as the owed wiring for `.dtd` rather than counted as a parse failure of this analyzer."
+        },
+        {
+          "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_3.dtd",
+          "measured": "50 ERROR nodes, 0 MISSING",
+          "verdict": "same",
+          "why": "same"
+        },
+        {
+          "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_1.dtd",
+          "measured": "28 ERROR nodes, 0 MISSING",
+          "verdict": "same",
+          "why": "same"
+        },
+        {
+          "path": "grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-jsptaglibrary_1_2.dtd",
+          "measured": "50 ERROR nodes, 0 MISSING",
+          "verdict": "same",
+          "why": "same"
+        }
+      ]
+    },
+    {
+      "name": "docx4j",
+      "path": "$HOME/fixtures/xml/repos/docx4j",
+      "url": "https://github.com/plutext/docx4j",
+      "revision": "0e8e763",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 431,
+      "whyThisOne": "The heaviest real-world XSD corpus reachable here: 177 `.xsd` and 31 `.xslt`, and OOXML schemas are the purest form of the defect this lane's biggest finding is about \u2014 thousands of named types whose declared name lives in a `name` attribute, referenced from other files by `type=` and reached by `schemaLocation=`. It also carries a Maven `m2/` tree of `.pom` files, which is how the 693 unrouted `.pom` files were counted."
+    },
+    {
+      "name": "libxml2",
+      "path": "$HOME/fixtures/xml/repos/libxml2",
+      "url": "https://gitlab.gnome.org/GNOME/libxml2",
+      "revision": "c43dc98",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 1311,
+      "whyThisOne": "The reference implementation's own test corpus, and the only set in this manifest that is adversarially REAL rather than incidentally real: `test/errors/` is a fuzzer-regression directory of files the project keeps precisely because they must NOT parse, and `test/valid/dtds/cond_sect*.dtd` are the conditional-section cases that exposed the grammar defect the repair fixed. A lane that only measures clean files never learns what a grammar rejects."
+    },
+    {
+      "name": "maven",
+      "path": "$HOME/fixtures/xml/repos/maven",
+      "url": "https://github.com/apache/maven",
+      "revision": "d296cc33",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 3250,
+      "whyThisOne": "The largest single XML corpus here (3,249 `.pom` files) and a control of a different kind: a POM is a document, not a schema, so it is the measurement that keeps the declared-name rule honest. 29,196 `name` attributes in this manifest's corpora sit outside any declaration vocabulary and are DATA \u2014 `<name>` on a POM is a display label \u2014 so a tag-gated version of the rule would have published thousands of data values as graph symbols."
+    },
+    {
+      "name": "cxf",
+      "path": "$HOME/fixtures/xml/repos/cxf",
+      "url": "https://github.com/apache/cxf",
+      "revision": "e43776be",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 2439,
+      "whyThisOne": "The Spring-configuration and WSDL corpus: 805 `.wsdl` (routed to nothing \u2014 recorded as owed), 617 `.xsl`, 242 `.xsd`, and the archetype templates whose `##` header placeholders produce 177 of the lane's 177 erroneous files, which is what made the recovery-labelling finding measurable instead of theoretical.",
+      "knownNegativeFixtures": [
+        {
+          "pathGlob": "maven-plugins/archetypes/**/archetype-resources/**",
+          "measured": "6 of 2,439 tracked XML-family files. Measured 177 of the 177 erroneous ROUTED files across all six repositories are this form.",
+          "verdict": "CORRECT BEHAVIOUR, NOT A DEFECT \u2014 and the measurement that made the recovery-labelling finding real rather than theoretical",
+          "why": "The file's first line is `##`, a placeholder the maven-archetype-plugin substitutes at build time, so the document is not well-formed XML at rest and becomes well-formed after substitution. Reporting an error is right. Suppressing the symbols would be wrong: a 90 %-parseable vendor template is thousands of real declarations and must stay visible. What the fix changed is that every symbol and edge from such a file now carries `metadata.syntaxErrors: true`. Pinned by validation/m14/fixtures/xml/recovery-labelling."
+        },
+        {
+          "pathGlob": "**/*.dtd",
+          "measured": "4 files (XMLSchema.dtd 170 ERROR nodes, datatypes.dtd 46, and two under wsn/\u2026/2001/), all with root node type ERROR",
+          "verdict": "OUT OF THE WIRED GRAMMAR'S SURFACE, NOT A PARSE FAILURE OF IT",
+          "why": "These are the W3C's own DTDs, included as EXTERNAL subsets by the schemas beside them. A standalone DTD has no document element and the `xml` grammar's `document` rule requires one, so the root is ERROR and the analyzer correctly publishes nothing. Upstream 0.7.0's separate `dtd` grammar parses them with 0 ERROR nodes; wiring that is the owed `.dtd` decision recorded in grammars/tree-sitter-xml/PIN.md."
+        },
+        {
+          "path": "src/site/site.xml",
+          "measured": "1 ERROR node, at line 20",
+          "verdict": "A REAL DEFECT IN THE UPSTREAM FILE, COMMITTED",
+          "why": "Line 20 reads `<project xmlns=\"http://maven.apache.org/DECINATION/1.0.0\"xmlns:xsi=\"\u2026\"` \u2014 a MISSING SPACE between two attributes, so `xmlns:xsi` is lexed as part of the first attribute's value. The file is not well-formed and the grammar is right to say so. Recorded because a lane that 'fixed' this by suppressing the error would be making an upstream typo invisible."
+        },
+        {
+          "path": "systests/rs-security/src/test/java/org/apache/cxf/systest/http/resources/jaxws-server.xml",
+          "measured": "3 ERROR nodes, at lines 58-59",
+          "verdict": "A REAL DEFECT IN THE UPSTREAM FILE, COMMITTED",
+          "why": "Line 58 has `resource=\"keys` with no closing quote, so the attribute value runs on into the next element. The file is not well-formed and the grammar is right to say so."
+        },
+        {
+          "pathGlob": "services/ws-discovery/ws-discovery-api/src/test/java/org/apache/cxf/ws/discovery/msg1.xml",
+          "measured": "1 ERROR node covering the whole file",
+          "verdict": "NOT A SINGLE XML DOCUMENT",
+          "why": "Four `<s:Envelope>` documents are concatenated with no separator, so there is no document element. A test capture of a message exchange, not a document."
+        },
+        {
+          "pathGlob": "**/emptyReq.xml",
+          "measured": "1 ERROR node on a 0-BYTE file",
+          "verdict": "AN EMPTY FILE IS NOT AN XML DOCUMENT",
+          "why": "0 bytes. The grammar requires a document element and there is nothing at all; the analyzer publishes nothing, which is correct."
+        },
+        {
+          "pathGlob": "**/signed_missing_signed_*.xml",
+          "measured": "1 ERROR node per file, each on a 0-BYTE file",
+          "verdict": "AN EMPTY FILE IS NOT AN XML DOCUMENT",
+          "why": "0 bytes, and the file NAME says the point: these are WSS4J security fixtures for the case where a signed part is MISSING, and the file is empty to express that."
+        },
+        {
+          "pathGlob": "**/test-no-endenv.xml",
+          "measured": "1 ERROR node, root type ERROR",
+          "verdict": "NOT A STANDALONE DOCUMENT",
+          "why": "A JAXB/JAX-WS binding fragment whose embedded payload has no document element where one is required; the root is ERROR and the analyzer publishes nothing."
+        },
+        {
+          "pathGlob": "**/message-operation-empty-param.xml",
+          "measured": "1 ERROR node, root type ERROR",
+          "verdict": "NOT A STANDALONE DOCUMENT",
+          "why": "Same class: a binding fragment, not a document."
+        },
+        {
+          "pathGlob": "**/GreetMeDocLiteralRespMalformed.xml",
+          "measured": "1 ERROR node, root type ERROR",
+          "verdict": "MALFORMED BY NAME, CORRECTLY REJECTED",
+          "why": "The file is called `\u2026Malformed.xml` and is a deliberate negative test input for the JAX-WS dispatch layer. A parser that accepted it would be the defect."
+        },
+        {
+          "pathGlob": "**/example-messages.xml",
+          "measured": "21 ERROR nodes",
+          "verdict": "NOT A STANDALONE DOCUMENT \u2014 IT IS A DOCUMENT ABOUT DOCUMENTS",
+          "why": "The file's own content is `<examples>` holding example XML payloads as text, plus an explanatory prologue. The payloads are not the file's document element, so the root is ERROR. This is the shape that makes a corpus useful: a file that LOOKS like XML and is not one."
+        },
+        {
+          "pathGlob": "**/wsdl/2001/XMLSchema.xsd",
+          "measured": "1 ERROR node, exactly on the `<?xml version='1.0' encoding='UTF-8'?>` declaration at line 11",
+          "verdict": "A REAL DEFECT IN THE UPSTREAM FILE \u2014 and the one that made a THIRD grammar defect worth proposing and then REJECTING",
+          "why": "The file opens with an 8-line licence comment and only then the XML declaration. The grammar's `prolog` admits an `XMLDecl` only as the first construct, so the declaration is rejected; that looked like a third grammar defect (a `Misc` may precede the declaration). It is not: XML 1.0 \u00a72.8 reads `prolog ::= XMLDecl? Misc* (doctypedecl Misc*)?`, which places the declaration FIRST, and Python's expat \u2014 a conforming implementation this repository does not own \u2014 rejects the same file with `XML or text declaration not at start of entity`. The grammar is right and the W3C's vendored copy violates the specification, so NO REPAIR WAS MADE. The hypothesis and its refutation are recorded in fixtures/xml/out/grammar-verdict-vs-reference.json, and the full 16-case accept/reject agreement with the reference parser is the evidence that a rejection is correct rather than a defect."
+        }
+      ]
+    },
+    {
+      "name": "libxslt",
+      "path": "$HOME/fixtures/xml/repos/libxslt",
+      "url": "https://gitlab.gnome.org/GNOME/libxslt",
+      "revision": "ec95343",
+      "cloneDepth": 1,
+      "trackedXmlFamilyFiles": 1144,
+      "whyThisOne": "The XSLT corpus: 583 `.xsl` files, which is the second declaration vocabulary the lane supports and the only one where a named template is both a DECLARATION and the target of a `call-template` REFERENCE \u2014 the case the bare-name rule exists for and the one a QName rule cannot see."
+    }
+  ],
+  "totals": {
+    "repos": 6,
+    "trackedXmlFamilyFiles": 8889,
+    "routedFileTypesExercised": [
+      "xml",
+      "xsd",
+      "dtd",
+      "xsl",
+      "xslt",
+      "svg",
+      "rng"
+    ],
+    "routedFileTypesNeverExercised": [],
+    "note": "`trackedXmlFamilyFiles` is the count of `git ls-files` over `globCounted`, re-measured on every fetch, so the number cannot drift from the corpus. The 8,889 total is the ROUTED+unrouted file population across the six repositories; the routed share is 8,916 minus the extensions the router does not claim, and the unrouted share (805 `.wsdl`, 693 `.pom`, 36 `.xhtml`, 4 extensionless = 1,538) is XML-family in the scanned set but not claimed by the engine, because the grammar does not declare those file types and the M60 #913 ruling is to refuse rather than to claim.",
+    "globCounted": [
+      "*.xml",
+      "*.xsd",
+      "*.dtd",
+      "*.xsl",
+      "*.xslt",
+      "*.svg",
+      "*.rng"
+    ],
+    "unroutedByTheEngine": 1538
+  }
+}
