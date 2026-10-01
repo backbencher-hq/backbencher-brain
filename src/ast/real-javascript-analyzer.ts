@@ -1434,8 +1434,14 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         baseByClass.set(r.source, r.target)
       }
     }
+    const overrideSeen = new Set<string>()
     for (const s of symbols) {
-      if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor) && s.ownerName) {
+      // J10: an ACCESSOR pair is a prototype member like any other, so a subclass
+      // accessor DOES shadow the base accessor. Accessors are kinded `property`
+      // (a declared contract other lanes and fixtures read) and merely carry
+      // `metadata.isAccessor` — so widening `overrides` does NOT change kinds.
+      const isAccessorMember = s.kind === ASTEngine.SymbolKind.Property && s.metadata?.isAccessor === true
+      if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Constructor || isAccessorMember) && s.ownerName) {
         // B4 (M49 #758, self-audit wave): STATIC methods never virtually
         // dispatch — `static create()` in a subclass SHADOWS the base static,
         // it does not override it (no prototype-chain link between the two;
@@ -1447,8 +1453,13 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         // J2: constructors never override (no virtual dispatch on `new`);
         // methods pair only against base METHODS (never fields).
         const isCtor = s.kind === ASTEngine.SymbolKind.Constructor || s.name === "constructor"
-        const inFileDeclares = !isCtor && (byName.get(s.name)?.some((bm) => bm.ownerName === base && bm.kind === ASTEngine.SymbolKind.Method) ?? false)
+        const inFileDeclares = !isCtor && (byName.get(s.name)?.some((bm) => bm.ownerName === base && (bm.kind === ASTEngine.SymbolKind.Method || (bm.kind === ASTEngine.SymbolKind.Property && bm.metadata?.isAccessor === true))) ?? false)
         if (inFileDeclares || (!isCtor && overrideCompanion?.get(base)?.has(s.name))) {
+          // J10: `get x()` and `set x()` shadow the SAME base slot, so the pair
+          // yields ONE edge. Without this the accessor pair double-counted.
+          const ovKey = `${s.ownerName}.${s.name}->${base}.${s.name}`
+          if (overrideSeen.has(ovKey)) continue
+          overrideSeen.add(ovKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${base}.${s.name}`,
@@ -1521,6 +1532,15 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           // threshold (0.7): visible in raw output, counted as heuristic
           // (honest suspicion) by the differential. Pre-M37.10 this edge was
           // silently dropped for every externally-declared base.
+          //
+          // J10: the same get/set collapse the verified branch applies. Without
+          // it here the accessor pair emitted TWO rows for one override — the first
+          // attempt at this fix deduplicated only the in-file branch and doubled
+          // every accessor guess. It showed up as `SvelteURL.hash` at BOTH line 77
+          // (get) and line 81 (set): the accessor pair is what made it visible.
+          const guessKey = `${s.ownerName}.${s.name}->${base}.${s.name}`
+          if (overrideSeen.has(guessKey)) continue
+          overrideSeen.add(guessKey)
           relationships.push({
             source: `${s.ownerName}.${s.name}`,
             target: `${base}.${s.name}`,
