@@ -169,6 +169,7 @@ export class RealJuliaAnalyzer {
               name,
               kind: ASTEngine.SymbolKind.Module,
               range: this.range(node),
+            complexity: this.complexity(node),
               ownerName: scope || undefined,
               metadata: { juliaSpecific: true, isBareModule: this.firstNamedChildType(node) === "baremodule" },
             })
@@ -192,6 +193,7 @@ export class RealJuliaAnalyzer {
             name,
             kind,
             range: this.range(node),
+            complexity: this.complexity(node),
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, declarationForm: node.type, isMutable: this.hasToken(node, "mutable") },
           })
@@ -226,6 +228,7 @@ export class RealJuliaAnalyzer {
               name: field.name,
               kind: ASTEngine.SymbolKind.Property,
               range: this.range(field.node),
+              complexity: this.complexity(field.node),
               ownerName: name,
               metadata: { juliaSpecific: true, isStructField: true },
             })
@@ -256,6 +259,7 @@ export class RealJuliaAnalyzer {
             name,
             kind: isMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Function,
             range: this.range(node),
+            complexity: this.complexity(node),
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, isMacro, hasBlockBody: !!this.firstNamedChildOfType(node, "compound_statement") },
           })
@@ -294,6 +298,7 @@ export class RealJuliaAnalyzer {
             name,
             kind: ASTEngine.SymbolKind.Function,
             range: this.range(node),
+            complexity: this.complexity(node),
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, declarationForm: "short_form_assignment", hasBlockBody: false },
           })
@@ -336,6 +341,7 @@ export class RealJuliaAnalyzer {
             name,
             kind: node.type === "const_statement" ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
             range: this.range(node),
+            complexity: this.complexity(node),
             ownerName: scope || undefined,
             metadata: { juliaSpecific: true, binding: node.type.replace("_statement", "") },
           })
@@ -572,9 +578,20 @@ export class RealJuliaAnalyzer {
     const uniqueRelationships = [...relMap.values()]
 
     this.classifyEvidenceTier(uniqueRelationships)
-    for (const s of uniqueSymbols) {
-      if (typeof (s as any).complexity !== "number") (s as any).complexity = this.complexity(rootNode)
-    }
+    // There is deliberately NO loop here computing complexity per symbol. The previous version was
+    // `if (s.complexity === undefined) s.complexity = this.complexity(rootNode)` — a FULL TREE WALK
+    // ONCE PER SYMBOL, and it was also wrong about WHICH complexity it measured: every symbol
+    // received the FILE's cyclomatic complexity rather than its own.
+    //
+    // Measured on `test/core.jl` (259 KB, 66,915 named nodes): the walk took 202 s, while one whole
+    // `complexity()` pass costs 102 ms and the file has 1,827 symbols — 1,827 x 102 ms is the 186 s
+    // that went missing, to within the error of the estimate. Bare traversal of the same tree is
+    // 165 ms, so the tree was never the problem. Across the 941-file corpus the analyzer took 969 s
+    // at 1.0 file/s, with this one file alone at 228 s — a file like that stalls an index run.
+    //
+    // Complexity is now measured at each `symbols.push` from that symbol's OWN node, which is both
+    // the O(n) behaviour and the meaning the managed-OO family uses (`csharp` M12.07 contract,
+    // `calculateCyclomaticComplexity(node)` at the declaration site).
 
     return {
       language: "julia",
