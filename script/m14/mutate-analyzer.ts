@@ -4614,6 +4614,47 @@ export const MUTANTS: Mutant[] = [
     }),
   },
   {
+    id: "cpp/d14-macro-heading-range-collapsed-to-heading",
+    language: "cpp",
+    defectClass: "wrong-range",
+    description: "D14 regression: collapse a macro-heading symbol's range back to the HEADING node. The fix extends it through the recovered function_definition, because on the measured shape (nlohmann-json tests/src/unit-class_const_iterator.cpp:14-15, where TEST_CASE's opening brace is on its own line) the heading node ends at the invocation while every edge the body emits lands hundreds of lines below. Reverted, the three headings in the fixture publish as 23-23, 37-37 and 45-45 while still owning edges at lines 25/27/28, 39/40 and 47/49/51/53. Reverting the range is enough to fail the fixture: expectSymbolRanges pins all three extents, so this needs no edge assertion to be caught — which is the point, since the defect IS the range rather than the edge set. MEASURED corpus-wide at HEAD: 39,787 macro-heading edges outside their owner's range across 1,076 offending symbols, of 234,111 owner-checkable edges; 0 after the fix.",
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.metadata?.expandedFrom === "macro-heading"
+          ? { ...s, range: { ...s.range, endLine: s.range.startLine, endIndex: s.range.startIndex } }
+          : s),
+    }),
+  },
+  {
+    id: "cpp/d15-macro-decorated-class-declined",
+    language: "cpp",
+    defectClass: "symbol-loss",
+    description: "D15 regression: drop macro-decorated classes back out, restoring what the grammar's recovery does to them. `class GTEST_API_ UnitTestImpl { ... };` is recovered as a function_definition whose specifier names the MACRO and whose real name is a bare sibling, so the specifier has no body of its own and the forward-declaration rule declines it — the class is never published, the bare sibling reads as a function declarator (so the class's own name is published as a FUNCTION), and the members lose their owner (HEAD published `UnitTestImpl` as a function at 27-27 with `value` and `cached_` unowned). This transform removes the class, re-adds the class's own name as a function, and strips its members' owners. `Reporter` goes entirely, since HEAD published no struct spelling at all. MEASURED corpus-wide at HEAD: 93 macro-decorated class declarations, 5 published, 88 lost; after the fix all 93 publish. The fixture's D11 control (`class Widget f();`) is not touched by this transform, which is why it can pass here while the elaborated-return-type shape still holds.",
+    transform: r => {
+      const symbols = (r.symbols ?? []) as any[]
+      const decorated = new Set(["UnitTestImpl", "Reporter"])
+      const members = symbols.filter((s: any) =>
+        decorated.has(s.name) || (s.ownerName && decorated.has(String(s.ownerName))))
+      return {
+        ...r,
+        symbols: symbols
+          .filter((s: any) => !decorated.has(s.name))
+          .filter((s: any) => !(s.ownerName && decorated.has(String(s.ownerName))))
+          .map((s: any) => {
+            const out = { ...s }
+            if (s.ownerName && decorated.has(String(s.ownerName))) { delete out.ownerName; out.kind = "function" }
+            return out
+          })
+          .concat(members
+            .filter((s: any) => decorated.has(s.name))
+            .map((s: any) => ({ ...s, kind: "function", ownerName: undefined,
+              range: { ...s.range, startLine: s.range.startLine, endLine: s.range.startLine } }))),
+        relationships: (r.relationships ?? []).filter((x: any) => !members.some((m: any) => m.name === x.target)),
+      }
+    },
+  },
+  {
     id: "rust/drop-union-symbols",
     language: "rust",
     defectClass: "symbol-loss",
@@ -8498,6 +8539,35 @@ export const MUTANTS: Mutant[] = [
         if (String(x.type) !== "exports") return true
         const t = String(x.target ?? "")
         return !(t === "/users/{id}" || t === "/ping" || t === "/cors" || t === "/legacy")
+      }),
+    }),
+  },
+  {
+    id: "rust/comment-becomes-a-module-path",
+    language: "rust",
+    defectClass: "relationship-fabrication",
+    description: "RUST-D29: the use collector's fallback accepted ANY node and published its raw text as a module path, so a comment or a stray separator inside a use tree became an import: `use {a ,, b}` published module `,` and `use {/* c */ Foo}` published the comment itself \u2014 14 such rows at full extent, all in parse-recovery or rustfmt-test files. This mutant restores that acceptance.",
+    transform: (r: any) => ({
+      ...r,
+      imports: [
+        ...(r.imports ?? []),
+        { module: "/* leading */", items: ["/* leading */"], range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 } },
+        { module: ",", items: [","], range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1, startIndex: 0, endIndex: 0 } },
+      ],
+    }),
+  },
+  {
+    id: "rust/path-root-prefix-dropped",
+    language: "rust",
+    defectClass: "relationship-loss",
+    description: "RUST-D29 second half: `crate::foo` and `super::util` carry a `crate`/`super` NODE in the path field rather than an identifier. Narrowing the fallback so a comment cannot become a module sent that recursion to the refuse branch, the prefix came back empty, and `crate::foo::{bar, Baz as B}` published module `::foo`. The narrower rule CREATED this defect on the same run \u2014 which is why both halves are pinned rather than either taken on trust.",
+    transform: (r: any) => ({
+      ...r,
+      imports: (r.imports ?? []).map((im: any) => {
+        const m = String(im.module ?? "")
+        if (m.startsWith("crate::")) return { ...im, module: "::" + m.slice(7) }
+        if (m.startsWith("super::")) return { ...im, module: "::" + m.slice(7) }
+        return im
       }),
     }),
   },
@@ -15420,6 +15490,43 @@ export const MUTANTS: Mutant[] = [
         const tgt = String(x.target ?? x.to ?? "")
         return !(src.endsWith("fragment-er3.erl") && tgt === "FRAGMENT_MACRO")
       }),
+    }),
+  },
+  {
+    id: "erlang/macro-kind-always-constant",
+    language: "erlang",
+    defectClass: "symbol-kind-corruption",
+    description: "ER-D39 regression: every `-define` is published as kind=constant, the state before the audit split it. A function-like macro (`-define(SCALE(X), X*2)`) claims to be a value, so the store's LSP identity list cannot tell a macro from a constant and `macro` — one of the 25 kinds in SymbolKind, emitted by 8 analyzers — is emitted by no Erlang symbol at all. export-import-macro-er3 pins SCALE as kind=macro and LIMIT as kind=constant, so dropping the split is caught on both halves of the line.",
+    // Reverts the exact ternary, so the mutant is faithful to the pre-fix code and
+    // not just to the expectation: the object-like macro stays `constant` and only
+    // the parameterized one is wrong, which is the narrower failure the fixture
+    // names separately.
+    transform: r => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        (s.metadata as any)?.isMacro && (s.metadata as any)?.isFunctionLike ? { ...s, kind: "constant" } : s),
+    }),
+  },
+  {
+    id: "erlang/export-edges-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D40 regression: `-export`/`-export_type` reaches the store as ExportInfo only, so no `exports` relationship exists and the module's public surface is indistinguishable from mere membership (`contains`). 16 analyzers emit this label; without it the type is stored and compared against nothing. export-import-macro-er3 pins one `exports` edge per `fa` in each attribute.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => String(x.type ?? "") !== "exports"),
+    }),
+  },
+  {
+    id: "erlang/import-edge-dropped",
+    language: "erlang",
+    defectClass: "relationship-loss",
+    description: "ER-D41 regression: `-import(Mod, [f/a])` emits only `references`, so the module-dependency pass that reads `imports` (brain_import rows, dependencies.ts:27-28, relied on precisely because resolved_symbol_id is often null) cannot see an Erlang import at all. 19 analyzers emit `imports`. The mutant removes the dependency and keeps the mention, which is the honest pre-fix state: the fact was recorded under a label nothing read.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(String(x.type ?? "") === "imports" && (x.metadata as any)?.isModuleImport),
+      ),
     }),
   },
   {
