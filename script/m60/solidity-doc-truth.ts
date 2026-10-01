@@ -114,6 +114,12 @@ const checks: Check[] = [
   { doc: "the remaining", what: "case audit suspicious count is stated", actual: caseAudit.totals.suspicious, expect: (v) => v === caseAudit.totals.suspicious },
   { doc: "of {SILENT} such cases".replace("{SILENT}", String(caseAudit.totals.silentButLive)), what: "case audit silent-but-live count", actual: caseAudit.totals.silentButLive, expect: (v) => v === caseAudit.totals.silentButLive },
   { doc: "and the gate", what: "case audit lists each suspicious case with a reason", actual: Object.keys(caseAudit.suspicious.reasons).length, expect: (v) => v === caseAudit.totals.suspicious },
+  // ── M60.solidity-ipc-wiring-gate. The production claim is the one most likely to be
+  //    believed on faith, because it is a wiring change in shared code and nothing about
+  //    it is visible in this repository's artifacts. Pinning the words that carry it.
+  { doc: "**Production supplies it**", what: "doc claims production supplies the index", actual: true, expect: (v) => v === true },
+  { doc: "so an INCREMENTAL run is", what: "doc states the incremental caveat", actual: true, expect: (v) => v === true },
+  { doc: "Every relationship carries", what: "doc states the self-describing flag", actual: true, expect: (v) => v === true },
   // The invariant the census asserts internally, re-checked here because a gate that
   // trusts a sibling script's self-report is not a second opinion.
   { doc: "denominator is asserted equal to the sum of its routes", what: "census denominator equals its numerators", actual: projCensus.totals.routeSumMatchesAudited, expect: (v) => v === true },

@@ -1094,10 +1094,74 @@ export async function processWithWorkerPool(
     }
   }
 
-  return new Promise((resolve) => {
+  // async: the project-index build below awaits a dynamic import, and an `await` in a
+  // non-async Promise executor is a parse error rather than a runtime one.
+  return new Promise(async (resolve) => {
     const results: FileResult[] = []
 
     let processed = 0
+
+    // ── SOL-21: the project index, built ONCE per run and shipped with every batch.
+    //
+    // WHY IT IS BUILT HERE AND NOT IN THE WORKER. A worker sees only its BATCH, so an
+    // index built there would resolve against whatever else happened to be in that batch
+    // — the same file would get a different answer depending on the run. Building it
+    // once here, from the whole run's file list, and shipping it makes every file in a
+    // run see the SAME project view.
+    //
+    // AND WHY THAT IS STILL RUN-DEPENDENT, STATED RATHER THAN GLOSSED. The index is
+    // built from `files`, which for an INCREMENTAL run is a subset of the project, so an
+    // incremental run produces LESS enrichment than a full one. That is why the analyzer
+    // stamps `projectIndexSupplied` on every row: a per-file answer and a settled answer
+    // are then distinguishable in the store, and enrichment is MONOTONIC — a full re-index
+    // can only add resolution, never contradict a settled one, because a settled one is
+    // written only when the index knew. Resolving against the whole project on an
+    // incremental run would need a second discovery pass that honours .bbignore and
+    // .git boundaries, and duplicating that logic is a worse risk than an under-enriched
+    // incremental run.
+    //
+    // Opt-in per EXTENSION, and the only entry is one this repository has measured the
+    // benefit of. A language with no entry pays nothing and behaves exactly as before.
+    const PROJECT_INDEX_EXTENSIONS: Record<string, string> = { ".sol": "solidity" }
+    let projectIndexes: Record<string, unknown> | undefined
+    try {
+      const wanted = new Set<string>()
+      for (const f of files) {
+        const base = f.slice(f.lastIndexOf("/") + 1)
+        const dot = base.lastIndexOf(".")
+        if (dot <= 0) continue
+        const ext = base.slice(dot).toLowerCase()
+        if (PROJECT_INDEX_EXTENSIONS[ext] !== undefined) wanted.add(ext)
+      }
+      if (wanted.size > 0) {
+        const mod: any = await import("./project-index")
+        // The wasm lives beside this module's package root, resolved the same way
+        // `resolvePoolWorkerFork` resolves its own paths — from THIS file's location, so
+        // it is correct whether the code runs from `src/ast` or from `dist`.
+        const repoRoot = path.resolve(path.dirname(require("url").fileURLToPath(import.meta.url)), "..", "..")
+        const wasmByLang: Record<string, string> = {
+          solidity: path.join(repoRoot, "wasm", "tree-sitter-solidity.wasm"),
+        }
+        const { existsSync: wasmExists } = await import("fs")
+        const byExt: Record<string, unknown> = {}
+        for (const ext of wanted) {
+          const lang = PROJECT_INDEX_EXTENSIONS[ext]
+          const wasm = wasmByLang[lang]
+          if (wasm === undefined || !wasmExists(wasm)) continue
+          const subset = files.filter((f) => f.toLowerCase().endsWith(ext))
+          if (subset.length === 0) continue
+          const built = await mod.buildProjectIndexFromDisk(wasm, subset, mod.SOLIDITY_DECLARATION_SPEC)
+          byExt[ext] = mod.serializeProjectIndex(built)
+          log.info("project index built", { ext, files: subset.length, types: built.typeKinds.size })
+        }
+        if (Object.keys(byExt).length > 0) projectIndexes = byExt
+      }
+    } catch (e: any) {
+      // A failure here must not fail the run: no index is exactly the pre-SOL-21
+      // behaviour, and enrichment is additive by construction.
+      log.warn("project index unavailable, indexing per-file", { error: e?.message ?? String(e) })
+      projectIndexes = undefined
+    }
 
     const fileQueue = [...files]
     const fileRetries = new Map<string, number>() // Track retries per file; skip after 3 attempts
@@ -1441,7 +1505,15 @@ export async function processWithWorkerPool(
           attempts: 1,
         })
 
-        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        worker.send({
+          type: "parse_batch",
+          batchId,
+          files: batchFiles,
+          projectPath,
+          // Omitted entirely when nothing was built, so the message shape for every
+          // other language is byte-identical to what it was before this change.
+          ...(projectIndexes !== undefined ? { projectIndexes } : {}),
+        })
       }
     }
 
