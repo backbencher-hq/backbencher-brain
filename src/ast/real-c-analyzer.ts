@@ -3780,8 +3780,64 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (c.type === "function_declarator") {
             isFuncType = true
             const innerDecl = c?.childForFieldName("declarator")
+            // #971: a `parenthesized_declarator` here is NOT automatically a function
+            // pointer. Parentheses around a declarator are GROUPING and mean nothing
+            // (C 6.7.6.3), so these two are opposite constructs that differ only by what
+            // the parens CONTAIN:
+            //
+            //   int (grouped)(int n);        function_declarator
+            //                                     parenthesized_declarator
+            //                                       identifier "grouped"      <- a FUNCTION
+            //
+            //   int (*fnptr)(int n);         function_declarator
+            //                                     parenthesized_declarator
+            //                                       pointer_declarator
+            //                                         identifier "fnptr"     <- a VARIABLE
+            //
+            // The old test keyed on the parens alone, so every GROUPED declarator was
+            // published as a `variable`:
+            //
+            //   int (luaL_register)(lua_State *L, const char *libname, ...);
+            //     symbols: paren_proto:variable  paren_ptr:variable  paren_void:variable
+            //
+            // A wrong symbol KIND, not a missing one -- consumers resolve calls and
+            // references against it, so these functions were invisible to call
+            // resolution while looking like data. Measured at
+            // redis/deps/lua/src/lauxlib.c:229. Definitions were never affected
+            // (`paren_defn:function`), because they take the function_definition path
+            // at CGD38, which descends the chain properly -- so the defect was specific
+            // to PROTOTYPES, and invisible to any test that only defined its functions.
+            //
+            // The test is now what the parens CONTAIN: a pointer_declarator inside means
+            // pointer-to-function (a variable); anything else means grouping (a
+            // function).
             if (innerDecl && innerDecl.type === "parenthesized_declarator") {
-              isFuncType = false // function pointer
+              // The descent must SKIP ERROR/MISSING children, exactly as
+              // getIdentifierFromDeclarator does (#916-C). A macro-eaten declaration
+              // puts the parens in this shape:
+              //
+              //   parenthesized_declarator
+              //     ERROR [ SQLITE_CDECL ]      <- namedChild(0), the macro
+              //     pointer_declarator
+              //       identifier "sqlite3IoTrace"
+              //
+              // so `childForFieldName("declarator") ?? namedChild(0)` descends into the
+              // ERROR, follows the MACRO's name, and never reaches the
+              // pointer_declarator -- which would classify a real function pointer as a
+              // function and lose the `sqlite3IoTrace` variable symbol entirely. Caught
+              // by c/macro-truncated-declarator-916 on the first run of this fix.
+              const descendsToPointer = (start: Node): boolean => {
+                let q: Node | null = start
+                for (let depth = 0; q && depth < 8; depth++) {
+                  if (q.type === "pointer_declarator") return true
+                  const byField = q.childForFieldName("declarator")
+                  if (byField) { q = byField; continue }
+                  const kids = (q.namedChildren ?? []).filter((k: Node | null): k is Node => !!k)
+                  q = kids.find((k: Node) => !k.isError && !k.isMissing) ?? null
+                }
+                return false
+              }
+              if (descendsToPointer(innerDecl)) isFuncType = false // a genuine function POINTER
             }
             break
           }
@@ -6056,6 +6112,27 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       "enumerator",
       "preproc_def",
       "preproc_function_def",
+      // #971: a PARENTHESISED declarator name. Wrapping the declarator in parens is
+      // legal C and means nothing but grouping, yet the grammar gives it its own node,
+      // so the name sat under `parenthesized_declarator` -- absent from this list --
+      // and was classified as a READ of itself:
+      //
+      //   redis/deps/lua/src/lauxlib.c:229
+      //     LUALIB_API void (luaL_register) (lua_State *L, const char *libname, ...)
+      //
+      //   function_definition / declaration
+      //     function_declarator
+      //       parenthesized_declarator
+      //         identifier "luaL_register"    <- a DECLARATION, published as
+      //                                            `uses global -> luaL_register`
+      //       parameter_list "(lua_State *L, ...)"
+      //
+      // The declared name is not a read of itself, and the function symbol IS emitted
+      // from the same occurrence, so the edge was both wrong and redundant.
+      // isDeclaringChainLeftmost already handles the node correctly -- it matches on
+      // endsWith("declarator") and descends to the leftmost identifier -- so listing
+      // the parent type is the whole fix; no new traversal is needed.
+      "parenthesized_declarator",
     ]
     if (!inArray(declParents, p.type)) return false
     // CGD12-mirror: within a declarator-chain parent only the leftmost
