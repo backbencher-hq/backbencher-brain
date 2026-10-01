@@ -325,6 +325,17 @@ ontology and disagreed only on whether the shorthand had been analysed at all.**
 is why it read as an open policy question and was not one. The convention was already
 settled and already implemented on the list path; the shorthand skipped it.
 
+**An edge with no owner is still a call (CLJ-D47).** The truth's edge sink dropped
+anything whose `from` was empty — *"a relationship needs two ends"*. That silently
+deleted **43 calls**, and the silence is what made it expensive: every affected file
+simply read as a coverage gap rather than a bug. The worst was `(foo 3.14159)` at
+`test_cl_format.clj:611`, inside a `(simple-tests …)` block where the owner chain ran
+out — the edge was derived and then thrown away. The fallback is the analyzer's own
+**C8** rule, not an invention: a call outside any function attributes to the namespace
+*in force*. Where there is no `ns`, the chain continues to `user`. Pinning that second
+half matters — the obvious fix, stopping at the namespace, still drops every call in a
+file with no `ns`, which is the smallest instance and is not contrived.
+
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with
