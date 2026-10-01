@@ -218,7 +218,7 @@ const descriptors = [
           type: "array",
           items: { type: "string" },
           description:
-            "stored relationship kinds to include. Default: calls, instantiates, extends, implements. Pass e.g. ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction. A kind that is not listed is never reported, so this is how you exclude the type-level 'uses'/'references' rows that make up roughly half of what a typical index stores.",
+            "stored relationship kinds to include. Default: calls, instantiates, extends, implements. Pass e.g. ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction. A kind that is not listed is never reported, so this is how you exclude the 48% of stored rows that are type-level 'uses'/'references' edges.",
         },
         includeCrossLanguage: {
           type: "boolean",
@@ -274,11 +274,10 @@ const descriptors = [
     // Kotlin Warehouse reach my Java Inventory, and where" — the shape
     // bb_graph already returns. A name is many symbols in the index (`invoke`
     // is 227 in a 230-file JVM corpus), so the facts are the union over every
-    // copy, `copies` names them, and `ambiguous` says so; absence is declared
-    // only when no copy holds a stored row. Bounded by a declared limit with
-    // first-class truncation, as bb_impact is. Same source and same laws as
-    // the editor's cross-language hover section; never infers, guesses, or
-    // aspires.
+    // copy, the copies are named, and absence is declared only when NO copy
+    // holds a stored row. Bounded by a declared limit with first-class
+    // truncation, as bb_impact is. Same source and same laws as the editor's
+    // cross-language hover section; never infers, guesses, or aspires.
     name: "bb_cross_language",
     description: "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Every fact names both ends: the copy of the requested name it came from, and the other symbol's name, file, language and line, plus the stored row id. A name is many symbols — the index holds one per (file, name, line) — so facts are the union over every copy, `copies` names them, and `ambiguous` says so; absence is declared only when no copy holds a stored row. The answer is bounded by `limit` (default 200, max 1000) with `truncated` and `totalCountIfKnown` declared. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Same source and laws as the editor's cross-language hover section.",
     inputSchema: {
@@ -296,7 +295,6 @@ const descriptors = [
     deprecated: false,
     documentation: { category: "graph", summary: "Stored cross-language pairs, each naming both ends, with declared absence and declared truncation.", defaults: { limit: 200 }, examples: [{ symbol: "Warehouse" }, { symbol: "invoke", limit: 50 }] },
   },
-
   {
     // M28.A1 (issue #626, decision D-3): the agent's write door. Provenance is
     // ENFORCED, not delegated: author_class is hardcoded 'agent' here — a tool
@@ -332,7 +330,6 @@ const descriptors = [
       type: "object",
       properties: {
         symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
-        path: { type: "string", description: "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
         limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
       },
       required: [],

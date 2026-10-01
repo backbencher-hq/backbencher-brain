@@ -1138,29 +1138,9 @@
             "type": "number",
             "description": "traversal depth bound (default 3)"
           },
-          "direction": {
-            "type": "string",
-            "enum": [
-              "callers",
-              "callees",
-              "both"
-            ],
-            "description": "which side to traverse (default both). 'callers' answers \"who depends on this\" and skips the callee walk entirely — on a real index that is the difference between 1 edge and 37 in the same payload."
-          },
-          "relationshipTypes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "stored relationship kinds to include. Default: calls, instantiates, extends, implements. Pass e.g. ['calls'] for the pure call graph, or ['implements'] to see only interface satisfaction. A kind that is not listed is never reported, so this is how you exclude the type-level 'uses'/'references' rows that make up roughly half of what a typical index stores."
-          },
-          "includeCrossLanguage": {
-            "type": "boolean",
-            "description": "include edges the indexer marked cross-language (default true). Set false for a single-language view."
-          },
           "edgeLimit": {
             "type": "number",
-            "description": "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`summary.calleesIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer."
+            "description": "Per-symbol call-site limit for one edge query (default 200, max 5000). Reaching it is declared in `summary.truncated` with `summary.truncationReason` and the root's true count in `summary.callersIfUncapped`/`callersIfUncapped` — the limit is never a silent cap. Raise it to receive more sites in one answer."
           }
         },
         "required": [
@@ -1178,8 +1158,7 @@
         "category": "graph",
         "summary": "Per-symbol graph with per-edge evidence tiers — the agent view of the editor's graph panel.",
         "defaults": {
-          "maxDepth": 3,
-          "direction": "both"
+          "maxDepth": 3
         },
         "examples": [
           {
@@ -1188,53 +1167,31 @@
           {
             "symbol": "handleRequest",
             "maxDepth": 5
-          },
-          {
-            "symbol": "handleRequest",
-            "direction": "callers"
-          },
-          {
-            "symbol": "Handler",
-            "relationshipTypes": [
-              "calls"
-            ]
           }
         ]
       },
       "referencePath": "docs/tools/bb_graph.md",
       "returns": [
         "Per-symbol dependency graph: callers and callees",
-        "Per-edge endpoints as described nodes — `{ id, name, symbolType, file, line, isExternal }` on BOTH ends, so an edge is self-contained and no id has to be parsed or looked up in a second call",
-        "Per-edge `rowId`: the stored `brain_relationship` row the edge came from, so every claim is auditable against the index (measured: every emitted rowId resolves to exactly one stored row)",
-        "Per-edge `match` (`exact` | `owner-cascade`) and `matchedMember` (`{ name, file }` when the cascade matched): whether the stored row names the symbol that was asked for, or one of its members folded onto it",
         "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence",
         "Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0",
-        "`summary.exactCallers` / `cascadedCallers` / `exactCallees` / `cascadedCallees`: how much of the answer is about the symbol that was asked for and how much the owner cascade folded in",
-        "`summary.edgesInBothDirections`: stored rows present in both the caller and the callee list — `totalCallers + totalCallees` double-counts exactly this many",
-        "`root.candidates`: how many stored symbols the requested name resolved among — 1 means the name was unique, more means the answer is about one of several and `root` is what to confirm",
-        "`summary.scope`: the `direction`, `relationshipTypes` and `includeCrossLanguage` actually applied, so a narrowed traversal returning zero edges is distinguishable from a widened one that found nothing",
         "Declared truncation with a reason when the traversal is bounded"
       ],
       "errors": [
         "Missing symbol",
         "maxDepth outside the declared 1-10 range",
-        "edgeLimit below 1",
-        "direction outside callers|callees|both",
-        "relationshipTypes given as an empty list (a narrowed traversal that can match nothing is refused rather than silently returning an empty graph)",
         "Symbol not found in the index"
       ],
       "limitations": [
         "Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven",
         "The graph reflects the index as of the last index run",
-        "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches. The superset is REDUCIBLE: every edge carries `match` (`exact` or `owner-cascade`) and, when cascaded, `matchedMember` naming the member the stored row actually referenced, and the summary carries the exact/cascade split. Measured on cobra, `Command` (182 methods) answers with 184 caller edges of which 24 name `Command` itself — a ratio no per-edge field alone makes obvious, and one no count in the payload revealed before the split existed. Every edge also carries the `rowId` it traces to",
-        "A symbol name is not a unique identifier. When one name matches several stored symbols the resolver takes the highest-gravity match (ties broken by lowest id, so the pick is reproducible rather than SQLite's whim) and says how many it chose between in `root.candidates` — measured: `build` in lodash resolves among 7, `code_block.go` in cobra among 50, `Command` among 1. When `root.candidates` is greater than 1 the graph is about ONE of those symbols, so confirm `root` is the one you meant before reading the edges. The other candidates are not listed",
-        "A name containing a SQL LIKE wildcard (`%`, `_`) is matched LITERALLY, not as a pattern: it either resolves to a symbol that genuinely contains those characters or is reported not found. It never widens into a match on an unrelated symbol",
+        "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row",
         "Call-site positions depend on the analyzer: an exact line is claimed only where the index stored a real line; a legacy 0 or a NULL line yields the declared `declaration` or `unknown` address instead (derived by src/intelligence/graph/line-address.ts — never an inline fallback)",
-        "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`. The cap now fires only when rows were ACTUALLY dropped: the query asks for one row beyond the limit, so a symbol holding exactly `edgeLimit` sites is reported complete instead of falsely truncated"
+        "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`"
       ],
-      "performance": "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph. `direction` halves the work when only one side is wanted — measured on cobra, a caller-only question about a symbol with 36 callees returned 1 edge instead of 37. The per-direction fan-out budget (50 symbols) is internal and is not exposed: truncation is declared in the summary when it bites.",
+      "performance": "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
       "safety": "Read-only. It does not modify source files or index data.",
-      "evidence": "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier, its confidence, and the `rowId` of the row it came from. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json). Owner-cascade edges are auditable in the same way: `match` and `matchedMember` identify the member the stored row actually named, and the exact/cascade split in the summary is verified against an independent SQL count of direct-target rows on real repos (cobra: tool reports `exactCallers: 24`; oracle counts 24 direct caller rows for the same symbol)."
+      "evidence": "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json)."
     },
     {
       "name": "bb_impact",
@@ -1270,41 +1227,31 @@
       },
       "referencePath": "docs/tools/bb_impact.md",
       "returns": [
-        "Downstream dependents of the symbol with per-edge evidence tiers and confidence, cross-language flags, bridge mechanism, and each dependent's own position",
-        "How the requested name became the root it walked: `rootMatch` carries the name asked for, whether the match was exact, a containment match, or the member→owner substitution, and how many stored symbols carry that exact name",
-        "The declared limits, from the component that owns them: `budget` (node budget, depth, and the two ceilings the declared total is computed under) and `traversal` (depth actually reached, the engine's own truncation state and reason, its per-query site limit, its capped-query count, and the root's uncapped caller count when computable)",
-        "`directCount` — the exact number of DIRECT dependents, or `null` when the counting walk hit a declared ceiling. `totalCountIfKnown` is the true transitive total under the same rule, or `null` for a declared unknown. Neither is ever smaller than `shownCount`",
-        "Freshness: a per-dependent `stale` flag (`true`/`false`, or `null` when the file is not in the index at all) and a summary `freshness` envelope; `rootStale` declares the root's own file separately, since a stale root with fresh dependents is still a stale answer",
+        "Downstream dependents of the symbol with per-edge evidence tiers and confidence",
         "Declared-absent result when the symbol is unknown — never an empty guess"
       ],
       "errors": [
         "Missing symbol",
-        "Symbol not found in the index",
-        "The named symbol exists but is not a traversable root (an enum member, a constant, a plain field) — a declared error naming the kind, never an empty set"
+        "Symbol not found in the index"
       ],
       "limitations": [
         "Static impact analysis cannot establish runtime behavior",
-        "Reflects the index as of the last index run; the freshness envelope states how far that is from the files on disk",
-        "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class",
-        "A truncated answer is a bounded PREFIX of the set, not a sample of it: the walk is depth-first, so a hub's 200 returned rows are an exploration order, not the 200 nearest dependents. `directCount` is the field that makes the shape readable"
+        "Reflects the index as of the last index run",
+        "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class"
       ],
-      "performance": "Complete answers stay under ~250 ms on the lane's corpora. A truncated hub pays for an unbounded counting walk so the declared total is honest: 0.5–2.0 s, bounded by two declared ceilings (50 000 scanned rows, 2 000 expansions) past which the total is a declared `null` rather than a number paid for with seconds.",
+      "performance": "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
       "safety": "Read-only. It does not modify source files or index data.",
-      "evidence": "Impact derives from brain_relationship rows via the same engine the editor impact panel uses. The declared total is measured by an independent bounded walk under the traversal's own rule — same relationship kinds, same owner cascade, same noise policy, same depth — so it is the size of the set the answer is a prefix of, and an independent oracle in the bb_impact corpus lane checks both against the stored tables on nine real repositories."
+      "evidence": "Impact derives from brain_relationship rows via the same engine the editor impact panel uses."
     },
     {
       "name": "bb_cross_language",
-      "description": "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Every fact names both ends: the copy of the requested name it came from, and the other symbol's name, file, language and line, plus the stored row id. A name is many symbols — the index holds one per (file, name, line) — so facts are the union over every copy, `copies` names them, and `ambiguous` says so; absence is declared only when no copy holds a stored row. The answer is bounded by `limit` (default 200, max 1000) with `truncated` and `totalCountIfKnown` declared. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Same source and laws as the editor's cross-language hover section.",
+      "description": "Cross-language facts for one symbol from stored brain_relationship rows only (is_cross_language = 1), per-pair with bridge mechanism and evidence tier. Pairs with no stored rows are declared absent — this tool never infers, guesses, or aspires. Identical semantics to the editor's cross-language hover section.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "symbol": {
             "type": "string",
             "description": "symbol name to fetch cross-language facts for (`target`/`symbolName`/`query` are accepted as aliases)"
-          },
-          "limit": {
-            "type": "number",
-            "description": "max facts to return (default 200, max 1000); truncation is declared, never silent"
           }
         },
         "required": [
@@ -1320,42 +1267,30 @@
       "deprecated": false,
       "documentation": {
         "category": "graph",
-        "summary": "Stored cross-language pairs, each naming both ends, with declared absence and declared truncation.",
-        "defaults": {
-          "limit": 200
-        },
+        "summary": "Stored cross-language pairs with declared absence — the agent view of the hover section.",
+        "defaults": {},
         "examples": [
           {
             "symbol": "Warehouse"
-          },
-          {
-            "symbol": "invoke",
-            "limit": 50
           }
         ]
       },
       "referencePath": "docs/tools/bb_cross_language.md",
       "returns": [
-        "One fact per stored cross-language row touching the name, each naming BOTH ends — the copy of the requested name it came from (`self`: symbol, file, language, line) and the counterparty (`other`: symbol, file, language, line) — plus the stored `rowId`, the direction, the bridge, the evidence tier and the confidence",
-        "`copies`: every indexed symbol that carries the name, with its file, language, line and cross-row count, plus `ambiguous` and `ambiguityNote` when the index holds more than one (the index has one symbol per file/name/line, so a common name is many symbols)",
-        "Declared absent only when NO copy of the name holds a stored cross-language row, with the copy count in the note",
-        "Declared truncation: `truncated`, `truncationReason` and `totalCountIfKnown` when the `limit` bounded the answer; `unpairableRowCount` and `collapsedRowCount` report rows that could not name a pair and rows matched from both directions"
+        "Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier",
+        "Declared-absent result when no stored cross-language rows exist"
       ],
       "errors": [
-        "Missing or blank symbol",
-        "Symbol not found in the index (declared, not an empty set)",
-        "limit outside the declared 1..1000 range (refused, never clamped silently)"
+        "Missing symbol",
+        "Symbol not found in the index (declared, not an empty set)"
       ],
       "limitations": [
         "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts",
-        "Coverage depends on the analyzers that produced cross-language rows — this tool reports what was stored, nothing more",
-        "A name is many symbols: the answer is the UNION over every copy, never a silent choice among them. Narrow with the `copies` list — every fact names the copy it came from",
-        "`bridge` is the stored `bridge_mechanism`. On a real polyglot corpus it is almost always the indexer's `name-resolution` placeholder, which means two identifiers matched by name — not that the two languages communicate by that mechanism. Weigh it with `tier` and `confidence`",
-        "A row whose endpoint file has no detected language cannot name a pair; those rows are counted in `unpairableRowCount` and never dressed up with a guessed language"
+        "Coverage depends on the analyzers that produced cross-language rows"
       ],
-      "performance": "Two indexed queries (the stored cross-language rows for the name, and every symbol carrying the name), no graph traversal; the response is bounded by `limit` and declares what it dropped.",
+      "performance": "Bounded by the stored cross-language rows for the symbol; no graph traversal.",
       "safety": "Read-only. It does not modify source files or index data.",
-      "evidence": "Only brain_relationship rows with is_cross_language=1, filtered by the row's own project_id, classified by the single evidence-tier rule in src/lsp/evidence_tier.ts — the same stored rows and the same rule as the editor cross-language hover section, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over a real polyglot corpus (script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json)."
+      "evidence": "Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section."
     },
     {
       "name": "bb_annotate",
@@ -1406,17 +1341,16 @@
       "referencePath": "docs/tools/bb_annotate.md",
       "returns": [
         "Stored annotation id and provenance (tool identity, timestamp)",
-        "Declared refusals for a missing/blank symbol, an empty body, or an over-limit body"
+        "Declared refusals for missing symbol, empty body, or over-limit body"
       ],
       "errors": [
-        "Missing or blank symbol",
+        "Missing or unknown symbol",
         "Empty body (a refusal, not a silent no-op)",
         "Body exceeds the declared 2000-char limit"
       ],
       "limitations": [
         "Annotations are opinions layered on index evidence, never index truth",
-        "Annotation store semantics are owned by the M28 workstream",
-        "Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given"
+        "Annotation store semantics are owned by the M28 workstream"
       ],
       "performance": "Constant-time store write bounded by the 2000-char body limit.",
       "safety": "Write-capable against the annotation store only. It never modifies source files.",
@@ -1431,10 +1365,6 @@
           "symbol": {
             "type": "string",
             "description": "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases"
-          },
-          "path": {
-            "type": "string",
-            "description": "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol"
           },
           "limit": {
             "type": "number",
@@ -1475,8 +1405,7 @@
       ],
       "limitations": [
         "Reads only stored annotations; absence is declared, not inferred",
-        "Annotation store semantics are owned by the M28 workstream",
-        "Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them"
+        "Annotation store semantics are owned by the M28 workstream"
       ],
       "performance": "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
       "safety": "Read-only. It does not modify source files, index data, or annotations.",

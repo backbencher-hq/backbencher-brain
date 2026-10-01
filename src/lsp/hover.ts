@@ -155,9 +155,6 @@ interface SymbolRow {
 interface FileRow {
   id: string
   path: string
-  /** The index's own spelling of the file. Annotations are written against
-   *  this (or the absolute `path`), so the hover matches both. */
-  relative_path: string
   language: string | null
 }
 
@@ -177,7 +174,7 @@ export { renderSignature, renderParameterList, UNRESOLVED_TYPE } from "./signatu
  */
 const SYMBOL_ROW_SELECT = `s.id, s.name, s.qualified_name, s.symbol_type, s.line_start, s.line_end,
             s.byte_start, s.byte_end, s.return_type, s.parameters, s.visibility, s.file_id,
-            f.id AS f_id, f.path, f.relative_path, f.language`
+            f.id AS f_id, f.path, f.language`
 
 export function findSymbolAtPosition(
   raw: CoreDatabase,
@@ -206,7 +203,7 @@ export function findSymbolAtPosition(
       bestWidth = width
       best = {
         symbol: row,
-        file: { id: row.f_id, path: row.path, relative_path: (row as { relative_path?: string }).relative_path ?? "", language: row.language },
+        file: { id: row.f_id, path: row.path, language: row.language },
       }
     }
   }
@@ -267,7 +264,7 @@ export async function resolveOccurrenceSymbol(
   const row = rows[0]!
   return {
     symbol: row,
-    file: { id: row.f_id, path: row.path, relative_path: (row as { relative_path?: string }).relative_path ?? "", language: row.language },
+    file: { id: row.f_id, path: row.path, language: row.language },
     occurrence: { startLine: cursorOcc.startLine, startColumn: cursorOcc.startColumn, endColumn: cursorOcc.endColumn },
   }
 }
@@ -441,21 +438,7 @@ export async function hover(
   const crossSection = crossLanguageSection(factsFromRows(storedCrossLanguageRows(raw, symbol.id), file.language))
   // M28.A2: annotation rows for this symbol, rendered by the single owner.
   // Project scoped via the symbol's file row (hover has no projectId param).
-  //
-  // Scoped to THIS FILE's copy of the name, plus name-level notes. It used to
-  // select on symbol_name alone, so a note an agent attached to one file's
-  // `force` was rendered under every other file's `force` too — the index holds
-  // one symbol per (file, name, line), so a name measured on a real corpus in 8
-  // files rendered one file's opinion as if it described the file under the
-  // cursor. Name-level notes (written with no path) still show, because they
-  // are about the name and apply wherever it appears.
-  //
-  // Both path spellings are matched: the index stores `relative_path`, and an
-  // agent annotating with the absolute path it was just handed would otherwise
-  // have its note silently invisible here.
-  const annotationRows = raw.prepare(
-    "SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? AND (symbol_path IS NULL OR symbol_path = ? OR symbol_path = ?) ORDER BY time_updated DESC, id",
-  ).all(file.id, symbol.name, file.relative_path, file.path) as AnnotationRow[]
+  const annotationRows = raw.prepare("SELECT symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = (SELECT project_id FROM brain_file WHERE id = ?) AND symbol_name = ? ORDER BY time_updated DESC").all(file.id, symbol.name) as AnnotationRow[]
   const annotationSection = annotationHoverSection(annotationRows)
 
   // The definition location (declaration of the hovered symbol) is the hover

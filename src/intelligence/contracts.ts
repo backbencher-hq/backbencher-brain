@@ -74,27 +74,6 @@ export type SearchResults = SearchResult[] & {
   freshCount?: number
   searchMode?: string
   truncated?: boolean
-  /**
-   * Size of the ranked MATCH SET the page was cut from — not the size of the
-   * returned page. `results.length` is the page; a caller that used it as the
-   * total could not tell one match from fifteen, and a truncated page read as a
-   * complete one. 0 when not computed.
-   */
-  totalMatches?: number
-  /**
-   * Why the candidate set is smaller than the raw match set, when it is: a
-   * per-phase candidate cap was reached, the noise filter removed rows after
-   * the cap, or (regex mode) the row cap or the time budget stopped the scan.
-   * Absent means the candidate set is believed complete.
-   */
-  truncationReason?: string
-  /**
-   * Freshness could not be resolved (the resolver threw). The answer is still
-   * returned and the counts keep their conservative default, but this flag
-   * exists so `staleCount: 0` is never read as "everything is fresh" when the
-   * check did not run.
-   */
-  freshnessError?: boolean
 }
 
 export interface CallGraphEntry {
@@ -154,13 +133,7 @@ export interface SemanticResult {
   file: string
   line: number
   snippet: string
-  /**
-   * Cosine similarity, or null when none was computed. Null is meaningful and
-   * is NOT the same as 0: the keyword-fallback path produces lexical matches
-   * with no score at all, and reporting 0 made callers print and average a
-   * number the engine had explicitly labelled meaningless.
-   */
-  similarity: number | null
+  similarity: number
   language: string
   /** True when the source file changed on disk since indexing — must never be presented as current. */
   stale?: boolean
@@ -176,19 +149,7 @@ export interface SemanticSearchResults {
     dimension: number
     scannedRows: number
     filteredRows: number
-    /**
-     * Why the dense path was abandoned. `degenerate-query-vector` is distinct
-     * from `no-vector-above-threshold` on purpose: the first means nothing was
-     * compared at all because the query could not be embedded, the second means
-     * vectors were compared and none cleared the threshold. Collapsing them
-     * sends the reader to re-embed a corpus that was embedded correctly.
-     */
     fallbackReason?: string
-    /** Indexable symbols vs symbols that actually have a stored embedding. */
-    indexSymbolCount: number
-    embeddedSymbolCount: number
-    /** 0..1, embeddedSymbolCount / indexSymbolCount. 1 when nothing is indexed. */
-    embeddingCoverage: number
   }
 }
 
@@ -242,18 +203,6 @@ export interface GraphEdge {
    *  (M26.W2 evidence requirement); an edge without one must never be
    *  emitted, never rendered. */
   rowId: string
-  /** Callers: whether the stored row names the TRACED symbol ("exact") or one
-   *  of its members, folded onto it by the owner cascade ("owner-cascade").
-   *  Absent means the engine could not resolve the match, which is NOT the
-   *  same as "exact" — consumers must read this rather than infer it. */
-  targetMatch?: "exact" | "owner-cascade"
-  /** Callees: the same question from the other end — whether the stored row's
-   *  SOURCE is the traced symbol or one of its members. */
-  sourceMatch?: "exact" | "owner-cascade"
-  /** Set only when the match was cascade-derived: the member the stored row
-   *  actually named, so the owner-family superset can be reduced to the exact
-   *  set without a second query. */
-  matchedMember?: { name: string; file: string }
   /** Stored edge metadata (parsed from brain_relationship.metadata).
    *  Only declared fields pass through; the graph renderer derives the
    *  evidence tier from evidenceClass when present. Enrichment fields
@@ -292,11 +241,6 @@ export interface GraphTraversalOptions {
 
 export interface GraphTraversalResult {
   root: GraphNode
-  /** How many stored symbols the name resolved among. 1 means the name was
-   *  unique; more means the caller should confirm `root` is the one they meant
-   *  (measured: lodash holds eight symbols named `build`, cobra holds fifty
-   *  structural symbols named `code_block.go`). */
-  rootCandidates: number
   callers: GraphEdge[]
   callees: GraphEdge[]
   nodes: Record<string, GraphNode>
@@ -322,30 +266,6 @@ export interface GraphTraversalResult {
     callersIfUncapped: number | null
     calleesIfUncapped: number | null
     totalsAreLowerBounds: boolean
-    /** DEPTH 0 ONLY — these four describe the ROOT. `exactCallers` names the
-     *  root itself; `cascadedCallers` names one of its members, folded on by
-     *  the owner cascade. The cascade is a declared superset; these make it a
-     *  REDUCIBLE one. An edge at depth >= 1 is about another symbol entirely
-     *  and is counted as `deeperCallers`; folding those in here would make
-     *  this number describe something other than the root. */
-    exactCallers: number
-    cascadedCallers: number
-    exactCallees: number
-    cascadedCallees: number
-    /** Edges at depth >= 1, about symbols the traversal discovered.
-     *  exactCallers + cascadedCallers + deeperCallers === totalCallers. */
-    deeperCallers: number
-    deeperCallees: number
-    /** The fan-out bound in force (symbols expanded per direction) and whether
-     *  it was exhausted. `truncationReason` names the bound when it fires; this
-     *  says what the bound was, which it previously did not. */
-    callerBudget: number
-    calleeBudget: number
-    callerBudgetExhausted: boolean
-    calleeBudgetExhausted: boolean
-    /** Rows present in both the caller and the callee list — one relationship
-     *  seen from two ends. `totalCallers + totalCallees` double-counts these. */
-    edgesInBothDirections: number
     /** M59 (#895, #854): stored rows collapsed at the tool layer before
      *  becoming edges — cascadeRepeatsCollapsed: the same rowId re-fetched by
      *  a deeper cascade; spellingVariantsCollapsed: same call site + same

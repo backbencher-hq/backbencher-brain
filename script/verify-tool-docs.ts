@@ -103,90 +103,33 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
     evidence: "Counts and versions come from the brain database; freshness compares indexed metadata with the filesystem.",
   },
   bb_graph: {
-    returns: [
-      "Per-symbol dependency graph: callers and callees",
-      "Per-edge endpoints as described nodes — `{ id, name, symbolType, file, line, isExternal }` on BOTH ends, so an edge is self-contained and no id has to be parsed or looked up in a second call",
-      "Per-edge `rowId`: the stored `brain_relationship` row the edge came from, so every claim is auditable against the index (measured: every emitted rowId resolves to exactly one stored row)",
-      "Per-edge `match` (`exact` | `owner-cascade`) and `matchedMember` (`{ name, file }` when the cascade matched): whether the stored row names the symbol that was asked for, or one of its members folded onto it",
-      "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence",
-      "Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0",
-      "`summary.exactCallers` / `cascadedCallers` / `exactCallees` / `cascadedCallees`: how much of the answer is about the symbol that was asked for and how much the owner cascade folded in",
-      "`summary.edgesInBothDirections`: stored rows present in both the caller and the callee list — `totalCallers + totalCallees` double-counts exactly this many",
-      "`root.candidates`: how many stored symbols the requested name resolved among — 1 means the name was unique, more means the answer is about one of several and `root` is what to confirm",
-      "`summary.scope`: the `direction`, `relationshipTypes` and `includeCrossLanguage` actually applied, so a narrowed traversal returning zero edges is distinguishable from a widened one that found nothing",
-      "Declared truncation with a reason when the traversal is bounded",
-    ],
-    errors: [
-      "Missing symbol",
-      "maxDepth outside the declared 1-10 range",
-      "edgeLimit below 1",
-      "direction outside callers|callees|both",
-      "relationshipTypes given as an empty list (a narrowed traversal that can match nothing is refused rather than silently returning an empty graph)",
-      "Symbol not found in the index",
-    ],
-    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run", "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches. The superset is REDUCIBLE: every edge carries `match` (`exact` or `owner-cascade`) and, when cascaded, `matchedMember` naming the member the stored row actually referenced, and the summary carries the exact/cascade split. Measured on cobra, `Command` (182 methods) answers with 184 caller edges of which 24 name `Command` itself — a ratio no per-edge field alone makes obvious, and one no count in the payload revealed before the split existed. Every edge also carries the `rowId` it traces to",
-      "A symbol name is not a unique identifier. When one name matches several stored symbols the resolver takes the highest-gravity match (ties broken by lowest id, so the pick is reproducible rather than SQLite's whim) and says how many it chose between in `root.candidates` — measured: `build` in lodash resolves among 7, `code_block.go` in cobra among 50, `Command` among 1. When `root.candidates` is greater than 1 the graph is about ONE of those symbols, so confirm `root` is the one you meant before reading the edges. The other candidates are not listed",
-      "A name containing a SQL LIKE wildcard (`%`, `_`) is matched LITERALLY, not as a pattern: it either resolves to a symbol that genuinely contains those characters or is reported not found. It never widens into a match on an unrelated symbol", "Call-site positions depend on the analyzer: an exact line is claimed only where the index stored a real line; a legacy 0 or a NULL line yields the declared `declaration` or `unknown` address instead (derived by src/intelligence/graph/line-address.ts — never an inline fallback)", "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`. The cap now fires only when rows were ACTUALLY dropped: the query asks for one row beyond the limit, so a symbol holding exactly `edgeLimit` sites is reported complete instead of falsely truncated"],
-    performance: "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph. `direction` halves the work when only one side is wanted — measured on cobra, a caller-only question about a symbol with 36 callees returned 1 edge instead of 37. The per-direction fan-out budget (50 symbols) is internal and is not exposed: truncation is declared in the summary when it bites.",
+    returns: ["Per-symbol dependency graph: callers and callees", "Per-edge evidence tier (structural/import_based/usage_contextual/reference_qualified/inferred) with confidence", "Per-edge call-site address (M62.A2): `{ kind, file, line, note }` — `call-site` is an exact stored line; `declaration` is a LABELED substitute (the calling symbol's own declaration, shown only when no call-site line is stored); `unknown` has no position at all (line null) and states why. A position is never fabricated and never reported as line 0", "Declared truncation with a reason when the traversal is bounded"],
+    errors: ["Missing symbol", "maxDepth outside the declared 1-10 range", "Symbol not found in the index"],
+    limitations: ["Edges reflect indexed static evidence with declared tiers; inferred edges are labeled, not proven", "The graph reflects the index as of the last index run", "Owner-cascade attribution: a relationship stored against a class member (e.g. a call to a method) is reported toward the owner class, so caller/callee sets are a superset of exact-symbol-only matches — every edge still traces to a stored relationship row", "Call-site positions depend on the analyzer: an exact line is claimed only where the index stored a real line; a legacy 0 or a NULL line yields the declared `declaration` or `unknown` address instead (derived by src/intelligence/graph/line-address.ts — never an inline fallback)", "`summary.totalCallers`/`totalCallees` are the RETURNED counts, not the totals. A per-symbol site limit (`edgeLimit`, default 200, max 5000) bounds one edge query; when it is reached the answer declares `truncated` with `truncationReason` naming the bound (`caller-site-limit` / `callee-site-limit`), `cappedQueries` says how many queries hit it, and `callersIfUncapped`/`calleesIfUncapped` carry the root's true site count (null when no cap was reached — never zero). Before M59.A12 (#888) the limit was silent: a symbol with 3,437 call sites answered 200 rows with `truncated: false`"],
+    performance: "maxDepth (default 3, max 10) bounds traversal; per-edge evidence resolution is bounded by the returned subgraph.",
     safety: "Read-only. It does not modify source files or index data.",
-    evidence: "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier, its confidence, and the `rowId` of the row it came from. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json). Owner-cascade edges are auditable in the same way: `match` and `matchedMember` identify the member the stored row actually named, and the exact/cascade split in the summary is verified against an independent SQL count of direct-target rows on real repos (cobra: tool reports `exactCallers: 24`; oracle counts 24 direct caller rows for the same symbol).",
+    evidence: "Nodes and edges come from the canonical graph engine over brain_symbol and brain_relationship rows; each edge carries its evidence tier and confidence. The declared totals are counted with the same query and the same noise filters as the returned edges, so a reported total is the number a caller would receive if no limit existed — verified against an independent SQL count on real repos (validation/m59/results/cap-real-corpus.json).",
   },
   bb_impact: {
-    returns: [
-      "Downstream dependents of the symbol with per-edge evidence tiers and confidence, cross-language flags, bridge mechanism, and each dependent's own position",
-      "How the requested name became the root it walked: `rootMatch` carries the name asked for, whether the match was exact, a containment match, or the member→owner substitution, and how many stored symbols carry that exact name",
-      "The declared limits, from the component that owns them: `budget` (node budget, depth, and the two ceilings the declared total is computed under) and `traversal` (depth actually reached, the engine's own truncation state and reason, its per-query site limit, its capped-query count, and the root's uncapped caller count when computable)",
-      "`directCount` — the exact number of DIRECT dependents, or `null` when the counting walk hit a declared ceiling. `totalCountIfKnown` is the true transitive total under the same rule, or `null` for a declared unknown. Neither is ever smaller than `shownCount`",
-      "Freshness: a per-dependent `stale` flag (`true`/`false`, or `null` when the file is not in the index at all) and a summary `freshness` envelope; `rootStale` declares the root's own file separately, since a stale root with fresh dependents is still a stale answer",
-      "Declared-absent result when the symbol is unknown — never an empty guess",
-    ],
-    errors: [
-      "Missing symbol",
-      "Symbol not found in the index",
-      "The named symbol exists but is not a traversable root (an enum member, a constant, a plain field) — a declared error naming the kind, never an empty set",
-    ],
-    limitations: [
-      "Static impact analysis cannot establish runtime behavior",
-      "Reflects the index as of the last index run; the freshness envelope states how far that is from the files on disk",
-      "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class",
-      "A truncated answer is a bounded PREFIX of the set, not a sample of it: the walk is depth-first, so a hub's 200 returned rows are an exploration order, not the 200 nearest dependents. `directCount` is the field that makes the shape readable",
-    ],
-    performance:
-      "Complete answers stay under ~250 ms on the lane's corpora. A truncated hub pays for an unbounded counting walk so the declared total is honest: 0.5–2.0 s, bounded by two declared ceilings (50 000 scanned rows, 2 000 expansions) past which the total is a declared `null` rather than a number paid for with seconds.",
+    returns: ["Downstream dependents of the symbol with per-edge evidence tiers and confidence", "Declared-absent result when the symbol is unknown — never an empty guess"],
+    errors: ["Missing symbol", "Symbol not found in the index"],
+    limitations: ["Static impact analysis cannot establish runtime behavior", "Reflects the index as of the last index run", "Owner-cascade attribution applies: dependents through class-member relationships are attributed to the owner class"],
+    performance: "Traversal bounds match the canonical graph engine limits; output scales with the dependents subgraph.",
     safety: "Read-only. It does not modify source files or index data.",
-    evidence:
-      "Impact derives from brain_relationship rows via the same engine the editor impact panel uses. The declared total is measured by an independent bounded walk under the traversal's own rule — same relationship kinds, same owner cascade, same noise policy, same depth — so it is the size of the set the answer is a prefix of, and an independent oracle in the bb_impact corpus lane checks both against the stored tables on nine real repositories.",
+    evidence: "Impact derives from brain_relationship rows via the same engine the editor impact panel uses.",
   },
   bb_cross_language: {
-    returns: [
-      "One fact per stored cross-language row touching the name, each naming BOTH ends — the copy of the requested name it came from (`self`: symbol, file, language, line) and the counterparty (`other`: symbol, file, language, line) — plus the stored `rowId`, the direction, the bridge, the evidence tier and the confidence",
-      "`copies`: every indexed symbol that carries the name, with its file, language, line and cross-row count, plus `ambiguous` and `ambiguityNote` when the index holds more than one (the index has one symbol per file/name/line, so a common name is many symbols)",
-      "Declared absent only when NO copy of the name holds a stored cross-language row, with the copy count in the note",
-      "Declared truncation: `truncated`, `truncationReason` and `totalCountIfKnown` when the `limit` bounded the answer; `unpairableRowCount` and `collapsedRowCount` report rows that could not name a pair and rows matched from both directions",
-    ],
-    errors: ["Missing or blank symbol", "Symbol not found in the index (declared, not an empty set)", "limit outside the declared 1..1000 range (refused, never clamped silently)"],
-    limitations: [
-      "Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts",
-      "Coverage depends on the analyzers that produced cross-language rows — this tool reports what was stored, nothing more",
-      "A name is many symbols: the answer is the UNION over every copy, never a silent choice among them. Narrow with the `copies` list — every fact names the copy it came from",
-      "`bridge` is the stored `bridge_mechanism`. On a real polyglot corpus it is almost always the indexer's `name-resolution` placeholder, which means two identifiers matched by name — not that the two languages communicate by that mechanism. Weigh it with `tier` and `confidence`",
-      "A row whose endpoint file has no detected language cannot name a pair; those rows are counted in `unpairableRowCount` and never dressed up with a guessed language",
-    ],
-    performance: "Two indexed queries (the stored cross-language rows for the name, and every symbol carrying the name), no graph traversal; the response is bounded by `limit` and declares what it dropped.",
+    returns: ["Cross-language relationship pairs for the symbol with bridge mechanism and evidence tier", "Declared-absent result when no stored cross-language rows exist"],
+    errors: ["Missing symbol", "Symbol not found in the index (declared, not an empty set)"],
+    limitations: ["Reads stored is_cross_language=1 relationship rows only; never infers cross-language facts", "Coverage depends on the analyzers that produced cross-language rows"],
+    performance: "Bounded by the stored cross-language rows for the symbol; no graph traversal.",
     safety: "Read-only. It does not modify source files or index data.",
-    evidence: "Only brain_relationship rows with is_cross_language=1, filtered by the row's own project_id, classified by the single evidence-tier rule in src/lsp/evidence_tier.ts — the same stored rows and the same rule as the editor cross-language hover section, over a projection that names both ends because a hover card already shows which file the reader is in and an agent does not. Every count is cross-checked against an independent SQL count over a real polyglot corpus (script/m63/verify-cl1-cross-language.ts, validation/m63/results/CL1.json).",
+    evidence: "Only brain_relationship rows with is_cross_language=1; identical semantics to the editor cross-language hover section.",
   },
   bb_annotate: {
-    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for a missing/blank symbol, an empty body, or an over-limit body"],
-    // Honesty: this tool does NOT require the symbol to exist in the index. It is
-    // a free-form note store — an agent may annotate before a symbol is indexed,
-    // or a name the analyzer did not classify — so "unknown symbol" is a
-    // declared acceptance, not a refusal. The previous claim ("Missing or
-    // unknown symbol") was a doc-truth lie: the handler only ever refused a
-    // blank symbol, and a symbol absent from brain_symbol stored with
-    // stored:true. Corrected to the code's real behavior.
-    errors: ["Missing or blank symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
-    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream", "Any symbol name is accepted; the note is not verified against the index, so a typo'd name is stored as given"],
+    returns: ["Stored annotation id and provenance (tool identity, timestamp)", "Declared refusals for missing symbol, empty body, or over-limit body"],
+    errors: ["Missing or unknown symbol", "Empty body (a refusal, not a silent no-op)", "Body exceeds the declared 2000-char limit"],
+    limitations: ["Annotations are opinions layered on index evidence, never index truth", "Annotation store semantics are owned by the M28 workstream"],
     performance: "Constant-time store write bounded by the 2000-char body limit.",
     safety: "Write-capable against the annotation store only. It never modifies source files.",
     evidence: "Annotations carry provenance (toolIdentity, time) and are stored in brain_annotation.",
@@ -194,7 +137,7 @@ const curated: Readonly<Record<string, CuratedToolDocumentation>> = {
   bb_annotations: {
     returns: ["Typed annotations for a symbol or the whole project, with full provenance (author class, tool identity, timestamps)", "Declared-absent result when none exist — absence is never an error"],
     errors: ["limit outside the declared 1-200 range"],
-    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream", "Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them"],
+    limitations: ["Reads only stored annotations; absence is declared, not inferred", "Annotation store semantics are owned by the M28 workstream"],
     performance: "Indexed lookup by project and symbol (brain_annotation_project_symbol_idx).",
     safety: "Read-only. It does not modify source files, index data, or annotations.",
     evidence: "Rows come from brain_annotation with provenance fields preserved.",
@@ -222,7 +165,7 @@ function artifact(): Record<string, unknown> {
 // M35.D1: staleness section rendered from the executable registry + the
 // registered remediation constants — docs CANNOT drift from code because both
 // sides derive from the same source here.
-export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
+const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string }> = {
   bb_search: { modes: ["symbol", "content", "file"], surfaces: "per-row `stale` flags + `freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`)" },
   bb_analyze: { modes: ["callers", "callees", "trace", "dependencies", "stats", "complexity", "impact", "test_mapping", "test_gaps", "test_impact", "test_quality"], surfaces: "`freshness` block (`{ fresh, stale, missing, staleRatio, mode, remediation }`); graph nodes and report rows carry `stale` flags (project-wide modes sample or resolve visible rows only — the block names its coverage mode)" },
   bb_visualize: { modes: [], surfaces: "per-node and per-link `stale` flags (links inherit worst-of-endpoints) + `freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON; truncation composes with staleness" },
@@ -230,16 +173,6 @@ export const FRESHNESS_TOOLS: Record<string, { modes: string[]; surfaces: string
   bb_patterns: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_security: { modes: [], surfaces: "per-finding `[stale]` markers + counts footer naming the remediation; silent when all fresh" },
   bb_doc: { modes: [], surfaces: "`freshness` envelope (`{ fresh, stale, missing, staleRatio, mode, remediation }`) on JSON + footer naming the remediation; per-citation `(stale)` in Sources; silent when all fresh" },
-  // bb_ask reports per-source staleness but is NOT auto-refreshing, and it does
-  // NOT emit a `freshness` envelope. Both halves matter and the generated page
-  // used to get the first one wrong: it claimed the tool "does not report
-  // per-file index staleness", while the retrieval path has always marked every
-  // cited source whose file changed on disk with `[STALE — file changed since
-  // index]` (measured with a controlled edit; see fixtures/bb_ask). A verified
-  // aggregate answer — a count — carries no per-file marker, because a count
-  // describes the whole index rather than a file, and that is stated rather than
-  // left to be discovered.
-  bb_ask: { modes: ["answer"], surfaces: "per-source `[STALE — file changed since index]` markers on retrieval answers, repeated in the source list; a verified aggregate answer carries no per-file marker (it describes the whole index, not a file)" },
 }
 // M48.D1 (#701): explicit cross-reference map. Every overlapping tool pair
 // states when to use which — rendered into every per-tool doc so an agent or
@@ -264,18 +197,6 @@ export const RELATIONS: Record<string, string> = {
   bb_migrate: "For dependency structure use `bb_graph`; this tool produces migration plans with declared limitations.",
 }
 
-/**
- * Tools whose staleness section is written by hand in `stalenessSection`
- * rather than derived from FRESHNESS_TOOLS or from the "no freshness surface"
- * default. Exported so the M48.D1 gate can hold these to their real text
- * instead of to one of the two blanket phrasings — which is how bb_edit's page
- * stayed stale and un-flagged: M59.A11 changed this generator, the committed
- * markdown was never regenerated, and the gate was still checking the old
- * wording, so the staleness check passed against text the generator no longer
- * produces.
- */
-export const CUSTOM_STALENESS_TOOLS = new Set(["bb_edit"])
-
 function stalenessSection(tool: any): string {
   // M59.A11 (#890): bb_edit is the one tool that CONSUMES a stale target by
   // refreshing it rather than reading around it or refusing. Stated here so the
@@ -291,15 +212,6 @@ function stalenessSection(tool: any): string {
     return `This tool does not report per-file index staleness and does not auto-refresh. Output reflects the index as of the last index run; when files changed after indexing, refresh first (project scope: \`${FRESHNESS_REMEDIATION.dir}\`).`
   }
   const modePart = info.modes.length ? `Freshness modes (registered as \`freshnessModes\`): ${info.modes.map((m) => `\`${m}\``).join(", ")}.` : "Freshness applies to the tool's read output (no registered per-mode split)."
-  // bb_ask reports staleness but never auto-refreshes, and unlike the graph
-  // tools it emits no `freshness` envelope. The two facts are stated so the
-  // page cannot be read as promising either — and its remediation text is the
-  // MANUAL one, because the shared constant names automatic refresh and would
-  // otherwise put "reads auto-refresh stale files within budget when enabled"
-  // two sentences after "this tool does not auto-refresh".
-  if (tool.name === "bb_ask") {
-    return `${modePart} Staleness surfaces as: ${info.surfaces}. This tool does not auto-refresh, and it emits no \`freshness\` envelope: a verified aggregate answer is a count over the whole index rather than a per-file fact, so there is no per-file envelope to publish. When a cited source is stale, remediation is manual: run: bb index --changed (or the bb_index tool with the project path — incremental, changed files only). Nothing is stale → no marker. Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
-  }
   return `${modePart} Staleness surfaces as: ${info.surfaces}. When something is stale/missing, the remediation names the registered reindex interfaces: project scope → \`${FRESHNESS_REMEDIATION.dir}\`; file scope → \`${FRESHNESS_REMEDIATION.file}\`. Nothing is stale → silence (no remediation text). Detection uses a mtime+size fast path with a content-hash fallback: an edit that leaves both size and mtime unchanged is reported fresh without hashing (same trade-off as git's index stat-cache; accepted, documented in \`src/brain/freshness.ts\`).`
 }
 

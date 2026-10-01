@@ -21,10 +21,6 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
       "type": "string",
       "description": "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases"
     },
-    "path": {
-      "type": "string",
-      "description": "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol"
-    },
     "limit": {
       "type": "number",
       "description": "max rows returned (default 50, cap 200)"
@@ -53,7 +49,6 @@ Read annotations for a symbol (or all annotations up to the declared limit) with
 
 - Reads only stored annotations; absence is declared, not inferred
 - Annotation store semantics are owned by the M28 workstream
-- Without `path`, a symbol that lives in several files returns every file's notes together; pass `path` (or read each row's symbol_path) to separate them
 
 ## Performance
 
