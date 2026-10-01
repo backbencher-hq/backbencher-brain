@@ -20568,7 +20568,16 @@ async function main() {
         // a real defect in the analyzer; see that file's header and
         // script/m14/spec/erlang-completeness.json.
         const { deriveErlangEdges: deriveErlangEdgesLane } = await import("./erlang-truth-oracle")
-        for (const e of deriveErlangEdgesLane(root)) {
+        // `relPath` is not optional here. The oracle uses the path as the owner of a
+        // file that declares no `-module` (ER-D32), and the analyzer is called with
+        // exactly this string at line 19869 -- so passing it is what makes the two
+        // sides name the same owner. Called without it, the oracle saw an empty path,
+        // emitted no `contains` at all for every module-less file, and the gate
+        // reported 1,804 analyzer-only `contains` edges on a 60-file sample: the
+        // shape this file's own #910 / G7 / M60 #278 notes describe, in a fifth
+        // direction -- an identity mismatch between the two sides of the comparison
+        // rather than a label dropped from it.
+        for (const e of deriveErlangEdgesLane(root, relPath)) {
           ;(truth as any[]).push(e)
         }
       }
