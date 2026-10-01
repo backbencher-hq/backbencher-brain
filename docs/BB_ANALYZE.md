@@ -10,7 +10,7 @@ it is produced from the executable registry plus a curated block in
 behind those fields: what each mode actually computes, and where its numbers
 come from.
 
-Every claim here is pinned by a corpus test in `fixtures/analyze/` (204 claims)
+Every claim here is pinned by a corpus test in `fixtures/analyze/` (308 claims)
 and every magnitude is measured on real code — `backbencher-brain/src` at
 8,565 symbols and 52,597 relationships, and `node_modules/commander` — not on a
 fixture.
@@ -31,6 +31,40 @@ by `script/verify-analyze.ts`, but the tool does not expose it: the registry
 enum omits it and the handler has no branch, so `mode:"coupling"` is rejected.
 An earlier revision of this file listed it as a mode. It is not.
 
+## Which symbol did you actually get?
+
+Every mode that takes a `target` resolves the name in three steps, and **which
+step won is declared in `rootMatch`**:
+
+| value | the step | what it means |
+| --- | --- | --- |
+| `exact` | a structural symbol of that name | you got the symbol you named |
+| `exact-any-kind` | a symbol of that name the graph cannot traverse — a constant, a type alias | you got the symbol, and it is not walkable as a root |
+| `containment` | the documented near-miss fallback | **the answer is about a symbol whose name CONTAINS what you asked for** |
+
+`found: true` on its own means *a root was found*, which is a weaker claim than
+a reader assumes. Measured on this repository's own `src`:
+
+| you asked | you got | `found` | said nothing about |
+|---|---|---|---|
+| `"us"` | `analyzeCSharpBareIdentifierUses` | `true` | that `us` is not a symbol |
+| `"_"` | `build_registry` | `true` | that **no** symbol is named `_` |
+| `"HUB"` | `hub` | `true` | that the match was case-folded |
+
+The third row is the same mechanism and is not a near miss at all: the exact
+step is `name = ?` (case-sensitive) while the fallback is `LIKE '%…%'`, and
+SQLite's `LIKE` is case-insensitive for ASCII. So a case difference is resolved
+by the *weaker* step, and `rootMatch: "containment"` is how you learn that.
+
+The escaping itself was always right (`likeContains` neutralises `%`, `_` and
+`\` by value). The defect was never that the tool matched too much — it was
+that a match it invented was indistinguishable from a match you asked for.
+
+`mode:"impact"` reports the same thing, and now also names the symbol at all:
+`impact.root` is `{ name, symbolType, file, line, candidates, match }`. It used
+to have **no** `root` field, so a blast radius could be published against a
+symbol the answer never named.
+
 ## `limit` — one parameter, one meaning
 
 `limit` is the most items the answer returns:
@@ -42,8 +76,16 @@ An earlier revision of this file listed it as a mode. It is not.
 | `test_mapping` / `test_gaps` | entries / rows | 50 |
 | `test_quality` | files | 50 |
 
-It is **refused**, not ignored, on the modes it does not apply to, and `limit: 0`
-is refused because an empty page is indistinguishable from a real answer.
+It is **refused**, not ignored, on the modes it does not apply to. It has **two
+refused ends**:
+
+- `limit: 0` — an empty page is indistinguishable from a real answer.
+- above the ceiling (**5,000** graph modes, **2,000** the rest) — a page that
+  cannot be read is not an answer. `limit: 2147483648` used to be accepted and
+  answered with the whole corpus.
+
+Refused, not clamped. Clamping returns a page that looks like the request was
+honoured, which is the whole failure this parameter exists to prevent.
 
 It used to be honoured in 2 of 9 collection modes and silently ignored in the
 rest. Measured on `backbencher-brain/src`: `test_mapping` returned **375,270
@@ -183,6 +225,21 @@ relationship graph is a 9% bonus.
 does not match `src/utilities`. It was a substring `includes()`, which made
 `filePath:"util"` and `filePath:"src/util"` the same question.
 
+The scope is normalized in exactly **one** place and exported
+(`normalizeScopePath`), and the page's denominator is computed by the engine
+that produced the rows (`scopeFileCount`). It used to be normalized in two
+places with two rules — the engine stripped trailing slashes, the handler's
+count did not — and the disagreement produced the worst answer this tool can
+give:
+
+| `filePath` | returned | `totalFiles` | `truncated` |
+|---|---|---|---|
+| `src/wide` | 20 of 68 | 68 | `true` |
+| `src/wide/` | 20 of 68 | **0** | **`false`** |
+
+Nothing was capped. The answer *lied*: 48 files hidden behind a flag saying
+there was nothing to see.
+
 `score` counts resolved internal edges and dependents only: a dependency on
 `node:fs` is a constant of the ecosystem, not coupling to this project.
 
@@ -208,8 +265,23 @@ Every metric is `{ value, available }`. Unavailable means `value: null,
 available: false` — never a substituted number.
 
 **The scope is resolved, not guessed.** `target` is a file path: an exact
-`brain_file.relative_path` first, then a directory prefix on a segment boundary.
-Anything else is **refused**, naming the mistake and pointing at `mode:"callers"`.
+`brain_file.relative_path` first, then a directory prefix on a segment boundary
+**at any depth, including a top-level directory**. Anything else is **refused**,
+naming the mistake and pointing at `mode:"callers"`.
+
+The prefix branch used to require a `/` in the target, so **every top-level
+directory was an invalid scope on every project**: `target: "ast"` was refused
+as "no indexed file matches" with 84 indexed files under it, `"intelligence"`
+with 33, `"mcp"` with 4 — while `ast/real-nim-analyzer.ts` answered perfectly.
+The guard could not have been protecting anything, because a bare name that is
+not a path matches no directory either and falls through to the same refusal. It
+only removed the working cases.
+
+`scopeMatch` says which of the two shapes resolved — `exact-file` or
+`directory-prefix` — because `scope` reads `"file"` for both, which reads as one
+file. And both file counts are published: `filesMatchingScope` is how many files
+the scope *names*, `filesInScope` is how many hold a symbol the metrics are
+*over* (83 of 84 on `ast`, measured), and `linesOfCode` covers the second.
 It used to be `LIKE '%target%'` matched anywhere, so `target:"e"` scoped 190 of
 198 symbols across 90 files and `target:"hub"` — a *function name* — was silently
 reinterpreted as a path filter, both while still reporting `"scope":"file"`.
@@ -281,6 +353,23 @@ Each mode also states its page (`summary.returned` / `truncated`), and a mapping
 entry carries at most 20 links with `linksTruncated` saying when more exist —
 the ranking and the summary counts still use the complete set.
 
+**The two modes now state the same population under the same name, and their
+arithmetic closes in public.** They used not to, and nothing said how they
+related:
+
+- `test_mapping.summary.productionSymbols` — the population scanned.
+- `test_gaps.summary.productionSymbols` — **the same number** (it was `total`,
+  which is the population *minus* the directly-tested, and the two modes
+  answered 169 and 163 under names that read as one question).
+- `excludedAsNoise` in both — symbols the population filter dropped, so
+  `productionSymbols + excludedAsNoise` is the store's population under the
+  mode's own filter (169 + 2 = 171, measured).
+- `directlyTested` — the gap between the population and the gaps, so
+  `productionSymbols = gaps + directlyTested`.
+
+An agent can now check every number against the store instead of taking it on
+trust. That is the whole point of publishing the denominators.
+
 ## What the payload does not contain
 
 - **Absolute paths.** `nodes[].filePath` is not emitted; `nodes[].file` is the
@@ -291,6 +380,11 @@ the ranking and the summary counts still use the complete set.
   that no tool page documented and no caller could cite — 64 of 64 edges, and the
   bulk of the payload. `metadata.evidenceClass` **is** documented, so it stays.
 - **A per-row copy of report-level provenance** (dependencies; above).
+- **An unbounded echo of the target.** The name is echoed into `target` and
+  `reason`, so a 4,000-character target produced a 9,409-byte "not found" —
+  ~2.6k tokens for two words of information. It is bounded at 200 characters with
+  the full length stated. The bound is on the **echo only**: the search always
+  uses the whole string, because cutting it would search for a different symbol.
 
 ## Verification
 
@@ -301,6 +395,11 @@ the ranking and the summary counts still use the complete set.
   fits in a context window, the answer contains nothing unasked for, metrics out
   of domain, `stats`, hostile parameters, provenance, the wall-clock bound, the
   unresolved-target arm, and the per-entry identity.
+- `fixtures/analyze/round3.test.ts` — 92 claims, the third review: does a claim
+  *tell the truth*, tested by making it lie. `found: true` for a symbol nobody
+  named; a `truncated: false` over a cut set; a `stale` flag driven by editing
+  the file on disk and requiring it to rise and then fall; two modes disagreeing
+  about one population; byte-identical answers across repeated calls.
 - `fixtures/analyze/latency-gate.sh` — the wall-clock half of the latency
   finding, on the real corpus.
 - `script/verify-analyze.ts` — the in-repo engine gate (coupling, dependencies,
