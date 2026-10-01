@@ -161,8 +161,16 @@ interface ErlangContext {
    * ER-D34.
    */
   macroAtoms: Map<string, string>
-  nifEntries: Set<string>
-  onLoadEntries: Set<string>
+  /**
+   * "name/arity" -> the LINE of the `-nifs` attribute that declared it.
+   *
+   * The line is kept because for an entry with no Erlang clause this attribute is
+   * the ONLY declaration site (ER-D37), so the published symbol's line — and the
+   * `contains` edge that carries it — is the attribute's line, not a line that
+   * does not exist.
+   */
+  nifEntries: Map<string, number>
+  onLoadEntries: Map<string, number>
   /** "name/arity" -> the function-or-callback symbol for that identity. */
   functionSymbolByKey: Map<string, ASTEngine.UniversalSymbol>
 
@@ -196,8 +204,8 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       fnBranches: new Map(),
       specs: new Map(),
       macroAtoms: new Map(),
-      nifEntries: new Set(),
-      onLoadEntries: new Set(),
+      nifEntries: new Map(),
+      onLoadEntries: new Map(),
       functionSymbolByKey: new Map(),
       moduleName: undefined,
       typeDepth: 0,
@@ -583,6 +591,16 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private fnKey(name: string, arity: number): string {
     return `${name}/${arity}`
+  }
+
+  /**
+   * The inverse of `fnKey`, for the two places that must go back from a collected
+   * "name/arity" entry to a symbol. Erlang function names cannot contain `/`, so
+   * the LAST slash is the separator and a name like `mod/1` never appears here.
+   */
+  private splitFnKey(key: string): [string, string] {
+    const i = key.lastIndexOf("/")
+    return i === -1 ? [key, ""] : [key.slice(0, i), key.slice(i + 1)]
   }
 
   /**
@@ -1199,12 +1217,52 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
    * Erlang-visible stub.
    */
   private annotateNativeFunctions(ctx: ErlangContext) {
-    for (const key of ctx.nifEntries) {
+    // ER-D37: a `-nifs` entry with NO Erlang clause is PUBLISHED, not counted as
+    // unresolved. The pre-fix comment here claimed "a NIF always has an
+    // Erlang-visible stub"; that is false, and the corpus says so. A NIF is
+    // implemented in C and its Erlang name is declared BY the attribute — the
+    // compiler accepts `-nifs([n/1])` with no `n/1` clause anywhere in the file.
+    // So for those entries the attribute is the ONLY declaration site: dropping
+    // them made every call to that NIF dangle, with nothing in the graph saying a
+    // function was declared. Measured on the co-agent's `imports-and-try`
+    // fixture, where `-nifs([nif_one/0, nif_two/1])` declares two functions that
+    // appear nowhere else in the file.
+    //
+    // `-on_load` is deliberately NOT extended the same way: the compiler REQUIRES
+    // the named function to be defined in the module, so an entry with no symbol
+    // is a genuine unresolved reference and stays counted.
+    const owner = this.ownerNameOf(ctx)
+    for (const [key, line] of ctx.nifEntries) {
       const sym = ctx.functionSymbolByKey.get(key)
-      if (sym) sym.metadata = { ...(sym.metadata ?? {}), isNif: true }
-      else ctx.stats.unresolvedNifs++
+      if (sym) {
+        sym.metadata = { ...(sym.metadata ?? {}), isNif: true }
+        continue
+      }
+      const [name, arityText] = this.splitFnKey(key)
+      const arity = Number(arityText)
+      if (!name || !Number.isFinite(arity)) {
+        ctx.stats.unresolvedNifs++
+        continue
+      }
+      const published: ASTEngine.UniversalSymbol = {
+        name,
+        kind: ASTEngine.SymbolKind.Function,
+        range: { startLine: line, startColumn: 1, endLine: line, endColumn: 1 },
+        ownerName: owner,
+        ownerKind: ASTEngine.SymbolKind.Module,
+        metadata: {
+          nodeType: "nif_declaration",
+          arity,
+          clauseCount: 0,
+          isNif: true,
+          declaredByNifsAttribute: true,
+          line,
+        },
+      }
+      ctx.symbols.push(published)
+      ctx.functionSymbolByKey.set(key, published)
     }
-    for (const key of ctx.onLoadEntries) {
+    for (const [key] of ctx.onLoadEntries) {
       const sym = ctx.functionSymbolByKey.get(key)
       if (sym) sym.metadata = { ...(sym.metadata ?? {}), isOnLoad: true }
     }
@@ -1337,7 +1395,11 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         atom.text,
         ASTEngine.RelationshipType.References,
         1.0,
-        { erlangSpecific: true, context: "record type reference" },
+        // The context is the generic type-dependency label so the whole family
+        // reads uniformly, and the record-ness is an explicit flag rather than a
+        // second context string: a consumer asking "is this a dependency on a
+        // record?" then has a boolean to read instead of a string to match.
+        { erlangSpecific: true, context: "type reference", isRecordType: true },
         line,
       )
       return
@@ -1588,7 +1650,20 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       // edges over the 150-file census draw, every one of them a module name
       // masquerading as a type.
       if (node.isNamed && (node.type === "remote" || node.type === "remote_module")) continue
-      if (node.isNamed && (node.type === "atom" || node.type === "call")) {
+      // ER-D36: a type dependency is an APPLIED name, and only an applied name.
+      // In Erlang type syntax a bare unquoted atom is the ATOM LITERAL of that
+      // name, never a type called by that name — you must write `foo()` to apply
+      // a type. So
+      //     -type day() :: monday | tuesday.        % two atom literals
+      //     -type job() :: #{id := job_id()}.       % `id` is a field DECLARATION
+      // declare no dependency on anything named monday, tuesday or id, and
+      // emitting one is a fabricated edge: it resolves to a same-named type or
+      // record property elsewhere in the file and reads as a real dependency.
+      // Measured by the M12 differential, which went 1.000 -> 0.784 with 19 false
+      // positives, two of them exactly this (`job -> id`, `job -> kind`, the map
+      // keys of a map type). The same walk also covers a record type's FIELD
+      // names (`#state{q :: [job()]}`) — `q` is a declaration, `job()` is applied.
+      if (node.isNamed && node.type === "call") {
         // ER-D31: a QUALIFIED type keeps its module, exactly as a qualified call
         // does (ER-D1). `-record(r, {f :: missing_mod:referenced_type()})` names
         // ONE type, `missing_mod:referenced_type`; reading the callee atom alone
@@ -1613,9 +1688,6 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
             nameNode = node.namedChild(0) ?? undefined
             name = nameNode?.text
           }
-        } else {
-          nameNode = node
-          name = node.text
         }
         const inDeclarationName =
           skipSpan !== undefined && nameNode !== undefined && this.spanContains(skipSpan, nameNode)
@@ -1885,20 +1957,21 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
    * grammar's own `-record`-in-`wild_attribute` error path produces `fa` nodes
    * for some vendor attributes.
    */
-  private collectAttributeFaEntries(node: Node, out: Set<string>, ctx: ErlangContext) {
+  private collectAttributeFaEntries(node: Node, out: Map<string, number>, ctx: ErlangContext) {
+    const line = node.startPosition.row + 1
     const stack: Node[] = [node]
     while (stack.length > 0) {
       const n = stack.pop()!
       if (n.isNamed && n.type === "binary_op_expr" && n.child(1)?.type === "/") {
         const nameNode = this.getChildByType(n, "atom")
         if (nameNode?.text) {
-          out.add(this.fnKey(nameNode.text, this.digitsOf(this.getChildByType(n, "integer")?.text)))
+          out.set(this.fnKey(nameNode.text, this.digitsOf(this.getChildByType(n, "integer")?.text)), line)
         }
         continue
       }
       if (n.isNamed && n.type === "fa") {
         const fa = this.readFa(n, ctx.moduleName)
-        if (fa) out.add(this.fnKey(fa.name, fa.arity))
+        if (fa) out.set(this.fnKey(fa.name, fa.arity), line)
         continue
       }
       for (let i = n.childCount - 1; i >= 0; i--) {
