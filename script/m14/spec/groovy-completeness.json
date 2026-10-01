@@ -2,7 +2,11 @@
   "language": "groovy",
   "grammar": "tree-sitter-groovy.wasm",
   "handled_verified": {
-    "types": ["interpolated_identifier", "leading_dot_call", "slashy_string", "string_interpolation", 
+    "types": [
+      "interpolated_identifier",
+      "leading_dot_call",
+      "slashy_string",
+      "string_interpolation",
       "annotation",
       "argument_list",
       "array_type",
@@ -74,7 +78,13 @@
     ]
   },
   "internal_silent": {
-    "types": ["operator_continuation", "reserved_word", "spread_argument", "spread_map_argument", "spread_map_item", "template_expression", 
+    "types": [
+      "operator_continuation",
+      "reserved_word",
+      "spread_argument",
+      "spread_map_argument",
+      "spread_map_item",
+      "template_expression",
       "annotated_type",
       "annotation_argument_list",
       "annotation_type_body",
@@ -214,11 +224,11 @@
   "design_decision": {
     "decisions": [
       {
-      "id": "S1",
-      "node_type": "string_interpolation,interpolated_identifier,string_fragment,multiline_string_fragment,slashy_string",
-      "status": "RULED",
-      "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
-      "resolution": "SUPERSEDED 2026-09-15 by M49 ledger G7 (was: DECLARED LIMITATION — the pinned grammar produced no interpolation nodes at all, probed 2026-08-27). The grammar now produces `string_interpolation` (${…}) and `interpolated_identifier` ($name) for the double-quoted AND slashy families, and the analyzer emits Uses for FREE names at confidence 0.9 with metadata.isInterpolationRead. Bound names (parameters, locals, closure `it`) are suppressed by the local-binding gate; single-quoted forms never interpolate; regex ANCHORS (/x$/) stay literal. Pinned by groovy/interpolation-reads-g7 with four mutants."
+        "id": "S1",
+        "node_type": "string_interpolation,interpolated_identifier,string_fragment,multiline_string_fragment,slashy_string",
+        "status": "RULED",
+        "question": "Should interpolated identifiers in GStrings (\"hi ${name}\") emit a Uses edge on the referenced variable/property? The gstring-interpolation fixture pins no-garbage-symbols only. Recommend: emit Uses (semantically a property read, matching field_access behavior).",
+        "resolution": "SUPERSEDED 2026-09-15 by M49 ledger G7 (was: DECLARED LIMITATION — the pinned grammar produced no interpolation nodes at all, probed 2026-08-27). The grammar now produces `string_interpolation` (${…}) and `interpolated_identifier` ($name) for the double-quoted AND slashy families, and the analyzer emits Uses for FREE names at confidence 0.9 with metadata.isInterpolationRead. Bound names (parameters, locals, closure `it`) are suppressed by the local-binding gate; single-quoted forms never interpolate; regex ANCHORS (/x$/) stay literal. Pinned by groovy/interpolation-reads-g7 with four mutants."
       },
       {
         "id": "S2",
@@ -231,7 +241,7 @@
         "id": "S3",
         "node_type": "",
         "status": "RULED",
-        "question": "exports relationship kind: NOT EMITTED for groovy \u2014 no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation.",
+        "question": "exports relationship kind: NOT EMITTED for groovy — no annotation-to-endpoint path exists (probe: Grails @Resource(uri=...) produces no exports edge or apiContractPath). Recommend: declared limitation.",
         "resolution": "DECLARED LIMITATION: exports relationship kind NOT EMITTED for groovy (no annotation-to-endpoint path; Grails @Resource(uri=...) probe emits no exports edge). Section B requiredKinds excludes it."
       },
       {
@@ -252,15 +262,15 @@
         "id": "GD19",
         "node_type": "multi-hop nested-class override resolution (BlackVal extends Black extends Node)",
         "status": "FIXED",
-        "question": "M37.21 #610 JD19 family lesson (java finding, groovy shares the copied resolveOverrides): overrides through a NON-declaring ancestor were lost at hop-2 (bare name vs FQN-keyed classHierarchy) AND fell through to the pass-3 first-parent guess, fabricating BlackVal.val -> Black.val at 0.5 \u2014 a wrong edge, worse than no edge.",
+        "question": "M37.21 #610 JD19 family lesson (java finding, groovy shares the copied resolveOverrides): overrides through a NON-declaring ancestor were lost at hop-2 (bare name vs FQN-keyed classHierarchy) AND fell through to the pass-3 first-parent guess, fabricating BlackVal.val -> Black.val at 0.5 — a wrong edge, worse than no edge.",
         "resolution": "Suffix-resolve every bare parent to its FQN candidate(s) during the BFS; match on the declaring-owner bare name against symbolMap's Owner.method(sig) raw key. Probe-verified: BlackVal.val -> Node.val at conf 1.0; both groovy lanes 100%/0/0 at 200 files; fixture groovy/multihop-override-resolution pins the true target and forbids the fabricated one; mutant groovy/override-multihop-fallthrough."
       },
       {
         "id": "GD20",
         "node_type": "`o as String` mis-parsed as local_variable_declaration(as, String)",
         "status": "FIXED",
-        "question": "Review G1: the idiomatic Groovy cast never parses as juxt_function_call \u2014 the patched grammar emits a phantom local_variable_declaration whose 'type' is the `as` keyword and whose declarator holds the target as a bare identifier. Both the juxt branch and the declared-type walk missed it (the `as` keyword exclusion voided the edge).",
-        "resolution": "Dedicated as-shape branch in the declared-type walk: a local_variable_declaration whose type-position child is literally `as` emits its declarator subtree (type_identifiers plus bare identifiers, keywords excluded) as cast_type references sourced to the enclosing declaration \u2014 the same label as C-style casts (juxt branch unified to cast_type). Probe: run->String, run->Set; fixture groovy/as-cast (+forbid target 'as'); mutant groovy/as-cast-drop."
+        "question": "Review G1: the idiomatic Groovy cast never parses as juxt_function_call — the patched grammar emits a phantom local_variable_declaration whose 'type' is the `as` keyword and whose declarator holds the target as a bare identifier. Both the juxt branch and the declared-type walk missed it (the `as` keyword exclusion voided the edge).",
+        "resolution": "Dedicated as-shape branch in the declared-type walk: a local_variable_declaration whose type-position child is literally `as` emits its declarator subtree (type_identifiers plus bare identifiers, keywords excluded) as cast_type references sourced to the enclosing declaration — the same label as C-style casts (juxt branch unified to cast_type). Probe: run->String, run->Set; fixture groovy/as-cast (+forbid target 'as'); mutant groovy/as-cast-drop."
       },
       {
         "id": "GD21",
@@ -274,14 +284,14 @@
         "node_type": "trait/interface/enum member exports + anonymous-class export leak",
         "status": "FIXED",
         "question": "Review G3/G7: the Class-only export owner filter excluded trait members (the most intentional API surface, java JAD3 parity), while class-level anonymous_Runnable noise symbols leaked INTO exports. Fix both directions at once?",
-        "resolution": "Exports filter mirrors java exactly (Class/Interface/Enum owners) plus an explicit isAnonymousClass exclusion \u2014 java only excludes its own accidentally via package visibility, so groovy is now stricter by design and the residual is recorded for the java lane. Fixtures groovy/trait-exports (Greeter + greet) and groovy/anon-exports (forbidExports anonymous_Runnable \u2014 new runner gate); mutants groovy/export-filter-revert and groovy/anon-export-leak."
+        "resolution": "Exports filter mirrors java exactly (Class/Interface/Enum owners) plus an explicit isAnonymousClass exclusion — java only excludes its own accidentally via package visibility, so groovy is now stricter by design and the residual is recorded for the java lane. Fixtures groovy/trait-exports (Greeter + greet) and groovy/anon-exports (forbidExports anonymous_Runnable — new runner gate); mutants groovy/export-filter-revert and groovy/anon-export-leak."
       },
       {
         "id": "GD23",
         "node_type": "constructor symbol identity ('constructor' literal)",
         "status": "FIXED",
-        "question": "Review G4 (java C3 parity): every ctor in every class was named 'constructor' \u2014 contains Alpha->constructor vs Beta->constructor indistinguishable, overloads collapsed.",
-        "resolution": "Ctors keep their declared (class) names with kind Constructor, exactly like java (including the A->A self-contains shape \u2014 family behavior, verified identical on the java lane). Fixture groovy/ctor-identity pins class-named ctors and forbids the literal; mutant groovy/ctor-name-revert."
+        "question": "Review G4 (java C3 parity): every ctor in every class was named 'constructor' — contains Alpha->constructor vs Beta->constructor indistinguishable, overloads collapsed.",
+        "resolution": "Ctors keep their declared (class) names with kind Constructor, exactly like java (including the A->A self-contains shape — family behavior, verified identical on the java lane). Fixture groovy/ctor-identity pins class-named ctors and forbids the literal; mutant groovy/ctor-name-revert."
       },
       {
         "id": "GD24",
@@ -292,16 +302,16 @@
       },
       {
         "id": "GD25",
-        "node_type": "resolveOverrides per-task suffix-index rebuild (O(T\u00b7C))",
+        "node_type": "resolveOverrides per-task suffix-index rebuild (O(T·C))",
         "status": "FIXED",
-        "question": "Review G6 (java C11 parity): the suffix index rebuilt per override task with queue.shift() dequeues. No observable behavior change \u2014 does it need a fixture or mutant?",
-        "resolution": "Hoisted above the task loop with an index cursor, mirroring java verbatim. No fixture/mutant (behavior-preserving perf change \u2014 mutants must be behavior-observable to be catchable); covered by the unchanged green override fixtures (overrides, multihop-override-resolution, implicit-override)."
+        "question": "Review G6 (java C11 parity): the suffix index rebuilt per override task with queue.shift() dequeues. No observable behavior change — does it need a fixture or mutant?",
+        "resolution": "Hoisted above the task loop with an index cursor, mirroring java verbatim. No fixture/mutant (behavior-preserving perf change — mutants must be behavior-observable to be catchable); covered by the unchanged green override fixtures (overrides, multihop-override-resolution, implicit-override)."
       },
       {
         "id": "GD26",
         "node_type": "heritage targets with folded type arguments (implements Cache<T>)",
         "status": "FIXED",
-        "question": "The pinned groovy grammar folds type args into the supertype token text (`implements Cache<T>` -> super_interfaces child text `Cache<T>`). deriveTreeEdges pushed the raw token, but decls keys are bracket-stripped at registration (M37.9) \u2014 the implements edge could never match its interface, nested-interface override chains died silently (geb CachingDriverFactory: SimpleCache.get -> Cache.get surfaced unexplained @150).",
+        "question": "The pinned groovy grammar folds type args into the supertype token text (`implements Cache<T>` -> super_interfaces child text `Cache<T>`). deriveTreeEdges pushed the raw token, but decls keys are bracket-stripped at registration (M37.9) — the implements edge could never match its interface, nested-interface override chains died silently (geb CachingDriverFactory: SimpleCache.get -> Cache.get surfaced unexplained @150).",
         "resolution": "deriveTreeEdges collect() strips type arguments from every TYPE-node heritage target on every language (a `<`-bearing target could never match a decl key, so the strip is provably safe family-wide; dotted paths keep the full path per M14 #419 kotlin rule). Mutant groovy/heritage-typeargs-revert re-brackets Cache -> Cache<T> and must die.",
         "evidence": "geb lane 2 unexplained -> 0 (100/0/0 @150); probe s1-groovy-overrides.ts shows all four real override pairs deriving; fixture groovy/heritage-typeargs-strip with forbid pins on bracketed targets."
       },
@@ -309,7 +319,7 @@
         "id": "GD27",
         "node_type": "import wildcard token node type (F1 grammar-conformance)",
         "status": "FIXED",
-        "question": "real-groovy-analyzer.ts checked `c.type === \"asterisk\" || c.type === \"wildcard_import\"` \u2014 the pinned grammar declares the wildcard token as `asterisk` ONLY (probe s1-groovy-shape.ts on live parses); `wildcard_import` does not exist in the wasm's node-type enumeration, so the second disjunct was dead code. F1 flagged it as the wave's only groovy regression (0 -> 1 unknown).",
+        "question": "real-groovy-analyzer.ts checked `c.type === \"asterisk\" || c.type === \"wildcard_import\"` — the pinned grammar declares the wildcard token as `asterisk` ONLY (probe s1-groovy-shape.ts on live parses); `wildcard_import` does not exist in the wasm's node-type enumeration, so the second disjunct was dead code. F1 flagged it as the wave's only groovy regression (0 -> 1 unknown).",
         "resolution": "Dead disjunct removed with a documented comment; F1 now PASS for groovy (unknown=0). Exactly the defect class the grammar-conformance audit exists to catch.",
         "evidence": "F1: groovy PASS refs=59 unknown=0 (was FAIL unknown=1, REGRESSION groovy 0 -> 1); probe s1-groovy-shape.ts shows import_declaration children [import, scoped_identifier, ., asterisk]."
       },
@@ -318,7 +328,7 @@
         "node_type": "multi-catch union catch (IOException | SQLException e)",
         "status": "FIXED",
         "question": "M49.G1 closeout probe (family parity with java JLS 14.20): does the groovy analyzer emit declared_type refs for EACH union member?",
-        "resolution": "Pre-fix: NO case existed for catch_formal_parameter \u2014 both union members silently vanished (probe-verified; the differential could not catch it because References edges are outside the F5 groovy contract). Fixed: the declared-type walk now emits via the catch_type child \u2014 collectTypeNames descends the union, one ref per member; the variable identifier is skipped naturally. Java already emitted these (its union_type/catch_type handling) \u2014 family contract is now identical. Pinned by groovy/multicatch-and-varargs + mutant groovy/multicatch-drop."
+        "resolution": "Pre-fix: NO case existed for catch_formal_parameter — both union members silently vanished (probe-verified; the differential could not catch it because References edges are outside the F5 groovy contract). Fixed: the declared-type walk now emits via the catch_type child — collectTypeNames descends the union, one ref per member; the variable identifier is skipped naturally. Java already emitted these (its union_type/catch_type handling) — family contract is now identical. Pinned by groovy/multicatch-and-varargs + mutant groovy/multicatch-drop."
       },
       {
         "id": "GD29",
@@ -340,6 +350,17 @@
         "status": "CONFIRMED",
         "question": "Which source form produces the grammar's `lambda_expression` node, and what is the contract for it? (M14.0.F6 read uncovered: [lambda_expression], i.e. an analyzer branch with no fixture.)",
         "resolution": "The UNBRACED arrow — `(int x) -> x + 1`, `s -> !s.isEmpty()`, `() -> x`, `(K k, V v) -> { … }` — parenthesised or not, typed or not; every BRACE form (`{ x -> x + 1 }`, `{ int x -> x + 1 }`, `{ x + 1 }`, `{ a, b -> a + b }`, `list.each { int x -> print x }`) is a `closure`. It is REAL, mainstream syntax, not an exotic spelling: 60 occurrences in 26 files across the two pinned corpora, with the parent a variable_declarator (26), argument_list (20), expression_statement (8), range_expression (3), closure (2) or return_statement (1) — `.filter(s -> !s.isEmpty())`, `map.forEach((K key, V value) -> { … })`, `registerBean(…, () -> userCacheManager)`. CONTRACT (family, K6/#866): a lambda is an EXPRESSION — no symbol of its own, its parameters are not project symbols, and the calls in its body (including an argument-position lambda's) attribute to the lexically enclosing declaration at their own lines. Pinned by fixture groovy/lambda-expression."
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "overrides",
+        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
+        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
       }
     ]
   }

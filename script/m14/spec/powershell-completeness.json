@@ -256,5 +256,61 @@
         "resolution": "RULED: comments publish no SYMBOL and no relationship, and are the one place this lane reads raw TEXT — comment-based help (`.SYNOPSIS`) is the documentation source, and `extractRequiresModule` reads `#requires -Module` from a comment body, because comments are opaque to the grammar and no AST route exists. That is the sanctioned exception to the zero-regex policy and it is why `isSpaceCode` spells out all 25 code points JavaScript's `\\s` matches rather than approximating: the comment delimiters are matched by character, not by a pattern. Pinned by payload-psb11's `expectDocstring`/`forbidDocstring` rows and the PS23 mutant."
       }
     ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "references",
+        "reason": "`references` is admitted for this lane and compared, but no references oracle exists for it, so its rows are counted as unexplained fabrications for the same reason as overrides elsewhere. Closes when a references oracle exists for this language.",
+        "closes_when": "an references oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "extends",
+        "reason": "`extends` is admitted for this lane and compared, but this lane has no extends oracle, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. The number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Closes when a extends oracle exists for this language.",
+        "closes_when": "an extends oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "instantiates",
+        "reason": "`instantiates` is admitted for this lane and compared, but this lane has no instantiates oracle, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. The number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Closes when a instantiates oracle exists for this language.",
+        "closes_when": "an instantiates oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "calls",
+        "reason": "`calls` is admitted for this lane and compared, but no calls oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a calls oracle exists for this language.",
+        "closes_when": "a calls oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "contains",
+        "reason": "`contains` is admitted for this lane and compared, but no contains oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a contains oracle exists for this language.",
+        "closes_when": "a contains oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "overrides",
+        "reason": "`overrides` is admitted for this lane and compared, but no overrides oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a overrides oracle exists for this language.",
+        "closes_when": "a overrides oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "uses",
+        "reason": "`uses` is admitted for this lane and compared, but no uses oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a uses oracle exists for this language.",
+        "closes_when": "a uses oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "imports",
+        "reason": "`imports` is admitted for this lane and compared, but no imports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a imports oracle exists for this language.",
+        "closes_when": "a imports oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "exports",
+        "reason": "`exports` is admitted for this lane and compared, but no exports oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a exports oracle exists for this language.",
+        "closes_when": "a exports oracle exists for this language; then admit it and reconcile"
+      },
+      {
+        "label": "implements",
+        "reason": "`implements` is admitted for this lane and compared, but no implements oracle exists behind it, so its rows enter the comparison with no truth to meet and are counted as unexplained FABRICATIONS. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced — and WHICH labels surface depends on the file draw, so this list is the lane's full admitted set rather than the one a single sweep happened to hit. Closes when a implements oracle exists for this language.",
+        "closes_when": "a implements oracle exists for this language; then admit it and reconcile"
+      }
+    ]
   }
 }

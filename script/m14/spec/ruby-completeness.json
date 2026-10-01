@@ -146,7 +146,7 @@
     "gaps": []
   },
   "design_decision": {
-    "description": "Owner rulings \u2014 never silent absence",
+    "description": "Owner rulings — never silent absence",
     "decisions": [
       {
         "id": "RUBD1",
@@ -171,7 +171,7 @@
         "node_type": "class_variable / global_variable",
         "status": "RULED",
         "question": "Do @@class_vars and $globals emit uses like instance_variable?",
-        "resolution": "NO \u2014 declared limitation: @@var/$var are file-global and cross-file by nature; per-file emission would fabricate cross-file semantics. Only instance_variable emits member-read uses.",
+        "resolution": "NO — declared limitation: @@var/$var are file-global and cross-file by nature; per-file emission would fabricate cross-file semantics. Only instance_variable emits member-read uses.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -180,7 +180,7 @@
         "node_type": "instance_variable in read-modify-write (operator_assignment: @x += / -= / ||=)",
         "status": "RULED",
         "question": "Does @x += v emit a uses edge for @x, or is every operator_assignment LHS a pure write?",
-        "resolution": "EMITS USES \u2014 read-modify-write reads @x before writing it. Plain assignment (@x = v) stays a pure write. Verified in rake corpus (@balance += amount, @options ||= {}): fixture pins authorize->@balance x3 and refund->@balance x1; oracle already mirrored this rule.",
+        "resolution": "EMITS USES — read-modify-write reads @x before writing it. Plain assignment (@x = v) stays a pure write. Verified in rake corpus (@balance += amount, @options ||= {}): fixture pins authorize->@balance x3 and refund->@balance x1; oracle already mirrored this rule.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -189,7 +189,7 @@
         "node_type": "singleton_class (class << self)",
         "status": "RULED",
         "question": "Do methods inside class << self belong to the enclosing class?",
-        "resolution": "YES \u2014 grammar represents them as ordinary method nodes inside singleton_class; analyzer re-parents them to the enclosing class with isStatic/isSingleton metadata. Verified: def self.create emits Service.create static.",
+        "resolution": "YES — grammar represents them as ordinary method nodes inside singleton_class; analyzer re-parents them to the enclosing class with isStatic/isSingleton metadata. Verified: def self.create emits Service.create static.",
         "decided_at": "2026-08-31",
         "decided_by": "owner-delegated (M14 wave authorization)"
       },
@@ -198,7 +198,7 @@
         "node_type": "if_modifier / unless_modifier / while_modifier / until_modifier / rescue_modifier",
         "status": "RULED",
         "question": "Do postfix (modifier) conditionals count toward cyclomatic complexity?",
-        "resolution": "YES \u2014 postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
+        "resolution": "YES — postfix forms are genuine branches, semantically identical to the block forms (`return false if x` == `if x; return false; end`) and Ruby's most idiomatic branching. tree-sitter-ruby emits DISTINCT node types (if_modifier etc.) that the analyzer previously skipped, under-reporting every modifier-heavy method. Both the per-symbol counter and the file-level cyclomaticComplexity now count if/unless/while/until/rescue + their *_modifier forms. Verified: fixture authorize has 2 if_modifier + 1 while = complexity 4 (previously mis-pinned at 2); charge has 1 if_modifier = 2 (previously mis-pinned at 1).",
         "decided_at": "2026-09-01",
         "decided_by": "owner-delegated (M14 ruby re-review)"
       },
@@ -207,7 +207,7 @@
         "node_type": "case_match / in_clause / array_pattern / hash_pattern / as_pattern (pattern family)",
         "status": "RULED",
         "question": "What do Ruby 3 pattern-matching bindings emit?",
-        "resolution": "BINDINGS ARE LOCALS, NEVER EDGES \u2014 same contract as left_assignment_list destructuring: `in [a, b]` binds a/b as locals of the match scope (visible in guards and match bodies); `in {name:}` binds name via hash_key_symbol (shorthand); `{age: x}` binds x; `Integer => n` binds n; `in x` binds x; `[*head, last]` binds head/last. `variable_reference_pattern` (^n) PINNS an outer local and binds nothing. Before RUBG1 the bindings leaked as bogus calls:a/calls:b edges in both the pattern and match body \u2014 now forbidden by fixture pins and the ruby/pattern-bindings-leak-as-calls mutant.",
+        "resolution": "BINDINGS ARE LOCALS, NEVER EDGES — same contract as left_assignment_list destructuring: `in [a, b]` binds a/b as locals of the match scope (visible in guards and match bodies); `in {name:}` binds name via hash_key_symbol (shorthand); `{age: x}` binds x; `Integer => n` binds n; `in x` binds x; `[*head, last]` binds head/last. `variable_reference_pattern` (^n) PINNS an outer local and binds nothing. Before RUBG1 the bindings leaked as bogus calls:a/calls:b edges in both the pattern and match body — now forbidden by fixture pins and the ruby/pattern-bindings-leak-as-calls mutant.",
         "decided_at": "2026-09-01",
         "decided_by": "owner-delegated (M14 ruby re-review)"
       },
@@ -223,56 +223,56 @@
         "node_type": "test_pattern",
         "status": "RULED",
         "question": "Is test_pattern a realizable parse-tree node for valid Ruby pattern-matching source in the pinned grammar?",
-        "resolution": "No. Probe-verified 2026-09-02 across 20+ case/in shapes (call patterns, bare literals, ranges, one-line `then` forms, parenthesized alts): the only source that produced test_pattern was `def m(v) = case v in 1 then 2 end`, which is an ERROR parse \u2014 the one-line case/in form is not supported by this grammar version. Every clean parse realizes other pattern nodes (as_pattern, alternative_pattern, parenthesized_pattern, find_pattern). Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
+        "resolution": "No. Probe-verified 2026-09-02 across 20+ case/in shapes (call patterns, bare literals, ranges, one-line `then` forms, parenthesized alts): the only source that produced test_pattern was `def m(v) = case v in 1 then 2 end`, which is an ERROR parse — the one-line case/in form is not supported by this grammar version. Every clean parse realizes other pattern nodes (as_pattern, alternative_pattern, parenthesized_pattern, find_pattern). Reclassified from handled_verified per the F6 fixture-coverage gate (M14.0.F6)."
       },
       {
         "id": "M3710-COMPANION",
         "node_type": "method_signature (override resolution)",
         "status": "RULED",
-        "question": "AnalyzeContext.overrideCompanion is never populated by production callers \u2014 what must the analyzer do for externally-declared bases?",
-        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' \u2014 below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-RUBY, the ruby/external-override fixture + confidence pins, and 6 family regression mutants."
+        "question": "AnalyzeContext.overrideCompanion is never populated by production callers — what must the analyzer do for externally-declared bases?",
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. In-file base declaring the method -> verified override @0.95; companion present -> companion-index resolution; otherwise deterministic Pass-3 first-parent guess @0.5 with reasonCode 'first-parent-guess' and tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic by the F5 differential. Gating on the companion alone silently dropped every cross-file override. Gated by F9-PROBE-M3710-RUBY, the ruby/external-override fixture + confidence pins, and 6 family regression mutants."
       },
       {
         "id": "RB-A",
         "node_type": "call with expression receiver (.new on Class.new{...})",
         "status": "RULED",
-        "question": "`Class.new { ... }.new` (and any .new whose receiver is a call/block expression) has no nameable class \u2014 what edge, if any, must be emitted?",
-        "resolution": "None. Rack two-corpus wave 2026-09: the outer .new constructs an ANONYMOUS class; the analyzer leaked a junk `calls:<owner> -> new` at top level (3 fabrications in spec_lock.rb) while the oracle truth emits nothing (no enclosing class). Analyzer now suppresses expression-receiver .new that cannot resolve to a constant/owner; `self.new`/`self.class.new` inside a class still resolve to the enclosing class (instantiates), and lowercase receivers (`task_class.new`) remain genuine calls:new \u2014 all mirrored by deriveRubyEdges."
+        "question": "`Class.new { ... }.new` (and any .new whose receiver is a call/block expression) has no nameable class — what edge, if any, must be emitted?",
+        "resolution": "None. Rack two-corpus wave 2026-09: the outer .new constructs an ANONYMOUS class; the analyzer leaked a junk `calls:<owner> -> new` at top level (3 fabrications in spec_lock.rb) while the oracle truth emits nothing (no enclosing class). Analyzer now suppresses expression-receiver .new that cannot resolve to a constant/owner; `self.new`/`self.class.new` inside a class still resolve to the enclosing class (instantiates), and lowercase receivers (`task_class.new`) remain genuine calls:new — all mirrored by deriveRubyEdges."
       },
       {
         "id": "RB-B",
         "node_type": "method_parameters default value expressions",
         "status": "RULED",
         "question": "Do default-argument VALUE expressions (`def f(app, lock = Lock.new)`, `def g(env, app = @app)`) count as call/use/instantiation sites of the method?",
-        "resolution": "Yes \u2014 Ruby evaluates defaults in the method scope at call time. Rack two-corpus wave 2026-09: only the body was walked, dropping mutex = Mutex.new (instantiates), params = Rack::Utils.default_query_parser (calls), app = @app (uses). walkParamDefaults now walks optional/keyword parameter values under the method owner; oracle truth already did. Locals in default values resolve as method calls unless they name a parameter (parity fix: collectLocals adds param NAMES only, not identifiers inside default values \u2014 handler.rb `www_authenticate = challenge`)."
+        "resolution": "Yes — Ruby evaluates defaults in the method scope at call time. Rack two-corpus wave 2026-09: only the body was walked, dropping mutex = Mutex.new (instantiates), params = Rack::Utils.default_query_parser (calls), app = @app (uses). walkParamDefaults now walks optional/keyword parameter values under the method owner; oracle truth already did. Locals in default values resolve as method calls unless they name a parameter (parity fix: collectLocals adds param NAMES only, not identifiers inside default values — handler.rb `www_authenticate = challenge`)."
       },
       {
         "id": "RB-C",
         "node_type": "class superclass call expression",
         "status": "RULED",
-        "question": "`class X < Struct.new(:root, :path, :files)` \u2014 the superclass is a call, not a constant. What edges exist?",
-        "resolution": "No extends (the base is anonymous/unnameable \u2014 both sides agree the leaf- extends edge is noise), but the `Struct.new` call IS a declaration-time instantiation of Struct and must surface. Rack two-corpus wave 2026-09 (directory.rb DirectoryBody): analyzer now visits call nodes inside the superclass field under the declaration's outer scope, mirroring deriveRubyEdges which already walked the superclass subtree."
+        "question": "`class X < Struct.new(:root, :path, :files)` — the superclass is a call, not a constant. What edges exist?",
+        "resolution": "No extends (the base is anonymous/unnameable — both sides agree the leaf- extends edge is noise), but the `Struct.new` call IS a declaration-time instantiation of Struct and must surface. Rack two-corpus wave 2026-09 (directory.rb DirectoryBody): analyzer now visits call nodes inside the superclass field under the declaration's outer scope, mirroring deriveRubyEdges which already walked the superclass subtree."
       },
       {
         "id": "RB-D",
         "node_type": "instance_variable reads outside method bodies",
         "status": "RULED",
-        "question": "Member reads with no enclosing def (spec/DSL `it`/`before` blocks, bare class-level reads) \u2014 do they emit uses, and under which source?",
-        "resolution": "Yes, under the file-level owner (owner || Global) \u2014 the same fallback calls use. Rack two-corpus wave 2026-09 (spec_media_type.rb @content_type/@empty_hash reads): walkBody only fired inside defs, so spec-DSL member reads vanished while the oracle truth counts every instance_variable read. The class/top-level DFS now emits memberRead uses for reads (assignment/operator-assignment LHS still skipped, SCD1 family contract)."
+        "question": "Member reads with no enclosing def (spec/DSL `it`/`before` blocks, bare class-level reads) — do they emit uses, and under which source?",
+        "resolution": "Yes, under the file-level owner (owner || Global) — the same fallback calls use. Rack two-corpus wave 2026-09 (spec_media_type.rb @content_type/@empty_hash reads): walkBody only fired inside defs, so spec-DSL member reads vanished while the oracle truth counts every instance_variable read. The class/top-level DFS now emits memberRead uses for reads (assignment/operator-assignment LHS still skipped, SCD1 family contract)."
       },
       {
         "id": "RB-E",
         "node_type": "alias_method simple_symbol arguments",
         "status": "RULED",
-        "question": "`alias_method :local_path, :path` \u2014 the analyzer emits calls:<alias> with aliasedTo metadata; the oracle truth had no mirror, flagging it unexplained. Keep, mirror, or remove?",
-        "resolution": "Keep and mirror. The alias makes the alias name a callable member of the class \u2014 the analyzer contract (calls source=class target=alias, aliasedTo metadata) has shipped since before M37.10 and carries the graph information. deriveRubyEdges now emits calls:<alias> for two-simple_symbol alias_method, matching the analyzer. Rack two-corpus wave 2026-09 (uploaded_file.rb local_path)."
+        "question": "`alias_method :local_path, :path` — the analyzer emits calls:<alias> with aliasedTo metadata; the oracle truth had no mirror, flagging it unexplained. Keep, mirror, or remove?",
+        "resolution": "Keep and mirror. The alias makes the alias name a callable member of the class — the analyzer contract (calls source=class target=alias, aliasedTo metadata) has shipped since before M37.10 and carries the graph information. deriveRubyEdges now emits calls:<alias> for two-simple_symbol alias_method, matching the analyzer. Rack two-corpus wave 2026-09 (uploaded_file.rb local_path)."
       },
       {
         "id": "RUBD12",
         "node_type": "pair (hash literal / keyword-argument value positions)",
         "status": "RULED",
         "question": "Are hash/argument pair VALUES real expression positions whose method calls must be emitted?",
-        "resolution": "YES \u2014 `{ key: fetch_key }` (colon), `{ pair => fetch_val }` (rocket, key AND value both evaluate), and `store.write(cache: build_entry)` (keyword argument) values are expressions evaluated at runtime; a bare identifier there is a method call when not a local. The `pair` entry in BARE_CALL_SKIP_PARENTS (analyzer) and the oracle skip list silently suppressed EVERY value-position call on BOTH sides \u2014 a shared blind spot F5 cannot see (matching is label+target, so equal suppression never shows as missing/unexplained). Pair removed from both skip lists; colon-form KEYS are hash_key_symbol nodes (never identifiers) so only genuine value expressions changed. Locals stay silent. Master-review 2026-09, pinned by ruby/master-review-wave fixture + mutant ruby/readd-pair-value-suppression.",
+        "resolution": "YES — `{ key: fetch_key }` (colon), `{ pair => fetch_val }` (rocket, key AND value both evaluate), and `store.write(cache: build_entry)` (keyword argument) values are expressions evaluated at runtime; a bare identifier there is a method call when not a local. The `pair` entry in BARE_CALL_SKIP_PARENTS (analyzer) and the oracle skip list silently suppressed EVERY value-position call on BOTH sides — a shared blind spot F5 cannot see (matching is label+target, so equal suppression never shows as missing/unexplained). Pair removed from both skip lists; colon-form KEYS are hash_key_symbol nodes (never identifiers) so only genuine value expressions changed. Locals stay silent. Master-review 2026-09, pinned by ruby/master-review-wave fixture + mutant ruby/readd-pair-value-suppression.",
         "decided_at": "2026-09-07",
         "decided_by": "owner-delegated (M14 master-review wave authorization)"
       },
@@ -281,7 +281,7 @@
         "node_type": "class/module reopen with namespaced name (class A::B, module A::B) + call-expression superclasses",
         "status": "RULED",
         "question": "What identity does a namespaced reopen declaration carry, and when is a superclass statically nameable?",
-        "resolution": "(1) `class M::Inner` declares the SAME class as nested `module M; class Inner` \u2014 symbol name = LEAF, ownerName = the module-scope path (kept verbatim, e.g. A::B), fqn metadata records the full declaration text. Before this the reopen carried the full path as a bare name with no owner, so the two spellings never unified across files (rake's lib uses both styles). (2) A superclass is statically nameable only as a constant/scope path (`Foo`, `::Foo`, `A::B`) \u2014 call expressions (`Struct.new(...)`, `Class.new(Base)`) have an ANONYMOUS base: no extends (RB-C ruling was violated by the analyzer emitting the raw expression text; the oracle produced a DIFFERENT junk target \u2014 latent missing+unexplained). Single source of truth: exported isRubyStaticSuperclassName (pure char scan, shared by analyzer and deriveRubyEdges \u2014 a duplicated inline regex drifted). Master-review 2026-09, pinned by ruby/master-review-wave (Tuple/Child/Inner symbols) + mutant ruby/readd-dynamic-superclass-extends.",
+        "resolution": "(1) `class M::Inner` declares the SAME class as nested `module M; class Inner` — symbol name = LEAF, ownerName = the module-scope path (kept verbatim, e.g. A::B), fqn metadata records the full declaration text. Before this the reopen carried the full path as a bare name with no owner, so the two spellings never unified across files (rake's lib uses both styles). (2) A superclass is statically nameable only as a constant/scope path (`Foo`, `::Foo`, `A::B`) — call expressions (`Struct.new(...)`, `Class.new(Base)`) have an ANONYMOUS base: no extends (RB-C ruling was violated by the analyzer emitting the raw expression text; the oracle produced a DIFFERENT junk target — latent missing+unexplained). Single source of truth: exported isRubyStaticSuperclassName (pure char scan, shared by analyzer and deriveRubyEdges — a duplicated inline regex drifted). Master-review 2026-09, pinned by ruby/master-review-wave (Tuple/Child/Inner symbols) + mutant ruby/readd-dynamic-superclass-extends.",
         "decided_at": "2026-09-07",
         "decided_by": "owner-delegated (M14 master-review wave authorization)"
       },
@@ -290,7 +290,7 @@
         "node_type": "override resolution with leaf-colliding external superclass (class Rake::TestCase < Test::Unit::TestCase)",
         "status": "RULED",
         "question": "How must the override pass treat a superclass whose leaf name equals the declaring class's own leaf?",
-        "resolution": "A class can never extend itself, so when the leaf-collapsed base equals the class's own identity the base is NOT a verified in-file base \u2014 routing it through the verified branch fabricated self-overrides at 0.95 (rake helper.rb: 9 phantom edges). Such a base is external-with-same-leaf: emit only the honest 0.5 first-parent guess (heuristic, excluded from unexplained), same as any other undeclared base. NOTE: an in-file base with the same leaf as a namespaced subclass in the SAME file is an inherent ambiguity of the name-keyed override map and is documented, not resolved. Master-review 2026-09, pinned by ruby/master-review-wave forbid overrides@0.95 + mutant ruby/self-verify-overrides-guard.",
+        "resolution": "A class can never extend itself, so when the leaf-collapsed base equals the class's own identity the base is NOT a verified in-file base — routing it through the verified branch fabricated self-overrides at 0.95 (rake helper.rb: 9 phantom edges). Such a base is external-with-same-leaf: emit only the honest 0.5 first-parent guess (heuristic, excluded from unexplained), same as any other undeclared base. NOTE: an in-file base with the same leaf as a namespaced subclass in the SAME file is an inherent ambiguity of the name-keyed override map and is documented, not resolved. Master-review 2026-09, pinned by ruby/master-review-wave forbid overrides@0.95 + mutant ruby/self-verify-overrides-guard.",
         "decided_at": "2026-09-07",
         "decided_by": "owner-delegated (M14 master-review wave authorization)"
       },
@@ -299,7 +299,7 @@
         "node_type": "keyword alias (alias new_name old_name)",
         "status": "RULED",
         "question": "What does the keyword `alias` emit at declaration scope, and what inside method bodies?",
-        "resolution": "Declaration scope (class/module/top-level): the RB-E alias_method contract \u2014 calls:<newname> with aliasedTo:<oldname> (+ keywordAlias:true marker); before this the keyword form was invisible while alias_method was handled. Method-body aliases are runtime redefinitions and emit NOTHING on either side \u2014 `alias` added to both skip lists so the two identifiers no longer fabricate junk bare calls (analyzer emitted them pre-wave; the oracle mirrored the junk). `setter` (the name wrapper of `def size=`) likewise added to the analyzer skip list to stop nested setter names leaking as bare calls. Master-review 2026-09, pinned by ruby/master-review-wave calls:Api->copy + mutant ruby/drop-keyword-alias-edge.",
+        "resolution": "Declaration scope (class/module/top-level): the RB-E alias_method contract — calls:<newname> with aliasedTo:<oldname> (+ keywordAlias:true marker); before this the keyword form was invisible while alias_method was handled. Method-body aliases are runtime redefinitions and emit NOTHING on either side — `alias` added to both skip lists so the two identifiers no longer fabricate junk bare calls (analyzer emitted them pre-wave; the oracle mirrored the junk). `setter` (the name wrapper of `def size=`) likewise added to the analyzer skip list to stop nested setter names leaking as bare calls. Master-review 2026-09, pinned by ruby/master-review-wave calls:Api->copy + mutant ruby/drop-keyword-alias-edge.",
         "decided_at": "2026-09-07",
         "decided_by": "owner-delegated (M14 master-review wave authorization)"
       },
@@ -328,7 +328,7 @@
         "id": "RB-I",
         "node_type": "dynamic class creation symbols",
         "status": "RULED",
-        "question": "Ruby second review (2026-09-13): `Point = Struct.new(:x)` (likewise Data.define/Class.new/Module.new) left no symbol \u2014 the defined type was invisible and Point.new resolved against nothing.",
+        "question": "Ruby second review (2026-09-13): `Point = Struct.new(:x)` (likewise Data.define/Class.new/Module.new) left no symbol — the defined type was invisible and Point.new resolved against nothing.",
         "resolution": "FIXED + GATED: LHS constant of a factory call emits Class (Struct/Data/Class) or Module (Module.new) instead of Constant, at class level and top level. Block-defined methods keep the enclosing owner (documented residual). Fixture expects classes Point and Cfg; mutant struct-new-symbols-loss CAUGHT."
       },
       {
@@ -342,8 +342,19 @@
         "id": "RB-K",
         "node_type": "nested singleton-def names and receivers",
         "status": "RULED",
-        "question": "Ruby second review, lane triage (2026-09-13): `def result.name` / `def @rio.check?` \u2014 receiver-precedes-name broke the positional def-name skip (oracle emitted calls->name), and neither side visited receivers (`@rio` reads at definition time).",
+        "question": "Ruby second review, lane triage (2026-09-13): `def result.name` / `def @rio.check?` — receiver-precedes-name broke the positional def-name skip (oracle emitted calls->name), and neither side visited receivers (`@rio` reads at definition time).",
         "resolution": "FIXED + GATED both sides: name-field match with positional fallback for def names; singleton receivers visited (ivar receivers emit member reads, identifier/constant/self receivers stay silent as before). Oracle scopes nested-def name+receiver to the enclosing method id. Fixture expects hook->@cfg and forbids hook->cached/memo/obj; lanes re-verified 0/0."
+      }
+    ]
+  },
+  "label_coverage": {
+    "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
+    "declared_gaps": [],
+    "declared_no_truth": [
+      {
+        "label": "overrides",
+        "reason": "`overrides` sits in the differential allowlist DEFAULT admitted prefix for every language except csharp/dart/swift/cpp, so it is compared for this lane — but this lane has no overrides oracle, so every analyzer overrides row enters the comparison with no truth to meet and is counted as an unexplained FABRICATION. That number accuses the analyzer of inventing edges when the real gap is that nobody wrote down what it should have produced. Dropping the label instead would hide the analyzer's output, which is the other half of the same silence. Closes when an overrides oracle exists for this language (scala's own cross-file work is recorded as SDJ-8); until then the state is DECLARED rather than counted as a verdict.",
+        "closes_when": "an overrides oracle exists for this language; then admit it and reconcile"
       }
     ]
   }
