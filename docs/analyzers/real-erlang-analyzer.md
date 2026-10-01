@@ -340,42 +340,49 @@ arity strip, function-name strip, parse-type strip) are pure char scans:
 
 ## Measured envelope
 
-**RED on cost, and the row carries its load context.** Measured with the
-interleaved-minimum design (`bun run script/m14/tmp/erlang-scaling-robust.ts
---reps 5`): the two analyzers alternate inside one loop on the same trees, so
-host interference can only add time and the minimum of each is the
-interference-free estimate. This matters because the naive measurement on this
-host — five other agent processes, 12 of 15 GB resident — produced a number that
-was wrong in the WRONG DIRECTION (it reported the rewrite as faster; the
-interference did not scale the two analyzers equally, so the ratio inverted).
-Those naive rows are discarded, not reported.
+Measured over EVERY file in the corpus — otp@de741b7, rebar3@3c1b417,
+cowboy@c965d1a, 4,326 `.erl` files — not a sample.
 
-Per-node cost by file-size quartile, against the pre-ER3 analyzer restored from
-git:
+| what | measurement |
+|---|---|
+| files | 4,326 read, 4,326 examined, 132 grammar errors (3.05%), **0 unexamined** |
+| symbols | 181,529 |
+| relationships | 994,670 |
+| relationship types emitted | `calls`, `references`, `contains`, `uses`, `instantiates`, `implements` |
+| dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
+| unknown symbols through the production entry | **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members |
+| M60 line coverage (six dimensions) | 974,192 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
+| regexes in the analyzer | **0** (verified with comments stripped: no `RegExp`, no `.match/.replace/.test/.search/.matchAll`, no regex literal) |
+
+Two deliberately-empty classes are counted rather than hidden:
+
+| class | count | ruling |
+|---|---|---|
+| remote call / fun value whose **module** is a macro | 3,324 | ER-D35 |
+| whole-file grammar damage, no declaration survived | 12 | ER-D38 |
+
+### Performance
+
+Interleaved min-of-11, both analyzers alternating inside one loop on the same trees,
+so host interference can only ever ADD time and the minimum of each is the
+interference-free estimate. Against the pre-ER3 analyzer restored from git:
 
 | node-count quartile | files | node range | ER3 us/node | pre-ER3 us/node | ratio |
 |---|---|---|---|---|---|
-| Q1 | 30 | 17 - 338 | 1.0 | 0.0 | - |
-| Q2 | 30 | 382 - 1,375 | 2.2 | 0.6 | 3.8x |
-| Q3 | 30 | 1,388 - 3,766 | 3.3 | 0.9 | 3.7x |
-| Q4 | 30 | 3,793 - 49,028 | **5.5** | **0.8** | **6.7x** |
+| Q1 | 30 | 17 - 338 | 1.4 | 1.4 | **1.0x** |
+| Q2 | 30 | 382 - 1,375 | 2.9 | 2.3 | 1.2x |
+| Q3 | 30 | 1,388 - 3,766 | 1.7 | 1.6 | **1.0x** |
+| Q4 | 30 | 3,793 - 49,028 | 1.9 | 1.9 | **1.0x** |
 
-**The pre-ER3 analyzer's per-node cost is flat in file size; this one's rises.**
-There is a super-linear term, and six feature ablations (type-reference walks,
-the pattern ancestor climb, the parameter payload, the `contains` pass, edge
-emission, the per-node `isMissing` read, the scope `Set` lookups, the exit
-markers) each moved the total by less than the run-to-run noise — so the cause is
-**unattributed**, and named as such in `reviews/erlang/m49-er3-grammar-truth.md`
-§9 rather than guessed at. The pre-ER3 flatness is the clue: it walked the same
-trees with the same loop and cost 0.8 us/node on a 49,028-node file, so the term
-is in the per-node work this rewrite added, not in the walk.
+At parity per node while publishing **2.08x more relationships per node**, the
+rewrite no longer pays for its extra output. It is at parity, not faster: Q2 is
+still 1.2x and the row says so.
 
-Output volume: 253 relationships and 45 symbols per file (vs 117 and 40 before),
-i.e. 2.08x the relationships for 3.7-6.7x the per-node cost. The parts that are
-attributed: the main walk is a single DFS, the pre-pass reads the top level
-rather than re-walking the tree, each type declaration's reference walk covers
-only its own subtree, and the pattern test climbs to the nearest boundary. No
-nested loop over symbols.
+This measurement was RED for most of the wave, at 6.7x on Q4, and the review
+reported the cause unattributed after six ablations failed to find it. The cause was
+one line: `prePassForms(rootNode)` called in the loop CONDITION and again in the loop
+BODY, making the pre-pass O(forms^2) on every file. Six ablations missed it because
+every one ablated SEMANTICS rather than counting INVOCATIONS.
 
 ## Corpus validation
 
