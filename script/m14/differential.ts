@@ -37,6 +37,7 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
 import { deriveDartImportsTruth } from "./oracles/dart-imports"
+import { deriveDartOverridesTruth } from "./oracles/dart-overrides"
 import { deriveJuliaContainsTruth } from "./oracles/julia-contains"
 import { deriveJuliaExtendsTruth, deriveJuliaInstantiatesTruth } from "./oracles/julia-type-edges"
 import { deriveJuliaCallsTruth } from "./oracles/julia-calls"
@@ -53,6 +54,8 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 import { deriveZigContainment, deriveZigImports, deriveZigExports, deriveZigInstantiation } from "./zig-truth"
 // M60: erlang `contains` — see script/m14/oracles/erlang-contains.ts for the rule.
 import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
+// M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
+import { deriveRustContainsTruth } from "./oracles/rust-contains"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -20009,6 +20012,7 @@ async function main() {
     // every 60-file draw read 100% with MISSING 0 — the draw could not see the gap
     // because the answer depended on having the base in the same file.
     let dartProjectIndex: any = null
+    let dartCompanion: Map<string, Set<string>> | null = null
     if (lang === "dart") {
       try {
         const mod: any = await import("../../src/ast/project-index")
@@ -20016,6 +20020,12 @@ async function main() {
           path.join(ROOT, "wasm", "tree-sitter-dart.wasm"), files, mod.DART_DECLARATION_SPEC,
         )
         mod.buildResolutionTables(dartProjectIndex)
+        // The ORACLE is handed the same closed member sets the ANALYZER derives its
+        // companion from. Not for convenience: if the two saw different cross-file
+        // worlds, a disagreement would be uninterpretable — the oracle resolving
+        // against a map the analyzer never saw tells you nothing about either. One
+        // project index, both sides, and the comparison means what it says.
+        dartCompanion = dartProjectIndex.__closedMembers ?? null
         console.log(`  [project-index] dart: ${dartProjectIndex.typeKinds?.size ?? 0} types over ${files.length} files`)
       } catch (e: any) {
         // No index is the pre-existing behaviour, not a lane failure: the analyzer
@@ -20765,6 +20775,16 @@ async function main() {
           ;(truth as any[]).push(e)
         }
       }
+      if (lang === "rust") {
+        // M60 label-coverage sweep: rust published `contains` that the allowlist
+        // dropped. Rust's items nest cleanly and the oracle shares no rule table with
+        // the analyzer — see script/m14/oracles/rust-contains.ts, which records the
+        // four language facts the corpus had to teach. Full mirror: truth and
+        // allowance in one commit.
+        for (const e of deriveRustContainsTruth(root)) {
+          ;(truth as any[]).push(e)
+        }
+      }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
           // C923 (#923): the truth now DERIVES the member-level interface contract, but
@@ -20839,6 +20859,16 @@ async function main() {
         // allowlist entry without the truth is the mirror image the groovy G7 note
         // records — either half alone is a harness gap dressed as a result.
         for (const e of deriveDartImportsTruth(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
+        // M60: `overrides` — the LARGEST dart class (229,416 edges on ProxiCall/lib)
+        // and the last one compared against nothing. It was excluded from the
+        // analyzer-side allowlist for dart, so the whole class sat outside the gate
+        // on both sides: not "measured and passing", not "measured and failing",
+        // simply absent, which is the state that reads most like coverage.
+        //
+        // Both halves again, in one commit: truth here, the allowlist entry below.
+        for (const e of deriveDartOverridesTruth(root, dartCompanion ?? undefined)) {
           ;(truth as any[]).push(e)
         }
       }
@@ -21175,7 +21205,7 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -21256,6 +21286,7 @@ async function main() {
           // existed in zig-truth.ts, wired only to tmp probes.
           ...(lang === "zig" ? ["contains", "imports", "exports"] : []),
           ...(lang === "erlang" ? ["contains"] : []),
+          ...(lang === "rust" ? ["contains"] : []),
           // M60: clojure's `uses` oracle existed in clojure-truth.ts with no consumer
           // in this file, so the label was unadmitted AND unmeasured — the same
           // finished-but-unconnected shape as typescript and contains.
