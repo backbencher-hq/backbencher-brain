@@ -325,6 +325,163 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): ASTEngine.ParseResult & { metadata: Partial<ASTEngine.FileMetadata> } {
     // SOL-6 — every SOURCE LINE the parser had to invent. Collected in one
     // pre-pass before the walk; consulted by both emit helpers.
+    /** The node types a NatSpec comment may document. Declared once, here, because
+     *  SOL-16 needs it and a second copy would be a second thing to forget. */
+    const DECLARATION_NODE_TYPES = new Set([
+      "contract_declaration", "interface_declaration", "library_declaration",
+      "function_definition", "modifier_definition", "constructor_definition",
+      "fallback_receive_definition", "struct_declaration", "enum_declaration",
+      "event_definition", "error_declaration", "user_defined_type_definition",
+      "state_variable_declaration", "variable_declaration",
+    ])
+
+    /**
+     * SOL-16 — NATSPEC. The language's documentation system, and this lane read NONE
+     * of it: 5,254 `comment` nodes over the 389-file corpus, zero reaching a symbol.
+     * Solidity's `///` line form and its slash-star block form are exactly what the
+     * TypeScript lane extracts from JSDoc, so their absence was the single largest
+     * depth gap between the two analyzers.
+     *
+     * ATTACHMENT, measured rather than assumed. A comment's `prevNamedSibling` is
+     * NULL and its index in `parent.children` is -1, so the obvious "the comment
+     * before this declaration" join does not exist. Its `nextNamedSibling` IS the
+     * declaration it documents. Solidity attaches documentation to what FOLLOWS it,
+     * which is also why the two forms can be told apart from position alone.
+     *
+     * MARKERS ARE STRIPPED WITH `startsWith`/`slice`, never a regex — this lane's
+     * zero-regex gate is a real gate, and documentation parsing is exactly where a
+     * whitespace-and-star matcher would have crept in and quietly become the
+     * analyzer's first regular expression.
+     */
+    const readNatSpec = (raw: string): { text: string; kind: string } => {
+      const lines = raw.split("\n")
+      const out: string[] = []
+      let sawNatspec = false
+      for (const line of lines) {
+        let t = line
+        while (t.length > 0 && t.charAt(0) === " ") t = t.slice(1)
+        // Block form, with a leading star on each continuation line for alignment.
+        if (t.startsWith("*/")) t = t.slice(2)
+        else if (t.startsWith("/**")) { t = t.slice(3); sawNatspec = true }
+        else if (t.startsWith("///")) { t = t.slice(3); sawNatspec = true }
+        else if (t.startsWith("//")) t = t.slice(2)
+        else if (t.startsWith("*")) t = t.slice(1)
+        if (t.startsWith(" ")) t = t.slice(1)
+        out.push(t)
+      }
+      while (out.length > 0 && out[out.length - 1].trim() === "") out.pop()
+      while (out.length > 0 && out[0].trim() === "") out.shift()
+      return {
+        text: out.join("\n").trim(),
+        kind: sawNatspec ? (raw.indexOf("/**") === 0 ? "natspec-block" : "natspec-line") : "line",
+      }
+    }
+    /** The `@tag` on each line, in order. NatSpec's structured payload, read
+     *  mechanically: a line whose first non-space character is `@` contributes the
+     *  run of tag characters. No regex, and no hand list of NatSpec tags — an
+     *  unknown `@custom:` tag is reported like any other rather than dropped. */
+    const natSpecTags = (text: string): string[] => {
+      const tags: string[] = []
+      for (const line of text.split("\n")) {
+        const t = line.trim()
+        if (!t.startsWith("@")) continue
+        let end = 1
+        while (end < t.length) {
+          const c = t.charAt(end)
+          if (c === " " || c === "\t") break
+          end++
+        }
+        tags.push(t.slice(0, end))
+      }
+      return tags
+    }
+    /**
+     * node id -> documentation for the declaration a comment documents, ACCUMULATED.
+     *
+     * A run of `///` lines is NOT one comment node: `/// @notice …`, `/// @dev …`,
+     * `/// @param x …` and `/// @return y …` are four separate `comment` nodes whose
+     * `nextNamedSibling` is the SAME declaration. The first version of this used
+     * `docByNode.set(...)` and so kept only the LAST line of every docstring — which
+     * is the opposite of what documentation means and would have shipped a lane that
+     * read NatSpec while silently discarding 3 of every 4 lines. The corpus has 5,254
+     * comment nodes against far fewer documented declarations for exactly this reason.
+     */
+    const docByNode = new Map<number, { text: string; kind: string; parts: string[] }>()
+    let commentsRead = 0
+    let commentsAttached = 0
+    let documentedSymbols = 0
+    {
+      // RUNS, not single comments — and the first version was wrong in a way that
+      // looked correct. `nextNamedSibling` is the documented declaration only for
+      // the LAST comment of a run, so `docByNode.set(...)` per comment kept exactly
+      // one line of every NatSpec block: `library Docs` came out documented as
+      // "@author Someone" and the `@title`/`@notice` above it were silently dropped.
+      //
+      // A comment RUN is a maximal set of line-ADJACENT comment siblings. Line
+      // adjacency is the contiguity boundary, matching the TypeScript lane's own
+      // rule: a blank line ends a docstring, so trailing remarks about the previous
+      // declaration are not stolen onto the next one. Runs are collected per parent
+      // because `source_file` and `contract_body` both hold them.
+      const attachRun = (run: Node[], anchor: Node | null): void => {
+        if (run.length === 0 || anchor === null) return
+        if (!DECLARATION_NODE_TYPES.has(anchor.type)) return
+        const parts: string[] = []
+        let kind = "line"
+        for (const c of run) {
+          const read = readNatSpec(c.text)
+          if (read.text === "") continue
+          parts.push(read.text)
+          if (read.kind !== "line") kind = read.kind
+          commentsAttached++
+        }
+        if (parts.length === 0) return
+        const prior = docByNode.get(anchor.id)
+        if (prior === undefined) {
+          docByNode.set(anchor.id, { text: parts.join("\n"), kind, parts })
+        } else {
+          prior.parts.push(...parts)
+          prior.text = prior.parts.join("\n")
+          if (kind !== "line") prior.kind = kind
+        }
+      }
+      const stack: Node[] = [rootNode]
+      while (stack.length > 0) {
+        const p = stack.pop()!
+        for (let i = 0; i < p.childCount; i++) {
+          const c = p.child(i)
+          if (c) stack.push(c)
+        }
+        let run: Node[] = []
+        let anchor: Node | null = null
+        const flush = (): void => {
+          if (run.length > 0) attachRun(run, anchor)
+          run = []
+          // The anchor is CONSUMED. Without this reset a trailing run at the end of a
+          // parent reused the PREVIOUS declaration: on natspec-sol16 the closing
+          // remark of the file was published as part of `IThing`'s docstring, which is
+          // the precise opposite of what a trailing remark is. Caught by the fixture
+          // that exists to pin the trailing case.
+          anchor = null
+        }
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "comment") {
+            commentsRead++
+            const last = run.length > 0 ? run[run.length - 1] : null
+            if (last !== null && c.startPosition.row > last.endPosition.row + 1) flush()
+            run.push(c)
+            continue
+          }
+          anchor = c
+          flush()
+        }
+        // A run still open at the end of a parent documents nothing: it is a trailing
+        // remark, and Solidity attaches documentation to what FOLLOWS.
+        flush()
+      }
+    }
+
     const recoveryLines = new Set<number>()
     {
       const stack: Node[] = [rootNode]
@@ -515,7 +672,26 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters?: ASTEngine.Parameter[],
     ): ASTEngine.UniversalSymbol | null => {
       const clean = name.trim()
-      if (clean === "") return null
+      if (clean === "") return
+      // SOL-16 — documentation attaches at the SINGLE point every declaration kind
+      // goes through, for the same reason SOL-14's store refusal does: a rule
+      // repeated per declaration kind is a rule that will be applied to some kinds
+      // and forgotten for the rest.
+      const doc = docByNode.get(node.id)
+      if (doc !== undefined && meta.docstring === undefined) {
+        meta.docstring = doc.text
+        meta.docstringKind = doc.kind
+        // `comments` as an ARRAY, because that is the field the TypeScript lane
+        // populates for the same job (`extractComments` returns `string[]`), and a
+        // lane that reads comments off a Solidity symbol should not have to learn a
+        // second shape. `docstring` is set too, because that one is a first-class
+        // symbol field the store persists to `brain_symbol.docstring` — a column that
+        // has been NULL for every Solidity symbol this lane has ever produced.
+        meta.comments = doc.parts
+        const tags = natSpecTags(doc.text)
+        if (tags.length > 0) meta.docTags = tags
+        documentedSymbols++
+      } null
       const owner = top().owner
       const key = `${owner}\u0000${clean}\u0000${kind}`
       const existing = symbolMap.get(key)
@@ -528,6 +704,26 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         ownerName: owner,
         visibility: (meta.visibility as string) ?? "public",
         parameters,
+        // SOL-16 — top-level as well as in metadata, because `docstring` is a
+        // FIRST-CLASS field on UniversalSymbol and the store reads `s.docstring`
+        // (pool-worker.ts:673). Metadata alone left `brain_symbol.docstring` NULL for
+        // every Solidity symbol while the analyzer believed it had published
+        // documentation — the field existed in the payload and nothing read it.
+        // SOL-17 — first-class symbol field, so it crosses the worker boundary and
+        // reaches the store rather than living only in metadata.
+        ...(Array.isArray(meta.decorators) ? { decorators: meta.decorators as string[] } : {}),
+        ...(typeof meta.docstring === "string"
+          ? {
+            docstring: meta.docstring,
+            // Also top-level: pool-worker's parseFile return shape does not carry
+            // `metadata` on symbols at all, so anything only in metadata is invisible
+            // to every consumer of this API — which is how `docstringKind` read `-`
+            // on the first successful run of this feature.
+            docstringKind: meta.docstringKind,
+            docTags: meta.docTags,
+            comments: meta.comments,
+          }
+          : {}),
         metadata: { soliditySpecific: true, ...meta },
       }
       // The payload the STORE actually reads. pool-worker.ts drops the whole
@@ -562,6 +758,25 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     ): void => {
       const clean = name.trim()
       if (clean === "") return
+      // SOL-16 — documentation attaches at the SINGLE point every declaration kind
+      // goes through, for the same reason SOL-14's store refusal does: a rule
+      // repeated per declaration kind is a rule that will be applied to some kinds
+      // and forgotten for the rest.
+      const doc = docByNode.get(node.id)
+      if (doc !== undefined && meta.docstring === undefined) {
+        meta.docstring = doc.text
+        meta.docstringKind = doc.kind
+        // `comments` as an ARRAY, because that is the field the TypeScript lane
+        // populates for the same job (`extractComments` returns `string[]`), and a
+        // lane that reads comments off a Solidity symbol should not have to learn a
+        // second shape. `docstring` is set too, because that one is a first-class
+        // symbol field the store persists to `brain_symbol.docstring` — a column that
+        // has been NULL for every Solidity symbol this lane has ever produced.
+        meta.comments = doc.parts
+        const tags = natSpecTags(doc.text)
+        if (tags.length > 0) meta.docTags = tags
+        documentedSymbols++
+      }
       // SOL-14 — the store refuses this name, so declaring it would publish a
       // `contains` edge pointing at a symbol that never reaches the store. Refuse
       // HERE, at the single point every declaration goes through, exactly as a
@@ -881,6 +1096,25 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         else if (types.length > 1) meta.returnType = `(${types.join(", ")})`
       }
       meta.hasBody = findFirstChild(node, "function_body") !== null
+      // SOL-17 — APPLIED MODIFIERS are Solidity's annotation mechanism, and they are
+      // what the TypeScript lane calls a decorator: `onlyOracle`, `nonReentrant`,
+      // `initializer`. Published on the `decorators` field rather than as a
+      // relationship, which is the FAMILY CONTRACT — C#, Java and F# all treat
+      // decorators as metadata on the thing they decorate, and the
+      // `modifier_invocation` case already emits the one edge that does carry
+      // meaning (a `calls` edge, because invoking a modifier IS calling it).
+      //
+      // grammar.js:765 — `modifier_invocation` is an identifier path plus optional
+      // arguments with NO field, so the name is the first `identifier` child. That
+      // is the same read the relationship case performs, deliberately: a modifier
+      // list and a modifier-call list that could disagree would be worse than
+      // neither.
+      const applied: string[] = []
+      for (const inv of findChildren(node, "modifier_invocation")) {
+        const id = findFirstChild(inv, "identifier")
+        if (id) applied.push(id.text)
+      }
+      if (applied.length > 0) meta.decorators = applied
       return meta
     }
 
@@ -1480,10 +1714,24 @@ const meta = modifiersOf(node)
           break
         }
 
+        // `using {eqCallType as ==} for CallType global;` — NEVER FIRED before
+        // SOL-16. It looked for DIRECT `identifier` children, but the grammar nests
+        // the name: `using_alias (user_defined_type (identifier))
+        // (user_definable_operator)`, so `findChildren(node, "identifier")` was always
+        // empty and the loop body never ran. Found by a per-case emit census over the
+        // 389-file corpus — 4 `using_alias` nodes, all four in
+        // contracts/account/utils/draft-ERC7579Utils.sol, 0 edges — which is the same
+        // signature as the `revert_statement` dead branch, and the reason the census is
+        // worth running rather than reading the code.
+        //
+        // The name is read the way every other type reference in this analyzer reads
+        // one, through `udtName`, so it cannot disagree with the rest.
         case "using_alias": {
-          for (const id of findChildren(node, "identifier")) {
-            addRel(top().scope, id.text, ASTEngine.RelationshipType.References, 0.85,
-              id.startPosition.row + 1, { isUsingAliasFunction: true })
+          const name = udtName(findDescendant(node, "user_defined_type"))
+          if (name !== "") {
+            addRel(top().scope, name, ASTEngine.RelationshipType.References, 0.85,
+              (findDescendant(node, "user_defined_type") ?? node).startPosition.row + 1,
+              { isUsingAliasFunction: true })
           }
           break
         }
@@ -2002,6 +2250,9 @@ const meta = modifiersOf(node)
         hasFrameworkIntelligence: true,
         analysisVersion: "6.0-sol-module-owners-lines-tiers",
         // Reported rather than hidden — see the F9 spec and the surface measure.
+        commentsRead,
+        commentsAttached,
+        documentedSymbols,
         callKinds,
         overridesEmitted,
         overridesEmittedExternal,

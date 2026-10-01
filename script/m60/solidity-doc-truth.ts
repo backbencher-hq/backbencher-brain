@@ -63,8 +63,8 @@ const checks: Check[] = [
   { doc: "447", what: "assembly_statement", actual: census.corpusCounts.assembly_statement, expect: (v) => v === 447 },
   // ── the surface, and the four numbers the lane standard is written in
   { doc: "5,976", what: "symbols", actual: t.symbols, expect: (v) => v === 5976 },
-  { doc: "26,803", what: "relationships", actual: t.relationships, expect: (v) => v === 26803 },
-  { doc: "**26,803 / 26,803 = 100.00%**", what: "line coverage", actual: t.lineNumber,
+  { doc: "26,807", what: "relationships", actual: t.relationships, expect: (v) => v === 26807 },
+  { doc: "**26,807 / 26,807 = 100.00%**", what: "line coverage", actual: t.lineNumber,
     expect: (v: any) => v.withLine === v.total && v.pct === "100.00" },
   { doc: "unknownTargets", what: "unknownTargets must be 0", actual: t.unknownTargets.count, expect: (v) => v === 0 },
   { doc: "dupKeys", what: "dupKeys must be 0", actual: t.dupKeys.count, expect: (v) => v === 0 },
@@ -91,14 +91,14 @@ const checks: Check[] = [
   { doc: "calls` 4331", what: "kinds.calls", actual: t.kinds.calls, expect: (v) => v === 4331 },
   { doc: "extends` 537", what: "kinds.extends", actual: t.kinds.extends, expect: (v) => v === 537 },
   { doc: "exports` 487", what: "kinds.exports", actual: t.kinds.exports, expect: (v) => v === 487 },
-  { doc: "references` 1303", what: "kinds.references", actual: t.kinds.references, expect: (v) => v === 1303 },
+  { doc: "references` 1307", what: "kinds.references", actual: t.kinds.references, expect: (v) => v === 1307 },
   { doc: "implements` 7", what: "kinds.implements", actual: t.kinds.implements, expect: (v) => v === 7 },
   { doc: "overrides` 422", what: "kinds.overrides", actual: t.kinds.overrides, expect: (v) => v === 422 },
   { doc: "instantiates` 1", what: "kinds.instantiates", actual: t.kinds.instantiates, expect: (v) => v === 1 },
   { doc: "899 import-annotated", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
   // ── tiers
   { doc: "structural 6619", what: "tiers.structural", actual: t.tiers.structural, expect: (v) => v === 6619 },
-  { doc: "usage_contextual 18863", what: "tiers.usage_contextual", actual: t.tiers.usage_contextual, expect: (v) => v === 18863 },
+  { doc: "usage_contextual 18867", what: "tiers.usage_contextual", actual: t.tiers.usage_contextual, expect: (v) => v === 18867 },
   { doc: "import_based 899", what: "tiers.import_based", actual: t.tiers.import_based, expect: (v) => v === 899 },
   { doc: "inferred 422", what: "tiers.inferred", actual: t.tiers.inferred, expect: (v) => v === 422 },
   // ── the limitations, each with its measured size

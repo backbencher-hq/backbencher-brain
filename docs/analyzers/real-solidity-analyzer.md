@@ -68,6 +68,8 @@ the index.
 | SOL-11 | `overrides` | **Three tiers.** Base in-file **and** declaring the member → **0.9**, verified. Base **not** in-file but named by an explicit `override(…)` → **0.75**, `inferred`, `meta.reasonCode: "named-by-override-specifier"`, `meta.externalBase: true`. Bare `override` with **one** header base → **0.75**, `reasonCode: "single-header-base"`. Bare `override` with **two or more** header bases → **no edge**. `AnalyzeContext.overrideCompanion` is read when a caller populates it. | Solidity's compiler **rejects** `override(X)` unless `X` declares the member, so for any compiling source the edge is the language's own invariant, not a guess — which is why an external base may be emitted at all. Fifteen sibling analyzers get cross-file overrides from `overrideCompanion`, and **nothing in production ever populates it**; Solidity does not need it. The 2+-bases case stays refused because the keyword says *one* of them declares the member without saying which. |
 | SOL-12 | `exports` | The **compilation-unit surface**: every file-scope declaration except a free function. | Solidity has no export construct. `solc` emits an ABI and abstraction for each contract, interface and library and nothing else; a free function contributes no ABI entry. |
 | SOL-13 | A function is a declaration container | Its **locals belong to it**, so `contains f -> ok` rather than `contains C -> ok`. | Solidity locals are strictly function-scoped, so the contract-level edge is simply false. PowerShell PS3 deliberately keeps a method's owner as its class; that is right for PowerShell and wrong here, and the divergence is stated rather than inherited. |
+| SOL-16 | NatSpec documentation | `///` and the slash-star block form attach to the **next** declaration and are published as `docstring` (first-class, persisted to `brain_symbol.docstring`), `comments` (per-comment array, the shape the TypeScript lane uses), `docstringKind` (`natspec-line` / `natspec-block` / `line`) and `docTags`. Markers stripped with `startsWith`/`slice`. A run of line-ADJACENT comments is one docstring; a blank line ends the run. | Solidity's documentation system, and the lane read none of it: 5,254 `comment` nodes, zero reaching a symbol. Attachment is measured, not assumed — a comment's `prevNamedSibling` is NULL, and only the LAST comment of a run has the declaration as its next sibling, so per-comment attachment keeps one line in three. A comment before an expression, or a trailing remark, documents nothing and is dropped. |
+| SOL-17 | Applied modifiers are `decorators` | `function f() public onlyOwner nonReentrant` publishes `decorators: ["onlyOwner","nonReentrant"]` on the symbol; a DECLARED modifier with nothing applying it carries none. | Solidity's annotation mechanism is what the TypeScript lane calls a decorator, and this is the FAMILY CONTRACT: C#, Java and F# all treat decorators as metadata on the thing they decorate, and the `modifier_invocation` case already emits the one edge that carries meaning — a `calls` edge, because invoking a modifier IS calling it. Measured: 188 of 5,976 symbols, over 40 distinct names. |
 | SOL-15 | Every `calls` edge carries a `calleeKind` | `localFunction` (declared on the enclosing type) · `inheritedMember` (reached through an in-file base) · `inFileTypeMember` (a member of another in-file type, via a receiver or `using X for T`) · `modifierInvocation` · `eventEmission` · `errorRevert` (a custom error) · `namespaceBuiltin` (`abi.` / `type.` / `super.` / `this.`) · `external` (declared in another file). Derived from the grammar and this file's declarations; **no hand-written list of builtin member names**. | A call edge used to be emitted from the callee NAME alone, so the census reported one undifferentiated "1,786 unresolved" class mixing a conversion, a language namespace, a custom error and a genuinely cross-file member. There is deliberately no builtin-name list: the first measurement had one containing `at`, `contains` and `length`, which are user-defined `EnumerableSet` methods — it would have silently reclassified live project edges. A conversion (`uint256(x)`) emits **no** edge at all, because `calleeNameOf` has no `primitive_type` case and a conversion is not a call. |
 | SOL-14 | Store-refused names | Not declared. | `pool-worker.ts`'s `UNIVERSAL` denylist says such names are "never legitimate declarations in any language". For Solidity that is false: `self` (CrosschainLinked.sol:59) and `root` (MerkleTreeMock.sol:15) are both real. Measured as 2 unknown `contains` targets before the rule existed. |
 | F9 | Edge targets | An edge target must be a name a stored symbol could have. | A target carrying `/` names nothing, and would sit at **zero** `unknownTargets` for as long as it existed — the metric asks whether a target *matches* a symbol, and a name matching nothing is no more detectable than one matching something. |
@@ -95,7 +97,7 @@ short circuits only, with the operator read **structurally** rather than by matc
 source text.
 
 Measured: `bun run script/m60/solidity-surface-measure.ts` →
-`79.60 ms/file, 1,059 facts/ms` over 389 files at `loadAvg1 26.21` on 8 cores, with
+`59.82 ms/file, 1,409 facts/ms` over 389 files at `loadAvg1 22.14` on 8 cores, with
 `perfIsQualified: false` because of it.
 
 ---
@@ -228,6 +230,15 @@ Named, with their measured size. None of these is hidden in a percentage.
    so the census passes, but it is not Solidity conformance evidence; a Solidity F11
    instance would be. Named rather than fixed, because the pin is a shared file and a
    working gate beats a clever one.
+10. **The F5 floor is 2 missing / 21 unexplained, not 0/0.** The floor moved UP from
+    18 because of limitation 11 — more truth is derived and more analyzer edges exist,
+    so the residue is larger in absolute terms while `unclassifiable` stays **0**. The
+    move and its reason are recorded in `validation/m14/differential-baseline.json`
+    under `floorMoves["solidity:solidity"]`. Both directions are itemised into classes
+    with reasons, and **0 rows are unclassifiable in either direction**. The 8 MISSING
+    rows are one class — a `type(IFoo).interfaceId` mention of an interface declared in
+    another file. The unexplained rows are `uses` naming a member of a built-in type.
+    Both are SCOPE limits with a named class each.
 11. **Two dead instruments that agreed were reading as a pass.** The `revert_statement`
     case had **never fired** — in the analyzer *and* in the F5 oracle — because both
     tested `node.namedChild(0).type === "identifier"` and the grammar puts an
@@ -240,15 +251,23 @@ Named, with their measured size. None of these is hidden in a percentage.
     `RESUMED` with the previous truth function's numbers. All three are fixed; the
     oracles are part of the sweep state now, and the oracle repair cut
     calls-unexplained from 47 to 2 on the adjudication draw.
-10. **The F5 floor is 2 missing / 21 unexplained, not 0/0.** The floor moved UP from
-    18 because of limitation 11 — more truth is derived and more analyzer edges exist,
-    so the residue is larger in absolute terms while `unclassifiable` stays **0**. The
-    move and its reason are recorded in `validation/m14/differential-baseline.json`
-    under `floorMoves["solidity:solidity"]`. Both directions are
-   itemised into classes with reasons, and **0 rows are unclassifiable in either
-   direction**. The 8 MISSING rows are one class — a `type(IFoo).interfaceId` mention
-   of an interface declared in another file. The unexplained rows are `uses` naming a
-   member of a built-in type. Both are SCOPE limits with a named class each.
+
+    A **second** dead branch of the same kind was found by instrumenting every case in
+    the analyzer's switch with a hit counter and an emit counter and reporting any case
+    whose node type occurs in the corpus but which emitted nothing: `using_alias`
+    searched for DIRECT `identifier` children while the grammar nests the name as
+    `using_alias (user_defined_type (identifier)) (user_definable_operator)`, so its
+    loop body never ran and the corpus's 4 nodes produced 0 edges. The census reports 56
+    such cases; all but this one are containers (`statement`, `block_statement`,
+    literals) or emit in a post-pass, which is why it is the only finding and why the
+    instrument is worth keeping rather than running once.
+12. **NatSpec reaches 46.5% of symbols, and that is not 100%.** 2,773 of 5,976 carry a
+    `docstring`; 5,254 comments were read and 2,895 attached. The gap is real and not a
+    defect — a comment before an expression, or a trailing remark, documents nothing.
+    What is NOT covered is the file-leading SPDX comment, whose anchor is a
+    `pragma_directive` and therefore not a declaration, so **no symbol carries a
+    licence**. Named rather than half-done: licence detection is the feature, and
+    `pool-worker`'s symbol whitelist has no licence field to carry it yet.
 
 ---
 
@@ -263,14 +282,14 @@ Every number, and the instrument that produced it. Each is re-runnable.
 | Parse damage | **0** damaged, 0 ERROR, 0 MISSING, 0 damage classes | same |
 | Type coverage | **112 of 124** declared named exercised; **12** never | same |
 | Never-exercised reachability | **12/12** probes reached their type; **8/8** negative controls correct | same, `--verify-silence` on the spec |
-| Symbols / relationships | **5,976** / **26,803** | `script/m60/solidity-surface-measure.ts` |
-| **Line coverage** | **26,803 / 26,803 = 100.00%** | same |
+| Symbols / relationships | **5,976** / **26,807** | `script/m60/solidity-surface-measure.ts` |
+| **Line coverage** | **26,807 / 26,807 = 100.00%** | same |
 | `unknownTargets` | **0** | same |
 | `dupKeys` | **0** | same |
 | `reservedTargets` | **0** | same, via the imported predicate |
-| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1303 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
-| Evidence tiers | structural 6619 · usage_contextual 18863 · import_based 899 · inferred 422 | same, read from the analyzer's own central emitter |
-| Perf | 79.60 ms/file, 1,059 facts/ms, at `loadAvg1 26.21` / 8 cores — **`perfIsQualified: false`** | same |
+| Relationship kinds | `contains` 5587 · `uses` 14128 · `calls` 4331 · `extends` 537 · `exports` 487 · `references` 1307 · `implements` 7 · `overrides` 422 · `instantiates` 1, plus 899 import-annotated `references` | same |
+| Evidence tiers | structural 6619 · usage_contextual 18867 · import_based 899 · inferred 422 | same, read from the analyzer's own central emitter |
+| Perf | 59.82 ms/file, 1,409 facts/ms, at `loadAvg1 22.14` / 8 cores — **`perfIsQualified: false`** | same |
 | Reserved tokens | **262** derived from `grammar.json`, byte-equal to the shared module; **28/28** negative controls | `script/m60/solidity-reserved-words.ts` |
 | Engine builtins needing a declared entry | **15 of 17**; the other 2 (`type`, `revert`) have dedicated node types | same |
 | Store denylist mirror | 15 names, **0 drift** in either direction | same |
