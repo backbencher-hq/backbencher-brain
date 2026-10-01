@@ -164,6 +164,19 @@ function sweepStateKey(repoPins: Record<string, string>, sampling: string): stri
   const files = fs.readdirSync(srcDir).filter((f: string) => f.endsWith(".ts")).sort()
   for (const f of files) h.update(createHash("sha256").update(fs.readFileSync(path.join(srcDir, f))).digest("hex"))
   h.update(createHash("sha256").update(fs.readFileSync(path.join(ROOT, "script", "m14", "differential.ts"))).digest("hex"))
+  // FLAGS THAT CHANGE WHAT THE ANALYZER SEES. `--dart-deps` hands the lane a
+  // `projectIndex` in `AnalyzeContext`, and the index changes the analyzer's
+  // `overrides` resolution — `direct` measured 3 unexplained where `none` measured
+  // 40 — so `none` and `all` are different measurements of the same lane. Hashing
+  // only the code and the corpus means the second run resumed the FIRST run's
+  // journal and printed its numbers, undetectably, which is the same defect the
+  // oracle-hashing comment above records and for the same reason: the key covered
+  // the code and the thing compared against, and not the input that changed the
+  // answer. Hash every `--flag=value` on the command line rather than a list, so
+  // the next flag that changes a measurement is covered by construction.
+  for (const a of process.argv.slice(2).filter((x) => x.startsWith("--") && x.includes("=")).sort()) {
+    h.update(`${a}\n`)
+  }
   // The ORACLES are truth, so an oracle edit invalidates a cached verdict for the
   // same reason a parser edit does — and this file's own comment above records what
   // happens when that reasoning is applied to the analyzer but not to the thing the
