@@ -10781,6 +10781,9 @@ export function derivePhpDeclaredTypeEdgesIndependent(
  * A method declared in one is invisible to this index — which is correct, because an
  * override target must name a class that something can refer to.
  */
+/** The value recorded when two observations of one name disagree on visibility. */
+export const PHP_VIS_AMBIGUOUS = "ambiguous"
+
 export function buildPhpOverrideCompanionWithVisibility(
   files: readonly string[],
   parse: (f: string) => any,
@@ -10843,9 +10846,25 @@ export function buildPhpOverrideCompanionWithVisibility(
               }
               break
             }
-            // A later declaration of the same name does not overwrite a recorded
-            // `private`: `private` is the restrictive reading and the safe default.
-            if (byName.get(String(mn)) !== "private") byName.set(String(mn), v)
+            // UNANIMITY, and this is the important one. php keys every edge on the LEAF
+            // name, so a NAME-keyed index is ambiguous whenever two namespaces declare the
+            // same class name — and phpunit does exactly that three times over:
+            // `Event\Value\TestSuite\TestSuite::__construct` (public),
+            // `Framework\TestSuite::__construct` (PRIVATE), and
+            // `TextUI\Configuration\Value\TestSuite::__construct` (public). The first
+            // merge rule took the most RESTRICTIVE reading and that SUPPRESSED 7 correct
+            // overrides on the corpus — verified by hand against the source, where
+            // `TestSuite::__construct` is plainly `public`. Resolving an ambiguous key by
+            // suppression fabricates a gap; the honest resolution is to refuse to decide.
+            //
+            // So `private` is recorded ONLY when every observation of that name agrees it
+            // is private, and disagreement becomes `ambiguous`, which suppresses nothing.
+            // A class genuinely declared private in one namespace and public in another is
+            // exactly the case a name-keyed index cannot answer, and the permissive
+            // reading is the one that never removes a true edge.
+            const key = String(mn)
+            const prev = byName.get(key)
+            byName.set(key, prev === undefined ? v : prev === v ? v : PHP_VIS_AMBIGUOUS)
           }
         }
       }
@@ -11324,7 +11343,8 @@ export function derivePhpEdges(
             }
             let vm = methodVis.get(onm)
             if (!vm) { vm = new Map<string, string>(); methodVis.set(onm, vm) }
-            if (vm.get(mn) !== "private") vm.set(mn, mv)
+            const vprev = vm.get(mn)
+            vm.set(mn, vprev === undefined ? mv : vprev === mv ? mv : PHP_VIS_AMBIGUOUS)
           }
         }
       }
@@ -11353,16 +11373,20 @@ export function derivePhpEdges(
       const baseSet = inFileSet ?? phpCompanion?.get(base)
       const clsSet = methodsByClass.get(cls)
       if (!baseSet || !clsSet) continue
-      // A `private` base method is not inherited, so it can never be overridden. The
-      // same-file reading comes from this file's own modifiers; the cross-file reading
-      // from the companion's visibility channel. Same rule, two sources — and the rule
-      // itself is implemented here, not reached through the analyzer.
-      const visOf = (m: string): string | undefined =>
-        inFileSet ? methodVis.get(base)?.get(m) : phpCompanionVisibility?.get(base)?.get(m)
+      // A `private` base method is not inherited, so it can never be overridden — and the
+      // rule is applied to the SAME-FILE reading only, for the reason
+      // `RealPhpAnalyzer.resolveOverrides` spells out at length: a name-keyed cross-file
+      // index cannot answer the question, because php keys edges on the leaf name and
+      // phpunit declares three `TestSuite` classes and two `Assert` classes (one of them a
+      // vendored library). Every ambiguity rule tried produced a wrong suppression, so a
+      // guess defaults to the permissive reading. Same decision as the analyzer's, reached
+      // by the same reasoning and implemented here rather than shared.
+      const visOf = (m: string): string | undefined => (inFileSet ? methodVis.get(base)?.get(m) : undefined)
       for (const m of clsSet) {
         if (visOf(m) === "private") continue
         if (baseSet.has(m)) push("overrides", `${base}.${m}`)
       }
+      void phpCompanionVisibility
     }
   }
   // R10 (#835): the analyzer's OWN static-path rule, not a mirror of it. The
@@ -13371,6 +13395,35 @@ function haskellLocalScopes(root: any): {
 }
 
 /** Innermost visible local wins (shadowing), else the module-level set. */
+/**
+ * Walk an application's LEFT SPINE to the type constructor that heads it.
+ *   apply(apply(apply(name "Set'", sep), b), a)  ->  "Set'"
+ * A one-level `namedChild(0)` is itself an `apply`, so the old lookup found no
+ * `name` inside it and fell back to the whole subtree text, publishing
+ * "Set' sep b" as a type name. Module-scoped: both the `implements` and the
+ * `overrides` instance paths need it, and they are separate functions.
+ * Returns undefined when the spine does not bottom out in a name, so the caller
+ * falls back deliberately rather than shipping an application as a name.
+ */
+function leftSpineName(n: any): string | undefined {
+  let cur = n
+  for (let i = 0; i < 8 && cur; i++) {
+    if (cur.type === "name" || cur.type === "constructor" || cur.type === "variable") return cur.text
+    // A QUALIFIED type heads the spine: `instance CharParsing (Parsec.ParsecT s u
+    // m)` -> `qualified -> module "Parsec." + name "ParsecT"`. The qualifier is
+    // part of the name the analyzer publishes, so recompose it rather than
+    // dropping it (which gave the unresolvable bare "ParsecT").
+    if (cur.type === "qualified") {
+      const mod = cur.namedChildren.find((c: any) => c.type === "module")?.text ?? ""
+      const nm = cur.namedChildren.find((c: any) => c.type === "name")?.text
+      return nm ? mod + nm : cur.text.trim()
+    }
+    if (cur.type !== "apply" && cur.type !== "parens" && cur.type !== "apply_type") return undefined
+    cur = cur.namedChildCount ? cur.namedChild(0) : undefined
+  }
+  return undefined
+}
+
 function haskellResolveTarget(
   name: string,
   locals: Map<string, string>,
@@ -13496,7 +13549,15 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
             // for `ExceptT`, and `instance D (C1 c)` for `C1`. Taking
             // `first.text` published "ExceptT Error" and "C1 c" — spellings no
             // consumer can resolve, and shapes the analyzer does not emit.
-            if (first) target = first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+            //
+            // The descent must follow the whole LEFT SPINE, not one level. A
+            // curried type application nests:
+            //   (Set' sep b a) -> apply(apply(apply(name "Set'", sep), b), a)
+            // so `namedChild(0)` is itself an `apply`, and the old one-level
+            // lookup found no `name` inside it and fell back to `first.text`,
+            // publishing "Set' sep b". Measured over the three corpora that
+            // mis-spelled 66 `implements` and 86 `overrides` targets.
+            if (first) target = leftSpineName(first) ?? first.text
           }
         }
       }
@@ -14131,7 +14192,11 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
             const par = tp.namedChildren.find((c: any) => c.type === "parens")
             const ap = par?.namedChildren.find((c: any) => c.type === "apply")
             const first = ap?.namedChild(0)
-            if (first) target = first.namedChildren.find((c: any) => c.type === "name")?.text ?? first.text
+            // Full left-spine descent, for the same reason as the `implements`
+            // path: a curried application `(Set' sep b a)` nests `apply`s, so a
+            // one-level `find(name)` misses and the fallback published the whole
+            // application text, mis-spelling 86 `overrides` targets.
+            if (first) target = leftSpineName(first) ?? first.text
             else {
               const v = tp.namedChildren.find((c: any) => c.type === "variable")
               if (!v) target = ""
@@ -21901,7 +21966,11 @@ async function main() {
           for (const [k, v] of built.visibility) {
             let cur = PHP_OVERRIDE_VISIBILITY.get(k)
             if (!cur) { cur = new Map<string, string>(); PHP_OVERRIDE_VISIBILITY.set(k, cur) }
-            for (const [m, vis] of v) if (cur.get(m) !== "private") cur.set(m, vis)
+            // Same unanimity rule as the builder, applied across FILES.
+            for (const [m, vis] of v) {
+              const prev = cur.get(m)
+              cur.set(m, prev === undefined ? vis : prev === vis ? vis : PHP_VIS_AMBIGUOUS)
+            }
           }
         } finally { try { tree?.delete?.() } catch { /* nothing to free */ } }
       }
