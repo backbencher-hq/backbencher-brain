@@ -1093,8 +1093,22 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (left.type !== "identifier") return
     const name = left.text
 
-    // __all__ → the explicit export contract.
-    if (name === "__all__") {
+    // __all__ → the explicit export contract, and ONLY at module scope.
+    //
+    // A CLASS body can contain `__all__` — cython's `Shadow.py` does exactly that, inside
+    // `CythonDotParallel` at L786 — and the assignment there is a plain class attribute, not an
+    // export contract. `from shadow import *` reads the MODULE's `__all__` and never looks at a
+    // class's, so publishing `exports Shadow -> parallel/prange/threadid` claims a public
+    // surface that does not exist. Those edges were in the graph and NEITHER the differential
+    // NOR a fixture caught them: my own oracle derived them from the same unstated assumption,
+    // so two derivations agreed on the same wrong fact. An agreement between two things I wrote
+    // is not evidence, and that is the whole argument for pinning a fixture on the SEMANTICS
+    // (`import *` ignores class `__all__`) rather than on the code path.
+    //
+    // The second half is a MISSING edge, not a false one: `__all__` in a class body really is
+    // in that class's `__dict__`, so it is a member like any other and now falls through to the
+    // class-member path below instead of being swallowed by this branch.
+    if (name === "__all__" && !ctx.currentClass && !ctx.currentFunction) {
       // PY-14. Only a `list` was read, so `__all__ = ("a", "b")` published nothing —
       // and the tuple spelling is ordinary older python. Measured over 400 pinned corpus
       // files: 16 `__all__` assignments, 13 lists, **3 tuples that produced no edge at
@@ -1206,7 +1220,20 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   private processCall(node: Node, ctx: PythonContext) {
     const caller = ctx.currentFunction || ctx.currentClass || ctx.moduleName
-    if (!caller || caller === "module") return
+    // A call with NO enclosing scope belongs to the MODULE, and the module scope is named
+    // after the file. The old guard compared that name to the LITERAL string `"module"` to
+    // avoid a synthetic placeholder — and `module.py` is one of the most common filenames in
+    // the corpus (four here, all ansible test modules), so every module-level call in such a
+    // file was silently dropped. The `if __name__ == "__main__": main()` guard at the end of an
+    // ansible module is the clearest case: `main()` is a real call made by the module and the
+    // graph had no edge for it at all.
+    //
+    // The right test is "is there an enclosing scope", not "is the scope called module" — the
+    // second is a question about a NAME and the module's own name is not ours to reserve. The
+    // independent oracle found it: it derives `calls module -> main` and the analyzer had
+    // nothing, which is a MISSING relationship and the only direction of this report that means
+    // something is absent from the graph rather than over-claimed in it.
+    if (!caller) return
 
     // Decorator calls (@dataclass(...)) are metadata on the decorated
     // symbol, not runtime call edges.

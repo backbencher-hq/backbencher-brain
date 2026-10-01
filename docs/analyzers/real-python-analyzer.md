@@ -158,19 +158,25 @@ lives).
 
 | Type | Agreed | Missing | Unexplained |
 | --- | --- | --- | --- |
-| `calls` | 59,197 | 15 | 14 |
+| `calls` | 59,211 | **0** | **0** |
 | `uses` | 39,085 | **0** | **0** |
-| `contains` | 28,213 | 6 | 18 |
+| `contains` | 28,232 | 1 | **0** |
 | `imports` | 15,160 | **0** | **0** |
 | `references` | 12,280 | **0** | **0** |
 | `extends` | 3,505 | **0** | **0** |
-| `instantiates` | 1,640 | **0** | 5 |
-| `overrides` | 1,883 | 6 | 26 |
-| `exports` | 96 | **0** | **0** |
+| `instantiates` | 1,645 | **0** | **0** |
+| `overrides` | 1,883 | **0** | **0** |
+| `exports` | 93 | **0** | **0** |
 
-**161,059 edges agreed by two derivations that share no helper; 90 disagreements, 99.94%.**
+**161,094 edges agreed by two derivations that share no helper; 1 disagreement, 99.9994%.**
 The four types added last (`uses`, `references`, `imports`, `exports`) came back perfect on their
 first full run — 66,621 edges that had been verified by nothing until then.
+
+The run started at 90 disagreements and ended at 1. Nine were real analyzer defects and are
+listed in `docs/analyzers/python.md`; the rest were oracle bugs, which is the ordinary order of
+things — an oracle written alongside the code it checks inherits the same assumptions, and each
+one it got wrong produced a round of *false* rows pointing at code that was fine. Fixing those
+made the number fall, and every drop was checked against CPython rather than against the count.
 
 Three details in those derivations are why they came back clean, and each was wrong first:
 
@@ -186,17 +192,21 @@ Three details in those derivations are why they came back clean, and each was wr
   quotes* — and handles `augmented_assignment`, since `__all__ += [...]` is how a module extends
   its own surface.
 
-**The 90 that remain** are not claimed to be clean. `contains` 24, `overrides` 32, `calls` 29,
-`instantiates` 5, concentrated in Cython (`PyrexTypes.py` 20, `test_dataclasses.py` 9,
-`Nodes.py` 7). Traced to three limits of the ORACLE, each documented where it lives: degenerate
-trees for chained calls written with a line continuation; `cdef class` bases the python grammar
-does not model; and base names that are both imported and locally declared, which needs the
-module's imports to settle.
+**The 1 that remains** is not claimed to be correct in either direction: `contains MethodRedef
+-> a`, in `cython/tests/run/class_scope.py`, where `def a` is declared at L10 and again at L13.
+The lane publishes one edge at the **last** declaration (M60 #748: a genuine rebinding
+collapses); the oracle publishes both, per site. Which is right is genuinely undetermined — see
+"Known gaps" in `reviews/python/master-review.md` — and it is reported rather than closed
+because both readings were tried against the corpus and each broke a larger set of true
+declaration-chain edges (`HTTPBasicAuth.__init__` twice, `Prop.prop` four times) in the other
+direction. A residual that resists two honest attempts is a decision to escalate, not a bug to
+paper over.
 
 **The harness also reports, permanently:** 6,787 declared guesses confirmed by the tree **0**
 times, and 1 file truncated at the 1 MiB parse limit whose unread tail is a PY-19 coverage
-concern rather than an analyzer error. Multiplicity disagreement is **7**, all the
-line-continuation shape.
+concern rather than an analyzer error. Multiplicity disagreement is **5**, all the
+line-continuation shape (PY-22): the store keys a `calls` edge on `(source, type, target,
+line)`, so two calls of one name on one line collapse and the same two on two lines do not.
 
 ### Three defects the differential found in this analyzer
 
@@ -218,8 +228,8 @@ comparison can see. That is the whole argument for having built the instrument: 
 | Claim | Artefact |
 | --- | --- |
 | grammar bytes, sha256, both-direction drift | `validation/m14/grammar-pins.json` (lane `python`) |
-| 11 fixtures | `validation/m14/fixtures/python/` |
-| 25 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
+| 17 fixtures | `validation/m14/fixtures/python/` |
+| 29 mutants, all caught | `script/m14/mutate-analyzer.ts`, ids prefixed `python/` |
 | node-type classification, 0 unclassified | `script/m14/spec/python-completeness.json` |
 | independent truth + comparator | `script/m14/oracles/python-truth.ts`, `python-truth-diff.ts` |
 | the measurements and the defects | `reviews/python/master-review.md` |

@@ -12192,6 +12192,33 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "python/class-dunder-all-not-contained",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "PY-24 REVERT: `__all__` is treated as export METADATA only, so an `__all__` assigned in a " +
+      "CLASS body publishes exports and never becomes a class member. `__all__` is in that class's " +
+      "`__dict__` like any other assignment, so this drops a real `contains` edge — the corpus row " +
+      "`contains CythonDotParallel -> __all__` at cython/Cython/Shadow.py, which was the last " +
+      "missing relationship left in the whole python corpus. Caught by " +
+      "python/class-dunder-all-is-not-exports. " +
+      "NOTE ON WHAT THIS MUTANT CANNOT EXPRESS: the revert had a second half — publishing " +
+      "`exports module -> alpha/beta` for names inside a class `__all__` — and that half is NOT " +
+      "reproducible here. It is an ABSENCE of scope information in the result: once the gate is " +
+      "correct, nothing in `r` records which `__all__` literals were skipped, so a result-shaped " +
+      "transform cannot re-add them. Reconstructing them from fixture strings is what the " +
+      "`dunder-all-tuple-ignored` comment above records as having produced a no-op that reported " +
+      "0 -> 0 and read as a survivor. The false-exports half is therefore covered ONLY by the " +
+      "fixture's three forbid rows, which is the honest split: a mutant that cannot be written " +
+      "without guessing names is a mutant that proves nothing.",
+    transform: r => ({
+      ...r,
+      relationships: ((r.relationships ?? []) as any[]).filter(
+        (x) => !(x.type === "contains" && String(x.target) === "__all__"),
+      ),
+    }),
+  },
+  {
     id: "python/framework-marker-silently-dropped",
     language: "python",
     defectClass: "coverage-loss",
