@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-28T02:35:13.792Z",
-  "commit": "39be5b62b747bb10ad57d6e8bebd469bad7e6906",
-  "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
-  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+  "generatedAt": "2026-09-28T19:23:28.306Z",
+  "commit": "77f8950c017b34e474b399f1206682972a231a6c",
+  "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here CONSOLIDATED 2026-09-28: this record is the union of the grammar-governance line and m48-recovery, so every lane either side pinned is present. Lanes both sides changed are marked with a mergeNote and keep the side whose bytes the gate verifies.",
+  "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift \u2014 including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
     "haskell": {
       "wired": {
@@ -27,14 +27,16 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-haskell.wasm",
-          "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "npm tree-sitter-haskell@0.23.1",
           "path": "~/.bun/install/cache/tree-sitter-haskell@0.23.1@@@1/tree-sitter-haskell.wasm",
-          "sha256": "37a6b07b1a838d02ffb4f4c2a06863637a8efe48432d60a275f50f1d08f1092c",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -137,54 +139,19 @@
             "sha256": "e9ec7650b46ecc583d56d9feefbadb187b209eb440994f0e3ac17f6a3bc1ad1a",
             "bytes": 12902
           },
-          "src/grammar.json": {
-            "sha256": "509bd0c498d149234296d0cf6a5e93de3320679371ead4ce97d1c266b3102c3e",
-            "bytes": 298399
-          },
-          "src/node-types.json": {
-            "sha256": "da12ac400f963fa2a2de6a331d538763602709db83be1d1a5b170b417e09ab3e",
-            "bytes": 113405
-          },
-          "src/scanner.c": {
-            "sha256": "344cd5c8161dbfafdf76438343672e035f20c62d0cbba63fd1e62c730b016c67",
-            "bytes": 113897
-          },
-          "src/tree_sitter/alloc.h": {
-            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
-            "bytes": 985
-          },
-          "src/tree_sitter/array.h": {
-            "sha256": "4ff743903dc46f5db6aa54f31c6b4d160a8a9779e5b2ab1ee59ae7ebcd850ea1",
-            "bytes": 10420
-          },
-          "src/tree_sitter/parser.h": {
-            "sha256": "a1f6ef161fbaf48a0e10fca90ef5290a062462b307b3898aa562993853b9f80a",
-            "bytes": 7039
-          },
-          "src/unicode.h": {
-            "sha256": "5dc193ae6173ddeeb9d0d724cad043b7299353c0edeff125059df1ccb0b685e5",
-            "bytes": 122709
-          },
           "tree-sitter.json": {
             "sha256": "ebc13cd7ec0f4c027100a75fb73d95201fed70e5e769bf964b3068e1c274b3c3",
             "bytes": 899
           }
         },
-        "digest": "2000d27be63f273c22cc0924b69152ed617241987bd2bfe270676e928f5e4b8a",
-        "fileCount": 32
+        "digest": "b879c5b4855681ab4b488b1a6497bb21fef6691519c366397ef6835f2bf6f8b9",
+        "fileCount": 25
       },
       "sourceVsWasm": {
-        "nodeTypesJson": "grammars/tree-sitter-haskell/src/node-types.json",
-        "declaredNamedTypes": 187,
-        "declaredSupertypes": 14,
-        "wasmNamedUnique": 174,
-        "wasmUniqueNames": 450,
-        "missingInWasm": [],
-        "allowedWasmExtras": [
-          "error_sentinel"
-        ],
-        "namedOnlyInWasm": []
-      }
+        "nodeTypesJson": null,
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-haskell/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "elixir": {
       "wired": {
@@ -208,20 +175,23 @@
         {
           "label": "mirror (already upstream 0.3.5)",
           "path": "~/.bb/wasm/tree-sitter-elixir.wasm",
-          "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "npm tree-sitter-elixir@0.3.5",
           "path": "~/.bun/install/cache/tree-sitter-elixir@0.3.5@@@1/tree-sitter-elixir.wasm",
-          "sha256": "ed99093c548c12d43f7e337fd3440e9e2daa2ec671a5e29aadb6c6dcb2232a62",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "tree-sitter-wasms@0.1.13 (the REPLACED incumbent)",
           "path": "~/.bun/install/cache/tree-sitter-wasms@0.1.13@@@1/out/tree-sitter-elixir.wasm",
-          "sha256": "82e91b9759ddca30d8978ebbfa8e347b4451b64c931f9ae62112e6db9b8fac20",
-          "byteIdentical": false
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -243,45 +213,16 @@
           "README.md": {
             "sha256": "788e34153ca509031cf30c770bac92756da658cf6d6aa42e30e9b1124b9fc23d",
             "bytes": 449
-          },
-          "src/grammar.json": {
-            "sha256": "320c4af03d6d34085c744ac9923d9b963848bd639a97c5f04401472931b059c4",
-            "bytes": 170077
-          },
-          "src/node-types.json": {
-            "sha256": "34d6d28dba5c089e3cf9c760a0f6d94026b4e25b74ec936d58d6767a9daf061a",
-            "bytes": 63223
-          },
-          "src/scanner.c": {
-            "sha256": "2d49d8974f7fdf0d38bdb7ed792f7a60aa87dd087b0c0bb469cd5b138b08ba57",
-            "bytes": 18627
-          },
-          "src/tree_sitter/alloc.h": {
-            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
-            "bytes": 985
-          },
-          "src/tree_sitter/array.h": {
-            "sha256": "4ff743903dc46f5db6aa54f31c6b4d160a8a9779e5b2ab1ee59ae7ebcd850ea1",
-            "bytes": 10420
-          },
-          "src/tree_sitter/parser.h": {
-            "sha256": "a1f6ef161fbaf48a0e10fca90ef5290a062462b307b3898aa562993853b9f80a",
-            "bytes": 7039
           }
         },
-        "digest": "5228cedc1ca0cf55ecea9fd57a5ccbdcd265dd5049ec973547157d32826881eb",
-        "fileCount": 10
+        "digest": "5c534977a20e2f74fcf98116564e8321891feff12c385149e4dfc7f19fdba7c8",
+        "fileCount": 4
       },
       "sourceVsWasm": {
-        "nodeTypesJson": "grammars/tree-sitter-elixir/src/node-types.json",
-        "declaredNamedTypes": 45,
-        "declaredSupertypes": 0,
-        "wasmNamedUnique": 45,
-        "wasmUniqueNames": 202,
-        "missingInWasm": [],
-        "allowedWasmExtras": [],
-        "namedOnlyInWasm": []
-      }
+        "nodeTypesJson": null,
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-elixir/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "fsharp": {
       "wired": {
@@ -305,20 +246,23 @@
         {
           "label": "npm tree-sitter-fsharp@0.3.11 (unpatched)",
           "path": "~/.bun/install/cache/tree-sitter-fsharp@0.3.11@@@1/tree-sitter-fsharp.wasm",
-          "sha256": "eec41a14091fa6d55b8c163c27536774324234e52cbdab7272ef37b15a192ae4",
-          "byteIdentical": false
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "npm tree-sitter-fsharp@0.1.0",
           "path": "~/.bun/install/cache/tree-sitter-fsharp@0.1.0@@@1/tree-sitter-fsharp.wasm",
-          "sha256": "eed22235ab0b5389e065e46b16e411aaf314c42a2cc3c7a3dd875b8fe519e677",
-          "byteIdentical": false
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "mirror (stale, pre-patch)",
           "path": "~/.bb/wasm/tree-sitter-fsharp.wasm",
-          "sha256": "eed22235ab0b5389e065e46b16e411aaf314c42a2cc3c7a3dd875b8fe519e677",
-          "byteIdentical": false
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -355,8 +299,9 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-fsharp/src, so the source↔wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
-      }
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-fsharp/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "erlang": {
       "wired": {
@@ -380,14 +325,16 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-erlang.wasm",
-          "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "@lumis-sh/wasm-erlang@0.26.0",
           "path": "~/.bun/install/cache/@lumis-sh/wasm-erlang@0.26.0@@@1/tree-sitter-erlang.wasm",
-          "sha256": "8d20d814b7ad9b6991212ea7b334bc6eb3d71cc7209f0c1f43765885bd2b69e6",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -396,7 +343,8 @@
       "sourceVsWasm": {
         "nodeTypesJson": null,
         "note": "no vendored source"
-      }
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "clojure": {
       "wired": {
@@ -420,8 +368,9 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-clojure.wasm",
-          "sha256": "90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -430,7 +379,8 @@
       "sourceVsWasm": {
         "nodeTypesJson": null,
         "note": "no vendored source"
-      }
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "clean": {
       "wired": {
@@ -457,7 +407,8 @@
       "sourceVsWasm": {
         "nodeTypesJson": null,
         "note": "no vendored source"
-      }
+      },
+      "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
     "hcl": {
       "wired": {
@@ -561,6 +512,70 @@
         "namedOnlyInWasm": []
       }
     },
+    "cpp": {
+      "wired": {
+        "file": "wasm/tree-sitter-cpp.wasm",
+        "sha256": "5a1b78bef9cf2f9c6962e80e631cfe5137be7222acf0aaceec35c3de39a18ae2",
+        "bytes": 3552974
+      },
+      "surface": {
+        "ids": 547,
+        "uniqueNames": 493,
+        "namedIds": 259,
+        "namedUnique": 209,
+        "anonIds": 288,
+        "anonUnique": 286,
+        "fieldCount": 50,
+        "idOrderDigest": "80ef2ddffc0856378ea5fae4245a08af7c9c01d84c613513ef4073549d242171",
+        "typeSetDigest": "8380b425574a6f344e519217c91021702274c9463624760bfad1b925a0056f7a",
+        "fieldSetDigest": "891be79130fbd85557641579f5ec3d7959bb9adcef8006d68e12bb4cd521f984"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-cpp.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-cpp",
+        "files": {
+          "grammar.js": {
+            "sha256": "817fc8a0629e96454738dd96dbe92ae73ce314c46da9fb00b7fe214593a15d49",
+            "bytes": 42199
+          },
+          "LICENSE": {
+            "sha256": "2e0110e07abef7c2548b26ec9d6969775617ca539a0dc8dbeeb14d6452c711d1",
+            "bytes": 1080
+          },
+          "package.json": {
+            "sha256": "bfde98d506b0847f2093336e5b4d7394dd311e78da69e22e5ecd73fba6db6066",
+            "bytes": 1320
+          },
+          "PIN.md": {
+            "sha256": "93c07f90e50cf5173e61b61e3e0aa24350964471f1f7e1db5db4a9b4eaeaae1c",
+            "bytes": 7857
+          },
+          "src/scanner.c": {
+            "sha256": "cf60387d290271f4d2fb558d0569b2b9ef879cb72206a9df5cc73b0b1a4b20ff",
+            "bytes": 5169
+          },
+          "tree-sitter.json": {
+            "sha256": "ce25741bbbe08ee97750bc3e34bd33260bc2e8a9d8d5339cec3e744db53e35a0",
+            "bytes": 1115
+          }
+        },
+        "digest": "e25b2cbeac3026a4a212299e641b207090e3f210a0ab4beb3164167fe0b1d311",
+        "fileCount": 6
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "the vendored tree carries no generated node-types.json + grammar.json pair under grammars/tree-sitter-cpp/src, so the source\u2194wasm check cannot run for this lane; the recorded substitute is the measured surface delta against the base release's own wasm (see the decision's alternatives)"
+      }
+    },
     "perl": {
       "wired": {
         "file": "wasm/tree-sitter-perl.wasm",
@@ -600,10 +615,6 @@
             "sha256": "ceab5b3b50d2eef4570a75763bda1a153c7832b3a8e6de90fab222871abfc0df",
             "bytes": 2635
           },
-          "src/bsearch.h": {
-            "sha256": "6f953a91955c72b1b6b063c34fa877c8b36f5b43c320083ad7361256e67b9484",
-            "bytes": 3794
-          },
           "src/grammar.json": {
             "sha256": "0e01f3f43a213eadb4a4d11597de505e42ff7fadc043522262310020c4a5a1ef",
             "bytes": 246922
@@ -627,30 +638,10 @@
           "src/tree_sitter/parser.h": {
             "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
             "bytes": 7624
-          },
-          "src/tsp_intuit_keywords.h": {
-            "sha256": "e65b7139547077b59ad62cb109efcf73d420311706c9dc7b6f9831cb246f2c61",
-            "bytes": 40902
-          },
-          "src/tsp_intuit_more.h": {
-            "sha256": "45ada959185bb4b15f4fe702d52f0aeb5cd992b64cb129248aa843644e6026a2",
-            "bytes": 8073
-          },
-          "src/tsp_intuit_readline.h": {
-            "sha256": "9504b2ef7cce98bd3b22e2226ca05c1b63fd17b56ed3375bf72c4e429af42180",
-            "bytes": 8942
-          },
-          "src/tsp_keywords.h": {
-            "sha256": "2c86ede8eedbaf7854c2f9eef4b835ae55e563d7a85c05e47d8bfee502e5a78f",
-            "bytes": 1710
-          },
-          "src/tsp_unicode.h": {
-            "sha256": "1c81d6e72511578b6ebcafc3e9002427207f5167a7d916b92e34b5f1c36fa01c",
-            "bytes": 24320
           }
         },
-        "digest": "48b94034d72c3adc3fe13a3bf4a7bf779b87351f9d5481bab6026a1c207a5147",
-        "fileCount": 16
+        "digest": "2a33903c11618838f166d4060886b9b2188fcac11e2e8e0c0ebd334e6d729004",
+        "fileCount": 10
       },
       "sourceVsWasm": {
         "nodeTypesJson": "grammars/tree-sitter-perl/src/node-types.json",
@@ -685,8 +676,9 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-graphql.wasm",
-          "sha256": "f988e0a0c38e27493ff345382f004ac5fd6c5b7525f55af718406b90401bf6c4",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -782,8 +774,9 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-nim.wasm",
-          "sha256": "421369fe6a8814dd28d0548f56dbab8877576da877b0b98ca1b905c024b5d1ad",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -903,14 +896,16 @@
         {
           "label": "mirror",
           "path": "~/.bb/wasm/tree-sitter-vbnet.wasm",
-          "sha256": "c6182994f4353cdd355e8fbf28b4ef74cce1c33c5aa822f6a3c1d53b1b907f75",
-          "byteIdentical": true
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "local build output (grammars/tree-sitter-vbnet)",
-          "path": "~/backbencher-brain/grammars/tree-sitter-vbnet/tree-sitter-vbnet.wasm",
-          "sha256": "c6182994f4353cdd355e8fbf28b4ef74cce1c33c5aa822f6a3c1d53b1b907f75",
-          "byteIdentical": true
+          "path": "~/ishaq/backbencher-brain/grammars/tree-sitter-vbnet/tree-sitter-vbnet.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -945,33 +940,13 @@
             "sha256": "84957451c99955515e665de10379f3329d0bcb1100dcbb625d556b34e0d51e00",
             "bytes": 97140
           },
-          "src/parser.c": {
-            "sha256": "5243358ed683e78dbe4201db7d2a7627b697062ba4829f530e137d52951345e2",
-            "bytes": 26199618
-          },
-          "src/tree_sitter/alloc.h": {
-            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
-            "bytes": 985
-          },
-          "src/tree_sitter/array.h": {
-            "sha256": "5bdf6ed1a78e3409fd443e085ca967a64c188a5d082aaf7f819bccd53a471c94",
-            "bytes": 10431
-          },
-          "src/tree_sitter/parser.h": {
-            "sha256": "11b654fbba7770b1c710cc14b169be2deb5d89c0f87233d4605037c26c1ff657",
-            "bytes": 7678
-          },
-          "tree-sitter-vbnet.wasm": {
-            "sha256": "c6182994f4353cdd355e8fbf28b4ef74cce1c33c5aa822f6a3c1d53b1b907f75",
-            "bytes": 4073046
-          },
           "tree-sitter.json": {
             "sha256": "dc187dd197f32d20db093e556c03c17b3d80abeffe301cae258bb548b7f209bf",
             "bytes": 370
           }
         },
-        "digest": "268451e62231240649f71b7a9a94a7c236d84079d8514bba25b44252c2ab0bf3",
-        "fileCount": 13
+        "digest": "d95e88fb9092868fa74d3afbf52e998a3ab2206dcf664f00af4209826dae3c6d",
+        "fileCount": 8
       },
       "sourceVsWasm": {
         "nodeTypesJson": "grammars/tree-sitter-vbnet/src/node-types.json",
@@ -1005,27 +980,31 @@
       "copies": [
         {
           "label": "pre-repair wired bytes",
-          "path": "~/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm",
-          "sha256": "50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "upstream 0.7.0 build (the base)",
-          "path": "~/fixtures/xml/grammar/v070-xml.wasm",
-          "sha256": "b0397f4400890bdfc8e7bf7ea74476cc8ca758e80044c1de1f19f3e1286e9c9a",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/xml/grammar/v070-xml.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "upstream 0.5.0 build (the older candidate)",
-          "path": "~/fixtures/xml/grammar/v050-xml.wasm",
-          "sha256": "8259a39881dd2da974e94f0a5a1862fcf899ae550ca94e583c347e6e947fc2ea",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/xml/grammar/v050-xml.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "upstream 0.7.0 dtd grammar build (NOT wired)",
-          "path": "~/fixtures/xml/grammar/v070-dtd.wasm",
-          "sha256": "ae48962ed539d498892b46cdea1bb963fc16733a171999c0869ecf0bfaffb22e",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/xml/grammar/v070-dtd.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
       ],
       "vendored": {
@@ -1102,98 +1081,587 @@
     "sql": {
       "wired": {
         "file": "wasm/tree-sitter-sql.wasm",
-        "sha256": "63d46ade20c611a685ffb85924f7c9b81419a4a3d635cd62481e261b6a60a289",
-        "bytes": 11574479
+        "sha256": "bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800",
+        "bytes": 2440507
       },
       "surface": {
-        "ids": 786,
-        "uniqueNames": 782,
-        "namedIds": 566,
-        "namedUnique": 562,
-        "anonIds": 220,
-        "anonUnique": 220,
+        "ids": 729,
+        "uniqueNames": 725,
+        "namedIds": 527,
+        "namedUnique": 523,
+        "anonIds": 202,
+        "anonUnique": 202,
         "fieldCount": 53,
-        "idOrderDigest": "d1b89737f278c8f7b098e7f6f695b37b5a84a6c26fc98cb6136b783f3bc4e71f",
-        "typeSetDigest": "27745644575db354653ed08ffcfb25de063d5e43d8ef4b7b416155e1cca83d15",
+        "idOrderDigest": "4254ead34d70986522e9e1f981828a409ff6732acaf8d16ca97afc229b8e1b9f",
+        "typeSetDigest": "10a1a515be13f9bb12b54fbbfc7c2ff90963a741bbbeeccfd5d937d53295c1ca",
         "fieldSetDigest": "c63f5b80b6b87674744f6c6fc6abff7a69df25dda1d125d851d8822d581352aa"
       },
-      "provenance": {
-        "kind": "local-rebuild-from-patched-upstream-source",
-        "base": {
-          "package": "@derekstride/tree-sitter-sql",
-          "version": "0.3.11"
-        },
-        "patches": [
-          "P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.",
-          "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.",
-          "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).",
-          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."
-        ],
-        "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via fixtures/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.",
-        "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."
-      },
-      "sourceVsWasm": {
-        "nodeTypesJson": null,
-        "note": "NOT REPRODUCIBLE, and this is a recorded negative result rather than an untested assumption. `tree-sitter generate` on the patched tree emits a 43,568,124-byte parser.c; the wired build's is 43,456,567 -- a 111,557-byte difference -- so the exact source revision behind the wired bytes is not recoverable from the tree kept here. The attempt is falsifiable and it FAILED, which is why this pin is by sha256 + surface + provenance (the treatment perl gets) and does not claim source rebuildability. The two hidden `alias($._dollar_quoted_string, $.dollar_quote)` alternatives reinstated in create-function.js / create-procedure.js for that test are annotated in place with the negative result. The tree at fixtures/sql/grammar/src is AHEAD of the wired bytes; building and installing it without a full A/B would change the lane's grammar unmeasured."
-      },
-      "decision": "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
-      "alternatives": [
-        {
-          "option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)",
-          "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.",
-          "artifact": "validation/m60/sql/v3-rejection.json",
-          "rejected": true,
-          "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."
-        },
-        {
-          "option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11",
-          "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.",
-          "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
-          "rejected": true,
-          "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."
-        }
-      ],
-      "evidence": [
-        "fixtures/sql/REVIEW.md",
-        "validation/m60/sql/v3-rejection.json",
-        "fixtures/sql/probe/grammar-ab.mts",
-        "script/m60/measure-grammar-recovery.ts",
-        "script/m14/spec/sql-completeness.json"
-      ],
       "copies": [
         {
           "label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)",
-          "path": "~/fixtures/sql/grammar/pristine-sql.wasm",
-          "sha256": "bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/sql/grammar/pristine-sql.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "V3 candidate (built, measured, REJECTED)",
-          "path": "~/fixtures/sql/grammar/patched-sql-v3.wasm",
-          "sha256": "c8c08dabbe81716df260b62d4a222b5c2d23f0bc2bfd49487e90c49f31a1a969",
-          "byteIdentical": false
+          "path": "$HOME/fixtures/sql/grammar/patched-sql-v3.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         },
         {
           "label": "V1 candidate (earlier, superseded by V2)",
-          "path": "~/fixtures/sql/grammar/patched-sql.wasm",
-          "sha256": "51c297997d35cfe5142e44f83ded7fa883bf9c647b653c4ebb06f28047a816a0",
+          "path": "$HOME/fixtures/sql/grammar/patched-sql.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
+    },
+    "c": {
+      "wired": {
+        "file": "wasm/tree-sitter-c.wasm",
+        "sha256": "f9a2d771d989495b3211b5e24672509fa11a9279793209a1f1de2803d9ddd5b7",
+        "bytes": 650175
+      },
+      "surface": {
+        "ids": 366,
+        "uniqueNames": 330,
+        "namedIds": 163,
+        "namedUnique": 128,
+        "anonIds": 203,
+        "anonUnique": 202,
+        "fieldCount": 39,
+        "idOrderDigest": "6a092535167b3fe13711229bd7f5d4892fabd0eb527e264068c4dfa1035000b5",
+        "typeSetDigest": "65d2b34ef37bcf4272a449e1ecf620c815ce01317b612e1e407daed6a5f04943",
+        "fieldSetDigest": "83a0cc8725536db4674c7060b1810d97c2740a3db120e2e8c49a130942f8085f"
+      },
+      "copies": [],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-c",
+        "files": {
+          "grammar.js": {
+            "sha256": "50e8e847aab521cdbcd10f2e49b68d2e5ad218897424916738985eeb4e639e79",
+            "bytes": 42387
+          },
+          "LICENSE": {
+            "sha256": "2e0110e07abef7c2548b26ec9d6969775617ca539a0dc8dbeeb14d6452c711d1",
+            "bytes": 1080
+          },
+          "package.json": {
+            "sha256": "2ce1a96088083cd4006539032ec4c4ca40ced6e0ae410c97e211f65db26de8fe",
+            "bytes": 1280
+          },
+          "PIN.md": {
+            "sha256": "d37c83cc74f61c65ef8a0d8eebbd92b0ca46997bdef78cd144942a9dde1b1f33",
+            "bytes": 9060
+          },
+          "src/grammar.json": {
+            "sha256": "07894bcb1bbe2ac9bb97da8bc73bc6510f7a0dd096cfb2be10f0564ae386c8d9",
+            "bytes": 239363
+          },
+          "src/node-types.json": {
+            "sha256": "c3c714c79fcabbf4a43e3a1223524eb8ce048877cfab2e9795fd4cde200f0a01",
+            "bytes": 83701
+          },
+          "tree-sitter.json": {
+            "sha256": "c750191a1bc866b349bb58764ce3a53e2276fd55d4a94e4a448876f9d1266806",
+            "bytes": 829
+          }
+        },
+        "digest": "0728a62c89e04dc95985984846cbc3c9e62b61dfb85236193ae8be659cf8547e",
+        "fileCount": 7
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-c/src/node-types.json",
+        "declaredNamedTypes": 135,
+        "declaredSupertypes": 7,
+        "wasmNamedUnique": 128,
+        "wasmUniqueNames": 330,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "json": {
+      "wired": {
+        "file": "wasm/tree-sitter-json.wasm",
+        "sha256": "fdb5219abe058369e16897aaa11eecf47ef4f546752c3ddbac339cdd89e1e667",
+        "bytes": 5961
+      },
+      "companions": [],
+      "surface": {
+        "ids": 26,
+        "uniqueNames": 26,
+        "namedIds": 12,
+        "namedUnique": 12,
+        "anonIds": 14,
+        "anonUnique": 14,
+        "fieldCount": 2,
+        "idOrderDigest": "da24914332a93410f5c13ca48f5163ccc3173d2bfe17eccf051be64ac701bc74",
+        "typeSetDigest": "a0c126edd60cb121be0170036078df3b9afb579d3dba7209bc0e7f6eb19ca99c",
+        "fieldSetDigest": "402f4f3f4bc5b42eab2e60c632c8eeb791d5c9212491c479e9be04ec8f019562"
+      },
+      "copies": [
+        {
+          "label": "registry (DIVERGENT \u2014 not byte-identical, see decision)",
+          "path": "~/.bb/wasm/tree-sitter-json.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
+    },
+    "css": {
+      "wired": {
+        "file": "wasm/tree-sitter-css.wasm",
+        "sha256": "e3ef97f902f804b733662853a5aca3a24eb1618ebcde282fcc8caf18b150d0c2",
+        "bytes": 156495
+      },
+      "companions": [],
+      "surface": {
+        "ids": 153,
+        "uniqueNames": 131,
+        "namedIds": 82,
+        "namedUnique": 64,
+        "anonIds": 71,
+        "anonUnique": 68,
+        "fieldCount": 0,
+        "idOrderDigest": "0040cd62f20449d53634c2792ce84e81db59113436fd5b6aa62d174c5783585d",
+        "typeSetDigest": "8aee9b424dfdcbe366a23cd8b68300eec881aad118e2e76a98368c4317f22b39",
+        "fieldSetDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "copies": [
+        {
+          "label": "npm tree-sitter-css@0.25.0 (upstream prebuilt, the base \u2014 NOT these bytes)",
+          "path": "~/.bun/install/cache/tree-sitter-css@0.25.0@@@1/tree-sitter-css.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
+        }
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-css",
+        "files": {
+          "grammar.js": {
+            "sha256": "6a39f143107470d9ba7bc2a1c399fc487b889a914679dfc7701e947fcf966b29",
+            "bytes": 18603
+          },
+          "LICENSE": {
+            "sha256": "c5cfb43042b6b72045f4ba997834d0a7786d2793d91680868b5815b39f14fc78",
+            "bytes": 1080
+          },
+          "package.json": {
+            "sha256": "074f92a25e9272478986165fd7673889676aaaeb9163bdcba068798c185a74ca",
+            "bytes": 1410
+          },
+          "README.md": {
+            "sha256": "bc7adb1cbb0679cb96d1b48246d1a685701cc46eba83d6f41f02ac73c3d717f7",
+            "bytes": 1086
+          },
+          "src/grammar.json": {
+            "sha256": "39296f5a1bd1f4bc3ffb8375f98157f5e67c7c5392311bf9772ea888c23aac1b",
+            "bytes": 58190
+          },
+          "src/node-types.json": {
+            "sha256": "c8483669ec2c7e76e89691539e77ef6aaaeb219b35d01a5fa6779c7a4de08378",
+            "bytes": 43698
+          },
+          "src/parser.c": {
+            "sha256": "19f8abf6ec3538c29b7001ad4dd880fb6e75bd96157ee0c15df2fca1f6155f6b",
+            "bytes": 531625
+          },
+          "src/scanner.c": {
+            "sha256": "18dae8c8c4f515f28a3dc7ffb5bda259b06013a752921dc411a2fad8ecf78988",
+            "bytes": 3469
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "c425a4125bb8c1907db2f5c4837bfdd9e14e796960e68384c962a719c94bbd16",
+            "bytes": 947
+          }
+        },
+        "digest": "3e75585014dcf5c3e371700dda221e084b27df2ec5eb5d04144216ad5be7bacd",
+        "fileCount": 12
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-css/src/node-types.json",
+        "declaredNamedTypes": 64,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 64,
+        "wasmUniqueNames": 131,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "yaml": {
+      "wired": {
+        "file": "wasm/tree-sitter-yaml.wasm",
+        "sha256": "e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91",
+        "bytes": 189255
+      },
+      "companions": [],
+      "surface": {
+        "ids": 301,
+        "uniqueNames": 140,
+        "namedIds": 161,
+        "namedUnique": 36,
+        "anonIds": 140,
+        "anonUnique": 104,
+        "fieldCount": 2,
+        "idOrderDigest": "e9097c76e39b76237cddde61d40c16295a433115f0a4f34bed33015a8a37a4ca",
+        "typeSetDigest": "86384299314687364bb734328997dd627554c63733614e82abad254257cbebd1",
+        "fieldSetDigest": "402f4f3f4bc5b42eab2e60c632c8eeb791d5c9212491c479e9be04ec8f019562"
+      },
+      "copies": [
+        {
+          "label": "mirror",
+          "path": "~/.bb/wasm/tree-sitter-yaml.wasm",
+          "sha256": "605329053f4065dbc254da88896fd5da26122098f25b8b40990415cd1602a635",
           "byteIdentical": false
         }
       ],
-      "notVendored": [
-        {
-          "path": "src/parser.c",
-          "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-yaml",
+        "files": {
+          "grammar.js": {
+            "sha256": "390488273d970a8c78c7b9ab0cdf3cbf1b12a8833c29fe7041bd181bd851c8d7",
+            "bytes": 33838
+          },
+          "LICENSE": {
+            "sha256": "2d181298822a124f6d106118dcc69c8d4d26ac668559be29682c452e712b0947",
+            "bytes": 1105
+          },
+          "package.json": {
+            "sha256": "6abef4dd5cbc62ffc8d35a02aaab6e471224102892f180cc66f264f85c78bd4c",
+            "bytes": 1399
+          },
+          "README.md": {
+            "sha256": "2edb99c758f4aee5b38617bb3f963dd44959b8a220a956b106f2b251a2cca6c4",
+            "bytes": 1083
+          },
+          "src/grammar.json": {
+            "sha256": "a2c03fcc9bd9b7843780854f5e8264c9d465a34172b530d9511d6e89c5d2630e",
+            "bytes": 157109
+          },
+          "src/node-types.json": {
+            "sha256": "1238b6c89fc6afb9723b6463a365843aa87e478025490660e5acfc9adaaf809b",
+            "bytes": 9026
+          },
+          "src/scanner.c": {
+            "sha256": "9cd962f7c7541247cfc7ebf661abaa5d9b642d27de16575c87093496557aae59",
+            "bytes": 51495
+          },
+          "src/schema.core.c": {
+            "sha256": "91e56c3f3ae6fad1803b739ce4eb4568a782a9aec710f733db2f3e38d407a4d5",
+            "bytes": 6630
+          },
+          "src/schema.json.c": {
+            "sha256": "3a18e4406aa8cdaea2806483e11c50e1a392fd72cf8f54ab7f189b3728836949",
+            "bytes": 3065
+          },
+          "src/schema.legacy.c": {
+            "sha256": "4f7ca12361e848214beceaa95ae615048317039ea4736c6eec956e3e8da4694c",
+            "bytes": 18624
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "5bdf6ed1a78e3409fd443e085ca967a64c188a5d082aaf7f819bccd53a471c94",
+            "bytes": 10431
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "f2c265d26baa81b322f2eecde587a7cb81e7763fca31c0d6b11dce040494ed47",
+            "bytes": 862
+          }
         },
+        "digest": "91f900b1715cc2b5d9b9e703356b47c9f9ee425a11db13db878476ffcf527a89",
+        "fileCount": 14
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-yaml/src/node-types.json",
+        "declaredNamedTypes": 36,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 36,
+        "wasmUniqueNames": 140,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "powershell": {
+      "wired": {
+        "file": "wasm/tree-sitter-powershell.wasm",
+        "sha256": "df867849137e4e87d326a52dc88d502d366efddd19fff4dce6c83522eccbdfc6",
+        "bytes": 1168838
+      },
+      "companions": [],
+      "surface": {
+        "ids": 429,
+        "uniqueNames": 421,
+        "namedIds": 154,
+        "namedUnique": 152,
+        "anonIds": 275,
+        "anonUnique": 269,
+        "fieldCount": 14,
+        "idOrderDigest": "0d9bf516e537f47cae7cd59906881aa1e6cbc1841250910498f3e369e8b9f5f6",
+        "typeSetDigest": "c1a932cef1cde9ac9415f0566eb79019bfbae1d642a7fb56c55f92ca3e952c3f",
+        "fieldSetDigest": "368d0b6f774c0c0a7c719110cc885a38269b7cf629548a6375f0a00a7f16fb1e"
+      },
+      "copies": [
         {
-          "path": "src/grammar.json, src/node-types.json",
-          "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"
-        },
-        {
-          "path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/",
-          "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"
+          "label": "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)",
+          "path": "~/.bun/install/cache/tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm",
+          "sha256": null,
+          "byteIdentical": false,
+          "absent": true
         }
-      ]
+      ],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-powershell",
+        "files": {
+          "grammar.js": {
+            "sha256": "b1a96075a192a77cb88343314a965d90eac2a9e1a9d32a9380e490874517923a",
+            "bytes": 62646
+          },
+          "LICENSE": {
+            "sha256": "1fca8454c0d77a73f9922a52d39e1f7c339f5da5d03f2766eff66b859fa19477",
+            "bytes": 1068
+          },
+          "package.json": {
+            "sha256": "07c3f6f516961ac6b4c899ca03c26dd93df634d93507c452f86dbea63eba96ea",
+            "bytes": 1248
+          },
+          "README.md": {
+            "sha256": "c6c24649782597fa4878d8bd06fd5df612e4754508592a5fc8a4c91baedda71d",
+            "bytes": 238
+          },
+          "src/grammar.json": {
+            "sha256": "0067775cd4214a9c7b7caa5405fb43f5566fc9c474057b525b724243cb718cc4",
+            "bytes": 163463
+          },
+          "src/node-types.json": {
+            "sha256": "6275f8ed80685802fd079a008200d231d6116315eef361ce9393305a5f495b24",
+            "bytes": 73089
+          },
+          "src/parser.c": {
+            "sha256": "fa78d37d85f6b6fe2b9d321a452c5679dd4688bff25d35600d458fd2d42d180f",
+            "bytes": 5039110
+          },
+          "src/scanner.c": {
+            "sha256": "cf366b70e258a0ac1eb264ac0f4165c8f0c1b943d1a6e9db9d291c6cf178221f",
+            "bytes": 2135
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "4c0ec9a6fc5a75f78c0caf71dc954626da92fc1ba4cffcf4ca8b6ebe240fb51f",
+            "bytes": 855
+          }
+        },
+        "digest": "3108a3259e9c94e8482059a09f465821ba3ccaac1a1923434511691cdc977f06",
+        "fileCount": 12
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-powershell/src/node-types.json",
+        "declaredNamedTypes": 152,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 152,
+        "wasmUniqueNames": 421,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "scss": {
+      "wired": {
+        "file": "wasm/tree-sitter-scss.wasm",
+        "sha256": "729731fb83e4cd26f42216d4db6a37ce1144165435a670b5b403bd26887020a1",
+        "bytes": 206409
+      },
+      "companions": [],
+      "surface": {
+        "ids": 195,
+        "uniqueNames": 185,
+        "namedIds": 90,
+        "namedUnique": 84,
+        "anonIds": 105,
+        "anonUnique": 102,
+        "fieldCount": 7,
+        "idOrderDigest": "fb2c5fd02e6847094632700f93beb52fcab5468133ef44772153937149ea1b0f",
+        "typeSetDigest": "8e2802c3809ed1c287b3902388c7887dd9e8eaf70704c19432e1a2cc540f7757",
+        "fieldSetDigest": "0ef04c1e7d621e797bc18d551f69cc3a118fc37ff83718953491546207cc1448"
+      },
+      "copies": [],
+      "vendored": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-scss",
+        "files": {
+          "grammar.js": {
+            "sha256": "8d586966c8316cb94c999d7892923a96fd71b0d6a29e7b7eb90ffe48ad0242b9",
+            "bytes": 14318
+          },
+          "package.json": {
+            "sha256": "54e98062a571d17679b85c3f8da6cc37a2693c65783ef8bc6359435240f6e328",
+            "bytes": 2156
+          },
+          "README.md": {
+            "sha256": "cb869017feeb28463ef27142683d1d9a1e7616476ea6d29b18ad9e87ad7cb008",
+            "bytes": 1053
+          },
+          "src/grammar.json": {
+            "sha256": "82ed6056552fbc37ed9e4d7d781cb7dd9aabda89e441076d7db7bd5235c26012",
+            "bytes": 72661
+          },
+          "src/node-types.json": {
+            "sha256": "72d4b34b325af4c7181e676c0e30f519e584143b90a9323c87b8dc590c9ff2fa",
+            "bytes": 80603
+          },
+          "src/parser.c": {
+            "sha256": "c3bf6146a64a4e5328da0aea7290e44a6c1ce52320c84c3285a00b7245e6ccd6",
+            "bytes": 873997
+          },
+          "src/scanner.c": {
+            "sha256": "161546c39369051c9cb6bfa374d62be90aaaa8c673bca68c4a06b2524706e7db",
+            "bytes": 3049
+          },
+          "src/tree_sitter/alloc.h": {
+            "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
+            "bytes": 985
+          },
+          "src/tree_sitter/array.h": {
+            "sha256": "31e60a1bff6f715afacce03b5b70efe42b58371b4f9595dd4af52a577ff9608c",
+            "bytes": 13269
+          },
+          "src/tree_sitter/parser.h": {
+            "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
+            "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "4184f1a80d64cafc0940ed23ded2f5f7f8f6e71ecfcdad21c227778c6fe4eb9e",
+            "bytes": 834
+          }
+        },
+        "digest": "12c6414083e405caf069fc1b15ff8c075a7b787f485d9d239162dc6ce7cba3ea",
+        "fileCount": 11
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": "grammars/tree-sitter-scss/src/node-types.json",
+        "declaredNamedTypes": 84,
+        "declaredSupertypes": 0,
+        "wasmNamedUnique": 84,
+        "wasmUniqueNames": 185,
+        "missingInWasm": [],
+        "allowedWasmExtras": [],
+        "namedOnlyInWasm": []
+      }
+    },
+    "markdown": {
+      "wired": {
+        "file": "wasm/tree-sitter-markdown.wasm",
+        "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+        "bytes": 421534
+      },
+      "companions": [
+        {
+          "file": "wasm/tree-sitter-markdown_inline.wasm",
+          "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+          "bytes": 426020,
+          "surface": {
+            "ids": 153,
+            "uniqueNames": 145,
+            "namedIds": 34,
+            "namedUnique": 26,
+            "anonIds": 119,
+            "anonUnique": 119,
+            "fieldCount": 0,
+            "idOrderDigest": "75b95fbcd7f910aa0932e96addb8475216807bf231c78cadd0da0aaab6d01b14",
+            "typeSetDigest": "00fcdca77b7ac379eb7711c0cb4d9e521953132e3463cacde67baef6ece8a4cb",
+            "fieldSetDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "surface": {
+        "ids": 207,
+        "uniqueNames": 194,
+        "namedIds": 64,
+        "namedUnique": 51,
+        "anonIds": 143,
+        "anonUnique": 143,
+        "fieldCount": 1,
+        "idOrderDigest": "851b8973c1516a3a7746d6fe5b4d172f6188ab3ea03f7c51e7a140d869a5c791",
+        "typeSetDigest": "6582ec3895582ccc6693afd282d8d28f1a66fe711d82205ee0be866b2f16d0a8",
+        "fieldSetDigest": "478b6c6aaf9935500483e1467c3a562d8c0f6f836d648213e347214c223e8657"
+      },
+      "copies": [
+        {
+          "label": "wasm registry copy of the block grammar",
+          "path": "~/.bb/wasm/tree-sitter-markdown.wasm",
+          "sha256": "3e13182f21373634c40653f170e6f2d2790914eb2c243927086d79023c534f7a",
+          "byteIdentical": true
+        },
+        {
+          "label": "wasm registry copy of the INLINE companion grammar",
+          "path": "~/.bb/wasm/tree-sitter-markdown_inline.wasm",
+          "sha256": "9bbd71a70a23f6d0193bb162a72eecf2a2bd9ce76910d7ad3da9c5f80f122671",
+          "byteIdentical": true
+        }
+      ],
+      "vendored": {
+        "state": "not-obtainable-offline"
+      },
+      "sourceVsWasm": {
+        "nodeTypesJson": null,
+        "note": "no vendored source"
+      }
     }
   },
   "decisions": {
@@ -1206,7 +1674,7 @@
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-haskell",
-        "note": "grammar.js + the split grammar modules (grammar/*.js) + src/ (scanner.c, grammar.json, node-types.json, unicode.h, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-haskell@0.23.1. The GENERATED src/parser.c (20 MB here) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
+        "note": "grammar.js + the split grammar modules (grammar/*.js) + src/ (scanner.c, grammar.json, node-types.json, unicode.h, tree_sitter/ headers) + package.json + tree-sitter.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-haskell@0.23.1. The GENERATED src/parser.c (20 MB here) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source\u2194wasm check below runs on the generated JSONs, not on parser.c."
       },
       "decision": "Pin as-is: the wired wasm is byte-identical to the wasm published in tree-sitter-haskell@0.23.1, which is the newest release of tree-sitter/tree-sitter-haskell (the grammar is dormant at 0.23.1), and that tarball's source is now vendored in-tree with per-file hashes. No better candidate exists, locally or upstream.",
       "alternatives": [],
@@ -1289,17 +1757,17 @@
           "version": "0.3.11"
         },
         "patches": [
-          "grammar: adds `module_val_declaration` and `nullable_type` — exactly the two named types the wired wasm has that npm tree-sitter-fsharp@0.3.11's wasm does not",
-          "scanner: the manifest records an interface-probe patch with token-type lookahead; its SOURCE IS NOT IN-TREE (`common/scanner.h` is byte-identical to the npm 0.3.11 tarball's), so the patch is not reconstructible from this repo — recorded here rather than papered over"
+          "grammar: adds `module_val_declaration` and `nullable_type` \u2014 exactly the two named types the wired wasm has that npm tree-sitter-fsharp@0.3.11's wasm does not",
+          "scanner: the manifest records an interface-probe patch with token-type lookahead; its SOURCE IS NOT IN-TREE (`common/scanner.h` is byte-identical to the npm 0.3.11 tarball's), so the patch is not reconstructible from this repo \u2014 recorded here rather than papered over"
         ],
         "patchEvidence": "validation/m14/results/family-grammar-fingerprints.json"
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-fsharp",
-        "note": "fsharp/grammar.js (the patched grammar — the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source↔wasm check cannot run for this lane."
+        "note": "fsharp/grammar.js (the patched grammar \u2014 the npm tarball ships no grammar.js, so its vintage is fixed by hash here rather than by byte-identity to a tarball) + common/scanner.h (byte-identical to the npm 0.3.11 tarball) + package.json + tree-sitter.json + LICENSE + README.md. The vendored src/ holds only tree_sitter/ headers, which is why the source\u2194wasm check cannot run for this lane."
       },
-      "decision": "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING → 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) — so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
+      "decision": "Pin the local rebuild. Three measured clauses: (1) the wired wasm's surface is upstream 0.3.11 PLUS exactly `module_val_declaration` and `nullable_type` and MINUS nothing; (2) the vendored grammar.js's rule set is 0.3.11's rule set plus exactly those two rules, with nothing dropped (fsharp-pin-evidence.json); (3) on the lane's own 400-file M12 sample the patch REPAIRS 9 files that unpatched 0.3.11 damages (e.g. infos.fs: 41 ERROR + 1 MISSING \u2192 0/0) and damages exactly ONE that unpatched 0.3.11 parses clean (BasicProvider.Runtime.fs: an ERROR around `namespace` on line 5, after a `#if/#endif` block) \u2014 so the patch is a net parse win on real code with one recorded regression site. The claimed SCANNER patch still has no in-tree source and no minimal repro: two sample files show the claimed difference class in aggregate (fsharp-grammar-ab.json's sentinel hits), which is not the same as a repro, so it stays recorded-not-proven rather than asserted.",
       "alternatives": [
         {
           "option": "npm tree-sitter-fsharp@0.3.11 (unpatched)",
@@ -1346,14 +1814,16 @@
     },
     "clojure": {
       "provenance": {
-        "kind": "unnamed-build-sha-only",
-        "chain": "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local package or source for the yogthos fork exists, so the spoken provenance cannot be re-derived here; the surface fingerprint below is the identity that CAN be checked."
+        "kind": "byte-identical-to-npm-tarball",
+        "package": "@yogthos/tree-sitter-clojure",
+        "version": "0.0.14",
+        "chain": "commit 34972a88 records the swap to @yogthos/tree-sitter-clojure 0.0.14 (a rewrite: list_lit/sym_lit/sym_name/sym_ns/vec_lit/kwd_lit/anon_fn_lit vocabulary, no interop nodes), after the canonical sogaiu 0.4.0 grammar failed 128/141 files of the clojure compiler's own source. No local copy of the package exists, so the bytes were matched against the package's PUBLISHED file hash instead: jsDelivr's listing for @yogthos/tree-sitter-clojure@0.0.14 reports tree-sitter-clojure.wasm, 91,957 bytes, sha256 (base64) kPiGa3TQThZD7XPM4lcgxzLfKqo4tF2p3MdzuugYHCc= \u2014 which decodes to 90f8866b74d04e1643ed73cce25720c732df2aaa38b45da9dcc773bae8181c27, the wired sha exactly, and the size matches too. External corroboration, not a local re-derivation: the pin records that distinction."
       },
       "source": {
         "state": "not-obtainable-offline",
-        "note": "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes — worse than no source. No yogthos source exists locally."
+        "note": "the canonical sogaiu tree-sitter-clojure@0.4.0 source IS in the bun cache, but it is a DIFFERENT grammar from the wired wasm (the wired build's vocabulary is the fork's), so vendoring it would put a mismatched source in-tree next to the wired bytes \u2014 worse than no source. No yogthos source exists locally."
       },
-      "decision": "Pin bytes + surface fingerprint + the commit that swapped them, and record the alternative that was measured and rejected: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88), while the wired fork leaves 2 of 585 files damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
+      "decision": "Pin the bytes to their named release: the wired wasm matches @yogthos/tree-sitter-clojure@0.0.14's published file hash and byte length, so the fork and its version are no longer only a commit message's claim. The alternative that was measured and rejected stays recorded: canonical sogaiu 0.4.0 failed 128/141 corpus files (34972a88) while the wired fork leaves 2 of 585 damaged. A maintained fork (tree-sitter-clojure-orchard v0.2.8) is the obvious upgrade candidate but is unobtainable offline, so no claim is made about it.",
       "alternatives": [
         {
           "option": "canonical sogaiu tree-sitter-clojure 0.4.0",
@@ -1369,18 +1839,24 @@
     },
     "clean": {
       "provenance": {
-        "kind": "unnamed-build-sha-only",
-        "chain": "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The SOURCE was not vendored then, and these bytes exist in no local copy, so this pin records the sha + surface + the adjudication that adopted it."
+        "kind": "local-rebuild-from-upstream-source",
+        "base": {
+          "repo": "tclem/tree-sitter-clean",
+          "version": "1.2.7"
+        },
+        "patches": [],
+        "patchEvidence": "reviews/m60-clean-grammar-127-adjudication.md",
+        "chain": "pinned v1.2.7 by commit 2bc64693 (wasm sha 9ea8525d, replacing 2b805890 of v1.2.4); that round verified the tracked source tree byte-identical to `git archive v1.2.7` through the production engine, with G1/G2 adjudication in reviews/m60-clean-grammar-127-adjudication.md. The source tree itself is NOT in this repo and these wasm bytes exist in no local copy, so the pin is sha + surface + that adjudication. External corroboration recorded this round: npm's tree-sitter-clean@1.2.7 does exist, and its published file listing (jsDelivr) carries per-file sha256 for grammar.js, src/scanner.c, src/grammar.json and src/node-types.json \u2014 but the package ships NO wasm, so the wired bytes cannot be hash-matched to a published artifact and are not claimed to be."
       },
       "source": {
         "state": "not-obtainable-offline",
         "note": "the bun cache holds only tree-sitter-clean@1.2.0 (an older release whose tarball ships no wasm); nothing on this machine carries v1.2.7's source or bytes. The version claim rests on 2bc64693's own instruments (the differential table's sha, the adjudication doc, spec/clean-completeness.json)."
       },
-      "decision": "Keep v1.2.7 (already pin-verified by the clean round) and fold it into this registry so the family has one place that answers the question; for clean the answer is a sha + surface + a named adjudication rather than a vendored source.",
+      "decision": "Keep v1.2.7 (already pin-verified by the clean round) and fold it into this registry so the family has one place that answers the question. For clean the answer is a sha + surface + a named adjudication: v1.2.7's npm package publishes source but no wasm, and no v1.2.7 source or bytes exist on this machine, so the version identity rests on 2bc64693's instruments (both now externally corroborated as existing) rather than on a vendored tree. Vendoring v1.2.7's source from npm is the natural next act for this lane and is unobtainable offline.",
       "alternatives": [
         {
           "option": "stay on v1.2.4 (sha 2b805890)",
-          "measured": "damaged files 67/312, MISSING 148, ERROR lines 6,508 → v1.2.7: 37/312, 9, 2,426, none newly damaged (G1)",
+          "measured": "damaged files 67/312, MISSING 148, ERROR lines 6,508 \u2192 v1.2.7: 37/312, 9, 2,426, none newly damaged (G1)",
           "artifact": "reviews/m60-clean-grammar-127-adjudication.md"
         }
       ],
@@ -1406,11 +1882,11 @@
         "dir": "grammars/tree-sitter-hcl",
         "note": "grammar.js + package.json + tree-sitter.json + LICENSE + README.md + CHANGELOG.md + PIN.md + src/ (grammar.json, node-types.json, scanner.c, parser.c, tree_sitter/ headers), byte-for-byte from a checkout of tree-sitter-grammars/tree-sitter-hcl@64ad6278 kept at $HOME/fixtures/hcl/ts-grammars-hcl. Unlike haskell/elixir/fsharp, src/parser.c IS vendored (600 KB, small enough to keep), so the wired wasm is rebuildable from this directory alone with `tree-sitter build --wasm` and the pin is not only a hash."
       },
-      "decision": "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation — a vendored wasm that had drifted from upstream and needed manual repair — does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
+      "decision": "Pin as-is. The wired wasm's enumerable surface, read through web-tree-sitter's Language API, is 121 ids / 64 named / 2 fields (key, val); the vendored src/node-types.json at 64ad6278 declares exactly 64 named types and exactly those 2 fields. The set difference is ZERO in both directions, which is the source-to-wasm proof the gate below re-measures. So the wired bytes ARE a build of this source and the Groovy situation \u2014 a vendored wasm that had drifted from upstream and needed manual repair \u2014 does NOT apply to HCL. 1.2.0 is also the only release of the only published HCL grammar package, the repository is not archived, and its last commit (2026-01-17) is the one that taught the grammar the `.tofu` extension this engine routes to hcl (language-detection.ts:47). There is nothing better to move to, so the pin's value is provenance and drift detection, not an upgrade.",
       "alternatives": [
         {
           "option": "hand-repair the wasm the way groovy's was repaired",
-          "measured": "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not — 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
+          "measured": "unnecessary and wrong here: the repair exists because a vendored wasm had drifted from its source. HCL's does not \u2014 0 missing and 0 extra node types against upstream, 0 missing and 0 extra fields. Recorded as rejected so the question is not reopened.",
           "artifact": "fixtures/hcl/out/grammar-conformance.json"
         }
       ],
@@ -1422,17 +1898,84 @@
       ],
       "notVendored": null
     },
+    "cpp": {
+      "provenance": {
+        "kind": "local-rebuild-from-vendored-source",
+        "base": {
+          "repo": "tree-sitter/tree-sitter-cpp",
+          "version": "0.23.4"
+        },
+        "patches": [
+          "#743 (rebuildability): `require('tree-sitter-c/grammar')` -> `require('../tree-sitter-c/grammar.js')`. Upstream reads the C grammar through a node_modules entry, and node_modules/ is gitignored repo-wide, so the require made this grammar unrebuildable from a fresh checkout. The C grammar is vendored beside it, so the dependency became a relative path; the same parser.c is generated, with no install step.",
+          "#743 (C++ port of the C wave, NARROWED for `::`): a new `macro_prefixed_type_specifier` rule = `prec(-1, seq(alias($.identifier, $.macro_specifier), $._macro_decorated_type))`, with `_macro_decorated_type` restricted to the KEYWORD-LED specifiers (struct/union/enum/class/sized_type_specifier/primitive_type/decltype). The C rule it ports uses the FULL type_specifier, and that breadth does not port: in cpp `_scope_resolution` has an OPTIONAL scope, so `A::B` reads as either the qualified type `A::B` or macro `A` decorating `::B`. Ported verbatim, the new derivation demanded a conflict declaration, and declaring it flipped runtime path selection in unrelated code \u2014 `fmt::format_to(std::back_inserter(buf), ...)` parsed as a DECLARATION of a function named `::format_to` in a file with zero ERRORs before and after. `A::B` was never a macro decoration, so the fix removes the ambiguity rather than arbitrating it: restricting the decorated type to keyword-led specifiers makes the bad derivation ungrammatical, and no identifier can start any of them, so no conflict is even possible.",
+          "#743 (header name): a `preproc_header_name` token, so a header can be an ARGUMENT of a preprocessor conditional (`#if __has_include(<vector>)`). The rule is scoped to the argument position because `<` cannot BEGIN a preprocessor expression (the unary operators are `! ~ - +`), so no competing `<` token exists there and the header token wins purely on match length; adding `<...>` anywhere in `_preproc_expression` instead would read `< B && C >` as a header name and turn every comparison into something else."
+        ],
+        "patchEvidence": "The vendored tree is byte-identical to the tree-sitter-cpp@0.23.4 npm tarball for 4 of its 5 files (src/scanner.c cf60387d, tree-sitter.json ce25741b, LICENSE 2e0110e0, package.json bfde98d5) and DIFFERS in exactly one: grammar.js (upstream d0242291 -> vendored 817fc8a0, +54/-2 lines, which is the three patches above and nothing else). The wired wasm is NOT the published bytes: 3,552,974 vs the tarball's 3,434,931, because it was rebuilt with the patches. The fork adds three named node types and no fields \u2014 macro_prefixed_type_specifier, macro_specifier, preproc_header_name \u2014 with namedIds 256 -> 259, namedUnique 206 -> 209, and an UNCHANGED fieldSetDigest (891be791). The patches are LOAD-BEARING, not cosmetic: over this lane's own 28 cpp fixtures the fork parses 22 clean against upstream's 20, and the two files that separate them are cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp \u2014 the fixtures that were written FOR those two rules, which do not parse at all without them. On the fmt corpus the two agree on all 47 files, so the fork neither helps nor hurts ordinary library C++."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-cpp",
+        "note": "grammar.js (the FORKED file, see patches) + src/scanner.c + tree-sitter.json + package.json + LICENSE. Four of the five are byte-for-byte from the npm tarball tree-sitter-cpp@0.23.4; grammar.js carries the three #743 patches. The GENERATED src/ (parser.c, grammar.json, node-types.json, tree_sitter/ headers) is NOT vendored, so the offline source<->wasm proof reports `not applicable` for this lane. That is a lane-specific reason, not the generic '41 MB, do not vendor' one the unpatched lanes give: publishing tree-sitter-cpp@0.23.4's own generated JSONs would make the check run and report a PERMANENT three-type delta (macro_prefixed_type_specifier, macro_specifier, preproc_header_name present in the wasm and absent from the source), because the fork's JSONs are what the proof would need and they can only be produced by `tree-sitter generate` from the forked grammar.js. A generated file that must be hand-corrected to make a proof pass is worse than a proof that honestly says it does not apply, so the surface is pinned by the digests below and the fork by the three named types named in the provenance. Rebuild with `tree-sitter generate` then `tree-sitter build --wasm`, from a tree that also has grammars/tree-sitter-c present \u2014 grammar.js requires ../tree-sitter-c/grammar.js, so unlike every unpatched lane this one is NOT rebuildable from its own directory alone."
+      },
+      "decision": "Pin as-is, as a local rebuild from vendored source with the patch set recorded. The wired bytes are not the published release and must not be recorded as such: a reader who ran `npm pack tree-sitter-cpp@0.23.4` and compared would find a 118 KB difference and no way to account for it, which is precisely the failure M63.5 (#954, 'bind corpus measurements to a grammar hash') is about. The patch set is small, fully enumerated above, and provably load-bearing, so the honest record is the base version PLUS the patches \u2014 not the base version alone, which is what the analyzer's own documentation claimed until this entry existed ('Parser: tree-sitter-cpp 0.23.4 (npm, latest)'). A version-only string cannot express a fork, and tree-sitter.json's own `metadata.version: 0.23.4` does not either.",
+      "alternatives": [
+        {
+          "option": "keep the wired fork (sha 5a1b78be)",
+          "measured": "28/28 cpp fixtures parse; the differential's fmt:cpp and nlohmann-json:cpp rows are measured against these bytes; 47/47 identical trees to upstream on fmt, and 22 vs 20 clean fixtures overall",
+          "artifact": "script/cpp-review/grammar-provenance.ts"
+        },
+        {
+          "option": "swap to the published tree-sitter-cpp@0.23.4 wasm",
+          "measured": "cpp/preproc-has-include.cpp and cpp/macro-decorated-specifier.cpp stop parsing (2 of 28 fixtures go from clean to errored) and the #743 header-name and macro-decorator rules are lost with them; surface drops to 256 named ids",
+          "artifact": "script/cpp-review/grammar-provenance.ts"
+        },
+        {
+          "option": "drop the fork and re-apply the patches upstream",
+          "measured": "NOT MEASURED \u2014 recorded as the obvious successor rather than a claim. The three patches are the kind that belong in tree-sitter-cpp (the C wave already landed the first of them there), but this repo cannot verify an upstream merge, and an unverified successor is worse than a recorded fork.",
+          "artifact": "n/a \u2014 see the note; nothing is claimed"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/cpp-defect-register.json",
+        "script/cpp-review/grammar-provenance.ts",
+        "script/m12/cpp-node-types-compare.ts",
+        "script/m12/cpp-wasm-compare.ts",
+        "docs/analyzers/real-cpp-analyzer.md"
+      ],
+      "notVendored": [
+        {
+          "path": "binding.gyp, bindings/, prebuilds/",
+          "why": "native bindings; not parser source"
+        },
+        {
+          "path": "queries/",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "src/parser.c, src/grammar.json, src/node-types.json, src/tree_sitter/",
+          "why": "generated from the FORKED grammar.js; publishing upstream's would make the source-vs-wasm check report a permanent 3-type delta (the fork's own types), so the proof is recorded as not applicable and the surface is pinned by digest instead"
+        },
+        {
+          "path": "README.md, CHANGELOG.md",
+          "why": "upstream docs; the provenance and decision live in this record"
+        },
+        {
+          "path": "tree-sitter-cpp.wasm",
+          "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
+        }
+      ]
+    },
     "perl": {
       "provenance": {
         "kind": "unnamed-build-sha-only",
-        "chain": "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files — the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted."
+        "chain": "the wired bytes match no published prebuilt (neither tree-sitter-perl@1.2.1 nor @2.0.0 ships a wasm in its npm tarball, and tree-sitter-wasms@0.1.13/out has no tree-sitter-perl.wasm), so the build is recorded by sha + surface. Its SOURCE is now pinned: a fresh emcc build of the vendored tree-sitter-perl@1.2.1 source (emscripten/emsdk:3.1.64, `-shared -O2 -sSIDE_MODULE=1`) reproduces the wired idOrderDigest c954cfdc, typeSetDigest 61033c08 and fieldSetDigest d0e6aa8f exactly, and yields identical trees on 275/275 mojo files \u2014 the registry's own rule (two builds of one source agree even when their bytes differ), so the wired bytes ARE a build of 1.2.1's source. validation/m12/corpus-manifest.json already recorded the 1.2.1 upgrade; this entry makes it verifiable rather than asserted."
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-perl",
-        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source↔wasm check below runs on the generated JSONs, not on parser.c."
+        "note": "grammar.js + src/ (scanner.c, grammar.json, node-types.json, the tsp_*.h scanner headers, bsearch.h, tree_sitter/ headers) + package.json + LICENSE + README.md, byte-for-byte from the npm tarball tree-sitter-perl@1.2.1. The GENERATED src/parser.c (29 MB here) is deliberately not vendored, for the same reason as haskell's and elixir's: `tree-sitter generate` rebuilds it from grammar.js, and the source\u2194wasm check below runs on the generated JSONs, not on parser.c."
       },
-      "decision": "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 — the newest release at the time this lane was first measured — proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
+      "decision": "Pin as-is: the wired wasm is a build of tree-sitter-perl@1.2.1 \u2014 the newest release at the time this lane was first measured \u2014 proven by surface identity against a fresh build AND by 275/275 identical trees on the M12 pinned corpus, and that source is now vendored in-tree with per-file hashes so it cannot drift unnoticed. tree-sitter-perl@2.0.0 is the newer release and it is BETTER on the one axis this lane was weakest on (it removes the multi-child paren field that hid 39,897 payloads), but it is refused for this wave: it changes 123 of 275 trees on the M12 pinned corpus and would invalidate the M12 corpus claims and every other lane's pinned F5 row, and it buys the analyzer nothing it does not already have (identical emissions on 5,847 of 5,875 files). Take it as a scheduled grammar bump with a re-baseline, not as a silent swap.",
       "alternatives": [
         {
           "option": "keep the wired 1.2.1 build (sha ac0248ed)",
@@ -1479,10 +2022,10 @@
           "rev": "ee5ce96"
         },
         "patches": [
-          "FIX 1 (§3.18) `extend schema` gains `repeat1(root_operation_type_definition)` and an optional body, with `prec.right` for the `{` ambiguity — fixes `extend schema { query: Q mutation: M }` and Apollo Federation's bodyless `extend schema @link(...)`",
-          "FIX 2 (§3.17) `scalar_type_extension`'s `$.directives` becomes `optional($.directives)` — `extend scalar S` with no directive is valid and was rejected",
-          "FIX 3 (§3.3) `field`'s `optional($.directive)` becomes `optional($.directives)` — `{ f @a @b }` is the legal spelling of two directives on one selection",
-          "FIX 4 (§2.9.4) both string rules learn their escapes: the short string accepts `\\` + any non-newline, the block string accepts `\"\"\"` and skips `\\` as a unit",
+          "FIX 1 (\u00a73.18) `extend schema` gains `repeat1(root_operation_type_definition)` and an optional body, with `prec.right` for the `{` ambiguity \u2014 fixes `extend schema { query: Q mutation: M }` and Apollo Federation's bodyless `extend schema @link(...)`",
+          "FIX 2 (\u00a73.17) `scalar_type_extension`'s `$.directives` becomes `optional($.directives)` \u2014 `extend scalar S` with no directive is valid and was rejected",
+          "FIX 3 (\u00a73.3) `field`'s `optional($.directive)` becomes `optional($.directives)` \u2014 `{ f @a @b }` is the legal spelling of two directives on one selection",
+          "FIX 4 (\u00a72.9.4) both string rules learn their escapes: the short string accepts `\\` + any non-newline, the block string accepts `\"\"\"` and skips `\\` as a unit",
           "RENAME: 71 rule names snake_case -> PascalCase, pinned to the previous wasm's own `language.nodeTypeForId` table, with `source_file`/`comment`/`comma` held lower-case",
           "ADDITIVE (upstream, not ours): `optional($.description)` on `schema_definition` and `optional($.directives)` on `variable_definition`"
         ],
@@ -1492,18 +2035,18 @@
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-graphql",
-        "note": "grammar.upstream.js (bkegley/tree-sitter-graphql@ee5ce96, VERBATIM — the fixed input, so the port is idempotent) + port.py (the patch AS CODE: the rename table and the four anchored FIX hunks, each refusing to write a half-ported grammar) + grammar.js (the GENERATED patched grammar, which is what `tree-sitter generate` reads) + tree-sitter.json (ABI 15) + package.json (deliberately no `\"type\"` field: the repo root is `\"type\": \"module\"` and grammar.js is CommonJS `module.exports`, so without a local package.json the tree-sitter CLI cannot load it) + LICENSE (MIT) + README.md (the divergence record, the regeneration sequence, and what the patch bought) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c IS vendored (284 KB), the same call hcl made at 600 KB and the opposite of nim at 41 MB: `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. Tracking it makes the wired wasm rebuildable from TRACKED files alone and keeps the recorded digests still across a regeneration that changed nothing else. The exact three-command sequence is in README.md. A `node_modules` symlink points at the tree-sitter CLI during a build and is not tracked."
+        "note": "grammar.upstream.js (bkegley/tree-sitter-graphql@ee5ce96, VERBATIM \u2014 the fixed input, so the port is idempotent) + port.py (the patch AS CODE: the rename table and the four anchored FIX hunks, each refusing to write a half-ported grammar) + grammar.js (the GENERATED patched grammar, which is what `tree-sitter generate` reads) + tree-sitter.json (ABI 15) + package.json (deliberately no `\"type\"` field: the repo root is `\"type\": \"module\"` and grammar.js is CommonJS `module.exports`, so without a local package.json the tree-sitter CLI cannot load it) + LICENSE (MIT) + README.md (the divergence record, the regeneration sequence, and what the patch bought) + src/grammar.json + src/node-types.json. The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable` and this lane has no such proof at all. src/parser.c IS vendored (284 KB), the same call hcl made at 600 KB and the opposite of nim at 41 MB: `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn the gate red after any `tree-sitter generate`. Tracking it makes the wired wasm rebuildable from TRACKED files alone and keeps the recorded digests still across a regeneration that changed nothing else. The exact three-command sequence is in README.md. A `node_modules` symlink points at the tree-sitter CLI during a build and is not tracked."
       },
-      "decision": "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs — so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md §E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling — the one thing an upgrade must not do to this repository.",
+      "decision": "Pin the local rebuild of the PATCHED vendored source. (1) The offline source<->wasm proof runs and is zero in both directions on the declared named types, re-measured by this gate on every run: every name the committed source declares exists in the wired wasm, and every wasm-named type is declared by the source. That is the offline statement that the committed bytes ARE a build of the committed source. (2) The wired build rejects 0 of 113 specification constructs, against 10 for the wasm it replaces and 6 for upstream `main`, while still correctly rejecting all 8 invalid constructs \u2014 so the patch is a strict improvement on BOTH the previous build and upstream, and does not trade correctness for permissiveness. (3) The extraction A/B over 47 real files, same analyzer both sides, moves 12 error files to 4, 20 error nodes to 7, and ADDS 4 symbols and 76 relationships; every single delta is enumerated and adjudicated in fixtures/graphql/REVIEW.md \u00a7E, and the direction is uniform. (4) The two most consequential upstream gaps (`interface I implements J`; a description on a `schema` block) both produced PUBLISHED PHANTOMS in the previous build, not merely missing facts, so this is a correctness pin and not a completeness one. (5) The PascalCase surface is preserved exactly, so no analyzer string literal, no stored symbol row and no m12/m14/m60 lane changes spelling \u2014 the one thing an upgrade must not do to this repository.",
       "alternatives": [
         {
           "option": "pin the previous wasm as-is and document the two gaps as boundaries (what docs/analyzers/real-graphql-analyzer.md did)",
-          "measured": "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent — on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
+          "measured": "REJECTED on evidence: 12 of 47 corpus files carry a grammar error under it, and the losses are not silent \u2014 on neo4j-graphql/.../apollo-federation-subgraph-compatibility/schema.graphql a described `extend type User` became ERROR and the analyzer published `anonymous_operation_1566 -> Int`, `-> ID`, `-> @external`, `-> @requires` (four invented references) while losing five real field symbols. A documented boundary is the right answer for a gap nobody can fix; a 12/47 error rate with phantom edges is not that.",
           "artifact": "fixtures/graphql/out/extraction-ab.json"
         },
         {
           "option": "upgrade to bkegley/tree-sitter-graphql main (ee5ce96) unmodified",
-          "measured": "REJECTED on capability, and this is the load-bearing measurement of the lane: upstream names its rules snake_case (`object_type_definition`). The analyzer, the m12 shape-safety census, the m14 and m60 lanes and every stored symbol row assume `ObjectTypeDefinition`. Building upstream unmodified and running the node-type set difference gives 72 node types gained and 72 lost with identical names apart from casing — i.e. every construct routes through the analyzer's default arm and the file yields nothing. It also leaves 6 of its own gaps (ext-schema-multi, ext-schema-directives-only, ext-scalar, desc-block-escaped-triple, field-two-directives, apollo-link).",
+          "measured": "REJECTED on capability, and this is the load-bearing measurement of the lane: upstream names its rules snake_case (`object_type_definition`). The analyzer, the m12 shape-safety census, the m14 and m60 lanes and every stored symbol row assume `ObjectTypeDefinition`. Building upstream unmodified and running the node-type set difference gives 72 node types gained and 72 lost with identical names apart from casing \u2014 i.e. every construct routes through the analyzer's default arm and the file yields nothing. It also leaves 6 of its own gaps (ext-schema-multi, ext-schema-directives-only, ext-scalar, desc-block-escaped-triple, field-two-directives, apollo-link).",
           "artifact": "fixtures/graphql/out/grammar-ab.json"
         },
         {
@@ -1708,28 +2251,28 @@
           "rev": "5000ae8f22d11fbe93939b05c1e37cf21117162d"
         },
         "patches": [
-          "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller — and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (fixtures/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
+          "REPAIR 1 (scanner, `common/scanner.h` `scan_pi_content`): the trailing `advance_if_eq(lexer, '\\n')` became `skip_if_eq`. `advance_if_eq` is defined as `if (!eof && lookahead==chr) advance(lexer); else return false`, so its `else` ABORTS the caller \u2014 and the caller had already committed, past `mark_end`, on a lookahead whose value is irrelevant. A processing instruction with content therefore produced no `_pi_content` token, `<?target content?>` could not complete, and the parser wrapped the whole `<?...?>` in an ERROR node. It was not merely a lost declaration: with no XMLDecl present the enclosing `prolog` node disappeared too, taking any DOCTYPE in the same prolog with it. A 19-shape battery isolates it exactly: the construct parses iff the byte after `?>` is `\\n` (fixtures/xml/out/pi-rootcause.json). `check_word` and `scan_comment` keep `advance_if_eq`, where a mismatch correctly means \"not the token I was asked for\".",
           "REPAIR 2 (grammar, `xml/grammar.js` `_intSubset`): the internal subset is now `repeat(choice($._markupdecl, $.conditionalSect, $._DeclSep))` over a named `_intSubsetItem` rule, and `conditionalSect` is declared. Upstream could not reach a conditional section from an internal subset at ANY version measured: 0.5.0-0.6.x declare `conditionalSect` in the `dtd` grammar and inline it, but `_intSubset` referenced `$._markupdecl`, which does not include it; 0.7.0, which the wired wasm matches exactly, does not declare it in the `xml` grammar at all. The failure was destructive, not silent: `<![INCLUDE[...]]>` wrapped the `doctypedecl` in an ERROR and the parser then took a LATER `Name` as the DTD's name, so the analyzer published a Type symbol literally named `INCLUDE`. The named `_intSubsetItem` is because tree-sitter rejects a rule that can match the empty string and XML 1.0 permits an empty internal subset; writing the repeat at each use site keeps the generated `node-types.json` free of a wrapper node."
         ],
-        "patchEvidence": "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build — the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (fixtures/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (fixtures/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (fixtures/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured — the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
+        "patchEvidence": "Two A/Bs, both over the whole pinned corpus, both re-runnable. (1) CONSTRUCT A/B: 29 shapes across the wired wasm, a build of upstream v0.5.0, a build of upstream HEAD v0.7.0, and this build \u2014 the wired wasm and upstream HEAD are byte-IDENTICAL in behaviour on all of them, which is what pins the pre-repair bytes as an unmodified upstream build (fixtures/xml/out/grammar-ab.json). (2) CORPUS A/B: 8,888 files / 33.6 MB / 6.69 M nodes across 6 repos, counting ERROR and MISSING per file: 31 files repaired, 2 files moved the wrong way, 8,855 unchanged, and corpus MISSING nodes 32 -> 10 (fixtures/xml/out/grammar-corpus-ab.json). BOTH regressions are adjudicated by measurement, not argument (fixtures/xml/out/regression-adjudication.json): `libxml2/test/valid/dtds/cond_sect2.dtd` is a STANDALONE DTD, whose root node type is `ERROR` under the wired grammar, under this build, and under every build measured \u2014 the `xml` grammar requires a document element and cannot represent a standalone DTD at all, so the file was never in the wired surface; and upstream's separate `dtd` grammar parses it with 0 ERROR nodes, which is filed as its own finding. `libxml2/test/errors/759573-2.xml` is libxml2's own FUZZER-REGRESSION corpus, a file the project keeps precisely because it must NOT parse; both sides reject it (root ERROR) and the repair traded one MISSING node for four more ERROR nodes, and a MISSING node is tree-sitter's recovery invention, the worse of the two signals.",
         "localCheckout": "The upstream checkouts the tree was vendored from are at $HOME/fixtures/xml/grammar/upstream (0.7.0 @ 5000ae8f, the base) and $HOME/fixtures/xml/grammar/probe-v0.5.0 (the older candidate, kept so the v0.5.0 build in the A/B stays reproducible). The pre-repair wired bytes are kept at $HOME/fixtures/xml/out/tree-sitter-xml.WIRED-BEFORE-REPAIR.wasm (sha256 50ad134273834d5efe37d8fe4f93aa4367b95a91be05dc08a6dc894c7ecdb9c1) so the A/B against them is reproducible forever."
       },
       "source": {
         "state": "vendored",
         "dir": "grammars/tree-sitter-xml",
         "srcSubdir": "xml/src",
-        "note": "Upstream's own multi-grammar layout, kept so the relative import in `xml/grammar.js` (`../common/common.mjs`) resolves and the tree is byte-comparable to a checkout: `xml/grammar.js` + `xml/src/` (grammar.json, node-types.json, parser.c, scanner.c, tree_sitter/ headers), `common/common.mjs` + `common/scanner.h` (the shared rules and the external scanner header, included by `xml/src/scanner.c`), `tree-sitter.json`, `LICENSE` (MIT). The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable`. `common/scanner.h` is the file REPAIR 1 edits, so tracking it is the difference between a reviewable repair and an invisible one. `xml/src/parser.c` IS vendored (254 KB) — the same call hcl made at 600 KB and graphql at 284 KB, the opposite of nim at 41 MB — because `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn this gate red after any `tree-sitter generate`. `xml/src/scanner.c` is vendored for the same reason: it includes the shared header. Rebuild with `tree-sitter build --wasm --output wasm/tree-sitter-xml.wasm grammars/tree-sitter-xml/xml`."
+        "note": "Upstream's own multi-grammar layout, kept so the relative import in `xml/grammar.js` (`../common/common.mjs`) resolves and the tree is byte-comparable to a checkout: `xml/grammar.js` + `xml/src/` (grammar.json, node-types.json, parser.c, scanner.c, tree_sitter/ headers), `common/common.mjs` + `common/scanner.h` (the shared rules and the external scanner header, included by `xml/src/scanner.c`), `tree-sitter.json`, `LICENSE` (MIT). The two generated JSONs are vendored ON PURPOSE: `sourceVsWasmFor` needs the pair to run the offline source<->wasm proof, and without them the check reports `not applicable`. `common/scanner.h` is the file REPAIR 1 edits, so tracking it is the difference between a reviewable repair and an invisible one. `xml/src/parser.c` IS vendored (254 KB) \u2014 the same call hcl made at 600 KB and graphql at 284 KB, the opposite of nim at 41 MB \u2014 because `measureVendored` hashes every file in the tree, tracked or not, so an untracked parser.c would turn this gate red after any `tree-sitter generate`. `xml/src/scanner.c` is vendored for the same reason: it includes the shared header. Rebuild with `tree-sitter build --wasm --output wasm/tree-sitter-xml.wasm grammars/tree-sitter-xml/xml`."
       },
-      "decision": "Pin the local rebuild of the PATCHED vendored source, and record that the pre-repair bytes needed no provenance work at all. (1) The pre-repair wired wasm is an UNMODIFIED upstream build: its enumerable surface is byte-for-byte the surface of a build of upstream HEAD 0.7.0 (140 node types, 2 fields, zero set difference in either direction) and its behaviour matches that build on all 29 constructs of the A/B battery. So unlike Groovy this was not a stale blob; it was current upstream, and the two defects are UPSTREAM defects that upstream's own test corpus never exercises — `grep -rn 'PITarget' test/corpus/` returns nothing, and the only `PI`-adjacent tests are `StyleSheetPI`/`XmlModelPI`. (2) Because the defects are upstream's, no upgrade fixes them: v0.5.0, v0.6.4 and v0.7.0 all fail both, which is the measurement that makes the repair necessary rather than optional. (3) Upgrading past 0.7.0 would DELETE capability, not add it: 0.7.0 already split DTD into a separate `dtd` grammar, and adopting a split would strand `elementdecl`, `AttlistDecl`, `AttDef`, `GEDecl`, `PEDecl` and `NotationDecl` — the analyzer's entire DTD surface — in a grammar this engine does not wire. (4) The repair is admissible on the corpus A/B above: 31 files repaired against 2 adjudicated out-of-surface/negative-control movements, and corpus MISSING nodes down 32 -> 10. (5) The offline source<->wasm proof runs and is measured on every gate run.",
+      "decision": "Pin the local rebuild of the PATCHED vendored source, and record that the pre-repair bytes needed no provenance work at all. (1) The pre-repair wired wasm is an UNMODIFIED upstream build: its enumerable surface is byte-for-byte the surface of a build of upstream HEAD 0.7.0 (140 node types, 2 fields, zero set difference in either direction) and its behaviour matches that build on all 29 constructs of the A/B battery. So unlike Groovy this was not a stale blob; it was current upstream, and the two defects are UPSTREAM defects that upstream's own test corpus never exercises \u2014 `grep -rn 'PITarget' test/corpus/` returns nothing, and the only `PI`-adjacent tests are `StyleSheetPI`/`XmlModelPI`. (2) Because the defects are upstream's, no upgrade fixes them: v0.5.0, v0.6.4 and v0.7.0 all fail both, which is the measurement that makes the repair necessary rather than optional. (3) Upgrading past 0.7.0 would DELETE capability, not add it: 0.7.0 already split DTD into a separate `dtd` grammar, and adopting a split would strand `elementdecl`, `AttlistDecl`, `AttDef`, `GEDecl`, `PEDecl` and `NotationDecl` \u2014 the analyzer's entire DTD surface \u2014 in a grammar this engine does not wire. (4) The repair is admissible on the corpus A/B above: 31 files repaired against 2 adjudicated out-of-surface/negative-control movements, and corpus MISSING nodes down 32 -> 10. (5) The offline source<->wasm proof runs and is measured on every gate run.",
       "alternatives": [
         {
           "option": "pin the pre-repair bytes as-is and document the two defects as boundaries (what docs/analyzers/real-xml-analyzer.md does today)",
-          "measured": "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE …>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
+          "measured": "REJECTED on capability, and the cost is the whole declaration vocabulary of a DTD. A content-bearing processing instruction is one of the most common constructs in XML, and it does not merely lose a symbol: with no XMLDecl present the enclosing `prolog` node is destroyed, so `<!DOCTYPE \u2026>` in the same prolog is lost with it, and in a conditional section the parser picks a later `Name` as the DTD name and the analyzer publishes a Type symbol called `INCLUDE`. A documented boundary is right for a gap nobody can fix; this one is fixable in two lines and the fix is measured.",
           "artifact": "fixtures/xml/out/pi-rootcause.json"
         },
         {
           "option": "upgrade to upstream HEAD 0.7.0 unmodified",
-          "measured": "REJECTED, and this is the negative result worth keeping: the pre-repair wired bytes ALREADY ARE 0.7.0. Surface-identical (140 types, 2 fields, zero difference either way) and behaviourally identical on all 29 battery constructs, so the upgrade buys nothing — and it leaves both defects in place, because they are upstream's. Separately, 0.7.0's split of DTD into its own `dtd` grammar means the `xml` grammar alone cannot represent a standalone `.dtd` file at all (root node type ERROR, measured), which is filed as a separate finding rather than solved by a swap.",
+          "measured": "REJECTED, and this is the negative result worth keeping: the pre-repair wired bytes ALREADY ARE 0.7.0. Surface-identical (140 types, 2 fields, zero difference either way) and behaviourally identical on all 29 battery constructs, so the upgrade buys nothing \u2014 and it leaves both defects in place, because they are upstream's. Separately, 0.7.0's split of DTD into its own `dtd` grammar means the `xml` grammar alone cannot represent a standalone `.dtd` file at all (root node type ERROR, measured), which is filed as a separate finding rather than solved by a swap.",
           "artifact": "fixtures/xml/out/grammar-ab.json"
         },
         {
@@ -1739,7 +2282,7 @@
         },
         {
           "option": "wire upstream's separate `dtd` grammar as a second language for `.dtd`",
-          "measured": "NOT TAKEN, and recorded as owed rather than rejected. It is measurably the right grammar — it parses libxml2's `cond_sect1.dtd` and `cond_sect2.dtd`, which the `xml` grammar cannot represent at all (root ERROR, 11 and 8 ERROR nodes), with 0 ERROR nodes — but it is a new wired language, a new router entry, a new analyzer and a new lane, not a repair. The measurement is kept so the decision is revisit-able with numbers instead of a recollection.",
+          "measured": "NOT TAKEN, and recorded as owed rather than rejected. It is measurably the right grammar \u2014 it parses libxml2's `cond_sect1.dtd` and `cond_sect2.dtd`, which the `xml` grammar cannot represent at all (root ERROR, 11 and 8 ERROR nodes), with 0 ERROR nodes \u2014 but it is a new wired language, a new router entry, a new analyzer and a new lane, not a repair. The measurement is kept so the decision is revisit-able with numbers instead of a recollection.",
           "artifact": "fixtures/xml/out/regression-adjudication.json"
         }
       ],
@@ -1756,6 +2299,137 @@
         "reviews/xml/master-review.md"
       ],
       "notVendored": null
+    },
+    "sql": {
+      "provenance": {
+        "kind": "local-rebuild-from-patched-upstream-source",
+        "base": {
+          "package": "@derekstride/tree-sitter-sql",
+          "version": "0.3.11"
+        },
+        "patches": [
+          "P1 (grammar/statements/): `CONSTRAINT <name> UNIQUE | FOREIGN KEY | INDEX`. The only rule accepting a leading `CONSTRAINT <name>` accepted just `PRIMARY KEY` and `CHECK`, so the two most common named constraints in a real schema lost their names.",
+          "P2 (grammar/statements/): `DELETE FROM t AS x` and `DELETE FROM t USING o`.",
+          "P3 (grammar/statements/): `grant_statement` / `revoke_statement` as VISIBLE nodes (upstream had the rules hidden, so the analyzer's GRANT/REVOKE arms named node types that no file could produce).",
+          "P4 (grammar/statements/do-drop-policy.js): `do_statement` and `drop_policy`. `keyword_do` existed but was wired only to MySQL's `INSERT ... ON DUPLICATE KEY DO UPDATE`; `keyword_policy` existed (create_policy needs it) but no drop rule used it."
+        ],
+        "patchEvidence": "Shape A/B over 6 dialects plus the whole pinned corpus, re-runnable via fixtures/sql/probe/grammar-ab.mts: 9 shapes fixed, 0 regressions. Corpus tree level, pristine -> wired: error files 320 -> 256, error nodes 6533 -> 5544, 0 shape regressions (named UNIQUE, named FOREIGN KEY, DELETE ... USING, DELETE ... AS alias, GRANT on a table, GRANT ALL PRIVILEGES on a schema, REVOKE from a role, GRANT a column list, procedure with a dollar-quoted body). The field-set digest is IDENTICAL to pristine (c63f5b80...), which is the precise statement that the patch is purely additive at the node-type level: +57 node types, +57 unique names, and ZERO new field names.",
+        "localCheckout": "Pristine upstream source at $HOME/fixtures/sql/grammar/pristine-src; the patched tree at $HOME/fixtures/sql/grammar/src; the pristine wasm kept at $HOME/fixtures/sql/grammar/pristine-sql.wasm (sha256 bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800, 2,440,507 B) so the A/B is reproducible forever."
+      },
+      "source": {
+        "state": "not-obtainable-offline",
+        "note": "NOT VENDORED, and not merely un-vendored: the exact source revision behind the wired bytes could not be recovered. `tree-sitter generate` on the patched tree at $HOME/fixtures/sql/grammar/src emits a 43,568,124-byte parser.c against the wired build's 43,456,567, so the wired bytes are pinned by sha256 + surface + provenance (the treatment perl gets) and this lane has NO offline source<->wasm proof. Pristine upstream source is kept at fixtures/sql/grammar/pristine-src and the patched tree at fixtures/sql/grammar/src; both are outside the repo, and the tree there is AHEAD of the wired bytes. Building and installing from it without a full A/B would change the lane's grammar unmeasured."
+      },
+      "decision": "PIN THE PATCHED LOCAL REBUILD. This lane refused every published grammar alternative on G1 damage / G2 identity / G3 output and concluded 'sql needs a patch, not a swap' (reviews/m60-sql-grammar-l1xnan-047-refused.md, sections 7.3 and 8.5), so the grammar was patched from its own upstream source with the pristine build retained for A/B. A THIRD candidate (V3) was built, measured at three levels, and REJECTED: it cuts tree-level error files 320 -> 196 while 49/256 damaged files lose >=25% of their structure (worst -95.8%) and 0 files gain any, and at the PRODUCT level it is byte-identical to the wired bytes over all 441 corpus files (9,448 symbols, 12,447 relationships, 7,506 analyzer errors, 258 error files, identical for both). Full record: validation/m60/sql/v3-rejection.json. The wired bytes therefore stay V2, and the headline error-count win that would have justified shipping is exactly the aggregate measure-grammar-recovery.ts exists to catch.",
+      "alternatives": [
+        {
+          "option": "ship V3 (opaque `DO $$ ... $$` + the two hidden dollar-body branches removed)",
+          "measured": "REJECTED. Zero product gain, real tree cost. See decision and validation/m60/sql/v3-rejection.json.",
+          "artifact": "validation/m60/sql/v3-rejection.json",
+          "rejected": true,
+          "why": "It reaches 0 errors on `database/migrations/20260309_rls_coms_subtypes.sql` by swallowing 7 DO bodies opaquely, hiding 27 of 37 statements -- the CREATE POLICY declarations that migration exists to create -- while the product output stays identical to V2."
+        },
+        {
+          "option": "wire an upstream/published tree-sitter-sql build instead of patching 0.3.11",
+          "measured": "REFUSED on measurement, per reviews/m60-sql-grammar-l1xnan-047-refused.md: 2 files newly damaged, 5 clean files changed shape (all 5 GAIN a `having` node the pinned build dropped), and -177 symbols / -441 pairs against the patch's +1813 / +2156, of which 138 of the 177 lost symbols are `property:ENABLE` phantoms the pinned grammar invents from `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.",
+          "artifact": "reviews/m60-sql-grammar-l1xnan-047-refused.md",
+          "rejected": true,
+          "why": "A swap that loses structure and manufactures phantom columns is not an upgrade."
+        }
+      ],
+      "evidence": [
+        "fixtures/sql/REVIEW.md",
+        "validation/m60/sql/v3-rejection.json",
+        "fixtures/sql/probe/grammar-ab.mts",
+        "script/m60/measure-grammar-recovery.ts",
+        "script/m14/spec/sql-completeness.json"
+      ],
+      "notVendored": [
+        {
+          "path": "src/parser.c",
+          "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"
+        },
+        {
+          "path": "src/grammar.json, src/node-types.json",
+          "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"
+        },
+        {
+          "path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/",
+          "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"
+        }
+      ]
+    },
+    "c": {
+      "provenance": {
+        "kind": "local-rebuild-from-vendored-source",
+        "base": {
+          "repo": "tree-sitter/tree-sitter-c",
+          "version": "0.24.1"
+        },
+        "patches": [
+          "P1 (#743, grammar.js): `macro_prefixed_type_specifier` as a VISIBLE node, with the conflict entries the ordinary reading (`A B;` = a B of type A) needs. Upstream hides the rule, so the analyzer could not name the type position at all; the `#743` note in the vendored file records that two conflict variants became unnecessary once the rule carried `prec(-1)`.",
+          "P2 (#743b, grammar.js): a header name in a PREPROCESSOR-ARGUMENT position -- `__has_include(<vector>)`, `__has_include(\"meta\")` and the wrapper form `FMT_HAS_INCLUDE(<string_view>)`. Upstream parses every one of these as an ERROR node, because `<string_view>` is not a preproc expression: `<` would have to be a binary operator with a missing left operand. The shape reaches 16 files across the two cpp corpora, in the guard of every portable header. Scoped to the ARGUMENT position deliberately: `<` cannot BEGIN a `_preproc_expression` (the unary operators are `! ~ - +`), so there is no competing `<` token to lose the tie to at the start of an argument."
+        ],
+        "patchEvidence": "Surface and behaviour A/B over three builds, re-runnable via `bun run script/m14/tmp/c-audit/c-grammar-pin.ts` (artifact: validation/m14/results/c-grammar-pin.json). WIRED vs a REBUILD of this committed patched source: named-type surface IDENTICAL in both directions (128 named types, zero difference either way) -- the byte sha256s differ, as they must, because a wasm build carries its emscripten version, compiler flags and section order; identity is claimed on surface and behaviour, which is what this gate measures. WIRED vs pristine tree-sitter-c@0.24.1's own published wasm: 3 named types present in WIRED and absent from pristine -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and ZERO the other way, which is the statement that the patch is live in the bytes this lane loads and is purely additive at the node-type level. 10-construct behavioural battery, WIRED == REBUILD on all 10, and the 3 `#743b` shapes are `damaged` under pristine and `clean` under both WIRED and REBUILD, while the two comparison shapes the patch could have broken (`#if A < B && C > D`, `#if MAX(A < B, C < D)`) and all 5 controls are `clean` under all three. The pristine and rebuilt wasms are kept at fixtures/c/grammar/ with a SHA256SUMS.txt so the A/B survives any network copy disappearing."
+      },
+      "source": {
+        "state": "vendored",
+        "dir": "grammars/tree-sitter-c",
+        "note": "grammar.js -- the PATCHED upstream 0.24.1 grammar, carrying this repository's own #743/#743b edits and their measured rationale in comments, not a pristine copy -- plus src/grammar.json and src/node-types.json REGENERATED from that patched grammar.js by `tree-sitter generate` (tree-sitter CLI 0.25.10) on 2026-09-29, plus package.json, tree-sitter.json and LICENSE byte-identical to npm tree-sitter-c@0.24.1. The generated src/ is the point of the exercise: before it, the vendored tree carried no node-types.json/grammar.json pair, so this gate's source<->wasm check could not run for C at all and the lane had no offline proof that its bytes were a build of its own source. src/parser.c (3.9 MB) is deliberately NOT vendored -- `tree-sitter generate` rebuilds it from grammar.js, and the check runs on the generated JSONs."
+      },
+      "decision": "Pin as a LOCAL REBUILD OF THE PATCHED VENDORED SOURCE, and the reason is that the prior question had to be answered before provenance could be stated at all. `wasm/tree-sitter-c.wasm` (650,175 B, sha256 f9a2d771...) was recorded in validation/m14/results/wasm-provenance-census.json with NO byte-identical local copy and the verdict \"provenance cannot be re-derived offline\", while grammars/tree-sitter-c/ carried only grammar.js/LICENSE/package.json/tree-sitter.json, so this gate could not compare the source to the bytes either. `byte-identical-to-npm-tarball` -- the kind every other lane in this file uses -- was therefore unavailable: the vendored grammar.js differs from npm tree-sitter-c@0.24.1's by 75 diff lines and carries this repository's #743/#743b markers. So the real question was whether the WIRED bytes are a build of the PATCHED source or a pristine build predating the patch, and it decides what every C measurement means, because the F1 oracle, the 2,498-file census, the clang layout probe and all 28 mutants are all measurements of a parse produced by these bytes. Measured answer: the patch IS live. A rebuild of the committed patched source is surface-identical to WIRED in both directions (128 named types) and behaviourally identical on all 10 constructs, while pristine upstream differs by exactly the 3 node types the patch adds and fails all 3 `#743b` shapes. The consequence is the useful one: the incumbent was already a verified build, so no C measurement needs re-baselining, and had the wired bytes matched pristine the #743b fix would not have been live and the whole lane would have needed re-measuring. This also retires a live hazard recorded in this wave's own review: the #936 defect was a node-type literal (`attributed_type_specifier`) written from memory of a different tree-sitter-c release, which F1 caught only because the vocabulary happened to be checked -- the pin makes the release explicit rather than remembered.",
+      "alternatives": [
+        {
+          "option": "Adopt npm tree-sitter-c@0.24.1's own published wasm (sha c852c2a8..., 625,918 B) as the wired bytes",
+          "measured": "REJECTED, and this is the load-bearing measurement of the lane: it DELETES capability. It is 3 named types short of the wired bytes -- `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` -- and it parses all three `#743b` shapes as ERROR nodes where the wired build parses them clean. The first is a node the C analyzer itself names (the `macro_prefixed_type_specifier` note in the vendored grammar.js is a #743 record, and the analyzer's member/enumerator rules key on macro names), and the second is 16 files across the two cpp corpora whose portable-header guards would move from clean to damaged.",
+          "artifact": "validation/m14/results/c-grammar-pin.json (constructs[], patchAddsNamedTypes[])"
+        },
+        {
+          "option": "Pin the wired bytes as `unnamed-build-sha-only`",
+          "measured": "REJECTED as insufficient, not as wrong. It would record the sha256 and stop, which does protect against future drift -- but it leaves the central question open, and the answer turned out to be available and cheap: the patch is live, the source is in-tree, and a rebuild reproduces the bytes' surface and behaviour exactly. A sha-only pin on bytes that are demonstrably a build of committed source understates what is actually known.",
+          "artifact": "validation/m14/results/c-grammar-pin.json (verdict.patchIsLiveInWiredBytes)"
+        },
+        {
+          "option": "Regenerate the wired bytes from the patched source and adopt the rebuild",
+          "measured": "NOT NEEDED, and worth recording as a negative result. The rebuild is 630,720 B against the wired 650,175 B -- a toolchain difference, not a grammar difference -- with identical surface and identical behaviour on all 10 constructs. Swapping would have churned every C measurement for no observable gain, and the pin does not require byte identity: it requires that the committed source and the committed bytes agree, which the gate now re-measures on every run.",
+          "artifact": "validation/m14/results/c-grammar-pin.json (builds.surfaceDiff.wiredVsRebuiltPatched)"
+        }
+      ],
+      "evidence": [
+        "validation/m14/results/c-grammar-pin.json",
+        "validation/m14/results/wasm-provenance-census.json",
+        "grammars/tree-sitter-c/PIN.md"
+      ],
+      "notVendored": [
+        {
+          "path": "src/parser.c",
+          "why": "generated from grammar.js by `tree-sitter generate`; 3.9 MB; the source<->wasm check runs on the generated JSONs"
+        },
+        {
+          "path": "src/tree_sitter/*.h",
+          "why": "the runtime headers the generated parser includes; shipped by the CLI, not by the grammar"
+        },
+        {
+          "path": "bindings/, binding.gyp, binding_test.js",
+          "why": "node-native bindings; not parser source"
+        },
+        {
+          "path": "prebuilds/",
+          "why": "platform .node binaries; not parser source"
+        },
+        {
+          "path": "queries/highlights.scm, queries/tags.scm",
+          "why": "editor queries; the engine does not load them"
+        },
+        {
+          "path": "README.md",
+          "why": "upstream's readme, not required by any check"
+        },
+        {
+          "path": "tree-sitter-c.wasm (the 0.24.1 tarball's own)",
+          "why": "kept instead at fixtures/c/grammar/pristine-tree-sitter-c-0.24.1.wasm, outside the repository, where the A/B can use it without the repo pinning a build it has decided against"
+        }
+      ]
     }
   }
 }

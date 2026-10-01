@@ -1,67 +1,1157 @@
 {
-  "schemaVersion": 1,
-  "truthSource": "manual_audit",
+  "schemaVersion": 2,
+  "truthSource": "f5_tree_oracle",
+  "authority": "f5_tree_oracle",
   "source": "validation/m12/fixtures/bash/{Common.sh,Deploy.sh,Negative.sh}",
+  "derivedBy": "script/m12/bash-truth-derive.ts",
+  "derivation": "Every fact below is read off the TREE by deriveBashEdges (script/m14/differential.ts) — the same independent oracle the M14.0.F5 differential uses — plus a symbol derivation that reads the grammar's own `name` fields. No fact is transcribed from analyzer output and no analyzer table is imported.",
+  "independence": "The m12 differential and the M14.0.F5 differential now consume the SAME oracle, so they are not independent of each other. The independence that matters is oracle-vs-analyzer: deriveBashEdges walks the tree and shares no table and no import with src/ast/real-bash-analyzer.ts, so it cannot corroborate an analyzer fabrication.",
+  "supersedes": {
+    "schemaVersion": 1,
+    "truthSource": "manual_audit",
+    "facts": 55,
+    "why": "The v1 truth was hand-authored by the same hand as the analyzer (all 55 facts `authority: manual_audit`). Twelve asserted `sourceId: \"global\"` — the phantom owner endpoint that isIndexArtifactName rejects as a symbol name, so those edges could never resolve — and two asserted a trap edge whose source was a signal name and whose target was a whole command string. It certified two defects as truth, which is why the lane's `precision 1.000` measured nothing and why any honest fix would have read as a regression."
+  },
   "facts": [
-    {"id":"symbol:Common.sh:5:constant:SCRIPT_NAME","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":5,"attributes":{"name":"SCRIPT_NAME","symbolKind":"constant"},"evidence":{"authority":"manual_audit","reference":"readonly SCRIPT_NAME declaration"}},
-    {"id":"symbol:Common.sh:6:constant:LOG_LEVEL","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":6,"attributes":{"name":"LOG_LEVEL","symbolKind":"constant"},"evidence":{"authority":"manual_audit","reference":"export LOG_LEVEL declaration"}},
-    {"id":"symbol:Common.sh:9:function:log","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":9,"attributes":{"name":"log","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"log() function definition"}},
-    {"id":"symbol:Common.sh:10:variable:level","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":10,"attributes":{"name":"level","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local level in log"}},
-    {"id":"symbol:Common.sh:11:variable:message","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":11,"attributes":{"name":"message","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local message in log"}},
-    {"id":"symbol:Common.sh:16:function:get_backend","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":16,"attributes":{"name":"get_backend","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"get_backend() function definition"}},
-    {"id":"symbol:Common.sh:17:variable:env","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":17,"attributes":{"name":"env","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local env in get_backend"}},
-    {"id":"symbol:Common.sh:18:variable:backends","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":18,"attributes":{"name":"backends","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local -a backends array in get_backend"}},
-    {"id":"symbol:Common.sh:26:function:check_all","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":26,"attributes":{"name":"check_all","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"check_all() function definition"}},
-    {"id":"symbol:Common.sh:27:variable:names","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":27,"attributes":{"name":"names","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local -a names array in check_all"}},
-    {"id":"symbol:Common.sh:36:function:wait_lock","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":36,"attributes":{"name":"wait_lock","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"wait_lock() function definition"}},
-    {"id":"symbol:Common.sh:37:variable:path","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":37,"attributes":{"name":"path","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local path in wait_lock"}},
-    {"id":"symbol:Common.sh:38:variable:tries","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":38,"attributes":{"name":"tries","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local tries in wait_lock"}},
-    {"id":"symbol:Common.sh:48:function:install_trap","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":48,"attributes":{"name":"install_trap","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"install_trap() function definition"}},
-    {"id":"symbol:Common.sh:57:function:ls","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":57,"attributes":{"name":"ls","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"alias ls definition"}},
-    {"id":"symbol:Common.sh:59:variable:result","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":59,"attributes":{"name":"result","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"result command-substitution assignment"}},
-    {"id":"symbol:Common.sh:60:variable:main_result","layer":"ast_extraction","kind":"symbol","file":"Common.sh","line":60,"attributes":{"name":"main_result","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"main_result assignment"}},
-
-    {"id":"rel:Common.sh:uses:global:LOG_LEVEL","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"LOG_LEVEL","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"${LOG_LEVEL:-info} expansion"}},
-    {"id":"rel:Common.sh:calls:log:date","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"log","targetId":"date","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"$(date -u +%H:%M:%S) inside log"}},
-    {"id":"rel:Common.sh:uses:log:level","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"log","targetId":"level","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$level expansion in log"}},
-    {"id":"rel:Common.sh:uses:log:message","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"log","targetId":"message","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$message expansion in log"}},
-    {"id":"rel:Common.sh:uses:get_backend:env","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"get_backend","targetId":"env","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"case $env dispatch"}},
-    {"id":"rel:Common.sh:uses:check_all:names","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"check_all","targetId":"names","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"${names[@]} loop iteration"}},
-    {"id":"rel:Common.sh:uses:check_all:name","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"check_all","targetId":"name","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$name references in check_all"}},
-    {"id":"rel:Common.sh:calls:check_all:log","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"check_all","targetId":"log","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"log INFO call in check_all"}},
-    {"id":"rel:Common.sh:uses:wait_lock:tries","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"wait_lock","targetId":"tries","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$tries condition in while"}},
-    {"id":"rel:Common.sh:uses:wait_lock:path","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"wait_lock","targetId":"path","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$path test in wait_lock"}},
-    {"id":"rel:Common.sh:calls:INT:log \"WARN\" \"interrupted\"","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"INT","targetId":"log \"WARN\" \"interrupted\"","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"trap INT handler"}},
-    {"id":"rel:Common.sh:calls:TERM:log \"WARN\" \"interrupted\"","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"TERM","targetId":"log \"WARN\" \"interrupted\"","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"trap TERM handler"}},
-    {"id":"rel:Common.sh:imports:global:./env.sh","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"./env.sh","attributes":{"type":"imports"},"evidence":{"authority":"manual_audit","reference":"source ./env.sh import"}},
-    {"id":"rel:Common.sh:references:global:./env.sh","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"./env.sh","attributes":{"type":"references"},"evidence":{"authority":"manual_audit","reference":"source ./env.sh dependency"}},
-    {"id":"rel:Common.sh:calls:global:get_backend","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"get_backend","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"$(get_backend prod) call"}},
-    {"id":"rel:Common.sh:uses:global:result","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"result","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"${result}-ready expansion"}},
-    {"id":"rel:Common.sh:uses:global:main_result","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"global","targetId":"main_result","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$main_result echo"}},
-    {"id":"rel:Common.sh:contains:log:level","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"log","targetId":"level","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"log contains its local level"}},
-    {"id":"rel:Common.sh:contains:log:message","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"log","targetId":"message","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"log contains its local message"}},
-    {"id":"rel:Common.sh:contains:get_backend:env","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"get_backend","targetId":"env","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"get_backend contains its local env"}},
-    {"id":"rel:Common.sh:contains:get_backend:backends","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"get_backend","targetId":"backends","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"get_backend contains its local array backends"}},
-    {"id":"rel:Common.sh:contains:check_all:names","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"check_all","targetId":"names","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"check_all contains its local array names"}},
-    {"id":"rel:Common.sh:contains:wait_lock:path","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"wait_lock","targetId":"path","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"wait_lock contains its local path"}},
-    {"id":"rel:Common.sh:contains:wait_lock:tries","layer":"relationships","kind":"relationship","file":"Common.sh","sourceId":"wait_lock","targetId":"tries","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"wait_lock contains its local tries"}},
-
-    {"id":"symbol:Deploy.sh:4:variable:APP_DIR","layer":"ast_extraction","kind":"symbol","file":"Deploy.sh","line":4,"attributes":{"name":"APP_DIR","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"APP_DIR global assignment"}},
-    {"id":"symbol:Deploy.sh:5:variable:IMAGE_NAME","layer":"ast_extraction","kind":"symbol","file":"Deploy.sh","line":5,"attributes":{"name":"IMAGE_NAME","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"IMAGE_NAME global assignment"}},
-    {"id":"symbol:Deploy.sh:21:function:deploy","layer":"ast_extraction","kind":"symbol","file":"Deploy.sh","line":21,"attributes":{"name":"deploy","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"deploy() function definition"}},
-    {"id":"symbol:Deploy.sh:22:variable:count","layer":"ast_extraction","kind":"symbol","file":"Deploy.sh","line":22,"attributes":{"name":"count","symbolKind":"variable"},"evidence":{"authority":"manual_audit","reference":"local count in deploy"}},
-
-    {"id":"rel:Deploy.sh:calls:global:docker","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"docker","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"docker build command"}},
-    {"id":"rel:Deploy.sh:uses:global:IMAGE_NAME","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"IMAGE_NAME","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$IMAGE_NAME expansion"}},
-    {"id":"rel:Deploy.sh:uses:global:APP_DIR","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"APP_DIR","attributes":{"type":"uses"},"evidence":{"authority":"manual_audit","reference":"$APP_DIR chmod argument"}},
-    {"id":"rel:Deploy.sh:calls:global:curl","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"curl","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"curl pipe command"}},
-    {"id":"rel:Deploy.sh:calls:global:bash","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"bash","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"bash pipe receiver"}},
-    {"id":"rel:Deploy.sh:calls:global:ssh-agent","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"global","targetId":"ssh-agent","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"$(ssh-agent -s) substitution"}},
-    {"id":"rel:Deploy.sh:calls:deploy:ssh","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"deploy","targetId":"ssh","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"ssh deployment call"}},
-    {"id":"rel:Deploy.sh:contains:deploy:count","layer":"relationships","kind":"relationship","file":"Deploy.sh","sourceId":"deploy","targetId":"count","attributes":{"type":"contains"},"evidence":{"authority":"manual_audit","reference":"deploy contains its local count"}},
-
-    {"id":"symbol:Negative.sh:2:function:valid_fn","layer":"ast_extraction","kind":"symbol","file":"Negative.sh","line":2,"attributes":{"name":"valid_fn","symbolKind":"function"},"evidence":{"authority":"manual_audit","reference":"valid_fn() function definition"}},
-
-    {"id":"rel:Negative.sh:calls:global:broken_fn","layer":"relationships","kind":"relationship","file":"Negative.sh","sourceId":"global","targetId":"broken_fn","attributes":{"type":"calls"},"evidence":{"authority":"manual_audit","reference":"grammar recovers broken_fn as a top-level command after the unterminated string forces error recovery; the engine flags the syntax error at line 5"}}
+    {
+      "id": "symbol:Common.sh:26:function:check_all",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 26,
+      "attributes": {
+        "name": "check_all",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:16:function:get_backend",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 16,
+      "attributes": {
+        "name": "get_backend",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:48:function:install_trap",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 48,
+      "attributes": {
+        "name": "install_trap",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:9:function:log",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 9,
+      "attributes": {
+        "name": "log",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:36:function:wait_lock",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 36,
+      "attributes": {
+        "name": "wait_lock",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:1:module:Common.sh",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 1,
+      "attributes": {
+        "name": "Common.sh",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "the file is bash's unit of declaration (BD2)"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:5:constant:SCRIPT_NAME",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 5,
+      "attributes": {
+        "name": "SCRIPT_NAME",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (readonly) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:6:constant:LOG_LEVEL",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 6,
+      "attributes": {
+        "name": "LOG_LEVEL",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (export) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:10:variable:level",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 10,
+      "attributes": {
+        "name": "level",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:11:variable:message",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 11,
+      "attributes": {
+        "name": "message",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:17:variable:env",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 17,
+      "attributes": {
+        "name": "env",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:18:variable:backends",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 18,
+      "attributes": {
+        "name": "backends",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:27:variable:names",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 27,
+      "attributes": {
+        "name": "names",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:37:variable:path",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 37,
+      "attributes": {
+        "name": "path",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:38:variable:tries",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 38,
+      "attributes": {
+        "name": "tries",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:59:variable:result",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 59,
+      "attributes": {
+        "name": "result",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "variable_assignment name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:60:variable:main_result",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 60,
+      "attributes": {
+        "name": "main_result",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "variable_assignment name node"
+      }
+    },
+    {
+      "id": "symbol:Common.sh:57:function:ls",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Common.sh",
+      "line": 57,
+      "attributes": {
+        "name": "ls",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "alias declaration — a callable name, modelled as a function"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:SCRIPT_NAME",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "SCRIPT_NAME",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:LOG_LEVEL",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "LOG_LEVEL",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:exports:Common.sh:LOG_LEVEL",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "LOG_LEVEL",
+      "attributes": {
+        "type": "exports"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:Common.sh:LOG_LEVEL",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "LOG_LEVEL",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "log",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:log:level",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "log",
+      "targetId": "level",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:log:message",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "log",
+      "targetId": "message",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:calls:log:date",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "log",
+      "targetId": "date",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:log:level",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "log",
+      "targetId": "level",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:log:message",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "log",
+      "targetId": "message",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:get_backend",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "get_backend",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:get_backend:env",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "get_backend",
+      "targetId": "env",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:get_backend:backends",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "get_backend",
+      "targetId": "backends",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:get_backend:env",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "get_backend",
+      "targetId": "env",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:check_all",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "check_all",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:check_all:names",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "check_all",
+      "targetId": "names",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:check_all:names",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "check_all",
+      "targetId": "names",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:check_all:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "check_all",
+      "targetId": "name",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:calls:check_all:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "check_all",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:wait_lock",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "wait_lock",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:wait_lock:path",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "wait_lock",
+      "targetId": "path",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:wait_lock:tries",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "wait_lock",
+      "targetId": "tries",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:wait_lock:tries",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "wait_lock",
+      "targetId": "tries",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:wait_lock:path",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "wait_lock",
+      "targetId": "path",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:install_trap",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "install_trap",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:calls:install_trap:log",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "install_trap",
+      "targetId": "log",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:imports:Common.sh:./env.sh",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "./env.sh",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:references:Common.sh:./env.sh",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "./env.sh",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:ls",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "ls",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:result",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "result",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:calls:Common.sh:get_backend",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "get_backend",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:contains:Common.sh:main_result",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "main_result",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:Common.sh:result",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "result",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Common.sh:uses:Common.sh:main_result",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Common.sh",
+      "sourceId": "Common.sh",
+      "targetId": "main_result",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "symbol:Deploy.sh:21:function:deploy",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Deploy.sh",
+      "line": 21,
+      "attributes": {
+        "name": "deploy",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Deploy.sh:1:module:Deploy.sh",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Deploy.sh",
+      "line": 1,
+      "attributes": {
+        "name": "Deploy.sh",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "the file is bash's unit of declaration (BD2)"
+      }
+    },
+    {
+      "id": "symbol:Deploy.sh:4:variable:APP_DIR",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Deploy.sh",
+      "line": 4,
+      "attributes": {
+        "name": "APP_DIR",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "variable_assignment name node"
+      }
+    },
+    {
+      "id": "symbol:Deploy.sh:5:variable:IMAGE_NAME",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Deploy.sh",
+      "line": 5,
+      "attributes": {
+        "name": "IMAGE_NAME",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "variable_assignment name node"
+      }
+    },
+    {
+      "id": "symbol:Deploy.sh:22:variable:count",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Deploy.sh",
+      "line": 22,
+      "attributes": {
+        "name": "count",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "declaration_command (local) name node"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:contains:Deploy.sh:APP_DIR",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "APP_DIR",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:contains:Deploy.sh:IMAGE_NAME",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "IMAGE_NAME",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:docker",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "docker",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:uses:Deploy.sh:IMAGE_NAME",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "IMAGE_NAME",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:chmod",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "chmod",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:uses:Deploy.sh:APP_DIR",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "APP_DIR",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:curl",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "curl",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:bash",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "bash",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:ssh-agent",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "ssh-agent",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:sudo",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "sudo",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:Deploy.sh:rm",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "rm",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:contains:Deploy.sh:deploy",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "Deploy.sh",
+      "targetId": "deploy",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:contains:deploy:count",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "deploy",
+      "targetId": "count",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:uses:deploy:count",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "deploy",
+      "targetId": "count",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Deploy.sh:calls:deploy:ssh",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Deploy.sh",
+      "sourceId": "deploy",
+      "targetId": "ssh",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "symbol:Negative.sh:2:function:valid_fn",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.sh",
+      "line": 2,
+      "attributes": {
+        "name": "valid_fn",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "function_definition name field"
+      }
+    },
+    {
+      "id": "symbol:Negative.sh:1:module:Negative.sh",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Negative.sh",
+      "line": 1,
+      "attributes": {
+        "name": "Negative.sh",
+        "symbolKind": "module"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "the file is bash's unit of declaration (BD2)"
+      }
+    },
+    {
+      "id": "rel:Negative.sh:contains:Negative.sh:valid_fn",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.sh",
+      "sourceId": "Negative.sh",
+      "targetId": "valid_fn",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    },
+    {
+      "id": "rel:Negative.sh:calls:Negative.sh:broken_fn",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Negative.sh",
+      "sourceId": "Negative.sh",
+      "targetId": "broken_fn",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "f5_tree_oracle",
+        "reference": "deriveBashEdges (script/m14/differential.ts), an independent tree walk"
+      }
+    }
   ]
 }

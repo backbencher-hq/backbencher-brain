@@ -1,266 +1,464 @@
 # real-clean-analyzer.md
 
+> **Status (2026-09-28, M14.0 clean-completeness round).** Rebuilt from 864 lines to
+> 3,000+ against an exhaustive census of the pinned grammar. Every number in this
+> document is measured over the 320-file Clean universe on this machine and every
+> claim is re-runnable. The round's findings, with their evidence, are in
+> `reviews/clean/m14-0-clean-completeness.md`.
+
 ## Language
 
 - Analyzer file: `src/ast/real-clean-analyzer.ts`
 - Parser: `tree-sitter-clean` **v1.2.7** (authored by the project owner; pinned
-  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@302fb5d0`
-  release v1.2.7, adopted 2026-09-25 on the adjudication recorded in
-  `reviews/m60-clean-grammar-127-adjudication.md`). The v1.2.4 pin it replaced was
-  `tree-sitter-clean@58729d3`, pulled during M12.26.
-
-  **What v1.2.5–v1.2.7 changed, measured on the corpus (312 `.icl`/`.dcl` across the five
-  Clean bases on this machine), not read off the release notes:** a lexer correction
-  (v1.2.4 split identifiers beginning `mod`/`rem`, so `mode` parsed as `mod`+`e` and
-  `removeTabViewItem` as `rem`+`oveTabViewItem`); four grammar node types that did not exist
-  before (`monad_bind`, `array_generator_sep`, `char_list`, `open_range_expression`, all four
-  currently **unreferenced** by this analyzer — see the shape-safety note below); and named
-  terminal types replacing generic ones (`operator` → `monad_bind`, `->` → `arrow`, `where`
-  and the other keywords as their own node types). The parse win is large and one-directional:
-  damaged files **67 → 37** of 312, MISSING tokens **148 → 9**, ERROR lines **6 508 → 2 426**,
-  with **no file newly damaged**.
-
-  Grammar tree shape (as pinned, v1.2.7):
-  `module_declaration` → `module_name` → `module_identifier`; imports are
-  `import_declaration` with `module_name` children (the `as` alias is a second
-  `module_name` child; `import qualified` is an anonymous `qualified` token);
-  `type_definition` → `constructor` (type name) + `type_definition_body` →
-  `record_definition` → `record_field` → `identifier` (fields) OR
-  `data_constructors` → `data_constructor` → `constructor` (ADT constructors);
-  `class_declaration` → `class_name` → `constructor` + `class_member` →
-  `type_signature` → `signature_name` → `identifier` (interface methods);
-  `instance_declaration` → `instance_class` → `constructor` + `constructor`
-  (target type) + `instance_member` → `function_declaration` (methods);
-  functions are `function_declaration` nodes (first `identifier` = name) with
-  `guard_binding`/`guard_body` children; calls are `application` nodes whose
-  head is `identifier` (local) or `qualified_identifier` (→ `constructor` +
-  `identifier`); constructor application heads are `constructor`; lambdas are
-  `lambda_expression`; where-locals live under `where_block` →
-  `local_binding` → `function_declaration`; record construction is
-  `record_expression`/`record_update`; field access is `field_access`.
-  A module-level operator is a DIFFERENT node from a function:
-  `operator_definition` with a `name` FIELD holding
-  `parenthesized_operator` (`(++|)`) or `parenthesized_name`; an
-  instance/synonym body is a `macro_definition`; a signature is `type_signature`
-  → `signature_name` → `identifier` / `constructor` / `parenthesized_operator` /
-  `parenthesized_name`; an infix use is a `binary_expression`.)
-- Language detection: `.icl`/`.dcl` → `clean` in `language-detection.ts`
+  `wasm/tree-sitter-clean.wasm` rebuilt from `tree-sitter-clean@302fb5d0` release
+  v1.2.7, adopted 2026-09-25 — `reviews/m60-clean-grammar-127-adjudication.md`).
+  The pin is recorded in `validation/m14/grammar-pins.json` (sha256 `9ea8525dcb…`,
+  6,743,856 B; round record `reviews/functional-family/m60-grammar-pins.md`): npm's
+  `tree-sitter-clean@1.2.7` publishes `grammar.js` / `scanner.c` / `grammar.json` /
+  `node-types.json` but **no wasm**, so the wired bytes are not claimed to be
+  hash-matched to a published artifact.
+- Language detection: `.icl` / `.dcl` → `clean` in `language-detection.ts`
 - Wired in: `engine.ts getAnalyzer` → `RealCleanAnalyzer`
-- Pure AST — symbols and relationships derive from Tree-sitter nodes/fields,
-  never source-text scanning. The only string processing is on values already
-  extracted from AST nodes (module-name assembly from `module_identifier`
-  children — pure char join, no regex). The analyzer has ZERO census regex
-  entries.
+- **Pure AST. ZERO regular expressions** — measured with TypeScript's own
+  scanner (`RegularExpressionLiteral` count = 0), and enforced by
+  `script/m14/clean-completeness-gate.ts`, which fails on a planted regex
+  literal. Note this was already true of the previous version (an earlier
+  M49.R2 wave replaced its two literals with `startsWith`/`slice`/`includes`), so
+  it is not a round-over-round gain; the gain is that the analyzer no longer
+  needs text inspection to find a name at all. The remaining text operations are
+  inventoried and classified in [Hygiene](#hygiene-zero-regex-and-what-it-is-checked-against).
+- Spec: `script/m14/spec/clean-completeness.json` — all **137** distinct named node
+  types the grammar declares are classified, with the gate at
+  `script/m14/clean-completeness-gate.ts`.
+
+## The measured surface this analyzer is built against
+
+| | count |
+| --- | --- |
+| Clean files measured (312-file corpus + 8 fixtures) | 320 |
+| **Clean files in the WIDE corpus** (`clean-wide-manifest.txt`) | **2,179** |
+| AST nodes over the 312-file corpus | 331,079 |
+| **AST nodes over the 2,179-file corpus** | **3,107,410** |
+| **files the pinned grammar parses with no ERROR** | **1,524 of 2,179 (69.9%)** |
+| distinct node types the grammar declares | 185 (139 named slots → **137** distinct named names) |
+| named types occurring in the corpus | **137** (all of them) |
+| named types the analyzer HANDLES, each fixture-backed | **99**, and all 99 occur in CORPUS code |
+| named types classified `internal_silent` | 29 |
+| named types in a `gap` | 1 |
+| named types in a `design_decision` | 8 (+11 further rulings recorded against types already in a behaviour bucket) |
+
+The three declared named types that never occur in the 320-file universe are
+`lazy_pattern`, `unit_pattern` and `qualified_identifier`. All three are pinned by
+fixture instead: the first two by `declaration-forms.icl`, the third by
+`qualified-names.icl` — which is the only reason `qualified_identifier` is
+`handled_verified` rather than unclassified.
+
+The previous version of this analyzer named **35** of those 137. The 100 it did not
+name covered **81,531 corpus sites** — the whole generic machinery, every macro,
+every class context, the record-field access graph, the selective-import lists,
+the where-locals, and every type reference in the corpus. That is the gap this
+round closed, and the review lists each piece with its size.
+
+## Grammar tree shape (as pinned, v1.2.7)
+
+Everything the analyzer reads is a node **field**, not a child scan. The shapes
+that matter:
+
+```
+module_declaration        → name: module_name → module_identifier        ("Data" "." "Map")
+import_declaration        → module: module_name (REPEATED), alias: module_name
+                          → items: identifier | constructor | operator leaf
+                                    | class_method_name | constructor_subset
+                                    | record_subset | range_operator
+type_definition           → name: constructor | body: type_definition_body
+                          | parameter: type_variable | rhs: data_constructors
+type_definition_body      → rhs: data_constructors | record_definition | constructor | …
+data_constructor          → name: constructor | argument: <type> (REPEATED)
+record_definition         → record_field → name: identifier | type: <type>
+class_declaration         → name: class_name | parameter: type_variable | dotted_type
+                          | context: class_context | type: type_function
+class_context             → ","-separated constraint list: 474 nodes holding 1,378
+                                    constraints, 496 of which name a class
+instance_declaration      → name: instance_class | argument: <type> (REPEATED)
+                          | context: class_context | type: … | body: code_expression
+generic_declaration       → name: identifier | parameter: type_variable (REPEATED)
+                          | context: identifier | context_arg: type_variable (REPEATED)
+generic_case_definition   → name: identifier | kind | pattern | body
+derive_declaration        → name: identifier | <the derived type>
+function_declaration      → name: constructor|identifier | pattern (REPEATED) | body (REPEATED)
+operator_definition       → name: parenthesized_operator|parenthesized_name|operator
+macro_definition          → name: constructor|identifier|parenthesized_* | body (REPEATED)
+type_signature            → name: signature_name | type: <type> | context: class_context
+                          | fixity: fixity_annotation | body: code_expression
+signature_name            → identifier | constructor | parenthesized_operator | parenthesized_name
+special_block             → special_member → variable: type_variable | type: <type>
+fixity_declaration        → operator | associativity | precedence
+foreign_export            → name: identifier
+where_block / with_block  → local_binding → (the definition it wraps)
+local_binding             → the definition it wraps (a name-bearing child, NOT a field)
+application               → function: <callee> (the LEFT-NESTED head) | argument (REPEATED)
+single_quoted_name        → the corpus's qualified form: 'Data.Error'.Ok
+qualified_identifier      → the alias form: M.lookup
+record_expression         → name (REPEATED) | value (REPEATED)
+record_update             → record | field: update_field (REPEATED) | value (REPEATED)
+field_access              → record | field
+type_function             → [domain, arrow, result]   ← the result is child(2)
+type_application          → [type, arg, arg, …]     ← the DOMAIN of a function type
+strict_type               → "!" + <type>      uniqueness_type  → "*" + <type>
+unique_var_type           → "u:" + <type>    dotted_type      → "." + <type>
+code_expression           → code { abc_instruction (REPEATED) }
+```
+
+Two shapes that are easy to get wrong and are called out because the analyzer
+depends on them:
+
+- **An application is LEFT-NESTED.** `f a b c` is
+  `application(application(application(f, a), b), c)`, so only the innermost
+  application carries the callee. Measured over 23,908 applications, the
+  `function` field is 13,102 `application` (the nest), 8,340 `identifier`, 2,045
+  `constructor`, 162 `field_access`, 78 `single_quoted_name`, 61
+  `unboxed_expression`, 25 `parenthesized_operator`, and 95 across ten more
+  shapes (`string`, `paren_expression`, `index_access`, `record_update`,
+  `tuple_expression`, `list_expression`, `lambda_expression`, and two
+  comprehensions). Reading `namedChild(0)` as "the head" is right for the head and wrong
+  for the nest, which is why the head is read from the `function` FIELD and the
+  nest is simply ignored.
+- **A function type's domain is a `type_application` whose children ARE the
+  parameters, in order.** `f :: !A !B -> C` has a two-child domain; so does
+  `f :: (OrderBook Int) -> C`, which is why Clean source parenthesises a
+  multi-argument type there. Pairing the domain's children with the definition's
+  `pattern` fields positionally is therefore sound, and no arrow scan over a
+  string is needed (the haskell lane has to do that scan; this one does not).
 
 ## Symbol contract
 
-| Field | Supported? | How extracted (AST node/field) |
+| Field | Supported? | How extracted |
 | --- | --- | --- |
-| name | ✅ | `module_declaration` → `module_name`; `type_definition` → first `constructor` (type); `record_definition` → `record_field` → `identifier` (property); `data_constructor` → `constructor` (constructor); `class_name` → `constructor` (interface); class members → `class_member` → `type_signature` → `signature_name` → `identifier` (method); `instance_declaration` → named by the TARGET type `constructor` (the Rust `impl User`/Haskell `instance ... User` contract); instance members → inner `function_declaration` `name` FIELD (method); top-level functions → `function_declaration` `name` FIELD (an uppercase name is typed `constructor`, so the field — not the first `identifier` child — is the name); a MODULE-LEVEL `type_signature` → `signature_name` child, normalized across all four shapes (`identifier`, `constructor`, `parenthesized_operator` `(==)` → `==`, `parenthesized_name` `(bitxor)` → `bitxor`; a comma/brace payload is a tuple/record PATTERN mis-shape and publishes nothing); an `operator_definition` → its `name` FIELD unparenthesized (`(++|)` → `++|`) |
-| kind | ✅ | module; type_definition → `type`; record fields → `property`; ADT constructors → `constructor`; class → `interface`; instance → `class`; class/instance members → `method`; top-level functions → `function` |
-| qualified/container name | ✅ | `ownerName` = enclosing module for all module-level symbols (tracked via `ctx.currentModule`); constructors/fields owned by their type (`Vec`); class/instance methods owned by their interface/class |
-| range (start/end line + column) | ✅ | the declaration node |
-| parameters | ✅ (metadata only) | function head identifiers after the name |
-| visibility | ✅ | always `public`. Clean has no visibility keyword and a module's definition list governs what it offers, so the export list is the module-level symbols: `sym.ownerName === currentModule || !sym.ownerName` (the haskell rule — the module is the namespace, members are importable by name), restricted to exportable kinds and deduped by NAME first-wins, because the exports-family invariant (run-fixtures.ts) requires a name a duplicate cannot identify its provider for. Clean reaches the collision honestly — `instance Eq ParseState` publishes its Class under the instance TARGET type, so a file that both defines the type and implements an instance for it offered the name twice (59 of 312 files). The predicate here used to be `!sym.ownerName`, the exact NEGATION of the rule its own comment stated: measured, 312 of 312 files exported ≤ 1 thing (295 exports against 6,031 module-owned symbols). Now **4,443 exports over 305 of 312 files**; the 7 without one are the `_`-prefixed compiler-internal modules, which are not part of any importable interface |
+| `name` | ✅ | Every declaration reads its grammar field: `module_declaration.name`, `type_definition.name`, `class_declaration.name`, `instance_declaration.name` (the `instance_class`), `generic_declaration.name`, `function_declaration.name`, `operator_definition.name`, `macro_definition.name`, `foreign_export.name`, `generic_case_definition.name`, `data_constructor.name`, `record_field.name`, `type_signature.name` (normalized across all four `signature_name` shapes). |
+| `kind` | ✅ | `module`; `type_definition` → `type`; record fields → `property`; ADT constructors → `constructor`; class → `interface`; generic → `interface`; instance → `class`; class/instance members → `method`; `macro_definition` → `macro`; everything else callable → `function`. |
+| `ownerName` / `ownerKind` | ✅ | The enclosing module for module-level symbols; a type for its constructors and fields; a class or instance for its members; **and, new this round, the enclosing FRAME for a where/with/let binder** — see [Local identity](#local-identity-where-with-and-let). |
+| `qualifiedName` | ✅ | The scoped identity of a local (`describe.nonNegative`). A module-level symbol needs none: its `name` is already unique in the file, and the store falls back to `name`. This is what makes a local's relationship endpoints resolvable while the symbol keeps the bare name the source declares. |
+| `visibility` | ✅ | `public` for module-level; **`local` for a where/with/let binder**, which is also what keeps it out of the export surface. |
+| `range` (lines + columns + byte indices) | ✅ | the declaration node. A multi-clause function's range extends to the last clause's end. |
+| `parameters` | ✅ **REAL** | The definition's `pattern` fields (one field = one parameter, in order) paired positionally with the `type` field's domain argument types. A pattern that binds no single target is named by its own text. |
+| `returnType` | ✅ **REAL** | `type_function`'s THIRD child — the one after the `arrow` node. 3,314 symbols carry one. |
+| `genericParameters` | ✅ **REAL** | `type_variable`s the signature or declaration binds (1,358 symbols) — and a `type_variable` is a **binding, never a reference**, which is what keeps `a` out of the reference graph. |
+| `comments` / `docstring` | ✅ **REAL** | The contiguous comment run immediately above the declaration, plus a trailing comment on its own end row, plus comments inside it. 998 symbols carry comments, 350 carry a docstring. |
+| `qualified_calls` | ✅ **REAL** | The qualified call targets the frame's bodies spell, quote-stripped (44 symbols). |
+| `complexity` | ✅ **REAL** | Decision points counted while the frame is open, so it is O(1) per decision node and O(n) for the file. |
+| `isAbstract` | ✅ | A class/instance member whose only occurrence is a signature. |
+| `isStatic` | ❌ | Clean has no static member. N/A. |
+| `docstring` on a `macro` | ✅ | same comment rules. |
 
-## Relationship ontology
+### The 253-defect: the instance target
 
-| Relationship | Supported? | How extracted (AST node/field) | Weight |
+`instance Array {} a` carries `array_type` and `type_variable` in the `argument`
+FIELD and has **no direct `constructor` child at all**. Measured over the corpus
+the field is 782 occurrences on 741 instances, of which only 489 are a bare
+`constructor`; the other 293 are `array_type` 127, `list_type` 97, `type_variable`
+32, `type_paren` 16, `question_type` 9, `tuple_type` 8, `unit_type` 4. On those 253
+declarations — across 203 files — the previous analyzer's
+`findChild(node, n => n.type === "constructor")` returned null and the instance was
+skipped whole: no Class symbol, no `implements` edge, no member scope, and every
+`instance_member` inside it (1,009 corpus-wide) left ownerless or attributed to
+the module. The target is now read from the field, and the remaining shapes are
+resolved structurally (an `array_type`'s inner type, a `type_paren`'s inner type)
+rather than by text. **488 Class symbols → 741.**
+
+### Local identity: `where`, `with` and `let`
+
+A `where` / `with` / `let` binder is a real callable. Measured over the corpus:
+**1,911 `local_binding` occurrences** in the corpus, of which **1,821 wrap one of
+the three callable definition shapes** (1,361 `function_declaration`, 449
+`type_signature`, 11 `operator_definition`) and 90 wrap a bare pattern or an
+expression. They publish **1,090 local symbols**, all of kind `function` (a local
+signature merges with its definition, and a multi-clause local merges with itself),
+and there are **5,085 applications inside where blocks** under them. The
+previous analyzer set `currentFunction = undefined` for the whole block — the M11.11
+"closure boundary" — so every one of those applications attributed to nothing and
+none of the 1,821 binders published a symbol.
+
+The haskell lane solved this exact construct with scoped local identity
+(`real-haskell-analyzer.ts:15-30`) and the rule is adopted here unchanged:
+
+- a binder's identity is `${owner}.${name}`, so it can never collide with a
+  module-level callable of the same name;
+- the identity rides the symbol's `qualifiedName` (so an edge endpoint resolves to
+  the right row) while `name` stays the bare declared name (so the C1/C2
+  name-surface gate sees the name the source declares);
+- call resolution walks the scope stack, so a local is only ever a target from
+  inside its own scope;
+- it is `visibility: "local"` and NOT exported — M11.11 §2 is unchanged, and it is
+  now stated in `emitExports` rather than being a side effect of the symbol not
+  existing.
+
+**42 of the 1,090 locals shadow a name their own frame declares** (`printPools`
+inside `printPools`, and `printPools` has an inner `printPools` in the corpus) and
+**0 shadow a module-level symbol** — so the shadowing risk that motivated the
+scoped identity is real but smaller than it looked, and the measurement is the
+reason to say so.
+
+Across the whole corpus, **250 symbols have `ownerName === name`**, and all 250
+are Clean's own name-sharing rather than a defect:
+
+| shape | count | example |
+| --- | --- | --- |
+| a newtype: a data constructor named as its type | 185 | `:: ErrPrefs = ErrPrefs` |
+| a local binder sharing its frame's name | 42 | `printPools` inside `printPools` |
+| the MODULE named as the symbol | 12 | a `.dcl` for module `Target` declaring type `Target` and three instances of it |
+| a one-method class whose method shares the class name | 11 | `class addTabViewItem a where addTabViewItem :: …` (Cocoa's ObjC delegates) |
+
+All four are safe by the same construction: the store keys a symbol row
+`${fileId}:${name}:${lineStart}` (`parallel-indexer.ts:2259`), so the rows are
+distinct, and resolution also matches `qualifiedName` (`:2734-2736`). The
+`Target` case has one visible cost: the module's `contains` edge to its own type
+`Target` collides by name and is deduplicated away, so `Target.dcl` publishes the
+type and the three instances with correct owners but no module→`Target` edge.
+That is the name-keyed `contains`/export dedupe, which is deliberate and pinned by
+`instance-target-name-collision.icl`.
+
+## Relationship contract
+
+| Type | From → To | When | Corpus |
 | --- | --- | --- | --- |
-| contains | ✅ | post-loop over `ownerName`: module → every module-level symbol (`contains Service -> User`), type → its constructors (`contains Side -> Bid`), type → record fields (`contains User -> name`), interface/class → methods (`contains Serializable -> serialize`). Self-named edges skipped (`data User = User {...}` would collapse into a self-loop in symbol-ID space) | 1.0 |
-| implements | ✅ | `instance_declaration` → `implements targetType -> className` (from `instance_class` + target `constructor`) | 1.0 |
-| calls | ✅ | `application` heads with function sources (source = the containing function/method via `currentFunction`; an `operator_definition` is a callable on the same terms, so its body attributes to the operator's unparenthesized name — `(++) x y = g x y` emits `calls ++ -> g`), and the attribution is released when the callable's scope exits. Local calls emit LEAF targets only when the callee is a module-level declared function (pre-pass collects all `function_declaration` names → forward references resolve, e.g. `submitOrder -> describe` declared later). Self-recursion and mutual recursion ARE emitted (`countDown -> countDown`, `mutualA -> mutualB`). Qualified calls emit FULL targets (`M.lookup` — the Erlang `gen_server:cast` precedent, from `qualified_identifier`). Exclusions: stdlib/imported functions (`foldl`, `map`, `fromMaybe`), type variables, pattern vars, record-field selectors (`u.name`), operator/infix syntax, where-local functions (their bodies are scoped noise) | 1.0 |
-| instantiates | ✅ | `application` heads that are `constructor` (uppercase) in BODY position → `instantiates fn -> Type` (`makeUser n a = User n a` → `instantiates makeUser -> User`). Pattern-position constructors (`addBid (Book bids asks) price`) and where-local patterns NEVER instantiate — excluded via `isPatternPosition` (pattern vars in function heads / `case_alternative` heads / `where_block` locals) | 1.0 |
-| references | ✅ | module dependency edges: `import StdEnv` → `references Service -> StdEnv` (import-list-less form `from Data.List import fromMaybe` also handled; the qualified/`as` import shapes produce the same dependency edge) | 1.0 |
-| extends | ❌ | Clean classes have no superclass syntax (type classes stand alone); no edge emitted | — |
-| uses | ❌ | intentionally not emitted — variable references are noise under the FP-family contract (Clojure/Elixir/Erlang/Haskell precedent) | — |
+| `calls` | callable → callable | an application whose head is a declared callable, resolved through the scope stack so a local wins over the module binding | 2,143 |
+| `calls` | callable → qualified name | the head is a `single_quoted_name` (the corpus form, 233 sites) or a `qualified_identifier` (the alias form, 2 sites, both in this repo's fixtures). Target is the source-spelling with its quote characters dropped. | |
+| `calls` | callable → class | the head is a declared CLASS name: Clean's implicit dictionary passing makes `C x` a call of `C`'s class method. **84** uppercase applied sites resolve to a class the file declares | |
+| `calls` | callable → declared function | the head is a `constructor`-typed node that this file declares as a CALLABLE. Clean lets a constructor be a function and the grammar types both `constructor`, so 939 corpus sites were `instantiates` edges on names that are Clean uppercase FUNCTIONS (`FModified`, `NSMakeSize`, `ApplicationOptionsToFlags`) | |
+| `instantiates` | callable → data constructor | the head is a `constructor` this file declares via a `data_constructor` node. **Only these** — see [The 24,986-site row](#the-24986-site-row). | 122 |
+| `uses` | callable → record field | a `field_access` read, a `record_expression` construction, or a `record_update` write, where the field is declared in this file. 1,406 edges. The FP family emits no bare VALUE read: a receiver, a parameter or a pattern variable never produces an edge | |
+| `uses` | callable → data constructor | a `constructor_pattern` — a MATCH, which is a dependency and not a construction | |
+| `implements` | instance target → class | `instance C T` where the class name is the `name` field's own node, on that node's line | 739 |
+| `implements` | derived type → generic | `derive g T` — the same shape as an instance: an implementation of a class AT a type | 43 |
+| `references` | symbol → type | Clean's `extractDeclaredTypeRefs`: every type a signature, a record field, an ADT constructor argument, a type synonym's RHS, a class context or a `special` block names. **A `type_variable` is a binding and is excluded.** Each edge carries the NAME's own line, not the type expression's start | 9,568 |
+| `references` | module → imported module | the module-level dependency, on the module NAME's line | 1,533 |
+| `imports` | module → `<module>:<item>` | one per imported NAME, the form `src/ast/import-resolution.ts` joins against the exporting file's export surface. 943 corpus items over 367 selective imports reached nothing before, because every import edge was the wildcard | 1,921 |
+| `contains` | owner → member | module → members, type → constructors and fields, class/instance → methods, **and a local frame → its own binders**. The CHILD's own naming line is the anchor that resolves the intended target among same-named siblings (#921) | 7,777 |
+| `exports` | module → exported name | one per exported name, on the symbol's own line. Clean has no `export` keyword — a `.dcl`'s definition list IS the interface — so the surface is a first-class edge and not only a property of the exports array | 5,093 |
 
-Every edge above carries `line_number` — the site line the edge happened on, 1-based, on the
-name-bearing node, per-site and not per-set. Details and the gates are in §8 below.
+**Every relationship carries a 1-based `line_number` on the name-bearing node,
+per-site and not per-set** (30,558 of 30,558). The line is part of the DEDUPE
+KEY, so a function called from three lines is three edges at three lines, and a
+line that is not a positive integer is recorded as ABSENT, never as 0 (M59.O2).
 
-## Complexity
+### The 24,986-site row
 
-Declared budget: fixtures < 5 s (met: 0.36 s); corpus (309 files) < 60 s, symbols/s ≥ 200,
-relationships/s ≥ 200. **Met**, with the margins stated below rather than asserted — but see the
-*how many draws* paragraph: the declaration fixes the wall bound, and the load-stable comparison is
-`userCpuMsPerFile`.
+One edge class could not be made honest, and the analyzer now emits nothing for it.
+The question is what an uppercase applied name that is **not** a data constructor
+declared in this file actually is. The population is measured on the AST — every
+application whose innermost `function` field is a `constructor`-typed node,
+excluding names the file declares via `data_constructor` — because the DECLINED
+sites emit no edge and so cannot be counted from the output. Over the **2,179-file**
+corpus that population is **24,986 sites**, each classified against what its own
+file declares:
 
-The count is the whole available Clean corpus, not a slice of it: every `.icl`/`.dcl` file
-under the corpus root `$HOME/fixtures/repositories` that is non-empty and ≤ 1 MiB —
-**309 of 312**, the three exclusions being 0-byte `clean-stdlib/_library.dcl`,
-`_startup.dcl` and `_system.dcl`. So the draw needs no `--limit` and is like-for-like with
-itself across runs, and the manifest's `setDigest` pins the exact set.
+| the target is declared in this file as a… | sites | share |
+| --- | --- | --- |
+| function | 4,472 | 17.90% |
+| **not declared anywhere in this file** | 19,566 | 78.31% |
+| macro | 465 | 1.86% |
+| class | 194 | 0.78% |
+| type | 289 | 1.16% |
 
-- Single-pass iterative walk with an explicit stack (no recursion, no O(n²)
-  scans). Multi-clause function merging is O(1) via `functionSymbolIndex`
-  (key = `scope::name`). The post-loop contains pass is a single O(symbols)
-  linear sweep.
-- Corpus envelope, **re-measured 2026-09-25** at the v1.2.7 pin, after the `.dcl` ruling and after
-  the site-line change (§8 below): **309 files → 6,338 symbols / 10,878 relationships in
-  4,483 ms** (1,414 symbols/s, 2,426 relationships/s) — `validation/m12/results/clean-complexity.json`.
-  The frame is complete: `loadRule`, `corpusManifest` with set digest `27935ec564834992` and
-  `extensionFiltered: true`, `loadAvg1` 3.22, `loadQuiet: true`, `userCpuMsPerFile` **28.2**.
-  Against the declaration above that is 4,483 ms of 60,000 ms (13.4x), 1,414 of ≥ 200 symbols/s
-  (7.1x) and 2,426 of ≥ 200 relationships/s (12.1x).
-  The M60 envelope instrument now reads this lane **`within-budget`**
-  (`script/m60/analyzer-complexity-gate.ts`), where its predecessor read `unscorable`
-  (severity 5) — clean is the **second** lane in the tree with a scored envelope, c being the
-  first.
-- **How many draws, and why that matters.** Three draws, all on a box the harness itself judged
-  quiet:
+**19,566 sites (78.31%) name something no file in the corpus declares at all**, so
+the analyzer cannot prove a construction. Of the 5,420 the file CAN name, **zero are
+data constructors** — that is the population's definition — and 82.5% are functions.
+The node type alone proves a
+construction in zero cases, so the branch emits nothing, the count is published as
+`metadata.declinedInstantiations` (19,430 over the corpus) so the cost is visible in
+the analyzer's own output, and the consequence is recorded: **the M14.0.F5 oracle
+is red on this lane**, and the disagreement is the point. The oracle derives an
+`instantiates` from every `constructor`-headed application, so satisfying it means
+asserting a data construction for at least 97% of these sites.
 
-  | draw | analyzer | files | symbols | relationships | wall | `load1` | `userCpuMsPerFile` |
-  |---|---|---|---|---|---|---|---|
-  | 1 | pre-site-line | 309 | 6,338 | 9,656 | 6,643 ms | 3.35 | 36.0 |
-  | 2 | pre-site-line | 309 | 6,338 | 9,656 | 4,757 ms | 2.75 | 29.9 |
-  | 3 (committed) | **current** | 309 | 6,338 | **10,878** | 4,483 ms | 3.22 | 28.2 |
+Three edge kinds DO survive an external target because their MEANING does not
+depend on what the target is — a `references` edge in a typed position is a type
+reference whatever the type is, an `implements` edge is an instance whatever the
+class is, and a `calls` edge to a source-spelled qualified name is that call.
+This one does not. See `reviews/clean/m14-0-clean-completeness.md` §6.
 
-  Draws 1 and 2 are the variance sample: same set (digest `27935ec564834992`, so the *set* is not
-  the difference) and the same counts (6,338 / 9,656, so the *work* is not either), 39.6 % apart in
-  wall time. Draw 3 differs in work by design — the site-line change added 1,222 edges (per-site
-  dedupe, §8) — so it is not a third variance sample and must not be read as one. What the three
-  together establish is the reason `userCpuMsPerFile` is the number to compare across lanes
-  (36.0 → 29.9 → 28.2 while wall moved 6,643 → 4,483 ms) and why a wall row is evidence only when
-  its frame names the load it ran under.
-- The figure this replaces, kept rather than deleted: 62 files / 1,307 symbols / 1,416
-  relationships in 3.0 s from `corpusDir: "/tmp/clean-corpus-copy"` under the **v1.2.4** grammar.
-  A temp path that no longer exists means the number was never re-derivable, which is the #909
-  defect verbatim; it also predates both the v1.2.7 pin and the `.dcl` ruling, so the two rows are
-  not comparable — symbol density is 21.1 per file there and 20.5 here, i.e. the growth is the
-  corpus (62 → 309 files, 5 repos instead of 1), and a reader should not read the 5x count as a
-  5x parser improvement. This paragraph is the only place the old row survives, which is the point:
-  it is quoted as history, never cited as the current figure.
-- **The frame is attacked, not asserted.** `script/m14/tmp/clean-envelope-frame.ts` recomputes the
-  set digest with an independent walk (`find` + `sha256`, sharing nothing with the harness but the
-  format) — it reproduces `27935ec564834992` — re-derives `totalBytes`/`avgBytes`/`maxFileBytes`,
-  and then applies **8 frame mutations to copies** of the artifact (`loadRule` removed, manifest
-  removed, `setDigest` removed, `extensionFiltered=false`, `loadAvg1` removed, `loadQuiet=false`,
-  `userCpuMsPerFile` removed, fixtures-only) and requires the instrument's own reader to name a gap
-  for each. 8/8, plus the control (the committed artifact has no gap and reads `within-budget`).
-  The probe also caught a real defect in the first draft of this paragraph: it had draw 1's
-  throughput (954/1,454) written beside draw 2's wall time (the artifact's rates for the row it
-  holds are 1,332/2,030 — the rates of the pre-site-line draw; the current artifact's are
-  1,414/2,426, which is draw 3 below).
-- **Disclosed, and this one is not the lane's to fix:** `script/m60/analyzer-complexity-gate.ts`,
-  its register `validation/m60/analyzer-budget-register.json` and its census
-  `validation/m60/results/analyzer-complexity.json` are **untracked in this checkout** — the R6
-  instrument exists on no ref — and the `package.json` wiring that runs it (`audit:complexity`, plus
-  its place in `npm run verify`) is uncommitted too. So every claim in this section is true of
-  `validation/m12/results/clean-complexity.json`, which **is** committed, and of the instrument in
-  this working tree; the verdict's own artifact and this lane's `paid` register entry are not in
-  history yet. Recorded as `reviews/m60-clean-grammar-127-adjudication.md` §13.6.
-- Cyclomatic complexity (`metadata.cyclomaticComplexity`) counts `case_expression`,
-  `case_alternative`, `guard_equation` (function guards), `guard` (list-comprehension
-  qualifiers) and `binary_expression`. Before the fix it counted `guard` and NOT
-  `guard_equation`, i.e. 23 comprehension filters were measured and 1,594 function guards were
-  not; `script/m14/verify-probe-battery.ts` (`F9-PROBE-CLEAN-GUARD-COMPLEXITY`) asserts the
-  delta now.
+### Retracted numbers, kept visible
 
-### Edge site lines (M59.A7, formula §8)
+Three figures in this document's history were wrong, and each is named where it was
+wrong rather than quietly edited:
 
-Every relationship carries `line_number`: the **site line** the edge happened on, 1-based, on the
-name-bearing node — the call's callee identifier, the import's module name, the instance's class
-name, and for a `contains` edge the **child's own naming line** (the anchor the store resolves
-same-named siblings with, #921). Two properties are contract, not implementation detail:
+- **"1,026 sites, 19.30% real constructors"** — a different population on an earlier
+  analyzer state (it counted uppercase applied sites *including* declared
+  constructors, before the decline existed), reproducible by no instrument.
+- **"4,107 applications inside where blocks"** — actually 5,085, and 42,289 at the
+  2,179-file scale.
+- **"`qualified_identifier` never occurs in the corpus"** — it does. The 312-file
+  census was too small to see it, and the branch was rare rather than dead.
 
-- **Per-site, not per-set.** The line is part of the dedupe key, so a function called from three
-  lines is three edges at three lines, not one edge at whichever line the walk saw first. Measured
-  over the lane's 312 files: 11,108 edges, **11,108 with a positive line (100 %)**, 0 fabricated
-  zeroes, 0 negatives, 0 non-integers (`script/m14/tmp/clean-edge-line-census.ts`); 1,722 of them
-  belong to multi-site groups, i.e. the property is doing real work rather than being true
-  vacuously; and all **5,823 `contains` edges** were checked against the child symbol's own line —
-  0 wrong, 0 without a line.
-- **Never a fabricated 0.** An absent line stays absent (`line_number` omitted, or `null` once the
-  store has it). A 0 reads as "line 0" to every reader downstream.
+The table above is what `clean-census.ts` recomputes; the corrections tables in the
+review §6.1 and §12.1 record each one.
 
-The gates: five lines in each of the lane's fixtures are pinned in **pairs** — the same name at two
-lines (`contains ExpressionShapes -> Point` at 19 and 31; `contains InstanceTargetNameCollision ->
-Collision` at 15 and 17) — and `F9-PROBE-CLEAN-EDGE-LINE` asserts the general rule on a snippet
-where `f` is called from three lines. Both halves are mutation-verified: `clean/edge-line-absent`
-is caught by all five fixtures, and `clean/edge-line-per-set` is caught by exactly the two fixtures
-whose pins are paired — which is the point, because a fixture asserting only that the field is
-PRESENT survives the per-set mutant (`script/m14/run-fixtures.ts`, M59 #825's `line_number: null`
-form is how a fixture says "this edge must NOT name a line").
+## Complexity and metrics
 
-## Verification evidence
+- `metadata.complexity` counts: `case_expression` 131, `case_alternative` 373,
+  `guard_equation` 1,594, `guard` 23, `if_expression` 165,
+  `comprehension_qualifier` 172, `binary_expression` 4,981. The previous list
+  counted only the first two and neither `if_expression` nor
+  `comprehension_qualifier` — 337 sites of real branching, silently uncounted.
+- `metadata.patterns` — 20 marks, 8 of them new this round (`Macros` 92 files,
+  `Generics` 23, `Specialised Members` 9, `Foreign Function Interface` 7,
+  `Operator Fixity Declarations` 12, `Class Contexts` 69, `Qualified Instances`
+  11, `Inline Machine Code` 61). Each mark previously existed for hundreds of
+  corpus sites that carried no mark at all.
+- `metadata.hasTypeInference: true` — a Clean signature IS its type.
+- `metadata.analysisVersion: "12.0.0-clean-ast-complete"`.
 
-- Differential: `validation/m12/ground-truth/clean.json` (68 facts) vs
-  observed → **1.000 precision / 1.000 recall, 0 FP / 0 FN / 0 unknown**
-  (`validation/m12/results/clean-differential.json`, 2 fixtures, 0 parse errors).
-  Re-measured unchanged after the site-line change — the ground truth compares edge
-  labels and targets, so adding a site line to every edge moves none of the 68 facts.
-- The differential artifact is now **pinned**: it carries the `inputs` block
-  `script/m12/differential-provenance.ts` writes (62 files, digest `497d60eb003d`), so
-  `script/m12/verify-differential-freshness.ts` reads this lane **FRESH** where it read
-  `UNPINNED` ("no `inputs` block — cannot be checked, NOT covered"). Disclosed: that closure is
-  the import graph of `src/ast/engine.ts`, i.e. **every** analyzer, so the pin is anchored to the
-  tree it was taken in; a sibling lane committing its own analyzer makes this artifact read STALE
-  until it is re-emitted (`bun script/m12/verify-analyzer.ts clean`) — which is the gate working,
-  and it names the moved file rather than hiding it.
-- Corpus: clean_stdlib@6971a8a — 41 files ≥1KB → **4 grammar-error files
-  (9.8%), 0 crashes**, all classified honestly: `_SystemArray.icl`/`.dcl`
-  (inline `code { ... }` machine-code blocks — compiler-runtime assembly, not
-  parseable Clean), `_SystemDynamic.icl`/`.dcl` (exotic record-pattern /
-  record-update-with-comprehension constructs). Same category as Go's
-  testdata / Haskell's TemplateHaskell quasiquotes.
-- Grammar: tree-sitter-clean **v1.2.7** (`302fb5d0`, adopted 2026-09-25). Shape safety
-  re-derived against the pinned grammar rather than restated (`script/m14/tmp/clean-127-shape-safety.ts`,
-  which reads the analyzer's `node.type ===` literals and intersects them with the grammar's own
-  `src/node-types.json`): **37 referenced node-type literals, 0 dead** — 36 are node types the
-  grammar defines and the 37th is tree-sitter's reserved `ERROR`. The grammar defines **198**
-  distinct node types, so this analyzer dispatches on 36 of them; the 4 types new in v1.2.7
-  (`monad_bind`, `array_generator_sep`, `char_list`, `open_range_expression`) are named nowhere
-  in it, which is a named worklist rather than a hidden one.
-- Differential: **derived, and the lane is enrolled.** `deriveCleanEdges`
-  (`script/m14/differential.ts`, keyed to the pinned v1.2.7 shapes rather than translated from
-  this analyzer) is the read oracle, and F5 row `M14.0.F5.clean.json` records
-  `Clyde:clean` 60 files / 683 tree-truth / 683 covered (100 %, 0 MISSING, 0 unexplained) and
-  `clean-stdlib:clean` 60 files / 744 / 744 (0/0). Exhaustively, un-sampled, over every file of
-  the lane's 312: Clyde 109 files truth 2,288 / analyzer 1,459, clean-stdlib 74 / 773 / 562,
-  Prelude 42 / 130 / 124, cloogle.org 14 / 271 / 182, eastwood 73 / 924 / 777 — 0 MISSING and
-  0 UNEXPLAINED on all five. The M12 manual audit (`validation/m12/results/clean-differential.json`,
-  68 facts, 1.000/1.000) still stands beside it as the fixture-level audit.
-- Parse-success: floor `M14.0.F10.clean.json` — `Clyde:clean` 109 files, 17 carrying damage
-  (15.6 %; ERROR 14.7 %, MISSING 3.7 %, damaged lines median 3 / max 81) and `clean-stdlib:clean`
-  74 / 1 (1.4 %). Both are still `unpinned` in the shared baseline; a whole-set `--update-baseline`
-  rewrites all 48 lanes, so pinning them is a separate, deliberate act. The earlier figure — 4 error
-  files of the 41-file ≥1KB draw (9.8 %) measured against v1.2.4, then **1 of 41 (2.4 %)** against
-  v1.2.7 (`script/m12/clean-corpus-errors.ts`) — measured a smaller draw; the file that no grammar
-  of this pin parses remains `_SystemDynamic.icl` (inline `code { ... }` blocks).
-- Fixture coverage (F6, new enrolment): `script/m14/spec/clean-completeness.json`
-  classifies all 37 dispatch literals plus the silent wrappers, the three declared gaps and the
-  eight rulings, and the gate reads **handled=37, fixtureTypes=91, uncovered=0, deadLiterals=0
-  — PASS**. The lane was absent from this gate until now, which is how the analyzer's own
-  coverage claim went unchecked: enrolling it is what surfaced that 13 dispatch shapes (case,
-  lambda, guards, where, comprehension, the qualified call, records, the class trio) occurred in
-  NO fixture parse tree.
-- Fixtures (F3): five, each pinning a contract rather than a snapshot —
-  `definition-module-interface.dcl` (all four `signature_name` shapes publish AND export),
-  `signature-definition-merge.icl` (the merge is one entity whose range is the definition's; an
-  operator's call belongs to the operator and is released at scope exit),
-  `instance-target-name-collision.icl` (a type and its instance collide on one name; the export
-  list dedupes first-wins), `expression-shapes.icl` (the shapes above), and
-  `import-modules-alias-884.icl` (#884).
-- Mutation hardening (F4): **seven mutants, all caught**, each a revert of a MEASURED state —
-  declarations-not-published, declaration-range-wins, declaration-beside-definition,
-  operator-not-callable, operator-attribution-leak, export-owner-negation, export-duplicate-name.
-  `script/m14/tmp/mutant-catch-reasons.ts` prints WHY each died, so a mutant cannot be "caught"
-  by an expectation unrelated to its defect class. Run scoped (`BB_MUTANT_ONLY="clean/"`); the
-  canonical whole-set F4 artifact is a separate act.
-- Probes (F9): four CLEAN probes in the battery (36 total) — the `.dcl` interface, the
-  guard-equation complexity signal, and two SOURCE-AWARE checks (operator scope exit, head-pattern
-  attribution) that assert the analyzer and the oracle agree on both the edge and its absence.
-- Two defects this enrolment found, both in this analyzer rather than in the data:
-  `cyclomaticComplexity` counted the `guard` node type — 23 corpus sites, every one a
-  LIST-COMPREHENSION qualifier — while `guard_equation` (1,594 function guards) went uncounted; and
-  the function-head pattern gate tested for a child typed `operator` with text `=`, which this
-  grammar never produces (a definition's children are name/pattern…/body; the corpora's 1,576
-  `operator` nodes are operator symbols under binary_expression/unary_expression/paren_pattern), so
-  the gate was dead. Both are fixed and probe-pinned; the pattern gate is a dormant-guard repair,
-  and no fixture can catch its regression (head patterns parse as `constructor_pattern`, never as
-  applications), which is exactly why the probe asserts it directly.
-- M11 gates: FP probe genuinely **1.000/1.000** (the cached
-  `fp-observed.json` was stale — honest regeneration exposed 0.986/0.920,
-  fixed by emitting record fields + class-member methods; probe now real);
-  lifecycle PASS; census PASS (0 regex entries, census count unchanged).
-- Full battery: all **24 completed differentials re-verified at 1.000/1.000**.
+## Corpus results (312 files, 331,079 nodes)
+
+| | before | after |
+| --- | --- | --- |
+| symbols | 6,340 | **8,336** |
+| relationships | 11,108 | **30,558** |
+| exports | 4,443 | **5,093** |
+| import edges | 0 (the arrays were the only record) | **1,921** |
+| symbols with a `returnType` | 0 | **3,314** |
+| symbols with `parameters` | 0 | **1,712** |
+| symbols with `genericParameters` | 0 | **1,358** |
+| symbols with `comments` | 0 | **998** |
+| symbols with a `docstring` | 0 | **350** |
+| symbols with `qualified_calls` | 0 | **44** |
+| `class` symbols (instances) | 488 | **741** |
+| `macro` symbols | 0 | **556** |
+| unknown symbol kinds | 0 | 0 |
+| empty symbol names | 0 | 0 |
+| members without an `ownerName` | 0 | 0 |
+| crash files | 0 | 0 |
+| symbol-free files | 3 (all legitimately symbol-free include stubs) | 3 |
+
+**Every edge type is 100% resolvable** against the store's own three resolution
+strategies (bare name, `Owner.member` qualified, or the leaf after the first `.`
+for a dotted target — `parallel-indexer.ts:2734-2736`), and **every edge type is
+100% semantically provable** except `implements`, whose 322 external-class cases
+are external because almost every Clean class is imported (`instance Eq Int` names
+StdEnv's `Eq`). The instrument is `script/m14/clean-honesty-gate.ts`.
+
+## Performance (lane formula dimension 9)
+
+Analyzer only (parse excluded), warm, best of 5, measured back to back on the
+same machine, **load average disclosed on every row** because the lane formula
+(§9, #871/#909) says a row measured under load is unscored rather than evidence:
+
+| | ms/Knode | all five reps (ms) | loadavg |
+| --- | --- | --- | --- |
+| previous analyzer | 2.64 | 995, 874, 889, 933, 929 | 9.93 |
+| **this analyzer** | 5.60 | 2364, 2119, 1942, 1855, 1889 | 8.29 |
+| previous analyzer (repeat) | 2.78 | 1113, 1004, 920, 1013, 988 | 8.04 |
+| this analyzer (repeat) | 6.42 | 2516, 2136, 2127, 2308, 2207 | 6.85 |
+
+So: **2.2× more time per node, for 2.75× the relationships and 1.31× the symbols.**
+Per unit of OUTPUT the two are within ±20% of each other across the size
+quartiles, which is the honest way to state it — the new analyzer does not get
+faster, it gets more, and the extra output pays for the extra work:
+
+| quartile | nodes | prev ms/Knode | this ms/Knode | prev facts/ms-per-Knode | this facts/ms-per-Knode |
+| --- | --- | --- | --- | --- | --- |
+| Q1 | 1,954 | 4.79 | 11.40 | 30,452 | 27,151 |
+| Q2 | 11,863 | 4.44 | 6.19 | 25,271 | **36,133** |
+| Q3 | 45,456 | 2.51 | 5.84 | 33,566 | 30,639 |
+| Q4 | 271,806 | 2.51 | 6.71 | **17,620** | 15,074 |
+
+(Q1 is JIT warm-up on 40-node files and is excluded from any claim.)
+
+**Scaling: flat ms/Knode means linear.** Q2 → Q4 is a 22.9× size range and a
+24.8× time range — within 8% of linear, with ms/Knode moving 6.19 → 6.71. The
+dominant costs are the two tree walks (one name-collection pass and one emitting
+pass, down from six) and the per-frame O(1) complexity accumulation that replaced a
+per-callable subtree re-walk.
+
+## Hygiene: zero regex, and what it is checked against
+
+`RegularExpressionLiteral` count in the analyzer: **0**, by TypeScript's scanner
+(not by a grep — a grep false-positives on every `/**` and `*/`). This is a
+stronger and simpler claim than the M49.R2 policy's "no regex doing syntax work",
+and it is one a gate can actually verify.
+`script/m14/clean-completeness-gate.ts` also fails on: a declared node type in no
+bucket, a type in two buckets, a `handled_verified` type the analyzer does not
+reach, a `handled_verified` type no fixture exercises, a write-only private field,
+an uncalled private method, a no-op ternary, and an empty population (a gate that
+read nothing fails).
+
+**Every remaining text operation, classified.** There are 22 call sites of
+`slice`/`split`/`indexOf`/`includes`/`startsWith`/`endsWith` in the file, and
+they fall into exactly three groups:
+
+| group | sites | what it is |
+| --- | --- | --- |
+| **positional, on node text** | `unparenthesize` (299-300), quote strip (2534), qualifier split at the first `.` (2547-2548), dot strip (3179), comment-marker strip (3167-3173) | removes or splits at a FIXED offset. No pattern, no alternation, no repetition. These read a node's own spelling where the grammar does not expose a field for it. |
+| **array `includes` for dedup** | 1860, 2024, 2314, 2341, 2854, 2861, 2943 | `Array.prototype.includes` on a `string[]`, not string matching. |
+| **character predicates on a NAME** | `indexOf("StdEnv")` on an import's module name (738) → sets the `Standard Environment` pattern mark; `startsWith("_")` on an exported name (2607) → Clean's convention that an underscore-prefixed name is not exported | two real semantic rules stated as character tests on a name. This is the M49.R2 "char-scan second" category, and it is declared here rather than left for a reader to find. Both are pinned by fixtures. |
+| **line count** | `split("\n").length` (623) | `linesOfCode`. Not syntax. |
+
+Nothing in the file inspects source text to decide what a construct IS. Where a
+name is needed, it comes from a grammar field.
+
+The gate is **proven able to fail** on all four defect classes — a spec row dropped,
+a spec row claiming an unreachable type, a regex literal planted in code, and a
+write-only flag planted — which is the C-PRE pattern from the M12 corpus-claims
+gate: a check whose population is empty is itself a failure.
+
+## Fixtures
+
+`validation/m14/fixtures/clean/` — 8 fixtures, all passing under
+`bun run script/m14/run-fixtures.ts`:
+
+| fixture | what it pins |
+| --- | --- |
+| `definition-module-interface.dcl` | the declaration contract, all four `signature_name` shapes |
+| `signature-definition-merge.icl` | a signature and its definition are ONE symbol |
+| `instance-target-name-collision.icl` | the name-keyed export dedupe |
+| `import-modules-alias-884.icl` | a multi-module import's items and alias |
+| `expression-shapes.icl` | case / lambda / guard / where / comprehension / record / class shapes, and the qualified-call and pattern-position rules |
+| `declaration-forms.icl` | **new.** macro, generic, generic case, derive, special, fixity (both spellings), foreign export, class context, with- and where-locals |
+| `qualified-names.icl` | **new.** BOTH qualified-name spellings, and the selective import item list |
+| `type-and-expression-shapes.icl` | **new.** the type spine, every pattern shape, every operator spelling, comments, open-subset import markers |
+
+The three new fixtures exist because the F6 obligation ("every `handled_verified`
+type is exercised by a fixture") was not met: 11 of the analyzer's handled types
+had no fixture at all, so a claim in the spec had nothing behind it. All 99
+handled types are now fixture-backed, and the gate says so on every run.
+
+## Known limits, stated
+
+0. **30.1% of real Clean files do not parse under the pinned grammar.** 655 of the
+   2,179 wide-corpus files contain at least one ERROR node (25,683 in total), from
+   the compiler's `<<@` directive, the `import code from` FFI form, `*`-parameter
+   synonyms, mixed-arity class contexts, several names before one `::`, and nine
+   other sampled shapes (`clean-census.ts` reports the line; the shapes are in the
+   review). This is a grammar limitation and it caps the whole lane: for nearly a
+   third of real Clean the analyzer reasons about a damaged tree. Every percentage
+   in this document is a percentage OF WHAT PARSED.
+1. **`index_access` emits nothing** (2,823 corpus sites) — spec gap `CL-G1`. An array
+   index is a real operation on the indexed value's type and the analyzer does not
+   know that type. Naming the receiver's NAME would be a `uses` edge to a value,
+   which is the FP family the lane forbids. Recorded, not ruled.
+2. **An uppercase applied name that is not an in-file data constructor emits no
+   edge** — the 24,986-site row above. Those sites are counted apart by how much the
+   analyzer knows: **19,365 it cannot classify** (`declinedInstantiations`) and
+   **65 it can** (`typeCoercions` — an application whose head is a declared type,
+   i.e. Clean's coercion). An earlier version of this document quoted 1,049 as one
+   number at the 312-file scale, which conflated the two and understated the
+   population thirteenfold.
+3. **`?Just 0` in a body is an ERROR in the pinned grammar**, so the unboxed BUILD
+   direction has no readable spelling and is unreachable (ruling `CL-D8`); the
+   unboxed PATTERN direction is handled.
+4. **An uppercase record field name breaks the grammar** — `:: Config = { Diagnostic
+   :: !Bool }` parses with the `{` as an ERROR, the field as a `data_constructor`
+   and the field's own `:: Bool` as a second `type_definition`. The corpus avoids
+   it by convention (record fields are lowercase), and the fixture that would have
+   pinned it was rewritten rather than enshrined.
+5. **`from M import :: (Ok)` — a subset with no name in front of it — is
+   unreadable**: the grammar ends the declaration at the `::`, emits an `identifier`
+   with EMPTY text, and re-reads `(Ok)` as a `type_signature` taking the next line
+   with it (`CL-G5`).
+6. **A `where_block`'s extent runs to the next DECLARATION**, and a comment written
+   at column 0 after an indented `where` body is absorbed INTO that block. A blank
+   line does not close it. A declaration between the two is required, which is what
+   the corpus does and what `afterWhere` in the fixture does.
+7. **The M14.0.F5 differential is red on this lane** (527 MISSING on the Clyde
+   draw, 49 on clean-stdlib) for the reason in the 24,986-site row. The oracle is
+   shared (`script/m14/differential.ts`) and was not modified.

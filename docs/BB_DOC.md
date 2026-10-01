@@ -102,6 +102,43 @@ schema version.
 included claim must still cite concrete symbols, files, or relationships.
 `api` does not infer undocumented HTTP behavior from a function name alone.
 
+**Every mode emits its declared section set, always** — including a section with
+no evidence, which then carries an explicit `not-observed` unknown rather than
+being absent. That is what makes the completeness gate meaningful: `expected` is
+the mode's declared section count, and `covered` is how many of them are
+present. A required section is never dropped for `audience` or `detail`; those
+two inputs select OPTIONAL sections and the per-section evidence cap, so a
+reader can never be handed an incomplete document by asking for a smaller one.
+
+`file` mode accepts a repository-relative path. An exact path, an absolute path,
+a directory prefix, and a bare file name (with or without its extension) all
+resolve. An absent path and an unresolved one are distinguishable, and the
+latter says which of the four forms it tried.
+
+**What `risks` is built from**, and why it is not "the analysis findings":
+three sources, all read from the index, all cited. Open
+`brain_analysis_finding` rows, files with recorded parser errors, and symbols at
+a measured complexity at or above a stated threshold. A required section that is
+always empty is a placeholder, not a measurement — and it WAS always empty,
+because no read path in this tool produces an analysis finding while the index
+held, on one measured corpus, 1 099 files with recorded parser errors and
+185 477 symbols carrying a measured complexity. When all three sources are
+empty, the section says exactly that, because the absence of evidence is not
+evidence of absence.
+
+**Docstrings are read from disk, and only where a comment is a comment.** A
+markdown symbol's name is a heading and `*` is the BOLD delimiter, so a
+comment scanner above a heading reads the previous English line as a JSDoc
+block; measured on this repository's own index, 79 of 3 598 markdown symbols
+received a fabricated docstring at `extracted` / `1.0`. Languages whose symbol
+names are prose are therefore excluded by asking
+`language-detection.ts` — the registry that admits a file to an analyzer — so
+the doc lane and the router cannot drift. The remaining limit is stated rather
+than papered over: the scanner knows `/**`, ` * ` and `//`, and not `#`, `;` or
+`--`, so a symbol in Ruby, Python, Perl, shell, Clojure, Lisp, SQL or Lua
+reports "not observed" instead of a guess. Teaching it those belongs to the
+analyzer lane, which knows each grammar.
+
 ## Fact And Prose Rules
 
 - **Extracted** facts are directly present in indexed source or tables: names,
@@ -131,9 +168,17 @@ depend on current source. Missing source or unavailable tables produce
 valid and must explain whether no target was found or the evidence was
 unavailable.
 
-`bb_doc` never refreshes implicitly. Callers must explicitly refresh through
-`bb_health`/`bb_refresh`, then request documentation again. This keeps the
-operation read-only and makes the source snapshot deterministic.
+`bb_doc` is a read path and participates in the shared inline auto-refresh
+(M43.A1/A2), like `bb_search` and `bb_analyze`: when the files a document
+cites are stale, the handler reindexes exactly those files within budget and
+**regenerates** the document, so an answer is never built from the rows a
+refresh just replaced. The repair is declared in an `autoRefresh` line, and
+`refresh: false` (or `BB_NO_AUTO_REFRESH=1`) opts out and answers from existing
+data with the staleness block. A decline is always declared with its reason.
+
+The read-only guarantee is unchanged: `bb_doc` never writes source, never
+creates a file, and never calls `bb_edit`. The only write it can cause is a
+reindex of files that already exist, bounded and declared.
 
 ## Examples And Diagrams
 
@@ -161,11 +206,42 @@ interface QualityReport {
 }
 ```
 
-The deterministic gate fails when a claim has no citation, a citation points to
-an invalid symbol/file span, an unsupported claim is presented as fact, the
-output exceeds `maxTokens`, or required mode sections are absent. Stale
-citations are warnings for inventory sections and failures for current-behavior
-claims. Unknowns are counted toward completeness and must be visible.
+`passed` is the conjunction of exactly four things, and nothing else:
+
+1. **factuality** — every claim carries a citation, AND the result is not empty.
+   A document with no evidence at all is a factuality failure: there is nothing
+   for it to be factual about. (`citations.every(...)` over an empty array is
+   vacuously true, which is how an empty result once reported `passed: true`.)
+2. **references** — no citation is broken and none points at a missing file.
+3. **budget** — the measured size of the WHOLE returned object is within
+   `maxTokens`. Over budget, the largest sections are trimmed and every drop is
+   declared as an `output-budget` unknown. A budget too small for the required
+   sections is reported as unmet, with the shortfall named; it is never met by
+   dropping a required section. The figure is measured with a same-width
+   placeholder in the field and that measurement is what is reported, so
+   `estimatedTokens * 4` is never smaller than the payload it describes — the
+   figure a caller budgets from must not be an under-count.
+4. **completeness** — every declared section for the mode is present.
+
+Stale evidence is a **warning**, not a failure: the spec makes it a failure for
+current-behavior claims, and this result makes no such claim. Unknowns are
+counted in `completeness.unknown` and are always listed; they do not by
+themselves fail the gate, because declaring a gap is the tool working, not
+failing.
+
+**Two bounds shorten a document, and they compose.** The per-section evidence
+cap (`detail` × `limit`) and the output budget each report what they removed,
+and the three numbers close:
+
+```
+availableBeforeCap = notSelectedByCap + afterCap
+afterCap          = droppedByBudget + emitted
+```
+
+An earlier version announced both from the same list, so a 12-of-24
+documentation map reported "18 more dropped" — 36 accounted for out of 24, on
+every section of a real document. A count a reader can check and finds wrong is
+worse than no count, because it condemns the whole quality block.
 
 ## Website Reference Metadata
 
@@ -200,7 +276,8 @@ website ingestion. A website may render `DocResult` directly, cache it by
   empty. No fabricated mermaid/graph output is produced.
 - Examples are only emitted when source-backed evidence exists; otherwise
   `includeExamples=true` records an honest `not-observed` unknown.
-- No source writes, refreshes, network calls, or generated test files.
+- No source writes, network calls, or generated test files. The only write it
+  can cause is the bounded, declared reindex of files it already cites.
 - Errors are structured and identify the mode, target, and unavailable evidence.
 
 See `docs/BB_DOC_EXAMPLES.md` for representative Markdown and JSON output.
@@ -217,6 +294,21 @@ false, and that deleted sources yield `freshness=missing` plus a real
 `references.broken` count (no longer hardcoded to zero).
 `script/m20/verify-doc-examples-diagrams.ts` proves examples/diagrams are never
 fabricated (honest `not-observed` unknowns) and that removing a relationship
-from the index removes the corresponding fact (tamper-negative). These are
-fixture-level evidence; real-repository documentation coverage is owned by
-M20.X2.
+from the index removes the corresponding fact (tamper-negative).
+
+`script/m20/verify-doc-truth.ts` is the gate for the class the three above
+cannot see. They build a two-file temporary project and prove that citations
+RESOLVE and that bad input is REFUSED. None of them asks whether a statement is
+true of the source, or whether the result's own metadata is self-consistent — and
+a corpus review over eight indexed upstream repositories found 19 defects in
+exactly that blind spot. Every predicate in this gate is shared with a negative
+twin that proves it can convict, and the gate records a check with no detail as
+a harness error rather than as a pass.
+
+The same predicates run against real repositories by
+`fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
+**382 checks pass, 0 fail, 1 disclosed skip, 56/56 negatives proved able to
+fail**, over `rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`
+and `perl5` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript and Perl. A corpus
+that is absent or too small to be meaningful is recorded as `skipped` with the
+reason, never as `passed`.

@@ -37,7 +37,7 @@ grammar errors or missing tokens**.
 | documentation/comments | ❌ (not extracted) | non-goal for M12.07 (matching the Java-family fixture contract) |
 | complexity metrics | ✅ | cyclomatic on `if`/`for`/`foreach`/`while`/`case`/`catch`/conditional/`&&`/`\|\|`; `complexity` = cyclomatic |
 | syntax errors | ✅ | ERROR/MISSING nodes pushed as warning `ParseError` (never silently dropped) |
-| decorators/attributes | ✅ | `attribute_list` → attribute names (`[Flags]`, etc.) |
+| decorators/attributes | ✅ | `attribute_list` → attribute names (`[Flags]`, etc.). **The published value is the type's NAME** — a `generic_name` name child is read (it was in no branch before 2026-09-28, so `[Marker<int>]` published nothing) and the type arguments are stripped through `csharpCleanTypeLeaf`, so `[System.Marker<int>]` publishes `System.Marker` and its plain twin `[Marker]` publishes `Marker` (D2) |
 
 ## Relationship ontology
 
@@ -49,7 +49,7 @@ grammar errors or missing tokens**.
 | instantiates | ✅ | `object_creation_expression` (`new Foo(...)` → `Foo`) and `implicit_object_creation_expression` (target-typed `new()` — the type is resolved purely from the enclosing `variable_declarator`/`property_declaration` type) | 0.95 |
 | overrides | ✅ | `override` modifier (C# keyword) + enclosing class supertypes → owner-qualified source, declaring-parent target via companion (`override-context.ts`, shared with Java/Kotlin/Scala/Groovy); without context → first hierarchy parent (deterministic per-file default) | 1.0 |
 | uses | ❌ (not emitted) | C# member-access reads are covered at call level; not materialized as separate `uses` edges in M12.07 (matching the Java-family `uses` only for field-access in Java fixtures; C# keeps the contract minimal) | — |
-| references | ✅ | `using_directive`/`using_static_directive` → source `root` (rewritten to the file's primary type), target = full module path | 0.9 |
+| references | ✅ | **three families, and the target is a NAME in all of them.** (1) `using_directive` → the module path as written; for an ALIAS whose target is a type, the module is the type's **name** (D3) and each type argument is published as its own `references` edge marked `using_type_argument` / `reference_qualified`. (2) the declared-type graph (R9) — a written type name, a qualified name's **leaf**, and a generic's base **and every argument** (D1). (3) nothing else | 0.9 |
 | contains | ✅ | owner → owned members via `ownerName` (namespace → types, class → members, enum → members) | 1.0 |
 | depends | ✅ | imports → References | 0.9 |
 | field_access | ❌ (not emitted) | covered at call level; not materialized as separate edges | — |
@@ -268,3 +268,225 @@ Verification: 13-shape probe matrix (fixes + 8 controls + 1 declared
 limitation: I-named external CLASSES still follow the first-base rule).
 Fixture +4 pins/+2 forbids; 2 new mutants — 192/192 caught; F5 100%/0/0;
 F1/F2/F3/F4/F6/SPEC/CC1/honesty green.
+
+## 2026-09-28 deep round — a type expression is not a name (5 defects, 2 of them in the oracle)
+
+**Why this round exists.** The lane was closed at 9/9 cells on 2026-09-23 on two pinned
+corpora — `powershell` and `fsharp` — whose `.cs` files are almost entirely *generated*
+(PowerShell's cmdlets are emitted from cmdlet XML). A generated-code corpus is a fine torture
+test and a poor *language* corpus: it is monomorphic, it writes short names, and it does not
+use the shapes below. This round cloned two corpora the lane had never been drawn on
+(`dotnet/roslyn`, 18,185 `.cs` files; `dotnet/aspnetcore`, 10,667), read all 4,041 lines of the
+analyzer, and then adjudicated every relationship the census could name. Full record, with
+every instrument and every correction to this round's own measurements:
+`reviews/csharp/m60-deep-round-2026-09-28.md`.
+
+The three analyzer defects are one class. This lane turns a *written type* into a *published
+name*, and in every position the contract is the same — the published value is a NAME. Three
+positions did not enforce it:
+
+- **D1 — a QUALIFIED generic lost every type argument in the declared-type graph.**
+  tree-sitter-c-sharp spells `System.Collections.Generic.Dictionary<string, Widget>` as
+  `qualified_name […, generic_name [identifier, type_argument_list]]`, and the leaf-only walk
+  reached the identifier while never touching the argument list hanging off the same node. The
+  **plain** twin took the branch that walks the arguments, so one type published two different
+  dependency sets depending only on how the source spelled it — and the qualified one dropped
+  exactly what R9's own header calls "the real dependency". Measured 39 occurrences in 12 of
+  1,500 roslyn files against 3,033 plain ones in 725: real and rare, the combination that
+  survives every depth draw. One `type_argument_list` lookup, the same one the working branch
+  already used.
+- **D2 — a GENERIC attribute published no decorator at all.** `extractAttributes` named three
+  node types; a generic attribute's name child is a fourth (`generic_name`). `[Marker<int>]`
+  published `[]`, and the qualified twin that *did* match published the whole spelling
+  `"System.Marker<int>"`. 1 occurrence in 1,500 roslyn files, **13 in 1,500 aspnetcore** —
+  `[JSMarshalAs<JSType.Number>]` and `[TestRenderMode<…>]`, production code. The position now
+  goes through the lane's one canonical-name rule, so both spellings publish a name.
+- **D3 — a `using` ALIAS named a type expression.** `using PropertiesMap = ImmutableDictionary<(UnusedValuePreference
+  preference, bool isUnusedLocalAssignment, …), …>;` published that whole string — type
+  arguments, tuple **element names**, nullability — as both the `imports[].module` and the
+  `references` target. 132 occurrences in 116 of 1,500 roslyn files. The module is now the
+  type's name, and the arguments are not dropped: each is published as its own `references`
+  edge marked `using_type_argument`, carrying `reference_qualified` (NOT the module edge's
+  `import_based` — an argument is a type reference, and `classifyEvidenceTier` keys on
+  exactly that flag pair).
+
+Two more were found by the lane's own F5 differential the moment it was pointed outside its
+pinned pair, and both were in the **oracle**, which is the more serious half of a round that
+reports "0 unexplained":
+
+- **D4 — the cross-file type-kind companion was a last-write-wins map over a NAME, and a name
+  is not a type.** `interface Base` is declared in twelve roslyn files, so the companion
+  answered "interface" for every file in the repository, including one that declares
+  `public class Base` in its own file — one MISSING edge, `implements Derived -> Base`, on a
+  declaration with no ambiguity in it at all. Measured over 1,500 files: **92 of 2,666 declared
+  names (3.5%) are declared under more than one kind** (`C` is a class in 172 files and an
+  interface in one), and **378 of the 1,227 base-list entries resolvable only through the
+  companion (31%) were decided against the file's own declaration of that name**. The fix is to
+  make the companion sound: a name enters it only when EVERY corpus declaration of it is an
+  interface, so an ambiguous name is absent and the analyzer falls back to its documented
+  deterministic rule — an honest default instead of a confident answer that is wrong.
+- **D5 — the oracle's CSD9 mirror was missing.** A C# 12 primary constructor with a base list
+  puts the base call's argument list in the `base_list` as a sibling; the analyzer has skipped
+  it since 2026-09-04 and the oracle never did, so it published
+  `implements OrNode -> (left,right)`. **1,168 occurrences** in roslyn's `src`, 0 in either
+  pinned corpus. A fix applied to one side of a differential is a fix on one side.
+
+### What was measured and found clean, at corpus scale
+
+- **Calls: 100%.** Every invocation callee leaf in 400 roslyn files against the emitted
+  `calls`/`uses`/`instantiates` edges — 810 ruled (CS-B2's `nameof`, the Object builtins, the
+  grammar's `if(…)`-as-invocation), **0 unruled**. The instrument prints the source line of
+  every row, because a count is a question and a printed line is an adjudication.
+- **Symbols: 100% for every symbol-bearing declaration** (class 437/437, method 2,068/2,068,
+  property 410/410, constructor 129/129, record 9/9, struct 16/16, interface 11/11, enum 8/8,
+  enum_member 22/22, file_scoped_namespace 399/399). The three partial rows are accessors (not
+  symbols, by design), a catch variable, and one instrument artefact.
+- **Declared-type graph: 0 missing / 0 extra** on 400 roslyn (5,726/5,726) and 400 aspnetcore
+  (2,489/2,489) files, by an instrument that computes the expected set from the tree with its
+  own walk — the analyzer's word is never its own evidence. That measurement is clean *because
+  neither draw contains the D1 shape*, and that scope limit is recorded rather than smoothed:
+  the first version of the instrument reported 213 "lost" arguments and all 213 were its own
+  noise, so it was withdrawn and rewritten.
+- **F5 at 120 files on four corpora: 0 missing / 0 unexplained / 100% coverage** —
+  roslyn 11,577/11,577, aspnetcore 3,760/3,760, and both pinned corpora. These are scoped probe
+  runs: `differential.ts` refuses to write the canonical 31-language artifact from a scoped
+  run, so the lane's milestone claim still reads 9/9 from `202424d2` and these are the numbers
+  a re-emission has to reproduce.
+- **Gate state:** F1 csharp PASS (92 refs, 0 unknown, 0 unknown fields) · F3 **16/16** · F4
+  **55/55** mutants caught (4 new, one of which **survived its first run** and was made
+  catchable by pinning `meta.evidenceClass` — a claim no test written on targets can see) ·
+  F6 198 fixture types, 0 uncovered, 0 dead literals · SPEC A–H 8/8 · hygiene clean ·
+  typecheck clean for this file.
+
+### Standing corrections this round makes to this document
+
+- The `uses ❌` row above still reads "not materialized as separate `uses` edges", which is
+  about `field_access`. Bare-identifier value reads (`uses`, confidence 1.0, marker
+  `identifier_usage`) and member-access reads (`uses`, confidence 0.7, marker
+  `csharp_field_access`) HAVE been emitted since CS-R1; the row predates it and is corrected
+  here rather than in silence.
+- `extractTypeString` still lists `type_identifier` in its inert type list. F1 reports 0 unknown
+  node types, so the pinned grammar *does* enumerate it in v0.23.5; the 2026-09-04 review's
+  claim that no such node exists predates the grammar upgrade.
+- The R9 declared-type **boundaries** list (`foreach`/`catch`/`using` headers, attribute
+  argument types, `where T : Dep` constraint clauses) is unchanged by this round. One boundary
+  is now *closed* rather than opened: a `using Alias = T;` directive's type arguments were
+  previously unwritten, and D3 writes them.
+
+## 2026-09-28, later — the labels that had nobody on the other side
+
+**The premise: an oracle that agrees with the lane finds nothing.** This round's first question
+was "are all the relationships emitted?", and the honest answer — from a ledger
+(`script/m14/tmp/cs-deep-18-relationship-ledger.ts`, 300 roslyn files, 25,374 edges) — was that
+only **60.3%** of them had an independent corpus derivation. `uses` (24.9%), `contains` (12.9%)
+and `overrides` (1.6%) were adjudicable by nothing but the lane's own fixtures. Writing the
+missing truth for two of the three found **two more fabrications**, which is the argument for
+doing it: a MISSING row had to become *expressible* before it could be seen.
+
+### `overrides` joins the compared set
+
+The class carried a paired exclusion on both sides, commented as *"the truth DERIVES the rule it
+would have to adjudicate, so a comparison would be self-agreeing."* That was **half true**:
+`deriveCSharpEdges` pushed `overrides` exactly once, for the C923 interface-member form. The
+`override`-**modifier** form had no truth derivation at all — which is what **299 UNEXPLAINED
+edges** on a 60-file draw were (8.8% of the lane's output; not wrong edges, edges with nobody on
+the other side). Both forms now derive from one input (the per-type member and base tables the
+C923 walk builds). The **signature is deliberately not re-derived** — a second spelling of the
+parameter-type rule free to drift is the failure a differential exists to catch — so this truth
+is a documented **lower bound** on the target set. Same 60 files, same sample hash
+`37c7d7bd9f8c8914`, only the truth side changed: **13,221 / 13,221, 0 MISSING, 0 unexplained.**
+
+### `uses` (field-access half) joins the compared set — and found two fabrications
+
+- **CS-D6 — a READ dropped because something else in the function is CALLED by the same name.**
+  The guard `!emittedCalls.has(`${src}->${tgt}`)` was keyed on (source, target) with **no site**.
+  Its stated purpose was to avoid duplicating a `calls` edge for a member access in callee
+  position, but `isCallee` already does that **structurally** (span against the invocation's
+  `function` field). The name-keyed guard was a coarser duplicate of a precise rule, and in C# a
+  static member and a method call can share a name, so real reads vanished — 4 occurrences over
+  150 real roslyn files, e.g. `_options.X.Severity == ReportDiagnostic.Suppress` dropped because
+  `context.ReportDiagnostic(d)` is called in the same function.
+- **CS-D7 — a declared TYPE published as a read, in two positions.** A **field's** type is not a
+  direct child of `field_declaration` (the grammar nests it under `variable_declaration`), so the
+  "first direct identifier" gate never saw it and `public Widget Widget;` published
+  `uses Collides -> Widget` on its own line. For a **property** the first direct identifier is the
+  *type*, so the gate took the type and let the property's own *name* through —
+  `public Widget Widget { get; set; }` published `uses Widget -> Widget`. Both now read the
+  grammar's `name` / `type` **fields**; the declared-type graph already publishes these names, so
+  R9 owns the type position and this pass stops claiming it.
+
+Both claims are held from **both** directions: the new truth reconciles **3,894 / 3,894, 0 either
+way** over 200 files, and the **pre-fix** analyzer materialised from git publishes neither CS-D6
+read and both CS-D7 self-reads when run over the same fixture. At corpus scale: **11,983 / 11,983,
+100%, 0 MISSING, 0 unexplained.** The **bare-identifier half** (617 rows, `identifier_usage`) is
+scoped **out** of the comparison and the limit is written into the allowlist, because it still
+has no truth and admitting it would report rows UNEXPLAINED for the truth's silence — a
+manufactured red. Lifting that is a one-line change once the derivation lands.
+
+### A sixth candidate, refuted and recorded as a boundary
+
+`resolveOverrides` Pass 3 does not check that the parent *declares* the member, and a probe
+produces exactly that shape — but on code that **compiles** it cannot happen, because C# requires
+an `override` member to come from the base *class*, and the base class is by language rule the
+**first** base-list entry. The probe's input is CS0115 (no suitable method to override). Measured
+over 400 real roslyn files: **642/642** override edges name a member declared in the same file,
+**0 fabrications.** Recorded as a boundary, not a fix.
+
+### Gates
+
+F3 **17/17** · F4 **57/57** (two new mutants, both CAUGHT) · F1 csharp PASS (**106 refs**, 0
+unknown) · F6 198 fixture types, 0 uncovered, 0 dead literals · SPEC A–H 8/8 · hygiene clean ·
+typecheck clean.
+
+### Oracle coverage, before and after
+
+| | share of emitted edges with an independent corpus oracle |
+|---|---|
+| before this round | **60.3%** |
+| after | **87.1%** |
+
+Remaining: `contains` (12.9%) — structurally self-agreeing, since it is derived from the same
+`ownerName` as the symbol table, so it cannot disagree with the symbols and is exactly why it is
+not independently checked — and the 617-row bare-identifier `uses` half.
+
+### `contains` — the last unoracled label, and it is clean
+
+12.9% of the output, 3,262 edges, and the class most likely to be wrong for a *structural*
+reason: the analyzer derives containment from `symbol.ownerName`, a field set during its own
+walk, so the class is **structurally self-agreeing** — it cannot disagree with the symbol table
+because it is built from it. An independent derivation walks the **tree** and rebuilds the owner
+chain from declaration nesting, never touching a symbol.
+
+**Ruled, not fixed: 2,442 / 2,442 over 200 roslyn files, 0 either way — on (owner, target)**,
+which is *stronger* than the harness's own label+target match, since a containment edge with a
+right member and a **wrong owner** is invisible to the gate and visible to this comparison.
+
+Six corpus rows arrived before the class was clean, and **all six were defects in the truth**,
+which is the point worth keeping: a new truth is not correct because it compiles. A nested type
+was attributed to the file's namespace instead of its outer type (the rule asked for "the nearest
+scope of the *other* kind"; the right rule is "the nearest scope of *any* kind"); an **enum** pushed
+no scope, so 53 of its members came out ownerless; a **record's positional parameters** were routed
+through the enclosing-scope rule instead of owned by the record; a record published its positionals
+but never its **own** containment edge; event-field names were not read from the declarator; and an
+**operator member's name** is written nowhere in the file (it comes from the grammar's `operator`
+field), which read as 6 UNEXPLAINED `operator ==` rows at 120-file depth. One row had the
+**analyzer** right for a reason the truth did not model: a file-scoped namespace covers the TYPE
+declarations that follow it as **siblings**, not a member — so a member-shaped declaration at the
+root is a fragment the grammar's error recovery flattened out of a class that failed to parse, and
+attributing 17 such members to the namespace was a wrong-owner claim.
+
+### Final oracle coverage
+
+| | |
+|---|---|
+| before this round | 60.3% of emitted edges had an independent corpus oracle |
+| after | **every label except one slice** |
+
+`calls` · `references` · `uses` (field-access) · `overrides` · `extends` · `implements` ·
+`instantiates` · `contains` — all compared, all 0 MISSING / 0 unexplained / 100% coverage at 120
+files on each of **roslyn (33,498), aspnetcore (6,603) and powershell (18,152)**.
+
+The one remaining slice is the **bare-identifier `uses` half** — 617 rows, 2.4% of output, marker
+`identifier_usage` — which needs lexical resolution to re-derive and is therefore still gated by
+its fixture and mutants alone, with that limit written into the allowlist rather than left to be
+discovered as unexplained rows. Lifting it is a one-line change once the derivation lands.

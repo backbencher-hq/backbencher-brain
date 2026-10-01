@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSourceTextColumn } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -106,6 +106,14 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // migrations go missing (the M22.W2 comment above): the DB every editor
       // and verifier opens is a PRE-EXISTING one.
       ensureSymbolDeclarationColumn(raw)
+      ensureFileMetadataColumn(raw)
+      // The symbol body, so content search can reach a word that appears only
+      // inside a function. Without it a project indexed before this column
+      // existed has NO searchable body, and the indexer's own INSERT fails with
+      // "no column named source_text" — measured on the first run of this
+      // change, which is why the migration is wired on the same open path as
+      // every other additive column rather than only on fresh databases.
+      ensureSymbolSourceTextColumn(raw)
     }
   }
 

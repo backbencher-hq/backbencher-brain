@@ -1,0 +1,170 @@
+{
+  "instrument": "script/m14/tmp/scss-grammar-ab.ts",
+  "purpose": "M14 grammar A/B for the SCSS lane: does a candidate wasm fix .scss files without breaking any that parsed cleanly, and is the local build the same parser as the package's shipped one?",
+  "base": "tree-sitter-scss@1.0.0, which is `grammar(require('tree-sitter-css/grammar'), {...})` over tree-sitter-css@0.20.0",
+  "candidateWasm": "wasm/tree-sitter-scss.wasm",
+  "q1_netWin": {
+    "files": 244,
+    "cleanBefore": 73,
+    "cleanAfter": 149,
+    "pctBefore": 29.9,
+    "pctAfter": 61.1,
+    "filesFixed": 76,
+    "filesRegressed": 0,
+    "stillFailing": 95,
+    "errNodesBefore": 5624,
+    "errNodesAfter": 3900,
+    "fixedSample": [
+      "element-plus/docs/.vitepress/vitepress/styles/base.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/common/switch.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/content.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/content/doc-content.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/content/table-of-content.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/css-vars.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/nav/menu.scss",
+      "element-plus/docs/.vitepress/vitepress/styles/navbar.scss"
+    ],
+    "regressedSample": []
+  },
+  "q2_perRepo": {
+    "element-plus": {
+      "files": 160,
+      "cleanBefore": 16,
+      "cleanAfter": 90,
+      "fixed": 74,
+      "regressed": 0,
+      "stillFailing": 70
+    },
+    "phpmyadmin": {
+      "files": 74,
+      "cleanBefore": 50,
+      "cleanAfter": 52,
+      "fixed": 2,
+      "regressed": 0,
+      "stillFailing": 22
+    },
+    "vue-core": {
+      "files": 1,
+      "cleanBefore": 1,
+      "cleanAfter": 1,
+      "fixed": 0,
+      "regressed": 0,
+      "stillFailing": 0
+    },
+    "vue-element-admin": {
+      "files": 9,
+      "cleanBefore": 6,
+      "cleanAfter": 6,
+      "fixed": 0,
+      "regressed": 0,
+      "stillFailing": 3
+    }
+  },
+  "q3_classReproduction": [
+    {
+      "id": "use-namespace",
+      "patch": "1/2",
+      "src": "@use 'sass:map' as map;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "use-star",
+      "patch": "1/2",
+      "src": "@use './vars' as *;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "use-plain",
+      "patch": "unpatched-forms-this-must-not-regress",
+      "src": "@use 'sass:map';",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "use-with-config",
+      "patch": "1/2",
+      "src": "@use 'x' as y with ($a: 1);",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "forward-as-namespace",
+      "patch": "1/2",
+      "src": "@forward './list' as list-gap;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "forward-as-dashed-prefix",
+      "patch": "1/2-DECLARED-NOT-SUPPORTED",
+      "src": "@forward './list' as list-gap-*;",
+      "before": true,
+      "after": true,
+      "verdict": "unchanged-broken"
+    },
+    {
+      "id": "forward-show",
+      "patch": "1/2",
+      "src": "@forward './list' show $horizontal-list-gap;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "variable-default-flag",
+      "patch": "2/2",
+      "src": "$brand: #f00 !default;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "variable-global-flag",
+      "patch": "2/2",
+      "src": "$x: 1 !global;",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "parameter-default-flag",
+      "patch": "2/2",
+      "src": "@mixin button($bg: $grey !default) { color: $bg; }",
+      "before": true,
+      "after": false,
+      "verdict": "FIXED"
+    },
+    {
+      "id": "important-still-parses",
+      "patch": "regression-control",
+      "src": ".a { color: red !important; }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "mixin-include-still-parses",
+      "patch": "regression-control",
+      "src": "@mixin m($a: 1) { color: red; }\n.b { @include m(2); }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    },
+    {
+      "id": "interpolation-still-parses",
+      "patch": "regression-control",
+      "src": "$p: a;\n.x-#{$p} { color: red; }",
+      "before": false,
+      "after": false,
+      "verdict": "unchanged-clean"
+    }
+  ],
+  "classReproFailures": []
+}
