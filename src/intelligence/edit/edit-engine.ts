@@ -465,6 +465,18 @@ async function uniqueSymbol(
   return match
 }
 
+/** A file's base name with no extension — how brain_import spells a relative
+ *  module specifier (`./target` for `src/target.ts`). */
+function basenameNoExt(fileId: string): string {
+  return path.basename(fileId, path.extname(fileId))
+}
+
+/** Best-effort project-relative path, for a message a human has to act on. */
+function relativeTo(root: string, file: string): string {
+  const rel = path.relative(root, file)
+  return rel && !rel.startsWith("..") ? rel : path.basename(file)
+}
+
 async function validateFile(filePath: string, content: string): Promise<void> {
   const result = await ASTEngine.parseFile(filePath, content)
   const errors = (result.errors ?? []).filter((error: any) => /syntax error/i.test(error.message ?? ""))
@@ -635,13 +647,81 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const leftovers = parsedAfter.occurrences
       .filter((o) => o.text === symbolName && isReferenceSite(o, ""))
       .map((o) => `line ${o.startLine}: ${o.parentType || "reference"}`)
-    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
-    if ((callers > 0 || leftovers.length > 0) && request.force !== true) {
-      const detail = [indexedCallers, leftovers.length > 0 ? `${leftovers.length} live reference(s) surviving deletion (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})` : null].filter(Boolean).join("; ")
-      throw new Error(`cannot delete ${symbolName}: ${detail}; pass force=true after reviewing impact`)
+
+    // M68: check the files that IMPORT this module, not only this one.
+    //
+    // MEASURED, three call shapes, same declaration, same index:
+    //
+    //   import { target } from './target'          2 edges -> 'calls'    GUARDED
+    //   import { target as aliased } from './...'  1 edge  -> 'exports' ONLY
+    //
+    // So in the aliased shape the analyzer never resolved the call site to the
+    // imported symbol, the `calls` edge does not exist, and the guard's two inputs
+    // were both empty: zero indexed callers, and zero occurrences of the name in
+    // the DECLARATION file. The delete proceeded, and the result was
+    // caller.ts still calling a function that no longer exists — a build break
+    // reported as SUCCESS.
+    //
+    // The fix is not to trust the edges more (they are what failed here) but to
+    // consult the one index table that DID record the dependency: brain_import.
+    // For each file whose import resolves to this module, parse that file and look
+    // for the deleted NAME. An aliased import still spells the original name in
+    // its specifier — `import { target as aliased }` contains `target`, with
+    // parent=import_specifier — so the alias case is caught by name, not by
+    // needing to resolve the alias.
+    //
+    // WHY THIS DOES NOT OVER-REFUSE, which was the real design risk: refusing on
+    // any unresolved edge would make `delete` unusable on any project with
+    // imperfect edges, which is most of them. This instead requires POSITIVE
+    // evidence in each importing file — the name must actually appear there — so a
+    // file that imports the module for something else is not blocked. A `side-
+    // effect` import that never mentions the name is correctly not a reference.
+    // `import_path` is stored as the WRITTEN specifier — `./target`, not `target`
+    // — and `imported_name` duplicates it, so a comparison against the bare stem
+    // matched nothing. Measured: the query returned zero rows for a project whose
+    // importer was plainly recorded, which is why the first version of this guard
+    // still let the aliased delete through. The stem is compared on both the
+    // written form and the bare form so a specifier recorded either way matches.
+    const stem = basenameNoExt(match.fileId)
+    const importerRows = raw.prepare(
+      "SELECT DISTINCT i.file_id AS fileId, f.path AS path FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE i.project_id = ? AND i.is_external = 0 AND i.file_id <> ? " +
+        "AND (i.import_path = ? OR i.import_path = ? OR i.imported_name = ? OR i.imported_name = ?)",
+    ).all(projectId, match.fileId, stem, `./${stem}`, stem, `./${stem}`) as Array<{ fileId: string; path: string }>
+
+    const importerLeftovers: string[] = []
+    for (const importer of importerRows) {
+      let importerText: string
+      try { importerText = readFileSync(importer.path, "utf8") } catch { continue }
+      if (!importerText.includes(symbolName)) continue
+      let importerParsed
+      try { importerParsed = await parseForSafety(importer.path, importerText) } catch { continue }
+      for (const o of importerParsed.occurrences) {
+        if (o.text !== symbolName) continue
+        // An import specifier naming this symbol is the dangling dependency
+        // itself; anything else is a call. Both are survivors of the deletion.
+        if (!isReferenceSite(o, "") && !/import/.test(o.parentType)) continue
+        importerLeftovers.push(`${relativeTo(projectPath, importer.path)}:${o.startLine}`)
+      }
     }
-    if (leftovers.length > 0) {
-      warnings.push(`delete ${symbolName} (forced): ${leftovers.length} reference(s) remain in ${match.fileId}: ${leftovers.slice(0, 10).join("; ")}${leftovers.length > 10 ? "; …" : ""}`)
+
+    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
+    const totalLeftovers = leftovers.length + importerLeftovers.length
+    if ((callers > 0 || totalLeftovers > 0) && request.force !== true) {
+      const parts = [
+        indexedCallers,
+        leftovers.length > 0
+          ? `${leftovers.length} live reference(s) in the declaring file (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})`
+          : null,
+        importerLeftovers.length > 0
+          ? `${importerLeftovers.length} reference(s) in importing file(s) — ${[...new Set(importerLeftovers.map((l) => l.split(":")[0]))].slice(0, 4).join(", ")}`
+          : null,
+      ].filter(Boolean).join("; ")
+      throw new Error(`cannot delete ${symbolName}: ${parts}; pass force=true after reviewing impact`)
+    }
+    if (totalLeftovers > 0) {
+      const where = [...leftovers.map((l) => `${path.basename(match.fileId)} ${l}`), ...importerLeftovers]
+      warnings.push(`delete ${symbolName} (forced): ${totalLeftovers} reference(s) remain — ${where.slice(0, 10).join("; ")}${where.length > 10 ? "; …" : ""}`)
     }
     const pruned = await ImportPruner.prune(deleted, match.fileId)
     return { changes: [{ path: match.fileId, before: original, after: pruned }], warnings }
