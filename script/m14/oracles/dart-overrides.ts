@@ -440,10 +440,12 @@ function directSupertypes(node: any): string[] {
  * a distant framework base could displace an in-file intermediate that actually
  * declares the method, and the edge would answer a different question.
  *
- * A supertype the companion knows but that declares no match ENDS the walk, because
- * the companion is a flat map and cannot be walked further. That is a real limit of
- * a cross-repository index, not a shortcut, and it is why the in-file subset and
- * the cross-file subset are measured as two numbers rather than one.
+ * A supertype the companion knows but that declares no match ENDS THE WALK FROM
+ * THAT BASE, because the companion is a flat map and cannot be walked further. That
+ * is a real limit of a cross-repository index, not a shortcut — but it limits DEPTH,
+ * not breadth, and an earlier version of this file used `break` where it needed
+ * `continue`, abandoning the remaining supertypes of the same class. See the comment
+ * at the companion branch for the `implements A, B` case that exposed it.
  */
 export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<string>>): TruthEdge[] {
   // index the file: declaration name -> the methods it declares
@@ -553,8 +555,26 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
           if (companion.get(sup)!.has(m) && (overrideOf.get(cls)?.has(m) ?? false)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
+            break
           }
-          break
+          // The companion is a FLAT map, so there is nowhere further to walk FROM
+          // THIS BASE — its own bases are not in it. That is not a reason to abandon
+          // the walk: `direct` may hold other supertypes, and "nearest wins" is
+          // evaluated across all of them.
+          //
+          //     class SessionInfoHeader extends StatelessWidget
+          //         implements PreferredSizeWidget {
+          //       @override
+          //       Size get preferredSize => ...;
+          //
+          // `StatelessWidget` is visited first, the companion knows it, it declares
+          // no `preferredSize` — and the `break` that used to stand here ended the
+          // walk before `PreferredSizeWidget` was ever considered. The edge went
+          // un-derived while the analyzer published it at 0.95, resolved against the
+          // base that actually declares the member. The flatness of the companion
+          // limits DEPTH, not BREADTH, and the old code confused the two: it read a
+          // statement about walking further as a statement about giving up.
+          continue
         }
       }
     }

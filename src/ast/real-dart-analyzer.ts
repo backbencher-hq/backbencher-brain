@@ -1127,6 +1127,25 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
     const seenOverride = new Set<string>()
     for (const s of symbols) {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property) && s.ownerName) {
+        // A STATIC member is not overridable. Dart resolves a static call against the
+        // STATIC TYPE it was written on, so a subclass declaring the same static name
+        // shadows nothing and overrides nothing — there is no such thing as overriding
+        // a static method, and no `@override` is even legal on one.
+        //
+        // The gate that excludes FIELDS from this loop ("fields can never override in
+        // Dart") was written for fields; the same reasoning covers static methods and
+        // was never written down. It produced a fabricated edge at 0.95, the highest
+        // confidence this pass uses, for the one case where the claim is provably
+        // impossible:
+        //
+        //   class BrowserWebSocket implements WebSocket {
+        //     static Future<BrowserWebSocket> connect(Uri url, {...}) async { ... }
+        //   }
+        //
+        // claimed `BrowserWebSocket.connect -> WebSocket.connect`. `WebSocket.connect`
+        // is itself `static`, so the "base" does not have an instance member to
+        // override either. Two statics, one edge, no override.
+        if (s.isStatic) continue
         const heritage = heritageByClass.get(s.ownerName)
         if (!heritage || heritage.length === 0) continue
         // Pass 1: BFS over the full heritage graph (extends/implements/with,
