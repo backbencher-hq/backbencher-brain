@@ -240,6 +240,8 @@ const CONSTRAINT_KEY_ALLOWLIST = new Set([
   "license", "licenseId",
   // SOL-23: the NatSpec-vs-signature findings.
   "undocumentedParameters", "overDocumentedParameters", "returnDocumentedWithoutReturn",
+  // Data location on a declaration.
+  "stateLocation",
   // relationship rows
   "from", "to", "source", "target", "fromSymbol", "toSymbol", "relationshipType",
   "line_number", "confidence", "contains", "symbol", "isImport", "isContained",
