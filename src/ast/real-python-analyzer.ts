@@ -73,6 +73,8 @@ interface PythonContext {
   currentClassKey: string | undefined
   /** base leaves -> the class DECLARATION that has them, keyed by `currentClassKey`'s form */
   basesByClassKey: Map<string, string[]>
+  /** base leaves the source spelled QUALIFIED, per class declaration — those are external */
+  qualifiedBasesByClassKey: Map<string, string[]>
 }
 
 // Python builtins — never legitimate in-file call targets.
@@ -238,6 +240,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       currentClass: undefined,
       currentClassKey: undefined,
       basesByClassKey: new Map(),
+      qualifiedBasesByClassKey: new Map(),
       currentFunction: undefined,
       moduleName,
     }
@@ -382,12 +385,27 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
               this.extractFunction(node, ctx)
             }
             const prevFunc = ctx.currentFunction
+            const prevClassKey = ctx.currentClassKey
             ctx.currentFunction = nameNode.text
             stack.push({
               node,
               isExit: true,
               setClass: ctx.currentClass,
               setFunc: prevFunc,
+              // The class DECLARATION must be restored alongside the class NAME, and this exit
+              // frame omitted it — so entering ANY method cleared `currentClassKey` on the way
+              // out, and only the FIRST method of a class kept its owner's declaration.
+              // Measured in `test_dataclasses.py`: of fifteen methods owned by
+              // `TestMakeDataclass`, FOURTEEN had no `ownerClassKey`. The override resolution
+              // then fell back to the name-keyed base table, which is precisely the path that
+              // cannot tell a namesake from a base, and a class inheriting `unittest.TestCase`
+              // next to a local `class TestCase` published fabricated overrides again.
+              //
+              // It is the same mistake as PY-21's defect three, one field wide: two pieces of
+              // state that mean the same thing were tracked separately, and only one of them was
+              // maintained on every path. The exit frame is the ONLY place a scope is restored,
+              // which makes it the place a scope has to be complete.
+              setClassKey: prevClassKey,
             })
           }
           break
@@ -580,6 +598,31 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // may share a name in one file and have nothing to do with each other, so a name-keyed
     // base table hands a base-less class the bases of an unrelated namesake.
     ctx.basesByClassKey.set(`${className}@${node.startPosition.row + 1}`, baseClasses.slice())
+    // ...and separately, which of those bases were written QUALIFIED in the source. A base
+    // spelled `unittest.TestCase` NAMES A CLASS THIS FILE HAS NOT READ, whatever a local class
+    // happens to be called, and recording that distinction is what stops a leaf collision from
+    // becoming an inheritance claim.
+    const qualifiedBases: string[] = []
+    {
+      const argsNode = this.findChildByType(node, "argument_list")
+      if (argsNode) {
+        for (let i = 0; i < argsNode.namedChildCount; i++) {
+          const arg = argsNode.namedChild(i)
+          if (!arg || arg.type === "keyword_argument") continue
+          if (arg.type === "attribute") {
+            const leaf = this.baseClassLeaf(arg)
+            if (leaf) qualifiedBases.push(leaf)
+          } else if (arg.type === "subscript") {
+            const first = arg.namedChild(0)
+            if (first && first.type === "attribute") {
+              const leaf = this.baseClassLeaf(first)
+              if (leaf) qualifiedBases.push(leaf)
+            }
+          }
+        }
+      }
+    }
+    ctx.qualifiedBasesByClassKey.set(`${className}@${node.startPosition.row + 1}`, qualifiedBases)
 
     // Enum members: assignments with constant values inside the class body.
     if (isEnum) {
@@ -1542,7 +1585,29 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         // and reading overrides from that same metadata without re-applying the exclusion
         // made every such class publish `C.m -> C.m`: a class overriding itself, which is not
         // a thing a class can do. The exclusion belongs to both derivations, not one of them.
-        const bases = raw?.filter((b) => b !== s.ownerName)
+        // A base the SOURCE spelled QUALIFIED is a class this file has not read, and it stays
+        // one however a local class is named. `class Other(unittest.TestCase)` does not inherit
+        // from a local `class TestCase` — both independently inherit `unittest.TestCase` — and
+        // binding the override to the local namesake asserts an inheritance that does not
+        // exist. The `extends` EDGE still publishes the leaf, because a leaf is the declared
+        // spelling of the base; what cannot be right is treating that leaf as proof the file
+        // has read the base and knows its methods.
+        //
+        // This is the fifth defect the independent oracle found, and the smallest repro in the
+        // set — six lines, no corpus, no Cython:
+        //
+        //     import unittest
+        //     class TestCase:  def test_init_var(self): ...
+        //     class Other(unittest.TestCase):  def test_init_var(self): ...
+        //
+        // published `overrides Other.test_init_var -> TestCase.test_init_var`. The oracle
+        // already refused that binding — `qualifiedBases.has(b)` — which is why it showed up as
+        // four unexplained edges concentrated in `test_dataclasses.py`, where a dozen test
+        // classes each inherit `unittest.TestCase` beside a local class of that name.
+        const declaredQualified = s.ownerClassKey
+          ? (ctx.qualifiedBasesByClassKey.get(s.ownerClassKey) ?? [])
+          : []
+        const bases = raw?.filter((b) => b !== s.ownerName && !declaredQualified.includes(b))
         if (!bases || bases.length === 0) continue
         // MRO order: the first base that DECLARES THIS NAME AS A METHOD owns the override.
         //
