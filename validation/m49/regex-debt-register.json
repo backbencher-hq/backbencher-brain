@@ -10,7 +10,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 \u2014 the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
     },
     {
       "file": "real-cpp-analyzer.ts",
@@ -18,7 +18,7 @@
       "source": "/::|\\s+/",
       "operation": "split",
       "classification": "needs_review",
-      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 — the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
+      "note": "M49: ::/space split -> char walk [#736 cpp wave: line shifted by CP1 pre-pass insertion; regex retained] [systems wave commit 5c71e176: line shifted by CP-wave insertions; regex retained] [cpp second review commit 1235feca: line shifted by CP5-CP8 insertions; regex retained] [re-anchor 2026-09-21: line shifted by the cpp #825/#870 line round commit c7f03a67; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 797 -> 1220 and 819 -> 1242 \u2014 the merged cpp analyzer's positions; both sites are the same statements (rawText split, t split); regex retained]"
     },
     {
       "file": "real-javascript-analyzer.ts",
@@ -53,52 +53,12 @@
       "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [Sv1 #736: line shifted by wave edits; regex retained for inline then/as split] [Sv2 #736: line shifted by D-wave edits 932->986] [M49.W21: line corrected 986 -> 1051 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1051 -> 1083 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1083 -> 1187 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family svelte rounds; regex retained]"
     },
     {
-      "file": "real-vue-analyzer.ts",
-      "line": 45,
-      "source": "/line/i",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "M49/#868: the SFC seam's metadata-line mirror \u2014 tests a metadata KEY NAME for 'line' (decoratorLine/decoratorLines/line) to apply the script-block offset to every line-valued key. No AST field enumerates arbitrary metadata key names, so this is a key-name classifier, not content parsing; pinned by the #868 vue fixture + its seam mutant (revert the mirror and the mutant is CAUGHT)."
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "line": 1091,
-      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-      "operation": "other",
-      "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 966 -> 1021 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1021 -> 1053 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1053 -> 1088 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "line": 1103,
-      "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+(.+)$/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 978 -> 1033 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1033 -> 1065 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1065 -> 1100 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "line": 1117,
-      "source": "/^\\s*\\(?([^)]*?)\\)?\\s+(?:in|of)\\s+/",
-      "operation": "test",
-      "classification": "needs_review",
-      "note": "text micro-parse on node/source text \u2014 no AST path; documented in reviews/regex-policy.md [M49.W21: line corrected 988 -> 1047 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1047 -> 1079 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1079 -> 1114 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
-    },
-    {
-      "file": "real-vue-analyzer.ts",
-      "line": 1119,
-      "source": "/[A-Za-z_$][A-Za-z0-9_$]*/g",
-      "operation": "other",
-      "classification": "needs_review",
-      "note": "M49: identifier tokenizer -> char walk; v-for shape -> grammar-field descent [M49.W21: line corrected 990 -> 1049 by the web-line round's insertions; source unchanged, identity is file+source] [M49.W22: line corrected 1049 -> 1081 by the #868 web decorator/SFC-seam round; source unchanged, identity is file+source] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 1081 -> 1088 from the HEAD-blob census] [re-anchor 2026-09-21: line shifted by the web-family vue rounds; regex retained]"
-    },
-    {
       "file": "real-zig-analyzer.ts",
       "line": 1016,
       "source": "/[!*\\s\\[\\]\\{\\}]+/g",
       "operation": "replace",
       "classification": "needs_review",
-      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 1000 -> 1016 — the merged zig analyzer's positions; same statement (char-class strip); regex retained]"
+      "note": "M49: char-class strip -> char walk [systems wave commit 5c71e176: line shifted by Z-wave insertions; regex retained] [M49.R2 freshness 2026-09-20 (840ffbbb): line re-anchored 960 -> 967 from the HEAD-blob census] [M59.A7 systems line round commit e7697acd: line shifted 967 -> 1000 by the call-site line insertions; regex retained] [merge wave 2026-09-26 (e32ceaac): line re-anchored 1000 -> 1016 \u2014 the merged zig analyzer's positions; same statement (char-class strip); regex retained]"
     },
     {
       "file": "real-clojure-analyzer.ts",
@@ -154,6 +114,17 @@
       "baselineTotalBefore": 15,
       "baselineTotalAfter": 13,
       "note": "A row may only disappear when the source no longer holds the regex. Both removals are code fixes, not reclassifications: `/\\b(Serialize|Deserialize)\\b/` and `/\\b(Parser|Subcommand|Args|ValueEnum)\\b/` were name-set tests on a `#[derive(...)]` / clap attribute argument's TEXT, and the test only ever needed WORD-RUN MEMBERSHIP \u2014 which is what `hasBareWord` computes with a char-code scan, exactly the class of replacement the policy's rule 2 asks for (char-scan with an inline equivalence proof). The inline proof is on `hasBareWord` in the analyzer; the corpus proof is script/m14/tmp/rust-004-regex-equivalence.ts (1,481 files, 970 bodies, 0 mismatches between the two regexes and the scan). Rust is now a zero-regex lane."
+    }
+  ],
+  "closedByRemoval": [
+    {
+      "file": "real-vue-analyzer.ts",
+      "entriesRemoved": 5,
+      "closedAt": "2026-09-30 (vue final review)",
+      "gate": "script/m60/verify-vue-no-regex.ts",
+      "why": "The register existed to make an ACCURATE census survivable: a pattern that cannot be deleted gets an entry, a classification and a justification. That is the right instrument for a pattern with a real job and the wrong one for six that did not. Vue's were: a case-insensitive substring test (toLowerCase().includes), quote stripping on a `name:` value (the file's existing `unquote`), an identifier character class used in two places while a hand-written tokenizer for the SAME input sat one method away \u2014 so the lane had two tokenizers disagreeing on method \u2014 and the two `v-for` patterns, replaced by `parseVForDirective`. Zero is the only state in which the lane's own header claim is true.",
+      "evidence": "Zero literals at HEAD; the v-for replacement proved equivalent to the removed patterns over 788 generated shapes, and end-to-end byte-for-byte over all 1,139 corpus files (25,028 relationships, 7,078 symbols). One real bug was caught on the way \u2014 the first hand-written parser consumed the separator greedily instead of backtracking, differing on 170 of 799 shapes while all 47 fixtures still passed \u2014 which is why the equivalence sweep is a gate rather than a note.",
+      "note": "The register is NOT deleted and its other entries are untouched; this records a CLOSURE for the vue rows so a later audit can see the rows were retired deliberately rather than lost."
     }
   ]
 }
