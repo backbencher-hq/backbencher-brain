@@ -19997,6 +19997,36 @@ async function main() {
       for (const nm of SWIFT_PROTOCOLS) SWIFT_TYPE_KINDS.set(nm, "interface")
     }
 
+    // M60: dart reads `AnalyzeContext.projectIndex` for DARTD16's cross-file
+    // override pass. Built over `files` — the WHOLE corpus, not `sample` — because a
+    // subset index would resolve a file differently depending on what else happened
+    // to be sampled, which `src/ast/project-index.ts` names as a worse failure than
+    // an unresolved edge. It is one parse pass per corpus and the indexer reads
+    // declarations only, not a full analysis, so it is the cheapest place to get
+    // cross-file facts.
+    //
+    // Without it the lane measured 100 MISSING / 219 EXTRA on the full corpus while
+    // every 60-file draw read 100% with MISSING 0 — the draw could not see the gap
+    // because the answer depended on having the base in the same file.
+    let dartProjectIndex: any = null
+    if (lang === "dart") {
+      try {
+        const mod: any = await import("../../src/ast/project-index")
+        dartProjectIndex = await mod.buildProjectIndexFromDisk(
+          path.join(ROOT, "wasm", "tree-sitter-dart.wasm"), files, mod.DART_DECLARATION_SPEC,
+        )
+        mod.buildResolutionTables(dartProjectIndex)
+        console.log(`  [project-index] dart: ${dartProjectIndex.typeKinds?.size ?? 0} types over ${files.length} files`)
+      } catch (e: any) {
+        // No index is the pre-existing behaviour, not a lane failure: the analyzer
+        // falls back to its first-parent pass, which is a weaker claim but a
+        // truthful one. Recorded rather than thrown so a missing wasm or a
+        // grammar change cannot take out the lane.
+        console.log(`  [project-index] dart: unavailable (${String(e?.message ?? e).slice(0, 120)}) — analyzer falls back to the first-parent pass`)
+        dartProjectIndex = null
+      }
+    }
+
     // M49 #760: cold-pool rotation — prefer never-sampled files each wave.
     // Falls back to warm files only when the fresh pool is exhausted.
     const pool = coldPoolPick(files, SAMPLE_PER_LANG, `${langRepo}:${lang}`,
@@ -20141,7 +20171,7 @@ async function main() {
           const eng = await import("../../src/ast/engine")
           result = await (eng as any).ASTEngine.parseFile(f, content)
         } else {
-          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> } : undefined)
+          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> } : lang === "dart" ? { projectIndex: dartProjectIndex } : undefined)
         }
       } catch (err) { noteSkip("analyzer-threw", relPath, err); continue }
       durations.push(performance.now() - tf0)
