@@ -715,6 +715,32 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!arr) { arr = []; byName.set(s.name, arr) }
       arr.push(s)
     }
+    // M60/SDJ-13b: the same rule, one step further. A base method may declare a
+    // trailing `using` clause that its implementation ELIDES:
+    //
+    //   trait SrcPos   : def startPos(using ctx: Context): SourcePosition
+    //   class SourcePosition extends SrcPos:
+    //     def startPos: SourcePosition = ...          // no clause, still an override
+    //
+    // That is legal Scala — a using clause is supplied at the call site, so a
+    // parameterless member implements one carrying only that clause. Compared as
+    // written the sigs are `(Context)` and `()`, so they never paired and the
+    // member was not recognised as an override at all. Measured on a 2,000-file
+    // scala3 draw: `startPos`, `endPos` and `focus` were 3 of the lane's 5
+    // remaining MISSING rows, all in SourcePosition.scala against SrcPos.
+    //
+    // So each method is indexed under a second sig with its TRAILING implicit
+    // parameters removed, and a child matches on either. Direction matters: only
+    // the BASE's elided form is added, so a child that ADDS a clause its base does
+    // not declare still fails to pair, which is correct — that is not an override.
+    // Elision removes only TRAILING implicits, so `foo(a: Int)(using C)` keeps its
+    // `a: Int` and cannot collapse onto a bare `foo`.
+    const sigTextElided = (m: ASTEngine.UniversalSymbol): string => {
+      const ps = m.parameters ?? []
+      let end = ps.length
+      while (end > 0 && ps[end - 1].isImplicit) end--
+      return sigText({ ...m, parameters: ps.slice(0, end) } as ASTEngine.UniversalSymbol)
+    }
     for (const s of symbols) {
       if (s.kind !== ASTEngine.SymbolKind.Method || !s.ownerName || s.metadata?.isPhantom) continue
       let byName = methodSigsByOwner.get(s.ownerName)
@@ -722,6 +748,7 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       let sigs = byName.get(s.name)
       if (!sigs) { sigs = new Set(); byName.set(s.name, sigs) }
       sigs.add(sigText(s))
+      sigs.add(sigTextElided(s))
     }
     // BFS over the in-file supertype chain for a non-private ancestor method
     // with the same name and signature (the declaring parent of `s`).
@@ -743,7 +770,14 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (parentSigs?.has(sig)) {
           // Private members are not inherited (JLS/Scala): a private-only
           // exact-signature match is an independent member — keep searching.
-          const nonPrivate = ownerMethods.some((bm) => sigText(bm) === sig)
+          //
+          // SDJ-13b: the elided form counts as a match here too, or the guard
+          // would veto exactly the case the second sig was added for — a base
+          // `def startPos(using ctx: Context)` whose implementation writes no
+          // clause at all. The guard's JOB is "is some non-private ancestor
+          // member really declared under this name and signature", and the
+          // elided sig is a signature the ancestor genuinely declares.
+          const nonPrivate = ownerMethods.some((bm) => sigText(bm) === sig || sigTextElided(bm) === sig)
           if (nonPrivate) return parent
         }
         // ScalaD-H generic-substitution fallback: the parent declares the
@@ -2590,16 +2624,33 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (child.type === "parameters") {
         let hasImplicit = false
-        for (let j = 0; j < child.namedChildCount; j++) {
-          const paramChild = child.namedChild(j)
-          if (paramChild && paramChild.type === "implicit") {
+        // M60/SDJ-13c: this scanned NAMED children only, so it could never see
+        // Scala 3's `using` — `using` is an ANONYMOUS token in this grammar:
+        //
+        //   parameters "(using ctx: Context)"  (childCount=4 named=1)
+        //     [0] arguments       named=false  "("
+        //     [1] using           named=false  "using"     <-- not a named child
+        //     [2] parameter       named=true   "ctx: Context"
+        //     [3] )               named=false  ")"
+        //
+        // So EVERY Scala 3 using parameter was published with isImplicit=false.
+        // That is wrong on its own, and it also silently disabled SDJ-13b: the
+        // elided signature only drops TRAILING implicit parameters, so with
+        // `ctx: Context` not marked implicit the elided form was byte-identical
+        // to the full one and an implementation that omits the clause still did
+        // not pair with the declaration it implements. Scanned over ALL children,
+        // which costs nothing and also still catches Scala 2's named `implicit`.
+        for (let j = 0; j < child.childCount; j++) {
+          const paramChild = child.child(j)
+          if (paramChild && (paramChild.type === "implicit" || paramChild.type === "using")) {
             hasImplicit = true
             break
           }
         }
         for (let j = 0; j < child.namedChildCount; j++) {
           const paramNode = child.namedChild(j)
-          if (paramNode && paramNode.type === "parameter") {
+          if (!paramNode) continue
+          if (paramNode.type === "parameter") {
             const paramName = paramNode.childForFieldName("name")?.text || ""
             const paramType = paramNode.childForFieldName("type")?.text || ""
             parameters.push({
@@ -2607,6 +2658,33 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
               type: paramType,
               isImplicit: hasImplicit,
             })
+            continue
+          }
+          // M60/SDJ-13: a Scala 3 `using` clause may OMIT the parameter name, and
+          // then the grammar does not emit a `parameter` node at all — the type
+          // sits directly under `parameters`:
+          //
+          //   def sourcePos(using Context)      -> parameters > type_identifier("Context")
+          //   def sourcePos(using ctx: Context)  -> parameters > parameter("ctx: Context")
+          //
+          // Only the second shape was read, so the unnamed form produced an EMPTY
+          // parameter list. That is not cosmetic: `overrideSig` is built from the
+          // parameter TYPES, so an abstract `def sourcePos(using ctx: Context)` in
+          // a trait and its unnamed implementation `def sourcePos(using Context)`
+          // compared as `(Context)` against `()` and never paired, so the
+          // implementation was not recognised as an override of it.
+          //
+          // Measured on a 2,000-file scala3 draw (differential --sample 2000):
+          // 4 of the lane's 6 MISSING rows were exactly this — SourcePosition's
+          // `sourcePos`, `startPos`, `endPos` and `focus` overriding `SrcPos`'s,
+          // all four written `(using Context)` against a trait that writes
+          // `(using ctx: Context)`. The name is recorded as "" because none is
+          // written; `overrideSig` compares types, so the pair matches on the
+          // thing that is actually written.
+          const isTypeNode =
+            paramNode.type.endsWith("_type") || paramNode.type.includes("type_identifier")
+          if (isTypeNode) {
+            parameters.push({ name: "", type: String(paramNode.text), isImplicit: true })
           }
         }
       }
