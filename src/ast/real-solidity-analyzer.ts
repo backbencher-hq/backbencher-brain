@@ -327,6 +327,8 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     // pre-pass before the walk; consulted by both emit helpers.
     /** The node types a NatSpec comment may document. Declared once, here, because
      *  SOL-16 needs it and a second copy would be a second thing to forget. */
+    /** SOL-18 — declared type name -> "contract" | "interface" | "library". */
+    const typeKindByName = new Map<string, string>()
     const DECLARATION_NODE_TYPES = new Set([
       "contract_declaration", "interface_declaration", "library_declaration",
       "function_definition", "modifier_definition", "constructor_definition",
@@ -410,6 +412,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     let commentsRead = 0
     let commentsAttached = 0
     let documentedSymbols = 0
+    let symbolsWithComplexity = 0
     {
       // RUNS, not single comments — and the first version was wrong in a way that
       // looked correct. `nextNamedSibling` is the documented declaration only for
@@ -525,7 +528,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
      * (attribution), so calls made inside a method are attributed to the method
      * and a contract's incoming edges stay its own rather than its methods'.
      */
-    interface Frame { owner: string; scope: string; containerLine: number; yul: boolean; isType?: boolean }
+    interface Frame {
+      owner: string; scope: string; containerLine: number; yul: boolean; isType?: boolean
+      /** SOL-18 — branches seen inside THIS frame, and the symbol they belong to. */
+      branches: number
+      sym: ASTEngine.UniversalSymbol | null
+    }
     const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false }]
     const top = (): Frame => frames[frames.length - 1]
     const atFileScope = (): boolean => frames.length === 1
@@ -712,6 +720,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         // SOL-17 — first-class symbol field, so it crosses the worker boundary and
         // reaches the store rather than living only in metadata.
         ...(Array.isArray(meta.decorators) ? { decorators: meta.decorators as string[] } : {}),
+        // SOL-18 — `ownerKind` is a first-class symbol field (`pool-worker` forwards
+        // it), so it is set top-level as well as in metadata, for the same reason
+        // `docstring` is.
+        ...(typeof meta.ownerKind === "string" ? { ownerKind: meta.ownerKind as string } : {}),
         ...(typeof meta.docstring === "string"
           ? {
             docstring: meta.docstring,
@@ -755,9 +767,16 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       meta: Record<string, unknown> = {},
       parameters?: ASTEngine.Parameter[],
       containsLine: number | null = line,
-    ): void => {
+    ): ASTEngine.UniversalSymbol | null => {
       const clean = name.trim()
-      if (clean === "") return
+      // SOL-18 — this now RETURNS the symbol it declared, so a caller can hold the
+      // object and finish populating it later. It called `pushSymbol` and discarded
+      // the result, which is why the first attempt at per-symbol complexity published
+      // 1 for every function in the corpus: the frame carried `sym: null`, the exit
+      // branch had nothing to write to, and `symbolsWithComplexity` was 0. A feature
+      // that measures nothing still reports the pool-worker's default of 1, so it
+      // looked configured rather than broken.
+      if (clean === "") return null
       // SOL-16 — documentation attaches at the SINGLE point every declaration kind
       // goes through, for the same reason SOL-14's store refusal does: a rule
       // repeated per declaration kind is a rule that will be applied to some kinds
@@ -791,20 +810,34 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         // count.
         storeRefusedDeclarations++
         storeRefusedNames.add(clean)
-        return
+        return null
       }
       // SOL-6 — a declaration on a recovery line is the parser guessing.
       if (recoveryLines.has(line)) {
         symbolsSuppressedOnRecoveryLines++
-        return
+        return null
+      }
+      // SOL-18 — `ownerKind`, the kind of the TYPE a member belongs to. The
+      // TypeScript lane sets it from the scope stack and `pool-worker` forwards it, so
+      // a consumer asking "is this method on an interface or a contract" gets an answer
+      // for every language except this one. Read from the declaration table rather than
+      // re-inspecting the tree, so it cannot disagree with the kind the owner was
+      // DECLARED with.
+      const ownerKindName = typeKindByName.get(top().owner)
+      if (ownerKindName !== undefined && meta.ownerKind === undefined) {
+        meta.ownerKind = ownerKindName
+      }
+      if (kind === ASTEngine.SymbolKind.Class || kind === ASTEngine.SymbolKind.Interface) {
+        typeKindByName.set(clean, kind === ASTEngine.SymbolKind.Interface ? "interface" : "contract")
       }
       const key = `${top().owner}\u0000${clean}\u0000${kind}`
-      if (symbolMap.has(key)) return
-      pushSymbol(clean, kind, node, meta, parameters)
+      if (symbolMap.has(key)) return null
+      const pushed = pushSymbol(clean, kind, node, meta, parameters)
       const owner = top().owner
       if (owner && owner !== clean) {
         addRel(owner, clean, ASTEngine.RelationshipType.Contains, 1.0, containsLine ?? line, {})
       }
+      return pushed
     }
 
     // ---------------------------------------------------------------- tree reads
@@ -942,7 +975,16 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     const innerCalleeOf = (node: Node | null, depth = 0): Node | null => {
       if (!node || depth > 6) return null
       if (node.type === "identifier" || node.type === "member_expression" ||
-          node.type === "user_defined_type" || node.type === "struct_expression") return node
+          node.type === "user_defined_type") return node
+      // SOL-10 — for the call-WITH-OPTIONS form (`target.call{value: v}(…)`) the
+      // callee is a `struct_expression` whose NAME lives in its `type:` field. Stopping
+      // there, as this did, handed `memberObjectName` a wrapper with no `object` field
+      // and every such call got `calleeObject: ""` — so `target.call` and a hypothetical
+      // `super.call` became indistinguishable, which is the one distinction SOL-15
+      // relies on to tell a namespace builtin from a project member.
+      if (node.type === "struct_expression") {
+        return innerCalleeOf(node.childForFieldName("type"), depth + 1)
+      }
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
         if (!c) continue
@@ -1166,9 +1208,12 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
-    const openFrame = (node: Node, owner: string, scope: string, line: number, yul = false, isType = false) => {
+    const openFrame = (
+      node: Node, owner: string, scope: string, line: number,
+      yul = false, isType = false, sym: ASTEngine.UniversalSymbol | null = null,
+    ) => {
       openedFrames.add(nodeKey(node))
-      frames.push({ owner, scope, containerLine: line, yul, isType })
+      frames.push({ owner, scope, containerLine: line, yul, isType, branches: 1, sym })
     }
     /** SOL-15 — the nearest enclosing TYPE. `top().owner` cannot answer this inside a
      *  function body, because SOL-13 makes a function frame its own owner, so
@@ -1191,7 +1236,17 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       if (exit) {
         if (openedFrames.has(nodeKey(node))) {
-          frames.pop()
+          // SOL-18 — the frame is the LAST moment the symbol's own body has been seen,
+          // so the branch count is final here. Attributed through the frame rather than
+          // by re-walking each declaration's subtree: the file-level walk already
+          // visits every node, and a second traversal per symbol is exactly the cost the
+          // TypeScript lane measured and removed.
+          const done = frames.pop()!
+          if (done.sym !== null) {
+            done.sym.metadata.complexity = done.branches
+            done.sym.complexity = done.branches
+            symbolsWithComplexity++
+          }
           openedFrames.delete(nodeKey(node))
         }
         continue
@@ -1207,7 +1262,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the switch consumed them first and they were never counted at all. Measured
       // on a probe file carrying every branch construct in the language: 4, where
       // there are 7.
-      if (isBranchNode(node)) cyclomaticComplexity++
+      if (isBranchNode(node)) {
+        cyclomaticComplexity++
+        top().branches++
+      }
 
       let descend = true
 
@@ -1377,7 +1435,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
             }
           }
-          declareSymbol(name, kind, node, line, meta, collectParameters(node))
+          const modSym = declareSymbol(name, kind, node, line, meta, collectParameters(node))
           noteMember(top().owner, name)
           // SOL-12, a stated boundary rather than an accident: a file-scope FREE
           // FUNCTION is deliberately NOT added to the module's `exports` surface.
@@ -1395,7 +1453,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           // variable it does not contain. The function's own place in the
           // contract is already served by the `contains C -> f` edge emitted at
           // its declaration site, one line above.
-          openFrame(node, name, name, line)
+          openFrame(node, name, name, line, false, false, modSym)
           break
         }
 
@@ -1413,9 +1471,9 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
               anyBase: basesByContract.get(top().owner) ?? [],
             })
           }
-          declareSymbol(name, ASTEngine.SymbolKind.Method, node, line, meta, collectParameters(node))
+          const fnSym = declareSymbol(name, ASTEngine.SymbolKind.Method, node, line, meta, collectParameters(node))
           noteMember(top().owner, name)
-          openFrame(node, name, name, line)   // SOL-13
+          openFrame(node, name, name, line, false, false, fnSym)   // SOL-13
           break
         }
 
@@ -1425,10 +1483,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "constructor_definition": {
           const line = node.startPosition.row + 1
           const name = "constructor"
-          declareSymbol(name, ASTEngine.SymbolKind.Constructor, node, line,
+          const ctorSym = declareSymbol(name, ASTEngine.SymbolKind.Constructor, node, line,
             modifiersOf(node), collectParameters(node))
           noteMember(top().owner, name)
-          openFrame(node, name, name, line)   // SOL-13
+          openFrame(node, name, name, line, false, false, ctorSym)   // SOL-13
           break
         }
 
@@ -1438,10 +1496,10 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           const first = node.childCount > 0 ? node.child(0) : null
           const name = first !== null && first.type === "receive" ? "receive" : "fallback"
           const line = node.startPosition.row + 1
-          declareSymbol(name, ASTEngine.SymbolKind.Method, node, line,
+          const fbSym = declareSymbol(name, ASTEngine.SymbolKind.Method, node, line,
             { ...modifiersOf(node), isFallbackOrReceive: true }, collectParameters(node))
           noteMember(top().owner, name)
-          openFrame(node, name, name, line)   // SOL-13
+          openFrame(node, name, name, line, false, false, fbSym)   // SOL-13
           break
         }
 
@@ -2253,6 +2311,7 @@ const meta = modifiersOf(node)
         commentsRead,
         commentsAttached,
         documentedSymbols,
+        symbolsWithComplexity,
         callKinds,
         overridesEmitted,
         overridesEmittedExternal,

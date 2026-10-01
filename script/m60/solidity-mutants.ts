@@ -546,6 +546,51 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/complexity-flattened-to-one",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-18 REVERT: report complexity 1 for every symbol. This is not a hypothetical shape — it is EXACTLY what the lane published for its whole life, because `pool-worker` defaults to `s.complexity || s.metadata?.complexity || 1` and the analyzer set neither, so the field was populated corpus-wide with a constant that reads as a measurement. Caught by complexity-sol18's seven `complexity` pins.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => ({ ...s, complexity: 1, metadata: { ...(s.metadata ?? {}), complexity: 1 } })),
+    }),
+    caughtBy: "solidity/complexity-sol18",
+  },
+  {
+    id: "solidity/complexity-declaration-wide",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-18 REVERT, the attribution half: count branches over the whole FILE rather than per frame, so every function in a file inherits the file's branch total. It is the natural wrong implementation — the file-level cyclomatic count already exists and is computed in the same loop — and it would pass any fixture whose file has one branchy function. Caught by complexity-sol18: `straight` is 1 and `twoBranches` is 3 in the SAME file, so a file-wide count cannot satisfy both.",
+    transform: (r: any) => {
+      const md: any = r.metadata ?? {}
+      const fileTotal = typeof md.cyclomaticComplexity === "number" ? md.cyclomaticComplexity : 0
+      if (fileTotal <= 0) return r
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s.kind === "method" || s.kind === "function" ? { ...s, complexity: fileTotal } : s),
+      }
+    },
+    caughtBy: "solidity/complexity-sol18",
+  },
+  {
+    id: "solidity/owner-kind-flattened",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-18 REVERT: report every `ownerKind` as \"contract\". The plausible-looking wrong answer: an interface's members and a library's members both look like members of something, and 'contract' is the default kind for a type declaration. Caught by complexity-sol18's `ownerKind: \"interface\"` on `IThing.external1`.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        typeof s.ownerKind === "string" && s.ownerKind !== ""
+          ? { ...s, ownerKind: "contract", metadata: { ...(s.metadata ?? {}), ownerKind: "contract" } }
+          : s),
+    }),
+    caughtBy: "solidity/complexity-sol18",
+  },
+  {
     id: "solidity/natspec-docstring-dropped",
     language: "solidity",
     defectClass: "payload-loss",
