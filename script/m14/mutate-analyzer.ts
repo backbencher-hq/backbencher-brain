@@ -5332,6 +5332,29 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "xml/attlist-default-entity-references-dropped",
+    language: "xml",
+    defectClass: "relationship-loss",
+    description:
+      "M18 (ATTLIST-default round) regression: an entity reference inside an ATTRIBUTE'S DECLARED DEFAULT stops being a use. `<!ATTLIST foo bar CDATA \"&lt;&gt;&quot;\">` says `bar`'s default value is assembled from `lt`, `gt` and `quot`, and an attribute cannot be given its default without expanding them \u2014 10 of the then-21-site residual across 4 files, 9 of them the PREDEFINED entities and therefore `builtin` rather than dangling. Dropped because an `EntityRef` was only collected under an OWNING ELEMENT and a DTD declaration has no element above it. Reverted by dropping every `entity_reference` edge whose source is an attribute declaration, which is the shape this analyzer records as `dtd_attribute_declaration`.",
+    transform: (r: any) => {
+      // Recover the attribute declarations from the analyzer's OWN symbols rather
+      // than from a table: an attribute declaration is a `property` symbol, and
+      // keying on that is what makes the revert faithful without re-listing names.
+      const attrDecls = new Set<string>()
+      for (const s of r.symbols ?? []) {
+        if (s.metadata?.isDtdAttributeDeclaration && typeof s.name === "string") attrDecls.add(s.name)
+      }
+      return {
+        ...r,
+        relationships: (r.relationships ?? []).filter((x: any) => {
+          if ((x.metadata as any)?.role !== "entity_reference") return true
+          return !attrDecls.has(String(x.source))
+        }),
+      }
+    },
+  },
+  {
     id: "xml/parameter-entity-reference-dropped",
     language: "xml",
     defectClass: "relationship-loss",
@@ -9114,6 +9137,35 @@ export const MUTANTS: Mutant[] = [
         (x: any) => !(x.type === "uses" && ["count", "total", "label"].includes(String(x.target)) && x.metadata?.isTemplateExpression === true),
       ),
     }),
+  },
+  {
+    id: "vue/computed-key-guard-drop",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "F6 regression: the bracket-led-key guard is removed from the three sites that lacked it, so `[dyn]` survives as a symbol name from a computed data key, a computed props/emits key, and an index signature inside an inline type literal — names no graph can resolve, and ones the store's name+line key can DISPLACE a real member with. Caught by vue/computed-key-guard's two forbid rows. The controls (plain / plainProp / save / plainInline) are what make the guard POSITIONAL rather than bracket-wide: an implementation that skipped the whole `[...]` would pass a fixture that only forbade the bad names.",
+    transform: r => {
+      // The pre-fix state is an EXTRACTION behaviour, so a transform that merely
+      // re-adds a name the analyzer no longer emits is a no-op — the first
+      // revision of this mutant did exactly that and SURVIVED, because with the
+      // guard in place `[dyn]` is absent from the result and there was nothing to
+      // duplicate. The defect is simulated the only way it can be: SYNTHESISE the
+      // phantom for any file that has a key-bearing contract at all, which is
+      // what "the guard never fired" produces.
+      const contractish = (r.symbols ?? []).filter(
+        (s: any) => s?.metadata?.isProp === true || s?.metadata?.isDataKey === true || s?.metadata?.isEmit === true,
+      )
+      if (!contractish.length) return r
+      if ((r.symbols ?? []).some((s: any) => String(s?.name).startsWith("["))) return r
+      const donor = contractish[0]
+      return {
+        ...r,
+        symbols: [
+          ...(r.symbols ?? []),
+          { name: "[dyn]", kind: "property", range: { ...(donor.range ?? {}) }, ownerName: donor.ownerName, ownerKind: donor.ownerKind, metadata: { isProp: true } },
+          { name: "[key]", kind: "property", range: { ...(donor.range ?? {}) }, ownerName: donor.ownerName, ownerKind: donor.ownerKind, metadata: { isIndexSignature: true, indexParameter: "key" } },
+        ],
+      }
+    },
   },
   {
     id: "vue/component-split-identity",
