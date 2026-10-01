@@ -793,7 +793,18 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   perfKey: "solidity:solidity",
   floorResidual: {
     missing: 2,
-    unexplained: 18,
+    // SOL-15 moved this floor UP from 18, which is the direction that normally means
+    // a regression, so the reason lives with the number in
+    // validation/m14/differential-baseline.json `floorMoves["solidity:solidity"]` and
+    // not here. In short: the `revert_statement` case had never fired in EITHER the
+    // analyzer or the oracle (both tested `namedChild(0).type === "identifier"`; the
+    // grammar puts an `expression` wrapper there), so 453 custom-error call edges did
+    // not exist and the two dead instruments agreed at zero. Two dead instruments
+    // that agree are not corroboration. Repairing both, and hashing the oracles into
+    // `sweepStateKey` so an oracle edit can no longer resume a cached verdict, left a
+    // residual of 3 custom-error calls to errors declared in another file — 0
+    // unclassifiable.
+    unexplained: 21,
     ruling: "SOL-SCOPE",
   },
   requiredKinds: ["calls", "extends", "implements", "instantiates", "uses", "references", "contains", "overrides", "exports"],
