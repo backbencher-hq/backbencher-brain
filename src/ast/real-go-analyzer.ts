@@ -64,8 +64,153 @@ function getObjectKeysLength(obj: any): number {
   return count
 }
 
+/**
+ * GO26 (round 5): the ONE Go framework vocabulary for this analyzer.
+ *
+ * The file previously carried TWO of them, written independently:
+ *
+ *   - `detectGoFrameworks` (file level, `detectedFrameworks` + `framework`):
+ *     gin, echo, fiber, net_http, gorilla_mux, grpc, testify;
+ *   - `detectFrameworkFromGoImport` (per-import `metadata.framework`): gin,
+ *     echo, fiber, gorilla_mux, gorm, sqlx, ent, grpc, golang_extended, fx,
+ *     wire, zap, logrus.
+ *
+ * They disagreed in both directions: `gorm`/`zap`/`ent`/… were known to one
+ * vocabulary and not the other, and `net_http`/`testify` only to the other.
+ * The consequence was not cosmetic — `getGoFrameworkPatterns` switches on the
+ * file-level names, and its `case "gorm"` (with `detectGORMPatterns`, a
+ * written-out pattern set) could NEVER be reached, because nothing ever pushed
+ * `gorm` into the file-level list. Dead code that a one-line addition to a
+ * different function would have brought to life is exactly the drift this
+ * table removes structurally: both readers now resolve a name through the same
+ * row.
+ *
+ * `listed: false` marks the one row that is a CATEGORY rather than a framework:
+ * `golang_extended` is what every `golang.org/x/...` import is (a namespace, not
+ * a library), and it was already produced per-import. Promoting it into
+ * `detectedFrameworks` would make almost every modern Go file report a
+ * framework, which is a category error rather than a detection. That is a
+ * deliberate exclusion, recorded here rather than left to a reader.
+ *
+ * Order is the previous file-level order, with the newly-consolidated rows
+ * appended. That matters: `analyze()` publishes `framework: frameworks[0]`, so
+ * the first matching row is the file's primary framework, and appending keeps
+ * the primary framework of every file that imports none of the added rows
+ * byte-identical to what the pre-fix code produced.
+ */
+interface GoFrameworkRule {
+  name: string
+  confidence: number
+  /** Does this import path name the framework? */
+  matches: (importPath: string) => boolean
+  /** Does the framework belong in the file-level `detectedFrameworks` list? */
+  listed: boolean
+}
+
+const GO_FRAMEWORK_RULES: GoFrameworkRule[] = [
+  {
+    name: "gin",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "gin-gonic/gin"),
+  },
+  {
+    name: "echo",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "labstack/echo"),
+  },
+  {
+    name: "fiber",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "gofiber/fiber"),
+  },
+  {
+    name: "net_http",
+    // The only standard-library entry, and the only row that must NOT be a
+    // substring test: `net/http` is a complete path, and a substring match
+    // would also fire on a third-party module whose path merely contains it.
+    confidence: 0.8,
+    listed: true,
+    matches: (p) => p === "net/http" || stringIncludes(p, "net/http/"),
+  },
+  {
+    name: "gorilla_mux",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "gorilla/mux"),
+  },
+  {
+    name: "grpc",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "google.golang.org/grpc"),
+  },
+  {
+    name: "testify",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "stretchr/testify"),
+  },
+  {
+    name: "gorm",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "gorm.io/gorm"),
+  },
+  {
+    name: "sqlx",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "jmoiron/sqlx"),
+  },
+  {
+    name: "ent",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "entgo.io/ent"),
+  },
+  {
+    name: "fx",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => p === "go.uber.org/fx" || stringIncludes(p, "go.uber.org/fx/"),
+  },
+  {
+    name: "wire",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "google/wire"),
+  },
+  {
+    name: "zap",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => p === "go.uber.org/zap" || stringIncludes(p, "go.uber.org/zap/"),
+  },
+  {
+    name: "logrus",
+    confidence: 1.0,
+    listed: true,
+    matches: (p) => stringIncludes(p, "sirupsen/logrus"),
+  },
+  {
+    name: "golang_extended",
+    // Category marker, not a framework — see the table's comment.
+    confidence: 1.0,
+    listed: false,
+    matches: (p) => p === "golang.org/x" || stringIncludes(p, "golang.org/x/"),
+  },
+]
+
 function getUniqueStrings(arr: string[]): string[] {
-  const seen: Record<string, boolean> = {}
+  // `Object.create(null)`, not `{}`: the keys are framework NAMES and symbol
+  // names, and `seen["constructor"]` on a plain object is `Object` — truthy —
+  // which would make a repeat of that one name look already-seen. Same class as
+  // the analyzer's other name-keyed map (see analyzeGoInterfaceImplementation);
+  // fixed here for the same reason, before it can bite.
+  const seen: Record<string, boolean> = Object.create(null)
   const result: string[] = []
   if (!arr) return result
   for (let i = 0; i < arr.length; i++) {
@@ -99,9 +244,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private goCallSites = new Map<number, Map<string, Node>>()
 
+  /**
+   * The canonical signature text of each method symbol, keyed by the method
+   * node's `startIndex` (file-local, so it cannot collide) — see `goCallSites`
+   * for the same discipline. The pre-fix code re-derived it on EVERY
+   * comparison: `checkGoInterfaceImplementation` compares each interface method
+   * against every candidate method, and `collectGoPromotedMethods` re-derives it
+   * again in each of its two shadowing tests, so one pass over a file with I
+   * interfaces and C candidates rebuilt the same string O(I × C × methods) times
+   * — the second half of the superlinear implements cost described at the hoist
+   * site below. Reset per `analyze()` with the same reason: a `startIndex` is
+   * file-local, so a retained map would leak one file's signatures into
+   * another's comparison.
+   */
+  private goSignatures = new Map<number, string>()
+
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const ctx: GoContext = { filePath, content }
     this.goCallSites = new Map()
+    this.goSignatures = new Map()
 
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
@@ -133,22 +294,27 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // PHASE 0: Extract package declaration as a Module symbol
-    const packageName = this.extractGoPackageName(rootNode)
-    if (packageName) {
+    const packageClause = this.findGoPackageClause(rootNode)
+    const packageName = packageClause ? this.goPackageClauseName(packageClause) : undefined
+    if (packageName && packageClause) {
       symbols.push({
         name: packageName,
         kind: ASTEngine.SymbolKind.Module,
-        range: {
-          startLine: 1,
-          startColumn: 1,
-          endLine: 1,
-          endColumn: packageName.length + 9,
-          startIndex: 0,
-          // GO4 (go review): endIndex is an exclusive byte offset —
-          // `package p` is 8 + len bytes (0..8+len), not +9 (the +9 is
-          // correct only for 1-based endColumn).
-          endIndex: packageName.length + 8,
-        },
+        // The PACKAGE CLAUSE's own range, read from the node. The pre-fix code
+        // hand-built the range from the NAME LENGTH — `startLine: 1,
+        // startColumn: 1, startIndex: 0, endIndex: packageName.length + 8` —
+        // which is only right when the clause is the first thing in the file.
+        // Go puts a `//go:build` / `// +build` header ABOVE the clause, and
+        // 158 of the pinned corpora's 3,924 files and 2,462 of kubernetes's
+        // 17,848 do, so every byte of the published range pointed into the
+        // build-tag comment: the symbol claimed line 1, column 1, bytes 0..8.
+        // GO4's finding stands and is now structural rather than arithmetic —
+        // `nodeToRange` derives the exclusive `endIndex` and the 1-based
+        // `endColumn` from the node's own end position, and for a clause at
+        // byte 0 those are byte-identical to the old hand-built values
+        // (`endIndex: len+8`, `endColumn: len+9`), so the common case is
+        // unchanged output and the header case becomes correct.
+        range: this.nodeToRange(packageClause),
         visibility: "public",
         metadata: {
           nodeType: "package_clause",
@@ -158,7 +324,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // PHASE 1: Extract Go symbols with proper understanding
-    this.extractGoSymbols(rootNode, symbols, ctx)
+    this.extractGoSymbols(rootNode, symbols)
 
     // PHASE 2: Analyze Go-specific relationships
     this.analyzeGoRelationships(rootNode, relationships, symbols, ctx)
@@ -198,7 +364,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // PHASE 4: Detect Go frameworks and patterns
-    const frameworks = this.detectGoFrameworks(rootNode, imports)
+    const frameworks = this.detectGoFrameworks(imports)
     const patterns = this.detectGoPatterns(rootNode, symbols)
 
     // PHASE 5: Exports — all public (exported) non-variable symbols
@@ -236,6 +402,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // so the completeness D-tier gate could never pin >=2 tiers for go).
     this.classifyEvidenceTier(relationships)
 
+    // GO26 (round 5): one traversal, one number, two keys. The pre-fix code
+    // called `calculateCyclomaticComplexity(rootNode)` twice in the metadata
+    // literal below, and each call is a full recursive walk of the tree — a
+    // wasted whole-file traversal per file, for two keys of one object literal
+    // that must agree by construction.
+    const cyclomaticComplexity = this.calculateCyclomaticComplexity(rootNode)
+
     return {
       language: "go",
       symbols,
@@ -249,9 +422,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // cyclomaticComplexity sat beside it — the exact disease the
         // family removed everywhere else. One contract: both report the
         // real cyclomatic number.
-        complexity: this.calculateCyclomaticComplexity(rootNode),
+        complexity: cyclomaticComplexity,
         linesOfCode: ctx.content.split("\n").length,
-        cyclomaticComplexity: this.calculateCyclomaticComplexity(rootNode),
+        // GO26 (round 5): computed ONCE. The pre-fix code called the counter
+        // twice on the same node, and each call is a full recursive walk of the
+        // tree — one wasted whole-file traversal per file, for two keys of the
+        // same object literal that must agree by construction.
+        cyclomaticComplexity,
         framework: frameworks[0]?.name, // Primary framework
         patterns,
 
@@ -289,10 +466,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // only for `references`, so the dedicated kind fell through to
       // usage_contextual). Go's import edges moved to this label this round.
       if (t === "imports") { md.evidenceClass = "import_based"; continue }
+      // GO26 (round 5): the `isGoImportDep || isImport -> import_based`
+      // alternative is removed. Both markers are written in exactly one place
+      // — the PHASE-3b import edge — and that edge's `type` is `imports`, which
+      // the branch above already classifies as `import_based`. The markers
+      // reached this test only through the round-2 change that MOVED the go
+      // import edge off the `references` label, so the alternative became
+      // unreachable in the same commit that made the live branch above correct.
+      // The `t === "exports"` alternative next to it is a family-contract mirror
+      // (rust/c/cpp carry it) and go emits no `exports` edge at all; it is left
+      // as the family mirror, and this comment is the record that it is a mirror
+      // rather than a live path here.
       if (t === "references") {
         md.evidenceClass =
-          md.isGoImportDep || md.isImport ? "import_based"
-          : md.relationshipType === "declared_type" || md.relationshipType === "return_type" ? "reference_qualified"
+          md.relationshipType === "declared_type" || md.relationshipType === "return_type" ? "reference_qualified"
           : "usage_contextual"
         continue
       }
@@ -314,7 +501,21 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
     const emitted = new Set<string>()
-    const BUILTINS = new Set(["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune", "error", "any"])
+    // Go's PREDECLARED identifiers (spec, Predeclared identifiers): the types
+    // `bool`, the numeric types, `string`, `error`, and the two predeclared
+    // ALIASES the generics-era spec added — `any` (= interface{}) and
+    // `comparable` (the type-constraint interface). All three non-numeric ones
+    // are usable as a declared type, and all three are spelled in ordinary
+    // type position, so all three belong in the exclusion set.
+    //
+    // `comparable` was missing, and the pinned grammar types a generic
+    // type-parameter list as `parameter_declaration` nodes, so
+    // `type Pair[K comparable, V any] struct{...}` reached the
+    // `parameter_declaration` case below and published a `declared_type`
+    // target `Pair -> comparable`: a name no declaration in the file (or any
+    // file) can define. `any` was in the set and `comparable` was not, which
+    // is the tell — the set was built before generics and never revisited.
+    const BUILTINS = new Set(["int", "int8", "int16", "int32", "int64", "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "float32", "float64", "complex64", "complex128", "string", "bool", "byte", "rune", "error", "any", "comparable"])
 
     // M59.A7 (#825): the node form of collectTypeNames — same traversal, same
     // BUILTINS guard, same first-wins dedupe, but it keeps the NODE the name is
@@ -335,8 +536,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       let p: Node | null = start.type === "field_declaration" ? start : start.parent
       let sawTypeSpec = false
       while (p) {
-        // Struct fields attribute to the enclosing named struct/interface.
-        if (!sawTypeSpec && p.type === "type_spec") {
+        // Struct fields attribute to the enclosing named struct/interface —
+        // and `type_alias` counts, because `type Alias = struct{ Q Inner }` is
+        // a type declaration that declares `Alias` (GO36). The pre-fix test read
+        // `type_spec` only, so an alias's field types had no enclosing
+        // declaration to attribute to and fell through to `global`:
+        //
+        //   type Inner struct{ Q int }
+        //   type Plain  struct{ Q Inner }   ->  Plain->Inner  (correct)
+        //   type Alias  = struct{ Q Inner }  ->  global->Inner  (defect)
+        //
+        // `global` is a pseudo-source, so the edge was unattributable: it says
+        // "something in this file uses Inner" with no way to navigate back to the
+        // declaration that wanted it. This is the SAME class round 5 fixed for
+        // the `extends` edge (GO31a, which taught the embedding pass to accept
+        // `type_alias`); the declared-type source attribution was the second half
+        // of that fix and was missed. Found by the round-6 `references` truth
+        // (`go-round6-references-shapes.ts` case S10), which is the first oracle
+        // that can see this surface at all.
+        if (!sawTypeSpec && (p.type === "type_spec" || p.type === "type_alias")) {
           for (let i = 0; i < p.namedChildCount; i++) {
             const c = p.namedChild(i)
             if (c && c.type === "type_identifier") return c.text
@@ -390,6 +608,31 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Is this `parameter_declaration` part of a function's RESULT list?
+    //
+    // The old test was `n.namedChildCount === 1` — "a declaration with one
+    // named child is a return value". That is a SHAPE heuristic, and Go has
+    // two unrelated shapes it cannot tell apart: an unnamed PARAMETER
+    // (`func f(*Server, Server)`) and an unnamed RESULT (`func h() (*S,
+    // error)`) are both single-named-child `parameter_declaration` nodes, so
+    // every unnamed parameter was published as a `return_type` reference.
+    // The tree already says which list it is: the result list is the
+    // `result` FIELD of the enclosing function/method/method_spec/func_literal
+    // (probe-verified on all four node kinds), so read the field instead of
+    // counting children.
+    const isGoResultParameter = (decl: Node): boolean => {
+      const list = decl.parent
+      if (!list || list.type !== "parameter_list") return false
+      const owner = list.parent
+      if (!owner) return false
+      if (
+        owner.type !== "function_declaration" && owner.type !== "method_declaration" &&
+        owner.type !== "method_spec" && owner.type !== "func_literal"
+      ) return false
+      const result = owner.childForFieldName("result")
+      return !!result && result.id === list.id
+    }
+
     const walk = (n: Node): void => {
       switch (n.type) {
         case "field_declaration": {
@@ -397,9 +640,12 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           emit(resolveSource(n), [n], "declared_type")
           break
         }
-        case "parameter_declaration": {
-          // Params, receivers AND anonymous return-value declarations.
-          emit(resolveSource(n), [n], n.namedChildCount === 1 ? "return_type" : "declared_type")
+        case "parameter_declaration":
+        case "variadic_parameter_declaration": {
+          // Params, receivers, generic type-parameter constraints AND
+          // anonymous return-value declarations. The result list is read from
+          // the tree (isGoResultParameter), not inferred from arity.
+          emit(resolveSource(n), [n], isGoResultParameter(n) ? "return_type" : "declared_type")
           break
         }
         case "var_spec":
@@ -419,39 +665,84 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * PHASE 1: Extract Go symbols with proper Go semantics understanding
    */
-  private extractGoSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[], ctx: GoContext, parentStruct?: string) {
-    // Package-scope declarations only. Function-local vars/consts/types are
-    // NOT symbols (C# M12.07 LocalsAreNotSymbols / Swift M12.21 negative
-    // contract) — the walk stops at function/method bodies.
-    const stack: { node: Node; parent?: string; inFunction: boolean }[] = [{ node, parent: parentStruct, inFunction: false }]
+  private extractGoSymbols(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
+    // LocalsAreNotSymbols (C# M12.07 / Swift M12.21), with ONE exception, and
+    // the exception is the family's, not this lane's: nim's own analyzer states
+    // it in its header — "Parameters, generic parameters, concept parameters,
+    // function-local `let`/`var`/`const`, anonymous routines … are execution
+    // artifacts. THE ONE EXCEPTION IS AN OBJECT/ENUM/FIELD DECLARATION, WHICH IS
+    // A SYMBOL BECAUSE THE OBJECT OWNS IT."
+    //
+    // GO38 (round 6): so a function-local VAR or CONST is not a symbol, and a
+    // function-local TYPE is. The pre-fix walk `continue`d on every function and
+    // method, so it never reached a local `type` declaration at all — the type,
+    // its fields, and its `contains` edges were all absent. That is not a
+    // neutral silence. The declared-type pass (extractDeclaredTypeRefs) DOES
+    // walk function bodies and DOES attribute a local type's field types to
+    // that type, so the lane was already publishing
+    //
+    //     references Local -> Host          where `Local` is NOT a symbol
+    //
+    // — a relationship whose SOURCE names nothing. The graph referred to a type
+    // its own symbol table had never heard of. Found by the round-6 `contains`
+    // truth, which derives membership from the DECLARATION side of the tree
+    // (so a type the analyzer never published is a MISSING row rather than
+    // invisible on both sides); 22 such memberships in 200 go-tools files, 0.07%
+    // of the surface — the class a 60-file draw cannot see.
+    //
+    // So the walk descends into bodies, and `inFunction` gates WHICH
+    // declarations are published: types yes, vars and consts no. That is the
+    // contract stated exactly, and each half was already implemented.
+    //
+    // GO26 (round 5): the `parentStruct` parameter and the `parent` frame this
+    // stack carried are removed. The single call site passed three arguments,
+    // so `parentStruct` was permanently `undefined`, `parent` was seeded from
+    // it and never reassigned, and therefore the two `ownerName: parentStruct`
+    // / `ownerKind: …Class : undefined` writes below could never fire. The
+    // owners that DO exist come from two other mechanisms — a struct's own name
+    // (`extractStructFields(typeNode, symbols, typeName)`) and a method's
+    // receiver type (`extractGoReceiver`) — which is the right one, because Go
+    // has exactly two owner relations. The `ctx` parameter was read nowhere in
+    // the body; the `GoContext` it was passed exists for the relationship passes.
+    const stack: { node: Node; inFunction: boolean }[] = [{ node, inFunction: false }]
 
     while (stack.length > 0) {
-      const { node: current, parent, inFunction } = stack.pop()!
+      const { node: current, inFunction } = stack.pop()!
 
       switch (current.type) {
         case "function_declaration":
-          this.extractGoFunction(current, symbols, parent)
-          // Do NOT descend into the body: locals are not symbols.
-          continue
+          this.extractGoFunction(current, symbols)
+          // DESCEND, for a local TYPE declaration only (GO38). A local var/const
+          // is gated below by `inFunction` and stays out of the symbol set.
+          break
         case "method_declaration":
           this.extractGoMethod(current, symbols)
-          continue
+          break
         case "type_declaration":
           this.extractGoTypeDeclaration(current, symbols)
           break
         case "var_declaration":
         case "const_declaration":
-          if (!inFunction) this.extractGoVariables(current, symbols, parent)
+          if (!inFunction) this.extractGoVariables(current, symbols)
           break
         case "import_declaration":
           // Handled in processGoImports
           break
       }
 
-      const nextInFunction = inFunction || current.type === "block"
+      // Entering a function body. `block` is the usual body node, but a
+      // one-statement body and a `func_literal`'s own children are not blocks,
+      // so the FUNCTION NODES themselves set the flag — otherwise a local
+      // `var` in a body the grammar shaped differently would publish.
+      const nextInFunction =
+        inFunction ||
+        current.type === "block" ||
+        current.type === "function_declaration" ||
+        current.type === "method_declaration" ||
+        current.type === "func_literal"
       for (let i = current.namedChildCount - 1; i >= 0; i--) {
         const child = current.namedChild(i)
-        if (child) stack.push({ node: child, parent, inFunction: nextInFunction })
+        if (child) stack.push({ node: child, inFunction: nextInFunction })
       }
     }
   }
@@ -459,7 +750,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Go function declarations
    */
-  private extractGoFunction(node: Node, symbols: ASTEngine.UniversalSymbol[], parentStruct?: string) {
+  private extractGoFunction(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     const nameNode = node.childForFieldName("name")
     if (!nameNode) return
 
@@ -491,8 +782,13 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // 2026-08-28, same counter as calculateCyclomaticComplexity).
       complexity: this.calculateCyclomaticComplexity(node),
       visibility: this.isGoExported(functionName) ? "public" : "private",
-      ownerName: parentStruct,
-      ownerKind: parentStruct ? ASTEngine.SymbolKind.Class : undefined,
+      // A package-scope Go function has no owner, and that is a property of
+      // the language rather than of a missing argument: Go declares functions
+      // and methods at package scope only, and a nested function is a
+      // `func_literal`, which LocalsAreNotSymbols keeps out of the symbol set
+      // entirely. The two `!s.ownerName` constructor filters below are
+      // therefore correct on a fact about Go, not by accident of a dead
+      // parameter (GO26).
       metadata: {
         nodeType: node.type,
         isGoFunction: true,
@@ -675,7 +971,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             // Extract struct tags like `json:"name"` — pure string scan over
             // the raw_string_literal content (backtick-delimited), no regex.
             const tagNode = fieldDecl.childForFieldName("tag")
-            let structTags: Record<string, string> = {}
+            // `Object.create(null)`: the keys come from a struct TAG, which is
+            // arbitrary text, and a tag key of `constructor`/`toString` on a
+            // plain object would read back `Object` instead of the tag's own
+            // value. Same prototype hazard as every other name-keyed map here.
+            let structTags: Record<string, string> = Object.create(null)
             if (tagNode) {
               const tagText = this.stripRawStringDelimiters(tagNode.text)
               structTags = this.parseStructTags(tagText)
@@ -770,8 +1070,17 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
     // A dot-imported external type still names its own leaf; a leaf that is not
     // an identifier (a qualified type with generics, an error-recovered node)
-    // names nothing honest, so it contributes no symbol.
-    return /^[A-Za-z_][A-Za-z0-9_]*$/.test(leaf) ? leaf : undefined
+    // names nothing honest, so it contributes no symbol. The identifier SHAPE
+    // test is `isPlainGoIdentifier` — the same char-scan helper the two
+    // embedded-interface call sites use. This line was the analyzer's ONLY
+    // regex literal (`/^[A-Za-z_][A-Za-z0-9_]*$/`): a second, hand-rolled copy
+    // of a predicate the file already had, in a file whose own section banner
+    // reads "no regex in this analyzer", and unregistered in
+    // `validation/m49/regex-debt-register.json` — so `verify-r2-regex` was
+    // reporting it as unjustified debt with no owner. Behaviour is identical
+    // (the helper is the same ASCII A-Z/a-z/0-9/_ ranges), which is why this is
+    // a debt payment and not a fix.
+    return this.isPlainGoIdentifier(leaf) ? leaf : undefined
   }
 
   /**
@@ -787,6 +1096,18 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // F1 grammar audit (unknown node type), so it is removed here.
       if (method?.type === "method_spec") {
         const methodName = method.childForFieldName("name")
+        // GO26 (round 5): the no-name `else` branch is removed. `method_spec`
+        // carries a MANDATORY `name` field in the pinned grammar, so the branch
+        // could never fire — and the file's own comment below already said so,
+        // describing the embedded-interface handling as living in a
+        // `method_spec` else-branch that `constraint_elem` never reaches. It
+        // was also the one place in this function that took a leaf from
+        // arbitrary `rawText` with NO identifier-shape guard, while the live
+        // `constraint_elem` branch below requires `isPlainGoIdentifier` — so
+        // dead code that would have fabricated a member name if the grammar
+        // ever changed. Probe: 8 adversarial interface bodies (6 `method_spec`
+        // nodes seen) produced 0 nameless ones.
+        // `script/m14/tmp/go-round5-verify.ts` case P1.
         if (methodName) {
           const parameters = this.extractGoMethodSpecParameters(method)
           const returnType = this.extractGoMethodSpecReturnType(method)
@@ -806,39 +1127,6 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
               isExported: this.isGoExported(methodName.text),
             },
           })
-        } else {
-          // Embedded interface (`Reader`/`io.Closer` in
-          // `interface { Reader; Close() error }`). Parsed as constraint_elem
-          // whose single named child is the type node (type_identifier or
-          // qualified_type) — NOT a named "type" field. The pre-fix code
-          // read childForFieldName("type"), which returned nothing, so NO
-          // embedded-interface symbol was emitted and the embedding
-          // interface's method set silently lost the promoted methods. That
-          // let a struct with only Close() be (wrongly) declared to
-          // implement ReadCloser — a false positive the differential missed
-          // because the oracle shared the same blind spot (go wave deep
-          // review 2026-08-29). We set name = LEAF so local embedded
-          // interfaces (Reader) resolve; external ones (io.Closer, leaf
-          // Closer) find no local interface and contribute nothing.
-          const embeddedType = method.childForFieldName("type")
-          const embeddedNode = embeddedType ?? (method.namedChildCount > 0 ? method.namedChild(0) : undefined)
-          if (embeddedNode) {
-            const rawText = embeddedNode.text
-            const leaf = rawText.lastIndexOf(".") !== -1 ? rawText.slice(rawText.lastIndexOf(".") + 1) : rawText
-            symbols.push({
-              name: leaf,
-              kind: ASTEngine.SymbolKind.Interface,
-              range: this.nodeToRange(method),
-              visibility: "public",
-              ownerName: interfaceName,
-              ownerKind: ASTEngine.SymbolKind.Interface,
-              metadata: {
-                nodeType: method.type,
-                isEmbeddedInterface: true,
-                embeddedInterface: rawText,
-              },
-            })
-          }
         }
         continue
       }
@@ -888,7 +1176,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Go variables and constants
    */
-  private extractGoVariables(node: Node, symbols: ASTEngine.UniversalSymbol[], parentStruct?: string) {
+  private extractGoVariables(node: Node, symbols: ASTEngine.UniversalSymbol[]) {
     // Process var/const spec children
     for (let i = 0; i < node.namedChildCount; i++) {
       const spec = node.namedChild(i)
@@ -907,10 +1195,15 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             symbols.push({
               name: nameNode.text,
               kind: isConst ? ASTEngine.SymbolKind.Constant : ASTEngine.SymbolKind.Variable,
-              range: this.nodeToRange(spec),
+              // The NAME's own span, not the whole `var_spec` — the same
+              // #919 range rule the struct-field path applies (and the reason
+              // it exists: `A, B int` names two fields at two positions, and a
+              // consumer that jumps to `B` must land on `B`). The var/const
+              // path kept the declaration's range, so on
+              // `var alpha,\n\tbeta int` BOTH names reported `3:5` — `beta`'s
+              // own position never appeared anywhere in the index.
+              range: this.nodeToRange(nameNode),
               visibility: this.isGoExported(nameNode.text) ? "public" : "private",
-              ownerName: parentStruct,
-              ownerKind: parentStruct ? ASTEngine.SymbolKind.Class : undefined,
               metadata: {
                 nodeType: spec.type,
                 isConst,
@@ -975,9 +1268,43 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Is a Go identifier EXPORTED?
+   *
+   * Go's spec: "An identifier is exported if the first character of the
+   * identifier's name is a Unicode upper case letter" — the rule is
+   * `unicode.IsUpper`, NOT an ASCII range. The old test here was
+   * `name[0] >= "A" && name[0] <= "Z"`, so every legal Go identifier with a
+   * non-ASCII head (`Ünï`, `Ö`, `Ñ`) was published `visibility: "private"`,
+   * which fails the PHASE-5 export predicate below and removed it from the
+   * public-API list the product serves. Go identifiers may use any Unicode
+   * letter (spec, Identifiers), so this was a real hole in the export
+   * surface, not a cosmetic classification.
+   *
+   * The implementation is a no-regex upper-case test on the FIRST CODE POINT
+   * using the JS runtime's own Unicode case mappings (the same ICU tables the
+   * grammar's identifier rule is written against):
+   *
+   *     c is an UPPER CASE letter  <=>  toUpperCase(c) === c  AND  toLowerCase(c) !== c
+   *
+   * which is exactly `unicode.IsUpper`'s definition — Go's own spec words the
+   * category test as "the uppercase version of the letter is different from
+   * its lowercase version". Spot-checked against the categories that matter:
+   * `A` upper, `a` not, `Ü` upper, `ü` not, `ß` not (Go: Ll, not Lu), CJK
+   * `中` not (Lo, not Lu), titlecase `ǅ` not (Lt, not Lu). The only residual is
+   * a code point the runtime's tables do not know, which is then not-upper —
+   * the conservative direction (a symbol stays private rather than being
+   * published as public API on a guess).
+   */
   private isGoExported(name: string): boolean {
-    // In Go, exported identifiers start with uppercase letter
-    return name.length > 0 && name[0] >= "A" && name[0] <= "Z"
+    if (!name) return false
+    const c = String.fromCodePoint(name.codePointAt(0) as number)
+    if (c.length === 0) return false
+    // An unpaired surrogate is not a letter in any Unicode version.
+    if (c === "\uFFFD" && name.charCodeAt(0) >= 0xd800 && name.charCodeAt(0) <= 0xdfff) return false
+    const upper = c.toUpperCase()
+    if (upper !== c) return false
+    return c.toLowerCase() !== c
   }
 
   private extractGoApiContractPathFromComments(node: Node): string | undefined {
@@ -1311,16 +1638,40 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
    * GO3: with a dot-import in the file, bare names may be dot-imported
    * members — resolve leniently (besides builtins, filtered by callers).
    */
+  /**
+   * Is this symbol a name a BARE call expression in this file could resolve to?
+   *
+   * A Go `method_spec` is published as `kind: Method` (it is a method
+   * declaration, in an interface body), and both the bare-call resolver and the
+   * package-scope-call predicate accepted it. So a name that exists in the file
+   * ONLY as an interface method — `type I interface{ Handle(x int) error }`
+   * with no `func Handle` anywhere — resolved as a package-scope callable and
+   * the analyzer emitted `calls global -> Handle`.
+   *
+   * That edge is a FABRICATION, and the differential called it one
+   * (`UNEXPLAINED`): the F5 oracle's `declaredFns` is built from
+   * `function_declaration` + `method_declaration` only, because those are the
+   * only two forms a bare callee can name in Go. A `method_spec` is not in
+   * scope as a package identifier at all — `Handle(1)` in that file does not
+   * compile. The two sides disagreed, which is the C5 asymmetry class (the
+   * mirror-image defect the lane hit in round 4), and the corpora could not
+   * see it: a file that declares an interface method and calls that name bare
+   * is not a shape either pinned corpus happens to contain.
+   *
+   * The rule is one predicate, applied at all three call-resolution sites, so
+   * the resolver and the two go/defer handlers cannot drift apart again.
+   */
+  private isGoPackageCallable(s: ASTEngine.UniversalSymbol): boolean {
+    if (s.kind !== ASTEngine.SymbolKind.Function && s.kind !== ASTEngine.SymbolKind.Method) return false
+    if (s.metadata?.isInterfaceMethod) return false
+    return true
+  }
+
   private isGoResolvableCallTarget(target: string | undefined, symbols: ASTEngine.UniversalSymbol[], dotImported = false): boolean {
     if (!target) return false
     if (target.indexOf(".") !== -1) return true // qualified -> leaf kept
     if (dotImported) return true
-    return someSymbol(
-      symbols,
-      (s) =>
-        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
-        s.name === target,
-    )
+    return someSymbol(symbols, (s) => this.isGoPackageCallable(s) && s.name === target)
   }
 
   /**
@@ -1345,34 +1696,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   // Framework detection
   private detectGoFrameworks(
-    rootNode: Node,
     imports: ASTEngine.ImportInfo[],
   ): { name: string; confidence: number; patterns: string[] }[] {
     const frameworks: { name: string; confidence: number; patterns: string[] }[] = []
     const modules = mapSymbols(imports, (imp) => imp.module || "")
 
-    // Pure AST/Import detection, NO primitive string matching
-    if (someSymbol(modules, (m) => stringIncludes(m, "github.com/gin-gonic/gin"))) {
-      frameworks.push({ name: "gin", confidence: 1.0, patterns: ["github.com/gin-gonic/gin"] })
-    }
-    if (someSymbol(modules, (m) => stringIncludes(m, "github.com/labstack/echo"))) {
-      frameworks.push({ name: "echo", confidence: 1.0, patterns: ["github.com/labstack/echo"] })
-    }
-    if (someSymbol(modules, (m) => stringIncludes(m, "github.com/gofiber/fiber"))) {
-      frameworks.push({ name: "fiber", confidence: 1.0, patterns: ["github.com/gofiber/fiber"] })
-    }
-    if (someSymbol(modules, (m) => m === "net/http" || m.startsWith("net/http/"))) {
-      frameworks.push({ name: "net_http", confidence: 0.8, patterns: ["net/http"] })
-    }
-    if (someSymbol(modules, (m) => stringIncludes(m, "github.com/gorilla/mux"))) {
-      frameworks.push({ name: "gorilla_mux", confidence: 1.0, patterns: ["github.com/gorilla/mux"] })
-    }
-    if (someSymbol(modules, (m) => stringIncludes(m, "google.golang.org/grpc"))) {
-      frameworks.push({ name: "grpc", confidence: 1.0, patterns: ["google.golang.org/grpc"] })
-    }
-    if (someSymbol(modules, (m) => stringIncludes(m, "github.com/stretchr/testify"))) {
-      frameworks.push({ name: "testify", confidence: 1.0, patterns: ["github.com/stretchr/testify"] })
-    }
+    // Deterministic module-path detection, NO code string-matching: every rule
+    // is an import-path test, never a scan of the file's text. One table, read
+    // by both framework readers (see GO_FRAMEWORK_RULES).
+    forEachSymbol(GO_FRAMEWORK_RULES, (rule) => {
+      if (!rule.listed) return
+      if (!someSymbol(modules, (m) => rule.matches(m))) return
+      frameworks.push({ name: rule.name, confidence: rule.confidence, patterns: [rule.name] })
+    })
 
     return frameworks
   }
@@ -1439,7 +1775,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     _ctx: GoContext,
   ) {
     // 1. Analyze struct embedding relationships (extends only)
-    this.analyzeGoStructEmbedding(rootNode, relationships, symbols)
+    this.analyzeGoStructEmbedding(rootNode, relationships)
 
     // 2. Analyze interface implementation relationships
     this.analyzeGoInterfaceImplementation(rootNode, relationships, symbols)
@@ -1507,13 +1843,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   private analyzeGoStructEmbedding(
     rootNode: Node,
     relationships: ASTEngine.UniversalRelationship[],
-    symbols: ASTEngine.UniversalSymbol[],
   ) {
     const stack = [rootNode]
     while (stack.length > 0) {
       const node = stack.pop()!
       if (node.type === "type_declaration") {
-        const typeSpecs = this.findChildrenByType(node, "type_spec")
+        // `type_spec` AND `type_alias`: `type A = struct{ *Inner }` is legal
+        // Go, and the SYMBOL path already accepted both (extractGoTypeSpec
+        // reads `type_spec || type_alias`) — so `Inner` was published as a
+        // member of `A` and then no composition edge was emitted for it. The
+        // member symbol and the `extends` edge come from the same tree node;
+        // publishing one without the other left the graph claiming `A`
+        // contains `Inner` while `A` extends nothing. The oracle read
+        // `type_spec` only, so the differential agreed on the omission and
+        // could not charge it — the class round 4 called out by name.
+        const typeSpecs: Node[] = []
+        for (let ti = 0; ti < node.namedChildCount; ti++) {
+          const ts = node.namedChild(ti)
+          if (ts?.type === "type_spec" || ts?.type === "type_alias") typeSpecs.push(ts)
+        }
         for (const typeSpec of typeSpecs) {
           const nameNode = typeSpec.childForFieldName("name")
           const typeName = nameNode?.text
@@ -1648,11 +1996,29 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // asymmetry rather than creating one — mirrored exactly: no generics skip
     // is possible for a name with no declaration in the file, and no
     // promotion is possible for a type whose embedding is declared elsewhere.
+    // GO26 (round 5): `SymbolKind.Class` is in this predicate and in four more
+    // places below, but the go analyzer has NEVER produced a Class symbol — the
+    // only two writes of the value are `ownerKind` on a package-scope function
+    // and variable, and the `parentStruct` that gates them is permanently
+    // undefined (extractGoSymbols is called with three arguments, so the
+    // parameter is always `undefined`; removed in this round). Go's struct is
+    // `SymbolKind.Struct` (M12.18 systems contract), so every `kind === Class`
+    // test was vacuously FALSE. Two of them are product features that have
+    // therefore never once fired:
+    //   - `generateGoArchitecturalInsights`: `structs` was always empty, so the
+    //     whole `struct_design` insight (struct count, method:struct ratio,
+    //     anemic/balanced/rich verdict) was NEVER emitted for any Go file, and
+    //   - `calculateArchitecturalScore`: the `+3` "proper struct design" bonus
+    //     could never be granted, so every Go file's score was computed
+    //     without it;
+    // and `detectGRPCPatterns`' `grpc_services` pattern and the gorm
+    // `hasModels` characteristic were dead for the same reason. The predicate
+    // now names the kind Go actually emits. Measured, not assumed: see
+    // reviews/go/sixth-review.md.
     const declaredTypeNames = new Set<string>()
     for (const s of symbols) {
       if (
         s.kind === ASTEngine.SymbolKind.Struct ||
-        s.kind === ASTEngine.SymbolKind.Class ||
         s.kind === ASTEngine.SymbolKind.Interface ||
         s.kind === ASTEngine.SymbolKind.Type
       ) {
@@ -1681,7 +2047,25 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // only Shape embedded appeared NOT to implement an interface it does).
     // Resolve embedding via the go_struct_embedding extends edges (source =
     // embedding struct, target = embedded type).
-    const embeddedOf: Record<string, string[]> = {}
+    //
+    // `Object.create(null)`, NOT `{}`. The key is a Go TYPE NAME, and Go
+    // identifiers may be any Unicode letter followed by letters and digits —
+    // which includes `constructor`, `toString`, `valueOf` and every other
+    // `Object.prototype` member. On a plain object literal,
+    // `embeddedOf["constructor"]` returns the `Object` constructor: truthy, so
+    // the `if (embeddedTypes)` guard in collectGoPromotedMethods passes, and
+    // `for (const et of embeddedTypes)` then throws `TypeError: {} is not
+    // iterable`. The F5 oracle already builds all five of its name-keyed maps
+    // this way for exactly this reason, with the comment "a legal Go type named
+    // `constructor`/`toString`/`valueOf` once made the go lane CRASH OUTRIGHT on
+    // go-tools/go/callgraph/vta/vta.go" — the analyzer never got the same
+    // defence, and the defect stayed latent only because
+    // collectGoPromotedMethods used to be reached for fewer candidates.
+    // FOUND BY THE FULL-EXTENT READ, NOT BY A GATE: `go-799-surface.ts` over
+    // go-tools (1,931 files) crashed on
+    // `go/callgraph/vta/vta.go`, whose `constructor` type is exactly the name in
+    // the oracle's comment. See reviews/go/sixth-review.md §12.
+    const embeddedOf: Record<string, string[]> = Object.create(null)
     for (const r of relationships) {
       if (
         (r.type || r.relationshipType || "") === ASTEngine.RelationshipType.Extends &&
@@ -1692,6 +2076,26 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (src && tgt) { if (!embeddedOf[src]) embeddedOf[src] = []; embeddedOf[src].push(tgt) }
       }
     }
+
+    // The promoted-method set for a candidate is a property of the CANDIDATE
+    // ALONE — it depends on the candidate's receiver methods and on the
+    // embedding closure, never on the interface being tested. The pre-fix code
+    // recomputed it inside the candidate loop, i.e. once per (interface ×
+    // candidate) PAIR, and `collectGoPromotedMethods` re-filtered the whole
+    // method list at every embedding hop while re-deriving every method
+    // signature on every comparison. Measured on synthetic files: 80×80 with
+    // embedding cost 17.4 s, and ms/KB climbed 35 → 64 → 361 → 662 as the file
+    // doubled, i.e. superlinear in a way LANE-AUDIT-FORMULA §9's "flat ms/KB
+    // means linear" check exists to catch. Hoisting it below makes the closure
+    // O(candidates × embedding depth) instead of O(interfaces × candidates ×
+    // depth), which is the same set for every interface by construction.
+    const promotedByCandidate = new Map<string, ASTEngine.UniversalSymbol[]>()
+    forEachSymbol(candidates, (candidate) => {
+      promotedByCandidate.set(
+        candidate.name,
+        this.collectGoPromotedMethods(candidate.name, methods, symbols, embeddedOf, new Set()),
+      )
+    })
 
     forEachSymbol(interfaces, (interfaceSymbol) => {
       // Generic-instantiation guard (M37 #604): neither a generic interface
@@ -1706,13 +2110,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       forEachSymbol(candidates, (candidate) => {
         if (candidate.hasGenerics) return
         const structName = candidate.name
+        // A type does not implement itself. The oracle has always carried this
+        // guard (`if (structName === iface) continue`); the analyzer did not,
+        // so a tree carrying two declarations of the same name — invalid Go,
+        // but the grammar accepts it and error recovery produces it — made the
+        // analyzer publish `implements I -> I` while the truth side refused the
+        // pair. A rule present on one side of a compared label only is the
+        // asymmetry class this lane treats as a fabrication, so the guard is
+        // added here rather than argued away.
+        if (structName === interfaceSymbol.name) return
         // Promoted methods: direct + transitive embedding closure (Go
         // method promotion — an embedded type's methods are elements of the
         // embedding struct's method set). We promote the FULL method set
         // (value + pointer receivers) because the overwhelmingly common and
         // spec-valid form is value embedding of a pointer (`*Shape`), which
         // promotes both. This mirrors the oracle exactly.
-        const promoted = this.collectGoPromotedMethods(structName, methods, symbols, embeddedOf, new Set())
+        const promoted = promotedByCandidate.get(structName) ?? []
 
         const valueMethods = [
           ...filterSymbols(methods, (m) => {
@@ -1943,7 +2356,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // (measured as 2 UNEXPLAINED on go-tools beyond the 60-file floor).
     const ctorFns = new Set<string>()
     for (const s of symbols) {
-      if (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) {
+      // `isGoPackageCallable`, not a raw kind test: an interface METHOD name is
+      // published as kind=Method, and accepting it here made `Handle(1)`
+      // resolve against `type I interface{ Handle(int) error }` and fabricate a
+      // `calls` edge the oracle cannot derive (see isGoPackageCallable).
+      if (this.isGoPackageCallable(s)) {
         declared.add(s.name)
       }
       if (s.kind === ASTEngine.SymbolKind.Function && !s.ownerName) {
@@ -2009,7 +2426,11 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const qualified = fn.type === "selector_expression"
           const isCtor = leaf[0] === leaf[0].toUpperCase() && leaf[0] !== leaf[0].toLowerCase()
-          const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf) || (isCtor && declared.has(leaf)))
+          // GO26 (round 5): the trailing `(isCtor && declared.has(leaf))` was a
+          // dead disjunct — `declared.has(leaf)` already subsumes it, so it could
+          // never be the reason an edge was emitted. `isCtor` is still computed
+          // because the INSTANTIATES rule below is the one that consults it.
+          const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf))
           if (emit && !emitted.has("call:" + leaf)) {
             emitted.add("call:" + leaf)
             relationships.push({
@@ -2230,8 +2651,22 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       // sends on one channel collapse to one row.
       if (node.type === "send_statement" || node.type === "receive_statement" || this.isGoReceiveExpression(node)) {
         const channelVar = this.extractGoChannelVariable(node)
-        const containingFunction = this.findContainingGoFunction(node)
-        if (channelVar && containingFunction && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
+        // GOD9 (M37 #604, round 6): the gate used to be
+        // `channelVar && containingFunction && ...`, and `containingFunction` is
+        // undefined for a FUNC LITERAL — so a channel read inside a closure was
+        // DROPPED by this pass while the selector/identifier read passes
+        // published the same physical read as `global -> <target>`. The lane
+        // disagreed with ITSELF on one read: `uses` coverage was 100% only
+        // because the truth was written to mirror the drop. The two corpus
+        // rows it cost are `var _ = func() int { ... case <-c: ... }` in
+        // go/analysis/passes/unreachable/testdata/src/a/a.go (lines 1611 and
+        // 1621), where `c` is a package var and the read is unambiguous. The
+        // fix is the `global` fallback the read passes already use, not a new
+        // naming scheme: `findContainingGoFunction` returns undefined only when
+        // the read is at file scope, and file scope is what the read passes
+        // call `global`.
+        const containingFunction = this.findContainingGoFunction(node) ?? "global"
+        if (channelVar && (channelVar.member || this.isGoDeclaredPackageVar(channelVar.name, symbols))) {
           const isSend = node.type === "send_statement"
           const key = `${containingFunction}->${channelVar.name}->${isSend ? "send" : "receive"}`
           if (!emittedChannelUses.has(key)) {
@@ -2913,7 +3348,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
             patterns: this.detectGORMPatterns(symbols),
             confidence: 0.9,
             characteristics: {
-              hasModels: someSymbol(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct),
+              hasModels: someSymbol(symbols, (s) => s.kind === ASTEngine.SymbolKind.Struct && s.metadata?.isGoStruct),
               hasMigrations: someSymbol(symbols, (s) =>
                 someSymbol(s.qualified_calls || [], (c) => stringIncludes(c, "AutoMigrate")),
               ),
@@ -3010,7 +3445,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // Analyze struct-based design
-    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct)
+    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Struct && s.metadata?.isGoStruct)
     const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
 
     if (structs.length > 0) {
@@ -3163,7 +3598,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (
       someSymbol(
         symbols,
-        (s) => stringIncludes(s.name.toLowerCase(), "service") && s.kind === ASTEngine.SymbolKind.Class,
+        (s) => stringIncludes(s.name.toLowerCase(), "service") && s.kind === ASTEngine.SymbolKind.Struct,
       )
     ) {
       patterns.push("grpc_services")
@@ -3217,7 +3652,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /** Parse struct tags `json:"name" db:"x"` into key -> value (no regex). */
   private parseStructTags(tagText: string): Record<string, string> {
-    const result: Record<string, string> = {}
+    const result: Record<string, string> = Object.create(null)
     let i = 0
     const n = tagText.length
     while (i < n) {
@@ -3351,20 +3786,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   private detectFrameworkFromGoImport(importPath: string): string | undefined {
-    if (stringIncludes(importPath, "gin-gonic/gin")) return "gin"
-    if (stringIncludes(importPath, "labstack/echo")) return "echo"
-    if (stringIncludes(importPath, "gofiber/fiber")) return "fiber"
-    if (stringIncludes(importPath, "gorilla/mux")) return "gorilla_mux"
-    if (stringIncludes(importPath, "gorm.io/gorm")) return "gorm"
-    if (stringIncludes(importPath, "github.com/jmoiron/sqlx")) return "sqlx"
-    if (stringIncludes(importPath, "entgo.io/ent")) return "ent"
-    if (stringIncludes(importPath, "google.golang.org/grpc")) return "grpc"
-    if (stringIncludes(importPath, "golang.org/x/")) return "golang_extended"
-    if (stringIncludes(importPath, "go.uber.org/fx")) return "fx"
-    if (stringIncludes(importPath, "github.com/google/wire")) return "wire"
-    if (stringIncludes(importPath, "go.uber.org/zap")) return "zap"
-    if (stringIncludes(importPath, "github.com/sirupsen/logrus")) return "logrus"
-
+    // The same table the file-level detector reads, so the two cannot name the
+    // same import differently (GO26, round 5). Order decides a tie, and the
+    // pre-fix per-import chain is a subsequence of the table in the same
+    // relative order, so every import that resolved before still resolves to
+    // the same name.
+    for (const rule of GO_FRAMEWORK_RULES) {
+      if (rule.matches(importPath)) return rule.name
+    }
     return undefined
   }
 
@@ -3447,7 +3876,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (inArray(patterns, "dependency_injection")) score += 4
 
     // Reward proper struct design
-    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Class && s.metadata?.isGoStruct)
+    const structs = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Struct && s.metadata?.isGoStruct)
     const methods = filterSymbols(symbols, (s) => s.kind === ASTEngine.SymbolKind.Method)
     if (structs.length > 0) {
       const methodToStructRatio = methods.length / structs.length
@@ -3550,29 +3979,14 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Get Go type name from type declaration
-   */
-  private getGoTypeName(node: Node): string | undefined {
-    const spec = this.findChildByType(node, "type_spec")
-    if (spec) {
-      const nameNode = spec.childForFieldName("name")
-      return nameNode?.text
-    }
-    return undefined
-  }
-
-  /**
-   * Extract embedded types from struct (anonymous fields)
-   */
-  private extractGoEmbeddedTypes(structNode: Node): string[] {
-    return this.extractGoEmbeddedTypeNodes(structNode).map((n) => n.text)
-  }
-
-  /**
-   * M59.A7 (#825): the node form of extractGoEmbeddedTypes. The extends edge
-   * this feeds carries the embedded TYPE's own line, so the walk has to return
-   * the node the name is written on, not just its text. One traversal serves
-   * both — the text form delegates here, so the two can never disagree.
+   * The embedded fields of a struct, as NODES. M59.A7 (#825): the `extends`
+   * edge these feed carries the embedded TYPE's own line, so the walk has to
+   * return the node the name is written on and not just its text.
+   *
+   * GO26 (round 5): the `extractGoEmbeddedTypes` TEXT form is removed. It was
+   * defined to delegate here and had no call site anywhere in the repository —
+   * a second entry point onto the same walk, and therefore a second thing that
+   * could drift from it. There is now exactly one.
    */
   private extractGoEmbeddedTypeNodes(structNode: Node): Node[] {
     const embeddedTypes: Node[] = []
@@ -3676,22 +4090,35 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     structMethods: ASTEngine.UniversalSymbol[],
   ): { implements: boolean; confidence: number; matchedMethods: string[] } {
     const matchedMethods: string[] = []
-    let totalMethods = interfaceMethods.length
+    const totalMethods = interfaceMethods.length
 
     if (totalMethods === 0) {
       return { implements: false, confidence: 0, matchedMethods: [] }
     }
 
-    forEachSymbol(interfaceMethods, (interfaceMethod) => {
-      const matchingMethod = findSymbol(structMethods, (structMethod) => {
-        const structSignature = this.buildGoMethodSignature(structMethod)
-        return (
-          interfaceMethod.name === structMethod.name &&
-          this.compareGoMethodSignatures(interfaceMethod.signature, structSignature)
-        )
-      })
+    // GO34 (round 5): the implementor's method set is indexed ONCE per
+    // (candidate, value/pointer) instead of being re-scanned for every
+    // interface method. The pre-fix code ran `findSymbol(structMethods, …)`
+    // inside the interface-method loop, so one candidate cost
+    // `interfaces × methods` signature comparisons, and a file with I
+    // interfaces and C candidates cost O(I × C × M). Measured on the
+    // deterministic synthetic shape below: ms/KB grew 9.15x from the smallest
+    // to the largest file pre-fix and 3.12x after the two GO34 changes; this
+    // index is what removes the remaining per-pair scan.
+    //
+    // The key is the SAME predicate the scan used — method NAME plus normalized
+    // signature — so the boolean answer per interface method and the
+    // `matchedMethods` list are identical to the linear scan's. A duplicate
+    // method (same name and signature) collapsing in the set changes nothing:
+    // the scan only ever asked whether AT LEAST ONE method matched, and pushed
+    // the interface method's name once.
+    const available = new Set<string>()
+    forEachSymbol(structMethods, (m) => {
+      available.add(`${m.name}\u0000${this.normalizeGoSignature(this.buildGoMethodSignature(m))}`)
+    })
 
-      if (matchingMethod) {
+    forEachSymbol(interfaceMethods, (interfaceMethod) => {
+      if (available.has(`${interfaceMethod.name}\u0000${this.normalizeGoSignature(interfaceMethod.signature)}`)) {
         matchedMethods.push(interfaceMethod.name)
       }
     })
@@ -3711,21 +4138,20 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // DIFFERENT types, and an interface satisfied by one is not satisfied by
     // the other. Normalization keeps it (normalizeGoSignature only drops the
     // space before the dots).
+    //
+    // Memoized per method node (see `goSignatures`): the string is a pure
+    // function of the method symbol, and the implements pass compares it
+    // O(interfaces × candidates) times.
+    const key = method.range?.startIndex
+    if (typeof key === "number") {
+      const hit = this.goSignatures.get(key)
+      if (hit !== undefined) return hit
+    }
     const params = mapSymbols(method.parameters || [], (p) => (p.isVariadic ? "..." : "") + (p.type || "interface{}")).join(", ") || ""
     const returnType = method.returnType || "void"
-    return `${method.name}(${params}) ${returnType}`
-  }
-
-  /**
-   * Compare Go method signatures for interface implementation
-   */
-  private compareGoMethodSignatures(sig1: string, sig2: string): boolean {
-    // Normalize signatures by removing extra whitespace and variadic expansion
-    // (pure char scan + string ops, no regex).
-    const normalize = (sig: string) => {
-      return this.normalizeGoSignature(sig)
-    }
-    return normalize(sig1) === normalize(sig2)
+    const sig = `${method.name}(${params}) ${returnType}`
+    if (typeof key === "number") this.goSignatures.set(key, sig)
+    return sig
   }
 
   /**
@@ -3742,12 +4168,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (!functionName) return undefined
 
       // Local symbol with a matching name wins (method/function leaf).
-      const fallback = findSymbol(
-        symbols,
-        (s) =>
-          (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
-          s.name === functionName,
-      )
+      const fallback = findSymbol(symbols, (s) => this.isGoPackageCallable(s) && s.name === functionName)
       return fallback?.name ?? functionName
     }
 
@@ -3755,12 +4176,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
     // bare names may be dot-imported members (besides builtins, filtered
     // by callers) — resolve leniently, mirrored by the oracle.
     if (dotImported) return callExpression || undefined
-    const targetFunction = findSymbol(
-      symbols,
-      (s) =>
-        (s.kind === ASTEngine.SymbolKind.Function || s.kind === ASTEngine.SymbolKind.Method) &&
-        s.name === callExpression,
-    )
+    const targetFunction = findSymbol(symbols, (s) => this.isGoPackageCallable(s) && s.name === callExpression)
 
     return targetFunction?.name
   }
@@ -3768,20 +4184,21 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Extract Go package name from content
    */
-  private extractGoPackageName(rootNode: Node): string | undefined {
-    for (let i = 0; i < rootNode.namedChildCount; i++) {
-      const child = rootNode.namedChild(i)
-      if (child && child.type === "package_clause") {
-        // M14.0.F1 (#880): `package_clause` declares NO fields in this grammar —
-        // the old `childForFieldName("package_identifier")` could never match
-        // (it is a node TYPE, not a field) and the named-child fallback carried
-        // the value all along. Read the node by type, so the audit's field table
-        // and this lookup agree.
-        const pkgId = this.findChildByType(child, "package_identifier") ?? child.namedChild(0)
-        return pkgId ? pkgId.text : undefined
-      }
-    }
-    return undefined
+  private findGoPackageClause(rootNode: Node): Node | undefined {
+    return this.findChildByType(rootNode, "package_clause") ?? undefined
+  }
+
+  /**
+   * The package name a `package_clause` declares. M14.0.F1 (#880):
+   * `package_clause` declares NO fields in this grammar, so the old
+   * `childForFieldName("package_identifier")` could never match (that is a
+   * node TYPE, not a field) and the named-child fallback carried the value all
+   * along. Read the node by TYPE, so the audit's field table and this lookup
+   * agree.
+   */
+  private goPackageClauseName(clause: Node): string | undefined {
+    const pkgId = this.findChildByType(clause, "package_identifier") ?? clause.namedChild(0)
+    return pkgId ? pkgId.text : undefined
   }
 
   /**

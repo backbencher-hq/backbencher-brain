@@ -1,0 +1,108 @@
+--- a/grammar.js	2026-09-28 20:21:40.598378207 -0400
++++ b/grammar.js	2026-09-28 20:21:40.619900385 -0400
+@@ -78,6 +78,17 @@
+     $._string,
+   ],
+ 
++  // PATCH P2 conflict declaration. `$$(FOO)` is genuinely two things at once:
++  // a `variable_reference` (one `_primary`) and a balanced `_paren_text` (the
++  // `shell_command` the analyzer already knows how to read). Declaring the
++  // conflict lets the parser keep BOTH readings alive and choose per input, which
++  // is the honest resolution; a static precedence would silently discard one of
++  // them for EVERY input rather than for the inputs where it is wrong.
++  conflicts: $ => [
++    [$.concatenation, $._paren_text],
++    [$.variable_reference, $._paren_text],
++  ],
++
+   extras: $ => [
+     /\s/,
+     alias(token(seq('\\', /\r?\n|\r/)), '\\'),
+@@ -102,13 +113,34 @@
+       $._static_pattern_rule,
+     ),
+ 
+-    _ordinary_rule: $ => prec.right(seq(
+-      $._targets,
+-      choice(':', '&:', '::'),
+-      optional(WS),
+-      optional($._prerequisites),
+-      choice(
+-        $.recipe,
++    // PATCH P1 (measured, M60 Make): GNU Make 7.7 "Target-specific variable".
++    //
++    // `variable_assignment` already accepts an OPTIONAL leading `list ':'`, so
++    // `target: VAR = value` parses. It does NOT parse `target: export VAR = value`,
++    // because `export_directive` puts the `export` keyword BEFORE the assignment
++    // (`export [target:] VAR = value`) and nothing allows the keyword after the
++    // colon. The line therefore became an ERROR node on 8 sites across 2 of the
++    // corpus's 99 files, and the variable was never extracted at all.
++    //
++    // The branch is added to the RULE (not to export_directive) because that is
++    // where the colon has already been consumed and the assignment has not yet
++    // started, which is the only place the form is unambiguous.
++    _ordinary_rule: $ => prec.right(choice(
++      seq(
++        $._targets,
++        choice(':', '&:', '::'),
++        optional(WS),
++        optional($._prerequisites),
++        choice(
++          $.recipe,
++          NL,
++        ),
++      ),
++      seq(
++        $._targets,
++        ':',
++        optional(WS),
++        alias($.export_directive, $.export_directive),
+         NL,
+       ),
+     )),
+@@ -390,6 +422,9 @@
+     // }}}
+     // Variables {{{
+     _variable: $ => choice(
++      // PATCH P2 placement: the escaped-dollar SHELL form is tried FIRST, and it
++      // is keyed on `$$` so it cannot shadow a real `$(...)` expansion.
++      $._shell_escape,
+       $.variable_reference,
+       $.substitution_reference,
+       $.automatic_variable,
+@@ -472,6 +507,35 @@
+       alias($._paren_text, $.shell_command),
+       ')',
+     ),
++
++    // PATCH P2 (measured, M60 Make): `$$( ... )`.
++    //
++    // `$$` is Make's ESCAPED dollar, so Make does NOT expand `$$(X)` — it hands
++    // `$(X)` to the shell verbatim. The grammar already writes `choice('$','$$')`
++    // on variable_reference, substitution_reference, automatic_variable and
++    // function_call, which routes an escaped form into the make-expansion
++    // branches. When the content is a SHELL command rather than a make primary —
++    // `$$($(GO_CMD) list -tags enterprise ./... | grep -v vendor/)` — neither
++    // branch can parse it (variable_reference takes a single `_primary`; there are
++    // spaces and a pipe), and the whole line became an ERROR node, so
++    // MAIN_PACKAGES was never extracted.
++    //
++    // Keyed on the `$$` form ONLY, which is what makes it unambiguous: `$(FOO)` is
++    // still a variable reference, and only the escaped spelling can be a shell
++    // command. Whether this REGRESSES anything is decided by the A/B over the
++    // 99-file corpus, not by this comment.
++    // `prec(1, …)` resolves the conflict the generator reports between this rule
++    // and `variable_reference`: `$(FOO)` is BOTH a single `_primary` and a
++    // balanced `_paren_text`, and without a precedence the parse is ambiguous.
++    // Raising the escaped form wins for `$$(`, which is the semantically correct
++    // reading — Make does not expand it. Whether that changes anything the
++    // analyzer can see is decided by the A/B, not here.
++    _shell_escape: $ => prec.dynamic(1, seq(
++      '$$',
++      token.immediate('('),
++      alias($._paren_text, $.shell_command),
++      ')',
++    )),
+     // }}}
+     // Primary and lists {{{
+     list: $ => prec(1, seq(

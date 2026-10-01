@@ -1,0 +1,1913 @@
+{
+  "schemaVersion": 1,
+  "truthSource": "manual_audit",
+  "source": "validation/m12/fixtures/nim/{Contract,mac,helpers,shared,painter,gloss}.nim",
+  "auditNote": "Hand-audited from the fixture source against the contract in docs/analyzers/real-nim-analyzer.md \u2014 symbol kinds, the ruled read/write table, and the import path rules. NOT dumped from the analyzer: every fact's evidence field cites the construct it asserts, so a wrong analyzer can be caught rather than confirmed. The fixture is accepted by the Nim 2.2.12 compiler, so no fact asserts behaviour the language rejects. Three facts are here BECAUSE the analyzer does not emit them, each verified in a minimal repro first: a parenless UFCS call (calls exercise->describe), and the two extends/references rows for an undeclared base (`ref object of RootObj`). One fixture line was corrected DURING the audit and the correction is worth recording: it first read `export proc helper*(x: int)`, which the Nim 2.2.12 compiler rejects with 9 errors and which occurs 0 times across all 12 corpora \u2014 the grammar's ERROR node and the compiler agreed, and the fixture was wrong. It is now `proc helper*` plus `export helper`, the real re-export form. One observed edge is deliberately ABSENT: `uses (global) -> x`, which reads a tuple type's field name as if it were a value. A second audit row was ADDED after the analyzer emitted it: `b.build` is as much a parenless UFCS call as `r.describe` is, and the first pass caught only one of the two. And two rows were REMOVED from this audit after the analyzer declined them: `extends Shape -> RootObj` and `references Shape -> RootObj`. `RootObj` is one of the four NIM_COMPILER_ROOTS \u2014 the implicit roots of the compiler's own type system, which no file in an analyzed project declares \u2014 and the analyzer deliberately publishes no edge to them because such an edge could never resolve. The audit asserted them on the grounds that the base IS written in the source; the analyzer's counter-argument is that a dependency edge to a name that exists in no analyzed file is a guaranteed-dangling row, and a dangling row in the dependency graph is worse than an absent one. The ruling is recorded in the analyzer and the audit adopts it. This is the one place in this lane where the analyzer's refusal is a judgement call rather than a defect, and it is called out here rather than left implicit. A THIRD omission, in the same direction: the audit left out the two method `contains` rows. They appeared only when a method began declaring `ownerName`, which is what makes the method owned by its receiver \u2014 the same field the project-wide override companion index keys on. An ownership edge that depends on an unrelated-looking field is easy to miss, and it is the third time this audit has been the thing that was wrong rather than the analyzer. The fixture set gained a CROSS-FILE OVERRIDE PAIR (painter.nim declares the base and its method; gloss.nim derives and overrides it in a sibling module) because no single-file fixture can express that family: the edge is project knowledge, supplied by the caller as the override companion index, and the M12 differential harness is one of the few places that builds one. Its production path does not \u2014 the seam gate runs the real `bb index`, which has no companion \u2014 so this family is gated by the differential and NOT by the fixture lane, and the mutation for it points there. Adding the pair then cost a second pass of the same failure mode: the first audit named the two types, three members, the extends edge and the overrides edge, and MISSED nine other edges the analyzer correctly published for those two files \u2014 the import, both receiver type references, both field ownerships and both member reads, plus the derived method's call to itself. Every one is a contract fact and the audit had simply not enumerated them, which is what the harness reported as precision 0.929. The lesson is the fourth instance of the same thing: an audit that writes down what it expects to see, rather than walking the file construct by construct, under-specifies by omission and the gap shows up as analyzer error.",
+  "facts": [
+    {
+      "id": "symbol:Contract.nim:12:enum:Color",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 12,
+      "attributes": {
+        "name": "Color",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:12 `type Color* = enum` \u2014 a nominal enum is SymbolKind.Enum"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:13:enum_member:Red",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 13,
+      "attributes": {
+        "name": "Red",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:13 `Red, Green, Blue` \u2014 each enum field is a value the language compares on"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:13:enum_member:Green",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 13,
+      "attributes": {
+        "name": "Green",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:13 `Red, Green, Blue`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:13:enum_member:Blue",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 13,
+      "attributes": {
+        "name": "Blue",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:13 `Red, Green, Blue`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:15:class:Shape",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 15,
+      "attributes": {
+        "name": "Shape",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:15 `Shape = ref object of RootObj` \u2014 `ref object` has identity, inheritance and dynamic dispatch, which is what Class means here"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:16:property:name",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 16,
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:16 `name*: string` \u2014 an object field IS a symbol; the object owns it"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:17:property:sides",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 17,
+      "attributes": {
+        "name": "sides",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:17 `sides: int`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:18:property:color",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 18,
+      "attributes": {
+        "name": "color",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:18 `color: Color`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:20:class:Rect",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 20,
+      "attributes": {
+        "name": "Rect",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:20 `Rect = ref object of Shape`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:21:property:w",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 21,
+      "attributes": {
+        "name": "w",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:21 `w, h: int` \u2014 one field_declaration, two properties"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:21:property:h",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 21,
+      "attributes": {
+        "name": "h",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:21 `w, h: int`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:23:struct:Registry",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 23,
+      "attributes": {
+        "name": "Registry",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:23 `Registry*[T] = object` \u2014 a plain `object` copies, so Struct. `T` is a generic PARAMETER and is not a symbol"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:24:property:items",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 24,
+      "attributes": {
+        "name": "items",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:24 `items: seq[T]`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:25:property:count",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 25,
+      "attributes": {
+        "name": "count",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:25 `count: int`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:27:struct:Pair",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 27,
+      "attributes": {
+        "name": "Pair",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:27 `Pair = tuple[x, y: int]` \u2014 a tuple type has fields and is destructurable, so Struct"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:27:property:x",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 27,
+      "attributes": {
+        "name": "x",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:27 `tuple[x, y: int]` \u2014 the tuple's NAMED elements are fields"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:27:property:y",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 27,
+      "attributes": {
+        "name": "y",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:27 `tuple[x, y: int]`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:28:struct:Anon",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 28,
+      "attributes": {
+        "name": "Anon",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:28 `Anon = (int, string)` \u2014 the ordinary UNNAMED tuple spelling; the elements are TYPES, not field names, so there are no property rows for int/string"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:29:type:Meters",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 29,
+      "attributes": {
+        "name": "Meters",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:29 `Meters = distinct float` \u2014 a type-level name with no fields"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:31:constant:MaxItems",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 31,
+      "attributes": {
+        "name": "MaxItems",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:31 `const MaxItems* = 32` \u2014 compile-time"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:32:constant:Names",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 32,
+      "attributes": {
+        "name": "Names",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:32 `const Names = [\"a\", \"b\"]`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:34:variable:Greeting",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 34,
+      "attributes": {
+        "name": "Greeting",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:34 `let Greeting* = \"hello\"` \u2014 a file-scope `let` is a runtime binding, Variable, not Constant"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:35:variable:counter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 35,
+      "attributes": {
+        "name": "counter",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:35 `var counter = 0`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:38:interface:Addable",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 38,
+      "attributes": {
+        "name": "Addable",
+        "symbolKind": "interface"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:38 `Addable = concept x` \u2014 a concept is the language's structural interface, satisfied by implicit dispatch"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:41:function:area",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 41,
+      "attributes": {
+        "name": "area",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:41 `proc area*`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:45:function:double",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 45,
+      "attributes": {
+        "name": "double",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:45 `func double*` \u2014 `func` is a function"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:48:function:withDefaults",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 48,
+      "attributes": {
+        "name": "withDefaults",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:48 `proc withDefaults*(a, b, c)`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:51:method:describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 51,
+      "attributes": {
+        "name": "describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:51 `method describe*(s: Shape) {.base.}` \u2014 a method is the only kind carrying a receiver"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:54:method:describe",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 54,
+      "attributes": {
+        "name": "describe",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:54 `method describe*(s: Rect)` \u2014 the derived method; same name, different owner"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:57:function:countUp",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 57,
+      "attributes": {
+        "name": "countUp",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:57 `iterator countUp*` \u2014 an iterator is callable and has its own call syntax"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:61:function:toFloat",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 61,
+      "attributes": {
+        "name": "toFloat",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:61 `converter toFloat*`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:64:macro:twice",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 64,
+      "attributes": {
+        "name": "twice",
+        "symbolKind": "macro"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:64 `template twice*` \u2014 a template is expanded before name resolution; not a callable value"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:70:struct:Builder",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 70,
+      "attributes": {
+        "name": "Builder",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:70 `Builder = object`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:71:property:parts",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 71,
+      "attributes": {
+        "name": "parts",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:71 `parts: seq[string]`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:73:struct:FileInfo",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 73,
+      "attributes": {
+        "name": "FileInfo",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:73 `FileInfo = object`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:74:property:fileStem",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 74,
+      "attributes": {
+        "name": "fileStem",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:74 `fileStem: string` \u2014 the field EXISTS; a same-named local binding elsewhere must not be attributed to it"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:75:property:fileSize",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 75,
+      "attributes": {
+        "name": "fileSize",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:75 `fileSize: int`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:77:function:add",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 77,
+      "attributes": {
+        "name": "add",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:77 `proc add*(b: var Builder, p: string)`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:80:variable:written",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 80,
+      "attributes": {
+        "name": "written",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:80 `var written* = 0`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:82:function:build",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 82,
+      "attributes": {
+        "name": "build",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:82 `proc build*(b: Builder): string`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:86:function:stemOf",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 86,
+      "attributes": {
+        "name": "stemOf",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:86 `proc stemOf*(path: string): string`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:90:function:makeRect",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 90,
+      "attributes": {
+        "name": "makeRect",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:90 `proc makeRect*(w, h: int): Rect`"
+      }
+    },
+    {
+      "id": "symbol:Contract.nim:93:function:exercise",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "Contract.nim",
+      "line": 93,
+      "attributes": {
+        "name": "exercise",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:93 `proc exercise*()`"
+      }
+    },
+    {
+      "id": "symbol:helpers.nim:1:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "helpers.nim",
+      "line": 1,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "helpers.nim:1 `proc helper*(): int`"
+      }
+    },
+    {
+      "id": "symbol:mac.nim:3:macro:retTrue",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "mac.nim",
+      "line": 3,
+      "attributes": {
+        "name": "retTrue",
+        "symbolKind": "macro"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "mac.nim:3 `macro retTrue*(): untyped` \u2014 a macro declaration is a Macro symbol"
+      }
+    },
+    {
+      "id": "symbol:shared.nim:2:function:helper",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "shared.nim",
+      "line": 2,
+      "attributes": {
+        "name": "helper",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "shared.nim:2 `export proc helper*(x: int): int`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):std/os",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "std/os",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import std/[os, strutils]` \u2014 a module LIST yields one edge per element"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):std/strutils",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "std/strutils",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import std/[os, strutils]`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):std/macros",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "std/macros",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import std/macros` \u2014 a plain two-segment path"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):std/private/globs",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "std/private/globs",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import std/private/globs` \u2014 a THREE-segment path; the separator is a named `operator` node whose text is the whole token"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):./helpers",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "./helpers",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import ./helpers` \u2014 a relative path keeps the written spelling"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):./shared",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "./shared",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `import ./shared`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:imports:(global):./mac",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "(global)",
+      "targetId": "./mac",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `from ./mac import retTrue` \u2014 the `from` form publishes the MODULE, not `module as alias`"
+      }
+    },
+    {
+      "id": "rel:mac.nim:imports:(global):std/macros",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "mac.nim",
+      "sourceId": "(global)",
+      "targetId": "std/macros",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "mac.nim `import std/macros` in the macro module"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Color:Red",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Color",
+      "targetId": "Red",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> enum member"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Color:Green",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Color",
+      "targetId": "Green",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> enum member"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Color:Blue",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Color",
+      "targetId": "Blue",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> enum member"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Shape:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "name",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Shape:sides",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "sides",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Shape:color",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "color",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Rect:w",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "w",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Rect:h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "h",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Registry:items",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Registry",
+      "targetId": "items",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Registry:count",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Registry",
+      "targetId": "count",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Pair:x",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Pair",
+      "targetId": "x",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> tuple field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Pair:y",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Pair",
+      "targetId": "y",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> tuple field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Builder:parts",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Builder",
+      "targetId": "parts",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:FileInfo:fileStem",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "FileInfo",
+      "targetId": "fileStem",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:FileInfo:fileSize",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "FileInfo",
+      "targetId": "fileSize",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim owner -> field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:extends:Rect:Shape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "Shape",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `ref object of Shape` \u2014 inheritance is a real dependency whether or not the base resolves in this file"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:overrides:Rect.describe:Shape.describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect.describe",
+      "targetId": "Shape.describe",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim a method override is receiver-QUALIFIED: `Rect.describe` and `Shape.describe` are different methods"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:Shape:Color",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "Color",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `color: Color` \u2014 a field's declared type is a dependency of the OWNING type"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:Rect:Shape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "Shape",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `ref object of Shape` \u2014 the declared base type is also a type reference"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:area:Rect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "area",
+      "targetId": "Rect",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `proc area*(s: Rect)` \u2014 a parameter's declared type"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:describe:Shape",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "describe",
+      "targetId": "Shape",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `method describe*(s: Shape)` \u2014 the receiver's declared type"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:describe:Rect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "describe",
+      "targetId": "Rect",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `method describe*(s: Rect)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:add:Builder",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "add",
+      "targetId": "Builder",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `proc add*(b: var Builder, \u2026)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:build:Builder",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "build",
+      "targetId": "Builder",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `proc build*(b: Builder)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:makeRect:Rect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "makeRect",
+      "targetId": "Rect",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `proc makeRect*(w, h: int): Rect` \u2014 the return type"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:references:exercise:Builder",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "Builder",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `var b: Builder` inside `exercise` \u2014 a LOCAL's annotation is a real declared-type dependency of the enclosing callable"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:area:w",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "area",
+      "targetId": "w",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `s.w * s.h` \u2014 a member read is a value dependency"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:area:h",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "area",
+      "targetId": "h",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `s.w * s.h`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:describe:name",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "describe",
+      "targetId": "name",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `s.name` in both describe bodies \u2014 one fact, since the two methods share a name"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:add:parts",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "add",
+      "targetId": "parts",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `b.parts.add p` \u2014 the member leaf of a UFCS read is a `uses` edge, distinct from the `calls` edge to `add` on the same expression"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:build:parts",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "build",
+      "targetId": "parts",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `b.parts.join(\",\")`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:makeRect:Red",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "makeRect",
+      "targetId": "Red",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `color: Red` inside the construction \u2014 an enum member read"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:exercise:counter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "counter",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `counter = counter + 1` \u2014 the RIGHT side is the read; the left is a write"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:exercise:Greeting",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "Greeting",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `echo \u2026 Greeting \u2026` \u2014 a bare read of a file-scope `let`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:exercise:MaxItems",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "MaxItems",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `$MaxItems`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:uses:exercise:Names",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "Names",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `join(Names, \",\")`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:describe:area",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "describe",
+      "targetId": "area",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `$area(s)` in the Rect describe"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:add:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "add",
+      "targetId": "add",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `b.parts.add p` \u2014 UFCS: no dot-call node, the member leaf IS the callee"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:build:join",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "build",
+      "targetId": "join",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `b.parts.join(\",\")`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:stemOf:splitFile",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "stemOf",
+      "targetId": "splitFile",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `splitFile(path)` \u2014 a call into an imported module is a real dependency"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:makeRect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "makeRect",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `makeRect(2, 3)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:area",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "area",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `area(r)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:double",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "double",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `double(a)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:add",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "add",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `b.add \"x\"`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:countUp",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "countUp",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `for i in countUp(3)` \u2014 an iterator is called"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:retTrue",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "retTrue",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `retTrue()` \u2014 a macro imported from ./mac is genuinely called"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:join",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "join",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `join(Names, \",\")`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:toFloat",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "toFloat",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `toFloat(counter)`"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "describe",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `r.describe` \u2014 a PARENLESS UFCS member call. In Nim `r.describe` invokes `describe(r)`; the contract admits UFCS member calls, and this is the one call form the analyzer does not emit at all (verified in a minimal repro)"
+      }
+    },
+    {
+      "id": "rel:mac.nim:calls:retTrue:newLit",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "mac.nim",
+      "sourceId": "retTrue",
+      "targetId": "newLit",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "mac.nim `result = newLit(true)` \u2014 a call into std/macros"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:instantiates:makeRect:Rect",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "makeRect",
+      "targetId": "Rect",
+      "attributes": {
+        "type": "instantiates"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim `Rect(name: \"r\", \u2026)` \u2014 object construction. Note the labels `name`/`w`/`h` are NOT reads: Nim has no ternary, so `x: value` in an expression only ever names a field"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:calls:exercise:build",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "exercise",
+      "targetId": "build",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:99 `let s = b.build` \u2014 a PARENLESS UFCS member call: `b.build` invokes `build(b)`. The first audit missed this row; the analyzer emitting it is what exposed the omission, and the same shape at `r.describe` is the false negative the audit DID catch"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Shape:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Shape",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:51 `method describe*(s: Shape) {.base.}` \u2014 a method is OWNED by its receiver type, which is what the `contains` ontology says (\"methods under their receiver\"). The first audit omitted both method rows; setting `ownerName` on a method is what made them appear, and the analyzer was right to emit them all along"
+      }
+    },
+    {
+      "id": "rel:Contract.nim:contains:Rect:describe",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "Contract.nim",
+      "sourceId": "Rect",
+      "targetId": "describe",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Contract.nim:54 `method describe*(s: Rect)` \u2014 the derived method is owned by Rect"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:2:class:Painter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 2,
+      "attributes": {
+        "name": "Painter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:2 `Painter* = ref object of RootObj` \u2014 the base of the cross-file override pair, declared in ITS OWN module"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:3:property:canvas",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 3,
+      "attributes": {
+        "name": "canvas",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:3 `canvas*: string`"
+      }
+    },
+    {
+      "id": "symbol:painter.nim:5:method:paint",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "painter.nim",
+      "line": 5,
+      "attributes": {
+        "name": "paint",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim:5 `method paint*(p: Painter) {.base.}` \u2014 the ROOT of the override chain, in the base's module"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:4:class:GlossPainter",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 4,
+      "attributes": {
+        "name": "GlossPainter",
+        "symbolKind": "class"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:4 `GlossPainter* = ref object of Painter` \u2014 the base `Painter` is declared in painter.nim, a module this file never sees, so the overrides edge below is not derivable from this file alone"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:5:property:sheen",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 5,
+      "attributes": {
+        "name": "sheen",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:5 `sheen*: int`"
+      }
+    },
+    {
+      "id": "symbol:gloss.nim:7:method:paint",
+      "layer": "ast_extraction",
+      "kind": "symbol",
+      "file": "gloss.nim",
+      "line": 7,
+      "attributes": {
+        "name": "paint",
+        "symbolKind": "method"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim:7 `method paint*(g: GlossPainter)` \u2014 same method name, different receiver, different FILE"
+      }
+    },
+    {
+      "id": "rel:painter.nim:contains:Painter:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "Painter",
+      "targetId": "paint",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim the base module's method is owned by its receiver type"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:contains:GlossPainter:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "paint",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim the derived module's method likewise"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:extends:GlossPainter:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "extends"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim the base is named in the source even though it lives in another module \u2014 verified emitting for a base outside this file"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:overrides:GlossPainter.paint:Painter.paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter.paint",
+      "targetId": "Painter.paint",
+      "attributes": {
+        "type": "overrides"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim THE CROSS-FILE OVERRIDE EDGE. `Painter` and the `paint` it declares are both in painter.nim. Nothing in gloss.nim can see them, so this edge exists only because the caller supplies the project-wide override companion index (engine `AnalyzeContext.overrideCompanion`, the same mechanism six other analyzers use). The receiver-qualified label is what makes it addressable: two methods, one name"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:imports:(global):./painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "(global)",
+      "targetId": "./painter",
+      "attributes": {
+        "type": "imports"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `import ./painter` \u2014 the base module, a relative path that keeps its written spelling"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:references:GlossPainter:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `ref object of Painter` \u2014 the declared base type is a type reference of the OWNING type, whether or not it is declared in this file"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:references:paint:GlossPainter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "GlossPainter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `method paint*(g: GlossPainter)` \u2014 a method's receiver is a declared-type dependency of the method"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:contains:GlossPainter:sheen",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "GlossPainter",
+      "targetId": "sheen",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `sheen*: int` \u2014 a field is owned by its type"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:uses:paint:sheen",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "sheen",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `$g.sheen` \u2014 the member leaf of a read is a value dependency"
+      }
+    },
+    {
+      "id": "rel:gloss.nim:calls:paint:paint",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "gloss.nim",
+      "sourceId": "paint",
+      "targetId": "paint",
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "gloss.nim `$paint(g)` \u2014 a PARENLESS UFCS call to the override itself. Same name at both ends, and that is correct: the derived method calls its own name, and the label is qualified by owner elsewhere"
+      }
+    },
+    {
+      "id": "rel:painter.nim:contains:Painter:canvas",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "Painter",
+      "targetId": "canvas",
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `canvas*: string` \u2014 a field is owned by its type"
+      }
+    },
+    {
+      "id": "rel:painter.nim:references:paint:Painter",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "paint",
+      "targetId": "Painter",
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `method paint*(p: Painter)` \u2014 the base method's receiver"
+      }
+    },
+    {
+      "id": "rel:painter.nim:uses:paint:canvas",
+      "layer": "relationships",
+      "kind": "relationship",
+      "file": "painter.nim",
+      "sourceId": "paint",
+      "targetId": "canvas",
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "painter.nim `p.canvas` \u2014 a member read"
+      }
+    }
+  ]
+}

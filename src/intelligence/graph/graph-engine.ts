@@ -7,9 +7,142 @@ import { deriveCallSiteAddress } from "./line-address"
 
 type EdgeMetadata = NonNullable<GraphEdge["metadata"]>
 
-const DEFAULT_REL_TYPES = ["calls", "instantiates", "extends", "implements"]
+/**
+ * Every value of `ASTEngine.RelationshipType`. This list is the DEFAULT filter,
+ * and it used to be four of them.
+ *
+ * The old default was `["calls","instantiates","extends","implements"]`, and it
+ * was UNDECLARED — the traversal's `reasons` set reported caps and budgets but
+ * not this, so a caller could not tell a filtered answer from a complete one.
+ * That is the same failure the M59.A12 note above already forbids in a different
+ * guise ("a bound is fine; an undeclared bound is not"), and the number is not
+ * small. Measured on 1,200 real Ruby files, 101,017 emitted relationships:
+ *
+ *     calls        73.6%
+ *     contains     10.7%   <- the parent -> member edge
+ *     overrides     5.4%
+ *     uses          5.0%
+ *     references    1.2%
+ *     … 22.2% of every emitted relationship was excluded before the query ran.
+ *
+ * `contains` is the one that does structural damage rather than just thinning:
+ * it is the parent -> member edge, so under the old default a traversal from a
+ * class could not reach that class's own methods.
+ *
+ * It also disagreed with the repository's TWO other graph paths, which both
+ * return everything when no filter is given — `src/ast/graph.ts`
+ * (`relationshipTypes: Object.values(RelationshipType)`) and
+ * `visualization-engine.ts` (`!request.relationshipTypes?.length || …`). Three
+ * paths, three default policies, and two of them disagreed with each other, so
+ * the same question about the same project had two different answers depending
+ * on which tool asked. Aligning on "no filter unless asked" makes all three
+ * agree, and a caller who wants a subset still passes one.
+ *
+ * Kept as a literal rather than imported from `ast/engine` to keep this module
+ * free of an import cycle, and it must be kept in step with the enum — which is
+ * why the value list is spelled out in full instead of a partial subset.
+ */
+const DEFAULT_REL_TYPES = [
+  "calls", "extends", "implements", "uses", "instantiates", "overrides",
+  "contains", "references", "imports", "exports",
+]
+/** Records an ACTIVE caller-supplied type filter in the result's reason set, so a
+ * filtered traversal is never mistaken for a complete one. The default is NOT
+ * recorded: with the default now covering every type, there is nothing to
+ * disclose. */
+function noteRelationshipFilter(note: (reason: string) => void, relTypes: string[]): void {
+  note(`relationshipTypes:${[...relTypes].sort().join("|")}`)
+}
+
 const DEFAULT_MAX_DEPTH = 5
 const DEFAULT_BUDGET = 50
+
+/**
+ * Wall-clock budget for one walk, in milliseconds.
+ *
+ * The other bounds on a traversal are in NODES, and a node is not a unit of
+ * work. Measured on backbencher-brain/src (7,196 symbols, 40,557
+ * relationships): the caller query for `push` matches 2,436 stored rows, and
+ * the `ORDER BY f.relative_path, r.line_number, r.id` that makes the answer
+ * reproducible (M59.A12) costs 85.8 ms of the 87.8 ms — a 43x multiplier over
+ * the same query without it. SQLite sorts BEFORE applying the LIMIT, so the
+ * per-query `edgeLimit` of 200 does not bound it. At a 50-node budget that is
+ * ~4.4 s for one symbol, and the recursion multiplies it: measured
+ * `bb_analyze mode=callers target=push` at 417 ms on a warm cache and over
+ * 25 s cold, and `mode=trace target=push` at 613 SECONDS.
+ *
+ * So a bound that is declared but does not bound is the defect. This one
+ * does: when the clock runs out the walk stops and says so through
+ * `truncationReason: "walk-time-budget-exhausted"`, which is the same contract
+ * every other bound here obeys. A caller who needs the whole set raises
+ * `timeBudgetMs` (or lowers the fan-in they are asking about) and can see that
+ * they did.
+ */
+const DEFAULT_WALK_TIME_BUDGET_MS = 2_000
+
+/**
+ * Which relationship kinds survive a cap first, and why.
+ *
+ * The cap's ORDER BY used to be `fileRel, lineNumber, rowId` — stable, but
+ * indifferent to KIND. When DEFAULT_REL_TYPES was four kinds that did not
+ * matter; now that it is all ten it does, because every kind competes for the
+ * same slots and the survivor set becomes a function of the target's file
+ * rather than of the graph. Measured on lodash's `baseConvert`:
+ *
+ *     relationshipTypes: ["calls"]  ->  99 edges, all calls
+ *     default (all ten kinds)       -> 230 edges, of which 71 are calls
+ *
+ * Asking for more returned fewer calls. That is the wrong direction for a tool
+ * whose question is "what depends on this", and it was invisible: the payload
+ * said nothing about which kinds had lost.
+ *
+ * The order below is a statement about what an edge MEANS, not about
+ * importance. `calls`, `instantiates`, `extends`, `implements` and `overrides`
+ * are dependencies between two symbols. `contains` is membership, `uses` and
+ * `references` are lexical, `imports` and `exports` are module-level. When a
+ * bound forces a choice, it should fall on the dependency side.
+ *
+ * KINDS NOT LISTED sort last but are still returned — this is a cap ordering,
+ * not a filter. `relTypes` is what filters; nothing here hides anything.
+ *
+ * The prefix keeps the order a strict TOTAL order (kind, then file, then line,
+ * then rowId), so two identical questions still produce identical answers.
+ */
+const EDGE_KIND_PRIORITY: Record<string, number> = {
+  calls: 0,
+  instantiates: 1,
+  extends: 2,
+  implements: 3,
+  overrides: 4,
+  uses: 5,
+  references: 6,
+  imports: 7,
+  exports: 8,
+  contains: 9,
+}
+const UNRANKED_KIND_ORDER = 100
+
+/**
+ * The rank expression, PROJECTED under the alias `kindRank`.
+ *
+ * It has to be projected rather than written inline in the ORDER BY. The
+ * callee query is a compound select (`... UNION ALL ...`), and for those SQLite
+ * restricts ORDER BY to output column names, integer literals and parameters —
+ * an arbitrary expression is refused outright, with
+ * "1st ORDER BY term does not match any column in the result set". The caller
+ * query is a simple select and would have taken it inline, but both project it
+ * so there is one ordering expression in the module rather than two.
+ */
+const KIND_RANK_SQL =
+  // `r.relationship_type`, not `relType`: the CASE is evaluated against the
+  // FROM tables, and an output alias is not in scope there. Inside a compound
+  // select that is a hard error — "no such column: relType" — which the corpus
+  // suite found before any reasoning about it would have.
+  "CASE r.relationship_type " +
+  Object.entries(EDGE_KIND_PRIORITY)
+    .map(([kind, rank]) => `WHEN '${kind}' THEN ${rank}`)
+    .join(" ") +
+  ` ELSE ${UNRANKED_KIND_ORDER} END AS kindRank `
 
 /**
  * M59.A12 (#888): the per-symbol site limit for one edge query.
@@ -25,6 +158,28 @@ const DEFAULT_BUDGET = 50
  */
 const DEFAULT_EDGE_QUERY_LIMIT = 200
 const MAX_EDGE_QUERY_LIMIT = 5000
+
+/**
+ * The bound on the SIZE OF THE ANSWER, as distinct from the bound on one query.
+ *
+ * `edgeLimit` bounds a single edge query and the fan-out budgets bound how many
+ * symbols are expanded, but nothing bounded their PRODUCT — so the nominal
+ * ceiling was 50 x 200 x 2 = 20,000 edges, and a caller asking "who calls
+ * unwrap" at the default depth could be handed half a megabyte with nothing in
+ * the payload to predict it. Measured: ripgrep's `unwrap` returns 206 edges at
+ * depth 1, 454 at depth 3 and 702 at depth 5 — 228 KiB, 504 KiB and 770 KiB
+ * rendered.
+ *
+ * Both existing bounds are declared, so this was never a silent lie; but a
+ * declared pair whose product is unbounded is not a bound, and the reader has to
+ * do the multiplication themselves to find that out.
+ *
+ * The default sits comfortably above what an ordinary question produces (about
+ * 450 edges for a hub symbol at the default depth) and stops the explosion. A
+ * caller who wants more asks for more.
+ */
+const DEFAULT_MAX_TOTAL_EDGES = 1000
+const MAX_TOTAL_EDGES = 5000
 /** Ceiling for the declared-total counting scan: past this the total is a
  *  declared lower bound rather than a silent one. Only reached when a cap was
  *  hit, so the normal path pays nothing. */
@@ -171,8 +326,21 @@ export async function traverseGraph(
   truncated: boolean
   truncationReason?: string
   maxDepthReached: number
+  /** The depth cap this run enforced. Paired with `maxDepthReached` it is the
+   *  only way a reader can tell "the walk finished" from "the walk stopped". */
+  maxDepth: number
+  /** The wall-clock budget this walk ran under, and whether it stopped on it.
+   *  A node is not a unit of work — see DEFAULT_WALK_TIME_BUDGET_MS — so the
+   *  time bound is the one that actually bounds a pathological target, and it
+   *  is declared on both sides: what it was, and whether it fired. */
+  timeBudgetMs: number
+  timeBudgetExhausted: boolean
   /** M59.A12 (#888): the declared per-query site limit in force for this run. */
   edgeLimit: number
+  /** The total-edge bound in force for this run, and whether it was reached.
+   *  Distinct from `edgeLimit`, which bounds ONE query: this bounds the answer. */
+  maxEdges: number
+  totalEdgeLimitReached: boolean
   /** How many edge queries hit that limit (a query can hit it at any depth). */
   cappedQueries: number
   /** True site count of the ROOT symbol, counted with the same query and the
@@ -182,17 +350,49 @@ export async function traverseGraph(
   totalCalleesIfKnown: number | null
   /** The count is a lower bound because the counting scan itself is bounded. */
   totalsAreLowerBounds: boolean
-  /** Caller edges that name the traced symbol exactly, vs. those the owner
-   *  cascade attributed to it through one of its members. The cascade is a
-   *  declared superset; these make it a REDUCIBLE one. */
+  /** DEPTH 0 ONLY. Caller edges that name the traced symbol exactly, vs. those
+   *  the owner cascade attributed to it through one of its members. The cascade
+   *  is a declared superset; these make it a REDUCIBLE one.
+   *
+   *  The depth-0 restriction is load-bearing, not pedantry: an edge found at
+   *  depth 2 is exact w.r.t. the symbol traced at depth 2, not w.r.t. the root,
+   *  and folding those in here produced a field that was simply wrong — measured
+   *  on rake, `exactCallers: 37` against 2 stored rows targeting the root. */
   exactCallers: number
   cascadedCallers: number
   exactCallees: number
   cascadedCallees: number
+  /** Edges at depth >= 1: about symbols DISCOVERED by the traversal, not
+   *  about the root. exactCallers + cascadedCallers + deeperCallers is
+   *  totalCallers. */
+  deeperCallers: number
+  deeperCallees: number
+  /** The fan-out bounds in force (symbols expanded per direction) and whether
+   *  each was exhausted. A bound that fires with no declared value is a bound
+   *  a reader cannot reason about. */
+  callerBudget: number
+  calleeBudget: number
+  callerBudgetExhausted: boolean
+  calleeBudgetExhausted: boolean
   /** Stored rows that appear in the caller list AND the callee list. Each is
    *  one relationship seen from two ends, so the sum of the two totals
    *  overstates the distinct relationship count by exactly this much. */
   edgesInBothDirections: number
+  /** Composition of the RETURNED edges by stored relationship kind. Counted
+   *  from the emitted edges, so it describes what the caller received after
+   *  cascade attribution, overlap and the cap — not what was queried. */
+  edgesByType: Record<string, number>
+  /** The cap's kind ordering, declared: which kinds survive a bound first.
+   *  Only observable when `truncated` is true, but published always so the rule
+   *  is not something a reader has to find in the engine's SQL. */
+  edgeKindPriority: string[]
+  /** The relationship kinds this run ACTUALLY searched — the resolved list,
+   *  not a restatement of the default. Measured: the handler's scope echo used
+   *  to name four kinds while the answer contained 120 `uses` and 11
+   *  `contains` edges, because it carried its own hardcoded copy of a default
+   *  that lives in this module and had been widened. A scope field is only
+   *  useful if it is true. */
+  relationshipTypesUsed: string[]
   /** M59 (#895): stored rows collapsed at the tool layer before becoming
    *  edges — cascadeRepeatsCollapsed: the same rowId re-fetched by a deeper
    *  cascade; spellingVariantsCollapsed: reserved for the #854 site-level
@@ -203,10 +403,39 @@ export async function traverseGraph(
   }
 }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
-  const maxDepth = Math.min(options.maxDepth || DEFAULT_MAX_DEPTH, 10)
+  // Clamped at BOTH ends, and the lower clamp is the one that matters.
+  // `Math.min(options.maxDepth || DEFAULT, 10)` leaves a negative depth intact,
+  // and `depth >= maxDepth` is then true at depth 0 — so a caller passing
+  // `maxDepth: -1` got zero edges, `truncated: false` and `maxDepthReached: 0`:
+  // an empty answer presented as a complete one. bb_graph's own handler rejects
+  // `maxDepth < 1` so the tool cannot reach it, but `graphTraversal` is the
+  // shared engine behind bb_impact, the test-intelligence suggestions and the
+  // LSP graph panel, and a trap that is unreachable from one door is still a
+  // trap for the other three.
+  const maxDepth = Math.max(1, Math.min(Math.floor(options.maxDepth || DEFAULT_MAX_DEPTH), 10))
   const relTypes = options.relationshipTypes?.length ? options.relationshipTypes : DEFAULT_REL_TYPES
+  // DECLARE the filter, whether it is the caller's or the default. Every other
+  // bound this function applies reports itself through `reasons`, and a caller
+  // reading a traversal result has no other way to know that a type was excluded
+  // before the answer was computed.
+  const callerFiltered = !!options.relationshipTypes?.length
   const relPlaceholders = relTypes.map(() => "?").join(",")
   const edgeLimit = Math.max(1, Math.min(Math.floor(options.edgeLimit ?? DEFAULT_EDGE_QUERY_LIMIT), MAX_EDGE_QUERY_LIMIT))
+  const maxEdges = Math.max(
+    edgeLimit,
+    Math.min(Math.floor(options.maxEdges ?? DEFAULT_MAX_TOTAL_EDGES), MAX_TOTAL_EDGES),
+  )
+  // Set once the answer is full, and consulted before every further emit, so the
+  // traversal stops rather than continuing to expand symbols whose edges can no
+  // longer be returned.
+  let totalLimitReached = false
+
+  // The cap orderings, over the projected `kindRank`. The trailing keys make
+  // each a strict TOTAL order, which is what makes two identical questions
+  // produce identical answers: a cap that returned a different 200 rows per run
+  // would make every count in the summary a sample of something arbitrary.
+  const CALLER_ORDER = "kindRank, fileRel, lineNumber, rowId"
+  const CALLEE_ORDER = "kindRank, fileRel, lineNumber, rowId"
 
   const nodes: Record<string, GraphNode> = {}
   let truncated = false
@@ -217,6 +446,20 @@ export async function traverseGraph(
     reasons.add(reason)
     truncated = true
   }
+  // Armed once, at the top of the walk, and read before every descent. The
+  // root query itself is not interruptible (SQLite would have to be), so the
+  // floor on a single call is one query — measured at 88 ms on the corpus that
+  // produced the 613 s figure, and 2 ms on a small one.
+  const timeBudgetMs = Math.max(0, Math.floor(options.timeBudgetMs ?? DEFAULT_WALK_TIME_BUDGET_MS))
+  const deadline = Date.now() + timeBudgetMs
+  let timeBudgetExhausted = false
+  const outOfTime = (): boolean => timeBudgetMs > 0 && Date.now() >= deadline
+  // An ACTIVE filter is a declared subset, so it goes through `noteReason` rather
+  // than straight into the set. Adding the reason alone would produce
+  // `truncated: false` beside a `truncationReason`, which is worse than either
+  // state on its own: a consumer that reads the boolean gets "complete" and a
+  // consumer that reads the string gets "filtered", and they disagree.
+  if (callerFiltered) noteRelationshipFilter(noteReason, relTypes)
   let maxDepthReached = 0
   let cappedQueries = 0
   let totalCallersIfKnown: number | null = null
@@ -287,10 +530,24 @@ export async function traverseGraph(
   // is what lets a reader use that superset instead of being drowned by it.
   // Measured on cobra: `Command` returns 184 caller edges of which 24 name the
   // symbol itself — a ratio no per-edge field alone makes obvious.
+  //
+  // DEPTH 0 ONLY, and that restriction is the whole point. An edge found at
+  // depth 2 is exact w.r.t. the symbol traced at depth 2, not w.r.t. the root;
+  // rolling those into a root-named total produced a field that was simply
+  // wrong (measured: rake's `Application` reported `exactCallers: 37` against 2
+  // stored rows targeting `Application`). Edges one hop or more out are about
+  // OTHER symbols and are counted as such.
   let exactCallers = 0
   let cascadedCallers = 0
   let exactCallees = 0
   let cascadedCallees = 0
+  let deeperCallers = 0
+  let deeperCallees = 0
+  // Budget exhaustion is a bound like any other, and it used to fire with no
+  // number anywhere in the payload. Declared, so a reader who sees
+  // `caller-budget-exhausted` can learn what the bound was.
+  let callerBudgetExhausted = false
+  let calleeBudgetExhausted = false
   // Rows that legitimately appear in BOTH directions. The engine already knew
   // this — it holds one rowId set per direction and re-encounters a row when a
   // deeper cascade reaches it — but never reported it, so `totalCallers +
@@ -305,6 +562,11 @@ export async function traverseGraph(
 
   const traceCallers = (symbolId: string, depth: number): void => {
     if (depth >= maxDepth || visitedCallers.has(symbolId)) return
+    if (outOfTime()) {
+      timeBudgetExhausted = true
+      noteReason("walk-time-budget-exhausted")
+      return
+    }
     visitedCallers.add(symbolId)
     const { prefix, upper } = cascadeBounds(symbolId)
     const cascade = "SELECT ? AS id UNION ALL SELECT m.id FROM brain_symbol m WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ? AND m.project_id = ?"
@@ -315,7 +577,8 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "f.relative_path AS srcFileRel, NULL AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL +
       "FROM brain_relationship r " +
       "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
       "JOIN brain_file f ON f.id = s.file_id " +
@@ -345,7 +608,7 @@ export async function traverseGraph(
     // deterministically ordered query are exactly the rows the old query
     // returned, so the visible answer is unchanged for every non-capped call.
     const fetched = raw
-      .prepare(callerSql + " ORDER BY fileRel, lineNumber, rowId LIMIT ?")
+      .prepare(callerSql + " ORDER BY " + CALLER_ORDER + " LIMIT ?")
       .all(...callerParams, edgeLimit + 1) as EdgeRow[]
     const capped = fetched.length > edgeLimit
     const rows = capped ? fetched.slice(0, edgeLimit) : fetched
@@ -356,7 +619,9 @@ export async function traverseGraph(
       // is countable in one bounded scan. Deeper symbols report the cap itself
       // (cappedQueries) rather than a total nobody could cheaply compute.
       if (depth === 0 && totalCallersIfKnown === null) {
-        totalCallersIfKnown = countSurviving(callerSql + " ORDER BY fileRel, lineNumber, rowId", callerParams, (r) => r.symName)
+        // Same ordering as the capped query, so the declared total and the
+        // returned rows are computed over one list rather than two.
+        totalCallersIfKnown = countSurviving(callerSql + " ORDER BY " + CALLER_ORDER, callerParams, (r) => r.symName)
       }
     }
 
@@ -365,6 +630,16 @@ export async function traverseGraph(
       if (!row.symName || AnalysisExclusions.isNoiseSymbolName(row.symName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // The bound on the WHOLE answer, as distinct from the per-query site
+      // limit. Checked BEFORE any bookkeeping for this row, so `emittedCallerRows`
+      // means "emitted" and does not claim a row the bound then discarded — the
+      // two orderings happen to behave the same today because the loop breaks
+      // either way, and "happens to" is not a property worth depending on.
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       // M59 (#895): one stored row must emit at most one edge per direction —
       // the cascade re-queries it once per traced ancestor (measured depths
       // [0,2,3]). Row-level dedupe is exact: same rowId = same everything.
@@ -384,7 +659,8 @@ export async function traverseGraph(
         }
         emittedCallerSites.add(siteKey)
       }
-      if (cascadeMatch(row, symbolId) === "exact") exactCallers++
+      if (depth > 0) deeperCallers++
+      else if (cascadeMatch(row, symbolId) === "exact") exactCallers++
       else cascadedCallers++
       const node = nodeFromEdge(row)
       registerNode(node)
@@ -418,15 +694,33 @@ export async function traverseGraph(
     }
 
     for (const childId of children) {
+      // Order matters. The VISITED test comes first, because a child that has
+      // already been expanded needs no budget; the previous order ended the loop
+      // on the first already-visited child it met once the budget ran out.
+      if (visitedCallers.has(childId)) continue
       if (callerBudget <= 0) {
-        noteReason("caller-budget-exhausted")
+        // A bound that fires with nothing left to do is not a truncation. The
+        // depth cap below already asks whether work remains; the budget did not,
+        // so it declared exhaustion on answers that skipped nothing — the two
+        // bounds disagreed about what "exhausted" means, and `truncated: true`
+        // was set for a traversal that lost no edges.
+        if (children.some((c) => !visitedCallers.has(c))) {
+          noteReason("caller-budget-exhausted")
+          callerBudgetExhausted = true
+        }
         break
       }
-      if (depth >= maxDepth - 1) break
-      if (!visitedCallers.has(childId)) {
-        callerBudget--
-        traceCallers(childId, depth + 1)
+      if (depth >= maxDepth - 1) {
+        // A bound that fires with work still queued is a truncation. The depth
+        // cap used to break out silently, so a 14-hop chain answered with the
+        // first 3 hops and `truncated: false` — a 23% sample presented as the
+        // whole set, which is the same lie as the budget directly above and
+        // exactly what this field exists to prevent.
+        if (children.some((c) => !visitedCallers.has(c))) noteReason("caller-depth-cap-reached")
+        break
       }
+      callerBudget--
+      traceCallers(childId, depth + 1)
     }
   }
 
@@ -437,6 +731,11 @@ export async function traverseGraph(
 
   const traceCallees = (symbolId: string, srcFileRel: string, srcLine: number, depth: number): void => {
     if (depth >= maxDepth || visitedCallees.has(symbolId)) return
+    if (outOfTime()) {
+      timeBudgetExhausted = true
+      noteReason("walk-time-budget-exhausted")
+      return
+    }
     visitedCallees.add(symbolId)
     const isExternal = symbolId.startsWith("ext:")
     const { prefix, upper } = cascadeBounds(symbolId)
@@ -449,7 +748,33 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "src.relative_path AS srcFileRel, r.target_external AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile "
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL
+
+    // The same shape with the TARGET-symbol columns as literal NULLs.
+    //
+    // These nine columns describe the resolved target, and in the unresolved arm
+    // there is no target — so they are constants. They used to be produced by
+    // `LEFT JOIN brain_symbol s ON 0` / `LEFT JOIN brain_file f ON 0`, which
+    // keeps the column count right and costs a nested-loop join per row. SQLite
+    // cannot flatten a compound whose arm contains a join it cannot eliminate,
+    // so the arm lost the `brain_rel_proj_type_target_idx` it was eligible for
+    // and read ALL 52,597 relationship rows of the project.
+    //
+    // Measured on backbencher-brain/src: ONE statement took 24-29 seconds —
+    // `bb_analyze mode=callees target=push` did not answer in 30 s, for a
+    // symbol with 23 callees, and `mode:callees` on a symbol with 6 callees did
+    // not answer either. A wall-clock budget cannot interrupt a single SQL
+    // statement, so this was the floor under the whole walk.
+    const selectColsUnresolved =
+      "SELECT r.id AS rowId, r.line_number AS lineNumber, r.relationship_type AS relType, r.confidence AS confidence, " +
+      "r.is_cross_language AS isCrossLang, r.bridge_mechanism AS bridge, r.metadata AS meta, " +
+      "NULL AS symId, NULL AS symName, NULL AS line, NULL AS lineEnd, " +
+      "NULL AS complexity, NULL AS symType, " +
+      "NULL AS fileRel, NULL AS filePath, NULL AS fileLang, " +
+      "src.relative_path AS srcFileRel, r.target_external AS extName, " +
+      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      KIND_RANK_SQL
 
     let rows: EdgeRow[]
     if (isExternal) {
@@ -468,10 +793,38 @@ export async function traverseGraph(
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NOT NULL " +
           "UNION ALL " +
-          selectCols +
+          // The UNRESOLVED arm. `target_symbol_id IS NULL` is the store saying
+          // it could not resolve this target, and `target_external` is the NAME
+          // it saw — not an identity.
+          //
+          // This arm used to JOIN brain_symbol back on that name, which turned
+          // the admission into a claim. Measured on real corpora, the name it
+          // joined on is not even close to unique: vscode fans a single stored
+          // row out to 37,876 internal symbols for the name `match`, svelte to
+          // 437,570 for `end`. The tool then emitted those as edges — asked
+          // about typescript's `pseudoTypeEquivalentToType` it reported 27
+          // internal callees, the first of them `isErrorType` in a different
+          // file, when the stored row names `getTypeOfSymbol`. No such
+          // relationship exists.
+          //
+          // Three harms, one JOIN: fabricated edges; the 200-row cap consumed
+          // entirely by fan-out so real callees never appear (and
+          // `calleesIfUncapped` reporting the inflated number); and
+          // `children.push` recursing into the arbitrary match, contaminating
+          // everything downstream.
+          //
+          // An unresolved target is therefore reported as the `ext:<name>` node
+          // this contract already documents for it. The name is kept — it is
+          // the node's name — so nothing is lost; it is simply labelled for
+          // what it is.
+          selectColsUnresolved +
           "FROM brain_relationship r " +
-          "LEFT JOIN brain_symbol s ON s.name = r.target_external AND s.project_id = r.project_id " +
-          "LEFT JOIN brain_file f ON f.id = s.file_id " +
+          // No target-symbol join at all: there is no target symbol, so the
+          // target columns come from `selectColsUnresolved` as literal NULLs.
+          // They used to be `LEFT JOIN … ON 0` against the resolved select
+          // list — same columns, one nested-loop join per row, and SQLite could
+          // not flatten the arm, so the arm read every relationship row in the
+          // project instead of using `brain_rel_proj_type_target_idx`.
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
@@ -483,7 +836,7 @@ export async function traverseGraph(
         symbolId, prefix, upper, projectId, projectId, ...relTypes,
         symbolId, prefix, upper, projectId, projectId, ...relTypes,
       ]
-      const calleeOrder = " ORDER BY fileRel, lineNumber, rowId"
+      const calleeOrder = " ORDER BY " + CALLEE_ORDER
       // Same one-row-over rule as the callers side: `LIMIT edgeLimit` cannot
       // tell "exactly at the limit" from "over it", and a compound query needs
       // the probe row just as much as a simple one.
@@ -505,6 +858,13 @@ export async function traverseGraph(
       if (!targetName || AnalysisExclusions.isNoiseSymbolName(targetName)) continue
       if (row.fileRel && AnalysisExclusions.isHardNoisePath(row.fileRel)) continue
       if (options.includeCrossLanguage === false && row.isCrossLang) continue
+      // Before the dedupe bookkeeping, for the same reason as the callers side:
+      // the emitted-row set must describe what was emitted.
+      if (callers.length + callees.length >= maxEdges) {
+        totalLimitReached = true
+        noteReason("total-edge-limit")
+        break
+      }
       // M59 (#895): same stored row must not emit once per cascade depth.
       if (emittedCalleeRows.has(row.rowId)) {
         collapsedCascadeRepeats++
@@ -520,7 +880,8 @@ export async function traverseGraph(
         }
         emittedCalleeSites.add(calleeKey)
       }
-      if (cascadeMatch(row, symbolId) === "exact") exactCallees++
+      if (depth > 0) deeperCallees++
+      else if (cascadeMatch(row, symbolId) === "exact") exactCallees++
       else cascadedCallees++
       const node = nodeFromEdge(row)
       registerNode(node)
@@ -545,20 +906,32 @@ export async function traverseGraph(
         metadata: edgeMetadata(row.meta),
       })
       maxDepthReached = Math.max(maxDepthReached, depth)
+      // Only a real symbol is worth walking into. An `ext:` node has no stored
+      // relationships of its own, and `traceCallees` already refuses it; the
+      // push existed only so the visited-set could absorb it, and with the
+      // name-join gone nothing resolves an external to anything walkable.
       if (row.symId) children.push({ id: row.symId, file: node.file, line: node.line })
-      else if (row.extName) children.push({ id: `ext:${row.extName}`, file: node.file, line: node.line })
     }
 
     for (const child of children) {
+      // Same rule as the callers side: an already-visited child needs no budget,
+      // and a bound only counts as a truncation when work is actually left. The
+      // depth cap below already asked that question; the budget did not, so the
+      // two bounds disagreed about what "exhausted" means.
+      if (visitedCallees.has(child.id)) continue
       if (calleeBudget <= 0) {
-        noteReason("callee-budget-exhausted")
+        if (children.some((c) => !visitedCallees.has(c.id))) {
+          noteReason("callee-budget-exhausted")
+          calleeBudgetExhausted = true
+        }
         break
       }
-      if (depth >= maxDepth - 1) break
-      if (!visitedCallees.has(child.id)) {
-        calleeBudget--
-        traceCallees(child.id, child.file, child.line, depth + 1)
+      if (depth >= maxDepth - 1) {
+        if (children.some((c) => !visitedCallees.has(c.id))) noteReason("callee-depth-cap-reached")
+        break
       }
+      calleeBudget--
+      traceCallees(child.id, child.file, child.line, depth + 1)
     }
   }
 
@@ -573,6 +946,15 @@ export async function traverseGraph(
     if (emittedCalleeRows.has(edge.rowId)) edgesInBothDirections++
   }
 
+  // What the answer is made of, counted from the EMITTED edges rather than from
+  // the query. With ten kinds in the default filter, a reader otherwise has to
+  // walk every edge to learn how many are calls — and the walk is per-call
+  // work an agent will not always do.
+  const edgesByType: Record<string, number> = {}
+  for (const edge of [...callers, ...callees]) {
+    edgesByType[edge.relationshipType] = (edgesByType[edge.relationshipType] ?? 0) + 1
+  }
+
   return {
     callers,
     callees,
@@ -580,7 +962,12 @@ export async function traverseGraph(
     truncated,
     truncationReason: reasons.size > 0 ? [...reasons].join("+") : undefined,
     maxDepthReached,
+    maxDepth,
+    timeBudgetMs,
+    timeBudgetExhausted,
     edgeLimit,
+    maxEdges,
+    totalEdgeLimitReached: totalLimitReached,
     cappedQueries,
     totalCallersIfKnown,
     totalCalleesIfKnown,
@@ -589,7 +976,16 @@ export async function traverseGraph(
     cascadedCallers,
     exactCallees,
     cascadedCallees,
+    deeperCallers,
+    deeperCallees,
+    callerBudget: options.callerBudget ?? DEFAULT_BUDGET,
+    calleeBudget: options.calleeBudget ?? DEFAULT_BUDGET,
+    callerBudgetExhausted,
+    calleeBudgetExhausted,
     edgesInBothDirections,
+    edgesByType,
+    edgeKindPriority: [...Object.keys(EDGE_KIND_PRIORITY)],
+    relationshipTypesUsed: relTypes,
     dedupedAtToolLayer: {
       cascadeRepeatsCollapsed: collapsedCascadeRepeats,
       spellingVariantsCollapsed: collapsedSpellingVariants,
@@ -598,7 +994,10 @@ export async function traverseGraph(
 }
 
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
-export async function resolveGraphRoot(projectId: ProjectID, name: string): Promise<SymbolRow | null> {
+export async function resolveGraphRootDetailed(
+  projectId: ProjectID,
+  name: string,
+): Promise<{ root: SymbolRow | null; candidates: number }> {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
   const base =
@@ -615,8 +1014,17 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
   // corpora is not hypothetical: cobra indexes 50 structural symbols all named
   // `code_block.go`.)
   const RANK = " ORDER BY s.gravity_score DESC, s.id ASC LIMIT 1"
+  // The three steps, as data. Which one produced the winning row is carried
+  // with it rather than inferred afterwards, because recounting the wrong
+  // population would describe a step that never ran.
+  const exactStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
+  const exactAnyKind = base + "AND s.name = ?"
+  const fuzzyStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'`
+
   // 1) exact name among the structural kinds the graph can traverse
-  let rows = raw.prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?${RANK}`).all(projectId, name) as SymbolRow[]
+  let predicate = exactStructural
+  let param = name
+  let rows = raw.prepare(exactStructural + RANK).all(projectId, name) as SymbolRow[]
   if (rows.length === 0) {
     // M48.C1 (#699) corpus catch: previously the fallback went STRAIGHT to a
     // fuzzy substring match, so a real exact-name symbol of a non-structural
@@ -624,7 +1032,9 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     // merely CONTAINING the string (a Makefile target lib$(LANGUAGE_NAME).a) —
     // bb_graph and bb_analyze then answered the same query with different
     // roots. Exact-name of ANY kind must win over fuzzy containment.
-    rows = raw.prepare(base + "AND s.name = ?" + RANK).all(projectId, name) as SymbolRow[]
+    rows = raw.prepare(exactAnyKind + RANK).all(projectId, name) as SymbolRow[]
+    predicate = exactAnyKind
+    param = name
   }
   if (rows.length === 0) {
     // 3) documented near-miss fallback: fuzzy containment among structural kinds.
@@ -637,11 +1047,17 @@ export async function resolveGraphRoot(projectId: ProjectID, name: string): Prom
     // nobody asked, with nothing in the payload saying so. `likeContains`
     // neutralises the metacharacters by value (not by deleting them from the
     // name) and pins the escape character so SQLite cannot re-interpret it.
-    rows = raw
-      .prepare(base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'` + RANK)
-      .all(projectId, likeContains(name)) as SymbolRow[]
+    const pattern = likeContains(name)
+    rows = raw.prepare(fuzzyStructural + RANK).all(projectId, pattern) as SymbolRow[]
+    predicate = fuzzyStructural
+    param = pattern
   }
-  return rows[0] ?? null
+  const root = rows[0] ?? null
+  if (!root) return { root: null, candidates: 0 }
+  // How many stored symbols the winning step had to choose between, counted
+  // with that step's own predicate and parameter.
+  const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(projectId, param) as any
+  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)) }
 }
 
 /**
@@ -659,12 +1075,17 @@ export function likeContains(needle: string): string {
   return `%${escaped}%`
 }
 
+/** The single-symbol form, unchanged for existing callers. */
+export async function resolveGraphRoot(projectId: ProjectID, name: string): Promise<SymbolRow | null> {
+  return (await resolveGraphRootDetailed(projectId, name)).root
+}
+
 export async function graphTraversal(
   projectId: ProjectID,
   name: string,
   options: GraphTraversalOptions = {},
 ): Promise<GraphTraversalResult> {
-  const root = await resolveGraphRoot(projectId, name)
+  const { root, candidates } = await resolveGraphRootDetailed(projectId, name)
   if (!root) throw new Error(`Symbol '${name}' not found`)
   const {
     callers,
@@ -673,7 +1094,12 @@ export async function graphTraversal(
     truncated,
     truncationReason,
     maxDepthReached,
+    maxDepth,
+    timeBudgetMs,
+    timeBudgetExhausted,
     edgeLimit,
+    maxEdges,
+    totalEdgeLimitReached: totalLimitReached,
     cappedQueries,
     totalCallersIfKnown,
     totalCalleesIfKnown,
@@ -682,13 +1108,23 @@ export async function graphTraversal(
     cascadedCallers,
     exactCallees,
     cascadedCallees,
+    deeperCallers,
+    deeperCallees,
+    callerBudget,
+    calleeBudget,
+    callerBudgetExhausted,
+    calleeBudgetExhausted,
     edgesInBothDirections,
+    edgesByType,
+    edgeKindPriority,
+    relationshipTypesUsed,
     dedupedAtToolLayer,
   } = await traverseGraph(projectId, root, options)
   const rootNode = nodes[root.id]!
   const crossLanguageEdges = [...callers, ...callees].filter((e) => e.isCrossLanguage).length
   return {
     root: rootNode,
+    rootCandidates: candidates,
     callers,
     callees,
     nodes,
@@ -697,6 +1133,9 @@ export async function graphTraversal(
       totalCallers: callers.length,
       totalCallees: callees.length,
       maxDepthReached,
+      maxDepth,
+      timeBudgetMs,
+      timeBudgetExhausted,
       crossLanguageEdges,
       truncated,
       truncationReason,
@@ -705,6 +1144,11 @@ export async function graphTraversal(
       // a cap was hit and it was computable — a floor can no longer be read as a
       // total by a caller that only looks at the summary.
       edgeLimit,
+      // The bound on the WHOLE answer, as distinct from the per-query site
+      // limit. Declared because the product of the per-query bound and the
+      // fan-out budget is otherwise unbounded, and unstated.
+      maxEdges,
+      totalEdgeLimitReached: totalLimitReached,
       cappedQueries,
       callersIfUncapped: totalCallersIfKnown,
       calleesIfUncapped: totalCalleesIfKnown,
@@ -718,6 +1162,30 @@ export async function graphTraversal(
       cascadedCallers,
       exactCallees,
       cascadedCallees,
+      deeperCallers,
+      deeperCallees,
+      // The fan-out bound, and whether it bit. `truncationReason` can name
+      // `caller-budget-exhausted`; before this it did so without saying what
+      // the budget was, so the bound was announced and never quantified.
+      callerBudget,
+      calleeBudget,
+      callerBudgetExhausted,
+      calleeBudgetExhausted,
+      // What the answer is made of. With ten kinds in the default filter, a
+      // caller that wanted calls had no way to find out how many of the
+      // returned edges were calls without walking all of them.
+      edgesByType,
+      // The kinds this run actually searched, resolved — not a restatement of
+      // the default. The handler's scope echo carried its own hardcoded copy
+      // and went stale the moment the default was widened, so it named four
+      // kinds while the answer held `uses` and `contains` edges.
+      relationshipTypesUsed,
+      // Which kinds survive a bound first. Only observable under truncation,
+      // but published always: the cap's ORDER BY used to be indifferent to
+      // kind, so asking for MORE kinds returned FEWER call edges (measured on
+      // lodash: 99 calls alone, 71 inside the 230-edge default answer). The
+      // rule that decides that is now declared here.
+      edgeKindPriority,
       // Rows present in BOTH callers and callees. `totalCallers + totalCallees`
       // counts each of these twice, and the number above is the correction.
       edgesInBothDirections,

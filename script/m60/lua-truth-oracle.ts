@@ -280,6 +280,104 @@ function collectTables(root: any, out: Set<string>): void {
 // callee path (LUA-27/LUA-30) and the setmetatable path (LUA-33), so the two
 // cannot drift the way `table_index_expression` did. Three forms carry a name;
 // nil, a call, a binary expression and a table constructor do not.
+function* walkNodes(node: any): Generator<any> {
+  const stack = [node]
+  while (stack.length) {
+    const n = stack.pop()
+    yield n
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+}
+
+// ── METADATA TRUTH, derived from the tree and NOT from the analyzer ──────────
+// M60 LUA-36. These are re-implementations of the CONTRACT, written from the
+// grammar, so a disagreement is a question about which side is wrong rather than
+// a comparison of one implementation with itself.
+
+/**
+ * Coroutines are counted as CREATIONS — `coroutine.create` and `coroutine.wrap` —
+ * not as every call into the coroutine library. That is the contract the existing
+ * gate states: a fixture with one `coroutine.create` and one `coroutine.wrap`
+ * publishes `coroutineUsage: 2`, and those are two coroutines brought into
+ * existence. `coroutine.resume` and `coroutine.yield` do not create anything, so
+ * counting them answers a different question.
+ *
+ * This truth side got that wrong twice before it got it right, and both wrong
+ * answers pointed at the ANALYZER. It first required `callee.type === "identifier"`,
+ * which misses every real call because `coroutine.create` is a
+ * `dot_index_expression` — so it reported `1 vs 0` on a file that plainly has one
+ * `coroutine.create`. It then counted all four library functions, so it reported
+ * `1 vs 2` on kong/init.lua, which has a `create` AND a `resume` and exactly one
+ * coroutine. Both times the instrument was the thing that was wrong, and a truth
+ * side that has to be corrected by looking at the code it is checking is a truth
+ * side whose contract was never written down. This comment is that contract.
+ *
+ * The callee is matched by the standard name rule: identifier, or a dot/method
+ * index whose text is the path.
+ */
+function countCoroutines(root: any): number {
+  const CREATES = new Set(["coroutine.create", "coroutine.wrap"])
+  let n = 0
+  for (const node of walkNodes(root)) {
+    if (node.type !== "function_call") continue
+    for (let i = 0; i < node.childCount; i++) {
+      const fn = typeof node.fieldNameForChild === "function" ? node.fieldNameForChild(i) : null
+      if (fn !== "name") continue
+      const name = nameBearing(node.child(i))
+      if (name && CREATES.has(name)) n++
+    }
+  }
+  return n
+}
+
+/**
+/**
+ * Any member access in the file — the MINIMUM evidence a framework claim needs,
+ * and the whole of the LUA-04 contract in one decidable fact.
+ *
+ * The first version of this leg derived one framework from the tree (Neovim) and
+ * counted every OTHER framework the analyzer legitimately knows as fabricated: 37
+ * spurious "findings" across 68 files, every one of them this truth side being
+ * too narrow rather than the analyzer being wrong. The fix is not to derive the
+ * full framework table — that means COPYING it, and a copy agrees by construction
+ * and proves nothing, which is the mirror trap this lane has paid for twice
+ * (LUA-27, LUA-33). It is to ask the question that needs no table: does the file
+ * contain a member access at all? LUA-04 claimed a framework from BARE
+ * IDENTIFIERS, so a file whose only names are `use`, `setup` and `GetTime` has
+ * none, and must claim nothing.
+ */
+function countMemberAccess(root: any): number {
+  let n = 0
+  for (const node of walkNodes(root)) {
+    if (node.type === "dot_index_expression" || node.type === "method_index_expression") n++
+  }
+  return n
+}
+
+/**
+ * M60 LUA-37: the RESOLVABLE source a `contains` edge must point at, tracked
+ * alongside `scope` (the LABEL).
+ *
+ * The oracle walked one string, `scope`, and used it for two different jobs: the
+ * scope a body belongs to, and the source of the containment edges inside it.
+ * Those are not the same thing. `function fs.appendFile(...)` gives scope
+ * "fs.appendFile" — right for scoping, and not a name any symbol is filed
+ * under, because the method is filed as name `appendFile` with owner `fs`. Every
+ * containment edge inside that body therefore read `fs.appendFile -> …` and
+ * pointed at nothing, so a consumer walking symbol -> members could not follow
+ * 22.6% of kong's edges and 1,352 of luvit's.
+ *
+ * The analyzer was fixed first and this had to follow, in lockstep, or the two
+ * would simply disagree — which is what happened for one run (analyzer-attributable
+ * 725, spurious 497) before this change. Two implementations of one rule must be
+ * written from one measurement, and the measurement is the symbol table.
+ */
+let edgeSource: string | undefined
+
+const forBoundVars = new Set<string>()
+let loopCoincidence = 0
+const loopCoincidenceSample: string[] = []
+
 function nameBearing(node: any): string | undefined {
   if (!node) return undefined
   if (node.type === "identifier") return node.text
@@ -359,7 +457,8 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
         // L802 and two more), all filed as analyzer misses, and the analyzer was
         // right to omit every one. Skipped rather than emitted, and not silently:
         // the count is reported.
-        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
+        const src = edgeSource ?? scope
+        if (id.text !== src) w.edges.push({ label: "contains", from: src, target: id.text, line: id.startPosition.row + 1, rule: "local-decl", rel })
         else w.selfContainmentSkipped++
         // A bare `local x` carries no value, so there is nothing to test for a
         // table. A declaration WITH a value can bind a table, and the
@@ -420,7 +519,8 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
         // skip those. The analyzer answers the same question with an inherited
         // frame, which is the same rule expressed structurally.
         if (visibleInChain(w, scope, id.text)) continue
-        if (id.text !== scope) w.edges.push({ label: "contains", from: scope, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
+        const src2 = edgeSource ?? scope
+        if (id.text !== src2) w.edges.push({ label: "contains", from: src2, target: id.text, line: id.startPosition.row + 1, rule: "assign-decl", rel })
         else w.selfContainmentSkipped++
       }
     }
@@ -449,7 +549,7 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     const fn = functionNameOf(node)
     if (fn) {
       // A method belongs to its RECEIVER, not to the enclosing scope.
-      w.edges.push({ label: "contains", from: fn.owner ?? scope, target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: fn.owner ? "method-decl" : "fn-decl", rel })
+      w.edges.push({ label: "contains", from: fn.owner ?? (edgeSource ?? scope), target: fn.name, line: fn.nameNode.startPosition.row + 1, rule: fn.owner ? "method-decl" : "fn-decl", rel })
       if (!w.localsIn.has(fn.label)) w.localsIn.set(fn.label, new Set())
       for (let i = 0; i < node.namedChildCount; i++) {
         const c = node.namedChild(i)
@@ -556,6 +656,23 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     // Only the `name` FIELD of a member is read. A positional entry has none,
     // and publishing it would mean inventing a name, so the oracle refuses to
     // derive one for the same reason the analyzer does.
+    // M60 LUA-35: `return setmetatable(M, mt)` publishes M. The module's surface
+    // IS M; the metatable is an attribute OF M, not a second export. Without this
+    // on the truth side the three kong files that genuinely name M read as
+    // fabricated exports — the analyzer right and the oracle calling it a defect,
+    // which is the failure this lane keeps having to undo.
+    else if (first?.type === "function_call") {
+      let callNameNode: any = null
+      for (let i = 0; i < first.childCount; i++) {
+        const fn = typeof first.fieldNameForChild === "function" ? first.fieldNameForChild(i) : null
+        if (fn === "name") callNameNode = first.child(i)
+      }
+      if (callNameNode?.text === "setmetatable") {
+        const a0 = argAt(first, 0)
+        const named = nameBearing(a0)
+        if (named) w.edges.push({ label: "exports", from: "global", target: named, line: a0.startPosition.row + 1, rule: "return-setmetatable", rel })
+      }
+    }
     else if (first?.type === "table_constructor") {
       for (let i = 0; i < first.namedChildCount; i++) {
         const f = first.namedChild(i)
@@ -591,6 +708,13 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
   const childScope = node.type === "function_declaration" || node.type === "function_definition"
     ? (functionNameOf(node)?.label ?? scope)
     : scope
+  // The resolvable source: the member's OWN name for a method, the function's own
+  // name otherwise, and the enclosing one for an anonymous closure.
+  const childEdgeSource = node.type === "function_declaration" || node.type === "function_definition"
+    ? (functionNameOf(node)?.name ?? edgeSource ?? "global")
+    : edgeSource
+  const prevEdgeSource = edgeSource
+  edgeSource = childEdgeSource
   if (childScope !== scope) w.scopeParent.set(childScope, scope)
   // M60 LUA-24: an ANONYMOUS function must still count as a function for
   // anything that asks "is this lexically inside a function?", even though it
@@ -612,6 +736,7 @@ function walk(node: any, scope: string, w: Walk, rel: string, fnDepth = 0): void
     const c = node.namedChild(i)
     if (c) walk(c, childScope, w, rel, childDepth)
   }
+  edgeSource = prevEdgeSource
 }
 
 export function deriveLuaTruth(root: any, rel = ""): TruthEdge[] {
@@ -695,6 +820,19 @@ async function main(): Promise<void> {
   const dualAgrees = new Set<string>()
   let dualMeasured = 0
   let exportTruth = 0, exportHit = 0, exportSpurious = 0, exportFilesProbed = 0
+  // M60 LUA-34: the DIRECT-path relationship comparison. Counters are declared
+  // beside the export ones because they answer the same question for a different
+  // payload, and `spurious` is the leg that catches a target the tree never
+  // derived — which is precisely what a payload target is.
+  let relTruth = 0, relHit = 0, relSpurious = 0, relFilesProbed = 0
+  let disclosureFiles = 0, disclosureCount = 0
+  let metaCoroutines = 0, metaFrameworks = 0, metaHit = 0, metaSpurious = 0, metaScoreSum = 0, metaScoreFiles = 0
+  const metaMissed: string[] = []
+  const metaExtra: string[] = []
+  const metaScoreSet = new Set<number>()
+  const relMissed: string[] = []
+  const relExtra: string[] = []
+  const directRelTruth = new Set<string>()
   const exportMissed: string[] = []
   const exportExtra: string[] = []
   const exportTruthNames = new Set<string>()
@@ -715,9 +853,30 @@ async function main(): Promise<void> {
 
     const tree = parser.parse(src)
     if (tree.rootNode.hasError) { parseErrors++; continue }
+    // Every name bound by a for-clause in THIS file, used only for the LUA-26
+    // exemption above. Structural: read off the tree, not matched by name.
+    forBoundVars.clear()
+    for (const n of walkNodes(tree.rootNode)) {
+      if (n.type === "for_numeric_clause") {
+        const id = n.childForFieldName("name")
+        if (id?.type === "identifier") forBoundVars.add(id.text)
+      } else if (n.type === "for_generic_clause") {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c?.type !== "variable_list") continue
+          for (let j = 0; j < c.childCount; j++) {
+            const fn = typeof c.fieldNameForChild === "function" ? c.fieldNameForChild(j) : null
+            if (fn !== "name") continue
+            const id = c.child(j)
+            if (id?.type === "identifier") forBoundVars.add(id.text)
+          }
+        }
+      }
+    }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) {
       truth.set(`${rel}|${key(e)}`, e)
       if (e.label === "exports") exportTruthNames.add(`${rel}|${e.target}`)
+      directRelTruth.add(`${rel}|${e.label}\u001f${e.from}\u001f${e.target}`)
     }
 
     const r: any = await parseFile(abs, repoRoot)
@@ -777,6 +936,15 @@ async function main(): Promise<void> {
       // script/m60/lua-export-census.ts makes, and having it here as well as there
       // was the duplication that let the two drift apart into a 218-edge
       // disagreement (LUA-24). One instrument, two paths, one truth.
+      // M60 LUA-35: the DISCLOSURE count. A nameless module surface is recorded
+      // rather than published, and nothing in this instrument could see whether
+      // that record existed — so the disclosure half of the fix was untestable and
+      // its mutant would have read as surviving. Counted here, per file, from the
+      // direct path, and reported. A disclosure is a claim about the file, so it
+      // has to be measured like one.
+      disclosureFiles++
+      disclosureCount += (direct.metadata?.unpublishedSurface ?? []).length
+
       const dExports = new Set<string>((direct.exports ?? []).map((e: any) => e.name))
       for (const e of deriveLuaTruth(tree.rootNode, rel)) {
         if (e.label !== "exports") continue
@@ -791,9 +959,135 @@ async function main(): Promise<void> {
           if (!anyTruth) { exportSpurious++; if (exportExtra.length < 25) exportExtra.push(`${n} ${rel}`) }
         }
       }
+      // ── metadata on the DIRECT path (M60 LUA-36) ──────────────────────────
+      // Four of this lane's fixed defects are METADATA defects — LUA-02 (a
+      // coroutine count that was structurally always zero), LUA-04 (framework
+      // detection firing on bare identifiers), LUA-10 (a score rewarding a branch
+      // the analyzer never detects) and LUA-11 (constant "measurements"). Each has
+      // a dedicated gate and NONE had a corpus-scale test, because this
+      // instrument compared relationships and exports and nothing else. A defect
+      // class the differential cannot see is a defect class with one test instead
+      // of two, and one test is what let LUA-02 ship.
+      //
+      // The truth side is derived from the TREE, independently: coroutines are
+      // counted by finding `coroutine.create` / `coroutine.wrap` call nodes, and
+      // the framework rule is re-implemented from the contract rather than
+      // copied from the analyzer. Copying it would be the mirror trap this lane
+      // has hit repeatedly (LUA-27, LUA-33) — agreement between two copies of one
+      // idea is not evidence.
+      const m = direct.metadata ?? {}
+      const tCoro = countCoroutines(tree.rootNode)
+      metaCoroutines++
+      if ((m.coroutineUsage ?? 0) === tCoro) metaHit++
+      else if (metaMissed.length < 20) metaMissed.push(`coroutineUsage ${m.coroutineUsage} vs tree ${tCoro}  ${rel}`)
+
+      // LUA-04, tested as the CONTRACT and not as a reimplementation. The first
+      // version of this leg derived one framework from the tree — Neovim — and
+      // counted every OTHER framework the analyzer legitimately knows as
+      // fabricated: 37 spurious "findings" on 68 files, all of them my truth side
+      // being too narrow rather than the analyzer being wrong. Deriving the full
+      // framework table would mean COPYING it, and a copy agrees by construction
+      // and proves nothing — the mirror trap, LUA-27 and LUA-33.
+      //
+      // So the test is the one that does not need the table: a framework claim
+      // requires a MEMBER ACCESS somewhere in the file. LUA-04 claimed a framework
+      // from BARE IDENTIFIERS, so a file whose only names are `use`, `setup` and
+      // `GetTime` has no member access and must claim nothing. That is the defect,
+      // it is decidable from the tree alone, and it needs no table.
+      const claimsFrameworks = ((m.detectedFrameworks ?? []).length > 0)
+      const hasMemberAccess = countMemberAccess(tree.rootNode) > 0
+      metaFrameworks++
+      if (claimsFrameworks && !hasMemberAccess) {
+        metaSpurious++
+        if (metaExtra.length < 20) metaExtra.push(`frameworks ${JSON.stringify(m.detectedFrameworks)} claimed with ZERO member accesses in the file  ${rel}`)
+      } else if (claimsFrameworks !== hasMemberAccess && !claimsFrameworks) {
+        // a file with member accesses that claims nothing is legitimate (a struct
+        // literal is a member access and no framework), so only the claiming
+        // direction is a check.
+        metaHit++
+      } else metaHit++
+
+      // LUA-10 / LUA-11: the score must MOVE with the file. A score that is 80 on
+      // an innocent file and 85 on a complex one is a measurement; one that is 85
+      // everywhere is a constant wearing a number. Measured across the probed
+      // files, not asserted on one fixture.
+      const s = m.architecturalScore
+      if (typeof s === "number") { metaScoreSum += s; metaScoreFiles++; metaScoreSet.add(s) }
+
       exportFilesProbed++
-    }
-  }
+
+      // ── relationships on the DIRECT path, for the same reason as exports ────
+      // M60 LUA-34. The export comparison above exists because the pipeline drops
+      // the whole field. The SAME blindness exists for relationships and it is
+      // worse, because the filter is not a missing field — it is a CONTENT rule.
+      // pool-worker rejects any relationship target containing a NEWLINE, so an
+      // edge whose target is a multi-line payload is deleted on the way to the
+      // store. The differential reads relationships through the pipeline, so such
+      // an edge is simply ABSENT: indistinguishable from one that was never
+      // derived.
+      //
+      // That is not hypothetical. LUA-32 was exactly this defect — `setmetatable(X,
+      // { … })` publishing a five-line table constructor as the extends target —
+      // and it survived an entire lane of review reading `extends 103/103, zero
+      // missing, zero unexplained`. It was found only by a direct-vs-pipeline seam
+      // probe comparing the two paths per file, which is a diagnostic, not a gate.
+      //
+      // Measured on a 42-file slice by mutation: reintroducing the LUA-32 payload
+      // moves NO number this instrument reports. Missing, unexplained, line
+      // accuracy and direct-path exports are all byte-identical. A mutant that
+      // provably changes the analyzer's output (15 of 260 corpus files change)
+      // and provably changes nothing the differential can see is the definition
+      // of a blind spot, and it is the last one in this instrument.
+      //
+      // So relationships get the same two-path treatment: the analyzer's own
+      // output against the same tree-derived truth, with no pipeline filter in
+      // between. `spurious` is the leg that matters here — a payload target the
+      // truth never derives is exactly what LUA-32 produced.
+      const directKeys = new Set<string>()
+      for (const e of direct.relationships ?? []) {
+        if (!e.type) continue
+        const k = `${e.type}\u001f${e.source}\u001f${e.target}`
+        directKeys.add(k)
+        if (directRelTruth.has(`${rel}|${k}`)) continue
+        // The ONE exemption, and it is structural rather than by name. LUA-26 is
+        // open: the oracle deliberately derives no edge for a for-loop's control
+        // variable, because whether one belongs in the symbol graph is a product
+        // decision. The analyzer, meanwhile, emits `contains <fn> -> <var>` for
+        // such a variable whenever the loop body also ASSIGNS it — the assignment
+        // creates the symbol, and the for-clause is not why the edge exists. On
+        // kong that is exactly one edge, `contains Schema:errors_to_string -> err`
+        // at kong/db/schema/init.lua, and it is a true statement reached by a
+        // different route than the one the oracle does not take.
+        //
+        // Exempted on the STRUCTURAL test — the target is bound by a for-clause
+        // somewhere in this file — not by matching the name. A name-based
+        // exemption would be a hole shaped exactly like the next bug; this one is
+        // closed the moment the loop binding goes away, and every exemption is
+        // counted and reported rather than silently dropped.
+        if (e.type === "contains" && forBoundVars.has(e.target)) {
+          loopCoincidence++
+          if (loopCoincidenceSample.length < 10) loopCoincidenceSample.push(`${e.source} -> ${e.target}  ${rel}`)
+          continue
+        }
+        relSpurious++
+        if (relExtra.length < 25) relExtra.push(`${e.type} ${e.source} -> ${JSON.stringify(e.target).slice(0, 90)}  ${rel}`)
+      }
+      // Exports are a SEPARATE array on the direct result, not an entry in
+      // `relationships`. Without this the relationship leg demanded an
+      // `exports global -> x` key that the direct relationship list can never
+      // contain, and reported every export as missed — 317 of them on kong, which
+      // is exactly the export truth count. The leg was measuring its own blind
+      // spot and calling it a recall gap.
+      for (const ex of direct.exports ?? []) {
+        directKeys.add(`exports\u001fglobal\u001f${ex.name}`)
+      }
+      for (const e of deriveLuaTruth(tree.rootNode, rel)) {
+        relTruth++
+        if (directKeys.has(`${e.label}\u001f${e.from}\u001f${e.target}`)) relHit++
+        else if (relMissed.length < 25) relMissed.push(`${e.label} ${e.from} -> ${e.target} (${e.rule}, L${e.line})  ${rel}`)
+      }
+      relFilesProbed++
+    }  }
 
   // ── the two directions ─────────────────────────────────────────────────────
   const missing: any[] = []
@@ -928,7 +1222,14 @@ async function main(): Promise<void> {
   // The direct-path export comparison is part of the verdict, not decoration: it is
   // the ONLY place an export defect can show up at all while LUA-14 stands.
   const exportsDirectBad = exportTruth > 0 && (exportHit !== exportTruth || exportSpurious > 0)
-  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad
+  // LUA-34: a direct-path relationship that the tree never derived is a fabricated
+  // target, and a fabricated target is the defect class this lane has spent its
+  // life on. It is part of the verdict, not a diagnostic.
+  const relDirectBad = relSpurious > 0
+  // LUA-36: a framework claimed that the tree does not support is a fabrication of
+  // the kind LUA-04 was, and it is part of the verdict rather than a report.
+  const metaBad = metaSpurious > 0
+  const hardFail = missingFromAnalyzer.length > 0 || unexplained.length > 0 || lineWrong.length > 0 || exportsDirectBad | relDirectBad || metaBad || metaMissed.some((x) => x.startsWith("coroutineUsage"))
   const report = {
     schemaVersion: 1,
     kind: "lua_truth_oracle_differential",
@@ -957,6 +1258,40 @@ async function main(): Promise<void> {
         precision: exportHit + exportSpurious ? Number((exportHit / (exportHit + exportSpurious)).toFixed(6)) : 1,
         missedSample: exportMissed,
         spuriousSample: exportExtra,
+      },
+      metadataDirectPath: {
+        note: "M60 LUA-36. LUA-02, LUA-04, LUA-10 and LUA-11 are metadata defects and had a dedicated gate but NO corpus test, because this instrument compared only relationships and exports. The truth side is re-derived from the tree: coroutine CALLS counted by node type, and the framework rule re-implemented from the contract rather than copied from the analyzer, because a copy agrees by construction and proves nothing.",
+        coroutines: { files: metaCoroutines, checks: metaHit },
+        frameworkClaimWithoutMemberAccess: { files: metaFrameworks, violations: metaSpurious },
+        spurious: metaSpurious,
+        missedSample: metaMissed,
+        spuriousSample: metaExtra,
+        architecturalScore: {
+          files: metaScoreFiles,
+          distinctValues: metaScoreSet.size,
+          values: [...metaScoreSet].sort((a, b) => a - b),
+          mean: metaScoreFiles ? Number((metaScoreSum / metaScoreFiles).toFixed(3)) : null,
+          note: "LUA-10/LUA-11 are about whether this number MOVES. One distinct value across a whole corpus is a constant wearing a number, and that is the check; the mean is reported so a reader can see the spread rather than be told it is fine.",
+        },
+      },
+      surfaceDisclosures: {
+        note: "M60 LUA-35. A module surface that carries no NAME is disclosed rather than published, so 'no exports' stops meaning two indistinguishable things. Counted on the direct path.",
+        filesWithDisclosures: disclosureFiles,
+        totalDisclosures: disclosureCount,
+      },
+      relationshipsDirectPath: {
+        note: "analyzer output vs the same tree-derived truth, read through parseWithAnalyzer. Exists because pool-worker DROPS any relationship target containing a newline, so a multi-line payload target is invisible through the pipeline — the blind spot that hid LUA-32 for an entire lane. `spurious` is the leg that catches a target the tree never derived.",
+        filesProbed: relFilesProbed,
+        truth: relTruth,
+        hit: relHit,
+        missed: relTruth - relHit,
+        spurious: relSpurious,
+        loopCoincidenceExempted: loopCoincidence,
+        loopCoincidenceSample,
+        recall: relTruth ? Number((relHit / relTruth).toFixed(6)) : 1,
+        precision: relHit + relSpurious ? Number((relHit / (relHit + relSpurious)).toFixed(6)) : 1,
+        missedSample: relMissed,
+        spuriousSample: relExtra,
       },
       pipelineDiscardEvidence: {
         note: "a label is called discarded ONLY where the direct path supplied it and the pipeline did not, on the same file. Absence on both sides proves nothing.",
@@ -1005,6 +1340,13 @@ async function main(): Promise<void> {
   if (missingByNoiseFilter.length) console.log(`  noise-filter targets hit: ${[...new Set(missingByNoiseFilter.map((e) => e.target))].sort().join(", ")}`)
   console.log(`lines: checked=${lineChecked} exact=${lineExact} wrong=${lineWrong.length} accuracy=${report.totals.lineAccuracy}`)
   console.log(`exports (DIRECT path, ${exportFilesProbed} files): truth=${exportTruth} hit=${exportHit} missed=${exportTruth - exportHit} spurious=${exportSpurious} recall=${report.totals.exportsDirectPath.recall} precision=${report.totals.exportsDirectPath.precision}`)
+  // Numeric and parseable, always. An earlier version printed "yes" for a
+  // mismatch and "0" for none, which a mutation harness cannot compare — a signal
+  // that changes TYPE rather than VALUE is a signal nobody can gate on.
+  const coroMismatches = metaMissed.filter((m) => m.startsWith("coroutineUsage")).length
+  console.log(`metadata (DIRECT path, ${metaFrameworks} files): coroutineMismatches=${coroMismatches} frameworkClaimsWithoutMemberAccess=${metaSpurious} scoreDistinctValues=${metaScoreSet.size} scoreValues=${JSON.stringify([...metaScoreSet].sort((a, b) => a - b))}`)
+  console.log(`disclosures (nameless surfaces): files=${disclosureFiles} total=${disclosureCount}`)
+  console.log(`relationships (DIRECT path, ${relFilesProbed} files): truth=${relTruth} hit=${relHit} missed=${relTruth - relHit} SPURIOUS=${relSpurious} recall=${report.totals.relationshipsDirectPath.recall} precision=${report.totals.relationshipsDirectPath.precision}`)
   console.log("\nper label:")
   for (const L of LABELS) {
     const b = byLabel[L]

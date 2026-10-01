@@ -1,0 +1,852 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M60",
+  "rule": "R10",
+  "authority": "lane-scoped",
+  "purpose": "Measure the R10 spelling question for the yaml lane, which the shared census cannot see because it enumerates lanes from LANGS in script/m14/differential.ts.",
+  "generatedAt": "2026-09-27T22:23:27.950Z",
+  "boundary": {
+    "sharedGateStatus": "NOT RUN for yaml. script/m60/verify-standing-rules.ts cannot adjudicate R10 for this lane: the lane is absent from the shared census's lane set, and registering it in validation/m60/target-spelling-register.json today would fail the gate with `registered lane(s) appear in no census row`.",
+    "whyNotEnrolled": "Adding a LANGS.yaml row without a hand-written deriveYamlEdges in the shared F5 sweep would enroll the lane with zero truth rows, which that sweep throws on (treeEdgesTotal === 0). Both changes are central-owner work in a 15k-line shared file.",
+    "classifier": "A faithful mirror of the shared census's classifier, with the same DELIMITERS, the same isLiteralTarget, the same imports/exports exclusion, the same MIN_SYMBOLS threshold and the same separator-triple vocabulary. It must be reconciled against the shared census when the lane is enrolled; until then it is evidence, not a gate result.",
+    "draw": "The shared census's own deterministic draw (sorted, then every k-th file) is reproduced because filesFor() requires a LANGS entry this lane may not add. The deviation is the file set: the shared sweep's primary/second pairs, kubernetes and ansible, per LANG_REPOS and SECOND_CORPUS in script/m14/differential.ts."
+  },
+  "lang": "yaml",
+  "verdict": "fabricated-spellings",
+  "draws": [
+    {
+      "repo": "kubernetes",
+      "files": 250
+    },
+    {
+      "repo": "ansible",
+      "files": 250
+    }
+  ],
+  "files": 500,
+  "symbols": 18880,
+  "distinctSymbols": 1726,
+  "minSymbols": 250,
+  "adjudicable": true,
+  "relationships": 18552,
+  "targets": 18552,
+  "distinctTargets": 14317,
+  "sampleTargets": 120,
+  "byClass": {
+    "literal": 0,
+    "whitespace": 2,
+    "delimiter": 0,
+    "separator": 13899
+  },
+  "anomalySamples": [
+    {
+      "target": "main[4].block[4].expect.responses.BECOME password",
+      "type": "contains",
+      "file": "test/integration/targets/become_su/tasks/main.yml",
+      "chars": [
+        " "
+      ],
+      "klass": "whitespace"
+    },
+    {
+      "target": "vars file spaces.foo",
+      "type": "contains",
+      "file": "test/integration/targets/lookup_first_found/files/vars file spaces.yml",
+      "chars": [
+        " "
+      ],
+      "klass": "whitespace"
+    },
+    {
+      "target": "bug-report.body[0]",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].type",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].id",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].attributes",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].attributes.label",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].attributes.description",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].validations",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[0].validations.required",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1]",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].type",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].id",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].attributes",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].attributes.label",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].validations",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[1].validations.required",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[2]",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[2].type",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[2].id",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[2].attributes",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    },
+    {
+      "target": "bug-report.body[2].attributes.label",
+      "type": "contains",
+      "file": ".github/ISSUE_TEMPLATE/bug-report.yaml",
+      "chars": [
+        "[",
+        "]"
+      ],
+      "klass": "separator"
+    }
+  ],
+  "anomalySampleRule": "up to 20 per class, in class order literal/whitespace/delimiter/separator",
+  "emptyTargets": [],
+  "emptyTargetCount": 0,
+  "reportedPathTargets": [
+    {
+      "target": "devel",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "stable-*",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "devel",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "stable-*",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "devel",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "stable-*",
+      "type": "imports",
+      "file": ".azure-pipelines/azure-pipelines.yml"
+    },
+    {
+      "target": "embed.yml",
+      "type": "imports",
+      "file": "test/integration/targets/ansiballz_python/tasks/main.yml"
+    },
+    {
+      "target": "./empty_installed_collections.yml",
+      "type": "imports",
+      "file": "test/integration/targets/ansible-galaxy-collection-scm/tasks/test_manifest_metadata.yml"
+    },
+    {
+      "target": "{{ cleanup_filename }}",
+      "type": "imports",
+      "file": "test/integration/targets/ansible-galaxy/cleanup.yml"
+    },
+    {
+      "target": "setup_become_user_pair",
+      "type": "imports",
+      "file": "test/integration/targets/become_su/tasks/main.yml"
+    },
+    {
+      "target": "true",
+      "type": "imports",
+      "file": "test/integration/targets/become_su/tasks/main.yml"
+    },
+    {
+      "target": "setup_pexpect",
+      "type": "imports",
+      "file": "test/integration/targets/become_su/tasks/main.yml"
+    },
+    {
+      "target": "add_block_to_existing_file.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "create_file.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "create_dir.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "preserve_line_endings.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "block_without_trailing_newline.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "file_without_trailing_newline.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "diff.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "validate.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "insertafter.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "insertbefore.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "multiline_search.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "append_newline.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "prepend_newline.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "encoding.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blockinfile/tasks/main.yml"
+    },
+    {
+      "target": "fail.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blocks/main.yml"
+    },
+    {
+      "target": "fail.yml",
+      "type": "imports",
+      "file": "test/integration/targets/blocks/main.yml"
+    },
+    {
+      "target": "standalone",
+      "type": "imports",
+      "file": "test/integration/targets/collections/collection_root_user/ansible_collections/testns/testcoll/roles/call_standalone/tasks/main.yml"
+    },
+    {
+      "target": "testns.testcoll.testrole",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "testns.testcoll.testrole",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "testns.testcoll.role_subdir.subdir_testrole",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "testns.testcoll.calls_intra_collection_dep_role_unqualified",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "testns.testcoll.calls_intra_collection_dep_role_unqualified",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "includeme.yml",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "includeme.yml",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "test_collection_meta.yml",
+      "type": "imports",
+      "file": "test/integration/targets/collections/posix.yml"
+    },
+    {
+      "target": "setup.yml",
+      "type": "imports",
+      "file": "test/integration/targets/fetch/roles/fetch_tests/tasks/main.yml"
+    },
+    {
+      "target": "normal.yml",
+      "type": "imports",
+      "file": "test/integration/targets/fetch/roles/fetch_tests/tasks/main.yml"
+    },
+    {
+      "target": "symlink.yml",
+      "type": "imports",
+      "file": "test/integration/targets/fetch/roles/fetch_tests/tasks/main.yml"
+    },
+    {
+      "target": "fail_on_missing.yml",
+      "type": "imports",
+      "file": "test/integration/targets/fetch/roles/fetch_tests/tasks/main.yml"
+    },
+    {
+      "target": "failures.yml",
+      "type": "imports",
+      "file": "test/integration/targets/fetch/roles/fetch_tests/tasks/main.yml"
+    },
+    {
+      "target": "handlers_lockstep_83019-include.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/handlers_lockstep_83019.yml"
+    },
+    {
+      "target": "include_handlers.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/roles/include_role_include_tasks_handler/handlers/main.yml"
+    },
+    {
+      "target": "handlers.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/roles/test_handlers_include/handlers/main.yml"
+    },
+    {
+      "target": "A.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/roles/test_role_handlers_include_tasks/handlers/main.yml"
+    },
+    {
+      "target": "B.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/roles/test_role_handlers_include_tasks/handlers/main.yml"
+    },
+    {
+      "target": "test_block_as_handler-include_import-handlers.yml",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/test_block_as_handler-include.yml"
+    },
+    {
+      "target": "doesnotmatter_fails_at_parse_time",
+      "type": "imports",
+      "file": "test/integration/targets/handlers/test_role_as_handler.yml"
+    },
+    {
+      "target": "tasks/handlers.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/handler_addressing/roles/import_handler_test/handlers/main.yml"
+    },
+    {
+      "target": "issue73657_tasks.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/issue73657.yml"
+    },
+    {
+      "target": "{{ \"playbook1.yml\" }}",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "validate1.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "playbook2.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "playbook4.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "validate34.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "playbook_needing_vars.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "sub_playbook/sub_playbook.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "playbook_using_a_var.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/playbook/test_import_playbook.yml"
+    },
+    {
+      "target": "r1t02.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/roles/role1/tasks/r1t01.yml"
+    },
+    {
+      "target": "r1t10.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/roles/role1/tasks/r1t09.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "false",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "false",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "false",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "dup_allowed_role",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "false",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/tasks/test_dynamic_allow_dup.yml"
+    },
+    {
+      "target": "nested_tasks",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/test_nested_non_existent_tasks.yml"
+    },
+    {
+      "target": "include_tasks.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/undefined_var/playbook.yml"
+    },
+    {
+      "target": "no_log",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/undefined_var/playbook.yml"
+    },
+    {
+      "target": "include_that_defines_var.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import/undefined_var/playbook.yml"
+    },
+    {
+      "target": "nested_adjacent.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_import_tasks_nested/tasks/nested/nested_include.yml"
+    },
+    {
+      "target": "syntax_error.yml",
+      "type": "imports",
+      "file": "test/integration/targets/include_when_parent_is_static/tasks.yml"
+    },
+    {
+      "target": "role_from_args",
+      "type": "imports",
+      "file": "test/integration/targets/includes/includes_from_dedup.yml"
+    },
+    {
+      "target": "{{ inventory_hostname }}.yml",
+      "type": "imports",
+      "file": "test/integration/targets/includes/includes_from_dedup.yml"
+    },
+    {
+      "target": "inner.yml",
+      "type": "imports",
+      "file": "test/integration/targets/includes/roles/test_includes_free/tasks/main.yml"
+    },
+    {
+      "target": "test_includes4.yml",
+      "type": "imports",
+      "file": "test/integration/targets/includes/test_includes3.yml"
+    },
+    {
+      "target": "tasks/main.yml",
+      "type": "imports",
+      "file": "test/integration/targets/interpreter_discovery_python/discovery.yml"
+    },
+    {
+      "target": "test_include_nested.yml",
+      "type": "imports",
+      "file": "test/integration/targets/parsing/roles/test_good_parsing/tasks/test_include_conditional.yml"
+    },
+    {
+      "target": "../setup_remote_tmp_dir",
+      "type": "imports",
+      "file": "test/integration/targets/remote_tmp/playbook.yml"
+    },
+    {
+      "target": "name=a",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "name=a public=no",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "name=a public=yes",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "name=a",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "name=a public=yes",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "name=a public=no",
+      "type": "imports",
+      "file": "test/integration/targets/roles/privacy.yml"
+    },
+    {
+      "target": "include_tasks.yml",
+      "type": "imports",
+      "file": "test/integration/targets/roles/roles/end_role_inside_nested/tasks/main.yml"
+    },
+    {
+      "target": "tasks.yml",
+      "type": "imports",
+      "file": "test/integration/targets/strategy_linear/roles/role1/tasks/main.yml"
+    },
+    {
+      "target": "setup.yml",
+      "type": "imports",
+      "file": "test/integration/targets/subversion/roles/subversion/tasks/main.yml"
+    },
+    {
+      "target": "tests.yml",
+      "type": "imports",
+      "file": "test/integration/targets/subversion/roles/subversion/tasks/main.yml"
+    },
+    {
+      "target": "warnings.yml",
+      "type": "imports",
+      "file": "test/integration/targets/subversion/roles/subversion/tasks/main.yml"
+    },
+    {
+      "target": "cleanup.yml",
+      "type": "imports",
+      "file": "test/integration/targets/subversion/roles/subversion/tasks/main.yml"
+    },
+    {
+      "target": "../setup_remote_tmp_dir",
+      "type": "imports",
+      "file": "test/integration/targets/win_app_control/main.yml"
+    },
+    {
+      "target": "setup.yml",
+      "type": "imports",
+      "file": "test/integration/targets/win_app_control/main.yml"
+    },
+    {
+      "target": "test_not_enabled.yml",
+      "type": "imports",
+      "file": "test/integration/targets/win_app_control/main.yml"
+    },
+    {
+      "target": "test_enabled.yml",
+      "type": "imports",
+      "file": "test/integration/targets/win_app_control/main.yml"
+    },
+    {
+      "target": "test_manifest.yml",
+      "type": "imports",
+      "file": "test/integration/targets/win_app_control/main.yml"
+    }
+  ],
+  "separatorTriples": [
+    {
+      "relationshipType": "contains",
+      "char": "#"
+    },
+    {
+      "relationshipType": "contains",
+      "char": "-"
+    },
+    {
+      "relationshipType": "contains",
+      "char": "."
+    },
+    {
+      "relationshipType": "contains",
+      "char": "/"
+    },
+    {
+      "relationshipType": "contains",
+      "char": "_"
+    },
+    {
+      "relationshipType": "imports",
+      "char": " "
+    },
+    {
+      "relationshipType": "imports",
+      "char": "\""
+    },
+    {
+      "relationshipType": "imports",
+      "char": "*"
+    },
+    {
+      "relationshipType": "imports",
+      "char": "-"
+    },
+    {
+      "relationshipType": "imports",
+      "char": "."
+    },
+    {
+      "relationshipType": "imports",
+      "char": "/"
+    },
+    {
+      "relationshipType": "imports",
+      "char": "="
+    },
+    {
+      "relationshipType": "imports",
+      "char": "_"
+    },
+    {
+      "relationshipType": "imports",
+      "char": "{"
+    },
+    {
+      "relationshipType": "imports",
+      "char": "}"
+    },
+    {
+      "relationshipType": "references",
+      "char": "-"
+    },
+    {
+      "relationshipType": "references",
+      "char": "."
+    },
+    {
+      "relationshipType": "references",
+      "char": "_"
+    }
+  ],
+  "relationTypes": [
+    "contains",
+    "imports",
+    "references"
+  ],
+  "crashes": [],
+  "crashCount": 0
+}

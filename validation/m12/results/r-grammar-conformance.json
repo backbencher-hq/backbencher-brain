@@ -147,6 +147,7 @@
       "comment",
       "dots",
       "extract_operator",
+      "false",
       "function_definition",
       "identifier",
       "namespace_operator",
@@ -157,7 +158,9 @@
       "string"
     ],
     "fieldLiterals": [
+      "alternative",
       "arguments",
+      "condition",
       "content",
       "default",
       "function",
@@ -174,10 +177,10 @@
   "regexLiterals": [],
   "commentBacktickMentionsExcluded": 2,
   "note": "Both the oracle and the analyzer's literals are produced in this run; nothing is a maintained list. The analyzer's only text-level operations are on a single node's own text: stripping one backtick pair from a quoted identifier, unquoting a `string` node's content via the grammar's `content` field with a first/last token fallback, detecting roxygen tags inside a `comment` token, and the S3 `generic.class` naming convention. The grammar exposes no sub-structure for any of those, so each is a justified text operation rather than source scanning.",
-  "currentCommit": "147c328a24a25cdf7d5249f14f8a89b6a55765d3",
+  "currentCommit": "e9bb67c7cd353b4ed8386924f8efd4887043b2dc",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-28T03:07:52.045Z",
-    "contentSha256": "4d63ebae917276ba6f7481c3aff086e0d6538739d2d5cd6d59bcc32462ca3474"
+    "sealedAt": "2026-09-28T22:02:32.606Z",
+    "contentSha256": "3ca253619de9737f786487a4981a190d549ee5028221b80e784f00ec015716c8"
   }
 }

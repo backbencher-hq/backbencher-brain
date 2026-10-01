@@ -18,6 +18,95 @@ import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
 import { findDeclaringParent } from "./override-context"
 
+/**
+ * #949: does a parameter signature carry a GENERIC TYPE VARIABLE — Kotlin's
+ * single-capital convention (`T`, `R`)? Char-scan, no regex: analyzers carry no
+ * regex literals (R2 register).
+ *
+ * This is a DELIBERATE mirror of the differential's own `hasTypeVar`
+ * (differential.ts, the `sigCompatible` used by the override truth derivation),
+ * boundary-for-boundary: a type variable is recognised only at `(`, `,`, `:`,
+ * `|`, `[`, `<`, `&` or string start, and only as a SINGLE capital (a following
+ * letter makes it concrete).
+ *
+ * The previous kotlin version split the signature on `,` and required the whole
+ * token to be one capital letter. That reads `(T?)` as CONCRETE — the nullable
+ * form is how Kotlin types every generic parameter — so the documented
+ * generic-substitution fallback never fired, and an override whose declaring
+ * ancestor is a GRANDPARENT interface fell through to the first-supertype guess
+ * (measured on exposed-core ColumnType.kt: `ColumnWithTransform : ColumnType`,
+ * `ColumnType : IColumnType` with `IColumnType.valueToDB sig=(T?)`: the analyzer
+ * published `ColumnType.valueToDB` at 0.5 where the truth says
+ * `IColumnType.valueToDB`, and `ColumnType` declares no such member at all).
+ * The judge already reads `(T?)` as a type variable; the analyzer now reads the
+ * same signature the same way, which is the only property that keeps the
+ * differential measuring one question rather than two.
+ *
+ * Mirroring is not free, and the boundary is registered rather than widened:
+ * `(Byte?)` and `(Wrapped?)` are NOT type variables (`Byte` is concrete;
+ * `Wrapped` is a multi-letter parameter the single-capital convention cannot
+ * name), exactly as the judge reads them — which is why the true overrides here
+ * fire on the ANCESTOR's `(T?)` and not on the child's sig. The judge's residual
+ * blindness (type variables in nested `<T>` positions) is oracle debt, not paid
+ * for with a fabricated red row.
+ */
+/**
+ * M60 (#924, kotlin half): quoting syntax is not part of an identifier's NAME.
+ * `fun `test char column read and write`()` declares the identifier
+ * `test char column read and write`; the backticks are Kotlin's escape for a name
+ * that cannot be spelled plainly (keywords, spaces), not part of what it is called.
+ * This mirrors the swift half of the same issue (real-swift-analyzer.ts
+ * stripNameQuoting); kotlin goes one step further because the strings this file
+ * publishes are also PATHS ("Outer.`object`") and ids (dotted names), so every
+ * COMPLETE backtick run is quoting, wherever it sits in the string. An unmatched
+ * backtick is not a run and is kept verbatim. Measured before the fix on the
+ * census's own samples: 6 occurrences / 3 distinct names
+ * (script/m14/tmp/c924-name-surface-probe.ts).
+ */
+function stripKotlinQuoting(text: string): string {
+  if (!text.includes("`")) return text
+  let out = ""
+  let i = 0
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 96) {
+      const close = text.indexOf("`", i + 1)
+      if (close === -1) {
+        out += text.slice(i)
+        break
+      }
+      out += text.slice(i + 1, close)
+      i = close + 1
+    } else {
+      out += text[i]
+      i++
+    }
+  }
+  return out
+}
+
+function kotlinSigHasTypeVar(sig: string): boolean {
+  const n = sig.length
+  let i = 0
+  while (i < n) {
+    const c = sig[i]
+    if (c === "(" || c === "," || c === ":" || c === "|" || c === "[" || c === "<" || c === "&" || i === 0) {
+      let j = i
+      while (j < n && (sig[j] === "(" || sig[j] === "[" || sig[j] === " " || sig[j] === ":" || sig[j] === ",")) j++
+      if (j < n && sig[j] >= "A" && sig[j] <= "Z") {
+        let end = j + 1
+        while (end < n && ((sig[end] >= "A" && sig[end] <= "Z") || (sig[end] >= "a" && sig[end] <= "z") || (sig[end] >= "0" && sig[end] <= "9") || sig[end] === "_")) end++
+        if (end === j + 1) return true
+        i = end
+        continue
+      }
+      i = j > i ? j : i + 1
+      continue
+    }
+    i++
+  }
+  return false
+}
+
 export interface KotlinContext {
   content: string
   currentFile: string
@@ -298,9 +387,37 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           source: _owner,
           target: s.name,
           type: ASTEngine.RelationshipType.Contains,
-          confidence: 1.0,
+          // K1 (M60 kotlin deep review, 2026-09-27): a SYNTHESIZED member's
+          // name is written nowhere in the file. `data class C(val a: Int)`
+          // produces component1 / copy / equals / hashCode / toString, and the
+          // code above already knows it — `isSynthetic` is computed, and the
+          // LINE is correctly omitted for exactly this reason. The confidence
+          // was the one field left claiming otherwise.
+          //
+          // This is the same defect the java pass closed as JD-J13, verbatim in
+          // shape: an inference published at maximum confidence, on a branch
+          // that already carries the knowledge it is wrong about. Probed here:
+          //
+          //     data class C(val a: Int)
+          //       C->a           conf=1.0  line=1     (declared — correct)
+          //       C->component1  conf=1.0  line=-     (synthesized)
+          //       C->copy        conf=1.0  line=-     (synthesized)
+          //       C->equals      conf=1.0  line=-     (synthesized)
+          //       C->hashCode    conf=1.0  line=-     (synthesized)
+          //       C->toString    conf=1.0  line=-     (synthesized)
+          //
+          // Five of six containment edges name a method with no declaration, at
+          // maximum confidence, while the one real member sits beside them at the
+          // same confidence with a real line. A consumer cannot tell them apart
+          // without knowing the `isPhantom` convention.
+          //
+          // Fixed the way java's JD-J13 was: keep the edge (the containment is
+          // real and useful — `C.component1` does exist), mark it, and demote
+          // below the 0.7 fabrication threshold so it reads as declared
+          // suspicion and a consumer can filter on it.
+          confidence: isSynthetic ? 0.6 : 1.0,
           ...(!isSynthetic && s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: { isContained: true },
+          metadata: { isContained: true, ...(isSynthetic ? { inferred: true } : {}) },
         })
       }
       // Overrides: real methods with 'override' modifier, keyed by
@@ -365,19 +482,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (!sigs || sigs.size === 0) return false
             if (overrideSig && sigs.has(overrideSig)) return true
             // No signature on a side (extractor gap) OR a generic type
-            // variable in either sig: name-only pairing. A sig carrying a
-            // bare capitalized token (T, R) is a type VARIABLE — concrete
-            // types (Int, String) still require the exact sig so overloads
-            // never pair.
-            const hasTypeVar = (sig: string): boolean => {
-              const inner = sig.slice(1, -1)
-              if (!inner) return false
-              for (const tok of inner.split(",")) {
-                const t2 = tok.trim()
-                if (t2.length === 1 && t2 >= "A" && t2 <= "Z") return true
-              }
-              return false
-            }
+            // variable in either sig: name-only pairing. A type variable is
+            // a single capital (T, R) at a token boundary — `(T?)` included,
+            // which is how Kotlin writes a nullable generic parameter and
+            // which the old token-split mirror misread as a concrete type
+            // (#949). Concrete types (Int, String, Byte?) still require the
+            // exact sig so overloads never pair. The scan is the judge's own
+            // (kotlinSigHasTypeVar) — see its comment for why mirroring it
+            // boundary-for-boundary is load-bearing.
+            const hasTypeVar = (sig: string): boolean => kotlinSigHasTypeVar(sig)
             if (!overrideSig) return true
             for (const s2 of sigs) if (hasTypeVar(s2) || hasTypeVar(overrideSig)) return true
             return false
@@ -441,6 +554,11 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         metadata: { isImportDep: true },
       })
     }
+
+    // M60 (#924, kotlin half): the published name surface — quoting syntax is
+    // not part of a name. Runs BEFORE exports and the import-source rewrite so
+    // every published spelling is derived from the canonical one.
+    this.canonicalizePublishedNames(symbols, relationships)
 
     // Rewrite import-reference sources from the placeholder "root" to the
     // file's primary top-level type so references carry a symbol identity
@@ -523,10 +641,43 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (symModifiers[j] === "data") { hasData = true; break }
       }
       if (symbol.kind === ASTEngine.SymbolKind.Class && hasData) {
+        // M60 K4 (kotlin deep review): componentN is generated ONLY for the
+        // data class's PRIMARY CONSTRUCTOR properties — the `val`/`var`
+        // parameters. This counted EVERY property carrying the class as owner,
+        // which under the family-wide owner contract is strictly larger.
+        //
+        //   data class ColumnDiff(val nullability, val type, val autoInc,
+        //       val defaults, val caseSensitiveName, val sizeAndScale, val comment)
+        //       : /* 7 properties */
+        //
+        // published component1..componentNINE. component8 and component9 do not
+        // exist: the two extra came from the COMPANION object's properties
+        // (`NoneChanged`, `AllChanged`), which the owner contract correctly
+        // flattens onto the class and which therefore satisfied
+        // `ownerName === class && kind === Property`.
+        //
+        // So the defect was a consequence of aa6a2beb's owner flattening being
+        // RIGHT: fixing local ownership made the owner set correct, and this
+        // count — which was written against the looser set — became wrong. The
+        // two fixes are only consistent together. A phantom naming a method
+        // that does not exist is a fabrication, and marking it `isPhantom`
+        // describes how it was made rather than excusing it: a tool offering
+        // `ColumnDiff.component9` navigates to a member Kotlin never generates.
+        //
+        // The same narrowing also excludes a data class's BODY properties, which
+        // is correct: Kotlin generates no componentN for them either.
+        //
+        // `isConstructorProperty` is set where ctor val/var parameters are
+        // extracted, so this reads a fact the extractor already established
+        // rather than re-deriving one.
         const properties: ASTEngine.UniversalSymbol[] = []
         for (let j = 0; j < symbols.length; j++) {
            const s = symbols[j]
-           if (s.ownerName === symbol.name && s.kind === ASTEngine.SymbolKind.Property) properties.push(s)
+           if (
+             s.ownerName === symbol.name &&
+             s.kind === ASTEngine.SymbolKind.Property &&
+             s.metadata?.isConstructorProperty === true
+           ) properties.push(s)
         }
 
         for (let index = 0; index < properties.length; index++) {
@@ -622,7 +773,38 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
 
       switch (n.type) {
         case "function_declaration":
-          this.extractFunction(n, symbols, ctx, pClass)
+          // M60 K4 (kotlin deep review): the same owner rule as the
+          // property_declaration case above (aa6a2beb), one node over. A
+          // function is a MEMBER of a class exactly when it is declared in that
+          // class's body; a function declared inside another function is LOCAL
+          // to that body, and the class does not contain it.
+          //
+          //   fun testInsertWithExpression() {
+          //       val tbl = object : IntIdTable("testInsert") { ... }
+          //       fun expression(value: String) = ...          // LOCAL
+          //       suspend fun verify(value: String) { ... }    // LOCAL
+          //       withTables(tbl) { ... }
+          //   }
+          //
+          // The walk carries `pClass` through every node it does not intercept,
+          // and a function body is not intercepted — so each of these locals was
+          // given ownerName = InsertTests and published
+          // `contains InsertTests -> expression` / `-> verify`. Kotlin scoping
+          // is unambiguous here: a `fun` in a body is visible only in that body.
+          //
+          // Found by K4 adjudication: after the anonymous-object class, six
+          // unexplained contains rows remained and every one was this shape
+          // (a top-level-looking function, a `suspend fun`, and a local
+          // extension `fun Query.sliceIt()` — all three the same defect).
+          //
+          // `pClass` is also what makes the SymbolKind choice below, so the
+          // same rule fixes the published kind: a local function is a Function,
+          // not a Method.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition = pt === "class_body" || pt === "enum_class_body"
+            this.extractFunction(n, symbols, ctx, isMemberPosition ? pClass : undefined)
+          }
           break
         case "class_declaration": {
           const isInterface = someSymbol(n.children, (c) => c?.type === "interface")
@@ -633,12 +815,41 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
             pushedName = cName
             nextParentClass = cName
           }
-          if (isInterface) {
-            this.extractInterface(n, symbols, ctx, pClass)
-          } else if (isEnum) {
-            this.extractEnumClass(n, symbols, ctx, pClass)
-          } else {
-            this.extractClass(n, symbols, ctx, pClass)
+          // M60 K4: the owner rule that aa6a2beb applied to properties and the
+          // local-function fix applied to functions, now applied to type
+          // declarations. A class is a NESTED MEMBER of another class exactly
+          // when it is declared in that class's body; one declared inside a
+          // function is LOCAL to that function.
+          //
+          //   fun testSubtypesFilterIsInstance() = runTest {
+          //       open class Super
+          //       class Sub : Super()
+          //       ...
+          //   }
+          //   published: contains FilterTrivialTest -> Super
+          //
+          // The walk threads pClass through every node it does not intercept, and
+          // a function body is not intercepted, so a local class was given the
+          // enclosing test class as owner. Kotlin scoping is unambiguous: `Super`
+          // is visible only inside the test function.
+          //
+          // Found by the first 400-file kotlinx-coroutines run, where four of the
+          // six remaining unexplained contains rows were this shape across three
+          // files (a local class, a local `class` with a supertype, and a local
+          // `open class`). `nextParentClass` is deliberately NOT gated: the
+          // class is still the scope owner of its own body, which is a different
+          // question from being a member of the enclosing class.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition = pt === "class_body" || pt === "enum_class_body"
+            const ownerForDecl = isMemberPosition ? pClass : undefined
+            if (isInterface) {
+              this.extractInterface(n, symbols, ctx, ownerForDecl)
+            } else if (isEnum) {
+              this.extractEnumClass(n, symbols, ctx, ownerForDecl)
+            } else {
+              this.extractClass(n, symbols, ctx, ownerForDecl)
+            }
           }
           break
         }
@@ -653,7 +864,44 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "property_declaration":
-          this.extractProperty(n, symbols, ctx, pClass, relationships)
+          // M60 K2 (kotlin deep review): a property is a MEMBER of a class
+          // exactly when it is declared in that class's body. Every other
+          // position is a local.
+          //
+          // The walk carries `pClass` down through every node it does not
+          // intercept, and `anonymous_initializer` (an `init { }` block) is not
+          // intercepted — so a local declared in an init block was given the
+          // class as its owner:
+          //
+          //   class D { val c = 1; init { val local = 2; println(local) } }
+          //     symbols:  D, c[owner=D], local[owner=D]     <-- local owns D
+          //     published: uses D -> local  (conf 0.6, "member read")
+          //
+          // That fabricated a member read for a name bound two lines earlier in
+          // the same block, and gate A of the uses oracle could not catch it:
+          // gate B only walks function/lambda/ctor scopes, and an init block is
+          // none of those, so nothing else stood between the bad owner and a
+          // published edge. The same wrong owner also put a phantom
+          // `contains D -> local` in the graph — the java pass closed that
+          // shape as JD-J13, and it was here too.
+          //
+          // Found by adjudication, not by inspection: the oracle disagreed with
+          // the analyzer on exactly one row across 14 real files
+          // (`uses ... -> columnsTable`, Constraints.kt, declared in an init
+          // block and read in the same one) and the oracle was right.
+          //
+          // Member positions are the bodies: a class body, and an enum body (its
+          // entries and declarations live in `enum_class_body`). A companion's
+          // own `class_body` counts too — a companion's members belong to the
+          // owner class, which is the family-wide owner contract, and the uses
+          // oracle's resolveOwner cannot see a companion at all because
+          // `companion_object` is not an `object_declaration`.
+          {
+            const pt = n.parent?.type
+            const isMemberPosition =
+              pt === "class_body" || pt === "enum_class_body"
+            this.extractProperty(n, symbols, ctx, isMemberPosition ? pClass : undefined, relationships)
+          }
           break
         case "primary_constructor":
         case "constructor_declaration":
@@ -2656,6 +2904,32 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
     const membersByOwner = new Map<string, Set<string>>()
     for (const s of symbols) {
       if (!s.ownerName) continue
+      // M60 K8b: a CONSTRUCTOR is not a readable member, and excluding it is
+      // what stops gate A from accepting the class's own name.
+      //
+      // A primary constructor publishes a symbol named after the CLASS and owned
+      // by it — `BufferedChannel[constructor|owner=BufferedChannel]` — so the
+      // inventory contained the class's own name. Gate A is a WHITELIST, and a
+      // whitelist containing `X` admits every read of a name `X`, including the
+      // type name in a declaration position:
+      //
+      //   regFunc = BufferedChannel<*>::registerSelectForSend as RegistrationFunction
+      //
+      // published `uses BufferedChannel -> BufferedChannel` at conf 0.6, a
+      // self-referential edge claiming the class reads a member named after
+      // itself. The name is a TYPE position there, not a member read.
+      //
+      // It reproduces only for classes WITH a parameter list, because that is
+      // what creates a `primary_constructor` node and therefore the symbol —
+      // which is why a hand-written probe (`class Holder { fun use() = Holder::doThing }`,
+      // no parameter list) does NOT reproduce it and the defect survived being
+      // looked for. Measured on kotlinx-coroutines: 2 such rows in 96 files.
+      //
+      // The class CONTAINS its constructor, and that containment is still
+      // published — the contains class derives it deliberately and is
+      // unaffected. What is wrong is only its presence in the READ inventory:
+      // nothing is read through a constructor reference.
+      if (s.kind === ASTEngine.SymbolKind.Constructor || s.kind === ASTEngine.SymbolKind.Module) continue
       let set = membersByOwner.get(s.ownerName)
       if (!set) {
         set = new Set<string>()
@@ -2809,7 +3083,15 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
         const parent = n.parent
         const lhs = parent && parent.type === "assignment" ? parent.namedChild(0) : null
         const isWrite = !!lhs && lhs.startIndex === n.startIndex && lhs.endIndex === n.endIndex
-        if (recv && hasIndexing && !isWrite) emitUse(n, recv.text)
+        // M60 (#924, kotlin E half): the receiver's NAME, never its text — see
+        // kotlinIdentifierPath. A receiver with no identifier on its spine keeps
+        // its old spelling only when that spelling is itself name-shaped; an
+        // expression-shaped target is exactly what this fix stops publishing.
+        if (recv && hasIndexing && !isWrite) {
+          const receiverPath = this.kotlinIdentifierPath(recv)
+          if (receiverPath) emitUse(n, receiverPath)
+          else if (this.kotlinNameShapedText(recv.text)) emitUse(n, recv.text)
+        }
       } else if (n.type === "interpolated_identifier") {
         emitUse(n, n.text)
       } else if (n.type === "simple_identifier") {
@@ -2841,6 +3123,42 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Call Expression Builder
    */
+  /**
+   * M60 (#924, kotlin half): canonicalize the PUBLISHED name surface.
+   *
+   * Kotlin has no symbol factory (symbols are pushed inline by the extractors),
+   * so the strip cannot be applied at construction the way swift's createSymbol
+   * does it; it is applied here, at the publish boundary — after every analysis
+   * pass and before exports/imports are derived from these same objects, so all
+   * published spellings agree with each other (a `contains` target still equals
+   * the symbol name it points at) and with what a reference can spell.
+   *
+   * Internal keys are deliberately NOT rewritten past this point: the analysis
+   * resolves references in the source's own spelling (a kotlin reference to a
+   * quoted name is itself quoted), so the quoted form is the correct lookup key
+   * inside the analysis and the stripped form is the correct published name.
+   */
+  private canonicalizePublishedNames(
+    symbols: ASTEngine.UniversalSymbol[],
+    relationships: ASTEngine.UniversalRelationship[],
+  ): void {
+    // typeof, not truthiness: id/ownerName are optional on UniversalSymbol and a
+    // target can be absent — the first cut of this pass called the helper with
+    // undefined, the analyzer threw, and the ENGINE swapped in a basic parse
+    // result, i.e. an empty analysis. Nothing published is missing, so a run
+    // cannot smell that; only the probe's "census samples re-derived" guard can
+    // (it read 0/33 and refused the green).
+    for (const s of symbols) {
+      if (typeof s.name === "string") s.name = stripKotlinQuoting(s.name)
+      if (typeof s.ownerName === "string") s.ownerName = stripKotlinQuoting(s.ownerName)
+      if (typeof s.id === "string") s.id = stripKotlinQuoting(s.id)
+    }
+    for (const r of relationships) {
+      if (typeof r.source === "string") r.source = stripKotlinQuoting(r.source)
+      if (typeof r.target === "string") r.target = stripKotlinQuoting(r.target)
+    }
+  }
+
   private buildKotlinCallExpression(node: Node): string {    switch (node.type) {
       case "simple_identifier":
       case "identifier":
@@ -2867,6 +3185,63 @@ export class RealKotlinAnalyzer implements ASTEngine.LanguageAnalyzer {
   /**
    * Kotlin Navigation Expression Builder (for method calls)
    */
+  /**
+   * M60 (#924, kotlin E half): the NAME of an expression, when it has one.
+   *
+   * The uses walk published an indexing receiver's raw TEXT, so a read of
+   * `dest.selectAll().where { dest.id eq 1 }.single()[dest.id]` was published as
+   * that whole expression — arguments, lambda body and brackets included. Every
+   * one of the 27 such strings the census collected on kotlin is an indexing
+   * receiver (script/m14/tmp/c924-name-surface-probe.ts). A name is the chain of
+   * IDENTIFIERS along the callee/receiver spine; arguments and lambda bodies are
+   * never part of it. Returns undefined when the spine carries no identifier, and
+   * the caller then decides by the old text's SHAPE (see kotlinNameShapedText).
+   */
+  private kotlinIdentifierPath(node: Node | null | undefined): string | undefined {
+    if (!node) return undefined
+    switch (node.type) {
+      case "simple_identifier":
+      case "identifier":
+      case "type_identifier":
+        return stripKotlinQuoting(node.text)
+      case "navigation_expression": {
+        const receiver = node.namedChild(0)
+        let selector = node.namedChild(node.namedChildCount - 1)
+        if (!receiver || !selector) return undefined
+        if (selector.type === "navigation_suffix") {
+          const inner = selector.namedChild(selector.namedChildCount - 1)
+          if (!inner) return undefined
+          selector = inner
+        }
+        const rt = this.kotlinIdentifierPath(receiver)
+        const st = this.kotlinIdentifierPath(selector)
+        return rt && st ? `${rt}.${st}` : undefined
+      }
+      case "call_expression":
+      case "indexing_expression":
+        return this.kotlinIdentifierPath(node.namedChild(0))
+      default:
+        return undefined
+    }
+  }
+
+  /**
+   * M60 (#924, kotlin E half): is this published TEXT itself name-shaped? A name
+   * carries no argument, lambda, index or separator punctuation — the same rule
+   * the census's E class measures. Used only as a FALLBACK: a receiver whose spine
+   * has no identifier (`this`, a type parameter, a quoted name) keeps its old
+   * spelling rather than losing the edge, because those spellings are names and
+   * the defect being fixed is an EXPRESSION published as one.
+   */
+  private kotlinNameShapedText(text: string): boolean {
+    if (!text) return false
+    if (text.includes("\n")) return false
+    for (const ch of ["(", ")", "{", "}", "[", "]", ","]) {
+      if (text.includes(ch)) return false
+    }
+    return text.trim() === text
+  }
+
   private buildKotlinNavigationExpression(node: Node): string {
     const receiver = node.namedChild(0)
     let selector = node.namedChild(node.namedChildCount - 1)

@@ -7,12 +7,23 @@
 //   bounded:     the set comes from the graph engine's caller traversal under
 //                the declared budget/depth (never an unbounded walk).
 //   declared:    truncation is a first-class field with a reason and REAL
-//                counts — `shownCount` plus `totalCountIfKnown` (computed by
-//                an independent bounded COUNT query over the same containment
-//                rule the traversal uses, so the UI can say "showing X of Y"
-//                instead of hiding the cut). When Y itself cannot be bounded
-//                cheaply, `totalCountIfKnown` is null and the UI says so —
-//                null is a declared number-shaped absence, never a guess.
+//                counts — `shownCount` plus `totalCountIfKnown`, the size of
+//                the set this answer is a prefix of, measured by an
+//                independent bounded walk over the traversal's OWN rule (same
+//                relationship kinds, same owner cascade, same noise policy,
+//                same depth) with no node budget. When that walk cannot finish
+//                inside its declared ceilings the total is null and the UI says
+//                so — null is a declared number-shaped absence, never a guess.
+//   proved:      `truncated` is not taken on the engine's word. When the walk
+//                could have lost a node at the depth boundary, the component
+//                measures the set against the unbounded walk and declares the
+//                answer a PREFIX if the two disagree, even when no bound
+//                fired (M63.T2). An untruncated answer is one the component
+//                checked, not one it assumed.
+//   one rule:    the set, its total, and the `rule` field on the result are
+//                measurements of ONE declared kind list, handed to both walks
+//                (M63.T2). Before it, the walk and the count each read a list
+//                of their own and nothing checked they agreed.
 //   consistent:  the differential gate (script/m26/verify-impact-mode.ts)
 //                proves impact counts agree with the L3 references surface
 //                (src/lsp/navigation.ts) for sampled symbols on the same
@@ -45,6 +56,8 @@
 //                  errors (never an empty set that would read as "no impact")
 
 import { graphTraversal } from "../intelligence/graph/graph-engine"
+import { AnalysisExclusions } from "../ast/analysis-exclusions"
+import { classifyTier, type EvidenceTier } from "./evidence_tier"
 import type { GraphNode } from "../intelligence/contracts"
 
 export const IMPACT_BUDGET = {
@@ -81,13 +94,58 @@ export {
 } from "./identity"
 
 export interface ImpactResult {
-  root: { id: string; name: string; file: string }
-  /** Reverse dependencies, bounded, deepest last. */
-  impact: Array<{ id: string; name: string; file: string; depth: number; relationshipType: string; confidence: number }>
+  /** The symbol the walk rooted at, with the identity a reader needs to check
+   *  it: M63.T1 the engine's node already carries the type, the line and the
+   *  language, and an impact answer about a symbol with no line and no type is
+   *  hard to argue with (the same shape the bb_graph door adopted when it
+   *  declared name ambiguity). */
+  root: { id: string; name: string; file: string; filePath: string; line: number; symbolType: string; language: string }
+  /** Reverse dependencies, bounded, deepest last.
+   *
+   *  M63.T1: each dependent carries the same evidence the stored row already
+   *  had and this component used to drop — the TIER (from the ONE server-side
+   *  classifier, `classifyTier`, never a second derivation), whether the edge
+   *  CROSSES LANGUAGES, the bridge mechanism when it does, and the dependent's
+   *  own position. Two of those were documented claims with no payload behind
+   *  them: docs/tools/bb_impact.md has promised "per-edge evidence tiers"
+   *  since M28, and a cross-language dependent was indistinguishable from a
+   *  same-language one — which is precisely the fact an agent needs before
+   *  renaming or deprecating a symbol. */
+  impact: ImpactDependent[]
   shownCount: number
-  /** Total reverse dependencies if it could be bounded cheaply; null when
-   *  the honest answer is "unknown" (never a fabricated total). */
+  /** The true number of reverse dependencies under the declared rule, or null
+   *  when the counting walk hit its declared scan ceiling (a declared
+   *  unknown, never a fabricated total and never a partial count wearing a
+   *  total's name). It is a total OF THIS SET: same relationship kinds, same
+   *  owner cascade, same noise policy, same depth (M63.T1). */
   totalCountIfKnown: number | null
+  /** Distinct dependents at depth 0 — exact whenever the counting walk stayed
+   *  inside its declared scan ceiling, and null (declared unknown) when it did
+   *  not. Trustworthy on its own even when `totalCountIfKnown` is null. */
+  directCount: number | null
+  /** Declared limits actually in force, so a reader never has to guess
+   *  whether a bound is in play (M63.T1). */
+  budget: {
+    maxNodes: number
+    maxDepth: number
+    /** Declared ceilings the declared total is computed under. Past either,
+     *  `totalCountIfKnown` and `directCount` are null (declared unknown). */
+    totalScanCeiling: number
+    totalExpansionCeiling: number
+  }
+  /** How far the walk actually went, and the engine's own bound declarations
+   *  (its per-query site limit, how many of its queries hit it, and the root's
+   *  uncapped site count when it could be computed). */
+  traversal: {
+    depthReached: number
+    engineTruncated: boolean
+    engineTruncationReason: string | null
+    edgeLimit: number | null
+    cappedQueries: number | null
+    callersIfUncapped: number | null
+    totalsAreLowerBounds: boolean
+    dedupedAtToolLayer: { cascadeRepeatsCollapsed: number; spellingVariantsCollapsed: number } | null
+  }
   truncated: boolean
   truncationReason: string | null
   /** M44.U5: how the root was resolved. "direct" = the name resolved to a
@@ -96,10 +154,66 @@ export interface ImpactResult {
    *  members), rooted through its owner with the member named. First-class
    *  so the UI states what it rooted at — never a silent relabel. */
   resolution?: { through: "direct" | "owning-declaration"; memberName?: string; ownerName?: string; memberFile?: string }
+  /** M63.T1: HOW the requested name became this root, stated on the answer.
+   *
+   *  The engine resolves a name in three steps (exact among traversable kinds,
+   *  exact among any kind, then a documented containment match). A reader of an
+   *  impact answer cannot tell which step ran: measured on the lane's corpora,
+   *  `bb_impact {symbol:"push"}` on graphql-js answers "0 reverse dependencies"
+   *  for a `push` that 141 stored relationships point at, and ripgrep `filter`
+   *  answers "0" for a symbol 8 depend on — a confident empty set about
+   *  somebody else's symbol, with no field that says the name was not exact.
+   *
+   *  `via` is derived, not guessed: a containment match can only win when no
+   *  exact name exists, so `root.name === requested` is exactly "the name was
+   *  an exact hit" and anything else is a containment match (or the declared
+   *  member substitution, which the `resolution` record already describes).
+   *
+   *  `nameMatches` counts the stored symbols whose name IS the requested one —
+   *  more than one means the name was ambiguous even when the hit was exact
+   *  (lodash `build` names eight; the resolver picked one and said nothing).
+   *  It is deliberately NOT the resolver's `candidates`: that number is counted
+   *  with the winning step's predicate, and for a containment match that means
+   *  re-running a `LIKE '%x%'` scan, which measured 30–420 ms per call on the
+   *  lane's corpora — a real cost on the highest-stakes read surface, paid for
+   *  a flag the `via` field already carries. This count is one indexed
+   *  equality. */
+  rootMatch: { requested: string; via: "exact" | "fuzzy-containment" | "owning-declaration"; nameMatches: number }
+  /** M63.T2: the rule this answer was MEASURED under, stated on the answer.
+   *  A reader who wants to know why a `uses` or `references` relationship did
+   *  not appear can read it here instead of inferring it, and the set and its
+   *  declared total are guaranteed to be measurements of this same list. */
+  rule: { relationshipTypes: string[]; cascade: string; noisePolicy: string; maxDepth: number }
 }
 
 export interface ImpactDb {
   prepare(sql: string): { get(...params: unknown[]): unknown; all(...params: unknown[]): unknown[] }
+}
+
+/** One reverse dependency, with everything the stored row said about it. */
+export interface ImpactDependent {
+  id: string
+  name: string
+  file: string
+  filePath: string
+  line: number
+  symbolType: string
+  language: string
+  depth: number
+  relationshipType: string
+  confidence: number
+  /** The legend tier for this edge, from the ONE server-side classifier. */
+  tier: EvidenceTier
+  /** True when the stored row says this dependency crosses languages. */
+  isCrossLanguage: boolean
+  /** The bridge mechanism, when the row names one (null otherwise). */
+  bridgeMechanism: string | null
+  /** M63.T1: whether this dependent's FILE changed since it was indexed.
+   *  Set by the surface that can answer it (the MCP door, over the component's
+   *  file rows); absent from a component-level answer, which never touches
+   *  the filesystem. Declared optional precisely so "not checked" cannot be
+   *  read as "checked and fresh" — a three-state field, not a boolean. */
+  stale?: boolean | null
 }
 
 export interface ImpactDeps {
@@ -122,27 +236,174 @@ export interface ImpactDeps {
 export const IMPACT_CONTAINMENT_NOTE =
   "the traversal descends into nested symbols via the owner cascade; flat reference counts (L3) count direct edges only"
 
-/** Independent bounded count of distinct reverse-dependency symbols under the
- *  same containment rule. Returns null only when the count query itself
- *  fails (declared unknown). */
-export function totalImpactCountIfKnown(db: ImpactDb, rootSymbolId: string): number | null {
+/** The relationship kinds an impact set is made of — ONE list, handed to
+ *  the engine's walk AND to the counting walk, so the declared total can never
+ *  measure a different set than the set it is a total of.
+ *
+ *  The kinds must be exactly what the set counts: a total that also counts
+ *  `contains` / `uses` / `references` rows the set never sees is not a total of
+ *  this set, it is a different measurement wearing its name. Measured on real
+ *  corpora with the filter missing, `GraphQLList` declared 57 reverse
+ *  dependencies of which 8 are dependency rows — the other 49 are `contains` /
+ *  `uses` edges from the class itself and its neighbours.
+ *
+ *  The share of a typical index these four kinds cover, measured per corpus
+ *  after the analyzer rewrite: svelte 26.7%, graphql-js 29.5%, cython 38.5%,
+ *  cobra 50.5%, lodash 53.8%, vue-core 55.9%, ripgrep 59.3%, rake 63.5%,
+ *  cargo 69.8%. The rest is `contains` (containment, not dependency),
+ *  `uses`/`references` (usage evidence), and module-level `imports`/`exports`.
+ *  A reader who wants one of those can ask; one who does not get the declared
+ *  rule, and the tool says which rule it applied. */
+export const IMPACT_REL_TYPES: readonly string[] = ["calls", "instantiates", "extends", "implements"]
+
+/** Declared ceiling on the counting walk's row scan. Past it the honest
+ *  answer is "unknown" and the component says so (null), rather than
+ *  publishing a partial count as a total. Mirrors the engine's own
+ *  `MAX_TOTAL_COUNT_SCAN` discipline. */
+export const IMPACT_TOTAL_SCAN_CEILING = 50_000
+
+/** Declared ceiling on the counting walk's EXPANSIONS (symbols it opens).
+ *  The cost of an honest total is one bounded query per symbol in the
+ *  closure, so the ceiling that actually bounds latency is this one, not the
+ *  row count. Measured on the lane's corpora: ~1.2 ms per expansion
+ *  (graphql-js, 43 496 relationships), so 2 000 expansions is a ~2.5 s worst
+ *  case; the biggest hub in any lane corpus closes over 719. Past the ceiling
+ *  both counts are null — the declared unknown. */
+export const IMPACT_TOTAL_EXPANSION_CEILING = 2_000
+
+export interface ImpactTotalCount {
+  /** Distinct dependent symbols under the declared rule, transitive to
+   *  `maxDepth`; null when the scan ceiling was reached (declared unknown,
+   *  never a partial count wearing a total's name). */
+  total: number | null
+  /** The SHORTEST path to each dependent, as this walk measured it. A
+   *  breadth-first walk reaches a node by the fewest edges there is, so these
+   *  are the depths the answer should report — the engine's caller walk is
+   *  depth-first and stamps the first trace instead (M63.T2). */
+  depths: Map<string, number>
+  /** Distinct dependents at depth 0 — always exact, always cheap, and the
+   *  number a reader can always trust even when `total` is null. */
+  direct: number
+  /** Rows the walk read (the declared cost of the answer). */
+  rowsScanned: number
+  /** Symbols the walk opened (the other declared cost bound). */
+  expansions: number
+  hitScanCeiling: boolean
+}
+
+/** The owner-cascade id range: everything owned by `symbolId` sorts between
+ *  that id's last colon and the colon's successor. One definition, used by
+ *  the counting walk and by every consumer that needs the same range. */
+function cascadePrefix(symbolId: string): string {
+  return symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
+}
+
+/** Independent bounded count of the reverse-dependency symbols the traversal
+ *  would return if nothing were capped.
+ *
+ *  M63.T1: this replaced a single flat COUNT over relationships whose target
+ *  is the root (or one of its members), which is not a total of the set the
+ *  walk returns:
+ *    * the set is TRANSITIVE to the declared depth, the old count was depth 0
+ *      only — measured on four real corpora it made the surface say "showing
+ *      200 of 145 reverse dependencies", a total smaller than the part shown;
+ *    * it counted EVERY relationship kind, including the `contains` rows that
+ *      make a class a dependent of its own members;
+ *    * it applied none of the noise filters the walk applies, so a name or a
+ *      path the walk drops still moved the declared total.
+ *  The walk below uses the traversal's own rule — same kinds, same cascade,
+ *  same noise policy, same depth — with no node budget, so what it returns IS
+ *  the size of the set the walk would have produced. It is bounded by a
+ *  declared scan ceiling and returns null past it. */
+export function countImpactDependents(
+  db: ImpactDb,
+  projectId: string,
+  rootSymbolId: string,
+  options: { maxDepth?: number; scanCeiling?: number; expansionCeiling?: number; relationshipTypes?: readonly string[] } = {},
+): ImpactTotalCount {
+  const maxDepth = options.maxDepth ?? IMPACT_BUDGET.maxDepth
+  const scanCeiling = options.scanCeiling ?? IMPACT_TOTAL_SCAN_CEILING
+  const expansionCeiling = options.expansionCeiling ?? IMPACT_TOTAL_EXPANSION_CEILING
+  // The kinds the WALK was given, not a list of this module's own: the caller
+  // hands both the same array, so a total can never describe a set that was
+  // measured under a different rule.
+  const relTypes = options.relationshipTypes ?? IMPACT_REL_TYPES
+  const relPlaceholders = relTypes.map(() => "?").join(",")
+  // One level, one statement. Every symbol at the same distance from the root
+  // contributes its own cascade range to a single disjunction, so the walk
+  // asks "who depends on ANY of these" once instead of once per symbol.
+  // 200 symbols per batch keeps the statement inside SQLite's default bound of
+  // 999 parameters (200 × 3 + the fixed ones); correctness does not depend on
+  // the batch size, only the number of round trips does.
+  const BATCH = 200
+  const levelSql = (batchSize: number) =>
+    "SELECT s.id AS id, s.name AS name, f.relative_path AS file " +
+    "FROM brain_relationship r " +
+    "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
+    "JOIN brain_file f ON f.id = s.file_id " +
+    "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
+    "AND r.target_symbol_id IN (SELECT m.id FROM brain_symbol m WHERE m.project_id = ? AND (" +
+    new Array(batchSize).fill("(m.id = ? OR (m.owner_symbol_id >= ? AND m.owner_symbol_id < ?))").join(" OR ") +
+    "))"
   try {
-    const prefix = rootSymbolId.includes(":") ? rootSymbolId.slice(0, rootSymbolId.lastIndexOf(":") + 1) : ""
-    const upper = prefix + ";"
-    const row = db
-      .prepare(
-        `SELECT COUNT(DISTINCT r.source_symbol_id) AS c
-         FROM brain_relationship r
-         WHERE r.target_symbol_id = ?
-            OR (r.target_symbol_id IN (
-              SELECT m.id FROM brain_symbol m
-              WHERE m.owner_symbol_id >= ? AND m.owner_symbol_id < ?
-            ) AND r.target_symbol_id IS NOT NULL)`,
-      )
-      .get(rootSymbolId, prefix, upper) as { c: number }
-    return typeof row?.c === "number" ? row.c : null
+    const found = new Set<string>()
+    const depths = new Map<string, number>()
+    const visited = new Set<string>()
+    let frontier: Array<{ id: string; depth: number }> = [{ id: rootSymbolId, depth: 0 }]
+    let direct = 0
+    let rowsScanned = 0
+    let expansions = 0
+    let hitScanCeiling = false
+
+    while (frontier.length > 0 && !hitScanCeiling) {
+      const next: Array<{ id: string; depth: number }> = []
+      for (let start = 0; start < frontier.length; start += BATCH) {
+        const batch = frontier.slice(start, start + BATCH).filter((entry) => !visited.has(entry.id))
+        if (batch.length === 0) continue
+        for (const entry of batch) {
+          if (expansions >= expansionCeiling) {
+            hitScanCeiling = true
+            break
+          }
+          visited.add(entry.id)
+          expansions++
+        }
+        if (hitScanCeiling) break
+        const params: unknown[] = [projectId, ...relTypes, projectId]
+        for (const entry of batch) {
+          // The cascade range belongs to the symbol being walked, not to the
+          // root: at distance d the members of THAT symbol are the targets
+          // whose edges make it a dependent. Using the root's range for every
+          // level silently drops the owner-cascade edges of every non-root
+          // level — measured on rake `each`: 112 found instead of 143.
+          const prefix = cascadePrefix(entry.id)
+          params.push(entry.id, prefix, prefix + ";")
+        }
+        const rows = db.prepare(levelSql(batch.length)).all(...params) as Array<{ id: string; name: string; file: string }>
+        rowsScanned += rows.length
+        if (rowsScanned > scanCeiling) {
+          hitScanCeiling = true
+          break
+        }
+        for (const row of rows) {
+          if (!row.name || AnalysisExclusions.isNoiseSymbolName(row.name)) continue
+          if (row.file && AnalysisExclusions.isHardNoisePath(row.file)) continue
+          // A cycle makes the root a dependent of itself; the set is about
+          // OTHER symbols (see the M63.T1 note where the walk is built).
+          if (row.id === rootSymbolId) continue
+          if (found.has(row.id)) continue
+          found.add(row.id)
+          depths.set(row.id, frontier[0]!.depth)
+          if (frontier[0]!.depth === 0) direct++
+          if (frontier[0]!.depth + 1 < maxDepth) next.push({ id: row.id, depth: frontier[0]!.depth + 1 })
+        }
+      }
+      frontier = next
+    }
+    return { total: hitScanCeiling ? null : found.size, direct, rowsScanned, expansions, hitScanCeiling, depths }
   } catch {
-    return null
+    // Unreadable index: the declared unknown, never a guess.
+    return { total: null, direct: 0, rowsScanned: 0, expansions: 0, hitScanCeiling: false, depths: new Map() }
   }
 }
 
@@ -166,12 +427,21 @@ export async function computeImpact(
    *  ambiguous member name keeps the declared error. Positional so existing
    *  call sites stay source-compatible. */
   memberFile?: string,
+  /** M63.T2: named options. `relationshipTypes` defaults to the declared
+   *  IMPACT_REL_TYPES and is handed to BOTH walks, so the set and its declared
+   *  total are always measurements of the same rule. */
+  options: { relationshipTypes?: readonly string[] } = {},
 ): Promise<ImpactResult> {
   const traverse = deps.traverse ?? graphTraversal
+  // M63.T2: ONE list, handed to the walk and to the counting walk. The engine
+  // applies exactly the kinds it is given, so the set is a measurement of this
+  // list and so is the total — not "whatever each side defaulted to".
+  const relationshipTypes = options.relationshipTypes ?? IMPACT_REL_TYPES
+  const walk = { direction: "callers" as const, maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes: [...relationshipTypes] }
   let resolution: ImpactResult["resolution"] = { through: "direct" }
   let result: Awaited<ReturnType<typeof graphTraversal>>
   try {
-    result = await traverse(projectId, symbolName, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    result = await traverse(projectId, symbolName, walk)
   } catch (error) {
     // Member fallback (declared, narrow): only when the direct traversal
     // could not resolve the name AND the member-resolution rules all hold.
@@ -186,7 +456,7 @@ export async function computeImpact(
       }
       throw error
     }
-    result = await traverse(projectId, owner.name, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    result = await traverse(projectId, owner.name, walk)
     if (!result.root || !result.root.id) {
       // The owner row exists but the traversal cannot root it (should not
       // happen — the owner passed the traversable-type rule): the original
@@ -220,7 +490,7 @@ export async function computeImpact(
           })`,
       )
     }
-    result = await traverse(projectId, owner.name, { direction: "callers", maxDepth: IMPACT_BUDGET.maxDepth })
+    result = await traverse(projectId, owner.name, walk)
     if (!result.root || !result.root.id) throw new Error(`bb/impact: symbol '${symbolName}' not found — no impact set exists (declared error)`)
     resolution = { through: "owning-declaration", memberName: symbolName, ownerName: owner.name, ...(memberFile ? { memberFile } : {}) }
   } else if (memberFile && result.root && rootType && IMPACT_TRAVERSABLE_ROOT_TYPES.includes(rootType)) {
@@ -238,6 +508,15 @@ export async function computeImpact(
 
   // Distinct caller nodes (a caller with three call sites is ONE dependency),
   // in traversal order (depth, then edge order — deterministic).
+  //
+  // M63.T1: the root is never a member of its own impact set. A cycle (A calls
+  // B, B calls A) makes the engine emit an edge from the root back to itself,
+  // and a reader asking "what breaks if I change this" would be told the
+  // symbol breaks itself. Measured on the lane's corpora: 8 of 24 hub answers
+  // listed the root among its own dependents (cobra `MarkFlagRequired`, rake
+  // `join`, lodash `baseConvert`, graphql-js `join`, vue-core
+  // `addEventListener`, …). The set is about OTHER symbols; the count moves
+  // with the set, so the counting walk drops the root too.
   const seen = new Set<string>()
   const impact: ImpactResult["impact"] = []
   let truncated = false
@@ -251,6 +530,7 @@ export async function computeImpact(
       break
     }
     const nodeId = edge.from
+    if (nodeId === result.root.id) continue
     if (seen.has(nodeId)) continue
     seen.add(nodeId)
     const node = result.nodes[nodeId] as GraphNode | undefined
@@ -258,24 +538,208 @@ export async function computeImpact(
       id: nodeId,
       name: node?.name ?? nodeId,
       file: node?.file ?? "",
+      filePath: node?.filePath ?? "",
+      line: node?.line ?? 0,
+      symbolType: node?.symbolType ?? "",
+      language: node?.language ?? "",
       depth: edge.depth,
       relationshipType: edge.relationshipType,
       confidence: edge.confidence,
+      // The ONE server-side classifier (M55.T5's owner). A second derivation
+      // here would be the exact defect that module was written to close.
+      tier: classifyTier({
+        relationshipType: edge.relationshipType,
+        confidence: edge.confidence,
+        evidenceClass: edge.metadata?.evidenceClass ?? null,
+      }),
+      isCrossLanguage: edge.isCrossLanguage === true,
+      bridgeMechanism: edge.bridgeMechanism ?? null,
     })
   }
-  if (result.summary?.truncated && result.summary.truncationReason) {
+  // M63.T2: an engine reason that describes a KIND FILTER is not a bound. The
+  // engine's default is now every stored kind, so a caller that passes one
+  // (this component passes the declared dependency kinds) has the filter
+  // recorded in its reason set — and folding that into `truncationReason`
+  // would make every answer `truncated: true`, because every answer filters.
+  // The filter is declared where it belongs, in `rule.relationshipTypes`;
+  // `truncated` keeps its one meaning: this set is a PREFIX of the declared
+  // rule's whole truth.
+  for (const reason of (result.summary?.truncationReason ?? "").split("+")) {
+    const clause = reason.trim()
+    if (clause.length === 0 || clause.startsWith("relationshipTypes:")) continue
     truncated = true
-    truncationReason = truncationReason ?? `traversal: ${result.summary.truncationReason}`
+    truncationReason = truncationReason ?? `traversal: ${clause}`
   }
 
-  const total = truncated ? totalImpactCountIfKnown(db, result.root.id) : impact.length
+  // M63.T1: the declared total is measured under the SAME rule the walk used
+  // (kinds, cascade, noise, depth) with no node budget, so it is the size of
+  // the set this answer is a prefix of.
+  const directFromSet = impact.reduce((n, entry) => (entry.depth === 0 ? n + 1 : n), 0)
+  const depthReached = impact.reduce((n, entry) => (entry.depth > n ? entry.depth : n), 0)
+
+  // M63.T2 — the tool now PROVES its own completeness instead of inferring it
+  // from the engine's `truncated` flag.
+  //
+  // That flag is the engine's honest account of ITS bounds: the node budget,
+  // the per-query site limit and the caller budget all declare themselves. It
+  // is silent about one more thing. The caller walk recurses depth-first and
+  // gives a node the depth of the first trace that reached it, so a symbol ONE
+  // hop from the root can be first reached four hops in; when the depth cap
+  // then forbids expanding it, its own dependents are dropped and no bound has
+  // fired. Measured on this lane's corpora: cobra `HasAvailableFlags` answered
+  // 27 of 28 dependents with `truncated: false`, and across nine repositories
+  // 21 of 47 hub answers carried dependents at a deeper depth than their real
+  // one.
+  //
+  // The walk is the engine's, so the engine's owner fixes that. But the CLAIM
+  // is this component's, and a claim it cannot support must not be made. The
+  // counting walk is exactly the measurement that settles it — same rule, no
+  // node budget, and therefore no order-dependence: if the unbounded count
+  // agrees with the returned set, the set IS the whole truth whatever the
+  // engine said; if the count is larger, the answer is a prefix and says so
+  // with a declared reason.
+  //
+  // The verification is not paid for on every call, because it cannot prove
+  // anything the walk could not in one case: a node is dropped at the boundary
+  // only if it sits at the last expandable depth (maxDepth - 1). If the walk
+  // never reached that depth, no node was ever blocked, every bound that could
+  // have fired has declared itself, and the set is complete by construction.
+  // So the count runs exactly on the answers that could be wrong.
+  const boundaryReached = depthReached >= IMPACT_BUDGET.maxDepth - 1
+  // M63.T2: the cheap form of the question. A node can be lost at the boundary
+  // only if it sits at the last expandable depth, so one query over THAT
+  // LEVEL's nodes decides whether anything was lost; the unbounded counting
+  // walk — the only thing that can say what the true total is, and the only way
+  // to correct a mis-stamped depth — runs only when this says maybe, or when
+  // truncation was already declared. Measured: it moved the warm median from
+  // ~740 ms to ~180 ms over the lane's corpora with no answer changed.
+  const boundarySuspect = boundaryReached && boundaryHasDependents(db, projectId, impact, relationshipTypes)
+  const verify = truncated || boundarySuspect
+  const counts = verify
+    ? countImpactDependents(db, projectId, result.root.id, { maxDepth: IMPACT_BUDGET.maxDepth, relationshipTypes })
+    : { total: impact.length, direct: directFromSet, hitScanCeiling: false, depths: new Map<string, number>() }
+  // The measured depths are the shortest paths, so the answer reports them
+  // rather than the walk's first-trace stamps, and the set is re-sorted so
+  // "deepest last" remains true of what is actually shown. A dependent the
+  // measurement did not reach keeps the walk's depth — that can only happen
+  // when the measurement hit its ceiling, which is declared as an unknown.
+  if (counts.depths.size > 0) {
+    for (const entry of impact as Array<{ id: string; depth: number }>) {
+      const measured = counts.depths.get(entry.id)
+      if (measured !== undefined && measured !== entry.depth) entry.depth = measured
+    }
+    impact.sort((a, b) => a.depth - b.depth || a.id.localeCompare(b.id))
+  }
+  // A count that cannot be trusted is worse than no count: when the counting
+  // walk hit its ceiling BOTH numbers are null (declared unknown), never a
+  // partial count presented as a whole.
+  const total = counts.hitScanCeiling ? null : counts.total
+  const direct = counts.hitScanCeiling ? null : counts.direct
+  if (verify && counts.hitScanCeiling) {
+    // Completeness could not be established either way, and no bound declared
+    // it. Say that rather than letting the reader assume the whole set.
+    truncated = true
+    truncationReason = truncationReason ?? "impact-completeness-unverifiable-at-depth-boundary"
+  } else if (verify && counts.total !== impact.length) {
+    // The set is short of an unbounded walk of the same rule: it is a prefix of
+    // a larger truth, and it says that instead of claiming to be the whole.
+    truncated = true
+    truncationReason = truncationReason ?? "impact-set-shorter-than-unbounded-walk"
+  }
+  const summary = result.summary
   return {
-    root: { id: result.root.id, name: result.root.name, file: result.root.file },
+    root: {
+      id: result.root.id,
+      name: result.root.name,
+      file: result.root.file,
+      filePath: result.root.filePath ?? "",
+      line: result.root.line ?? 0,
+      symbolType: result.root.symbolType ?? "",
+      language: result.root.language ?? "",
+    },
     impact,
     shownCount: impact.length,
     totalCountIfKnown: total,
+    directCount: direct,
+    budget: {
+      maxNodes: IMPACT_BUDGET.maxNodes,
+      maxDepth: IMPACT_BUDGET.maxDepth,
+      totalScanCeiling: IMPACT_TOTAL_SCAN_CEILING,
+      totalExpansionCeiling: IMPACT_TOTAL_EXPANSION_CEILING,
+    },
+    traversal: {
+      depthReached: impact.reduce((n, entry) => (entry.depth > n ? entry.depth : n), 0),
+      engineTruncated: summary?.truncated === true,
+      engineTruncationReason: summary?.truncationReason ?? null,
+      edgeLimit: summary?.edgeLimit ?? null,
+      cappedQueries: summary?.cappedQueries ?? null,
+      callersIfUncapped: summary?.callersIfUncapped ?? null,
+      totalsAreLowerBounds: summary?.totalsAreLowerBounds === true,
+      dedupedAtToolLayer: summary?.dedupedAtToolLayer ?? null,
+    },
     truncated,
     truncationReason,
     resolution,
+    rootMatch: {
+      requested: symbolName,
+      via:
+        resolution.through === "owning-declaration"
+          ? "owning-declaration"
+          : result.root.name === symbolName
+            ? "exact"
+            : "fuzzy-containment",
+      nameMatches: countExactNameMatches(db, projectId, symbolName),
+    },
+    rule: {
+      relationshipTypes: [...relationshipTypes],
+      cascade: "owner-cascade: a relationship stored against a member of a class is attributed to the whole owner family",
+      noisePolicy: "hard-noise symbol names and paths are excluded, as in every other analysis surface",
+      maxDepth: IMPACT_BUDGET.maxDepth,
+    },
+  }
+}
+
+/** Do any of the LAST-LEVEL dependents have dependents of their own that the
+ *  walk had no room to expand? One query over that level's node ids, under the
+ *  declared kinds and the noise policy.
+ *
+ *  This is the whole boundary question, cheaply: a node the walk never
+ *  expanded is a node at the last expandable depth, so if the last level has no
+ *  dependents, the walk expanded everything it had room to expand and the
+ *  returned set is the whole truth. If it has some, the answer may be a prefix
+ *  and the caller pays for the full measurement to find out which. */
+function boundaryHasDependents(
+  db: ImpactDb,
+  projectId: string,
+  impact: ImpactResult["impact"],
+  relationshipTypes: readonly string[],
+): boolean {
+  const lastDepth = Math.max(0, ...impact.map((entry) => entry.depth))
+  if (lastDepth === 0) return false // nothing sat at a boundary: the root's own
+  const boundary = impact.filter((entry) => entry.depth === lastDepth).map((entry) => entry.id)
+  if (boundary.length === 0) return false
+  const placeholders = relationshipTypes.map(() => "?").join(",")
+  const row = db
+    .prepare(
+      "SELECT 1 AS any FROM brain_relationship r JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
+        "WHERE r.project_id = ? AND r.relationship_type IN (" + placeholders + ") " +
+        "AND r.source_symbol_id IN (" + boundary.map(() => "?").join(",") + ") LIMIT 1",
+    )
+    .get(projectId, ...relationshipTypes, ...boundary) as { any: number } | undefined
+  return row !== undefined
+}
+
+/** How many stored symbols carry exactly this name. One indexed equality —
+ *  `brain_sym_proj_name_idx` — so the declaration costs a fraction of a
+ *  millisecond; a declared 1 when the index cannot answer, because the root
+ *  that was just walked is itself one such row. */
+function countExactNameMatches(db: ImpactDb, projectId: string, symbolName: string): number {
+  try {
+    const row = db
+      .prepare("SELECT COUNT(*) AS c FROM brain_symbol WHERE project_id = ? AND name = ?")
+      .get(projectId, symbolName) as { c: number }
+    return typeof row?.c === "number" && row.c > 0 ? row.c : 1
+  } catch {
+    return 1
   }
 }

@@ -1,6 +1,276 @@
 {
   "schemaVersion": 1,
   "kind": "per_analyzer_differential:vue",
+  "inputs": {
+    "files": {
+      "src/ast/analysis-exclusions.ts": {
+        "sha256": "f9ba863d0aa053cece3edb8c194f8665d31e29db81b320266f9679142a70f75b",
+        "bytes": 9702
+      },
+      "src/ast/engine.ts": {
+        "sha256": "7f5e3f2ba578e276c6376751d3b6422466fa25b437b0ce5f12d1b93c18845059",
+        "bytes": 75193
+      },
+      "src/ast/fingerprint.ts": {
+        "sha256": "c8129443ac79b2c5bc1ba3a6ee7ee40d89909d18a432da0e9642adced6ebaccc",
+        "bytes": 8903
+      },
+      "src/ast/framework-detectors.ts": {
+        "sha256": "eb1b337757d2374376fe383e10bf5c46e8c7d0642d50447a8225a8841708514a",
+        "bytes": 23350
+      },
+      "src/ast/framework-intelligence.ts": {
+        "sha256": "de307ac2a68ab6baee1f9f4cd0d3b4690d189d21b17e41b78e91c6206106f000",
+        "bytes": 46065
+      },
+      "src/ast/language-detection.ts": {
+        "sha256": "597322236a43169f21a8bb384021d0750020224b8f4726b8dbd473b015054342",
+        "bytes": 6421
+      },
+      "src/ast/override-context.ts": {
+        "sha256": "962e335a79286e8153595e305f7cafbb813a37f94d50c0d3dfa1c192197e22ba",
+        "bytes": 7047
+      },
+      "src/ast/real-bash-analyzer.ts": {
+        "sha256": "f770a2be8e1f5cfcf5e8a782167882821c33a4d88e7e4a590476f07d87c2ed37",
+        "bytes": 29157
+      },
+      "src/ast/real-c-analyzer.ts": {
+        "sha256": "091f9498bd1b845d3a7f68d9a43fbef937f3b1df88361211905c05d0405336dc",
+        "bytes": 185825
+      },
+      "src/ast/real-clean-analyzer.ts": {
+        "sha256": "3f413c9b18b43d9c9592457ef91d813da7df6c21bb09afdf5845fafd244c3679",
+        "bytes": 36816
+      },
+      "src/ast/real-clojure-analyzer.ts": {
+        "sha256": "06fce1d2e992ae289677662b220fc9e75e61e155c5ea9c99372ef4b430633de8",
+        "bytes": 89802
+      },
+      "src/ast/real-cpp-analyzer.ts": {
+        "sha256": "4427b9f4672a1eb3e0b965b4d6be8068891c359ff7c5dcf237766fcab1391854",
+        "bytes": 134291
+      },
+      "src/ast/real-csharp-analyzer.ts": {
+        "sha256": "9f4ffb978437f53e8c69f9b8034f128a934135373b89d80b70a27a8aed8c5310",
+        "bytes": 190596
+      },
+      "src/ast/real-css-analyzer.ts": {
+        "sha256": "34e3a9a347e23d3dc6b1ae46ef97fd4298fc0744885c8459d7bd5efe2ffa9381",
+        "bytes": 33011
+      },
+      "src/ast/real-dart-analyzer.ts": {
+        "sha256": "0b2307ba8b350ce2b351e53f2e1a0749ffb6242c16dff485bc9d7f6cc09a3d29",
+        "bytes": 119919
+      },
+      "src/ast/real-elixir-analyzer.ts": {
+        "sha256": "1a2f52795e3a51af614a19490fbe3ab19097e7ed09408b28f313ef631f83fd87",
+        "bytes": 83204
+      },
+      "src/ast/real-erlang-analyzer.ts": {
+        "sha256": "39d0f89ce73cfaf707c37ad6c3994573bf14f25bd7c0d63cfdc1300018166913",
+        "bytes": 20347
+      },
+      "src/ast/real-fsharp-analyzer.ts": {
+        "sha256": "3177fea8038005a292487357a73723b4f56f53e74bf6a9c8bfc3add197a69c79",
+        "bytes": 32473
+      },
+      "src/ast/real-go-analyzer.ts": {
+        "sha256": "20604867e98f7acf406153062a8d5c59897138ec4cf5f1dc268638964e8f19a6",
+        "bytes": 169638
+      },
+      "src/ast/real-graphql-analyzer.ts": {
+        "sha256": "26a750190749b907ca77b801ec723960bceedfd243ed7d93f4a62c96cf57d563",
+        "bytes": 21325
+      },
+      "src/ast/real-groovy-analyzer.ts": {
+        "sha256": "63638755dfad93183c8e3ad427d7c7311a6ed6b67d8607f0d586e34e7e0feae7",
+        "bytes": 126319
+      },
+      "src/ast/real-haskell-analyzer.ts": {
+        "sha256": "a81e2687de855134537ac94f60de38af40f6ed0bd80d51158b6f099aa251f2e0",
+        "bytes": 55753
+      },
+      "src/ast/real-hcl-analyzer.ts": {
+        "sha256": "ab8da69cdcea17dff04c931656138797941482b388567c674cd89331e2b4f204",
+        "bytes": 14474
+      },
+      "src/ast/real-html-analyzer.ts": {
+        "sha256": "be22f6cbdfe79e38767594587a252b442d8955f3bfb17609d0f8ccada0b9d555",
+        "bytes": 20521
+      },
+      "src/ast/real-java-analyzer.ts": {
+        "sha256": "b1bd65de2c2b35a4a1dbf0685545d5a1a23cc9157db16a20b578827e6ebd6549",
+        "bytes": 140355
+      },
+      "src/ast/real-javascript-analyzer.ts": {
+        "sha256": "4466919b9d9f6c92cde3f3f8325674640e2df693602f294eac7217db8d9bf144",
+        "bytes": 111124
+      },
+      "src/ast/real-json-analyzer.ts": {
+        "sha256": "d67b383f77bbe1aa01022f4b9f48e55e7f33002c52aab6ae0658626571ae42a1",
+        "bytes": 22151
+      },
+      "src/ast/real-kotlin-analyzer.ts": {
+        "sha256": "210020a4bbc0064c35affcf450b2cb53f2265c978386cd3594de261a34b24cb9",
+        "bytes": 151789
+      },
+      "src/ast/real-lua-analyzer.ts": {
+        "sha256": "7bca4586fa6ab313e90659a07753ed8877520e7e0373bcfe2ec2af07feba5569",
+        "bytes": 20172
+      },
+      "src/ast/real-makefile-analyzer.ts": {
+        "sha256": "1d0e9aed353608e02be090a176c30644fa4aeb88f3613535424827d61032deb8",
+        "bytes": 15750
+      },
+      "src/ast/real-markdown-analyzer.ts": {
+        "sha256": "f2d8521f178011a656281e2697f332d8c5086245e79b8ef8101dd61c2ebdc643",
+        "bytes": 13413
+      },
+      "src/ast/real-objective-c-analyzer.ts": {
+        "sha256": "07f3fadae6ddc8f54d3e29d0cb59c2be8ea2717dfea7dc39f90b024572e3e57a",
+        "bytes": 74340
+      },
+      "src/ast/real-perl-analyzer.ts": {
+        "sha256": "ee47ac0a13697af42415a8e0a5a9120dc592c8f54cd1e7408f73d6846a607958",
+        "bytes": 26379
+      },
+      "src/ast/real-php-analyzer.ts": {
+        "sha256": "c595f59630ea3c553eb59e29323d1ebdbf555f317e58c40e6a8c1051d1a0e75a",
+        "bytes": 114562
+      },
+      "src/ast/real-powershell-analyzer.ts": {
+        "sha256": "d1b5fe764f779ff02e421358005d66fcc3d14fe0ac691953b72669673d9c397e",
+        "bytes": 24914
+      },
+      "src/ast/real-python-analyzer.ts": {
+        "sha256": "3bcf78dfc8abb4794e4a29c5bf6479f44d39a9a9e01152ed9b015f76e6156299",
+        "bytes": 69581
+      },
+      "src/ast/real-r-analyzer.ts": {
+        "sha256": "530a23484d24e4cc8c4a6ea03ede91bbe1e18eb8cdc8d68aa8d4dd827ab5801a",
+        "bytes": 39112
+      },
+      "src/ast/real-ruby-analyzer.ts": {
+        "sha256": "7b1523a366ef4c8ffac74670e3b62e38ada1cb5f9fad3f1db41a891df0915e07",
+        "bytes": 88887
+      },
+      "src/ast/real-rust-analyzer.ts": {
+        "sha256": "76ef763d855f989f73dc7fa5489704651729f6ececffc6144c814cecd5ba8e5b",
+        "bytes": 107870
+      },
+      "src/ast/real-scala-analyzer.ts": {
+        "sha256": "b90fc16e0e3f0a2d1c0a3f4c38c8dfb9cbddb56314e55d04d55e7eb9cd716264",
+        "bytes": 123034
+      },
+      "src/ast/real-sql-analyzer.ts": {
+        "sha256": "ab7ae470cf9e45430f6b8fbd4b872084129113a4acf727dd102fab01ce7bcf05",
+        "bytes": 29215
+      },
+      "src/ast/real-svelte-analyzer.ts": {
+        "sha256": "78029b690670892a505f6094216a7c76f0f24bda5afcb16941d08590d7bf40de",
+        "bytes": 71997
+      },
+      "src/ast/real-swift-analyzer.ts": {
+        "sha256": "c0347cfd0bfc9dadd1110111a7b7808e47b40304b471aa38901c79d6328476f2",
+        "bytes": 107709
+      },
+      "src/ast/real-typescript-analyzer.ts": {
+        "sha256": "e8495e46525e587aceba358644eccf69b808b876b8e413b1209e9852a551d32f",
+        "bytes": 236668
+      },
+      "src/ast/real-vue-analyzer.ts": {
+        "sha256": "ea03e38c14712d9716927e59fec3a7c0bdb2ba1396b22433f9c515f83c8bfe2d",
+        "bytes": 58931
+      },
+      "src/ast/real-xml-analyzer.ts": {
+        "sha256": "f5dcb2c3e3a455e481fb2f0b6c0eac76aaaa2bbbdd1950f5dbdb9159f665ae1f",
+        "bytes": 11842
+      },
+      "src/ast/real-yaml-analyzer.ts": {
+        "sha256": "809811c1871c7538ed370073b949484d98d47f2eb3261ffc8f4da949015cb8a0",
+        "bytes": 23819
+      },
+      "src/ast/real-zig-analyzer.ts": {
+        "sha256": "2316d1db2369839ac07faf9d5ef617706e0e92e29a2047376a87d367a180a114",
+        "bytes": 62122
+      },
+      "src/ast/test-classification.ts": {
+        "sha256": "d1af1c1e4ba070dcbf2dfe94dfc8a7cd2a8385423170c7e2459c1b7a6775e679",
+        "bytes": 3145
+      },
+      "src/ast/type-inference.ts": {
+        "sha256": "49c0c8a6d0751bbca6e97affc0cd5c96f1e0fc3c67103fbba7a65d4537b70953",
+        "bytes": 31754
+      },
+      "src/brain/brain.sql.ts": {
+        "sha256": "8e7d7342f77b57b39228bce36933e8520ef5d7642276c559fb31120bd382739a",
+        "bytes": 18451
+      },
+      "src/brain/database.ts": {
+        "sha256": "71b678e93a6fc058a8da67ef1f14845c2a098fc4451007670579eee7512c6328",
+        "bytes": 18136
+      },
+      "src/brain/schema-ddl.ts": {
+        "sha256": "7208196721cd9a0be384aa98b50afd378f1259f4a33e72ab0edcde7bf2a1c7f9",
+        "bytes": 29793
+      },
+      "src/project/project.sql.ts": {
+        "sha256": "59da6d67b7350fc83b71943f9ea1277aee95834f3a1237211bc3fb64105fd20c",
+        "bytes": 328
+      },
+      "src/project/schema.ts": {
+        "sha256": "fab75194c4883b77781ca829939cbe255182c60f0d31b1d11451697ab6f526c3",
+        "bytes": 63
+      },
+      "src/tool/brain-log.ts": {
+        "sha256": "2d915ae4d24911968ec247eff53048ecc8cc4870df503019edc322c560d81124",
+        "bytes": 564
+      },
+      "src/util/bb-data-dir.ts": {
+        "sha256": "80a5947016d4abdf8140725bed5bf4e34b86fe31582d03aa8982fc5ec5c0283b",
+        "bytes": 1781
+      },
+      "src/util/lazy.ts": {
+        "sha256": "59301f4264eda06ec9d79c1a5b9a4961a95c635adc22ee2d1784a81e2373ea7c",
+        "bytes": 333
+      },
+      "src/util/wasm.ts": {
+        "sha256": "3096b73d34a707e68bde1e7744733888dea2980e37d4fcc108f4440ae783bc35",
+        "bytes": 8218
+      },
+      "validation/m12/fixtures/vue/App.vue": {
+        "sha256": "7e783b109a1158520e2a7aa95c2d7831d2438e2f55c8ee0be40ca2ee374edea6",
+        "bytes": 273
+      },
+      "validation/m12/fixtures/vue/Button.vue": {
+        "sha256": "029ae396516dde321a76f5697cc366652c06eaec8a9d89d2d08a82710bc2eda8",
+        "bytes": 441
+      },
+      "validation/m12/fixtures/vue/Card.vue": {
+        "sha256": "7f5685a70cb10d493751cb9afbdc571f5d356c4747a74d94df3e9c821f31fe0b",
+        "bytes": 609
+      },
+      "validation/m12/fixtures/vue/Negative.vue": {
+        "sha256": "786d95bffd7b5de239224c1fbdd314502c1d0ce1b26a070fe0f4e4c8f8ebb0e6",
+        "bytes": 648
+      },
+      "validation/m12/fixtures/vue/UserList.vue": {
+        "sha256": "c6567c77d7a196c7fa181b163d6d490c8ad92c3d721b776683173cc9f3c8185d",
+        "bytes": 536
+      },
+      "validation/m12/ground-truth/vue.json": {
+        "sha256": "f3ec78c497d026d844ee335d3df4948b29938283d983acd66773d0e15091b69d",
+        "bytes": 19785
+      }
+    },
+    "digest": "de4bae2b1ecdf14a319976bcc973309ac39ef254045d763f08bf8e89b51ff682",
+    "parser": {
+      "path": "/tmp/bb-wasm_tree-sitter-vue_tree-sitter-vue.wasm",
+      "sha256": "6244521bb3fb60f34ce5f677f2af81facb2c38691193985ca5fa85e1b6f29250",
+      "bytes": 23895
+    }
+  },
   "truthSource": "manual_audit",
   "truthReference": "Independent hand audit of validation/m12/fixtures/vue/*.vue against Vue 3 semantics and the TS/JS family contract (M12.09/M12.10): SFC component -> class (file-level, L1); <script setup> top-level const -> constant, let/var -> variable, function -> function; Options API: props -> property, emits -> event, data/computed->property, methods/lifecycle hooks -> method; defineProps/defineEmits are compiler macros (no symbols, no calls); script content analyzed by the real JavaScript analyzer (family consistency, whether or not lang=ts); template pass emits instantiates only for capitalized PascalCase component tags and kebab-case tags matching an import (router-link/router-view); builtin HTML tags and template bindings (v-if/v-for/v-model/@input/{{ }}) are NOT symbols or calls; imports from import directives (vue:ref, ./Card.vue:Card); calls use leaf identities (ref/computed/fetch/json/slice/$emit/toggle); $emit kept as a legit '$'-prefixed target (pool-worker $ denylist removed in M12.12); no locals/params as symbols (tmp, e not emitted); contains from ownerName for Options API members only.",
   "fixtureDir": "validation/m12/fixtures/vue",
@@ -17,42 +287,42 @@
       "relationships": 4
     },
     "Button.vue": {
-      "symbols": 4,
-      "relationships": 4
+      "symbols": 7,
+      "relationships": 15
     },
     "Card.vue": {
-      "symbols": 9,
-      "relationships": 11
+      "symbols": 10,
+      "relationships": 15
     },
     "Negative.vue": {
-      "symbols": 10,
-      "relationships": 4
+      "symbols": 11,
+      "relationships": 15
     },
     "UserList.vue": {
       "symbols": 3,
-      "relationships": 8
+      "relationships": 12
     }
   },
   "passing": {
     "schemaVersion": 1,
-    "passed": true,
+    "passed": false,
     "metrics": {
       "expected": 56,
-      "observedResolved": 56,
-      "truePositive": 56,
-      "falsePositive": 0,
-      "falseNegative": 0,
-      "unknown": 0,
+      "observedResolved": 86,
+      "truePositive": 54,
+      "falsePositive": 32,
+      "falseNegative": 2,
+      "unknown": 4,
       "unsupported": 0,
       "correctlyClassifiedUnknown": 0,
       "correctlyClassifiedUnsupported": 0,
-      "precision": 1,
-      "recall": 1,
-      "falsePositiveRate": 0,
-      "falseNegativeRate": 0,
-      "unknownRate": 0
+      "precision": 0.627906976744186,
+      "recall": 0.9642857142857143,
+      "falsePositiveRate": 0.37209302325581395,
+      "falseNegativeRate": 0.03571428571428571,
+      "unknownRate": 0.07142857142857142
     },
-    "earliestFailingLayer": null,
+    "earliestFailingLayer": "ast_extraction",
     "truePositiveIds": [
       "rel:App.vue:imports:App:vue-router:RouterLink",
       "rel:App.vue:imports:App:vue-router:RouterView",
@@ -88,8 +358,6 @@
       "symbol:Button.vue:11:constant:isActive",
       "symbol:Button.vue:13:function:onHit",
       "symbol:Button.vue:1:class:Button",
-      "symbol:Card.vue:11:property:body",
-      "symbol:Card.vue:11:property:title",
       "symbol:Card.vue:15:event:select",
       "symbol:Card.vue:16:method:data",
       "symbol:Card.vue:1:class:Card",
@@ -111,21 +379,94 @@
       "symbol:UserList.vue:1:class:UserList",
       "symbol:UserList.vue:20:function:loadMore"
     ],
-    "falsePositiveIds": [],
-    "falseNegativeIds": [],
-    "unknownIds": [],
+    "falsePositiveIds": [
+      "rel:Button.vue:contains:Button:click",
+      "rel:Button.vue:contains:Button:disabled",
+      "rel:Button.vue:contains:Button:label",
+      "rel:Button.vue:uses:Button:count",
+      "rel:Button.vue:uses:Button:disabled",
+      "rel:Button.vue:uses:Button:label",
+      "rel:Card.vue:contains:Card:expanded",
+      "rel:Card.vue:exports:Card:default",
+      "rel:Card.vue:uses:Card:body",
+      "rel:Card.vue:uses:Card:title",
+      "rel:Negative.vue:contains:Negative:title",
+      "rel:Negative.vue:references:onInput:Event",
+      "rel:Negative.vue:references:onInput:HTMLInputElement",
+      "rel:Negative.vue:references:onInput:message",
+      "rel:Negative.vue:uses:Negative:cls",
+      "rel:Negative.vue:uses:Negative:message",
+      "rel:Negative.vue:uses:Negative:onInput",
+      "rel:Negative.vue:uses:Negative:options",
+      "rel:Negative.vue:uses:Negative:query",
+      "rel:Negative.vue:uses:Negative:user",
+      "rel:Negative.vue:uses:Negative:visible",
+      "rel:UserList.vue:references:loadMore:users",
+      "rel:UserList.vue:references:users:Array",
+      "rel:UserList.vue:uses:UserList:loadMore",
+      "rel:UserList.vue:uses:UserList:users",
+      "symbol:Button.vue:18:property:label",
+      "symbol:Button.vue:19:property:disabled",
+      "symbol:Button.vue:22:event:click",
+      "symbol:Card.vue:12:property:title",
+      "symbol:Card.vue:13:property:body",
+      "symbol:Card.vue:18:property:expanded",
+      "symbol:Negative.vue:30:property:title"
+    ],
+    "falseNegativeIds": [
+      "sym:Card.vue:11:property:body",
+      "sym:Card.vue:11:property:title"
+    ],
+    "unknownIds": [
+      "rel:Button.vue:uses:Button:Boolean",
+      "rel:Button.vue:uses:Button:String",
+      "rel:Button.vue:uses:Button:value",
+      "rel:Button.vue:uses:onHit:amount"
+    ],
     "unsupportedIds": [],
-    "minimizedFailure": null
+    "minimizedFailure": {
+      "expected": [
+        {
+          "id": "sym:Card.vue:11:property:title",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Card.vue",
+          "line": 11,
+          "attributes": {
+            "name": "title",
+            "symbolKind": "property"
+          },
+          "evidence": {
+            "authority": "manual_audit",
+            "reference": "props.title"
+          }
+        }
+      ],
+      "observed": [
+        {
+          "id": "symbol:Button.vue:22:event:click",
+          "layer": "ast_extraction",
+          "kind": "symbol",
+          "file": "Button.vue",
+          "line": 22,
+          "attributes": {
+            "name": "click",
+            "symbolKind": "event"
+          },
+          "state": "resolved"
+        }
+      ]
+    }
   },
   "intentionalFailure": null,
   "measurements": [
     {
       "name": "verify-analyzer:vue",
-      "wallTimeMs": 78.722813,
-      "userCpuMs": 69.039,
-      "systemCpuMs": 13.868,
-      "peakRssBytes": 245215232,
-      "rssDeltaBytes": 6033408,
+      "wallTimeMs": 902.513989,
+      "userCpuMs": 342.617,
+      "systemCpuMs": 46.574,
+      "peakRssBytes": 241614848,
+      "rssDeltaBytes": 6795264,
       "databaseBytes": null,
       "files": null,
       "symbols": null,
@@ -138,7 +479,7 @@
   "note": "M12 per-analyzer differential for vue. Precision/recall/fp/fn/unknown computed against independent ground truth. Identity contract: symbol facts keyed by file:line:kind:name; relationship facts keyed by file:type:sourceId:targetId with attributes={type} only (no line, no extra fields) so the comparison measures extraction correctness, not naming noise.",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.115Z",
-    "contentSha256": "68ad25d1cc827eebc4f8c40f46dda74062b6672a3ae2c4801f8f05f01b31a377"
+    "sealedAt": "2026-09-28T02:54:46.584Z",
+    "contentSha256": "c9f87e991a1e1e9277e01d01cdd6e93806e98f65624449aa8cf730d0efd9b04b"
   }
 }

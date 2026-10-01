@@ -14,8 +14,56 @@ import { makeProvenance } from "../evidence"
 // (highest-priority rows first via the ORDER BY in the query).
 const VECTOR_SCAN_CAP = Number(process.env.BB_VECTOR_SCAN_CAP || 20000)
 
+/**
+ * How close two scores must be for the ranking to be treated as unable to tell
+ * them apart.
+ *
+ * 0.05 on a cosine is roughly the resolution of a 50-dimensional hashed space:
+ * one extra vocabulary word out of a typical body moves the score by about this
+ * much, so two results within it differ by a word of vocabulary rather than by
+ * anything about the question. The exact value is a judgement; what matters is
+ * that the tool declares which way it went, so a reader can discount the score
+ * instead of being handed a number with no scale.
+ */
+const NON_DISCRIMINATIVE_MARGIN = 0.05
+
+/**
+ * Minimum cosine for a LOCAL (offline, 50-dimensional hashed) match to be
+ * returned at all. Derived from measurement, not taste — see the comment at the
+ * threshold site for the two populations and the trade-off table.
+ *
+ * Overridable per call through `options.similarityThreshold`, which is what a
+ * caller raising or lowering its own bar should use; this constant is the
+ * default that a caller who has expressed no opinion gets.
+ */
+export const LOCAL_VECTOR_FLOOR = 0.5
+
 // Sparse/incompatible model labels that must never be fed to dense cosine.
 const NON_DENSE_MODELS = new Set(["tfidf-v1"])
+
+/** Stored embeddings vs indexable symbols, read with one query. Returns 1/1
+ *  when there is nothing to cover, so a fully-unembedded index never renders
+ *  as "0% covered" (which reads as total failure rather than total absence). */
+function measureCoverage(raw: any, projectId: ProjectID): { indexSymbolCount: number; embeddedSymbolCount: number; embeddingCoverage: number } {
+  try {
+    // TWO placeholders, TWO bindings — binding one leaves the second subquery
+    // NULL, which SQLite reports as 0, and coverage then reads "0 of 0" on
+    // every project instead of the real ratio.
+    const row = raw.prepare(
+      "SELECT (SELECT COUNT(*) FROM brain_symbol WHERE project_id = ?) AS symbols, " +
+        "(SELECT COUNT(DISTINCT entity_id) FROM brain_semantic_embedding WHERE project_id = ?) AS embedded",
+    ).get(projectId, projectId) as { symbols: number; embedded: number } | undefined
+    const indexSymbolCount = row?.symbols ?? 0
+    const embeddedSymbolCount = row?.embedded ?? 0
+    return {
+      indexSymbolCount,
+      embeddedSymbolCount,
+      embeddingCoverage: indexSymbolCount > 0 ? embeddedSymbolCount / indexSymbolCount : 1,
+    }
+  } catch {
+    return { indexSymbolCount: 0, embeddedSymbolCount: 0, embeddingCoverage: 1 }
+  }
+}
 
 type EmbeddingRow = {
   rowid?: number
@@ -81,20 +129,47 @@ export async function semanticVectorSearch(
   const maxResults = options.maxResults || 50
   const raw = await BrainDatabase.getRawInstance(projectId)
 
+  // Coverage is measured, not assumed, and read once per call. Every response
+  // carries it, including the fallback ones: a caller asking "why did I get
+  // these results" needs the ratio, and at 22% coverage the vector path
+  // succeeds while most of the index is simply absent from the comparison.
+  const coverage = measureCoverage(raw, projectId)
+
   const emptyMeta = (method: "vector" | "keyword-fallback", reason: string, model = "unknown", dimension = 0): SemanticSearchResults => ({
     results: [],
     provenance: makeProvenance({ evidenceClass: method === "vector" ? "unknown" : "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: method === "vector" ? "no-result" : "content-search-fallback", limitations: ["Semantic retrieval is candidate discovery, not behavioral proof."], unknowns: [reason] }),
-    metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason },
+    metadata: { queryModel: model, indexModel: model, method, dimension, scannedRows: 0, filteredRows: 0, fallbackReason: reason, ...coverage },
   })
 
   let queryVector: number[]
   try {
-    queryVector = await SemanticEngine.embed(query)
+    // The project id is passed so the query is embedded in the SAME local
+    // vector space the index used. Without it the query falls back to the
+    // 190-word base vocabulary while the index used the project's, so a symbol
+    // name could not be represented at all — the query vector was all zeros.
+    queryVector = await SemanticEngine.embed(query, projectId as any)
   } catch {
     return await keywordFallback(projectId, query, options, "embedding-error")
   }
   if (!queryVector || queryVector.length === 0) {
     return await keywordFallback(projectId, query, options, "no-query-vector")
+  }
+  // A vector of the right SHAPE but no magnitude is a different failure from an
+  // empty one, and it must not be reported as "we compared vectors and none
+  // were close enough".
+  //
+  // The local word-vector model returns a 50-element array of zeros whenever
+  // every token in the query is out of vocabulary — which is every
+  // identifier-shaped query, because the vocabulary is built by splitting
+  // camelCase and snake_case while the query tokenizer splits on whitespace
+  // only. Measured over 9 real repositories: 99 of 99 symbol names and 81 of
+  // 180 ordinary questions produce exactly this vector. Cosine against the zero
+  // vector is 0 for EVERY row, so the old code fell through to
+  // `no-vector-above-threshold` — a reason that blames the index for a problem
+  // that is entirely in the query, and points remediation at re-embedding a
+  // corpus that was embedded correctly.
+  if (queryVector.every((component) => component === 0)) {
+    return await keywordFallback(projectId, query, options, "degenerate-query-vector")
   }
 
   // Authoritative model = the one that actually produced this query vector.
@@ -160,7 +235,36 @@ export async function semanticVectorSearch(
   }
 
   const isLocalVectors = queryVector.length < 200
-  const threshold = options.similarityThreshold ?? (isLocalVectors ? 0.15 : 0.35)
+  // The LOCAL floor was 0.15, which sits far below the noise. Measured on rake
+  // with the production scorer, over two populations known apart WITHOUT a
+  // human judging them:
+  //
+  //   GOOD — a symbol scored against a query that NAMES it. The answer is known
+  //          to exist, so the score is a true positive.
+  //   BAD  — the top-scoring symbol for an ordinary question about a capability
+  //          this corpus does not have ("how does authentication work" in a
+  //          build tool). Every hit is a false positive BY CONSTRUCTION, because
+  //          the honest answer is "nothing found".
+  //
+  //          GOOD: n=120  min -0.262  p10 0.185  p50 0.576  p90 1.000
+  //          BAD:  n= 10  min  0.312  p10 0.346  p50 0.443  p90 0.547
+  //
+  // 0.15 is below the false-positive MEDIAN, so the old floor admitted
+  // essentially every wrong answer. What a floor buys:
+  //
+  //   floor 0.45   keeps 69% of true matches, 40% of false ones
+  //   floor 0.50   keeps 61% of true matches,  0% of false ones
+  //   floor 0.55   keeps 53% of true matches,  0% of false ones
+  //
+  // 0.50 is the knee. The dense matches it gives up are symbol-name queries,
+  // and those are resolved EXACTLY by the name route before retrieval is
+  // consulted at all — so nothing reachable by a user is lost, while every
+  // question this corpus cannot answer becomes an explicit "no semantic match"
+  // instead of a confident `matrix` at similarity 0.387.
+  //
+  // The API-embedding floor stays at 0.35: it was chosen for a different model
+  // in a different space, and there is no measurement here to move it.
+  const threshold = options.similarityThreshold ?? (isLocalVectors ? LOCAL_VECTOR_FLOOR : 0.35)
   const ranked = scored
     .filter((s) => s.similarity >= threshold)
     .sort((a, b) => b.similarity - a.similarity)
@@ -175,6 +279,29 @@ export async function semanticVectorSearch(
     return await keywordFallback(projectId, query, options, "no-resolvable-entities")
   }
 
+  // ── is this ranking discriminative, or noise with a decimal point? ───────
+  // The local model is a bag of words with NO inverse-document-frequency
+  // weighting, and cosine normalises by length, so a two-word body that happens
+  // to contain any word of the query can outrank a 200-word function that is
+  // actually about the question. Measured on rake, ten ordinary questions:
+  //
+  //   "how are errors reported to the user" -> top result `future`  (0.367)
+  //   "where is the request handled"        -> top result `matrix` (0.387)
+  //   "how does authentication work"        -> top result `glob`   (0.361)
+  //   "what validates the user input"       -> top result `item_4` (0.435)
+  //
+  // and nine of those ten had NO word in common with the question anywhere in
+  // the result's name, file or body. Those scores are not weak evidence, they
+  // are not evidence — but they are printed as a similarity, which makes noise
+  // look measured.
+  //
+  // So a score is qualified by whether the ranking can DISTINGUISH its top
+  // results from one another. When it cannot, the answer says so, and the
+  // number stops reading as a finding.
+  const rankedScores = ranked.map((r) => r.similarity)
+  const topScore = rankedScores[0]
+  const competitors = rankedScores.filter((s) => s >= topScore - NON_DISCRIMINATIVE_MARGIN).length - 1
+
   return {
     results,
     provenance: makeProvenance({ evidenceClass: "semantic_candidate", engine: "semantic-search@intelligence", engineVersion: "m10.02", projectId, source: "brain_semantic_embedding", limitations: ["Semantic similarity is candidate discovery and does not prove behavior, ownership, or architecture."], truncated: rows.length >= VECTOR_SCAN_CAP }),
@@ -185,6 +312,9 @@ export async function semanticVectorSearch(
       dimension: queryVector.length,
       scannedRows: rows.length,
       filteredRows: scored.length,
+      discriminative: competitors === 0,
+      nonDiscriminativeCompetitors: competitors,
+      ...coverage,
     },
   }
 }
@@ -247,11 +377,14 @@ async function keywordFallback(
   reason: string,
 ): Promise<SemanticSearchResults> {
   const { searchContent } = await import("./content-search")
+  const raw = await BrainDatabase.getRawInstance(projectId)
   const content = await searchContent(projectId, query, {
     maxResults: options.maxResults || 50,
     languages: options.languages,
     symbolKind: options.symbolKind,
   })
+  // `similarity: null`, not 0 — see SemanticResult.similarity. A zero is a
+  // NUMBER, and every consumer treated it as one.
   const results: SemanticResult[] = content.map((row) => ({
     entityId: row.fileId,
     symbolName: row.symbolName || row.context,
@@ -259,7 +392,7 @@ async function keywordFallback(
     file: row.file,
     line: row.line,
     snippet: row.snippet,
-    similarity: 0,
+    similarity: null,
     language: row.language,
     stale: (row as any).stale === true || undefined,
   }))
@@ -274,6 +407,7 @@ async function keywordFallback(
       scannedRows: content.length,
       filteredRows: content.length,
       fallbackReason: reason,
+      ...measureCoverage(raw, projectId),
     },
   }
 }

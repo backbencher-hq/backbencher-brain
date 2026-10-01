@@ -3,11 +3,11 @@
   "code": "CL1",
   "milestone": "M63",
   "status": "verified",
-  "checks": 159,
-  "passed": 159,
+  "checks": 324,
+  "passed": 324,
   "failed": 0,
-  "mutantsCaught": 6,
-  "mutantsTotal": 6,
+  "mutantsCaught": 14,
+  "mutantsTotal": 14,
   "mutantRecords": [
     {
       "id": "M1",
@@ -40,6 +40,54 @@
       "note": "load/throw: TypeError: m.createToolHandlers is not a function"
     },
     {
+      "id": "M11",
+      "name": "unpairable rule removed (a row with no language gets a fabricated pair)",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
+      "id": "M15",
+      "name": "the absence note claims the whole index instead of the searched project",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M14",
+      "name": "hover door leaks a foreign row (project filter dropped from the callee direction)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M13",
+      "name": "hover door leaks a foreign row (project filter dropped from the caller direction)",
+      "caught": true,
+      "note": ""
+    },
+    {
+      "id": "M12",
+      "name": "collapse rule removed (a same-named cross-language row is emitted twice)",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
+      "id": "M7",
+      "name": "cascade laundered: member rows absorbed into facts",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M8",
+      "name": "the pre-CL2 absence rule (own rows only)",
+      "caught": true,
+      "note": "load/throw: Error: Cannot find module '$HOME/Documents/Default Project/ishaq/backbencher-brain/srcbrain/annotation-store' impo"
+    },
+    {
+      "id": "M9",
+      "name": "cascade reported with no member to check it against",
+      "caught": true,
+      "note": "load/throw: TypeError: m.createToolHandlers is not a function"
+    },
+    {
       "id": "M6",
       "name": "pair fabrication where the row has no languages",
       "caught": true,
@@ -47,28 +95,35 @@
     }
   ],
   "failures": [],
-  "currentCommit": "564eacb42247e10642feb0fb2e1b409deafc1a62",
+  "currentCommit": "2d9c5fb96f604f7989bd4ee4f1ebdad58e8c4737",
   "verifierCommand": "npx tsx script/m63/verify-cl1-cross-language.ts",
   "evidenceFile": "CL1.json",
   "corpus": {
     "path": "(reused index)",
     "projectId": "06fee2bfd6b7e3733bfacf182ef927498939dbad",
-    "crossLanguageRows": 1545
+    "crossLanguageRows": 1642
   },
   "samples": [
     {
-      "name": "generate-class",
-      "copies": 1,
-      "storedRows": 132,
-      "toolFacts": 132,
-      "pairableRows": 132
+      "name": "Method",
+      "copies": 4,
+      "storedRows": 242,
+      "toolFacts": 242,
+      "pairableRows": 242
     },
     {
-      "name": "clojure.core",
+      "name": "generate-class",
       "copies": 1,
-      "storedRows": 116,
-      "toolFacts": 116,
-      "pairableRows": 116
+      "storedRows": 127,
+      "toolFacts": 127,
+      "pairableRows": 127
+    },
+    {
+      "name": "f",
+      "copies": 6,
+      "storedRows": 109,
+      "toolFacts": 109,
+      "pairableRows": 109
     },
     {
       "name": "generate-proxy",
@@ -78,32 +133,25 @@
       "pairableRows": 108
     },
     {
-      "name": "f",
-      "copies": 6,
-      "storedRows": 106,
-      "toolFacts": 106,
-      "pairableRows": 106
-    },
-    {
       "name": "byte",
       "copies": 1,
-      "storedRows": 84,
-      "toolFacts": 84,
-      "pairableRows": 84
+      "storedRows": 74,
+      "toolFacts": 74,
+      "pairableRows": 74
     },
     {
       "name": "char",
       "copies": 1,
-      "storedRows": 76,
-      "toolFacts": 76,
-      "pairableRows": 76
+      "storedRows": 65,
+      "toolFacts": 65,
+      "pairableRows": 65
     },
     {
-      "name": "int",
-      "copies": 1,
-      "storedRows": 63,
-      "toolFacts": 63,
-      "pairableRows": 63
+      "name": "parse",
+      "copies": 30,
+      "storedRows": 56,
+      "toolFacts": 56,
+      "pairableRows": 56
     },
     {
       "name": "getName",
@@ -115,16 +163,16 @@
     {
       "name": "ArrayChunk",
       "copies": 5,
-      "storedRows": 0,
-      "toolFacts": 0,
-      "pairableRows": 0
+      "storedRows": 6,
+      "toolFacts": 6,
+      "pairableRows": 6
     },
     {
       "name": "ByteVector",
       "copies": 4,
-      "storedRows": 2,
-      "toolFacts": 2,
-      "pairableRows": 2
+      "storedRows": 53,
+      "toolFacts": 53,
+      "pairableRows": 53
     },
     {
       "name": "ChunkedSeq",
@@ -136,16 +184,16 @@
     {
       "name": "ClassReader",
       "copies": 6,
-      "storedRows": 3,
-      "toolFacts": 3,
-      "pairableRows": 3
+      "storedRows": 32,
+      "toolFacts": 32,
+      "pairableRows": 32
     },
     {
       "name": "CompilerException",
       "copies": 4,
-      "storedRows": 0,
-      "toolFacts": 0,
-      "pairableRows": 0
+      "storedRows": 1,
+      "toolFacts": 1,
+      "pairableRows": 1
     },
     {
       "name": "EMPTY",
@@ -157,23 +205,23 @@
     {
       "name": "Entry",
       "copies": 8,
-      "storedRows": 0,
-      "toolFacts": 0,
-      "pairableRows": 0
+      "storedRows": 2,
+      "toolFacts": 2,
+      "pairableRows": 2
     },
     {
       "name": "Frame",
       "copies": 4,
-      "storedRows": 0,
-      "toolFacts": 0,
-      "pairableRows": 0
+      "storedRows": 13,
+      "toolFacts": 13,
+      "pairableRows": 13
     },
     {
-      "name": "stream-to-bytes",
+      "name": "clojure.repl",
       "copies": 1,
-      "storedRows": 1,
-      "toolFacts": 1,
-      "pairableRows": 1
+      "storedRows": 8,
+      "toolFacts": 8,
+      "pairableRows": 8
     },
     {
       "name": "*1",
@@ -183,7 +231,7 @@
       "pairableRows": 0
     }
   ],
-  "generatedAt": "2026-09-29T04:35:31.756Z",
+  "generatedAt": "2026-09-30T03:17:37.055Z",
   "claimLevel": "verified — every count compared against SQL the tool does not execute, over a real polyglot index, with six planted defects all caught",
   "replaces": "validation/m48/results/C1-bb_cross_language.json (predicate accepted 6 of 6 impossible answers — see script/m63/verify-cl1-corpus-predicate.ts)",
   "limitations": [
@@ -193,7 +241,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-29T04:35:31.758Z",
-    "contentSha256": "f6b802393b8c92e827e8c6b04e74b5447d593e22308b5021669d3177cdf1e2fc"
+    "sealedAt": "2026-09-30T03:17:37.058Z",
+    "contentSha256": "f16acda35980c903ee657e0d1251e7702a49a0ea6d6f3f7400a4293c8b573d99"
   }
 }

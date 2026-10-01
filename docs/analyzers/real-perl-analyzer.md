@@ -1,95 +1,533 @@
 # real-perl-analyzer.md
 
-## Language
+## Language and wiring
 
 - Analyzer: `src/ast/real-perl-analyzer.ts`
-- Parser: `tree-sitter-perl` **1.2.1** (npm source freshly built to
-  `wasm/tree-sitter-perl.wasm` during M12.30; the previous pinned WASM was
-  retained for the direct comparison)
-- Detection: `.pm`/`.pl` → `perl` in `src/ast/language-detection.ts`
-- Wiring: `ASTEngine.getAnalyzer("perl")` → `RealPerlAnalyzer`
+- Grammar: `wasm/tree-sitter-perl.wasm`, sha256 `ac0248edc420...`, 4,757,625 B
+- Pinned source: `tree-sitter-perl@1.2.1` from its npm tarball, vendored at
+  `grammars/tree-sitter-perl/`; registered in `validation/m14/grammar-pins.json`
+  and gated by `script/m14/verify-grammar-pins.ts`
+- Detection: `.pl`, `.pm`, `.t` -> `perl` in `src/ast/language-detection.ts`
+  (the F5 lane additionally samples `.PL`, which production routes by name)
+- Wiring: `ASTEngine.parseFile` -> `RealPerlAnalyzer`
+- Corpora: `mojo@93f59174` (the M12 pinned perl target, 275 files) and
+  `plack@c821514` (independent, 226 files)
+
+The grammar is a *build*, not a published artifact: neither `tree-sitter-perl@1.2.1`
+nor `@2.0.0` ships a `.wasm` in its npm tarball, and `tree-sitter-wasms@0.1.13/out`
+has no Perl build. Provenance is therefore established offline, by the registry's own
+rule rather than by assertion: a fresh `emcc` build of the vendored 1.2.1 source
+(`-shared -O2 -sSIDE_MODULE=1`, emscripten/emsdk 3.1.64) reproduces the wired
+`idOrderDigest c954cfdc...`, `typeSetDigest 61033c08...` and `fieldSetDigest
+d0e6aa8f...` exactly, and produces **identical trees on 275/275 mojo files**. The
+wired bytes are a build of 1.2.1's source.
 
 ## Symbol contract
 
-| Construct | Symbol | AST source |
+| Construct | Symbol | AST rule |
 | --- | --- | --- |
-| `package Name;` | `class` | `package_statement` → `package` |
-| `sub name { ... }` in a package | `method` | `subroutine_declaration_statement` → `bareword` |
-| `sub new { ... }` | `constructor` named `constructor` | the same `bareword`, normalized from `new` |
-| top-level `our $VERSION` | `constant` | `variable_declaration` → `scalar` → `varname` |
-| top-level `our @EXPORT` | `constant` | `variable_declaration` → `array` → `varname` |
-| Moose/Moo `has 'name'` | `property` | function-call AST → first string argument |
+| `package Name;` / `package Name { }` | `class` | `package_statement` -> `name` field |
+| `class Name { }` (5.38 core OO) | `class` | `class_statement` -> `name` field |
+| `role Name { }` (5.38 core OO) | `trait` | `role_statement` -> `name` field |
+| `sub name { }` inside a package | `method` | `subroutine_declaration_statement` -> `name` field |
+| `method name { }` inside a class/role | `method` | `method_declaration_statement` -> `name` field |
+| `sub new { }` | `constructor`, named `constructor` | the same `name` field, normalized from `new` |
+| `sub name { }` at file scope | `function` | same node, no owner in scope |
+| `our $VERSION` / `our @EXPORT` | `constant` | `variable_declaration` -> `variable` field -> `varname` |
+| `our $ISA` / `our @ISA` | `variable` | same node, with `isInheritanceVariable` |
+| `use constant NAME => v` | `constant` | fat-comma **keys** of the argument list |
+| `has 'name' => (...)` (Moose/Moo) | `property` | the first argument's `string_content` / `autoquoted_bareword` |
+| `field $x;` in a class/role body | `property` | `variable_declaration` with an unnamed `field` token |
+| `sub f ($a, $b = 1, @rest)` | parameters on the method | the `signature` field's `mandatory_parameter` / `optional_parameter` / `slurpy_parameter` |
+| `sub f :lvalue :method` | `decorators` | the `attributes` field -> `attrlist` -> `attribute` -> `name` |
 
-Lexical `my`, `state`, and `field` declarations, subroutine parameters,
-anonymous subroutines, and local temporaries are **never symbols**. The
-package symbol is root-level; methods, package globals, and declarative
-properties carry `ownerName` and receive one `contains` relationship.
+Lexical `my` / `state` declarations, plain parameters written as
+`my ($a, $b) = @_`, anonymous subs, and expression payload are **never symbols**.
+A package, class or role symbol's `scope` is **itself** -- the namespace a class
+belongs to is the class, not the package declared before it.
+
+`field` is a Property only directly in a `class` / `role` body; in a method body it
+is a lexical and is not emitted.
 
 ## Relationship ontology
 
-| Relationship | Rule |
-| --- | --- |
-| `extends` | `use parent`, `use base`, `Mojo::Base` superclass argument, `extends`, or `@ISA` |
-| `implements` | Moose/Moo `with` role declaration |
-| `calls` | `function_call_expression` and `method_call_expression`, leaf target, source = enclosing sub |
-| `instantiates` | concrete `Package->new()` or `new()` constructor call; dynamic scalar/chained receivers are excluded |
-| `overrides` | package method whose name is declared by its inherited base, using local declarations or the project companion index |
-| `contains` | one edge for every owned package member |
-| imports | every `use_statement`, with module and AST-derived arguments |
-| exports | names from an AST `@EXPORT` assignment and `qw(...)` word list |
+| Relationship | Rule | Carries a line |
+| --- | --- | --- |
+| `contains` | one edge per owned member: subs, package globals, `use constant` names, Moose attributes, class fields | no, by design |
+| `calls` | `function_call_expression`, `ambiguous_function_call_expression` and `method_call_expression`, target = the receiver-qualified owner where the source proves one, else the leaf; source = the enclosing sub | the callee node |
+| `instantiates` | a concrete package invocant on `->new`, or `new` with a named class argument | the invocant node |
+| `extends` | `use parent` / `use base` / `use Mojo::Base` (named **or** flag-only), an `@ISA` / `$ISA` assignment, and Moo's `extends 'X'` | the naming node |
+| `implements` | Moo `with 'R'` and `use role 'R'` | the argument node |
+| `overrides` | a class method whose name the first declared base also declares | no, by design |
+| imports | `use Module ...` and `require Module`; **never** `no` | |
+| exports | `@EXPORT`, `@EXPORT_OK` and the `%EXPORT_TAGS` keys | |
 
-Perl builtins and control primitives are filtered from ordinary call edges.
-Qualified calls preserve the leaf target (`Service::Util::format()` →
-`format`); member calls preserve the method leaf (`$self->helper()` →
-`helper`). Constructor calls emit `instantiates`, not a duplicate ordinary
-`calls` edge.
+### `line_number` (M59.A7)
 
-## Supported AST shapes
+Every relationship that corresponds to a **source construct** carries that
+construct's 1-based `line_number`, taken from the node that *names* the edge -- the
+callee leaf, the invocant, the heritage word -- never from the enclosing statement.
 
-- `source_file` with ordered `package_statement` siblings
-- `package_statement`, `subroutine_declaration_statement`, and `block`
-- `variable_declaration` with `scalar`, `array`, and `hash` children
-- `use_statement` with `module` and string/word-list arguments
-- `function_call_expression`, `ambiguous_function_call_expression`, and
-  `method_call_expression`
-- `assignment_expression`, `quoted_word_list`, `string_literal`, and
-  `string_content`
-- Control-flow nodes for cyclomatic complexity counting
+Measured over the 7-corpus census (107,513 relationships):
 
-The analyzer is regex-free. It uses AST fields and node types, plus small
-character scans for Perl sigils, quoted literals, qualified-name leaves, and
-word-list separators where the grammar intentionally exposes the content as a
-single token.
+| label | with a line | without | why |
+| --- | --- | --- | --- |
+| `calls` | 71,230 | 0 | |
+| `instantiates` | 3,307 | 0 | |
+| `implements` | 666 | 0 | |
+| `extends` | 1,959 | 0 | |
+| `contains` | 0 | 22,266 | **declared exception** -- membership is a fact about two symbols, not a construct |
+| `overrides` | 0 | 8,085 | **declared exception** -- an inferred edge, or a guess |
+
+So 77,162 of 107,513 edges (71.8%) are lined, and the 30,351 that are not are
+exactly the two classes the honesty contract exempts by name. Before this wave the
+lane carried **0 of 105,979**.
+
+The per-label table and the census total are two instruments and they agree to
+the edge: `fixtures/perl/census.mts` and `fixtures/perl/lineless.mts` both sum to
+107,513. They did not agree for most of this wave (107,838 vs 107,870, a 32-edge
+gap) because the two instruments walked different file sets -- see
+[the file-surface section](#the-file-surface-is-production-s-exactly).
+
+### Honesty: every sub-1.0 edge carries a reason code
+
+`docs/M14-HONESTY-CONTRACT.md` section 4.1 requires a machine-readable reason on
+any edge below confidence 1.0. Before this wave, 8,179 of 8,754 sub-1.0 edges in
+the mojo sample carried a bare number. The vocabulary now says what is actually
+uncertain: `name-only-callee`, `dynamic-receiver`, `concrete-invocant`,
+`magic-token-invocant`, `use-parent-declaration`, `mojo-base-declaration`,
+`isa-array`, `moo-role-composition`, `use-role-composition`, `base-declares-method`,
+`first-parent-guess`.
+
+`overrides` is the heuristic class: with no companion index (production never
+supplies one) a method of a class with a declared base gets the deterministic
+first-parent guess at **0.5**, below the 0.7 consumer threshold, so it is counted
+as suspicion rather than as a claim.
+
+## The grammar fact that decides this lane
+
+The pinned build gives **one field name to several children** of a parenthesised
+construct. `our @EXPORT_OK = (a => 1, b => 2)` puts `(`, the `list_expression` and
+`)` ALL under the `right` field, so `childForFieldName("right")` returns the empty
+`(` marker and the payload is unreachable through the single-child API.
+
+Measured on 5,875 corpus files: **39,897 such sites across 41 field pairs, in 3,049
+files (52%)** -- `variable_declaration.variables` 25,750,
+`assignment_expression.right` 3,570, `binary_expression.right` 1,607, and so on.
+Every payload read therefore goes through `fieldNodes()`, which collects *all*
+children carrying the field.
+
+Two consequences that are easy to get wrong:
+
+- The `variable_declaration` scope (`our` / `my` / `state` / `field`) is an
+  **unnamed** child token. A named-child scan finds nothing and every package
+  global in the corpus vanishes -- the 2,379 constants measured before this wave
+  all came from a `node.text.startsWith("our ")` prefix match. The scan walks the
+  raw child list.
+- `package NAME { }` does **not** leak the package past the closing brace; only the
+  statement form does. Proved by executing perl 5.34: with `package Outer { }`
+  followed by `sub after_block {}`, `__PACKAGE__` is `main`, and the pre-review
+  analyzer reported `Outer`.
+
+## Import and export semantics
+
+- `no strict;` / `no warnings;` are **not** dependencies. `no` is the unnamed first
+  token of the same node type as `use`; recording it as an import invented a
+  dependency edge on files that load nothing.
+- `use constant NAME => value` is a **declaration**, not a dependency. Each
+  fat-comma key becomes a Constant and no import is emitted. Before this wave the
+  lane recorded `import { module: "constant" }` and lost the constant.
+- `require Module` at runtime **is** a dependency (39 sites in mojo alone) and is
+  emitted with `isDefault: false`; `require 5.010` is a version check and is not.
+- `use 5.010;` / `use v5.36;` are a **language version requirement**, recorded as
+  `metadata.perlVersion`. An import named `5.010` would put a fake module in the
+  dependency graph and in every unused-import report.
+- The Exporter surface is `@EXPORT`, `@EXPORT_OK` **and** `%EXPORT_TAGS`. Reading
+  only `@EXPORT` lost the whole optional half of every Exporter module: exports
+  across the 7 corpora went from 795 to 2,170.
+
+## What is ruled, and why
+
+- **Parameters are rare in real Perl, and that is not a defect.** The dominant
+  idiom is `my ($self, $id) = @_`, which is a lexical declaration, not a
+  signature. Measured: 40 subs with a real `signature` across 5,866 files. The
+  pre-review number was **0**, because `childForFieldName("parameters")` names a
+  field the grammar does not declare -- the M14 #863 residual, repaid here.
+- **`@ISA` is a `variable`, not a `constant`.** It is the inheritance mechanism,
+  not an application constant; handing it to a user searching for constants returns
+  an inheritance table. The inheritance edge is emitted separately and carries a
+  line.
+- **A file-scope call is sourced from `"global"`.** Perl's most common real-world
+  shape is a script (`Mojolicious::Lite`, `t/` files), where the whole DSL runs
+  outside any sub and there is no caller symbol to name. This matches the PHP and
+  python analyzers, and -- with `line_number` present -- the indexer attributes
+  such an edge to the innermost storeable symbol enclosing its call site.
+- **Self-reference guards compare fully qualified names.** A class that names
+  itself as its base (`use Mojo::Base 'SelfNamed'` inside `package SelfNamed`)
+  yields a useless self-edge. A **leaf** comparison looks equivalent and is not:
+  `package MojoliciousTest3::Baz` over `Mojolicious::Baz` is a real subclass of a
+  different class, and a leaf guard deleted 7 legitimate override edges.
+- **Perl 5.38 `class` / `role` / `field` are why the lane needed the grammar's full
+  vocabulary.** They are core-OO declarations, and the pre-review analyzer emitted
+  no class symbol for them at all -- its methods became ownerless functions and the
+  fields disappeared.
+- **`use Mojo::Base -base` means "subclass Mojo::Base itself".** The pre-review
+  rule skipped every option-bearing form, so 53 of mojo's 118 inheritance sites
+  produced no edge at all.
+
+## Regex inventory
+
+**Zero.** No `RegExp`, no pattern methods. The word splitter is a character scan and
+unquoting is index arithmetic. The one pattern this wave introduced
+(`node.text.replace(...)` on a quoted literal) was removed rather than kept, because
+the lane's own documentation promises zero and the grammar exposes the unquoted
+text under `content` on every shape that needs the fallback.
 
 ## Verification evidence
 
-- Independent manual ground truth: `validation/m12/ground-truth/perl.json`
-- Fixtures: `validation/m12/fixtures/perl/{BaseService,Service,Negative}.pm`
-- Differential: **32/32 facts, precision 1.000, recall 1.000, 0 FP, 0 FN**
-- Corpus: `mojo@93f591742a7dbc0cee36875ab80a38f0666e32ae`, 164 tracked
-  `.pm`/`.pl` files; **3 grammar-error files, 0 crashes** after the upgrade
-- Residual corpus errors: two valid bareword `true`/`false` calls in
-  `lib/Mojo/JSON.pm`, plus two intentionally malformed loader-test fixtures;
-  the upgraded parser fixed the valid `CHECK:` phase in `lib/Mojo/Exception.pm`
-- Production extraction: **1,681 symbols / 5,991 relationships** in the
-  recorded tracked-only run; evidence is in
-  `validation/m12/results/perl-corpus-complexity.json`
-- Grammar comparison: current pinned parser vs freshly built npm 1.2.1 —
-  **4 → 3 error files, 1 fixed, 0 regressions, 0 crashes**
-- Grammar shape safety: **12/12** analyzer dispatch references emitted by
-  the upgraded grammar; no missing references
-- Project regex census: the Perl analyzer contributes **0 regex usages**
+- **M12 pinned ground truth**: `validation/m12/ground-truth/perl.json` --
+  **32/32 facts, zero line mismatches**, symbols *and* relationships, against the
+  three pinned fixtures at their pinned lines.
+- **Differential**, own oracle (`derivePerlEdges` in
+  `script/m14/differential.ts`), at **full corpus depth on all seven corpora**.
+  The F5 lane runs two (mojo, plack); the other five go through
+  `script/m14/tmp/perl-diff-adjudicate.mts`, which reuses the harness's own
+  oracle and its own matching predicate:
 
-## Complexity and limitations
+  | corpus | files | tree truth | covered | MISSING | unexplained |
+  | --- | --- | --- | --- | --- | --- |
+  | mojo (M12 pinned, F5 lane) | 274 | 11,202 | 100% | 0 | 0 |
+  | plack (second, F5 lane) | 225 | 2,395 | 100% | 0 | 0 |
+  | perl5 core | 3,607 | 48,344 | 100% | 0 | 0 |
+  | Moose-2.4000 | 961 | 12,233 | 100% | 0 | 0 |
+  | Catalyst-Runtime-5.90132 | 465 | 6,462 | 100% | 0 | 0 |
+  | Moo-2.005005 | 141 | 1,496 | 100% | 0 | 0 |
+  | DBI-1.654 | 101 | 2,369 | 100% | 0 | 0 |
+  | **all seven** | **5,774** | **84,501** | **100%** | **0** | **0** |
 
-The extraction is a single recursive AST walk over the source tree. Symbol and
-relationship identity sets/maps make duplicate suppression and override lookup
-O(1); contains and override completion are linear post-passes. No per-symbol
-scan of the full symbol or relationship arrays is used.
+  **Auditing the corpora the census walks but the F5 lane never sampled is what
+  found the defects in this wave**, and it is worth saying why two F5 corpora
+  could not have: mojo and plack contain **zero** bare-`extends` files between
+  them, and the spelling is overwhelmingly a Moose idiom -- 401 of the census's
+  5,774 files. A lane that measures two of its seven corpora is not measuring the
+  language; it is measuring the two places it happened to look.
 
-Perl is dynamically dispatched: ordinary calls are emitted from syntactic AST
-shape and builtin filtering, not from pretending runtime dispatch is fully
-knowable. A concrete instantiation requires a package-shaped receiver; scalar
-and chained receivers remain calls only. Cross-file override precision requires
-the optional project companion index; without it, declarations available in the
-current file are still handled deterministically.
+  What the wider audit found, and where each row came from:
+
+  | corpus | before | after | what was missing |
+  | --- | --- | --- | --- |
+  | Moose-2.4000 | 97.7% | 100% | 278 `overrides` (bare `extends`) |
+  | Catalyst-Runtime | 94.1% | 100% | 379 `overrides` (bare `extends`) |
+  | Moo | 98.7% | 100% | 20 `overrides` (bare `extends`) |
+  | DBI | 2 unexplained | 100% | an indirect-object class, and a hash key read as a class |
+  | perl5 | never audited | 100% | 325 rows, mostly `&`-sigil code references read as calls |
+
+  None of those rows were added by a fix. They are rows the analyzer was always
+  supposed to emit and did not, or rows it emitted that named a type that does not
+  exist. The first three corpora are the same defect three times, which is what a
+  401-file idiom looks like from inside a lane that never looked at it.
+
+  `contains` is in the compared label set for this lane, so its 22,266 corpus
+  ownership edges are audited too -- the first lane in the family where they are.
+  The allowlist filters the truth side only, so a label outside it could never be
+  covered and would have been a guaranteed false MISSING.
+- **7-corpus census**, 5,774 files (mojo, plack, perl5 core, Moose, Moo,
+  Catalyst-Runtime, DBI): 30,347 symbols, 107,513 relationships, 28,317 imports,
+  2,170 exports, **0 crashes**, **0 unknown kinds**, **0 empty names**, **0 unknown
+  relationship types**, 55 files with parse errors (619 error nodes), 1,939
+  symbol-free files (test and script files that legitimately declare nothing).
+  4,570 distinct call targets (16,504 edges) name a method or bareword that no
+  definition in the corpus provides; that is an inter-file resolution question,
+  not an unknown kind, and it is why the lane emits `calls` to the name and lets
+  the indexer resolve it.
+
+### A call target carries its owner when the source proves one (PERL-MR11)
+
+`Mojo::IOLoop->start` states two things: that a sub named `start` is being
+invoked, and that its owner is `Mojo::IOLoop`. The lane published only the first,
+so `Mojo::IOLoop->remove`, `Mojo::IOLoop->stream` and `Mojo::IOLoop->server`
+collapsed onto `remove`, `stream` and `server` -- and a caller of one class's
+method read as a caller of another's. The target is now `IOLoop.start`, using
+the same leaf convention the `instantiates` path already used for
+`Util.constructor`.
+
+| receiver | target | why |
+| --- | --- | --- |
+| `Mojo::IOLoop` (a `package` node, or a bareword with `::`) | `IOLoop.start` | the class is **provable** from the token itself |
+| `app` (a bare bareword, no `::`) | `level` | see below |
+| `$self`, `$loop`, a chained `app->log` | `helper` | a value has no class to name |
+| `Mojo::IOLoop->reset` | *nothing* | `reset` is a perl **builtin** |
+
+Two of those rows are load-bearing and each has a mutant, because each is a way
+this rule has already been got wrong.
+
+**A bare bareword is not a class.** The grammar types `app` and `Mojo::IOLoop`
+both as `bareword`, so node type cannot separate them and only the `::` can. In
+`mojo/t/mojo/cgi.t` the same construct is a lexical holding a `Mojo::Server`;
+qualifying it would invent a class named `app` -- the same fabrication as the
+phantom `DSN` and `use_module` this wave removed. So the rule is deliberately
+the *narrow* one: qualify only what `::` or a `package` node proves.
+
+**The builtin test is about the method, never about the target's shape.**
+`addCall` checks its argument against `PERL_BUILTINS`. When the argument became
+the qualified `IOLoop.reset`, the test stopped seeing `reset` and the lane began
+emitting edges for a builtin -- 3 of them on the first run (`IOLoop.reset`,
+`Promise.map`, `Reactor.reset`). The method name is what decides that; the
+qualification happens after the decision, not before it.
+
+Measured with `script/m14/tmp/perl-receiver-scope.mts`, which walks the tree and
+compares what the analyzer published against what the source proves, and exits
+non-zero on any target the tree does not justify:
+
+| corpus | call sites walked | provable package (now qualified) | bare bareword (leaf kept) | unjustified targets |
+| --- | --- | --- | --- | --- |
+| mojo | 28,885 | 2,599 | 235 | 0 |
+| plack | 1,630 | 303 | 19 | 0 |
+| Moose | 13,941 | 1,637 | 1,654 | 0 |
+| Catalyst-Runtime | 6,401 | 266 | 305 | 0 |
+| Moo | 1,074 | 111 | 288 | 0 |
+| DBI | 2,045 | 107 | 109 | 0 |
+| perl5 | 56,166 | 5,758 | 2,190 | 0 |
+| **total** | **110,142** | **10,781** | **4,800** | **0** |
+
+Neither the differential nor any other fixture could see this defect. The
+independent oracle in `derivePerlEdges` derived the target by leaf name exactly
+as the analyzer did, so the pair agreed on a shape both were wrong about --
+100% covered, 0 unexplained, on all seven corpora, the whole time. This is the
+third time that pair has agreed on a shared premise (after the
+`use constant { ... }` dead branch and the oracle's `!inSub` gap), and the
+conclusion is the same: **agreement between an analyzer and an oracle is not
+evidence about the source.** Only `perl/receiver-qualification` pins it, and
+only the AST count gives it a size.
+
+### The file surface is production's, exactly
+Three instruments walk the corpora -- `fixtures/perl/census.mts`,
+`fixtures/perl/lineless.mts` and the F5 lane in `script/m14/differential.ts` --
+and for most of this wave they walked **three different file sets**, which is
+why no two of their numbers agreed (107,838 / 107,870 / 111,106+2,395).
+
+`src/ast/language-detection.ts:42` maps `rb php lua pl pm t perl`, and `PL` is
+**not** in that table: a `.PL` file is not a perl file to the engine. The census
+walked `PL` for perl5 and Moose (92 extra files, 91 of them perl5's), the F5 lane
+walked `PL` everywhere (one extra `Makefile.PL` each in mojo and plack), and
+`lineless.mts` had its own hardcoded regex with `PL` in it. All three are now
+`pm,pl,t`, which is production's set, and all three now sum to the same 107,513
+relationships over the same 5,774 files.
+
+The 92 excluded `.PL` files are real Perl that the product does not index. They
+are named here rather than quietly dropped, because the line to move is this one:
+if `language-detection.ts` ever routes `PL`, the census's ext sets, the F5 lane's
+`ext` and `lineless.mts`'s regex all have to move with it.
+- **Grammar pin**: registered and green -- `all 144 declared names present (4
+  supertypes hidden by design), 140 wasm-named types all declared, 0 built-in
+  extras`.
+- **Fixtures**: `validation/m14/fixtures/perl/` -- one per defect class
+  (package-block scope, signatures and attributes, 5.38 class/role, imports and
+  exports, builtins and branches, inheritance declarations, magic-token invocant).
+- **Forward compatibility**: emissions are identical under the wired 1.2.1 build
+  and a fresh 2.0.0 build on **5,750 of 5,774** files (99.6%). The 24 that differ
+  are all the same shape, and 2.0.0 is the **worse** answer on every one of them —
+  see [the 2.0.0 upgrade](#the-200-upgrade-measured-and-refused).
+
+## The 2.0.0 upgrade: measured, and refused
+
+`tree-sitter-perl@2.0.0` declares exactly one type over 1.2.1 --
+`parenthesized_expression` -- and that is the wrapper that removes the multi-child
+paren field:
+
+| | 1.2.1 (wired) | 2.0.0 |
+| --- | --- | --- |
+| files with an unreachable payload field | 3,049 / 5,875 | 564 / 5,875 |
+| unreachable sites | 39,897 | 1,419 |
+| affected (node, field) pairs | 41 | 5 |
+| parse damage on mojo | 4 / 275 | 4 / 275 |
+| mojo trees identical to the wired build | 275 / 275 | 152 / 275 |
+
+### The 24 files where 2.0.0 is worse, not just different
+
+Identical emissions on 5,750 of 5,774 files is not "compatible", it is "the same
+almost everywhere, and where it is not, here is which one is right". All 24
+differing files are the parenthesised-argument `use` with a ternary in it:
+
+```perl
+use Test::More (
+    $^O eq 'VMS'
+    ? ( skip_all => 'VMS' )
+    : ( tests => 1 )
+);
+```
+
+| | wired 1.2.1 | 2.0.0 |
+| --- | --- | --- |
+| `imports[0].items` | `["*"]` | `["VMS","VMS","skip_all","tests"]` |
+
+**1.2.1 is the honest answer and 2.0.0 is the wrong one.** The parse explains it.
+Under 1.2.1 the `(` is attached *inside* the `package` node and the whole argument
+is a bare `conditional_expression` direct child of `use_statement`, so the analyzer
+finds no argument node it can read and falls back to the declared `["*"]`
+wildcard. Under 2.0.0 the argument is a proper `parenthesized_expression`, which is
+exactly the fix that makes the payload reachable -- and the analyzer's word walk
+then harvests straight through it: `VMS` twice (from `$^O eq 'VMS'` and from
+`skip_all => 'VMS'`, one per ternary branch) plus the fat-comma **keys** `skip_all`
+and `tests` as if they were imported names, when they are `Test::More` plan
+arguments.
+
+So the bump is not a re-baseline cost alone. It needs an analyzer change first:
+import-item harvesting has to respect the `parenthesized_expression` boundary and
+must not read a nested list's fat-comma keys as import names. Until that lands,
+2.0.0 would turn an honest wildcard into a confidently wrong list on 24 corpus
+files (0.4%) while fixing the unreachable-field problem this lane already works
+around.
+
+### Why it is refused anyway
+
+Four measured reasons: it changes 123 of 275 trees on the corpus the M12 claims
+were measured on, so it would invalidate the M12 corpus claims and every other
+lane's pinned F5 row; the residual 5 unreachable pairs are genuinely repeated
+fields that a collect-all-children read handles correctly anyway; the analyzer is
+already correct under 1.2.1, so the bump buys no correctness; and as above, on the
+24 files where the two builds differ, the new build is the one that is wrong. It
+is a scheduled grammar bump with an analyzer change and a re-baseline, not a
+silent swap -- and the measurement that decides it lives in the pin registry, not
+in a comment.
+
+> The forward-compatibility instrument (`fixtures/perl/forward-compat.mts`) was
+> reconstructed on 2026-09-27 after a full disk truncated it to zero bytes, and
+> its digest is now strictly wider than the original's (it covers decorators,
+> evidence tiers and parse-error text). So "5,750 of 5,774" is comparable only to
+> another figure from that file; the earlier "5,847 of 5,875" is not a baseline for
+> it and the two must not be quoted side by side.
+
+## Complexity envelope
+
+One recursive AST walk. Symbol and relationship identity are O(1) set/map lookups;
+contains and override resolution are linear post-passes. `fieldNodes` scans a
+node's direct children, never the tree. `collectErrors` and `countBranches` are
+iterative over an explicit stack rather than recursive, so deep Perl files do not
+risk a JS stack overflow.
+
+`PERL_BUILTINS` is derived from the grammar's own fixed op-token sets intersected
+with perl 5.38's `opcode.h`, not hand-listed. The pre-review list was missing 10
+words, and `say` and `system` alone produced phantom call edges on mojo.
+
+`cyclomaticComplexity` counts decision points by the grammar's real node types --
+`conditional_statement`, `elsif`, `loop_statement`, `for_statement`,
+`cstyle_for_statement`, `conditional_expression`, `postfix_conditional_expression`,
+`try_statement`, `catch`, plus the short-circuit operators. The pre-review set named
+six node types the grammar does not declare, so the metric was 1 for almost every
+real file; a fixture with ten decision points now reports 11.
+
+## Honest limitations
+
+- Cross-file override precision needs the optional project companion index, which
+  production never supplies. Without it the lane emits the deterministic
+  first-parent guess at 0.5 and says so in the reason code, rather than dropping the
+  edge (which is what it did before M37.10) or inventing certainty.
+- A method call on a dynamic receiver is a leaf-name match. The owning class is
+  not knowable at this layer, which is what `dynamic-receiver` records.
+- `use base` / `use parent` inheritance is read from one file. A base declared in
+  another file of the same project is not seen, so `extends` targets can be
+  external.
+- Symbol-free files (1,939 across the census) are test and script files that
+  legitimately declare no package or sub; each was inspected rather than assumed.
+- The F1 grammar cell is green (0 unknown node types, 0 unknown fields). The 415
+  node *types the corpora contain* is a different set from the 140 the grammar
+  *declares*, and the classification that matters is the declared one: all 140 are
+  in exactly one bucket of `script/m14/spec/perl-completeness.json` (52 handled, 74
+  internal-silent, 14 ruled by 14 decisions, 0 gaps). Note the wasm declares 168
+  named node-type **ids** that resolve to 140 unique names, so the completeness
+  gate's "168 types" and this spec's 140 are both right and mean different things.
+
+## What is measured, and what is still open
+
+| station | state |
+| --- | --- |
+| F1 grammar cells | **green** -- 0 unknown node types, 0 unknown fields, 0 entries in the dead-literal record. **This claim was false when first written**: the cell was red at 2 unknown types and 1 unknown field, and the doc asserted green anyway. See the correction below. |
+| F3 fixtures | **8 expectations, 8/8 pass.** `validation/m14/fixtures/perl/`, one per defect class |
+| F4 mutation | **26 mutants, 26/26 caught** |
+| #419 structural (A) | green -- 140/140 classified, each in exactly one bucket |
+| #419 relationship kinds (B) | green -- the six kinds the lane emits, all pinned |
+| #419 payload matrix (C) | green -- complexity, parameters, decorators, imports, exports |
+| #419 evidence tiers (D) | green -- 3 tiers, 27 pins |
+| #419 docs (G) | green |
+| #419 differential (E) | green -- `mojo:perl` and `plack:perl` rows pinned, 0 missing / 0 unexplained |
+| #419 perf (F) | green -- `avgMsPerFile` recorded for both (22.0 and 4.7 ms/file) |
+| cross-language (H) | green |
+
+All eight are green and perl is in `GATED_LANGS`. E and F were the last two, and
+they got there the only honest way available: a **sanctioned scoped
+`--pin-baseline`**, which added exactly two rows (`mojo:perl`, `plack:perl`) and
+left all 181 existing rows byte-identical. A plain scoped differential
+deliberately writes no evidence -- replacing a 30-language artifact with a
+2-corpus one would shrink the milestone's claim -- and quoting someone else's
+sweep as perl's result would have been worse. The gate is re-pinned whenever
+the analyzer's edge set changes, because the pin records a `sampleSetHash` of
+what the analyzer actually published; after PERL-MR11 it was re-pinned and the
+diff was 11 lines, all inside the two perl rows.
+
+`GATED_LANGS` means "reached CONFORMANT and runs in `npm run verify`", so
+membership is a claim about the *whole* verify run too. Perl is in it; the
+30-language `npm run verify` is not currently clean, for other lanes
+(groovy, objc, lua/nim fixture coverage, stale F1 records). That is a
+milestone-level fact for the owner, not a perl one, and nothing here
+self-closes it.
+
+### A false claim this document used to make
+
+An earlier version of this file carried the line "F1 grammar cells: green -- 0
+unknown node types, 0 unknown fields". It was **not green.** The cell was red at
+**2 unknown node types and 1 unknown field**, and the sentence was written from
+the pin being green rather than from the audit having been run. Two of the three
+were branches this wave had just added for `tree-sitter-perl` **2.0.0** --
+`noninterpolated_string_content` and `parenthesized_expression`, neither of which
+exists in the wired 1.2.1 grammar -- and the third was
+`childForFieldName("signature")`, which returns `undefined` on every sub.
+
+That third one is the sharp end. `signature` is a node **type**, not a field: the
+grammar's 44 field names are `alternative, arguments, array, arrayref, attributes,
+block, body, callback, catch_block, catch_expr, condition, consequent, content,
+continue, default, finally_block, function, hash, hashref, index, initialiser,
+invocant, iterator, key, label, left, lexical, list, loopex, method, modifiers,
+module, name, operand, operator, phase, right, statement, try_block, type, value,
+variable, variables`, and `signature` is not among them. So the #863 fix had
+replaced one non-existent field with a different non-existent field, and the
+`findChildByType` fallback beside it is what has been producing every parameter all
+along. The wrong word -- "FIELD" -- is what produced the original bug, and it
+survived in the comment that claimed to have fixed it.
+
+All three are gone rather than waived. The grammar allowlist is "empty by design:
+every current finding must be fixed or justified", and both existing waivers
+(`java`'s `comment`, `swift`'s `String`) are for literals the audit
+*misenumerates* -- live code, not dead branches. These were neither. The 2.0.0
+branches are requirements of a bump that is explicitly **not authorised**; they
+belong to that wave, and deleting them moved **nothing** on any of the seven
+corpora, which is the proof they were dead:
+
+| corpus | before | after |
+| --- | --- | --- |
+| mojo / plack | 11,202 / 2,395, 0 / 0 | 11,202 / 2,395, 0 / 0 |
+| Moose / Catalyst | 12,233 / 6,462, 0 / 0 | 12,233 / 6,462, 0 / 0 |
+| Moo / DBI / perl5 | 1,496 / 2,369 / 48,344, 0 / 0 | 1,496 / 2,369 / 48,344, 0 / 0 |
+
+The dead-literal record for perl is now **empty**, which is what closes #863: the
+issue asked for the dead field read to go, and the register that existed to track
+it is finally clear.
+
+The lesson is the one the head gate now enforces: a claim copied from a
+neighbouring gate is not a measurement. The pin being green says the grammar is
+pinned; only the audit says the analyzer has no dead branches, and only the audit
+was asked.
+
+The two fixtures-plus-mutants waves each found something the previous station
+could not, which is the argument for running them in this order:
+
+- The **fixtures** found two real defects the differential could not see: the
+  `use constant { ... }` brace form declared nothing (13 constants on mojo), and a
+  double-quoted `use` argument lost its items. The brace form was invisible to the
+  differential because the independent oracle carried the *same* dead branch --
+  two implementations agreeing on a wrong reading of the grammar.
+- The **mutants** found two holes in the machinery: `forbidImports` and
+  `forbidExports` did not exempt `note`/`comment` the way `matchConstraints`
+  does, so a forbid pin that documents itself could never fire (three mutants
+  survived a suite that looked complete); and the completeness gate caught the spec
+  leaving 5 of 140 types in no bucket and 2 in two.
