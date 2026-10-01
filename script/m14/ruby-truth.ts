@@ -62,9 +62,17 @@ const RUBY_BUILTINS = new Set(
     "method", "public_method", "private_method", "protected_method",
     "instance_method", "public_instance_method", "private_instance_method",
     "super", "method_missing", "respond_to_missing?",
-    // Rails implicit-receiver helpers reached as bare identifiers. `flash` and
-    // `class` appeared as MISSING `calls`; the analyzer suppresses both.
-    "flash", "class", "redirect_to", "render", "head", "params", "cookies", "session",
+    // NOTE: `flash`, `redirect_to`, `render`, `params`, `cookies` and `session` are
+    // DELIBERATELY ABSENT. An earlier version of this list added them on the theory
+    // that a Rails controller helper reached through an implicit receiver is a
+    // builtin. PROBED: `def m; redirect_to x; params; flash; render; end` publishes
+    // `calls:redirect_to`, `calls:x`, `calls:params`, `calls:flash`, `calls:render` -
+    // every one of them. The analyzer makes no distinction between a framework
+    // helper and a user method at this layer, so neither does the oracle. Suppressing
+    // them invented 4,187 MISSING `calls`. The lesson generalises: `RUBY_BUILTINS`
+    // is the analyzer's suppression list, not a judgement about the Ruby language,
+    // and adding an entry that is not in the analyzer's list is always wrong.
+    "class",
     "respond_to", "respond_to?",
     "initialize_copy", "initialize_dup", "initialize_clone",
     "send", "__send__", "freeze", "frozen?", "dup", "clone",
@@ -142,6 +150,17 @@ const NON_BARE_PARENTS = new Set([
   "block_parameters", "lambda_parameters", "class", "module", "singleton_class",
 ])
 
+/**
+ * Kernel conversion functions. `Array(x)` is a Kernel method, not a call to a user
+ * symbol, so it publishes no edge - probed. Distinct from `Array.new`, which is an
+ * `instantiates`, and from `Foo(x)`, which IS a `calls` because a capitalised name
+ * can be a user-defined method.
+ */
+const KERNEL_CONVERSIONS = new Set([
+  "Array", "Hash", "String", "Integer", "Float", "Rational", "Complex",
+  "File", "Dir", "IO", "Proc", "Method", "Struct", "Set", "Pathname",
+])
+
 /** Unquote one pair of surrounding quotes. Character scans only, no regex. */
 function unquote(text: string): string {
   if (text.length >= 2) {
@@ -168,6 +187,18 @@ function isConstantName(name: string): boolean {
 /** The static name of a node when it is a nameable constant path (`A::B::C`). */
 function constantPath(n: Node | null): string | null {
   if (!n) return null
+  // PROBED: a `superclass` FIELD points at a `superclass` WRAPPER node, not at the
+  // constant. `class AccountsIndex < Chewy::Index` gives
+  // `class(superclass: superclass(constant, scope_resolution(constant, constant)))`,
+  // so reading the field and expecting a constant/scope_resolution returned `null`
+  // for EVERY inheritance in the corpus and no `extends` edge was ever derived.
+  // Unwrapping the wrapper is the whole fix. This is the same class as the
+  // splat/keyword parameter wrappers and the `exception_variable` child: this
+  // grammar wraps the thing you want.
+  if (n.type === "superclass") {
+    const inner = n.namedChild(0)
+    return inner ? constantPath(inner) : null
+  }
   if (n.type === "constant") return n.text
   if (n.type === "scope_resolution") {
     const scope = n.childForFieldName("scope")
@@ -353,6 +384,32 @@ function isBound(bindings: Map<number, Set<string>>, scopes: number[], name: str
 export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
   const edges: RubyTruthEdge[] = []
   const bindings = collectBindings(root)
+  /**
+   * Every method name DECLARED anywhere in this file, used to decide whether an
+   * `alias` renames something that exists. The analyzer resolves aliases against
+   * declarations in the same file; `alias foo? bar` with no `bar` publishes nothing.
+   */
+  const declaredNames = new Set<string>()
+  {
+    const st: Node[] = [root]
+    while (st.length > 0) {
+      const nd = st.pop()!
+      if (nd.type === "method" || nd.type === "singleton_method") {
+        const nm = nd.childForFieldName("name")
+        if (nm) declaredNames.add(nm.text)
+      } else if (nd.type === "call") {
+        const mn = nd.childForFieldName("method")
+        const recv = nd.childForFieldName("receiver")
+        if (mn && mn.type === "identifier" && recv && recv.type === "constant") {
+          declaredNames.add(mn.text)
+        }
+      }
+      for (let i = 0; i < nd.namedChildCount; i++) {
+        const c = nd.namedChild(i)
+        if (c) st.push(c)
+      }
+    }
+  }
   const bases = new Map<string, string>()
   /** Members declared by each class in THIS file, for implicit `overrides`. */
   const members = new Map<string, Set<string>>()
@@ -383,12 +440,45 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     const parent = f.parent
 
     // ---------------------------------------------------------------- classes
-    if (t === "class" || t === "module" || t === "singleton_class") {
+    if (t === "singleton_class") {
+      // `class << self` has no name, but the methods inside it ARE members of the
+      // enclosing class - PROBED: `module M; class << self; def go; end; end; end`
+      // publishes `contains:go`. Passing `undefined` for `cls` here dropped every
+      // singleton method in the corpus.
+      const body = n.childForFieldName("body")
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (!c) continue
+        stack.push({
+          n: c, parent: n, inBody: false,
+          scopes: [...f.scopes, n.id],
+          cls: f.cls, methodId: f.methodId,
+        })
+      }
+      void body
+      continue
+    }
+
+    if (t === "class" || t === "module") {
       const nameNode = n.childForFieldName("name")
       const scopeNode = n.childForFieldName("scope")
       // `class << self` has no name — it is an anonymous singleton, so it cannot
       // own a namable `contains` edge.
-      const clsName = constantPath(nameNode) ?? constantPath(scopeNode) ?? undefined
+      // A QUALIFIED class name is a member of its SCOPE: `class ActivityPub::ContextsController`
+      // declares `ContextsController` inside `ActivityPub`, which is why the analyzer
+      // emits `contains:ContextsController`. Treating the whole dotted name as the class
+      // name hid that, and every namespaced class in the corpus disagreed. PROBED against
+      // the emitted `contains ActivityPub -> ContextsController`.
+      let scopePrefix: string | undefined
+      let clsName: string | undefined
+      if (nameNode && nameNode.type === "scope_resolution") {
+        const outer = nameNode.childForFieldName("scope")
+        const inner = nameNode.childForFieldName("name")
+        scopePrefix = outer ? constantPath(outer) ?? undefined : undefined
+        clsName = (inner ? constantPath(inner) : constantPath(nameNode)) ?? undefined
+      } else {
+        clsName = constantPath(nameNode) ?? constantPath(scopeNode) ?? undefined
+      }
       const superNode = n.childForFieldName("superclass")
       const superName = constantPath(superNode)
       if (clsName && superName) bases.set(clsName, superName)
@@ -401,14 +491,21 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // Inner; end; end` -> `contains:Inner`, and likewise `module M; class C;`.
       // PROBED in both the plain and the module-qualified form. The top-level case
       // emits nothing, which is why this is gated on having an owner at all.
+      if (scopePrefix) push("contains", leafName(clsName ?? scopePrefix), line, undefined)
       if (clsName && f.cls !== undefined) push("contains", clsName, line, undefined)
 
       // DIRECTION matters: the analyzer's edge is `extends -> <superclass LEAF>`
       // (`class C < A::B` -> `extends -> B`, probed), with the subclass as `from`.
-      // PROBED: the analyzer's `extends` has `from === undefined` - the superclass
-      // is the TARGET and the subclass is not recorded at all. Passing `clsName` as
-      // `from` put a value on all 5,411 inheritance edges, none of which matched.
-      if (superName) push("extends", leafName(superName), line)
+      // CORRECTED BY RE-READING THE PAYLOAD. The analyzer's `extends` DOES carry a
+      // source - the subclass - and the target is the superclass LEAF:
+      // `class AccountsIndex < Chewy::Index` -> `extends AccountsIndex -> Index`.
+      // My earlier probe printed `from === undefined` because it read a field named
+      // `from`; the emitted key is `source` (the census reads `r.source ?? r.from`).
+      // So the original `clsName` source was RIGHT and the "fix" that removed it was
+      // the error - which is why 4,967 inheritance edges stayed unexplained across two
+      // rounds. A probe that reads a field the payload does not use reports absence,
+      // not absence in the payload.
+      if (superName) push("extends", leafName(superName), line, clsName)
 
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
@@ -552,6 +649,15 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
         }
         continue
       }
+      // `Struct.new(:a, :b)` does NOT declare a struct, its fields, or a class. Only
+      // a BLOCK form declares methods, and the factory rule below already covers
+      // that. PROBED directly:
+      //   `X = Struct.new(:a, :b)`          -> analyzer contains: (none), oracle -
+      //   `X = Struct.new(:a) do def go; end` -> analyzer contains:go, oracle -
+      // Both attempts to publish struct fields were fabrication - 615 MISSING
+      // `contains` edges, one per field per struct, for classes that do not exist.
+      // Deleted rather than fixed: the premise was wrong, not the predicate.
+      //
       // `X.new { }` where the left is NOT a constant is an anonymous scope.
       if (rightIsCall && methodName === "new") {
         for (let i = n.namedChildCount - 1; i >= 0; i--) {
@@ -601,12 +707,21 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     }
 
     // ------------------------------------------------------------------ alias
+    // `alias new_name old_name` is a RENAME: it declares exactly ONE method, the new
+    // name. PROBED against `attr_reader :loaded; alias loaded? loaded`:
+    //   analyzer -> contains:loaded      (the attribute, once)
+    //   oracle   -> contains:loaded loaded? loaded
+    // The old name is not a new member and `loaded` was being counted twice, so this
+    // invented a `contains` per alias in the corpus. The analyzer only publishes an
+    // alias when the OLD name already exists in this file - `alias foo? bar` with no
+    // `bar` declared publishes NOTHING at all - so the rule is "the first identifier,
+    // and only if the second one is also declared here".
     if (t === "alias") {
-      // `alias new_name old_name` declares methods; inside a class it is a member.
-      if (f.cls) {
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (c) push("contains", unquote(c.text), c.startPosition.row + 1, undefined)
+      if (f.cls !== undefined) {
+        const first = n.namedChild(0)
+        const second = n.namedChild(1)
+        if (first && second && declaredNames.has(second.text)) {
+          push("contains", unquote(first.text), first.startPosition.row + 1, undefined)
         }
       }
       continue
@@ -623,17 +738,44 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
       // is a read or a name; a call node has already committed to being a call, so
       // `test "a" do` and `Fabricator(:x) do` read as calls even at file scope.
       // Gating these lost `calls:test`, `calls:Fabricator`, `calls:after_build`.
+      // A call with a CONSTANT receiver and NO method name is a Kernel conversion
+      // function: `Array(x)`, `Hash(x)`, `String(x)`. PROBED: `Foo(1)` publishes
+      // `calls:Foo` (a user-defined capitalised method) but `Array(1)` publishes
+      // NOTHING, while `Array.new` is `instantiates:Array`. So these are Kernel
+      // intrinsics, distinct from both. 1,321 MISSING `calls` were exactly this.
+      // PROBED: for a receiverless `Array(x)` the grammar puts the `constant` in the
+      // `method` FIELD - `childForFieldName("method").type === "constant"`, not a
+      // `receiver`. Testing `methodNode === null` therefore never fired, which is why
+      // this rule changed nothing on the first attempt. A constant in the method
+      // position with no receiver is the conversion-function shape.
+      if (methodNode !== null && methodNode.type === "constant" &&
+          n.childForFieldName("receiver") === null &&
+          KERNEL_CONVERSIONS.has(methodNode.text)) continue
+
       if (methodName && !RUBY_BUILTINS.has(methodName) &&
           methodNode !== null && !isBound(bindings, f.scopes, methodName)) {
         push("calls", methodName, line)
       }
       if (methodName === "require" || methodName === "require_relative" ||
           methodName === "autoload" || methodName === "load") {
-        for (let i = 0; i < n.namedChildCount; i++) {
-          const c = n.namedChild(i)
-          if (!c || c.id === methodNode?.id) continue
-          const name = unquote(c.text)
-          if (name.length > 0) push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
+        // Only a STRING LITERAL names a required file. PROBED: `require "a/b"` gives
+        // exactly one `references` edge; nothing else on the call contributes. This
+        // branch walked every NAMED child, so `params.require(:domain_block)` and
+        // similar contributed their receiver and their hash key as "references" -
+        // including the literal text `(:domain_block)`, a parentheses-and-colon
+        // fragment that is not a path in any sense. That was 1,826 MISSING
+        // `references`, the single largest remaining class.
+        const args = n.childForFieldName("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (!a) continue
+            if (a.type !== "string" && a.type !== "bare_string") continue
+            const name = unquote(a.text)
+            if (name.length > 0) {
+              push("references", name, line, methodName === "autoload" ? "ruby-autoload" : `ruby-${methodName}`)
+            }
+          }
         }
         continue
       }
@@ -737,6 +879,15 @@ export function deriveRubyEdges(root: Node): RubyTruthEdge[] {
     if (t === "identifier") {
       const text = n.text
       const parentType = parent?.type ?? ""
+      // `flash[:a] = 1` is a WRITE through an index, not a call. PROBED: the read
+      // `foo[:a]` publishes `calls:foo`, but the same node with an assignment parent
+      // publishes NOTHING. Treating the index receiver as an ordinary read invented
+      // 1,420 MISSING `calls` - every `flash[...]`, `params[...]`, `session[...]`
+      // assignment in the corpus.
+      const isIndexedWrite = parent !== null && parent.type === "element_reference" &&
+        parent.parent !== null && parent.parent.type === "assignment" &&
+        parent.parent.childForFieldName("left")?.id === parent.id
+      if (isIndexedWrite) continue
       const parentIsNameField = parent !== null && parent.childForFieldName("name")?.id === n.id
       if (f.inBody && !parentIsNameField && !NON_BARE_PARENTS.has(parentType) &&
           !RUBY_BUILTINS.has(text) && !isBound(bindings, f.scopes, text)) {
