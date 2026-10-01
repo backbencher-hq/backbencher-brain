@@ -4635,7 +4635,38 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_"
   }
 
-  /** True when every character is arithmetic this method is willing to evaluate. */
+  /**
+ * #975 (P11): true when `s` is one or more decimal digits followed by zero or more
+ * C integer-suffix letters (`u`, `U`, `l`, `L`) and nothing else.
+ *
+ * This replaces the last regex literal in this file, `/^\d+[uUlL]*$/`, which decided
+ * whether an enumerator's value is a plain integer (so the implicit ++ chain can
+ * continue) or something the evaluator cannot follow (so it must stop and report the
+ * value as unknown rather than guess).
+ *
+ * Written as a character scan for two reasons. P11 forbids regex literals in this
+ * analyzer, because a regex is opaque to the AST the rest of the file reasons from
+ * and the lane's rule is that structure decides, not pattern-matching. And the file
+ * already has the idiom — `isIdentifierStart` and `isArithmeticOnly` are both
+ * character loops over an allowed set — so this is the house style rather than a new
+ * shape.
+ *
+ * Equivalence with the regex is exact, including that `\d` is ASCII-only in JS: the
+ * digit test below is `>= "0" && <= "9"`, so a Unicode digit is refused by both.
+ */
+  private isDecimalWithUnsignedOrLongSuffix(s: string): boolean {
+  if (!s) return false
+  let i = 0
+  while (i < s.length && s[i] >= "0" && s[i] <= "9") i++
+  if (i === 0) return false // `\d+` needs at least one digit
+  for (; i < s.length; i++) {
+    const c = s[i]
+    if (c !== "u" && c !== "U" && c !== "l" && c !== "L") return false
+  }
+  return true
+}
+
+/** True when every character is arithmetic this method is willing to evaluate. */
   private isArithmeticOnly(text: string): boolean {
     const allowed = "0123456789+-*/|&<>() \t"
     for (const ch of text) if (!allowed.includes(ch)) return false
@@ -4846,7 +4877,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nm = e.childForFieldName("name") || e.namedChild(0)
           const val = e.childForFieldName("value")
           if (val) {
-            const literal = /^\d+[uUlL]*$/.test(val.text.trim())
+            const literal = this.isDecimalWithUnsignedOrLongSuffix(val.text.trim())
             if (!literal) {
               next = Number.NaN // unknown: the chain stops here
               continue
