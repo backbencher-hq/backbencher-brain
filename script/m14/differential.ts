@@ -1105,7 +1105,14 @@ function seededPick<T>(items: T[], n: number, seedStr: string): T[] {
 // a corpus's cumulative coverage stalls (no new files in N waves = the pool is
 // exhausted = sample >= corpus, fine) or the state file is missing on a
 // canonical run (silent revert to the old blind behavior).
-const COLD_POOL_STATE = path.join(WORK_ROOT, "m14-f5-cold-pool.json")
+// Overridable so a GATE can run against an isolated pool. The default is the
+// shared state file, and sharing it means any other lane's unscoped sweep
+// advances `seen`, which moves a pinned wave underneath the gate: the Haskell
+// lane read 13/15 and 12/15 on an unchanged tree for exactly this reason. A
+// coverage sweep still wants the shared default — the rotation is the point.
+const COLD_POOL_STATE = process.env.BB_F5_COLD_POOL_STATE
+  ? path.resolve(process.env.BB_F5_COLD_POOL_STATE)
+  : path.join(WORK_ROOT, "m14-f5-cold-pool.json")
 function loadColdPool(): { seen: Record<string, string[]>; rotations: Record<string, number> } {
   try { return JSON.parse(fs.readFileSync(COLD_POOL_STATE, "utf8")) } catch { return { seen: {}, rotations: {} } }
 }
