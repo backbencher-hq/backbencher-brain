@@ -628,6 +628,51 @@ belongs to the canonical 60-file, 40-language sweep, and a scoped run would
 replace that claim with a smaller one. `--update-baseline` would pin the drawn
 file set (`zig:c` is currently unpinned), but that is a shared-harness decision.
 
+**#964 was wrong the first time, and measuring it is what showed that.** The
+first version suppressed directive-spliced callees with the file's existing
+`isDirectiveConditionText()`. Over the full corpus that predicate
+**over-suppresses**: it holds for any identifier whose ancestor chain reaches a
+`preproc_*` node without crossing a statement/declaration, which is equally true
+of **real** calls and **real** macro invocations inside `#ifdef` blocks. It ate
+15 true rows — `strcmp`, `S_ISREG`, `strerror_s`, `sasl_choose_krb5`,
+`curlx_get_winapi_error` — turning them into unexplained edges and trading one
+error class for its opposite. That predicate's own comment warns of exactly this:
+"the exclusion must not eat CONDITIONAL CODE". The test is now the **physical
+line**: a line whose first non-space character is `#`. Real code inside a
+conditional is never on a `#` line, so the test is exact and cannot over-reach.
+
+**`calls` is now exactly agreed, in both directions.** Per-file unique
+`(label, target)` sets, analyzer against `deriveCCalls`, over **2,600 files**
+(curl, libgit2, redis, zig):
+
+| | MISSING (oracle says, analyzer silent) | UNEXPLAINED (analyzer emits, oracle blind) |
+| --- | --- | --- |
+| `isDirectiveConditionText` (first attempt) | 36 | 15 |
+| physical-line test (shipped) | **0** | **0** |
+
+The 36 were the same splicing as the original 6: `calls -> defined`,
+`-> AF_INET6`, `-> CURL_DISABLE_PROXY`, `-> USE_SSL`, `-> RLIM_INFINITY`,
+`-> HAVE_BORINGSSL_LIKE` and friends — every one an `#ifdef`-tested macro that
+recovery fused to the next line's parenthesized expression.
+
+This also **retires the two-file exclusion** `call-edge-fidelity` carried: it
+could not account for `curl/lib/http.c` (5,115 lines) and `curl/lib/openldap.c`
+(1,387). The tree oracle has no such blind spot, and both files now agree.
+
+**What is still open, and it is NOT an analyzer defect.** The differential
+compares four labels for C (`calls`, `uses`, `references`, `imports` —
+`differential.ts` allowlist), and `deriveCCalls` derives all four. Over the same
+2,600 files, `uses` alone leaves **3,937 analyzer edges unexplained**, heavily
+weighted to curl (`uses tv_sec`, `uses sockfd`, `uses ptr`, `uses settings_id`
+— ordinary field and value reads). `deriveCCalls` derives `uses` only for a
+narrow subset of identifier positions, so this is the oracle being **blind**, not
+the analyzer inventing edges — the distinction the harness itself draws at its
+`unexplained` counter ("the signal that says the truth is blind, not that the
+analyzer invented something"). The `zig:c` sample reports only 1 missing / 7
+unexplained because the cold pool draws from zig, where the gap is far smaller.
+**A complete C `uses` oracle is the next real piece of work**, and it is an
+oracle task, not an analyzer one.
+
 Measured on `zig:c`, 60 files (the cold pool rotates the sample, so counts move
 between runs — the direction does not):
 
