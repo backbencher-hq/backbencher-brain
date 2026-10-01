@@ -136,6 +136,20 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
           const inner = named(decl)[0]
           if (!inner) break
           if (inner.type === "factory_constructor_signature") { pushName("constructor"); break }
+          // A PLAIN constructor also arrives as `method_signature >
+          // constructor_signature` — `class ContentBloc { ContentBloc({…}); }`
+          // parses that way, NOT as `declaration > constructor_signature`. DARTD3
+          // applies to it exactly as it does to the other three spellings, so the
+          // member is `constructor` and not the class's own name. Without this arm
+          // the oracle published `ContentBloc -> ContentBloc` — a self-containment
+          // row the analyzer never emits — and failed to publish
+          // `ContentBloc -> constructor`, which it does. Measured over 1,294
+          // ProxiCall/lib files that is ~2,565 missing rows and 23 invented ones,
+          // and it is invisible to a four-case battery because `class C { C({int? x
+          // }); }` happens to parse as the `declaration` spelling: the two spellings
+          // are the same source text, and a battery built from one of them cannot
+          // see the other.
+          if (inner.type === "constructor_signature") { pushName("constructor"); break }
           pushName(firstOfType(inner, "identifier")?.text)
           break
         }
