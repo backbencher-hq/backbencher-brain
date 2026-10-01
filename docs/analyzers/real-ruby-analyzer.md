@@ -151,20 +151,42 @@ invisible to *graph traversal* specifically. Review §27.
 
 **All 8 of the emitted types now have an independent oracle derivation.** `contains` and `references`
 were in no audited set and had no derivation at all — ~34% of the payload, correct as emitted and verified
-by nothing. Both are now derived (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`) and
-audited, which is what made the two identity defects below findable at all: both are *containment* facts.
+by nothing. Both are now derived in the standalone oracle and audited, which is what made the two identity
+defects below findable at all: both are *containment* facts.
 
-**Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the staged oracle mirrors):
+**Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the standalone oracle
+`script/m14/ruby-truth.ts`, selected with `BB_RB_ORACLE`):
 
 | reading | value |
 |---|---|
 | outside the audited set | **0%** (was 34%) |
-| MISSING | **3 (0.001%)** — `instantiates` 2, `calls` 1 |
-| UNEXPLAINED | **507 (0.178%)** — `contains` 451, `calls` 31, `uses` 18, `overrides` 5, `instantiates` 2 |
+| MISSING | **2,720 (0.418%)** — `contains` 1,067, `calls` 905, `references` 311, `implements` 274, `uses` 144 |
+| UNEXPLAINED | **634 (0.222%)** — `calls` 330, `contains` 253, `instantiates` 50, `implements` 1 |
+| — of which cross-file (out of scope, see below) | 4,118 |
 
-The first number in this lane's history taken over the whole corpus rather than a stride. The 507 are
-dominated by `contains` on symbols created inside a dynamic or `class_eval` block — the SIG-B class, where
-the graph cannot say which class owns the member.
+**The oracle is single-file by construction, and that is now accounted for separately.** It reads one
+file's tree, so an analyzer edge whose target is *defined in another file* cannot be matched by it — not
+because either side is wrong, but because the question is unanswerable from one tree. Those 4,118 edges
+(`calls` 3,192, `uses` 568, `contains` 353, `overrides` 5) are reported as cross-file rather than folded
+into "unexplained"; doing the latter overstated the gap roughly sevenfold (11,843 → 634 once separated).
+
+The 634 remaining are genuine same-file disagreements. Per-label causes are itemised in review §40; the
+`calls` 330 are mostly helpers defined in a superclass or included concern, which a single-file oracle
+cannot see, and `contains` 253 is qualified-name and `defined_type` attribution.
+
+**Where the oracle lives, and why.** It used to be `deriveRubyEdges` inside the shared
+`script/m14/differential.ts`. That file is shared by at least six language lanes and was rewritten
+wholesale six times during this work — once replacing the Ruby derivation with a PHP-derived generic keyed
+on node types (`method_declaration`, `class_declaration`) that do not exist in the Ruby grammar, at which
+point UNEXPLAINED measured **80,761 (28.3%)**. The oracle now lives in **`script/m14/ruby-truth.ts`**,
+which is not a shared file. It contains no regular expressions at all.
+
+**Reading `extends` requires reading `source`, not `from`.** The emitted relationship key is `source`
+(the census reads `r.source ?? r.from`). A probe reading `r.from` reports `undefined` and makes it look
+as though inheritance edges carry no source — which is how one "correction" to this lane's oracle made
+things worse for two rounds. Also note `RUBY_BUILTINS` is the analyzer's *suppression list*, not a
+judgement about the Ruby language: adding an entry that is not in that list is always wrong, even when
+the entry looks obviously like a framework helper.
 
 ## Line numbers
 
@@ -267,7 +289,11 @@ Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
   and adds other lanes' rows — see the review §7.2)
 - Differential on three corpora this lane had never been run against: rubocop **MISSING 0 / unexplained
   0**; mastodon **0 / 79**; rails **20 / 59**. **All** of the residual is oracle-side and is adjudicated in
-  the review §4.2.
+  the review §4.2. Those figures predate the standalone oracle and are kept for continuity; the current
+  whole-corpus reading is the table above.
+- **Symbol coverage and performance have not been re-measured since the later fixes.** Neither is claimed
+  here: `rb-node-coverage.ts` and a Ruby performance benchmark are still outstanding, so this document
+  should not be read as asserting 100% symbol coverage or a performance ceiling.
 - Stride census, 400 files per corpus: **zero analyzer-side fabrications after this round**; every
   remaining unexplained edge is an `uses` association the read oracle has no truth derivation for, and
   every remaining missing edge is an `overrides` edge the read oracle fabricated through a nested-class
