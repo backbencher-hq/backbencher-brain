@@ -25,7 +25,10 @@ tool.
 - `evidenceTotals` and a per-plan `evidenceBreakdown`
 - `effort` — one authoritative total plus the arithmetic reconciling it with the
   per-plan view
-- `dependencyProvenance` — whether import evidence was available at all
+- `dependencyProvenance` — **where the libraries came from**: the file the imports
+  were read for, the standard-library / third-party / local / unclassified split,
+  which libraries are mapped and which are not, and whether any name came from a
+  canonicalization guess
 - explicit `unsupported` entries, each with a typed reason
 - explicit `truncation` metadata separating deduplication from the cap
 - the registered `freshness` envelope and a per-plan `stale` flag
@@ -105,8 +108,11 @@ two different rules, so one package produced two different names.
 | `./relative` | any | *excluded* | not a package |
 | `drizzle-orm/node-postgres` | ts/js | `drizzle-orm` | npm subpath stripped to the package |
 | `socket.io` | ts/js | `socket.io` | dots are KEPT — it is a real package name |
-| `net/http` | go | `net/http` | in Go the path IS the package |
-| `github.com/x/y/v2` | go | whole path | module paths keep every segment |
+| `net/http` | go | `net/http` | no host, so it is a standard-library path and keeps every segment |
+| `github.com/x/y/v2` | go | `y` | the REPOSITORY, not the module path — see below |
+| `github.com/stretchr/testify/assert` | go | `testify` | an in-repo subpath names the repo's package, not a new library |
+| `k8s.io/api/core/v1` | go | `api` | some hosts put the repository at a fixed position |
+| `sigs.k8s.io/yaml` | go | `yaml` | undeclared host, so the last segment is taken — and that is reported |
 | `package:flutter/material.dart` | dart | `flutter` | the PACKAGE is the first segment; the subpath names a library |
 | `core.async` | clojure | `core.async` | namespaces are dotted paths, not modules |
 | `asgiref` / `cryptography.fernet` | python | `asgiref` / `cryptography` | the first dotted segment is the module |
@@ -116,23 +122,125 @@ different things in different ecosystems. `core.async` is a whole Clojure
 namespace and would be a truncated Python module. A single rule got all of these
 wrong, which is what the audit measured.
 
-### Known evidence limit — stated, not papered over
+### Go module paths: the repository, not the path
 
-**The index does not record per-file imports.** No analyzer captures them, so
-`dependencies` is normally empty and `dependencyProvenance.importEvidence` is
-`"unavailable"`. This is materially different from "this component has no
-libraries", and the difference appears in the risk field:
+A Go import is a path, and the dictionary is keyed by a bare library name
+(`gin`, `gorm`, `testify`, `net/http`). Reducing the wrong segment makes a
+registered row unreachable, so which segment names the repository is decided by
+the **host**, and each host's rule is declared with the layout it encodes:
 
-> Library dependencies are UNKNOWN, not empty: the index does not record the
-> imports this component performs. Resolve them before estimating.
+| Host | Layout | Example |
+|---|---|---|
+| `github.com`, `gitlab.com`, `bitbucket.org`, `codeberg.org`, `gitea.com`, `sourceforge.net` | `<host>/<org>/<repo>[/<subpkg>...]` | `github.com/stretchr/testify/assert` → `testify` |
+| `golang.org` | `golang.org/x/<repo>` else `golang.org/<repo>` | `golang.org/x/text/language` → `text` |
+| `k8s.io` | `k8s.io/<module>[/<pkg>...]` | `k8s.io/api/core/v1` → `api` |
+| `google.golang.org` | `<host>/<repo>[/<pkg>...]` | `.../protobuf/types/known/anypb` → `protobuf` |
+| `cloud.google.com` | `cloud.google.com/go/<repo>` else `<host>/<repo>` | `cloud.google.com/go/storage` → `storage` |
+| `go.uber.org`, `go.opentelemetry.io`, `nhooyr.io` | `<host>/<repo>[/<pkg>...]` | `go.opentelemetry.io/otel/trace` → `otel` |
+| `gonum.org` | `gonum.org/vN/<repo>[/<pkg>...]` | `gonum.org/v1/gonum/stat` → `gonum` |
+| `gopkg.in` | `gopkg.in/<repo>[.vN]` or `gopkg.in/<user>/<repo>` | `gopkg.in/src-d/go-git.v4` → `go-git.v4` |
+| **anything else** | **last segment** — a guess, and reported as one | `sigs.k8s.io/yaml` → `yaml` |
+
+A major-version segment (`/v2`, `/v3`) is removed **before** the index is
+resolved, because it sits in a different place per host. A host gets an entry only
+when the last-segment rule was measured to be wrong for it; hosts where the last
+segment *is* the repository are deliberately absent and still resolve correctly.
+
+**The last row is the honest limit.** For an unrecognised host the repository cannot
+be known from the path alone, so the name may be a *package* rather than a
+library, and a row keyed by the real repository will not be reached. That is this
+tool's guess, and it is reported rather than blended in:
+
+```jsonc
+"hostRule": "declared"   // derived from the host's declared module layout
+"hostRule": "fallback"   // last segment taken; may name a package, not a library
+```
+
+and counted per plan in `dependencyProvenance.imports.fallbackHostNames` with the
+names in `fallbackHostLibraries`.
+
+### Imports are read from the index
+
+`dependencies` is built from the imports the index already holds for the component's
+file, in `brain_import` — written by `parallel-indexer` and read by `doc-engine`,
+`analysis/dependencies`, `health`, `quick-answer`, `quality` and `edit-engine`. The
+migration lane was, for a long time, the only module claiming it did not exist.
+
+Measured across 40 indexed projects / 82,879 symbols / 13,351 import rows:
+
+| Language | Files carrying imports | Rows |
+|---|---|---|
+| go | 96.2% | 91,826 |
+| python | 95.8% | 44,810 |
+| javascript | 89.6% | 2,320 |
+| clojure | 88.8% | 9,516 |
+| rust | 78.2% | 326,302 |
+| **typescript** | **0.0%** (22 files) | **0** |
+
+TypeScript is a real, separate analyzer gap and is declared as one rather than
+averaged away. On cobra, 35 of 36 Go files carry imports.
+
+Every plan reports the split:
+
+```jsonc
+"imports": {
+  "declared": 6,            // specifiers considered
+  "fromIndex": 6,           // ...of which the INDEX holds
+  "suppliedByCaller": 0,    // ...supplied on the request
+  "standardLibrary": 4,
+  "thirdParty": 2,
+  "localCrate": 0,
+  "unclassified": 0,        // no rule declared for this language — not zero
+  "mapped": 1,              // third-party with a registered row
+  "unmapped": 1,
+  "unmappedLibraries": ["pflag"],
+  "stdlibWithoutRow": 3,        // `fmt`, `bytes`, `io`: visible, NOT libraries
+  "stdlibWithoutRowLibraries": ["bytes", "fmt", "io"],
+  "fallbackHostNames": 0,
+  "fallbackHostLibraries": [],
+  "classification": "available"
+}
+```
+
+Four distinctions in that block each prevent a specific false conclusion:
+
+- **Standard library is reported, not suppressed.** `fmt` has no dictionary row, but
+  suppressing the lookup on "standard library" throws away a real mapping —
+  `net/http → requests / httpx` is a row precisely *because* porting a Go service
+  means choosing a Python HTTP client. Classification drives **reporting**; only a
+  **local crate** is skipped, because a relative import is a graph edge rather than
+  a library.
+- **A standard-library name with no row is not a library to research.** It is
+  listed and counted (`stdlibWithoutRow`) but it is **not** charged the 6h research
+  allowance and raises no risk factor. Charging it turned a five-import Go file into
+  30h of fictitious research.
+- **A measured zero is a finding.** "Every import this file declares is standard
+  library" and "the index holds no import rows for this file" are different facts,
+  and the note says which one it is:
+
+  > `dependencies` holds no LIBRARY: all 6 import(s) src/srv.go declares are
+  > standard library or local crate. **A MEASURED zero, not missing evidence.**
+
+- **Python has no stdlib classification**, so `classifyImport` returns `null`
+  (UNKNOWN) for it rather than guessing. A guess would put `os` and `json` in the
+  dependency list of every Python plan. `classification` is `unavailable` only when
+  *nothing* in the split could be classified.
+
+### Known evidence limit — the one that remains
+
+**Coverage, not reachability.** Once a specifier canonicalizes correctly it is
+looked up, but most real libraries have no dictionary row — on cobra, 0 of its 5 Go
+dependencies are keys, which is why the plans name `pflag`, `cobra`, `mousetrap`,
+`md2man` and `yaml` as `uncertain` with confidence 0 and charge 6h each. That is a
+dictionary-content gap, it is measured rather than assumed, and it is what
+`unmappedLibraries` exists to make visible.
 
 A candidate extraction from `target_external` (the `module:attr` form) was
 measured against imports parsed from the source text and **rejected**: 43.5%
 precision / 12.6% recall on Python, and zero signal on Go and Rust, where the
 analyzers emit no external-target relationships at all. Shipping F1 19.6% as
 "evidence-backed mappings" would have replaced an open fabrication with a subtler
-one. See `reviews/migrate/REVIEW.md`. Closing this properly is an analyzer
-change — another lane's work — not a planner decision.
+one. See `reviews/migrate/REVIEW.md`.
 
 ## Language vocabulary
 
@@ -493,7 +601,28 @@ Methodology constants, labelled as methodology rather than measurement:
 - 4 base hours per supported component
 - 2 hours per **chargeable** indexed relationship (resolvable AND an integration
   point), deduplicated across the request
-- 6 hours per indexed import with no registered equivalence
+- 6 hours per **third-party library** with no registered equivalence
+
+That last constant was structurally zero for the whole life of the tool, and the
+reason is worth recording. It was counted from `dependencies`, which was always
+empty because the lane believed the index held no imports — so **every plan this
+tool ever produced reported zero missing mappings**, including plans for Go
+services carrying unported libraries. It is now counted from the measured import
+split in `dependencyProvenance.imports.unmappedLibraries`.
+
+Two rules keep the number meaningful:
+
+- **Per library name, not per specifier.** A file importing `gin` and `gin/render`
+  declares two specifiers for one library; charging both bills the research twice.
+- **Third-party only.** A standard-library name with no row (`fmt`, `bytes`) is
+  listed and visible in `stdlibWithoutRow` but is not a library a human must
+  research, so it is not charged. Counting it turned a five-import Go file into
+  30h of fictitious research.
+
+On cobra the figure is now live: 12h for 2 unmapped libraries, and the per-plan
+view carries the same charge — otherwise the two effort views would disagree and
+their difference would come out negative, which is round 3's defect reintroduced
+through a different door.
 
 The batch total and the per-plan figure use **one** chargeability rule, declared
 once. When they diverged, the tool printed a "shared relationship hours" figure
@@ -615,8 +744,18 @@ does not make the advice true.
   target-language source.
 - Library mappings are advisory equivalence guidance, not proof of semantic
   compatibility.
-- The index does not record per-file imports, so `dependencies` is usually empty
-  and library risk is UNKNOWN. Stated on every affected plan.
+- **Dictionary coverage is the binding limit on mapping quality.** Imports are read
+  from the index and canonicalization reaches the rows, but most real libraries have
+  no row — 0 of cobra's 5 Go dependencies are keys. Each unmapped third-party
+  library is named at confidence 0 and charged 6h of research; none is ever
+  `supported`. See `imports.unmappedLibraries`.
+- **Go canonicalization falls back to a guess for undeclared hosts.** The name may
+  be a package rather than a library, so a row keyed by the real repository is not
+  reached. Counted and named in `imports.fallbackHostNames`.
+- **TypeScript import coverage is 0%** over the 22 indexed files measured — a
+  separate analyzer gap, declared rather than averaged away.
+- **Python has no stdlib classification here**, so its split is `unclassified`
+  rather than a guess. `os` and `json` are not listed as dependencies.
 - Ordering and mapping depend on the analyzer-extracted graph. Reflection,
   dynamic dispatch, and cross-file relations the grammar does not model limit
   completeness.
