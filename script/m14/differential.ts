@@ -22029,6 +22029,23 @@ async function main() {
     if (!mapped) throw new Error(`no corpus repo mapped for language ${lang} — extend LANG_REPOS`)
     return mapped
   }
+  // `repoFor` throws on purpose, and that is right for a PROBE: asking for one named repo
+  // and silently measuring a different one would be a wrong number, so it must be loud.
+  // It is the wrong behaviour for a full sweep. `hcl` is in LANGS with no LANG_REPOS entry
+  // and no corpus checkout on any machine, so the throw above fired on the first lane of the
+  // sweep and took all ~40 other lanes down with it — no evidence written for any of them,
+  // which is the same total-artifact-loss failure this file's PARSER_CACHE note describes.
+  // So a sweep DECLARES an unmappable lane and carries on; a probe still throws.
+  const unmappedLanes: string[] = []
+  const repoForSweep = (lang: string): string | null => {
+    if (REPO) return REPO
+    const mapped = LANG_REPOS[lang]
+    if (!mapped) {
+      unmappedLanes.push(lang)
+      return null
+    }
+    return mapped
+  }
 
   const report: Record<string, any> = {}
   const reportSecond: Record<string, any> = {}
@@ -22054,12 +22071,19 @@ async function main() {
   const lanes: { lang: string; repo: string; isSecond: boolean }[] = []
   for (const lang of Object.keys(LANGS)) {
     if (ONLY_LANGS && !ONLY_LANGS.includes(lang)) continue
-    lanes.push({ lang, repo: repoFor(lang), isSecond: false })
+    const primary = repoForSweep(lang)
+    if (primary === null) {
+      // Declared, not silent: the lane is reported as unrun and named in the run's output
+      // and in the artifact, so its absence is visible rather than looking like a pass.
+      console.log(`[lane] SKIP ${lang}: no corpus repo mapped in LANG_REPOS and none checked out — declared unrun, not measured`)
+      continue
+    }
+    lanes.push({ lang, repo: primary, isSecond: false })
     // Probe mode (--repo X): single corpus only — the second lane would point
     // at an unrelated repo and defeat the probe's intent.
     if (REPO) continue
     const second = SECOND_CORPUS[lang]
-    if (second && second !== repoFor(lang)) lanes.push({ lang, repo: second, isSecond: true })
+    if (second && second !== primary) lanes.push({ lang, repo: second, isSecond: true })
   }
 
   // ---------------------------------------------------------------------

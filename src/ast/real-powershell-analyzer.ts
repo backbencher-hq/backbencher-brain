@@ -546,6 +546,33 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
       return text.slice(1)
     }
 
+    /**
+     * M60 (#278) — strip ONE layer of matching surrounding quotes.
+     *
+     * Zero regex, like every other normalizer in this file: `"` is char code 34 and
+     * `'` is 39, so the test is a length check plus two code-point reads.
+     *
+     * Why it exists: an invocation-operator target is often WRITTEN as a quoted
+     * string, and a command-name node's text is source text, so the quotes came
+     * through into the published callee name. Measured on the production draw:
+     *
+     *     . "$PSScriptRoot\tools\buildCommon\startNativeExecution.ps1"
+     *       -> calls -> "$PSScriptRoot\tools\buildCommon\startNativeExecution.ps1"
+     *
+     * The target carries its own double quotes, so it names nothing any symbol can be
+     * called, and the dot-sourced file is not published as a dependency at all.
+     * 5 sites, 3 files. It hid because the BARE spelling is the rare one: the
+     * control `. ./plain.ps1` was already clean, so a reader sampling dot-sourcing
+     * would see nothing wrong.
+     */
+    const unquoteTarget = (text: string): string => {
+      if (text.length < 2) return text
+      const first = text.charCodeAt(0)
+      if (first !== 34 && first !== 39) return text
+      if (text.charCodeAt(text.length - 1) !== first) return text
+      return text.slice(1, -1)
+    }
+
     /** PS8 — a scope-qualified name (`$global:x`) is never a local declaration. */
     const isQualified = (raw: string): boolean => {
       const lower = raw.toLowerCase()
@@ -968,15 +995,35 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     const commandNameOf = (node: Node): string => {
+      // M60 (#278): resolve the name NODE first and normalise once at the end.
+      //
+      // Two things were wrong here and only the second was visible. A quoted
+      // invocation target — `. "$PSScriptRoot\tools\buildCommon\start.ps1"` — is
+      // parsed as `command_name_expr > string_literal > expandable_string_literal`,
+      // and the name was read as raw SOURCE TEXT, so the quotes came through into
+      // the published callee:
+      //
+      //     calls -> "$PSScriptRoot\tools\buildCommon\start.ps1"
+      //
+      // A name carrying its own quotes names nothing any symbol can be called, so
+      // the dot-sourced file was published as no dependency at all — 5 sites, 3
+      // files. And the obvious fix, handling `command_name_expr` in the branch that
+      // looks for it, does not work: the grammar gives the `command_name_expr` node
+      // the FIELD NAME `command_name`, so `childForFieldName("command_name")`
+      // returns it and the early return fires first. That is why this is a single
+      // normalisation at the exit rather than a branch.
+      //
+      // It hid because the BARE spelling is the rare one — `. ./plain.ps1` was always
+      // clean, so sampling dot-sourcing by eye finds nothing wrong.
       const field = (node as any).childForFieldName?.("command_name")
-      if (field) return field.text
-      const nameNode = findFirstChild(node, "command_name")
-      if (nameNode) return nameNode.text
+      const fieldNode: Node | null = field ?? null
+      const nameNode = fieldNode ?? findFirstChild(node, "command_name")
+      if (nameNode) return unquoteTarget(nameNode.text)
       const expr = findFirstChild(node, "command_name_expr")
       if (expr) {
         const inner = findFirstChild(expr, "command_name")
         if (inner) return inner.text
-        return expr.text
+        return unquoteTarget(expr.text)
       }
       return ""
     }
@@ -1870,23 +1917,35 @@ export class RealPowershellAnalyzer implements ASTEngine.LanguageAnalyzer {
           // can have, since a variable is stored stripped.
           const op = findFirstChild(node, "command_invokation_operator")
           if (op) {
-            if (leaf.startsWith("$")) {
+            // M60 (#278): the target may be a QUOTED path, and the quotes are not
+            // part of the name. Unquote first, then dispatch.
+            //
+            // The ORDER of the two tests was also wrong, and unquoting alone does not
+            // fix it. The `$` test ran first, so a quoted path like
+            // `. "$PSScriptRoot\tools\x.ps1"` was classified as an invoked VARIABLE
+            // and the path reading was never reached — and the unquoted text still
+            // starts with `$`. A path-shape test FIRST is correct for both:
+            // `$PSScriptRoot\tools\x.ps1` contains a separator so it is a path, while a
+            // bare `$sb` has no separator and no extension, so it still takes the
+            // variable reading. Controls for both are asserted.
+            const target = unquoteTarget(leaf)
+            if (looksLikeModulePath(target)) {
+              addRel(top().scope, target, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
+                powershellSpecific: true, invokationOperator: op.text,
+              })
+            } else if (target.startsWith("$")) {
               // F9: guard the name. `$type::$method()` leaves the command-name node
               // holding `$method()` plus the rest of the recovered line, so the
               // stripped text was `method()\n                }` — published as a
               // `uses` target that no symbol can have, on
               // ConstrainedLanguageRestriction.Tests.ps1:513. Found by the
               // line-level check, the last of its residue at 100.00% justified.
-              const invoked = stripDollar(leaf)
+              const invoked = stripDollar(target)
               if (isPlausibleSymbolName(invoked)) {
                 addRel(top().scope, invoked, ASTEngine.RelationshipType.Uses, 0.9, nameLine, {
                   powershellSpecific: true, isInvokedVariable: true, isVariableReference: true,
                 })
               }
-            } else if (looksLikeModulePath(leaf)) {
-              addRel(top().scope, leaf, ASTEngine.RelationshipType.Calls, 0.9, nameLine, {
-                powershellSpecific: true, invokationOperator: op.text,
-              })
             }
             break
           }

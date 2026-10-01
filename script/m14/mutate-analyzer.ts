@@ -14781,6 +14781,27 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "sql/sweep-stops-at-a-declaration-RETIRED-unfixtureable",
+    language: "sql",
+    defectClass: "symbol-loss",
+    retired: true,
+    retiredOn: "2026-09-27",
+    description:
+      "RETIRED, NOT DELETED, and not because the pass stopped mattering. The declaration sweep stopped descending once it met a declaration node, so a declaration NESTED INSIDE another declaration was unreachable — on database/schema.sql that was 401 of 3,557 symbols, and the corpus's most-referenced tables were among the casualties. The pass is still worth MORE than when this mutant was written: measured under the shipped plpgsql grammar it recovers 77 declarations across 8 ProxiCall files and 375 across 79 PostgreSQL extension files. The mutant became unfixtureable because the shipped plpgsql scaffolding stopped collapsing the SMALL cases: sqld9's `RAISE EXCEPTION` body and sqld10's damaged file both parse cleanly now, so nothing in the fixture lane buries a declaration inside another declaration any more. A green-but-vacuous mutant is worse than no mutant, so it is retired here with its reason recorded, and the pass's value is pinned by corpus assertions S1/S2 in script/m60/verify-sql-resync.ts instead. RESTORE THIS MUTANT when a fixture shape exists that still buries a declaration inside another declaration under the shipped grammar — a templating shape (SQLD12 probe: `CREATE TABLE {{ ref('x') }}`) was tried and does NOT, because the declarations either side of it stay reachable and the sweep never fires. The transform below is the pre-fix behaviour and is kept so restoring it is a one-line change.",
+    transform: (r: any) => {
+      const recovered = Number((r.metadata ?? {}).ambiguity?.sweepDeclarationsRecovered ?? 0)
+      if (!recovered) return r
+      // The sweep appends what it finds, so the pre-fix state is the result minus
+      // the sweep's own contribution.
+      const syms = r.symbols ?? []
+      return {
+        ...r,
+        symbols: syms.slice(0, Math.max(0, syms.length - recovered)),
+        metadata: { ...(r.metadata ?? {}), ambiguity: { ...((r.metadata ?? {}).ambiguity ?? {}), sweepDeclarationsRecovered: 0 } },
+      }
+    },
+  },
+  {
     id: "sql/execute-literal-recovery-removed",
     language: "sql",
     defectClass: "symbol-loss",

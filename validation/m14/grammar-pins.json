@@ -385,20 +385,20 @@
     "clean": {
       "wired": {
         "file": "wasm/tree-sitter-clean.wasm",
-        "sha256": "9ea8525dcbd441b237b3d475b0ccd39a0d36d7fbe5937dce3daaa85d5e6097ec",
-        "bytes": 6743856
+        "sha256": "90eab80b423f56217b68e9a1c86feb4ad9068ed1178af3ea1c0de87fa7140f03",
+        "bytes": 6791203
       },
       "surface": {
-        "ids": 280,
-        "uniqueNames": 276,
-        "namedIds": 139,
-        "namedUnique": 137,
-        "anonIds": 141,
-        "anonUnique": 139,
-        "fieldCount": 28,
-        "idOrderDigest": "82c656b7e014a7e91a8e4c7e2bd13b4bd3239155e1ce7ca780ce7635d366e32c",
-        "typeSetDigest": "aa774ef6e89e46fcff4ed4222bf8afac8f488c2bb8bd5142a61fc19f37e4860a",
-        "fieldSetDigest": "722a05b65970d94a389cb0063b82a349051865fc6a43e7a5a9aaef444119fbd3"
+        "ids": 290,
+        "uniqueNames": 286,
+        "namedIds": 143,
+        "namedUnique": 141,
+        "anonIds": 147,
+        "anonUnique": 145,
+        "fieldCount": 29,
+        "idOrderDigest": "77f947617fb4874637b9c987a31e6fe72f438c7b8e8d0a7eedbfb3818b91f6d4",
+        "typeSetDigest": "9a0cd3f26c92df788a3b67512201434d0e582b76b90719deba223267b9707384",
+        "fieldSetDigest": "1bbd8154060dce8f2fea9120994f98b24d9392e22ed418c3095741b81e92e2aa"
       },
       "copies": [],
       "vendored": {
@@ -406,7 +406,7 @@
       },
       "sourceVsWasm": {
         "nodeTypesJson": null,
-        "note": "no vendored source"
+        "note": "no vendored source for this lane; the surface above is measured from the wired bytes through web-tree-sitter, which is the runtime the product parses with. The source of record is the grammar repository (tree-sitter-clean, master), and the constructs this surface gained \u2014 foreign_code_import/foreign_code_item, let_group, record_binding \u2014 are grammar-source changes, so the pin moves with them rather than describing them."
       },
       "mergeNote": "both sides changed this lane in the consolidation. OURS was kept because the pin is a contract and the bytes it names are what the gate checks. The m48-recovery variant of this lane is preserved on origin/m48-recovery at e5d57c11 and can be restored per-lane."
     },
