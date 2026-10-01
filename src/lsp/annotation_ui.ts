@@ -29,6 +29,12 @@ export interface AnnotationRow {
  *  it is markup anywhere. (Contract §6: repo-controlled strings are escaped.) */
 export function escapeAnnotationText(text: string): string {
   return text
+    // A control character that can BREAK THE LINE is neutralised FIRST: markup
+    // escaping alone leaves "\n" intact, and in a markdown list a newline is
+    // what turns one annotation into two — the forged-second-note defect. It is
+    // rendered as a space so the label stays readable and stays ONE line.
+    .replace(/[\r\n\u2028\u2029]+/g, " ")
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -49,7 +55,14 @@ export function annotationHoverSection(rows: AnnotationRow[]): string {
   if (!Array.isArray(rows) || rows.length === 0) return ""
   const lines: string[] = ["**notes** (agent/human annotations — provenance recorded, not index-derived):"]
   for (const row of rows) {
-    const who = `${row.author_class} note by ${row.tool_identity}`
+    // EVERY interpolated field is escaped, not just the body. `tool_identity` is
+    // the caller's own label, recorded verbatim by design, and a newline in it
+    // used to render as a second line — one that could claim to be a HUMAN note
+    // (measured: a single stored row rendered two lines, the forged one reading
+    // "human note by the-review-team ... approved"). author_class is enforced by
+    // a storage trigger, but the RENDERER is the trust boundary: anything it
+    // interpolates must not be able to introduce a line, a bracket, or a tag.
+    const who = `${escapeAnnotationText(row.author_class)} note by ${escapeAnnotationText(row.tool_identity)}`
     const when = formatAnnotationTime(row.time_updated)
     // Scope is stated, because the store holds two kinds of note and the reader
     // cannot otherwise tell them apart: a note written WITH a path is about THIS
