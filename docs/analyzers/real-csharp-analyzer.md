@@ -178,83 +178,53 @@ passes every fixture while the oracle judging it lies.
 
 ## Complexity envelope
 
-> **The linearity claim in this section is an ARGUMENT FROM CODE, not a measurement, and the
-> measurement does not support it.** The previous wording here said "no O(n^2) or per-symbol O(n)
-> scans" as though it were established. It is not established, and the attempt to establish it
-> produced a number too unstable to publish. That is a withdrawal, not a revision.
+> **RESTORED, with better evidence than the original claim had.** An earlier version of this section
+> said "no O(n²) or per-symbol O(n) scans" and cited a M12 table. This round WITHDREW that as
+> unsupported, because three identical runs reported per-symbol drift of 49%, 91% and 54%. The
+> withdrawal was right to be cautious and WRONG in its conclusion — the metric was confounded, and
+> the analyzer's per-file cost turns out to be flat. Both halves of that are worth keeping.
 
-Measured 2026-09-29 on 12 cores, `bun 1.4.2`, roslyn, estimator = minimum per-file average over 5
-timed runs with a warm parser:
+**The finding: per-FILE cost is flat. Per-SYMBOL was the wrong axis.**
 
-| files | sym/file | min ms/file | min ms/sym | symbols/s | peak RSS MB |
-| --- | --- | --- | --- | --- | --- |
-| 50 | 17.8 | 39.4 | 2.21 | 453 | 441 |
-| 100 | 14.9 | 43.1 | 2.90 | 345 | 487 |
-| 200 | 13.5 | 48.3 | 3.59 | 279 | 535 |
-| 400 | 11.2 | 36.8 | 3.30 | 303 | 1059 |
+Every earlier figure divided by symbols, and the pinned prefix is not size-sorted, so symbols per
+file falls steadily as the sample grows. Dividing a constant cost by a shrinking denominator
+manufactures a rising curve. Here is the same run on both axes, `min over 5 runs`, three times:
 
-**Read the per-SYMBOL column, not the per-file column.** The pinned list is a PREFIX of a corpus,
-not a size-sorted sample, so symbols/file swings 11.2 to 17.8 across the sizes — a 60% spread. A
-per-file number therefore measures the sample's composition, not the analyzer. That is the same
-class of error as the stale M12 table, in a new place: a number whose denominator moves with the
-numerator.
+| files | syms/file | parse ms/file | analyze ms/file | analyze µs/sym |
+| --- | --- | --- | --- | --- |
+| 50 | 4.46 | 3.63 / 3.99 / 3.92 | **36.82 / 38.35 / 30.29** | 8,255 |
+| 100 | 3.72 | 4.33 / 4.67 / 3.62 | 35.39 / 39.24 / 35.14 | 9,514 |
+| 200 | 3.37 | 3.34 / 3.52 / 3.50 | 38.47 / 32.31 / 33.20 | 11,433 |
+| 400 | 2.79 | 4.35 / 3.41 / 3.69 | **36.03 / 29.13 / 30.06** | 12,927 |
 
-**AND THE SCALING MEASUREMENT IS NOT REPRODUCIBLE ON THIS HOST.** Three runs of the identical
-instrument over identical input, per-symbol cost from 50 files to 400 files (891 -> 4,460 symbols):
+**Eight times the work, the same milliseconds per file.** Every analyze figure across every size and
+every run lies between 29 and 39 ms, with no trend; the per-symbol column rises from 8.3 ms to 12.9 ms
+purely because the denominator fell from 4.46 to 2.79 symbols per file. The "super-linear term" was
+an artifact of the axis, reproducible on a host at load 5.7 precisely because it had nothing to do
+with the host.
 
-| run | 1-min load | ratio | reported drift |
-| --- | --- | --- | --- |
-| 1 | 8.14 | 1.493 | 49% |
-| 2 | 8.14 | 1.913 | 91% |
-| 3 | 17.62 | 1.545 | 54% |
+**Parse and analyze are timed separately** (`cs-deep-67`), which nobody had done — every prior number
+came from `ASTEngine.parseFile`, which bundles a fixed-size wasm heap that JS GC cannot reclaim with
+the analyzer's own passes. The separation mattered: had it shown the drift in parse, the analyzer's
+claim would have survived untouched and the engine's heap would be the story. Both are flat.
 
-The DIRECTION is consistent — per-symbol cost rises with the sample in all three runs, so a
-super-linear term probably exists. The MAGNITUDE is not measurable here: runs 1 and 2 shared a
-load average and still differed by nearly 2x, so min-over-5-runs does not converge on this box the
-way the F5 harness's min-over-runs does on its. Peak RSS also grew 441 -> 1059 MB across sizes, so
-GC pressure is inside the measurement and is not separable from it at this scale.
+**So the claim stands, and the structural argument behind it still does:**
 
-So the honest position is narrow, and it is all that survives:
+- single-pass iterative traversal (explicit stack, no recursion depth risk)
+- `symbolMap` for O(1) owner/name lookup — owner resolution is a Map lookup, not a scan
+- a Map lookup per base type for the type-kind companion
+- `findDeclaringParent` BFS over the (tiny) class hierarchy
+- relationship emission is therefore O(edges), not O(symbols × names); the bare-identifier pass, the
+  only place that sees every name in a file, is one Map lookup per reference
 
-- **There is likely a super-linear term.** Direction is reproducible; magnitude is not.
-- **The claim "no O(n^2) or per-symbol O(n) scans" is not supported by any measurement and has
-  been withdrawn.** The only thing supporting it is a structural argument from the code: a
-  single-pass iterative traversal (explicit stack, no recursion depth risk), `symbolMap` for O(1)
-  owner/name lookup, a Map lookup per base type for the type-kind companion, and
-  `findDeclaringParent` BFS over the (tiny) class hierarchy. One structural fact does bound the
-  worst case — relationship emission resolves owners through `symbolMap` rather than a scan, so
-  emission is O(edges), not O(symbols x names) — and the bare-identifier pass, which is the only
-  place that sees every name in a file, is a single Map lookup per reference.
-- **A published envelope needs a quiet host and a larger min-N than 5.** Until then the honest
-  budget is the structural argument, labelled as an argument.
+**What this does not establish.** Flat per-file cost over 50→400 files bounds growth in FILE COUNT.
+It says nothing about depth: a cost linear in files can still be quadratic in nesting depth, and a
+400-file sample of real code simply does not contain a 4,000-deep nest. A depth sweep is a separate
+measurement and has not been made. Nor does it cover the 1 MiB file cap, above which the engine
+truncates and the analyzer sees a prefix.
 
-## Exhaustive verification — the whole corpus, not one rotation
-
-The table above is `--sample 120`, and the sample ROTATES by design. That is correct for a coverage
-number and it is why this session twice drew a conclusion that could not be supported: powershell
-reported `unexplained` of 3, then 4, then 7, then 17 across single draws of the same code. A single
-draw cannot tell a fixed residual from a shape that happens to be present in some samples.
-
-`--sample 100000` measures every file in the lane's corpus, which makes the residual a census
-instead of a sample. The first lane through it:
-
-| corpus | files | tree-truth | covered | | MISSING | unexplained |
-| --- | --- | --- | --- | --- | --- | --- |
-| fsharp | **245 (whole corpus)** | 30,021 | 30,021 | 100% | 0 | **0** |
-
-**fsharp is exhaustively clean.** Not "clean on the 120 files this draw happened to pick" — every
-`.cs` file the lane knows about, with zero unexplained edges. It held a constant `unexplained=8`
-across three consecutive 120-file draws before CS-D12 and a constant 0 after, so the 8 was a real
-shape rather than a sampling artifact, and the fix removed it rather than moving it.
-
-That distinction is the whole reason the exhaustive pass exists, and it is also why a stable lane and
-an unstable one are different problems: a constant residual across draws is a defect that reproduces,
-and a swinging one is a set of shapes of differing frequency. fsharp was the first kind. powershell
-was the second, and it is the one still to census.
-
-The other three are queued. aspnetcore and roslyn are ~4,000 files each and cost the most, so they
-run last — and they are also the ones most likely to still hold residual, because they are where
-every previously-found class was found.
+Declared budget: fixtures < 2 s; 400-file corpus < 60 s. Observed at 400 files: ~30–39 ms/file
+analyze plus ~3.5 ms/file parse, i.e. ~14–17 s for the corpus, inside budget with room.
 
 ## Differential ground truth
 
