@@ -1,0 +1,23 @@
+{
+  "gate": "ER3 dimension 5 \u2014 zero unknown symbols, through the PRODUCTION entry",
+  "at": "2026-09-30",
+  "method": "ASTEngine.parseFile (pool-worker), not the analyzer class, so the engine's own handoff runs. EVERY .erl file in otp/rebar3/cowboy \u2014 4,326 of 4,326, no sampling. Four counts: a symbol whose kind is not universal; a symbol with an empty name; a sentinel name the analyzer INVENTED (verified against the file's own text, since `anonymous/0` and `unknown` are real Erlang names); a module-level symbol with no owner.",
+  "files": 4326,
+  "symbols": 181529,
+  "relationships": 994670,
+  "parseFailures": 0,
+  "unknownKind": 0,
+  "emptyNames": 0,
+  "inventedSentinelNames": 0,
+  "membersWithoutOwner": 0,
+  "symbolFreeFiles": {
+    "total": 12,
+    "suspect": 0,
+    "causes": {
+      "TEMPLATE (not Erlang source, rebar3 mustache)": 6,
+      "GRAMMAR DAMAGE (ER-D38: no declaration of any kind survived)": 6
+    }
+  },
+  "verdict": "PASS",
+  "crossCheck": "181,529 symbols and 994,670 relationships \u2014 byte-identical to the independent dual-lens run (validation/m14/results/erlang-dual-lens-full-corpus.json), which read the same corpus through a completely different entry point. Two instruments, same numbers."
+}
