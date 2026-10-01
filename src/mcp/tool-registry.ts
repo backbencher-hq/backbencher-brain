@@ -316,6 +316,7 @@ const descriptors = [
       type: "object",
       properties: {
         symbol: { type: "string", description: "symbol name (omit to list all annotations); `target`/`query` are accepted as aliases" },
+        path: { type: "string", description: "optional file path; returns that file's copy's notes plus any name-level notes (written with no path). Omit to return every note for the symbol" },
         limit: { type: "number", description: "max rows returned (default 50, cap 200)" },
       },
       required: [],

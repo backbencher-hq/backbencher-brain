@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { BrainDatabase } from "../brain/database"
+import { annotationId } from "../brain/annotation-store"
 import { BrainTools, PatternBrainTools } from "../ast/tools"
 import { quickAnswer } from "../intelligence/search/quick-answer"
 import { detectOrphans } from "../intelligence/patterns/orphans"
@@ -1143,14 +1144,18 @@ const handlers: Record<string, ToolHandler> = {
     if (!body.trim()) return textResult("bb_annotate requires a non-empty body — an empty note is a refusal, not a silent no-op", true)
     if (body.length > 2000) return textResult(`bb_annotate: body exceeds the declared limit of 2000 chars (got ${body.length}) — declared refusal, not silent truncation`, true)
     const now = Date.now()
-    const id = `bbann-${projectId}-${symbol}-${annotationPath ?? ""}-agent`.replace(/[^a-zA-Z0-9-]/g, "_")
+    const id = annotationId({ projectId, symbol, path: annotationPath, authorClass: "agent" })
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     raw.prepare(
       `INSERT INTO brain_annotation (id, project_id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated)
        VALUES (?, ?, ?, ?, 'agent', ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
+       ON CONFLICT(project_id, symbol_name, author_class, COALESCE(symbol_path, '')) DO UPDATE
+         SET body = excluded.body, tool_identity = excluded.tool_identity, time_updated = excluded.time_updated`,
     ).run(id, projectId, symbol, annotationPath, toolIdentity, body, now, now)
-    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE id = ?").get(id) as any
+    // Re-read by the NATURAL key, not by id: when the upsert updated a row that
+    // predates the current id scheme, that row keeps its original id, and
+    // reading by id would report a row that does not exist.
+    const updated = raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND author_class = 'agent' AND COALESCE(symbol_path, '') = COALESCE(?, '')").get(projectId, symbol, annotationPath) as any
     return textResult(JSON.stringify({
       stored: true,
       annotation: updated,
@@ -1160,21 +1165,54 @@ const handlers: Record<string, ToolHandler> = {
   },
 
   // M28.A1 read door: every row carries its provenance; absence is declared.
+  //
+  // `path` mirrors the write's disambiguation. It used to be write-only, so a
+  // symbol that lives in several files (measured on a real corpus: `force` in 8
+  // files, `toString` in 6) returned every file's notes mixed together with no
+  // way to ask for one file's note — and the editor hover, which also keyed on
+  // symbol_name alone, showed another file's note as if it belonged to the file
+  // under the cursor. A path filter here returns the notes for THAT file's copy
+  // of the symbol together with any NAME-level notes (written with no path),
+  // because a name-level note applies wherever the name appears. Every row
+  // still carries its own `symbol_path`, so a caller that wants the raw set can
+  // always narrow further.
   bb_annotations: async (args, { projectId }) => {
     const symbol = args.symbol === undefined || args.symbol === null || String(args.symbol).trim() === "" ? null : String(args.symbol).trim()
+    const annotationPath = args.path === undefined || args.path === null || String(args.path).trim() === "" ? null : String(args.path)
     const limitRaw = args.limit === undefined || args.limit === null ? 50 : Number(args.limit)
     if (Number.isNaN(limitRaw) || limitRaw < 1 || limitRaw > 200) return textResult("bb_annotations: limit must be a number between 1 and 200", true)
     const raw = await BrainDatabase.getRawInstance(projectId as any)
     const limit = Math.floor(limitRaw)
-    const rows = symbol
-      ? (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, symbol, limit) as any[])
-      : (raw.prepare("SELECT id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC LIMIT ?").all(projectId, limit) as any[])
+    // The ORDER BY carries a deterministic tiebreak: several agents writing in
+    // the same millisecond share a time_updated, and without a second key their
+    // relative order is whatever SQLite happens to produce, so "read back what
+    // I just wrote" is not reproducible.
+    const COLUMNS = "id, symbol_name, symbol_path, author_class, tool_identity, body, time_created, time_updated"
+    let rows: any[]
+    if (symbol && annotationPath) {
+      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, annotationPath, limit) as any[]
+    } else if (symbol) {
+      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND symbol_name = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, symbol, limit) as any[]
+    } else if (annotationPath) {
+      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? AND (symbol_path = ? OR symbol_path IS NULL) ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, annotationPath, limit) as any[]
+    } else {
+      rows = raw.prepare(`SELECT ${COLUMNS} FROM brain_annotation WHERE project_id = ? ORDER BY time_updated DESC, id LIMIT ?`).all(projectId, limit) as any[]
+    }
     return textResult(JSON.stringify({
       symbol,
+      path: annotationPath,
       annotations: rows,
       count: rows.length,
       declaredAbsent: rows.length === 0,
-      absenceNote: rows.length === 0 ? (symbol ? `no annotations stored for '${symbol}' — absence declared, never guessed` : "no annotations stored for this project yet") : null,
+      absenceNote: rows.length === 0
+        ? (symbol && annotationPath
+          ? `no annotations stored for '${symbol}' in '${annotationPath}' — absence declared, never guessed`
+          : symbol
+            ? `no annotations stored for '${symbol}' — absence declared, never guessed`
+            : annotationPath
+              ? `no annotations stored for '${annotationPath}' — absence declared, never guessed`
+              : "no annotations stored for this project yet")
+        : null,
     }, null, 2))
   },
 

@@ -117,6 +117,271 @@ export interface CrossLanguageDb {
   prepare(sql: string): { all(...params: unknown[]): unknown }
 }
 
+// ---------------------------------------------------------------------------
+// M63.CL1 — the AGENT door's projection of the same facts.
+//
+// `storedCrossLanguageRows` + `factsFromRows` above are the HOVER's projection:
+// one exact symbol id (the editor knows the file and the position), collapsed to
+// a language pair and a bridge, because a human reading one card already knows
+// which file they are in. That projection is correct for its surface and was
+// copied wholesale into the MCP tool (M28.T1), where it loses the only field
+// that makes the tool answerable. Measured on the real jvm-interop corpus
+// (validation/m63/results/CL1.json):
+//
+//   asked about `stream-to-bytes`; the stored edge goes to `toByteArray` in
+//   `src/jvm/clojure/asm/ClassWriter.java`; the fact said
+//   `{pair, direction, bridge, tier, confidence, relationshipType}` and named
+//   none of them. `bb_graph`, in the same registry, returns from/to as
+//   {id, name, symbolType, file, line} plus a rowId. The standard exists in
+//   this codebase; this projection did not meet it.
+//
+// Three defects the hover projection cannot express, all measured, all fixed
+// here — this module stays the SINGLE owner and the tool keeps calling into it:
+//
+//   A. NO IDENTITY. Each fact now carries both ends: the copy of the requested
+//      name it came from, and the counterparty (name, file, language, line),
+//      plus the stored row id — the same traceability `bb_graph` provides.
+//   B. NAME AMBIGUITY. The hover has an exact id; an agent has a NAME. The
+//      index holds one symbol per (file, name, line), so a name is many
+//      symbols: `invoke` is 227 symbols in the jvm-interop corpus. The old
+//      door picked one with a bare `.get()` and reported its rows as THE
+//      answer — and when the copy it happened to pick held none, it declared
+//      `declaredAbsent: true` while the index held 21 such rows for the name.
+//      A false absence is the worst thing this tool can say. `byName` unions
+//      every copy, names the ambiguity, and can never declare absence while
+//      any copy holds a stored row.
+//   C. NO BOUND. The hover renders a card; an agent reads JSON. 106 stored
+//      rows for one symbol became 106 identical facts and 20,904 bytes. Now
+//      bounded by a declared `limit`, deduplicated by row id, and carrying
+//      first-class `truncated` / `totalCountIfKnown` exactly as bb_impact does.
+//
+// The laws are unchanged and are now measurable rather than assumed:
+//   - source:      stored `brain_relationship` rows with is_cross_language = 1
+//   - absence:     declared only when NO copy of the name holds a stored row
+//   - project:     every row is filtered by `r.project_id = ?` (see LEAK below)
+//   - per-pair:    facts are grouped per (source language, target language)
+//   - tier:        src/lsp/evidence_tier.ts, unchanged
+//
+// LEAK (cross-project, measured): the hover door filters on the JOIN
+// (`ss.project_id = r.project_id`) and takes the symbol id as its only key, so
+// it never constrains `r.project_id`. That is sound for it — a hover symbol id
+// is project-scoped and names one row's world — but it is NOT sound for a
+// name, which is why `byName` takes the project id as a required argument and
+// filters the row itself. Symbol ids minted by
+// src/ast/cross-language-intelligence-persister.ts (`cross_lang_*`,
+// `dataflow_source_*`) are not project-prefixed, so the row filter is load
+// bearing, not decorative.
+
+/** One end of a cross-language fact. `line` is the symbol's declaration line;
+ *  `null` is honest unknown, never 0. */
+export interface CrossLanguageEnd {
+  symbol: string | null
+  file: string | null
+  language: string | null
+  line: number | null
+}
+
+/** One stored row, both ends named. */
+export interface CrossLanguageAgentFact {
+  /** the copy of the requested name this row belongs to */
+  self: CrossLanguageEnd
+  direction: "caller" | "callee"
+  /** the other end of the edge — the identity the hover projection dropped */
+  other: CrossLanguageEnd
+  /** "selfLang → otherLang"; null when either language is unknown or equal
+   *  (a row flagged cross-language whose ends share a language cannot name a
+   *  pair — it is counted, never dressed up) */
+  pair: string | null
+  bridge: string
+  tier: EdgeTier
+  confidence: number
+  relationshipType: string
+  /** the stored row id — traceability, the same field bb_graph returns */
+  rowId: string
+}
+
+/** One indexed symbol that carries the requested name. */
+export interface CrossLanguageNameCopy {
+  id: string
+  symbol: string
+  file: string | null
+  language: string | null
+  line: number | null
+  /** stored cross-language rows touching THIS copy */
+  crossRowCount: number
+}
+
+export interface CrossLanguageNameResult {
+  copies: CrossLanguageNameCopy[]
+  copyCount: number
+  /** distinct non-empty languages across the copies, sorted */
+  languages: string[]
+  ambiguous: boolean
+  facts: CrossLanguageAgentFact[]
+  /** stored cross-language rows matched across every copy */
+  storedRowCount: number
+  /** rows that matched but cannot name a pair (unknown/equal languages) */
+  unpairableRowCount: number
+  /** rows dropped because the same row id was matched from both directions */
+  collapsedRowCount: number
+}
+
+/** The declared default and ceiling for the agent door. The hover is a card
+ *  and needs no bound; an agent's context does, and an unbounded answer is a
+ *  defect, not a thoroughness. */
+export const CROSS_LANGUAGE_DEFAULT_LIMIT = 200
+export const CROSS_LANGUAGE_MAX_LIMIT = 1000
+
+interface AgentFactRow {
+  row_id: string
+  relationship_type: string
+  confidence: number | null
+  bridge_mechanism: string | null
+  metadata: string | null
+  direction: "caller" | "callee"
+  self_id: string
+  self_name: string
+  self_file: string | null
+  self_language: string | null
+  self_line: number | null
+  other_id: string | null
+  other_name: string | null
+  other_file: string | null
+  other_language: string | null
+  other_line: number | null
+}
+
+/** The two directions in one statement, ordered so the answer is
+ *  deterministic (row order is not a contract — it changes with inserts,
+ *  ANALYZE and VACUUM, which is how the old `.get()` became a coin flip). */
+const AGENT_FACTS_SQL = `
+SELECT r.id AS row_id, r.relationship_type AS relationship_type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge_mechanism, r.metadata AS metadata, 'caller' AS direction,
+       ts.id AS self_id, ts.name AS self_name, tf.relative_path AS self_file,
+       tf.language AS self_language, ts.line_start AS self_line,
+       ss.id AS other_id, ss.name AS other_name, sf.relative_path AS other_file,
+       sf.language AS other_language, ss.line_start AS other_line
+FROM brain_relationship r
+JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+JOIN brain_file   tf ON tf.id = ts.file_id
+JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+JOIN brain_file   sf ON sf.id = ss.file_id
+WHERE r.project_id = ? AND r.is_cross_language = 1 AND ts.name = ?
+UNION ALL
+SELECT r.id AS row_id, r.relationship_type AS relationship_type, r.confidence AS confidence,
+       r.bridge_mechanism AS bridge_mechanism, r.metadata AS metadata, 'callee' AS direction,
+       ss.id AS self_id, ss.name AS self_name, sf.relative_path AS self_file,
+       sf.language AS self_language, ss.line_start AS self_line,
+       ts.id AS other_id, ts.name AS other_name, tf.relative_path AS other_file,
+       tf.language AS other_language, ts.line_start AS other_line
+FROM brain_relationship r
+JOIN brain_symbol ss ON ss.id = r.source_symbol_id
+JOIN brain_file   sf ON sf.id = ss.file_id
+JOIN brain_symbol ts ON ts.id = r.target_symbol_id
+JOIN brain_file   tf ON tf.id = ts.file_id
+WHERE r.project_id = ? AND r.is_cross_language = 1 AND ss.name = ?
+ORDER BY self_file, self_line, direction, other_file, other_line, row_id`
+
+/** Every indexed symbol that CARRIES the name — including the ones with no
+ *  cross-language rows at all. A name held by six symbols where one is
+ *  connected is a different fact from a name held by one, and an agent that
+ *  cannot see the difference will read "one of my six `f` symbols is
+ *  cross-language" as "`f` is cross-language". The gate caught this: the copy
+ *  count disagreed with the index for every ambiguous name (CL1 A2). */
+const ALL_COPIES_SQL = `
+SELECT s.id AS id, s.name AS name, f.relative_path AS file, f.language AS language, s.line_start AS line
+FROM brain_symbol s
+JOIN brain_file f ON f.id = s.file_id
+WHERE s.project_id = ? AND s.name = ?
+ORDER BY f.relative_path, s.line_start, s.id`
+
+/** Every stored cross-language row touching ANY symbol with this name, with
+ *  both ends named, filtered by project.
+ *
+ *  This is the agent door's single source. It never guesses: a row whose ends
+ *  cannot name a pair is counted in `unpairableRowCount` and not emitted, and
+ *  a row matched from both directions is collapsed once and counted. */
+export function storedCrossLanguageFactsByName(
+  db: CrossLanguageDb,
+  projectId: string,
+  name: string,
+): CrossLanguageNameResult {
+  const rows = db.prepare(AGENT_FACTS_SQL).all(projectId, name, projectId, name) as unknown as AgentFactRow[]
+  const allCopies = db.prepare(ALL_COPIES_SQL).all(projectId, name) as unknown as Array<{
+    id: string; name: string; file: string | null; language: string | null; line: number | null
+  }>
+
+  // Every copy first, so a copy with no rows is still declared; the row scan
+  // then adds each copy's row count.
+  const copies = new Map<string, CrossLanguageNameCopy>()
+  for (const copy of allCopies) {
+    copies.set(copy.id, { id: copy.id, symbol: copy.name, file: copy.file, language: copy.language, line: copy.line, crossRowCount: 0 })
+  }
+  const seenRows = new Set<string>()
+  const facts: CrossLanguageAgentFact[] = []
+  let unpairable = 0
+  let collapsed = 0
+
+  for (const row of rows) {
+    const copy = copies.get(row.self_id)
+    if (copy) copy.crossRowCount++
+    else {
+      // A row whose source symbol is not in this project (should be impossible
+      // under the project filter, but a stored id is not a promise): the copy is
+      // added rather than dropped, so the count can never under-report.
+      copies.set(row.self_id, { id: row.self_id, symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line, crossRowCount: 1 })
+    }
+
+    // One stored row is one fact. A self-referential row matches from both
+    // directions; it is counted as collapsed, not emitted twice.
+    if (seenRows.has(row.row_id)) { collapsed++; continue }
+    seenRows.add(row.row_id)
+
+    const selfLang = row.self_language
+    const otherLang = row.other_language
+    const pair = selfLang && otherLang && selfLang.toLowerCase() !== otherLang.toLowerCase()
+      ? `${selfLang} → ${otherLang}`
+      : null
+    if (pair === null) { unpairable++; continue }
+
+    facts.push({
+      self: { symbol: row.self_name, file: row.self_file, language: row.self_language, line: row.self_line },
+      direction: row.direction,
+      other: { symbol: row.other_name, file: row.other_file, language: row.other_language, line: row.other_line },
+      pair,
+      bridge: row.bridge_mechanism ?? UNNAMED_BRIDGE,
+      tier: tierForCrossLanguageEdge({
+        relationship_type: row.relationship_type,
+        confidence: row.confidence,
+        evidence_class: parseEvidenceClass(row.metadata),
+      }),
+      confidence: row.confidence ?? 0,
+      relationshipType: row.relationship_type,
+      rowId: row.row_id,
+    })
+  }
+
+  const copyList = [...copies.values()].sort((a, b) =>
+    (a.file ?? "").localeCompare(b.file ?? "") || (a.line ?? 0) - (b.line ?? 0) || a.id.localeCompare(b.id))
+  const languages = [...new Set(copyList.map((c) => c.language).filter((l): l is string => Boolean(l)))].sort()
+
+  return {
+    copies: copyList,
+    copyCount: copyList.length,
+    languages,
+    ambiguous: copyList.length > 1,
+    facts,
+    storedRowCount: rows.length,
+    unpairableRowCount: unpairable,
+    collapsedRowCount: collapsed,
+  }
+}
+
+/** The one honest wording for a row that carries no bridge mechanism. Kept as
+ *  a named constant because the W3 mutation suite plants its defect by
+ *  replacing the string literal at the assignment site (script/m26). */
+export const UNNAMED_BRIDGE = "unnamed bridge (stored row carries no mechanism)"
+
 /** Fetch the stored cross-language rows for one symbol, both directions,
  *  with the opposite side's file language. Single query per direction. */
 export function storedCrossLanguageRows(db: CrossLanguageDb, symbolId: string): CrossLanguageEdgeRow[] {
