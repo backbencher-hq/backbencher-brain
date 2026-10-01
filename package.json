@@ -89,7 +89,8 @@
     "verify:m60-sql-resync": "bun run script/m60/verify-sql-resync.ts",
     "verify:m60-sql-perf": "bun run script/m60/sql-perf-gate.ts",
     "verify:patterns": "bun run script/verify-patterns.ts && bun run script/m13/verify-patterns-orphans.ts && bun run script/m13/verify-patterns-rules.ts && bun run script/m13/verify-patterns-contract.ts && bun run script/m20/verify-patterns-parameter-scan.ts && bun run script/m20/verify-patterns-pagination-history.ts && bun run script/m57/verify-t3-scope-all.ts && bun run script/m64/verify-patterns-evidence-gate.ts && bun run script/m64/verify-gate-selftest.ts && bun run script/m65/verify-rules-budget-and-gates.ts && bun run script/m65/verify-rules-gate-selftest.ts && bun run script/m69/verify-patterns-page-class-representation.ts",
-    "verify:security": "npx tsx script/m15/verify-security-regressions.ts && npx tsx script/m15/verify-security-precision.ts && npx tsx script/m15/verify-security-deep.ts && npx tsx script/verify-security.ts && npx tsx script/m20/verify-security-flow-boundary.ts && npx tsx script/m20/verify-security-adversarial.ts && npx tsx script/m20/verify-security-history.ts"
+    "verify:security": "npx tsx script/m15/verify-security-regressions.ts && npx tsx script/m15/verify-security-precision.ts && npx tsx script/m15/verify-security-deep.ts && npx tsx script/verify-security.ts && npx tsx script/m20/verify-security-flow-boundary.ts && npx tsx script/m20/verify-security-adversarial.ts && npx tsx script/m20/verify-security-history.ts",
+    "parse:check": "bun run script/m14/parse-check.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

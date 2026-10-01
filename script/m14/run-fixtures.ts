@@ -7,13 +7,8 @@
  *
  * Expectation matching semantics:
  *   expectSymbols / expectRelationships : each entry must match >=1 actual item.
- *   expectTaintSources / expectTaintSinks : taint payload snippets (the sink side
- *     was added with H1; before it only the source side was checkable).
  *       An entry matches when EVERY specified constraint field matches
  *       (unspecified fields are wildcards). Extra actual items are fine.
- *   expectErrorCount { equals | atLeast | atMost } : the TOTAL number of parse
- *       errors. `expectErrors` is a >=1 match, so two copies of ONE error satisfy
- *       it — the channel a duplicated-error defect needs.
  *   forbidSymbols / forbidRelationships / forbidDecorators : NO actual item may match the entry.
  *       forbidDecorators takes { symbol?, contains } — the negative half of the decorator
  *       payload, added by the C2a alias-qualifier round because a `contains` assertion on a
@@ -31,6 +26,11 @@ const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : p
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
+  // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
+  // `wasm` is the GRAMMAR's name rather than the language's -- the lane reads
+  // tree-sitter-vbnet, and the pin's `wired` field names the same file, so a swap
+  // of the wasm here is a swap the pin catches.
+  vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
   clojure: { wasm: "tree-sitter-clojure.wasm", analyzerFile: "real-clojure-analyzer", className: "RealClojureAnalyzer", ext: "clj,cljc,cljs" },
   javascript: { wasm: "tree-sitter-javascript.wasm", analyzerFile: "real-javascript-analyzer", className: "RealJavaScriptAnalyzer", ext: "js" },
   vue: { wasm: "tree-sitter-vue.wasm", analyzerFile: "real-vue-analyzer", className: "RealVueAnalyzer", ext: "vue" },
@@ -52,6 +52,11 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   objc: { wasm: "tree-sitter-objc.wasm", analyzerFile: "real-objective-c-analyzer", className: "RealObjectiveCAnalyzer", ext: "m" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
+  // M14.6 perl wave: the lane had no fixture directory at all, so none of its
+  // defects were pinned. `ext` carries the whole production surface: the
+  // fixtures are .pm because the language is, and `t` is in the universe because
+  // perl5's own test suite is 2,000+ of the corpus files a differential draws.
+  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
   haskell: { wasm: "tree-sitter-haskell.wasm", analyzerFile: "real-haskell-analyzer", className: "RealHaskellAnalyzer", ext: "hs" },
   elixir: { wasm: "tree-sitter-elixir.wasm", analyzerFile: "real-elixir-analyzer", className: "RealElixirAnalyzer", ext: "ex" },
   // M14.7-DataConfigDocs.yaml (#286): yaml joins the fixture lane with 24 fixtures, each
@@ -83,6 +88,58 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // which is why an inert fixture is worse than a missing one: it looks like
   // evidence. A fixture lane is not a directory, it is a directory this map names.
   clean: { wasm: "tree-sitter-clean.wasm", analyzerFile: "real-clean-analyzer", className: "RealCleanAnalyzer", ext: "icl,dcl" },
+  // M60 XML lane, 2026-09-27: FOUR lanes had fixture DIRECTORIES with authored
+  // expectations and no entry in this map, so `getParser(lang)` read
+  // `LANGS[lang].wasm` off `undefined` and the mutation harness CRASHED before
+  // it verified a single mutant — for every lane, not just these four. A gate
+  // that cannot run is not a green gate, and the cost was invisible because the
+  // crash looked like an unrelated TypeError rather than a missing entry.
+  //
+  // A fixture lane is not a directory, it is a directory THIS MAP NAMES; the
+  // clean round recorded that for `clean` and the same shape recurred four times
+  // over. Each entry below is mechanical (wasm, analyzer module, class, and the
+  // extension the fixtures actually use — measured from the directories, not
+  // assumed), and each is verified by running the lane.
+  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
+  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
+  // M60 Make wave (2026-09-27). The analyzer was wired into engine.ts and named
+  // in SUPPORTED_LANGUAGES — so the website advertised it — while being absent
+  // from every gate that could fail. A lane that cannot fail is decoration, and
+  // that is the exact state this registration ends: 5 fixtures, 71 asserted
+  // relationships and 28 forbidden wrong answers, none of which the runner read
+  // before now.
+  make: { wasm: "tree-sitter-make.wasm", analyzerFile: "real-makefile-analyzer", className: "RealMakefileAnalyzer", ext: "mk" },
+  // M60 fsharp wave (2026-09-28). The lane had NO fixture directory, so F3 read
+  // `fixtures: n/a` in the completion matrix and nothing measured what the analyzer
+  // called things — which is how 60 symbols named with an entire function signature
+  // and 368 `contains X -> X` self-edges survived. `ext` carries the WHOLE production
+  // surface language-detection.ts routes (fs, fsi, fsx) because the lane's grammar
+  // parses signature files as IMPLEMENTATION files — `engine.ts` resolves exactly one
+  // wasm, `tree-sitter-fsharp.wasm`, for all three extensions, and the separate
+  // `tree-sitter-fsharp_signature.wasm` is NOT wired. A fixture lane that swept only
+  // `.fs` would have been measuring a surface the product never sees.
+  fsharp: { wasm: "tree-sitter-fsharp.wasm", analyzerFile: "real-fsharp-analyzer", className: "RealFsharpAnalyzer", ext: "fs,fsi,fsx" },
+  // NIM wave (2026-09-27). `ext` carries .nim and .nims but NOT .nimble: the
+  // router does not send .nimble here (decision NIMD4 in
+  // script/m14/spec/nim-completeness.json), and a lane that swept a file the
+  // indexer would never route is the inert-pin class — it would report coverage
+  // the production path does not have.
+  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims,nimble" },
+  java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
+  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
+  // GraphQL joined 2026-09-27 with the M12.38/#177 wave. The lane did not exist,
+  // which is why 31 measured defects survived in an analyzer whose only pinned
+  // surface was 97 hand-audited facts over three m12 fixtures — including 3,131
+  // of 3,332 symbols on the GitHub public schema pointing at a DOCSTRING line,
+  // and every `extend type …` member dropped. `ext` carries all three of the
+  // extensions language-detection.ts routes to `graphql`, because the fixtures
+  // deliberately use `.graphqls` and `.gql` so a regression that keys on one
+  // extension cannot pass.
+  graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
+  // --- from the m60 grammar-governance merge: two lanes the other laptop's wave had
+  // not registered. A fixture lane is not a directory, it is a directory this map
+  // NAMES — and `payload-matrix.ts` enumerates the payload languages from
+  // `validation/m14/fixtures/*`, so an unregistered lane has no P1 row to convict it.
   // M14 (#288 / M60.LCM): html joins the fixture lane. html was the LAST
   // ungated web-family language: its analyzer had an M12 corpus claim, a regex
   // census row and a grammar-audit pass, and no fixture, no mutant, no
@@ -96,96 +153,6 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // `ext` carries BOTH html spellings because `language-detection.ts` routes
   // `.htm` to the same analyzer and a lane that only claimed `.html` would
   // silently skip half its own routing.
-  html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
-  toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
-  // M14 (#419 / F3-F6 / M59): css joins the fixture lane. It was the one lane
-  // with a differential reading 100% and a census reading blind=0, and NO fixture
-  // at all — so nothing could have convicted a regression in any of it, and a lane
-  // whose only evidence is self-consistent is the M14 #288 html finding repeated.
-  //
-  // The six fixtures are authored from the CONTRACT (script/m14/spec/
-  // css-completeness.json and reviews/m49-css-review.md), not transcribed from
-  // analyzer output, which is the whole difference between a fixture and a mirror
-  // — and it is why they were able to DISAGREE with the analyzer. They found, in
-  // this order: a `complexity` that was a literal 1; a functional-pseudo term that
-  // was dead code (it matched `pseudo_class_arguments`, which the grammar ALIASES
-  // to `arguments`, so it could never fire); a base of 0 that the worker's `||`
-  // turned into a second value; 24% of the lane carrying a fabricated 1 because
-  // complexity was measured for selectors only; a `@property` whose `var()` read
-  // pointed at a name nothing published; a `font-family` that emitted nothing for a
-  // declared `@font-face`; and an `@layer a, b, c;` that published a name with no
-  // referent. Every one of those was a green lane.
-  //
-  // `ext` carries ONLY `css`, and the comment that used to explain why has been
-  // REPLACED because its claim became false. It said: "the ROUTER also sends `.scss`,
-  // `.sass` and `.less` here … the CSS grammar does not support those dialects — 42 of
-  // 244 real `.scss` files parse clean, 17.2% … That gap is DECLARED as CSS-L1."
-  //
-  // It did not stay declared. `.scss` is now its own language with its own grammar
-  // (tree-sitter-scss@1.0.0 plus two measured patches), its own analyzer
-  // (RealScssAnalyzer) and its own fixtures, and the router no longer sends it here.
-  // Measured after: 149 of 244 `.scss` files parse clean (61.1%), from 43 (17.6%).
-  // `.sass` and `.less` STILL come here and are still DECLARED — 0 files of each
-  // across 13 corpora, so this lane can neither support nor refute a claim about them,
-  // and inventing a fixture for a dialect with no corpus would be a pin with nothing
-  // behind it.
-  css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
-  // M14 #290 (markdown): markdown joins the fixture lane, and it is the FIRST lane
-  // whose `wasm` field is only half the story — the two grammars are stated in the
-  // note below rather than smuggled into the field, because `wasm` is a single string
-  // in this map and the runner uses it to name the grammar the ANALYZER is loaded
-  // with. The companion is loaded by the engine, not by the runner.
-  //
-  // Why this lane existed at all, stated as the measurement that forced it. markdown
-  // shipped an M12 differential reading precision 1.000 / recall 1.000, a contract
-  // probe at 31/31, a shape census at 28 live / 0 dead, and a corpus claim of 734
-  // clean files with 0 crashes — and NO fixture, so nothing in the repository could
-  // convict a regression in any of it. That is the M14 #288 html finding repeated
-  // exactly: a lane whose only evidence is self-consistent. Worse, its whole
-  // measured surface was THREE hand-written files totalling 99 lines
-  // (validation/m12/fixtures/markdown/), containing zero reference-style links,
-  // zero footnotes, zero duplicate headings and zero duplicate code blocks — the
-  // four constructs where the lane is actually wrong.
-  //
-  // The defects these fixtures exist to pin, all measured against the lane's own
-  // pinned corpus (scala3@18df09c0, 738 tracked .md files) rather than argued:
-  //
-  //   1,584 of 3,742 fenced code blocks (42%) were ERASED. `code_block.<lang>` was
-  //     keyed by `owner + name`, so the second ``` block of a language under one
-  //     heading collapsed into the first, taking its `contains` edge with it. 406 of
-  //     738 files affected; worst case docs/_spec/05-classes-and-objects.md, 79
-  //     sites -> 24 symbols. A code block is a SITE, not a declaration.
-  //
-  //   671 reference-link sites (44 uses + 627 definitions, 66 files) emitted NOTHING.
-  //     The lane doc claimed "Links (inline and reference destinations)".
-  //
-  //   54 footnote and wiki-link sites emitted nothing, undeclared.
-  //
-  //   `line_number` was absent on every symbol and every relationship; 35 of 41
-  //     analyzers emit it, and `context.mdInlineLines` was computed by the engine
-  //     and read by nobody.
-  //
-  //   No `evidenceClass` on any edge, so the read-time derivation sent the 100%
-  //     structural heading hierarchy out as `inferred` — "a guess, never as fact".
-  //
-  //   Heading identity was the RAW INLINE SOURCE, not the rendered text: `# H #`
-  //     published a symbol named `H #`, and `## **bold** and [l](u)` published the
-  //     literal markdown. The inline tree was already parsed and in hand.
-  //
-  //   A multi-line setext heading published a name containing a NEWLINE, and an
-  //     empty heading published a symbol named `#` / `##` — the R7 class, a name
-  //     that is not a name.
-  //
-  // `ext` carries BOTH spellings the router accepts: language-detection.ts maps
-  // `md` AND `markdown` to this analyzer, and a lane that only claimed one would
-  // measure a different file set than it is routed for — the cpp `.cpp` defect.
-  markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
-  // scss joins the fixture lane with its own wasm and its own analyzer. It is here
-  // rather than folded into the css entry because the two dialects have genuinely
-  // different contracts: a `$variable`, a `@mixin` and an `@use` namespace are entities
-  // the CSS grammar has no node for, and a fixture that could not fail would be worse
-  // than no fixture.
-  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
   // M14 #277: bash joins the fixture lane. The lane had FOUR artifacts and no
   // runner entry, so nothing could have caught a regression in any of them —
   // and the four are a differential whose truth was authored by the same hand
@@ -197,60 +164,14 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // measured (retired to `script/m12/bash-node-types-legacy-inventory.ts`,
   // reasoning preserved, and replaced by a derived gate). A fixture lane is
   // not a directory, it is a directory this map names.
+  html: { wasm: "tree-sitter-html.wasm", analyzerFile: "real-html-analyzer", className: "RealHtmlAnalyzer", ext: "html,htm" },
+  toml: { wasm: "tree-sitter-toml.wasm", analyzerFile: "real-toml-analyzer", className: "RealTomlAnalyzer", ext: "toml" },
+  css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
+  markdown: { wasm: "tree-sitter-markdown.wasm", analyzerFile: "real-markdown-analyzer", className: "RealMarkdownAnalyzer", ext: "md,markdown" },
+  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
   bash: { wasm: "tree-sitter-bash.wasm", analyzerFile: "real-bash-analyzer", className: "RealBashAnalyzer", ext: "sh,bash" },
-  // M14: json joins the fixture/mutant lane. It was the largest UNGATED lane of its
-  // kind: a committed wasm, a doc, a walk over all 9 real grammar node types — and
-  // no fixture, no mutant, no differential oracle and no completeness spec, while
-  // being offered on the website. The string `line_number` occurred ZERO times in the
-  // analyzer, so every json edge in the index carried a NULL line, and nothing was
-  // positioned to notice: the absence of a differential is why a missing payload
-  // field can survive indefinitely. `ext` is the three spellings the router accepts,
-  // because a lane measured on a different file set than it is routed for is measured
-  // on the wrong corpus.
   json: { wasm: "tree-sitter-json.wasm", analyzerFile: "real-json-analyzer", className: "RealJsonAnalyzer", ext: "json,jsonc,json5" },
-  // M60 (#278): powershell joins the fixture lane. It was the largest
-  // UNGATED analyzer lane in the tree: an M12 corpus claim (34 acceptance
-  // files of 553 tracked), a regex-census row, an F1 grammar PASS — and no
-  // fixture, no mutant, no differential oracle, no completeness spec and no
-  // review folder. F1 is the one gate that passed, and it asks the one
-  // question that cannot fail here: the analyzer names 18 node types and all 18
-  // exist in the grammar, while the 134 it does not name are not F1's question.
-  //
-  // What the ungated lane was measured to be doing, on the production half of
-  // two real corpora (50 files of powershell@91ce9844 + 24 of ansible@7ec731b,
-  // through the production `parseFile`): 2,145 symbols and 3,410 relationships
-  // carrying FOUR relationship kinds, `uses`/`overrides`/`exports` at ZERO,
-  // and `line_number` on 0 of 3,410. Every one of those is a claim no gate in
-  // this repo could ask about, which is the same finding M14 #288 recorded for
-  // html and M60 #884 for clean — an inert lane is worse than a missing one,
-  // because its green cells read as evidence.
-  //
-  // `ext` carries all THREE spellings because `language-detection.ts` routes
-  // `.ps1`, `.psm1` and `.psd1` here, and a lane that claimed only `.ps1` would
-  // silently skip two thirds of the language it is named after — `.psm1` is a
-  // PowerShell MODULE and `.psd1` its manifest, so the module surface (and the
-  // `Export-ModuleMember` export surface with it) would be entirely unpinned.
   powershell: { wasm: "tree-sitter-powershell.wasm", analyzerFile: "real-powershell-analyzer", className: "RealPowershellAnalyzer", ext: "ps1,psm1,psd1" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  vb: { wasm: "tree-sitter-vbnet.wasm", analyzerFile: "real-vb-analyzer", className: "RealVbAnalyzer", ext: "vb" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  perl: { wasm: "tree-sitter-perl.wasm", analyzerFile: "real-perl-analyzer", className: "RealPerlAnalyzer", ext: "pm,pl,t" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  sql: { wasm: "tree-sitter-sql.wasm", analyzerFile: "real-sql-analyzer", className: "RealSqlAnalyzer", ext: "sql" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  hcl: { wasm: "tree-sitter-hcl.wasm", analyzerFile: "real-hcl-analyzer", className: "RealHclAnalyzer", ext: "tf,tfvars,tofu,hcl" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  make: { wasm: "tree-sitter-make.wasm", analyzerFile: "real-makefile-analyzer", className: "RealMakefileAnalyzer", ext: "mk" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  fsharp: { wasm: "tree-sitter-fsharp.wasm", analyzerFile: "real-fsharp-analyzer", className: "RealFsharpAnalyzer", ext: "fs,fsi,fsx" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  nim: { wasm: "tree-sitter-nim.wasm", analyzerFile: "real-nim-analyzer", className: "RealNimAnalyzer", ext: "nim,nims,nimble" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  java: { wasm: "tree-sitter-java.wasm", analyzerFile: "real-java-analyzer", className: "RealJavaAnalyzer", ext: "java" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  typescript: { wasm: "tree-sitter-typescript.wasm", analyzerFile: "real-typescript-analyzer", className: "RealTypeScriptAnalyzer", ext: "ts" },
-  // M60 lane entry, re-applied verbatim from the merge's side.
-  graphql: { wasm: "tree-sitter-graphql.wasm", analyzerFile: "real-graphql-analyzer", className: "RealGraphqlAnalyzer", ext: "graphql,graphqls,gql" },
 }
 
 interface Entry { [k: string]: any }
@@ -269,6 +190,23 @@ interface Entry { [k: string]: any }
  */
 const PARAM_PIN_EXEMPT = new Set(["note", "isNamed"])
 
+/**
+ * M60 fsharp wave (2026-09-28) — a SILENTLY DEAD FORBID is now a loud failure.
+ *
+ * `matchConstraints` skips the documentation keys it knows (`comment`, `note`) and
+ * treats every OTHER key in an expectation row as a required constraint on the actual
+ * object. So a `forbid` row carrying a documentation key the runner does not know —
+ * `_why`, written by this lane's own first draft — can never match anything, and the
+ * row is dead: it asserts nothing, passes on every run, and looks like coverage in the
+ * fixture file. Five of the lane's seven mutants survived for exactly this reason, and
+ * the honest reading is that the FORBID half of three new fixtures was inert.
+ *
+ * A key the runner does not recognise in a CONSTRAINT row is therefore reported, not
+ * swallowed. This can only turn a silent pass into a loud one: every constraint key
+ * already used by the 33 registered lanes is in the allowlist below, so no existing
+ * lane changes verdict. The check is a report, not an exception, so one bad row cannot
+ * take a whole lane's run down — it is visible in the fixture's problem list instead.
+ */
 const CONSTRAINT_KEY_ALLOWLIST = new Set([
   // symbol rows
   "name", "kind", "ownerName", "scope", "owner", "ownerKind", "range", "startLine", "endLine",
@@ -470,36 +408,9 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     const content = fs.readFileSync(path.join(dir, src), "utf8")
     const tree = parser.parse(content)
 
-    // vue/svelte/html: production parity — engine parseFile performs the
-    // sub-parse seams (the SFC script-block pre-parse, and for html the inline
-    // <script>/<style> block pre-parse that closes HTML-G1) exactly as real
-    // indexing does. A fixture that ran the analyzer directly would see NO
-    // embedded symbols at all, so every script-side pin in these lanes would be
-    // vacuous — and html/inline-embedded-code failed on exactly that when it was
-    // first run, which is the correct behaviour of a gate and not a flake.
+    // vue/svelte: production parity — engine parseFile performs the SFC
+    // script-block pre-parse exactly as real indexing does.
     let result: any
-    // toml joins the production-parity set for the same reason html does, and for a
-    // sharper one. Parse errors are the ENGINE's to report: the html analyzer walks
-    // for ERROR/MISSING itself and pushes its own, but the toml analyzer reports
-    // nothing, so a fixture running it directly sees a malformed document as
-    // CLEAN — zero errors for a file the parser could not read. The lane's
-    // error-recovery contract was therefore written into the spec and the doc with
-    // nothing able to see it, which is how a documented guarantee becomes a stale
-    // sentence. Going through `parseFile` exercises the path real indexing takes
-    // AND the diagnostics a consumer would actually receive.
-    // markdown joins for the same reason html does, and the failure mode is the
-    // sharpest one in this file. The block grammar leaves inline content as an
-    // OPAQUE text node, so links, images and autolinks are not nodes until the
-    // ENGINE pre-parses every `inline` node with the companion
-    // tree-sitter-markdown_inline grammar and hands the trees over on
-    // `context.mdInlineTrees` / `mdInlineStarts` (the vue/svelte SFC seam).
-    // Calling `analyzer.analyze(tree.rootNode, content, path)` with no context
-    // leaves those arrays empty, `inlineByStart` empty, and EVERY `uses` edge in
-    // the lane disappears — a green fixture that asserts nothing, authored against
-    // a lane whose whole second grammar was silently switched off. This is not
-    // hypothetical for this lane: the reference-link and autolink contracts are
-    // exactly the pins that a context-free run cannot fail, because the nodes they
-    // name are not in the block grammar at all.
     if (runLangLang === "vue" || runLangLang === "svelte" || runLangLang === "html" || runLangLang === "toml" || runLangLang === "markdown") {
       const engine = await import("../../src/ast/engine")
       result = await (engine as any).ASTEngine.parseFile(path.join(dir, src), content)
@@ -513,10 +424,25 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     } else {
       result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`)
     }
+    const fixtureFilePath = `fixtures/${runLangLang}/${src}`
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
     const problems: string[] = []
+
+    // M60 fsharp wave: an unrecognised key in a CONSTRAINT row is a silently dead
+    // assertion. See CONSTRAINT_KEY_ALLOWLIST's header — five of the fsharp lane's
+    // seven mutants survived a forbid half that had been inert for this reason, and
+    // a forbid that can never match is worse than no forbid, because it reads as
+    // coverage in the fixture file.
+    for (const sect of ["expectSymbols", "expectRelationships", "forbidSymbols", "forbidRelationships", "forbidDecorators"] as const) {
+      const unknown = unknownConstraintKeys((exp as any)[sect])
+      if (unknown.length) {
+        problems.push(
+          `inert assertion: ${sect} row(s) carry key(s) ${JSON.stringify(unknown)} which matchConstraints treats as REQUIRED constraints on the actual object — the row can never match, so it asserts nothing. Use "note" or "comment" for documentation.`,
+        )
+      }
+    }
 
     for (const want of exp.expectSymbols ?? []) {
       if (!symbols.some(s => matchConstraints(s, want))) {
@@ -586,6 +512,7 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         }
       }
     }
+
     for (const want of exp.expectTaintSinks ?? []) {
       // Mirror of expectTaintSources, for the SINK payload. The source side got
       // this gate with the TS T9 wave; the sink side had NONE, which is how
@@ -857,15 +784,9 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       }
     }
     for (const want of exp.expectExports ?? []) {
-      // `matchConstraints`, not a hand-rolled every-field-equals loop. The
-      // hand-rolled version did not skip the documentation fields, so an export
-      // pin carrying a `comment` compared `e["comment"] === "…"` against an
-      // export object that has no such field and could NEVER match — a
-      // documentation string silently became a failing assertion. Every other
-      // channel in this file already routed through `matchConstraints`, which
-      // skips `comment`/`note` and understands `line_number: null`; the export
-      // channels were the two that did not. Found by the powershell lane's first
-      // module-surface fixture.
+      // Each constraint field must match >=1 export (unspecified fields
+      // wildcards). ER3 (erlang wave): `note` is documentation here too — see the
+      // expectImports comment below for why the three matchers must agree.
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
@@ -886,34 +807,59 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Each constraint field must match >=1 import (unspecified fields are
       // wildcards; `comment` is documentation, never a constraint — mirrors
       // matchConstraints, unified 2026-09-05 by the rust RSD6 fixture).
+      // ER3 (erlang wave): `note` joins `comment` here. matchConstraints — which
+      // every symbol/relationship pin goes through — has skipped both since M14,
+      // but the exports/imports matchers treated a `note` as a constraint, so a
+      // documented pin failed with "expected export not found" naming a key that
+      // is documentation. No existing pin relied on that (all lanes pass before
+      // and after), so this only makes the three matchers agree.
       const hit = (result.imports ?? []).find((imp: any) =>
         Object.entries(want).every(([k, v]) => {
-          if (k === "comment") return true
+          if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           if (Array.isArray(v)) return JSON.stringify([...(imp[k] ?? [])].sort()) === JSON.stringify([...v].sort())
-          // M14 (#888, html): an OBJECT payload compares by value. `range` is the
-          // one that matters — an import's line is what makes it checkable
-          // against the source, and the pre-fix html analyzer published the
-          // ELEMENT's range rather than the ATTRIBUTE's, so a multi-line start
-          // tag produced a wrong import line. With identity comparison a pin
-          // naming `range` could never match, which is exactly how that defect
-          // stayed unpinned. No existing pin names an object field on an import,
-          // so this changes no pin's existing meaning.
-          if (v !== null && typeof v === "object") return JSON.stringify(imp[k]) === JSON.stringify(v)
+            // M14 (#888, html): an OBJECT payload compares by value. `range` is the one that
+            // matters — an import's line is what makes it checkable against the source, and
+            // the pre-fix html analyzer published the ELEMENT's range rather than the
+            // ATTRIBUTE's, so a multi-line start tag produced a wrong import line. With
+            // identity comparison a pin naming `range` could never match, which is exactly
+            // how that defect stayed unpinned. No existing pin names an object field on an
+            // import, so this changes no pin's existing meaning.
+            // Re-applied 2026-09-29 from origin/main during the merge. It is COMPLEMENTARY to
+            // the `note` clause above, not competing: upstream lacked the `note` clause
+            // (erlang ER3) and this side lacked the object comparison (html #888), so each side
+            // passed its own lane and failed the other's — the clearest evidence yet that a
+            // merge cannot be resolved by picking a side.
+            if (v !== null && typeof v === "object") return JSON.stringify(imp[k]) === JSON.stringify(v)
           return imp[k] === v
         }),
       )
       if (!hit) problems.push(`expected import not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.imports ?? []).map((i: any) => ({ module: i.module, ns: i.isNamespaceImport, items: i.items })))}`)
     }
     for (const want of exp.expectDecorators ?? []) {
-      // Each entry: { symbol, contains } — symbol.decorators must include an
-      // entry whose text contains `contains`. Reads ONLY s.decorators (not
-      // metadata.annotations fallback) so decorator emission itself stays
+      // Each entry: { symbol, ownerName?, contains } — symbol.decorators must
+      // include an entry whose text contains `contains`. Reads ONLY s.decorators
+      // (not metadata.annotations fallback) so decorator emission itself stays
       // pinned per symbol kind.
-      const sym = symbols.find((s: any) => s.name === want.symbol)
+      //
+      // M60.P1 (cpp): `ownerName` joins the filter because a lane that NORMALIZES a
+      // declaration's name cannot address it by name at all. cpp publishes every
+      // constructor as the symbol named `constructor` (and this file's own
+      // expectParameters comment already records the same problem for dart's
+      // multiple `constructor` symbols), so `{ symbol: "constructor",
+      // ownerName: "Shape" }` is the only way to pin a modifier on ONE
+      // constructor — and without it the pin silently resolves to whichever
+      // constructor happens to come first in the file, which is a pin that can
+      // pass against the wrong declaration. This mirrors expectParameters,
+      // expectVisibility and expectComplexity, which all had the filter already;
+      // `ownerName` was already in CONSTRAINT_KEY_ALLOWLIST, so no other lane
+      // changes meaning.
+      const sym = symbols.find((s: any) =>
+        s.name === want.symbol &&
+        (want.ownerName === undefined || s.ownerName === want.ownerName))
       const decs: string[] = sym?.decorators ?? []
       if (!decs.some((d) => d.includes(want.contains))) {
-        problems.push(`expected ${want.symbol} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
+        problems.push(`expected ${want.symbol}${want.ownerName ? " in " + want.ownerName : ""} decorators to include "${want.contains}"; got ${JSON.stringify(decs)} (meta.annotations=${JSON.stringify(sym?.metadata?.annotations)})`)
       }
     }
     for (const want of exp.forbidDecorators ?? []) {
@@ -925,11 +871,18 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // decorator rows in the two pinned csharp corpora carried the qualifier — so the
       // payload needed a gate that can say no.
       //
-      // Semantics mirror forbidSymbols/forbidRelationships: { symbol?, contains } — every
-      // decorator of every symbol (or of the named symbol when given) must NOT include
-      // `contains`. Unspecified fields are wildcards; `comment`/`note` are documentation.
+      // Semantics mirror forbidSymbols/forbidRelationships: { symbol?, ownerName?, contains }
+      // — every decorator of every symbol (or of the named symbol when given) must
+      // NOT include `contains`. Unspecified fields are wildcards; `comment`/`note`
+      // are documentation. `ownerName` is the same M60.P1 addition as
+      // `expectDecorators` above, and it is what keeps the negative twin from
+      // being blunter than the positive one: a forbid row that can only name a
+      // symbol, for a lane that normalizes constructors, would forbid the modifier
+      // on EVERY constructor rather than the one under test.
       const scope = want.symbol
-        ? symbols.filter((s: any) => s.name === want.symbol)
+        ? symbols.filter((s: any) =>
+            s.name === want.symbol &&
+            (want.ownerName === undefined || s.ownerName === want.ownerName))
         : symbols
       for (const s of scope) {
         for (const d of (s.decorators ?? []) as string[]) {
@@ -1023,6 +976,31 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       )
       if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
     }
+
+    for (const want of exp.expectErrorCount ?? []) {
+      // M14 (#888, html): the only pre-existing channel for this was
+      // `expectErrors`, which is a >=1 match — so a lane that reported the SAME
+      // parse error twice passed it. That is exactly the html defect the parse
+      // walk carried: the analyzer walked for ERROR/MISSING nodes with an
+      // UNBOUNDED stack while the engine walks the same tree with a cap of 50,
+      // and a 300-line broken file published 350 warnings for 300 lines. Two
+      // copies of one error are indistinguishable to `expectErrors` and obvious
+      // to a count, so the count is the channel the class needed.
+      // `{ equals: N }` for the total, `{ atLeast: N }` / `{ atMost: N }` for a
+      // bound — the same shape `expectSymbolCount`'s `equals` uses, plus bounds
+      // because a cap is a bound and not a constant.
+      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+      const n = errList.length
+      if (want.equals !== undefined && n !== want.equals) {
+        problems.push(`expected ${want.equals} parse error(s); got ${n}`)
+      }
+      if (want.atLeast !== undefined && !(n >= want.atLeast)) {
+        problems.push(`expected at least ${want.atLeast} parse error(s); got ${n}`)
+      }
+      if (want.atMost !== undefined && !(n <= want.atMost)) {
+        problems.push(`expected at most ${want.atMost} parse error(s); got ${n}`)
+      }
+    }
     for (const want of exp.forbidSymbols ?? []) {
       const hit = symbols.find(s => matchConstraints(s, want))
       if (hit) problems.push(`forbidden symbol present: ${JSON.stringify(want)} (found ${hit.name}:${hit.kind})`)
@@ -1050,30 +1028,6 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         problems.push(`expected ${want.equals} symbol(s) named "${want.name}"${want.ownerName ? ` in ${want.ownerName}` : ""}${want.kind ? ` kind=${want.kind}` : ""}; got ${n}`)
       }
     }
-    for (const want of exp.expectErrorCount ?? []) {
-      // M14 (#888, html): the only pre-existing channel for this was
-      // `expectErrors`, which is a >=1 match — so a lane that reported the SAME
-      // parse error twice passed it. That is exactly the html defect the parse
-      // walk carried: the analyzer walked for ERROR/MISSING nodes with an
-      // UNBOUNDED stack while the engine walks the same tree with a cap of 50,
-      // and a 300-line broken file published 350 warnings for 300 lines. Two
-      // copies of one error are indistinguishable to `expectErrors` and obvious
-      // to a count, so the count is the channel the class needed.
-      // `{ equals: N }` for the total, `{ atLeast: N }` / `{ atMost: N }` for a
-      // bound — the same shape `expectSymbolCount`'s `equals` uses, plus bounds
-      // because a cap is a bound and not a constant.
-      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
-      const n = errList.length
-      if (want.equals !== undefined && n !== want.equals) {
-        problems.push(`expected ${want.equals} parse error(s); got ${n}`)
-      }
-      if (want.atLeast !== undefined && !(n >= want.atLeast)) {
-        problems.push(`expected at least ${want.atLeast} parse error(s); got ${n}`)
-      }
-      if (want.atMost !== undefined && !(n <= want.atMost)) {
-        problems.push(`expected at most ${want.atMost} parse error(s); got ${n}`)
-      }
-    }
     for (const want of exp.expectRelationshipCount ?? []) {
       // { type, from, target, equals } — pins DEDUPE on relationship edges:
       // vue re-emitted sub-analyzer contains edges, doubling every class
@@ -1087,6 +1041,15 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidImports ?? []) {
       const hit = (result.imports ?? []).find((imp: any) =>
         Object.entries(want).every(([k, v]) => {
+          // Documentation keys are NOT match constraints, exactly as in
+          // matchConstraints: a `note` explaining the pre-fix shape must not
+          // make the assertion unassertable. Without this exemption a
+          // forbidImports pin that DOCUMENTS itself could never fire — the
+          // three perl mutants perl/no-strict-recorded-as-import,
+          // perl/version-requirement-recorded-as-import and
+          // perl/use-constant-becomes-an-import all survived a suite that
+          // looked complete, and only because their pins carried a note.
+          if (k === "comment" || k === "note") return true
           if (k.startsWith("meta.")) return ((imp.metadata ?? {})[k.slice(5)] ?? imp[k.slice(5)]) === v
           return imp[k] === v
         }),
@@ -1145,9 +1108,28 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         .filter((s: any) => s.kind === "module" || s.kind === "Module" || s.kind === "namespace" || s.kind === "Namespace")
         .map((s: any) => s.name),
     )
+    // A symbol whose owner is ITS OWN FILE is a file-scope unit — the case the
+    // rule above already names ("ownerless symbols (file-scope units: types,
+    // fns, consts)") reaches in a language that can genuinely have no module.
+    // Erlang's include fragments are exactly that: an .erl file whose `-module`
+    // line is commented out because the file is textually included into another
+    // module (OTP ships them — lib/syntax_tools/examples/merl/basic_test.erl is
+    // one). The analyzer owns those members by the file path, because the path
+    // is the only identity the file has and inventing a module name from the
+    // filename would fabricate a module that does not exist. That makes the
+    // member file-scoped, hence importable by its bare name, hence top level —
+    // the same class of unit the ownerless clause already admits. Without this,
+    // every `-export` in an Erlang include fragment is reported as unresolvable.
+    const isFileScopeUnit = (s: any) => !!s.ownerName && s.ownerName === fixtureFilePath
     const topLevelNames = new Set(
       symbols
-        .filter((s: any) => !s.ownerName || nsNames.has(s.ownerName) || moduleNames.has(s.ownerName))
+        .filter(
+          (s: any) =>
+            !s.ownerName ||
+            nsNames.has(s.ownerName) ||
+            moduleNames.has(s.ownerName) ||
+            isFileScopeUnit(s),
+        )
         .map((s: any) => s.name),
     )
     // JS/TS module-system binding forms — these are importable units even

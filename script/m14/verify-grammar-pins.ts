@@ -81,39 +81,11 @@ const BUILTIN_WASM_SYMBOLS = new Set(["error_sentinel"])
 // ---------------------------------------------------------------------------
 export interface LaneDecision {
   wired: string
-  /**
-   * Additional grammars the SAME analyzer loads at runtime, beyond `wired`.
-   *
-   * Added for markdown (M14 #290), the first two-grammar lane: tree-sitter-markdown
-   * ships a BLOCK grammar and a COMPANION INLINE grammar, and the engine pre-parses
-   * every `inline` node with the companion before the analyzer runs. The lane cannot
-   * work without it — every `uses` edge in the lane comes from it — and until this
-   * field existed the inline wasm had NO sha256 anywhere in the repository, so a
-   * rebuild of it would have changed what the analyzer emits with nothing able to
-   * notice. That is the class the M49 W16 sweep-state header narrates: grammar 4/5
-   * was rebuilt into `tree-sitter-css.wasm`, the CSS analyzer's behaviour changed
-   * while every hashed input stayed byte-identical, and the journal resumed and
-   * reported a clean pass — a cached verdict for a parser that no longer existed.
-   *
-   * A separate field rather than widening `wired`, because `wired` is a single
-   * string that the consistency gate (C2) compares against the survey's one
-   * `shipped.sha256` per lane, and because the union oracle in
-   * `audit-analyzer-grammar.ts` already spells multi-grammar lanes as a primary plus
-   * a list. One concept, one field, in both places.
-   */
-  companionWasm?: string[]
   provenance:
     | { kind: "byte-identical-to-npm-tarball"; package: string; version: string }
     | { kind: "byte-identical-to-third-party-package"; package: string; version: string; upstream: { repo: string; version: string; rev: string; builtWith?: string } }
     | { kind: "local-rebuild-from-vendored-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string }
     | { kind: "local-rebuild-from-upstream-source"; base: { repo: string; version: string }; patches: string[]; patchEvidence: string; chain: string }
-    // scss is neither: its grammar.js is `grammar(require("tree-sitter-css/grammar"), {...})`,
-    // so the base is an npm DEPENDENCY of the package rather than source this repo
-    // vendors, and the build is NOT self-contained — `tree-sitter generate` needs that
-    // dependency installed. Recording it as `local-rebuild-from-vendored-source` would
-    // have been a lie about where the base came from, and recording it as
-    // byte-identical-to-npm-tarball would have been a lie about the bytes.
-    | { kind: "local-rebuild-from-npm-dependency"; base: { package: string; version: string; pinnedExactly: boolean; depOf: { package: string; version: string } }; patches: string[]; patchEvidence: string; buildRequires: string[] }
     | { kind: "unnamed-build-sha-only"; chain: string }
   source:
     | { state: "vendored"; dir: string; note: string; srcSubdir?: string }
@@ -121,20 +93,7 @@ export interface LaneDecision {
   decision: string
   alternatives: Array<{ option: string; measured: string; artifact: string }>
   evidence: string[]
-  /**
-   * Local copies of the wired bytes, each compared against the grammar it MIRRORS.
-   *
-   * `of` names the wired file a copy is a copy of, and it must be either the lane's
-   * own `wired` or one of its `companionWasm` entries. It exists because comparing
-   * every copy to the PRIMARY sha is wrong the moment a lane has a companion:
-   * markdown's inline registry copy is byte-identical to the inline companion and
-   * necessarily differs from the block grammar, and the first measurement of this
-   * entry read it as `differs` — a record that reports a true copy as a broken one
-   * is worse than no copy list, because it sends a reader hunting a divergence that
-   * does not exist. Omitting `of` means the primary, which is every other lane's
-   * intent.
-   */
-  copies: Array<{ label: string; path: string; of?: string }>
+  copies: Array<{ label: string; path: string }>
   notVendored?: Array<{ path: string; why: string }>
 }
 
@@ -237,85 +196,6 @@ export const LANES: Record<string, LaneDecision> = {
   // identical behaviour on all 533 corpus files (script/m14/tmp/css-grammar-ab.ts).
   // So this lane's proof is the source↔wasm check (every name the vendored source
   // declares exists in the wired wasm and vice versa), NOT a hash comparison.
-  scss: {
-    wired: "wasm/tree-sitter-scss.wasm",
-    provenance: {
-      kind: "local-rebuild-from-npm-dependency",
-      base: {
-        package: "tree-sitter-scss",
-        version: "1.0.0",
-        // the package declares `tree-sitter-css: ^0.20.0`, a RANGE. Left as a range,
-        // a rebuild is not a rebuild: any 0.20.x would satisfy it and the generated
-        // parser would differ. The exact version is pinned here and in the note below
-        // precisely so that this is a decision and not an accident of a lockfile
-        // nobody reads.
-        pinnedExactly: true,
-        depOf: { package: "tree-sitter-css", version: "0.20.0" },
-      },
-      patches: [
-        "use_statement / forward_statement: Sass's module system has optional clauses these rules never allowed — `as <namespace>`, `as *`, `with (<config>)`, and `show`/`hide <members>` on @forward. As written each rule was `seq('@use', $._value, ';')`, so every `as` clause was an ERROR: `@use 'sass:map';` parsed and `@use 'sass:map' as map;` — the form Sass documents — did not. Measured over 244 .scss files this was the single largest residual class, the bare token `as` at 277 error spans. Two sub-fixes were needed and the first attempt at each was wrong in an instructive way. (a) `with (<config>)` was first written to allow only `$._value`, so `with ($a: 1)` matched the `$a` and then reported `(UNEXPECTED '1')` — which reads like a value problem and is actually a missing `:` separator, because Sass's clause is a list of `$name: value` PAIRS. (b) the `as` clause was first written with `$._value`, which admits `binary_expression` and collided with the dashed-prefix form. The `as` target is therefore `choice($.identifier, $.variable, $._concatenated_identifier)`, and the whole clause is modelled in the grammar's OWN loose style (the `$._value, repeat(seq(optional(','), $._value))` pattern already at lines 86-87) rather than with a strict grammar for Sass config objects: a strict model is a second research project, and the analyzer reads these clauses by SLICING node.text, never by naming a node type, because slicing text cannot fall behind a grammar change (M60 R10). Repro: @use 'sass:map' as map;",
-        "declaration + parameter: Sass's `!default` / `!global` flag. The declaration rule allowed `optional($.important)` and nothing else, so `$a: 1 !default;` — the most common line in a Sass variable file, and the entire point of a configurable default — was an ERROR, at 210 occurrences across the corpus. Applied at BOTH sites: a variable declaration and a mixin/function parameter default, which is where Sass puts it most often (`@mixin button($bg: $grey !default)`). Repro: $x: 1 !default;",
-        "DECLARED, NOT PATCHED: `@forward 'x' as prefix-*;`, the PREFIX form of the `as` clause. It requires `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression` (a `$._value` can itself be `a - b`). It occurs ZERO times in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. The A/B carries it as `forward-as-dashed-prefix` with verdict `unchanged-broken` rather than omitting it, so the unsupported form is named in the evidence instead of absent from it. A grammar conflict taken on for a construct with no evidence is a risk incurred on somebody else's behalf.",
-      ],
-      patchEvidence:
-        "validation/m14/results/scss-grammar-ab.json — an A/B over the 244 non-empty .scss files in 4 corpora (element-plus, phpmyadmin, vue-core, vue-element-admin), instrument script/m14/tmp/scss-grammar-ab.ts. Both patches together: 73 -> 149 files parsing clean (29.9% -> 61.1%), 76 FIXED, 0 REGRESSED, ERROR nodes 5,624 -> 3,900, and all 3 regression controls (`!important`, mixin+include, `#{$p}` interpolation) unchanged-clean; and the byte-reproducibility check that the locally generated parser matches the package's own shipped src/parser.c exactly (73/244 and 5,624 ERROR nodes on both) — which is the measurement that identifies the base dependency version rather than assuming it. Per corpus: element-plus 16 -> 90, phpmyadmin 50 -> 52, vue-core 1 -> 1, vue-element-admin 6 -> 6, which is why the instrument reports per-repo rather than an aggregate — 17.6% average is element-plus at 16/160 and phpmyadmin at 50/74 wearing the same number. This is the FIRST grammar lane whose win is measured on a corpus the grammar was not written for: 0.20.0 is the version the package declares, not one chosen for the corpus.",
-      buildRequires: [
-        "`npm install --no-save tree-sitter-css@0.20.0` inside grammars/tree-sitter-scss/ before `tree-sitter generate`. grammar.js line 9 is `const CSS = require('tree-sitter-css/grammar')`, so the build is NOT self-contained and fails with `Cannot find module 'tree-sitter-css/grammar'` without it.",
-        "tree-sitter.json is REQUIRED for ABI 15 and is NOT in the npm tarball. Without it `tree-sitter generate` warns and silently emits ABI 14. It was authored here, and the wired bytes are ABI 15.",
-      ],
-    },
-    source: {
-      state: "vendored",
-      dir: "grammars/tree-sitter-scss",
-      note:
-        "grammar.js (upstream 1.0.0 byte-for-byte except the two marked LOCAL PATCH hunks) + src/scanner.c + package.json + README.md, from the npm tarball tree-sitter-scss@1.0.0, PLUS an authored tree-sitter.json. The external scanner is REQUIRED, not optional: its TokenType enum is exactly CONCAT, which backs `_concatenated_identifier` and therefore SCSS interpolation such as `#{$a}-suffix`. It is the fourth grammar in this repo whose hand-written scanner needed an explicit `.gitignore` negation, because the blanket `grammars/tree-sitter-*/src/*` rule silently untracks it. The GENERATED src/parser.c is deliberately not vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs. THERE IS NO LICENSE FILE IN THE TARBALL — the only evidence of the licence is package.json's `\"license\": \"MIT\"` field, which is a claim by the publisher rather than a licence text. That is recorded here rather than papered over with a substituted file.",
-    },
-    decision:
-      "Pin the local patched rebuild, and require the source↔wasm proof rather than a hash. The alternative was to leave .scss on the CSS grammar, which is where it was routed: 43 of 244 files parsed clean (17.6%) with 30,767 ERROR nodes, because the CSS grammar has no `$variables`, no `@mixin`/`@include`, no `@use`/`@forward` and no interpolation. The stock SCSS grammar was NOT sufficient on its own and was measured before being adopted: 73/244 (29.9%), i.e. better than CSS but still leaving 171 files failing, which is why two patches were written rather than the package being wired as shipped. The trade is recorded rather than hidden: the wired bytes are ours, they are an ABI 15 build of a dependency-based grammar, and 96 of 244 corpus files still fail and are DECLARED rather than claimed.",
-    alternatives: [
-      {
-        option: "leave .scss routed to the CSS lane and declare the dialect unsupported",
-        measured:
-          "Rejected on measurement: 43/244 clean (17.6%) and 30,767 ERROR nodes, and the lane would carry a routing claim for a dialect its grammar cannot read. This is the status quo and it is the thing the SCSS lane exists to replace.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
-      },
-      {
-        option: "wire tree-sitter-scss@1.0.0's shipped src/parser.c as-is, unpatched",
-        measured:
-          "Rejected on measurement: 73/244 clean (29.9%). It is 1.4x better than the CSS grammar and still leaves 171 files failing, dominated by the `as` clause at 277 error spans. Its value was as the BASE — and it did establish something worth keeping, since the locally generated parser reproduces its shipped parser.c exactly (73/244, 5,624 ERROR nodes both), which is how the 0.20.0 dependency was identified rather than assumed.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
-      },
-      {
-        option: "rebuild SCSS on top of this repo's patched tree-sitter-css 0.25.0 instead of the 0.20.0 it declares",
-        measured:
-          "NOT POSSIBLE as written, and worth recording because it was the more attractive option — it would have inherited all four CSS patches for free. tree-sitter-scss 1.0.0 is CommonJS (`module.exports = grammar(require('tree-sitter-css/grammar'), {...})`) and tree-sitter-css 0.25.0 ships an ES-module grammar.js, so `require` of it fails with `ReferenceError: grammar is not defined` under the CLI's loader. Bridging it needs either a CJS shim that re-exports the ESM grammar or a port of the SCSS extension to ESM, and the port would also have to reconcile rule-name drift between 0.20 and 0.25 across the ~20 rules the extension overrides. That is a real project with a real risk of silent shape change, and it was declined in favour of two measured patches. The cost of declining is that SCSS does not inherit the CSS lane's `url(../)`, float-keyframe, IE-`progid:` or at-rule-ident fixes; measured cost is unquantified, which is itself the honest statement.",
-        artifact: "validation/m14/results/scss-grammar-ab.json",
-      },
-    ],
-    evidence: [
-      "validation/m14/results/scss-grammar-ab.json",
-      "validation/m14/results/wasm-provenance-census.json",
-      "reviews/m49-css-review.md",
-    ],
-    // Deliberately EMPTY, and that is a fact rather than an omission. Every other
-    // vendored lane lists a copy of the same wasm elsewhere on this machine so the
-    // pin can prove the wired bytes are the ones that were compared. tree-sitter-scss
-    // 1.0.0 ships NO prebuilt wasm at all (its `prebuilds/` are native node
-    // bindings), so there is nothing to compare against and a path that resolves to
-    // nothing would render as `absent` in the census — a row that looks like a
-    // finding and is really just a wrong assumption in this file. The equivalent
-    // proof is behavioural and lives in the A/B: the locally generated parser
-    // reproduces the package's shipped src/parser.c exactly.
-    copies: [],
-    notVendored: [
-      { path: "prebuilds/, bindings/, binding.gyp", why: "native node bindings for 4 platforms; not parser source, and the engine loads the wasm" },
-      { path: "src/parser.c, src/grammar.json, src/node-types.json, src/tree_sitter/", why: "generated by `tree-sitter generate`; the source↔wasm proof runs on the generated JSONs instead" },
-      { path: "queries/", why: "syntax highlighting queries; no consumer in this repo reads them" },
-      { path: "LICENSE", why: "NOT PRESENT IN THE TARBALL. tree-sitter-scss@1.0.0 ships no licence file; package.json declares `license: MIT` and nothing more. Recorded as absent rather than substituted." },
-      { path: "node_modules/ (tree-sitter-css@0.20.0)", why: "a build-time dependency, not source. The exact version is recorded in provenance.base.depOf and in buildRequires, because the package's own range is `^0.20.0` and a range is not a pin." },
-    ],
-  },
-
   css: {
     wired: "wasm/tree-sitter-css.wasm",
     provenance: {
@@ -324,11 +204,9 @@ export const LANES: Record<string, LaneDecision> = {
       patches: [
         "keyframe_block: add float_value to the step choice — `33.3%` is a float_value, not an integer_value, and float_value already exists in this grammar, so no node type is added (measured 151 -> 151). Repro: @keyframes f { 33.3% { color: yellow } }",
         "plain_value: allow a LEADING `.` — an unquoted relative url() could not lex at all, because the token ended at the first `.` and the `..` became two ERROR nodes; `.` was already legal in the token's BODY, so only the leading repeat lacked it. The required /[a-zA-Z]/ is deliberately RETAINED so a value made only of punctuation still cannot match and the token cannot swallow structure. Repro: .a { background-image: url(../img/x.svg); }",
-        "parenthesized_value: `sep(choice(',', ';', '='), repeat1($._value))` — an IE filter argument list is `name = value` PAIRS, and `parenthesized_value` allowed exactly ONE value, so `progid:DXImageTransform.Microsoft.Alpha(Opacity=50)` could not lex and the whole filter was ERROR. The node types 151 -> 152 and the ONE addition is this rule's own generated `parenthesized_value_repeat1`; 0 field changes. Measured over 533 corpus files: 37 fixed, 0 regressed, 0 collateral, grails-core 20.94% -> 1.57%. Repro: .a { filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=50); }",
-        "at_rule: an optional leading RUN OF IDENTIFIERS before the comma-separated query list, aliased to `keyword_query` so no visible node type is added (measured: the new rule is hidden — absent from node-types.json and from every parse tree; only the wasm symbol table grows 152 -> 153). `@custom-media --narrow (max-width: 400px)` and `@font-feature-values Body Text { … }` ERRORED outright, because a prelude had to be a comma-separated query list. The `prec(1)` on the identifier resolves the leading-identifier ambiguity toward the new run, and it is safe BECAUSE both readings alias to the same node, so the choice changes which parse wins and not what a consumer sees. Repro: @custom-media --narrow (max-width: 400px);",
       ],
       patchEvidence:
-        "Three A/B artifacts, one per patch, all over the same 533 corpus files across 13 repositories (instrument script/m14/tmp/css-grammar-ab.ts). `css-grammar-ab-url-float.json` — 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change. `css-grammar-ab-progid.json` — 37 fixed, 0 regressed, 0 collateral, 0 field change. `css-grammar-ab-custom-media.json` — 0 fixed, 0 regressed, 0 collateral, 0 shape deltas, 0 field changes: this patch's justification is its MINIMAL REPRODUCTION, not a corpus win, because no corpus file uses `@custom-media` or `@font-feature-values`, which is exactly WHY they were broken and unmeasured. Corpus-wide 61 error files -> 24. Plus reviews/m49-css-review.md. Every hunk carries its own repro in grammar.js under a `LOCAL PATCH` marker, the header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison, and — because a hash comparison cannot catch a REVERTED patch — validation/m14/fixtures/css/ie-filter-arguments and declarations-the-corpus-never-uses both parse their own construct, so undoing a hunk fails a fixture even though source<->wasm still matches.",
+        "validation/m14/results/css-grammar-ab-url-float.json (A/B over 533 corpus files across 4 repos: 19 files fixed, 0 regressed, 0 node-count delta on files that already parsed clean, 0 node-type and 0 field change), plus reviews/m49-css-review.md. Both hunks carry their own repro in grammar.js under a `LOCAL PATCH` marker, and the file's header states the rebuild command and the sha-is-not-reproducible measurement so the next editor is not misled by a hash comparison.",
     },
     source: {
       state: "vendored",
@@ -1240,8 +1118,11 @@ export const LANES: Record<string, LaneDecision> = {
     copies: [{"label": "upstream pristine 0.3.11 (kept for A/B, NOT wired)", "path": "$HOME/fixtures/sql/grammar/pristine-sql.wasm"}, {"label": "V3 candidate (opaque DO, REJECTED)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v3.wasm"}, {"label": "V8 (WIRED: psql meta-commands as an extra, quoted LANGUAGE, C-language body)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v8.wasm"}, {"label": "V6 (plpgsql scaffolding; the previous wired bytes)", "path": "$HOME/fixtures/sql/grammar/patched-sql-v6.wasm"}],
     notVendored: [{"path": "src/parser.c", "why": "generated by `tree-sitter generate`; 43 MB, and per the xml/hcl lanes a tracked 43 MB generated file is not vendored"}, {"path": "src/grammar.json, src/node-types.json", "why": "generated; the offline source<->wasm proof is not applicable for this lane (see sourceVsWasm)"}, {"path": "bindings/, binding.gyp, Makefile, CMakeLists.txt, Cargo.toml, go.mod, pyproject.toml, setup.py, Package.swift, queries/, test/", "why": "native/package-manager bindings, editor queries and upstream's test corpus; the engine wires none of them"}],
   },
-  json: {
+    json: {
     wired: "wasm/tree-sitter-json.wasm",
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
         "NOT provenanced to a published version, and the lane says so rather than guessing. Two builds of " +
         "`tree-sitter-json` are in circulation on this machine and they are NOT the same artifact: the " +
         "wired bytes are sha256 fdb5219abe058369… / 5,961 B and the ~/.bb registry copy is " +
@@ -1266,11 +1147,16 @@ export const LANES: Record<string, LaneDecision> = {
         "`wasm/tree-sitter-json_schema.wasm` is NOT this lane's grammar and is deliberately unwired: it is a " +
         "YAML-family schema backend selected at compile time by -DYAML_SCHEMA (6 node types, no fields), and " +
         "it is listed under notVendored for that reason.",
+    },
+    source: {
       state: "not-obtainable-offline",
+      note:
         "grammars/ has no tree-sitter-json directory, so there is no vendored grammar.js, no node-types.json " +
         "and no scanner to diff against the wired bytes. The source<->wasm check that haskell, elixir and " +
         "yaml run cannot run for this lane, and the pin therefore rests on byte identity plus the enumerable " +
         "surface rather than on a source diff.",
+    },
+    decision:
       "Pin the wired bytes by sha256 + the full enumerable surface, record the registry copy as DIVERGENT " +
       "rather than as a byte-identical copy, and treat the id-order digest as the discriminator. The " +
       "divergence is not resolved here because it cannot be resolved offline: two versions are in " +
@@ -1278,20 +1164,32 @@ export const LANES: Record<string, LaneDecision> = {
       "registry copy as a matching `copies` entry would make this lane read as fully provenanced when the " +
       "product's own bytes are not the ones a compiled build resolves, which is the opposite of what a pin " +
       "is for. It is listed so the gate can fail on it.",
+    alternatives: [
+      {
         option: "assert byte-identity against ~/.bb/wasm/tree-sitter-json.wasm",
+        measured:
           "REFUSED, and measurably so: fdb5219abe058369… (5,961 B) vs d2119fb98d591271… (5,596 B) are " +
           "different artifacts, not two copies of one.",
         artifact: "sha256 of both files; measureSurface on both",
+      },
+      {
         option: "pin on the named-type set alone, since that is what the analyzer matches",
+        measured:
           "REFUSED as insufficient: the two builds have identical named SETS (12) and would pass as one, " +
           "while differing in anonymous tokens and in every named type's numeric id. A pin that cannot tell " +
           "two builds apart cannot detect a re-point.",
         artifact: "named-set and id-order digests of both builds",
+      },
+      {
         option: "wire the newer build (the one with fewer leaked helper tokens) to make dev and compiled agree",
+        measured:
           "NOT TAKEN, and out of scope for a lane: choosing which published version the product loads is a " +
           "product decision with a blast radius across every consumer of the wasm registry, and this lane's " +
           "correctness does not depend on it because the analyzer is name-matched.",
         artifact: "resolveWasm in src/ast/engine.ts prefers the registry in compiled mode",
+      },
+    ],
+    evidence: [
       "wired sha256 fdb5219abe058369e16897aaa11eecf47ef4f546…" + " (5,961 B)",
       "registry copy sha256 d2119fb98d5912719b13f9458574f8608d2d29df… (5,596 B)",
       "surface (wired): 26 ids, 26 unique names, 12 named, 14 anon, 2 fields",
@@ -1299,74 +1197,15 @@ export const LANES: Record<string, LaneDecision> = {
       "named vocabulary, both builds: array comment document escape_sequence false null number object pair string string_content true",
       "idOrderDigest wired da24914332a93410f5c13ca48f5163ccc3173d2bfe17eccf051be64ac701bc74 vs registry bcf795b62c53db5b5f6873edb4b67b51fcbc4fbcb3703a819efe3eb7b50aad49",
       "named ids are offset by exactly one between builds (wired escape_sequence=9, registry escape_sequence=8)",
+    ],
     copies: [{ label: "registry (DIVERGENT — not byte-identical, see decision)", path: "~/.bb/wasm/tree-sitter-json.wasm" }],
-  yaml: {
-    wired: "wasm/tree-sitter-yaml.wasm",
-      kind: "byte-identical-to-npm-tarball",
-      package: "@tree-sitter-grammars/tree-sitter-yaml",
-      version: "0.7.1",
-      dir: "grammars/tree-sitter-yaml",
-        "grammar.js + tree-sitter.json + package.json + README.md + LICENSE + src/ (scanner.c, the three schema backends schema.core.c/schema.json.c/schema.legacy.c, the generated grammar.json and node-types.json, and the tree_sitter/ runtime headers), byte-for-byte from `npm pack @tree-sitter-grammars/tree-sitter-yaml@0.7.1`. The GENERATED src/parser.c (1.29 MB) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source<->wasm check below runs on node-types.json/grammar.json, not on parser.c. Unlike haskell and elixir, the generated JSONs ARE tracked here -- see the .gitignore entry, which explains that a clone carrying grammar.js but not node-types.json can rebuild a working parser and cannot run the proof.",
-      "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/real-yaml-analyzer.md) into a gated contract, and changes nothing the product loads.",
-        option: "ikatyang tree-sitter-yaml@0.5.0 (the fork parent)",
-        measured: "publishes no wasm -- the 0.5.0 tarball contains only src/parser.c, so it cannot be a wire candidate without a local build, and its last release predates the fork by four years",
-        artifact: "reviews/yaml/research-and-plan.md §2.1",
-        option: "rebuild the wire with -DYAML_SCHEMA=legacy to reach timestamp_scalar",
-        measured: "not attempted, and recorded as declined rather than as pending: it would replace the newest published bytes with a local build whose only gain is one scalar type, at the cost of making the lane's scalar typing disagree with every YAML 1.2 consumer that reads the same file. A pin is a claim about what is shipped; changing what is shipped is a different act with its own A/B (script/m14/verify-grammar-leaves.ts).",
-        artifact: "reviews/yaml/research-and-plan.md §4 (defect Y12) and §2.1",
-      "reviews/yaml/research-and-plan.md",
-      "script/m14/spec/yaml-completeness.json",
-      { label: "mirror", path: path.join(MIRROR, "tree-sitter-yaml.wasm") },
-      { path: "binding.gyp, bindings/, prebuilds/", why: "native bindings and prebuilds; not parser source" },
-      { path: "src/parser.c", why: "generated from grammar.js; 1.29 MB; `tree-sitter generate` rebuilds it" },
-      { path: "tree-sitter-core_schema.wasm, tree-sitter-json_schema.wasm", why: "the other two schema builds as PREBUILDS; the backend is selected at COMPILE time by -DYAML_SCHEMA, so the choice belongs in the source tree (the three schema.*.c files), not in three wired wasms" },
-      { path: "tree-sitter-yaml.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
-  powershell: {
-    wired: "wasm/tree-sitter-powershell.wasm",
-      base: { repo: "airbus-cert/tree-sitter-powershell", version: "0.26.4" },
-        "G5a/b: PowerShell 7 null-coalescing `??` and ternary `? :`, as two HIDDEN precedence levels",
-        "G5c: PowerShell 7 null-conditional `?.` and `?[`, added inside the rules that already define `.` and `[` so they inherit their associativity and precedence",
-        "G1: a script-level `param()` block after any other statement, reached through a statement-level form that deliberately omits the `attribute_list` and is ALIASED back to the `param_block` node name",
-        "G6: a command argument list whose values include a BARE WORD — one alternative whose elements are `generic_token`, which is DISJOINT from `array_literal_expression` (whose elements are `unary_expression`) by the deciding token, so it cannot consume a comma that rule owns",
-        "G7: a command ARGUMENT that is a sigil-led path (`$PSScriptRoot/x`, `$env:TEMP\\a.txt`), a new token declared ONLY inside `_command_argument` so the state-driven lexer cannot produce it in the assignment right-hand side where `$a/$b` is division and must stay so",
-        "G8: `+` as .NET's nested-type separator in `type_name` (mirroring the `.` arm that already exists for the same reason), and `=` admitted to the DOUBLE-DASH branch of `command_parameter` only, because `--flag=value` is one argv token for a native command while PowerShell's own `-Name=value` is not valid",
-        "G9: a generic TYPE ARGUMENT may be a bracketed type (`Dictionary[[string],[int]]`), because `generic_type_arguments` could only take a `type_spec` and a `type_spec` can only express the SUFFIX array form `string[]` — the leading `[` of a `type_literal` had no route, so the derivation did not exist and the parser reached for the only one it had and failed",
-        "G10: a value GLUED to a double-dash parameter (--flag=..., --flag=$var), added as a PARSER alternative on the existing `command_parameter` and deliberately NOT as a second token — the third design, after two rejections whose causes are recorded in the decision",
-      patchEvidence: "validation/m60/results/powershell-grammar-g5b-ab.json + validation/m14/results/M14.0.F11.powershell.json + validation/m60/results/powershell-g5-g3-adjudication.txt + reviews/powershell/grammar-worklist.md",
-      dir: "grammars/tree-sitter-powershell",
-        "grammar.js (PATCHED — see provenance.patches) + src/scanner.c + src/tree_sitter/{parser,alloc,array}.h + package.json + tree-sitter.json + LICENSE + README.md. The grammar source is byte-for-byte from the npm tree-sitter-powershell@0.26.4 tarball EXCEPT grammar.js, which carries one additive hunk; `tree-sitter diff` against the tarball's own grammar.js is the record of what changed, and it is three rules and no edit to an existing one. The generated src/parser.c (4.5 MB) is NOT vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs, never on parser.c. Unlike the css/cpp vendors this lane's src/ holds only the hand-written scanner, so the .gitignore rule that drops `grammars/tree-sitter-*/src/*` — the rule that silently cost cpp its scanner and css its own (see the two negations above) — needed a THIRD negation for this lane, because tree-sitter-powershell's external scanner is also named src/scanner.c. The same trap, a third time, named by filename rather than by role.",
-"Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. (5) G1 is the largest of the lane's grammar classes and the only one whose fix NECESSARILY changes a clean file's tree. A script's `param` block must be its first STATEMENT, but `using` statements may precede it, and a .psm1 module is REQUIRED to declare `using module` when it needs types — so `using` + `param(…)` is the ordinary shape for any parameterised script that uses a type. Under the pinned grammar `param($Name)` after a `using` line is not a `param_block` at all but a `command` named `param` whose argument is a parenthesized expression, so the parameter is never declared. The dangerous part is that this class is INVISIBLE to hasError-keyed gates: measured over the repro battery, 7 of 8 cases lose every parameter and 6 of those 7 report hasError=FALSE with zero ERROR and zero MISSING nodes, so F1, F10 and the M12 ERROR-node census all read them clean. 33 corpus files carry the shape (16 powershell, 17 ansible), and the ansible side went from 98 ERROR / 23 MISSING to 35 / 2 with 17 more symbols declared. The patch is one statement alternative, and two alternatives were measured and rejected first. (a) Deleting `program`'s own `optional($.param_block)` and keeping only the statement form would have re-shaped 11 of 35 clean powershell files and 2 of 9 clean ansible files — ~30% of the clean corpus — which F11's G2 gate fails on. (b) Putting `param_block` itself into the statement set fixed all 8 cases and silently REGRESSED a different construct: at statement position a leading `[` then had two uses, and the deterministic resolution took the param-block one, so `[ValidateSet('a','b')]$mode = 'a'` stopped being one pipeline and became an ERROR holding the attribute plus a detached pipeline holding the assignment. It surfaced as a fixture failure, not a corpus number. tree-sitter reported a `[param_block, _statement]` conflict declaration UNNECESSARY on both attempts — the automaton separates those routes on the text, so it can choose, and it chooses wrong; the fix had to remove the competing route rather than reprioritise it, hence the attribute-less `_bare_param_block` ALIASED back to `param_block` so the analyzer's existing `case \"param_block\"` and its descendant-walk lookup both work and the grammar's 152 named types do not grow. The cost of dropping the attribute from the statement form was measured, not assumed: 16 powershell and 17 ansible files have `using` followed by a BARE `param(`, and ZERO have `using` followed by an ATTRIBUTED one, while an attributed `param` block that IS the first statement still parses through the pre-existing program-level rule. What F11 says, and what was done about it: G1 damage passes (135 → 135 files, sites 891 → 882, 0 newly damaged) and G3 output is PERFECT (+1 pair, 0 lost, 0 symbols vanished, 0 re-attributed). G2 identity FAILS on exactly 11 files, and that failure is the cost of the fix rather than damage from it — those 11 are the files whose leading `param` block re-parents from `program` into `statement_list`, and G3 reports that NOT ONE of the 11 changed analyzer output at all. The analyzer is parent-agnostic by construction: it finds `param_block` with `collectChildrenByType`, a descendant walk, and already handles a `param_block` nested under a `script_block`. A tree-shape change the product does not consume is a different claim from one that does not matter, and it is the claim the evidence supports. Two attempts to suppress the 11 with dynamic precedence are recorded in the grammar and both failed — `prec.dynamic(1)` on `program` is inert because `program` is the parent of both parses, and `prec.dynamic(-1)` on the statement route does not change the outcome while re-breaking the attribute-attach shape. (6) G6 is the largest class in the lane and the one whose SHAPE was decided by measurement rather than by taste. In the pinned grammar a comma-separated command argument list works for every value kind EXCEPT a bare word: `'deb', 'rpm'` parses, `$a, $b` parses, `(1), (2)` parses, `1, 2` parses, and `deb, rpm` is 2 ERROR nodes. The reason is that `array_literal_expression` is `prec.left(seq($.unary_expression, repeat(seq(',', $.unary_expression))))` and a bare word is not reachable as a `unary_expression` — so the one value kind that matters most in command position, where an unquoted word is a command name or a bare argument, is the one that cannot form a list. Measured footprint: 245 parameter-form sites across both production corpora plus 2 module-surface bare sites, of which 8 are the `Export-ModuleMember` lines this lane's own `exports` reader is built to read. The first attempt at the patch was a bare `seq(',', tail)` among the `_command_element` alternatives. It scored 135 -> 107 damaged files, MISSING 139 -> 81, +253 pairs with 0 lost and 7 corpus files fixed — and was still wrong, because it stole the comma from INSIDE `array_literal_expression`: a two-element array became a one-element array plus an orphaned literal. G1 could not see it (error count 0 before and 0 after), the analyzer could not see it (byte-identical output on all 34 affected files), and `prec(-1)` on the comma element did not help because it was never a precedence tie. The admitted form is one alternative whose list elements are `generic_token`, which makes it disjoint from the array rule on the FIRST TOKEN of each element rather than merely lower-precedence than it. On the corpus: F11 G1 135 -> 110 damaged files with MISSING 139 -> 81, G2 identity 265 clean files with 0 tree differences, G3 +252 pairs with 0 lost and 0 symbols vanished — ADMISSIBLE — and the same 7 production files fixed with 0 broken that the rejected form fixed, without the shape change. The repro battery's named limits go 9 -> 7. (7) G7 is the LARGEST class in the lane — 1,002 sites in 155 files in `powershell` and 81 in 15 in `ansible`, 1,083 in 170 files — and the deciding token is an asymmetry inside one character class. `generic_token` is `token(/[^\\(\\)\\$\"\'\\-\\{\\}@\\|\\[\\`\\&\\s][^\\&\\s\\(\\)\\}\\|;,]*/)`: the CONTINUATION class allows `/` and `\\`, but the FIRST-character class excludes `$`. So `a/b` lexes as one token and `$a/b` cannot, and in PowerShell `$PSScriptRoot/x` is a single path argument. The battery had named this class `backslash-path`, which is wrong — `\\` and `/` fail identically and `Import-Module $PSScriptRoot` alone parses clean — and two of the battery's own controls were themselves broken, which is why the class was mis-named in the first place. The patch is a new token declared ONLY inside `_command_argument`. That scoping is the whole safety argument and it is structural rather than a matter of tuning: tree-sitter's lexer is driven by parse state, so a token valid only where a command argument is expected cannot be produced on the right-hand side of an assignment, where `$a/$b` is DIVISION and already parses correctly. Widening the shared `generic_token` instead would have changed the token in every position including that one. Four forms were built and three rejected before this one, and every rejection was caught by a different gate: (1) a HIDDEN token reported 0 ERROR nodes while the tree was `command_elements: (command_argument_sep)` — the argument silently GONE, which is worse than an error because an error is visible and a missing node is not, and which the micro-repro read as `ok` until the tree was printed instead of the error count; (2) without `prec(2)` the `variable` token's `reserved` precedence won and only a PREFIX of the path was consumed, so `$a/b` appeared to work while a `..` chain did not; (3) a run whose alternation required a TRAILING separator could not match any real path, since every real path ends in a segment. The fourth form fixed a measured loss rather than a refinement: a directory argument ends in a separator — `$testDataPath\\UserConfigProv\\` — and without an optional trailing separator the token matched only the prefix, leaving the final `\\` orphaned and costing 11 REAL cmdlet calls in one Pester file, verified by running the analyzer under both grammars (40 such calls pinned, 29 under the broken candidate) rather than inferred. Final measurement: F11 G1 damaged files 110 -> 87 with sites 755 -> 603, G2 identity 290 clean files with 0 tree differences, G3 +44 pairs against -121 — and every one of those 121 is a PATH-FRAGMENT FABRICATION: 87 name a file extension (`.txt`, `.psd1`, `.yaml`) and the rest name filename components, checked against the source (`Resolve-Path $TESTDRIVE/this.directory.is.invalid` was publishing `uses -> directory`, `uses -> is` and `uses -> invalid`). The 44 gained are real recovered calls, 18 of them `calls -> It` in Pester blocks that previously did not parse. Production corpora: 9 files fixed, 0 broken. The repro battery's named limits go 7 -> 6, and the powershell production draw's damaged files go 14 -> 10. (8) G8 is two one-character widenings, each mirroring a case the rule already had, and it is the highest-yield patch in the lane per site touched. `type_name` already recursed on `.` for a dotted type, so `+` — .NET's nested-type separator, as in `[System.Environment+SpecialFolder]` — is that same `choice` widened to a separator set, and it cannot interact with anything else because a type name's only other continuation is `.`. `command_parameter`'s class had no `=`, so `--flag=value` split at the `=` and the remainder fell to `assignement_operator`, which is not valid in command-argument position. `=` is admitted to the DOUBLE-DASH branch ONLY: a native command's `--flag=value` really is one argv token, whereas PowerShell's own parameters are `-Name value` or `-Name:value` and `-Name=value` is not valid, so widening the single-dash class would make an INVALID form parse. Measured footprints: 11 sites for the nested type and 26 for the flag, and the residue is recorded below. The yield is out of proportion to the diff because the patch makes whole regions parse. F11 G1 damaged files 87 -> 85 with ERROR LINES 8721 -> 3748, a 57% drop; G2 identity 313 clean files with 0 tree differences; G3 +608 pairs against 4 lost. The powershell production draw's damaged files go 10 -> 9 and its relationships 9,597 -> 10,111. The one symbol the gate reports as VANISHED is a promotion, and it was checked rather than argued. `build.psm1`'s `AddRemoteIfMissing` is a `param()` block parameter; parameters are carried as `parameters` METADATA on the owning function rather than as symbols, which is the lane's design and which `suppression-and-params-psb7` pins on a separate channel. Under the pinned grammar the region did not parse, so the parameter was carried NOWHERE and only the recovery reader named it, as a file-level variable. Under G8 the enclosing function parses and the parameter is carried as `Sync-PSTags -> AddRemoteIfMissing:Switch`, with its type read: 58 functions carrying 172 parameters against 57 and 171. The three remaining lost pairs (`uses -> describe` twice, `uses -> RepoRoot`) are the same recovery-fabrication class G7 removed, from a `git --git-dir=... describe` line. Residue, recorded rather than rounded off: `--flag=$var` with a VARIABLE value is still 1 MISSING, because the value after a glued `=` has no `command_argument_sep` and a bare `variable` is not among the value alternatives. That is 8 corpus sites, and PowerShell's canonical `-Name $var` is unaffected because that form does have the separator. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars. (9) G9 is the last of the big classes and the only one whose DIAGNOSIS I got wrong before the measurement forced it. I recorded this class as a genuine LR ambiguity between `array_type_name` and `generic_type_name` — the two are indeed both `seq($.type_name, '[')`, identical prefixes separated only by what follows the bracket — and I expected to fix it by reprioritising. It is not an ambiguity, and the automation said so twice while I was asserting otherwise. `prec(1)` on the generic branch of `type_spec` changed nothing at all, and declaring the conflict `[$.array_type_name, $.generic_type_name]` came back `unnecessary conflicts` from `tree-sitter generate` — which is the informative part: UNNECESSARY means the automaton has no conflict there, because the generic route was never reachable. That is the third time this lane has been told 'unnecessary conflict' (G1's `param_block` and G7's hidden token are the other two) and the lesson is the same each time: it means the competing route does not EXIST, so reprioritising cannot help and the fix has to be to add the missing derivation. The real gap is one token deep: `generic_type_arguments` was `seq($.type_spec, repeat(seq(',', $.type_spec)))`, and a `type_spec` reaches the array form only as `array_type_name` = `type_name` followed by `[` — the SUFFIX. PowerShell and C# both write the PREFIX form, `[string]`, which is a `type_literal`, and no `type_spec` production can begin with a leading `[`. So `[Dictionary[[string],[int]]]` had no derivation at all; the parser took the only route available (`array_type_name` on `Dictionary[`), expected `]`, found `[`, and produced `ERROR(array_type_name(Dictionary[))` with the remainder of the line falling out as a separate expression — which is why the damage looked like an unrelated downstream error. The admitted patch widens `generic_type_arguments`' element to `choice($.type_spec, $.type_literal)`. It is additive, it needs no conflict declaration, and it is disjoint from the existing form on the FIRST TOKEN of the argument, which is the same disjointness argument that made G6 and G7 safe rather than merely lower-precedence. A process finding worth the same record as the patch, because it changed how the work was done: `tree-sitter parse` in the vendored grammar directory compiles natively and answers in about 14 SECONDS, against 19 MINUTES for the emscripten `tree-sitter build -w` that the F11 gate needs. Every A/B for this patch was taken natively first — 691 corpus files, damaged 126 -> 123, ERROR 803 -> 788, MISSING 29 -> 27, with the six control forms checked case by case — and the wasm was built once, only after the native sweep said the patch was a win. The corollary trap cost one cycle: `tree-sitter build --output x.wasm` emits an ELF shared object, not a wasm, unless `-w/--wasm` is passed, and web-tree-sitter rejects it with `need to see wasm magic number` — a `.wasm` extension is not a request for a wasm. F11 on the built candidate: G1 damaged files 85 -> 82 with sites 580 -> 560 and MISSING 85 -> 71, fixed 3, newly damaged 0, worse 0; G2 identity 315 clean files with 0 tree differences; G3 +2 pairs against 2 lost, and the verdict is INADMISSIBLE. Both 'lost' pairs are MOVES, verified from the gate's own added list rather than argued from the source, and they are a NEW instance of this lane's recurring false negative: the first three were a pair attributed to a recovery fabrication, and this one is a pair whose TARGET GOT MORE PRECISE. Generics.Tests.ps1:44 is `$x = [dictionary[[string], [int]]]::New()`; the pinned grammar could not parse the type literal, so the analyzer recovered a method named `int::New` and published `calls -> int::New`, attributing the static call to a type ARGUMENT rather than to the constructed type that is its actual receiver. Under G9 the same line publishes `calls -> dictionary[[string], [int]]::New`. Conversions.Tests.ps1:493 is `[Func[[E], [object]]] $f = $n.GetC`, and the edge moves from `uses -> object` to `uses -> Func[[E], [object]]` — from the innermost bareword to the full type reference that owns the span. Same line, same label, strictly better target, in both cases; F11 compares (label,target) as strings and so cannot tell 'more precise' from 'gone'. Production corpora: the powershell draw's damaged files go 9 -> 8 and its MISSING nodes halve, 12 -> 6, with its relationships flat at 10,111 because both moved pairs live in files outside the 49-file draw.  (10) G10 is the class the lane's own gate nearly forbade, and the reason is the most reusable finding in this record. A value GLUED to a double-dash parameter — `--git-dir=\"$RepoRoot/.git\"`, `--flag=$var`, `--a=1` — published no edge, and the reason was that every value alternative in `_command_argument` begins with `command_argument_sep` and a glued value has none, so `redirection` won the value instead. The failure is not an error but a FABRICATION: the tree becomes a redirection carrying a MISSING `>`, which is invisible to F1, F10 and the M12 ERROR-node census, and the analyzer then publishes the value as a redirected file. Two prior measurements made it worse than invisible — on the first run of the A/B harness, which counted only ERROR, `--git-dir=$R` and `--a=1` were reported as CLEAN. Two designs were built and REJECTED before the third, and both rejections are about the LEXER rather than the parser. Attempt 1 added a `_glued_command_parameter` token requiring a trailing `=`, with `token(prec(1, ...))`, reasoning that lexical precedence would make it win exactly the ties it needed. F11 returned INADMISSIBLE: 274 clean files changed tree shape, 71 symbols changed owner, 19 pairs lost. The cause is that tree-sitter resolves LEXICAL precedence BEFORE LENGTH, so `prec(1)` made the glued token win even when its match was SHORTER — and `--flag=alnum`, which `command_parameter` matches whole and which is CLEAN across the corpus, was split into a parameter plus a value everywhere. Attempt 2 dropped the precedence, reasoning that length would then decide; that is also unworkable, because two tokens matching the SAME text at the SAME length is unresolvable by precedence OR by length, and `--a=1 --b=2` measured 2 ERROR where the pinned grammar had one SILENT MISSING. The third design has NO SECOND TOKEN. It is a PARSER alternative — `command_parameter` followed immediately by a literal or a variable, with no separator — and `command_parameter` itself is left byte-for-byte as it was, which is the entire safety argument: with nothing about the lexer moving, `--flag=alnum` cannot change shape. CORRECTION, and it is the reason this paragraph is longer than the others. The native sweep said 0 clean files changed shape, 7 became clean and 0 became broken, and the 7 was WRONG about the product. F11 runs on web-tree-sitter 0.25.9 and reported G1 fixed 0 and G3 at ZERO changed pairs: on the runtime the product actually loads, this patch is INERT. The 7 were an artefact of the native CLI being 0.26.9, and the same bytes parse differently under the two — the version skew this lane has now been bitten by repeatedly, and the first time it has bitten a patch's BENEFIT rather than its safety. What the native sweep DID establish is the half that matters for admissibility: 0 clean files changed shape, which F11 then confirmed on its own runtime at 0 differences over 318 clean files. F11 then confirmed G2 at 0 tree differences over 318 clean files and G3 at ZERO changed pairs. `generic_token` is deliberately absent from the value choice for the same reason it is absent from attempt 1: `--flag=alnum` is clean today because `command_parameter` matches the whole token, so admitting `generic_token` would split that clean node into two children. The generalisable finding is the one this lane has now paid for three times: when a construct is damaged because a TOKEN cannot reach far enough, adding a token moves the LEXER, and every clean file that relied on the old token's full extent is collateral. The fix belongs in the PARSER unless the token itself is wrong. The id digest is unchanged at 429 ids / 152 named types for exactly this reason — a parser alternative adds no node type, so no analyzer written against the old shapes is re-pointed. F11's own G1 row shows 0 fixed and G3 shows zero changed pairs. The first reading of that was a SAMPLE-CAP explanation — the gate caps at 400 files per corpus and the 7 the full sweep found are outside it. That explanation was checked and is WRONG: re-parsing the failing cases directly through web-tree-sitter 0.25.9 reproduces the errors, so the sample never saw a fix because there was none to see on this runtime. The patch is kept because it is ADMISSIBLE and free — G2 0 differences over 318 clean files, G3 zero changed pairs, id digest unchanged at 429/152 — not because it is known to help. A patch that changes nothing on the product runtime should not be described as a repair, and the grammar's own record now says so. The 38-site and 10-site corpus footprint is spent; what remains in this class is recorded below as unmeasured rather than as a plan.",
-        option: "G5c as a new precedence level, or `?.[` for element access",
-          "REJECTED on measurement, and both halves of it came from the corpus rather than from taste. The corpus target disagrees with the documentation on the element-access form: PowerShell's own test/powershell/Language/Operators/NullConditional.Tests.ps1 uses `?[` (6 × `?[0]`, plus `?[tb]`, `?['a']`, `?[-2]`, `?[0..2]`, `?[0,1]`, `?[]`, `?[1234]`) and never `?.[`, so a `?.[` implementation would have satisfied the docs and none of the corpus. And a precedence LEVEL was rejected for the same reason G5a's named levels were: `?.` binds exactly like `.` and `?[` exactly like `[`, so the correct edit is one `choice` arm inside the rule that already defines the twin, inheriting its associativity — which is also what makes the corpus's `${psObj}?.name?.nonExistent` chain and its `(Get-Item $TestDrive)?.EnumerateFiles()?.Name` compose without a new level at all.",
-        artifact: "validation/m60/results/powershell-grammar-g5c-ab.json",
-        option: "G5 with the two precedence levels left NAMED (the first attempt)",
-          "REJECTED on measurement, and it is the most instructive rejection in this lane. It scored a clean win on every count the repro battery reports — 2 of 12 named limits fixed, 0 regressions, all 9 controls held — and the collateral gate passed too, 0 files broken. It was still the wrong patch, and only the SHAPE delta caught it: a named level emits its node in the pass-through case as well, so adding two levels wrapped EVERY expression in the language and produced 9,046 `coalesce_expression` and 9,038 `ternary_expression` nodes across 49 corpus files, re-pointing an analyzer written against the old shapes while every other number said 'pure win'. Hiding both levels makes the rules inline, so an expression using neither operator produces exactly the tree it produced before and F11's G2 identity gate passes by construction rather than by luck.",
-        artifact: "validation/m60/results/powershell-grammar-g5b-ab.json",
-        option: "the previously wired version, tree-sitter-powershell@0.25.10 (sha 1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154, 983,236 bytes)",
-          "0.25.10 vs 0.26.4 unpatched, production corpora: damaged files 16/49 powershell and 15/24 ansible on BOTH; ERROR nodes 93 → 91 in ansible; named vocabulary IDENTICAL (152) so no analyzer is re-pointed; 0 files broken. The base upgrade buys the here-string fix and nothing else, which is why it is recorded as taken rather than as a repair.",
-        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
-        option: "patch the source while the wired bytes stay 0.25.10",
-          "REJECTED, and this is the reason the pin exists. The npm cache held 0.26.4 and the first draft of this lane's review called it the wired grammar's source; it is not. Rebuilding the cache's source gives 419 ids against the wired wasm's 415 and a different id-order digest, so a hunk written against that grammar.js would have been a patch on a DIFFERENT grammar and every A/B number attributed to it would have been unattributable. Found by measuring the surface gap before writing any hunk, not after.",
-        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
-      "validation/m60/results/powershell-grammar-g1-ab.json",
-      "validation/m60/results/powershell-grammar-g5c-ab.json",
-      "validation/m60/results/powershell-g5c-g3-adjudication.txt",
-      "validation/m60/results/powershell-grammar-g5b-ab.json",
-      "validation/m60/results/powershell-g5-g3-adjudication.txt",
-      "validation/m14/results/M14.0.F11.powershell.json",
-      "validation/m60/results/powershell-grammar-upgrade-ab.json",
-      "validation/m60/results/powershell-surface.json",
-      "reviews/powershell/resolution.md",
-      "reviews/powershell/grammar-worklist.md",
-      { label: "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)", path: path.join(CACHE, "tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm") },
-      { path: "src/parser.c", why: "generated from grammar.js; 4.5 MB; `tree-sitter generate` rebuilds it" },
-      { path: "src/grammar.json, src/node-types.json", why: "generated from grammar.js; the source↔wasm check runs on these after regenerating them" },
-      { path: "bindings/, binding.gyp, prebuilds/", why: "native bindings, not parser source" },
-      { path: "queries/highlights.scm", why: "editor queries; the engine does not load them" },
-      { path: "tree-sitter-powershell.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
-  markdown: {
+  },
+    markdown: {
     wired: "wasm/tree-sitter-markdown.wasm",
     companionWasm: ["wasm/tree-sitter-markdown_inline.wasm"],
+    provenance: {
+      kind: "unnamed-build-sha-only",
+      chain:
         "NOT provenanced to a published version from inside this tree, and the lane says so rather than " +
         "guessing. `docs/analyzers/real-markdown-analyzer.md` records that " +
         "`script/m60/find-grammar-provenance.ts` matched the BLOCK wasm by exact sha256 against a published " +
@@ -1393,43 +1232,269 @@ export const LANES: Record<string, LaneDecision> = {
         "WHAT IS NOT ESTABLISHED: that these bytes are the 0.5.1 release, for EITHER grammar. The block wasm's " +
         "match is inherited from a doc; the inline wasm has no provenance claim at all, anywhere, and the pin makes " +
         "none. Re-deriving both needs network access to the release assets and is owed.",
+    },
+    source: {
       state: "not-obtainable-offline",
+      note:
         "grammars/ has no tree-sitter-markdown directory, so there is no vendored grammar.js, no node-types.json " +
         "and no scanner to diff against either wired wasm. The source<->wasm check cannot run for this lane in " +
         "either direction, and the pin therefore rests on byte identity, the enumerable surface, and the " +
         "name-not-id property of the analyzer. Stated rather than approximated.",
+    },
+    decision:
       "Pin BOTH grammars by sha256 + full enumerable surface, list the registry copies as byte-identical for each, " +
       "and declare the provenance class `unnamed-build-sha-only` rather than inheriting the doc's 0.5.1 claim as if " +
       "it had been measured in this round. The claim is plausible and cited; it is not established, and the " +
       "difference between those two is the whole subject of this record.",
+    alternatives: [
+      {
         option: "record `byte-identical-to-npm-tarball` for @tree-sitter-grammars/tree-sitter-markdown@0.5.1, on the strength of the lane doc's existing claim",
+        measured:
           "REFUSED as unsupported by this round. The census artifact the claim cites carries no markdown row, and " +
           "the class asserts the bytes ARE the published tarball's, which is stronger than 'a published artifact " +
           "hashes to these bytes' (a release asset is not the tarball). Recording the stronger class on the " +
           "weaker evidence is how a pin becomes a decoration.",
         artifact: "validation/m60/results/G-PROVENANCE.json (no markdown row); sha256 of both wasms vs the registry copies",
+      },
+      {
         option: "pin only the block grammar, as the other ten lanes do",
+        measured:
           "REFUSED, and it is the option this entry was written to close. The inline grammar supplies every `uses` " +
           "edge the lane emits, so pinning the block grammar alone would leave the load-bearing input unpinned — " +
           "and the F1 oracle had already been caught reading only the block grammar, which is how " +
           "`uri_autolink` and `email_autolink` sat in the dead-literal record for 35 days as branches that " +
           "'can never match' when both are live named types of the companion (ids 37, 38).",
         artifact: "audit-analyzer-grammar.ts EXTRA_GRAMMARS; validation/m14/grammar-audit-baseline.json (markdown 2 -> 0, repayment recorded)",
+      },
+      {
         option: "vendor the grammar source so the source<->wasm proof can run, as eight other lanes do",
+        measured:
           "NOT TAKEN in this round, and named as owed rather than dismissed. The source class is a release asset, " +
           "not an npm tarball, so 'vendoring the tarball tree' has no source tree to copy; obtaining the " +
           "repository's grammar.js and regenerating from it would be a build-identity question this round did not " +
           "answer.",
         artifact: "grammars/ (12 lanes vendored, no tree-sitter-markdown)",
+      },
+    ],
+    evidence: [
       "sha256 + size of both wired grammars, and of both registry copies, in this record",
       "the enumerable surface (ids/named/anon/fieldCount + three digests) for both grammars, in this record",
       "validation/m14/grammar-audit-baseline.json — markdown 2 -> 0, with the repayment that the F1 oracle was missing the companion",
       "validation/m60/results/G-PROVENANCE.json — has NO markdown row, which is why the provenance class is unnamed-build",
       "docs/analyzers/real-markdown-analyzer.md — the two-grammar design and the inherited 0.5.1 claim",
+    ],
+    copies: [
       { label: "wasm registry copy of the block grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown.wasm") },
       { label: "wasm registry copy of the INLINE companion grammar", path: path.join(HOME, ".bb/wasm/tree-sitter-markdown_inline.wasm"), of: "wasm/tree-sitter-markdown_inline.wasm" },
+    ],
+    notVendored: [
       { path: "grammar.js / src/grammar.json / src/node-types.json", why: "not vendored; the package publishes a prebuilt per-release wasm, so there is no tarball source tree to copy byte-for-byte" },
       { path: "tree-sitter-markdown_inline.wasm", why: "the wired companion bytes; they live at wasm/ and are pinned by sha here via companionWasm" },
+    ],
+  },
+    powershell: {
+    wired: "wasm/tree-sitter-powershell.wasm",
+    provenance: {
+      kind: "local-rebuild-from-vendored-source",
+      base: { repo: "airbus-cert/tree-sitter-powershell", version: "0.26.4" },
+      patches: [
+        "G5a/b: PowerShell 7 null-coalescing `??` and ternary `? :`, as two HIDDEN precedence levels",
+        "G5c: PowerShell 7 null-conditional `?.` and `?[`, added inside the rules that already define `.` and `[` so they inherit their associativity and precedence",
+        "G1: a script-level `param()` block after any other statement, reached through a statement-level form that deliberately omits the `attribute_list` and is ALIASED back to the `param_block` node name",
+        "G6: a command argument list whose values include a BARE WORD — one alternative whose elements are `generic_token`, which is DISJOINT from `array_literal_expression` (whose elements are `unary_expression`) by the deciding token, so it cannot consume a comma that rule owns",
+        "G7: a command ARGUMENT that is a sigil-led path (`$PSScriptRoot/x`, `$env:TEMP\\a.txt`), a new token declared ONLY inside `_command_argument` so the state-driven lexer cannot produce it in the assignment right-hand side where `$a/$b` is division and must stay so",
+        "G8: `+` as .NET's nested-type separator in `type_name` (mirroring the `.` arm that already exists for the same reason), and `=` admitted to the DOUBLE-DASH branch of `command_parameter` only, because `--flag=value` is one argv token for a native command while PowerShell's own `-Name=value` is not valid",
+        "G9: a generic TYPE ARGUMENT may be a bracketed type (`Dictionary[[string],[int]]`), because `generic_type_arguments` could only take a `type_spec` and a `type_spec` can only express the SUFFIX array form `string[]` — the leading `[` of a `type_literal` had no route, so the derivation did not exist and the parser reached for the only one it had and failed",
+        "G10: a value GLUED to a double-dash parameter (--flag=..., --flag=$var), added as a PARSER alternative on the existing `command_parameter` and deliberately NOT as a second token — the third design, after two rejections whose causes are recorded in the decision",
+      ],
+      patchEvidence: "validation/m60/results/powershell-grammar-g5b-ab.json + validation/m14/results/M14.0.F11.powershell.json + validation/m60/results/powershell-g5-g3-adjudication.txt + reviews/powershell/grammar-worklist.md",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-powershell",
+      note:
+        "grammar.js (PATCHED — see provenance.patches) + src/scanner.c + src/tree_sitter/{parser,alloc,array}.h + package.json + tree-sitter.json + LICENSE + README.md. The grammar source is byte-for-byte from the npm tree-sitter-powershell@0.26.4 tarball EXCEPT grammar.js, which carries one additive hunk; `tree-sitter diff` against the tarball's own grammar.js is the record of what changed, and it is three rules and no edit to an existing one. The generated src/parser.c (4.5 MB) is NOT vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs, never on parser.c. Unlike the css/cpp vendors this lane's src/ holds only the hand-written scanner, so the .gitignore rule that drops `grammars/tree-sitter-*/src/*` — the rule that silently cost cpp its scanner and css its own (see the two negations above) — needed a THIRD negation for this lane, because tree-sitter-powershell's external scanner is also named src/scanner.c. The same trap, a third time, named by filename rather than by role.",
+    },
+    decision:
+"Pin the patched local rebuild, and record both decisions that got here, because both were measured and one of them was a correction. (1) The BASE was identified by fetching all four published versions and hash-matching: the wired bytes were tree-sitter-powershell@0.25.10 (sha 1d30b5a2…, 983,236 B), not the 0.26.4 sitting in the npm cache. The only thing that said so was the full id enumeration — 415 ids vs 419, id-order digests differing, and a source diff naming `_string_literal_immediate`, the here-string fix. The NAMED vocabularies are identical (152), so a pin comparing named types alone would have passed two revisions as one, and the first grammar hunk would have been written against a grammar the product does not load. (2) The 0.25.10 → 0.26.4 upgrade was measured before it was taken: 0 files fixed, 0 broken over 73 production corpus files, identical 152 named types and 14 fields, 2 fewer ERROR nodes in ansible. (3) The PATCH is G5, and its provenance is stronger than any other lane's because the base was PROVEN before it was patched: the unpatched 0.26.4 source rebuilds to the published prebuild BYTE-FOR-BYTE (same 1,088,467 B, same sha), so the patch is a delta against a known artifact rather than against whatever the source happened to be. A rebuild's sha is not a function of its source across toolchain versions (M49 W19), so the patch's own sha is a local build and the ID-ORDER digest is the part that can be required to match — 419 ids / ff141f18453a becomes 423 ids / 50274a750a87 with G5a/b and 425 ids / 2edf2378eb2c with G5c, and the 152 NAMED types are unchanged at every step, which is the property that keeps an analyzer written against the old shapes from being silently re-pointed. (4) BOTH patches are strictly additive to the rules they extend. G5a/b inserts two hidden precedence levels and edits no existing rule. G5c adds one `choice` arm to `member_access`, one to `element_access` and one to `invokation_expression`, changing no precedence number and no existing arm; the operators are `token.immediate` for the same reason the `.` in `member_access` is, so `?.` is not recognised across whitespace and `$c ? .5 : 1.5` cannot be stolen. The one form whose meaning changes is `$c?[1,2] : $y` written tight, which this grammar now reads as null-conditional indexing — which is what PowerShell itself does, so the ambiguity is resolved the way the language resolves it rather than invented here. (5) G1 is the largest of the lane's grammar classes and the only one whose fix NECESSARILY changes a clean file's tree. A script's `param` block must be its first STATEMENT, but `using` statements may precede it, and a .psm1 module is REQUIRED to declare `using module` when it needs types — so `using` + `param(…)` is the ordinary shape for any parameterised script that uses a type. Under the pinned grammar `param($Name)` after a `using` line is not a `param_block` at all but a `command` named `param` whose argument is a parenthesized expression, so the parameter is never declared. The dangerous part is that this class is INVISIBLE to hasError-keyed gates: measured over the repro battery, 7 of 8 cases lose every parameter and 6 of those 7 report hasError=FALSE with zero ERROR and zero MISSING nodes, so F1, F10 and the M12 ERROR-node census all read them clean. 33 corpus files carry the shape (16 powershell, 17 ansible), and the ansible side went from 98 ERROR / 23 MISSING to 35 / 2 with 17 more symbols declared. The patch is one statement alternative, and two alternatives were measured and rejected first. (a) Deleting `program`'s own `optional($.param_block)` and keeping only the statement form would have re-shaped 11 of 35 clean powershell files and 2 of 9 clean ansible files — ~30% of the clean corpus — which F11's G2 gate fails on. (b) Putting `param_block` itself into the statement set fixed all 8 cases and silently REGRESSED a different construct: at statement position a leading `[` then had two uses, and the deterministic resolution took the param-block one, so `[ValidateSet('a','b')]$mode = 'a'` stopped being one pipeline and became an ERROR holding the attribute plus a detached pipeline holding the assignment. It surfaced as a fixture failure, not a corpus number. tree-sitter reported a `[param_block, _statement]` conflict declaration UNNECESSARY on both attempts — the automaton separates those routes on the text, so it can choose, and it chooses wrong; the fix had to remove the competing route rather than reprioritise it, hence the attribute-less `_bare_param_block` ALIASED back to `param_block` so the analyzer's existing `case \"param_block\"` and its descendant-walk lookup both work and the grammar's 152 named types do not grow. The cost of dropping the attribute from the statement form was measured, not assumed: 16 powershell and 17 ansible files have `using` followed by a BARE `param(`, and ZERO have `using` followed by an ATTRIBUTED one, while an attributed `param` block that IS the first statement still parses through the pre-existing program-level rule. What F11 says, and what was done about it: G1 damage passes (135 → 135 files, sites 891 → 882, 0 newly damaged) and G3 output is PERFECT (+1 pair, 0 lost, 0 symbols vanished, 0 re-attributed). G2 identity FAILS on exactly 11 files, and that failure is the cost of the fix rather than damage from it — those 11 are the files whose leading `param` block re-parents from `program` into `statement_list`, and G3 reports that NOT ONE of the 11 changed analyzer output at all. The analyzer is parent-agnostic by construction: it finds `param_block` with `collectChildrenByType`, a descendant walk, and already handles a `param_block` nested under a `script_block`. A tree-shape change the product does not consume is a different claim from one that does not matter, and it is the claim the evidence supports. Two attempts to suppress the 11 with dynamic precedence are recorded in the grammar and both failed — `prec.dynamic(1)` on `program` is inert because `program` is the parent of both parses, and `prec.dynamic(-1)` on the statement route does not change the outcome while re-breaking the attribute-attach shape. (6) G6 is the largest class in the lane and the one whose SHAPE was decided by measurement rather than by taste. In the pinned grammar a comma-separated command argument list works for every value kind EXCEPT a bare word: `'deb', 'rpm'` parses, `$a, $b` parses, `(1), (2)` parses, `1, 2` parses, and `deb, rpm` is 2 ERROR nodes. The reason is that `array_literal_expression` is `prec.left(seq($.unary_expression, repeat(seq(',', $.unary_expression))))` and a bare word is not reachable as a `unary_expression` — so the one value kind that matters most in command position, where an unquoted word is a command name or a bare argument, is the one that cannot form a list. Measured footprint: 245 parameter-form sites across both production corpora plus 2 module-surface bare sites, of which 8 are the `Export-ModuleMember` lines this lane's own `exports` reader is built to read. The first attempt at the patch was a bare `seq(',', tail)` among the `_command_element` alternatives. It scored 135 -> 107 damaged files, MISSING 139 -> 81, +253 pairs with 0 lost and 7 corpus files fixed — and was still wrong, because it stole the comma from INSIDE `array_literal_expression`: a two-element array became a one-element array plus an orphaned literal. G1 could not see it (error count 0 before and 0 after), the analyzer could not see it (byte-identical output on all 34 affected files), and `prec(-1)` on the comma element did not help because it was never a precedence tie. The admitted form is one alternative whose list elements are `generic_token`, which makes it disjoint from the array rule on the FIRST TOKEN of each element rather than merely lower-precedence than it. On the corpus: F11 G1 135 -> 110 damaged files with MISSING 139 -> 81, G2 identity 265 clean files with 0 tree differences, G3 +252 pairs with 0 lost and 0 symbols vanished — ADMISSIBLE — and the same 7 production files fixed with 0 broken that the rejected form fixed, without the shape change. The repro battery's named limits go 9 -> 7. (7) G7 is the LARGEST class in the lane — 1,002 sites in 155 files in `powershell` and 81 in 15 in `ansible`, 1,083 in 170 files — and the deciding token is an asymmetry inside one character class. `generic_token` is `token(/[^\\(\\)\\$\"\'\\-\\{\\}@\\|\\[\\`\\&\\s][^\\&\\s\\(\\)\\}\\|;,]*/)`: the CONTINUATION class allows `/` and `\\`, but the FIRST-character class excludes `$`. So `a/b` lexes as one token and `$a/b` cannot, and in PowerShell `$PSScriptRoot/x` is a single path argument. The battery had named this class `backslash-path`, which is wrong — `\\` and `/` fail identically and `Import-Module $PSScriptRoot` alone parses clean — and two of the battery's own controls were themselves broken, which is why the class was mis-named in the first place. The patch is a new token declared ONLY inside `_command_argument`. That scoping is the whole safety argument and it is structural rather than a matter of tuning: tree-sitter's lexer is driven by parse state, so a token valid only where a command argument is expected cannot be produced on the right-hand side of an assignment, where `$a/$b` is DIVISION and already parses correctly. Widening the shared `generic_token` instead would have changed the token in every position including that one. Four forms were built and three rejected before this one, and every rejection was caught by a different gate: (1) a HIDDEN token reported 0 ERROR nodes while the tree was `command_elements: (command_argument_sep)` — the argument silently GONE, which is worse than an error because an error is visible and a missing node is not, and which the micro-repro read as `ok` until the tree was printed instead of the error count; (2) without `prec(2)` the `variable` token's `reserved` precedence won and only a PREFIX of the path was consumed, so `$a/b` appeared to work while a `..` chain did not; (3) a run whose alternation required a TRAILING separator could not match any real path, since every real path ends in a segment. The fourth form fixed a measured loss rather than a refinement: a directory argument ends in a separator — `$testDataPath\\UserConfigProv\\` — and without an optional trailing separator the token matched only the prefix, leaving the final `\\` orphaned and costing 11 REAL cmdlet calls in one Pester file, verified by running the analyzer under both grammars (40 such calls pinned, 29 under the broken candidate) rather than inferred. Final measurement: F11 G1 damaged files 110 -> 87 with sites 755 -> 603, G2 identity 290 clean files with 0 tree differences, G3 +44 pairs against -121 — and every one of those 121 is a PATH-FRAGMENT FABRICATION: 87 name a file extension (`.txt`, `.psd1`, `.yaml`) and the rest name filename components, checked against the source (`Resolve-Path $TESTDRIVE/this.directory.is.invalid` was publishing `uses -> directory`, `uses -> is` and `uses -> invalid`). The 44 gained are real recovered calls, 18 of them `calls -> It` in Pester blocks that previously did not parse. Production corpora: 9 files fixed, 0 broken. The repro battery's named limits go 7 -> 6, and the powershell production draw's damaged files go 14 -> 10. (8) G8 is two one-character widenings, each mirroring a case the rule already had, and it is the highest-yield patch in the lane per site touched. `type_name` already recursed on `.` for a dotted type, so `+` — .NET's nested-type separator, as in `[System.Environment+SpecialFolder]` — is that same `choice` widened to a separator set, and it cannot interact with anything else because a type name's only other continuation is `.`. `command_parameter`'s class had no `=`, so `--flag=value` split at the `=` and the remainder fell to `assignement_operator`, which is not valid in command-argument position. `=` is admitted to the DOUBLE-DASH branch ONLY: a native command's `--flag=value` really is one argv token, whereas PowerShell's own parameters are `-Name value` or `-Name:value` and `-Name=value` is not valid, so widening the single-dash class would make an INVALID form parse. Measured footprints: 11 sites for the nested type and 26 for the flag, and the residue is recorded below. The yield is out of proportion to the diff because the patch makes whole regions parse. F11 G1 damaged files 87 -> 85 with ERROR LINES 8721 -> 3748, a 57% drop; G2 identity 313 clean files with 0 tree differences; G3 +608 pairs against 4 lost. The powershell production draw's damaged files go 10 -> 9 and its relationships 9,597 -> 10,111. The one symbol the gate reports as VANISHED is a promotion, and it was checked rather than argued. `build.psm1`'s `AddRemoteIfMissing` is a `param()` block parameter; parameters are carried as `parameters` METADATA on the owning function rather than as symbols, which is the lane's design and which `suppression-and-params-psb7` pins on a separate channel. Under the pinned grammar the region did not parse, so the parameter was carried NOWHERE and only the recovery reader named it, as a file-level variable. Under G8 the enclosing function parses and the parameter is carried as `Sync-PSTags -> AddRemoteIfMissing:Switch`, with its type read: 58 functions carrying 172 parameters against 57 and 171. The three remaining lost pairs (`uses -> describe` twice, `uses -> RepoRoot`) are the same recovery-fabrication class G7 removed, from a `git --git-dir=... describe` line. Residue, recorded rather than rounded off: `--flag=$var` with a VARIABLE value is still 1 MISSING, because the value after a glued `=` has no `command_argument_sep` and a bare `variable` is not among the value alternatives. That is 8 corpus sites, and PowerShell's canonical `-Name $var` is unaffected because that form does have the separator. F11 on the G5c candidate: G1 damage 137 → 135 files and MISSING 177 → 139 with 0 newly damaged, G2 identity 263 clean files with 0 tree differences, and G3 losing exactly ONE (label,target) pair — whose target F11 prints in full as a seven-line ERROR block — against +126 pairs added. That single pair is the same false-negative class as G5b's 135, and the census confirms it: NullConditional.Tests.ps1 falls 69 → 16 ERROR nodes, NativeCommandPathUpdate.Tests.ps1 goes hasError=true → false, and the three corpus files that do not use `?.` are BIT-IDENTICAL between the two grammars. (9) G9 is the last of the big classes and the only one whose DIAGNOSIS I got wrong before the measurement forced it. I recorded this class as a genuine LR ambiguity between `array_type_name` and `generic_type_name` — the two are indeed both `seq($.type_name, '[')`, identical prefixes separated only by what follows the bracket — and I expected to fix it by reprioritising. It is not an ambiguity, and the automation said so twice while I was asserting otherwise. `prec(1)` on the generic branch of `type_spec` changed nothing at all, and declaring the conflict `[$.array_type_name, $.generic_type_name]` came back `unnecessary conflicts` from `tree-sitter generate` — which is the informative part: UNNECESSARY means the automaton has no conflict there, because the generic route was never reachable. That is the third time this lane has been told 'unnecessary conflict' (G1's `param_block` and G7's hidden token are the other two) and the lesson is the same each time: it means the competing route does not EXIST, so reprioritising cannot help and the fix has to be to add the missing derivation. The real gap is one token deep: `generic_type_arguments` was `seq($.type_spec, repeat(seq(',', $.type_spec)))`, and a `type_spec` reaches the array form only as `array_type_name` = `type_name` followed by `[` — the SUFFIX. PowerShell and C# both write the PREFIX form, `[string]`, which is a `type_literal`, and no `type_spec` production can begin with a leading `[`. So `[Dictionary[[string],[int]]]` had no derivation at all; the parser took the only route available (`array_type_name` on `Dictionary[`), expected `]`, found `[`, and produced `ERROR(array_type_name(Dictionary[))` with the remainder of the line falling out as a separate expression — which is why the damage looked like an unrelated downstream error. The admitted patch widens `generic_type_arguments`' element to `choice($.type_spec, $.type_literal)`. It is additive, it needs no conflict declaration, and it is disjoint from the existing form on the FIRST TOKEN of the argument, which is the same disjointness argument that made G6 and G7 safe rather than merely lower-precedence. A process finding worth the same record as the patch, because it changed how the work was done: `tree-sitter parse` in the vendored grammar directory compiles natively and answers in about 14 SECONDS, against 19 MINUTES for the emscripten `tree-sitter build -w` that the F11 gate needs. Every A/B for this patch was taken natively first — 691 corpus files, damaged 126 -> 123, ERROR 803 -> 788, MISSING 29 -> 27, with the six control forms checked case by case — and the wasm was built once, only after the native sweep said the patch was a win. The corollary trap cost one cycle: `tree-sitter build --output x.wasm` emits an ELF shared object, not a wasm, unless `-w/--wasm` is passed, and web-tree-sitter rejects it with `need to see wasm magic number` — a `.wasm` extension is not a request for a wasm. F11 on the built candidate: G1 damaged files 85 -> 82 with sites 580 -> 560 and MISSING 85 -> 71, fixed 3, newly damaged 0, worse 0; G2 identity 315 clean files with 0 tree differences; G3 +2 pairs against 2 lost, and the verdict is INADMISSIBLE. Both 'lost' pairs are MOVES, verified from the gate's own added list rather than argued from the source, and they are a NEW instance of this lane's recurring false negative: the first three were a pair attributed to a recovery fabrication, and this one is a pair whose TARGET GOT MORE PRECISE. Generics.Tests.ps1:44 is `$x = [dictionary[[string], [int]]]::New()`; the pinned grammar could not parse the type literal, so the analyzer recovered a method named `int::New` and published `calls -> int::New`, attributing the static call to a type ARGUMENT rather than to the constructed type that is its actual receiver. Under G9 the same line publishes `calls -> dictionary[[string], [int]]::New`. Conversions.Tests.ps1:493 is `[Func[[E], [object]]] $f = $n.GetC`, and the edge moves from `uses -> object` to `uses -> Func[[E], [object]]` — from the innermost bareword to the full type reference that owns the span. Same line, same label, strictly better target, in both cases; F11 compares (label,target) as strings and so cannot tell 'more precise' from 'gone'. Production corpora: the powershell draw's damaged files go 9 -> 8 and its MISSING nodes halve, 12 -> 6, with its relationships flat at 10,111 because both moved pairs live in files outside the 49-file draw.  (10) G10 is the class the lane's own gate nearly forbade, and the reason is the most reusable finding in this record. A value GLUED to a double-dash parameter — `--git-dir=\"$RepoRoot/.git\"`, `--flag=$var`, `--a=1` — published no edge, and the reason was that every value alternative in `_command_argument` begins with `command_argument_sep` and a glued value has none, so `redirection` won the value instead. The failure is not an error but a FABRICATION: the tree becomes a redirection carrying a MISSING `>`, which is invisible to F1, F10 and the M12 ERROR-node census, and the analyzer then publishes the value as a redirected file. Two prior measurements made it worse than invisible — on the first run of the A/B harness, which counted only ERROR, `--git-dir=$R` and `--a=1` were reported as CLEAN. Two designs were built and REJECTED before the third, and both rejections are about the LEXER rather than the parser. Attempt 1 added a `_glued_command_parameter` token requiring a trailing `=`, with `token(prec(1, ...))`, reasoning that lexical precedence would make it win exactly the ties it needed. F11 returned INADMISSIBLE: 274 clean files changed tree shape, 71 symbols changed owner, 19 pairs lost. The cause is that tree-sitter resolves LEXICAL precedence BEFORE LENGTH, so `prec(1)` made the glued token win even when its match was SHORTER — and `--flag=alnum`, which `command_parameter` matches whole and which is CLEAN across the corpus, was split into a parameter plus a value everywhere. Attempt 2 dropped the precedence, reasoning that length would then decide; that is also unworkable, because two tokens matching the SAME text at the SAME length is unresolvable by precedence OR by length, and `--a=1 --b=2` measured 2 ERROR where the pinned grammar had one SILENT MISSING. The third design has NO SECOND TOKEN. It is a PARSER alternative — `command_parameter` followed immediately by a literal or a variable, with no separator — and `command_parameter` itself is left byte-for-byte as it was, which is the entire safety argument: with nothing about the lexer moving, `--flag=alnum` cannot change shape. CORRECTION, and it is the reason this paragraph is longer than the others. The native sweep said 0 clean files changed shape, 7 became clean and 0 became broken, and the 7 was WRONG about the product. F11 runs on web-tree-sitter 0.25.9 and reported G1 fixed 0 and G3 at ZERO changed pairs: on the runtime the product actually loads, this patch is INERT. The 7 were an artefact of the native CLI being 0.26.9, and the same bytes parse differently under the two — the version skew this lane has now been bitten by repeatedly, and the first time it has bitten a patch's BENEFIT rather than its safety. What the native sweep DID establish is the half that matters for admissibility: 0 clean files changed shape, which F11 then confirmed on its own runtime at 0 differences over 318 clean files. F11 then confirmed G2 at 0 tree differences over 318 clean files and G3 at ZERO changed pairs. `generic_token` is deliberately absent from the value choice for the same reason it is absent from attempt 1: `--flag=alnum` is clean today because `command_parameter` matches the whole token, so admitting `generic_token` would split that clean node into two children. The generalisable finding is the one this lane has now paid for three times: when a construct is damaged because a TOKEN cannot reach far enough, adding a token moves the LEXER, and every clean file that relied on the old token's full extent is collateral. The fix belongs in the PARSER unless the token itself is wrong. The id digest is unchanged at 429 ids / 152 named types for exactly this reason — a parser alternative adds no node type, so no analyzer written against the old shapes is re-pointed. F11's own G1 row shows 0 fixed and G3 shows zero changed pairs. The first reading of that was a SAMPLE-CAP explanation — the gate caps at 400 files per corpus and the 7 the full sweep found are outside it. That explanation was checked and is WRONG: re-parsing the failing cases directly through web-tree-sitter 0.25.9 reproduces the errors, so the sample never saw a fix because there was none to see on this runtime. The patch is kept because it is ADMISSIBLE and free — G2 0 differences over 318 clean files, G3 zero changed pairs, id digest unchanged at 429/152 — not because it is known to help. A patch that changes nothing on the product runtime should not be described as a repair, and the grammar's own record now says so. The 38-site and 10-site corpus footprint is spent; what remains in this class is recorded below as unmeasured rather than as a plan.",
+    alternatives: [
+      {
+        option: "G5c as a new precedence level, or `?.[` for element access",
+        measured:
+          "REJECTED on measurement, and both halves of it came from the corpus rather than from taste. The corpus target disagrees with the documentation on the element-access form: PowerShell's own test/powershell/Language/Operators/NullConditional.Tests.ps1 uses `?[` (6 × `?[0]`, plus `?[tb]`, `?['a']`, `?[-2]`, `?[0..2]`, `?[0,1]`, `?[]`, `?[1234]`) and never `?.[`, so a `?.[` implementation would have satisfied the docs and none of the corpus. And a precedence LEVEL was rejected for the same reason G5a's named levels were: `?.` binds exactly like `.` and `?[` exactly like `[`, so the correct edit is one `choice` arm inside the rule that already defines the twin, inheriting its associativity — which is also what makes the corpus's `${psObj}?.name?.nonExistent` chain and its `(Get-Item $TestDrive)?.EnumerateFiles()?.Name` compose without a new level at all.",
+        artifact: "validation/m60/results/powershell-grammar-g5c-ab.json",
+      },
+      {
+        option: "G5 with the two precedence levels left NAMED (the first attempt)",
+        measured:
+          "REJECTED on measurement, and it is the most instructive rejection in this lane. It scored a clean win on every count the repro battery reports — 2 of 12 named limits fixed, 0 regressions, all 9 controls held — and the collateral gate passed too, 0 files broken. It was still the wrong patch, and only the SHAPE delta caught it: a named level emits its node in the pass-through case as well, so adding two levels wrapped EVERY expression in the language and produced 9,046 `coalesce_expression` and 9,038 `ternary_expression` nodes across 49 corpus files, re-pointing an analyzer written against the old shapes while every other number said 'pure win'. Hiding both levels makes the rules inline, so an expression using neither operator produces exactly the tree it produced before and F11's G2 identity gate passes by construction rather than by luck.",
+        artifact: "validation/m60/results/powershell-grammar-g5b-ab.json",
+      },
+      {
+        option: "the previously wired version, tree-sitter-powershell@0.25.10 (sha 1d30b5a21866354aa2eb94845556f1e19126ff00e3335048719a0e6435b1c154, 983,236 bytes)",
+        measured:
+          "0.25.10 vs 0.26.4 unpatched, production corpora: damaged files 16/49 powershell and 15/24 ansible on BOTH; ERROR nodes 93 → 91 in ansible; named vocabulary IDENTICAL (152) so no analyzer is re-pointed; 0 files broken. The base upgrade buys the here-string fix and nothing else, which is why it is recorded as taken rather than as a repair.",
+        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      },
+      {
+        option: "patch the source while the wired bytes stay 0.25.10",
+        measured:
+          "REJECTED, and this is the reason the pin exists. The npm cache held 0.26.4 and the first draft of this lane's review called it the wired grammar's source; it is not. Rebuilding the cache's source gives 419 ids against the wired wasm's 415 and a different id-order digest, so a hunk written against that grammar.js would have been a patch on a DIFFERENT grammar and every A/B number attributed to it would have been unattributable. Found by measuring the surface gap before writing any hunk, not after.",
+        artifact: "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      },
+    ],
+    evidence: [
+      "validation/m60/results/powershell-grammar-g1-ab.json",
+      "validation/m60/results/powershell-grammar-g5c-ab.json",
+      "validation/m60/results/powershell-g5c-g3-adjudication.txt",
+      "validation/m60/results/powershell-grammar-g5b-ab.json",
+      "validation/m60/results/powershell-g5-g3-adjudication.txt",
+      "validation/m14/results/M14.0.F11.powershell.json",
+      "validation/m60/results/powershell-grammar-upgrade-ab.json",
+      "validation/m60/results/powershell-surface.json",
+      "reviews/powershell/resolution.md",
+      "reviews/powershell/grammar-worklist.md",
+    ],
+    // A SECOND copy used to be listed here: "the pre-patch local build, preserved for
+    // bisect", pointing at /tmp/opencode/ps-lane/wired-0.26.4-unpatched.wasm. It is
+    // removed, and the reason is the gate finding it: the pin reported the copy as
+    // VANISHED. A /tmp path is scratch by definition, so a durable record naming one
+    // fails on the next cleanup, on another machine, or in CI — the pin would be
+    // asserting provenance it cannot re-establish. The npm-cache tarball copy above
+    // carries the same bytes (sha 796124137f05…, 1,088,467 B) and IS re-derivable, so
+    // the bisect capability survives without an artifact that cannot exist tomorrow.
+    copies: [
+      { label: "npm tree-sitter-powershell@0.26.4 (the UNPATCHED base these bytes are a patch of)", path: path.join(CACHE, "tree-sitter-powershell@0.26.4@@@1/tree-sitter-powershell.wasm") },
+    ],
+    notVendored: [
+      { path: "src/parser.c", why: "generated from grammar.js; 4.5 MB; `tree-sitter generate` rebuilds it" },
+      { path: "src/grammar.json, src/node-types.json", why: "generated from grammar.js; the source↔wasm check runs on these after regenerating them" },
+      { path: "bindings/, binding.gyp, prebuilds/", why: "native bindings, not parser source" },
+      { path: "queries/highlights.scm", why: "editor queries; the engine does not load them" },
+      { path: "tree-sitter-powershell.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
+    scss: {
+    wired: "wasm/tree-sitter-scss.wasm",
+    provenance: {
+      kind: "local-rebuild-from-npm-dependency",
+      base: {
+        package: "tree-sitter-scss",
+        version: "1.0.0",
+        // the package declares `tree-sitter-css: ^0.20.0`, a RANGE. Left as a range,
+        // a rebuild is not a rebuild: any 0.20.x would satisfy it and the generated
+        // parser would differ. The exact version is pinned here and in the note below
+        // precisely so that this is a decision and not an accident of a lockfile
+        // nobody reads.
+        pinnedExactly: true,
+        depOf: { package: "tree-sitter-css", version: "0.20.0" },
+      },
+      patches: [
+        "use_statement / forward_statement: Sass's module system has optional clauses these rules never allowed — `as <namespace>`, `as *`, `with (<config>)`, and `show`/`hide <members>` on @forward. As written each rule was `seq('@use', $._value, ';')`, so every `as` clause was an ERROR: `@use 'sass:map';` parsed and `@use 'sass:map' as map;` — the form Sass documents — did not. Measured over 244 .scss files this was the single largest residual class, the bare token `as` at 277 error spans. Two sub-fixes were needed and the first attempt at each was wrong in an instructive way. (a) `with (<config>)` was first written to allow only `$._value`, so `with ($a: 1)` matched the `$a` and then reported `(UNEXPECTED '1')` — which reads like a value problem and is actually a missing `:` separator, because Sass's clause is a list of `$name: value` PAIRS. (b) the `as` clause was first written with `$._value`, which admits `binary_expression` and collided with the dashed-prefix form. The `as` target is therefore `choice($.identifier, $.variable, $._concatenated_identifier)`, and the whole clause is modelled in the grammar's OWN loose style (the `$._value, repeat(seq(optional(','), $._value))` pattern already at lines 86-87) rather than with a strict grammar for Sass config objects: a strict model is a second research project, and the analyzer reads these clauses by SLICING node.text, never by naming a node type, because slicing text cannot fall behind a grammar change (M60 R10). Repro: @use 'sass:map' as map;",
+        "declaration + parameter: Sass's `!default` / `!global` flag. The declaration rule allowed `optional($.important)` and nothing else, so `$a: 1 !default;` — the most common line in a Sass variable file, and the entire point of a configurable default — was an ERROR, at 210 occurrences across the corpus. Applied at BOTH sites: a variable declaration and a mixin/function parameter default, which is where Sass puts it most often (`@mixin button($bg: $grey !default)`). Repro: $x: 1 !default;",
+        "DECLARED, NOT PATCHED: `@forward 'x' as prefix-*;`, the PREFIX form of the `as` clause. It requires `repeat1(seq('-', …))` after the name, which tree-sitter reports as an unresolved conflict with `binary_expression` (a `$._value` can itself be `a - b`). It occurs ZERO times in 40,521 lines of corpus, where 359 uses are `as *` and 1 is `as common`. The A/B carries it as `forward-as-dashed-prefix` with verdict `unchanged-broken` rather than omitting it, so the unsupported form is named in the evidence instead of absent from it. A grammar conflict taken on for a construct with no evidence is a risk incurred on somebody else's behalf.",
+      ],
+      patchEvidence:
+        "validation/m14/results/scss-grammar-ab.json — an A/B over the 244 non-empty .scss files in 4 corpora (element-plus, phpmyadmin, vue-core, vue-element-admin), instrument script/m14/tmp/scss-grammar-ab.ts. Both patches together: 73 -> 149 files parsing clean (29.9% -> 61.1%), 76 FIXED, 0 REGRESSED, ERROR nodes 5,624 -> 3,900, and all 3 regression controls (`!important`, mixin+include, `#{$p}` interpolation) unchanged-clean; and the byte-reproducibility check that the locally generated parser matches the package's own shipped src/parser.c exactly (73/244 and 5,624 ERROR nodes on both) — which is the measurement that identifies the base dependency version rather than assuming it. Per corpus: element-plus 16 -> 90, phpmyadmin 50 -> 52, vue-core 1 -> 1, vue-element-admin 6 -> 6, which is why the instrument reports per-repo rather than an aggregate — 17.6% average is element-plus at 16/160 and phpmyadmin at 50/74 wearing the same number. This is the FIRST grammar lane whose win is measured on a corpus the grammar was not written for: 0.20.0 is the version the package declares, not one chosen for the corpus.",
+      buildRequires: [
+        "`npm install --no-save tree-sitter-css@0.20.0` inside grammars/tree-sitter-scss/ before `tree-sitter generate`. grammar.js line 9 is `const CSS = require('tree-sitter-css/grammar')`, so the build is NOT self-contained and fails with `Cannot find module 'tree-sitter-css/grammar'` without it.",
+        "tree-sitter.json is REQUIRED for ABI 15 and is NOT in the npm tarball. Without it `tree-sitter generate` warns and silently emits ABI 14. It was authored here, and the wired bytes are ABI 15.",
+      ],
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-scss",
+      note:
+        "grammar.js (upstream 1.0.0 byte-for-byte except the two marked LOCAL PATCH hunks) + src/scanner.c + package.json + README.md, from the npm tarball tree-sitter-scss@1.0.0, PLUS an authored tree-sitter.json. The external scanner is REQUIRED, not optional: its TokenType enum is exactly CONCAT, which backs `_concatenated_identifier` and therefore SCSS interpolation such as `#{$a}-suffix`. It is the fourth grammar in this repo whose hand-written scanner needed an explicit `.gitignore` negation, because the blanket `grammars/tree-sitter-*/src/*` rule silently untracks it. The GENERATED src/parser.c is deliberately not vendored: `tree-sitter generate` rebuilds it, and the source↔wasm check runs on the generated JSONs. THERE IS NO LICENSE FILE IN THE TARBALL — the only evidence of the licence is package.json's `\"license\": \"MIT\"` field, which is a claim by the publisher rather than a licence text. That is recorded here rather than papered over with a substituted file.",
+    },
+    decision:
+      "Pin the local patched rebuild, and require the source↔wasm proof rather than a hash. The alternative was to leave .scss on the CSS grammar, which is where it was routed: 43 of 244 files parsed clean (17.6%) with 30,767 ERROR nodes, because the CSS grammar has no `$variables`, no `@mixin`/`@include`, no `@use`/`@forward` and no interpolation. The stock SCSS grammar was NOT sufficient on its own and was measured before being adopted: 73/244 (29.9%), i.e. better than CSS but still leaving 171 files failing, which is why two patches were written rather than the package being wired as shipped. The trade is recorded rather than hidden: the wired bytes are ours, they are an ABI 15 build of a dependency-based grammar, and 96 of 244 corpus files still fail and are DECLARED rather than claimed.",
+    alternatives: [
+      {
+        option: "leave .scss routed to the CSS lane and declare the dialect unsupported",
+        measured:
+          "Rejected on measurement: 43/244 clean (17.6%) and 30,767 ERROR nodes, and the lane would carry a routing claim for a dialect its grammar cannot read. This is the status quo and it is the thing the SCSS lane exists to replace.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+      {
+        option: "wire tree-sitter-scss@1.0.0's shipped src/parser.c as-is, unpatched",
+        measured:
+          "Rejected on measurement: 73/244 clean (29.9%). It is 1.4x better than the CSS grammar and still leaves 171 files failing, dominated by the `as` clause at 277 error spans. Its value was as the BASE — and it did establish something worth keeping, since the locally generated parser reproduces its shipped parser.c exactly (73/244, 5,624 ERROR nodes both), which is how the 0.20.0 dependency was identified rather than assumed.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+      {
+        option: "rebuild SCSS on top of this repo's patched tree-sitter-css 0.25.0 instead of the 0.20.0 it declares",
+        measured:
+          "NOT POSSIBLE as written, and worth recording because it was the more attractive option — it would have inherited all four CSS patches for free. tree-sitter-scss 1.0.0 is CommonJS (`module.exports = grammar(require('tree-sitter-css/grammar'), {...})`) and tree-sitter-css 0.25.0 ships an ES-module grammar.js, so `require` of it fails with `ReferenceError: grammar is not defined` under the CLI's loader. Bridging it needs either a CJS shim that re-exports the ESM grammar or a port of the SCSS extension to ESM, and the port would also have to reconcile rule-name drift between 0.20 and 0.25 across the ~20 rules the extension overrides. That is a real project with a real risk of silent shape change, and it was declined in favour of two measured patches. The cost of declining is that SCSS does not inherit the CSS lane's `url(../)`, float-keyframe, IE-`progid:` or at-rule-ident fixes; measured cost is unquantified, which is itself the honest statement.",
+        artifact: "validation/m14/results/scss-grammar-ab.json",
+      },
+    ],
+    evidence: [
+      "validation/m14/results/scss-grammar-ab.json",
+      "validation/m14/results/wasm-provenance-census.json",
+      "reviews/m49-css-review.md",
+    ],
+    // Deliberately EMPTY, and that is a fact rather than an omission. Every other
+    // vendored lane lists a copy of the same wasm elsewhere on this machine so the
+    // pin can prove the wired bytes are the ones that were compared. tree-sitter-scss
+    // 1.0.0 ships NO prebuilt wasm at all (its `prebuilds/` are native node
+    // bindings), so there is nothing to compare against and a path that resolves to
+    // nothing would render as `absent` in the census — a row that looks like a
+    // finding and is really just a wrong assumption in this file. The equivalent
+    // proof is behavioural and lives in the A/B: the locally generated parser
+    // reproduces the package's shipped src/parser.c exactly.
+    copies: [],
+    notVendored: [
+      { path: "prebuilds/, bindings/, binding.gyp", why: "native node bindings for 4 platforms; not parser source, and the engine loads the wasm" },
+      { path: "src/parser.c, src/grammar.json, src/node-types.json, src/tree_sitter/", why: "generated by `tree-sitter generate`; the source↔wasm proof runs on the generated JSONs instead" },
+      { path: "queries/", why: "syntax highlighting queries; no consumer in this repo reads them" },
+      { path: "LICENSE", why: "NOT PRESENT IN THE TARBALL. tree-sitter-scss@1.0.0 ships no licence file; package.json declares `license: MIT` and nothing more. Recorded as absent rather than substituted." },
+      { path: "node_modules/ (tree-sitter-css@0.20.0)", why: "a build-time dependency, not source. The exact version is recorded in provenance.base.depOf and in buildRequires, because the package's own range is `^0.20.0` and a range is not a pin." },
+    ],
+  },
+    yaml: {
+    wired: "wasm/tree-sitter-yaml.wasm",
+    provenance: {
+      kind: "byte-identical-to-npm-tarball",
+      package: "@tree-sitter-grammars/tree-sitter-yaml",
+      version: "0.7.1",
+    },
+    source: {
+      state: "vendored",
+      dir: "grammars/tree-sitter-yaml",
+      note:
+        "grammar.js + tree-sitter.json + package.json + README.md + LICENSE + src/ (scanner.c, the three schema backends schema.core.c/schema.json.c/schema.legacy.c, the generated grammar.json and node-types.json, and the tree_sitter/ runtime headers), byte-for-byte from `npm pack @tree-sitter-grammars/tree-sitter-yaml@0.7.1`. The GENERATED src/parser.c (1.29 MB) is deliberately not vendored: `tree-sitter generate` rebuilds it from grammar.js, and the source<->wasm check below runs on node-types.json/grammar.json, not on parser.c. Unlike haskell and elixir, the generated JSONs ARE tracked here -- see the .gitignore entry, which explains that a clone carrying grammar.js but not node-types.json can rebuild a working parser and cannot run the proof.",
+    },
+    decision:
+      "Pin as-is, and vendor the source, with NO wire change. Three independent measurements agree that the wired bytes are the right bytes: (1) `npm pack` of 0.7.1 + sha256 of the extracted tree-sitter-yaml.wasm is e752dc21c3591df9b45692fe417d101f45d1828c28c44d79005f4066dc7e4e91 / 189,255 B, an EXACT match for wasm/tree-sitter-yaml.wasm with no inference from size or date; (2) 0.7.1 is the newest published release (2025-05-22) of the only maintained fork, and its parent ikatyang/tree-sitter-yaml has been dormant since 0.5.0 (2021-04-18) and publishes no wasm at all, so it is not a wire candidate; (3) the source<->wasm check below is green with an EMPTY allowance, i.e. all 36 named types the source declares exist in the wired wasm and every wasm-named type is declared by the source. The pin therefore upgrades an existing DOC-ONLY claim (docs/analyzers/real-yaml-analyzer.md) into a gated contract, and changes nothing the product loads.",
+    alternatives: [
+      {
+        option: "ikatyang tree-sitter-yaml@0.5.0 (the fork parent)",
+        measured: "publishes no wasm -- the 0.5.0 tarball contains only src/parser.c, so it cannot be a wire candidate without a local build, and its last release predates the fork by four years",
+        artifact: "reviews/yaml/research-and-plan.md §2.1",
+      },
+      {
+        option: "rebuild the wire with -DYAML_SCHEMA=legacy to reach timestamp_scalar",
+        measured: "not attempted, and recorded as declined rather than as pending: it would replace the newest published bytes with a local build whose only gain is one scalar type, at the cost of making the lane's scalar typing disagree with every YAML 1.2 consumer that reads the same file. A pin is a claim about what is shipped; changing what is shipped is a different act with its own A/B (script/m14/verify-grammar-leaves.ts).",
+        artifact: "reviews/yaml/research-and-plan.md §4 (defect Y12) and §2.1",
+      },
+    ],
+    evidence: [
+      "reviews/yaml/research-and-plan.md",
+      "script/m14/spec/yaml-completeness.json",
+      "validation/m60/grammar-survey.json",
+    ],
+    copies: [
+      { label: "mirror", path: path.join(MIRROR, "tree-sitter-yaml.wasm") },
+    ],
+    notVendored: [
+      { path: "binding.gyp, bindings/, prebuilds/", why: "native bindings and prebuilds; not parser source" },
+      { path: "queries/", why: "editor queries; the engine does not load them" },
+      { path: "src/parser.c", why: "generated from grammar.js; 1.29 MB; `tree-sitter generate` rebuilds it" },
+      { path: "tree-sitter-core_schema.wasm, tree-sitter-json_schema.wasm", why: "the other two schema builds as PREBUILDS; the backend is selected at COMPILE time by -DYAML_SCHEMA, so the choice belongs in the source tree (the three schema.*.c files), not in three wired wasms" },
+      { path: "tree-sitter-yaml.wasm", why: "the wired bytes; they live at wasm/ and are pinned by sha here" },
+    ],
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -1450,8 +1515,6 @@ export interface Surface {
 
 export interface MeasuredLane {
   wired: { file: string; sha256: string; bytes: number }
-  /** Measured per companion grammar; `[]` for the single-grammar lanes. */
-  companions: Array<{ file: string; sha256: string; bytes: number; surface: Surface }>
   surface: Surface
   copies: Array<{ label: string; path: string; sha256: string | null; byteIdentical: boolean; absent?: boolean }>
   vendored:
@@ -1521,20 +1584,12 @@ export async function measureSurface(absWasm: string): Promise<{ surface: Surfac
   return { surface, namedUnique: [...new Set(named)].sort(), uniqueNames: [...new Set([...named, ...anon])].sort() }
 }
 
-export async function measureLane(file: string, companionFiles: string[] = []): Promise<MeasuredLane> {
+export async function measureLane(file: string): Promise<MeasuredLane> {
   const abs = path.join(ROOT, file)
   const buf = fs.readFileSync(abs)
   const { surface } = await measureSurface(abs)
-  const companions: MeasuredLane["companions"] = []
-  for (const cf of companionFiles) {
-    const cAbs = path.join(ROOT, cf)
-    const cBuf = fs.readFileSync(cAbs)
-    const { surface: cSurface } = await measureSurface(cAbs)
-    companions.push({ file: cf, sha256: sha256(cBuf), bytes: cBuf.length, surface: cSurface })
-  }
   return {
     wired: { file, sha256: sha256(buf), bytes: buf.length },
-    companions,
     surface,
     copies: [],
     vendored: { state: "not-obtainable-offline" },
@@ -1543,19 +1598,10 @@ export async function measureLane(file: string, companionFiles: string[] = []): 
 }
 
 export function measureCopies(lane: LaneDecision, wiredSha: string): MeasuredLane["copies"] {
-function measureCopies(lane: LaneDecision, shasByFile: Record<string, string>): MeasuredLane["copies"] {
   return lane.copies.map((c) => {
-    // Default to the lane's primary; a companion copy must say which grammar it mirrors.
-    const target = c.of ?? lane.wired
-    const want = shasByFile[target]
-    if (!want) {
-      // An `of` naming a grammar this lane does not wire is a RECORD error, not a
-      // silent false: the copy would be compared against nothing and read as broken.
-      throw new Error(`grammar-pins: copy "${c.label}" declares of="${target}", which is neither the lane's wired grammar nor one of its companionWasm entries`)
-    }
     if (!fs.existsSync(c.path)) return { label: c.label, path: c.path.replace(HOME, "~"), sha256: null, byteIdentical: false, absent: true }
     const sha = sha256(fs.readFileSync(c.path))
-    return { label: c.label, path: c.path.replace(HOME, "~"), sha256: sha, byteIdentical: sha === want }
+    return { label: c.label, path: c.path.replace(HOME, "~"), sha256: sha, byteIdentical: sha === wiredSha }
   })
 }
 
@@ -1617,7 +1663,7 @@ export function sourceVsWasmFor(root: string, lane: LaneDecision, namedUnique: s
 // ---------------------------------------------------------------------------
 export interface PinRecord {
   schemaVersion: number
-  lanes: Record<string, { wired: { file: string; sha256: string; bytes: number }; companions?: MeasuredLane["companions"]; surface: Surface; copies: MeasuredLane["copies"]; vendored: any; sourceVsWasm: any }>
+  lanes: Record<string, { wired: { file: string; sha256: string; bytes: number }; surface: Surface; copies: MeasuredLane["copies"]; vendored: any; sourceVsWasm: any }>
   decisions: Record<string, unknown>
 }
 
@@ -1645,37 +1691,6 @@ export function verifyPins(record: PinRecord, actual: Record<string, MeasuredLan
     }
     if (JSON.stringify(now.copies) !== JSON.stringify(rec.copies)) {
       failures.push({ lane: lang, check: "local copy list changed (a copy appeared, vanished, or no longer matches)", recorded: rec.copies, actual: now.copies })
-    }
-    // Companion grammars get the same treatment as the primary, in BOTH directions.
-    // A companion that appears, vanishes, or changes a single byte or a single
-    // node-type id is a failure, because a companion is not optional — it is a
-    // grammar the analyzer loads on every run. markdown is the first lane with one
-    // (tree-sitter-markdown_inline).
-    const recCompanions = rec.companions ?? []
-    const nowCompanions = now.companions ?? []
-    if (recCompanions.length !== nowCompanions.length) {
-      failures.push({
-        lane: lang,
-        check: "companion grammar set changed (a companion was added or removed without a record)",
-        recorded: recCompanions.map((c) => c.file),
-        actual: nowCompanions.map((c) => c.file),
-      })
-    } else {
-      for (let i = 0; i < nowCompanions.length; i++) {
-        const rc = recCompanions[i]
-        const nc = nowCompanions[i]
-        if (nc.file !== rc.file) {
-          failures.push({ lane: lang, check: "companion grammar order changed", recorded: rc.file, actual: nc.file })
-          continue
-        }
-        if (nc.sha256 !== rc.sha256) failures.push({ lane: lang, check: `companion wasm sha256 drifted: ${nc.file}`, recorded: rc.sha256, actual: nc.sha256 })
-        if (nc.bytes !== rc.bytes) failures.push({ lane: lang, check: `companion wasm byte length drifted: ${nc.file}`, recorded: rc.bytes, actual: nc.bytes })
-        for (const k of ["ids", "uniqueNames", "namedIds", "namedUnique", "anonIds", "anonUnique", "fieldCount", "idOrderDigest", "typeSetDigest", "fieldSetDigest"] as const) {
-          if ((nc.surface as any)[k] !== (rc.surface as any)[k]) {
-            failures.push({ lane: lang, check: `companion surface ${k} drifted: ${nc.file}`, recorded: (rc.surface as any)[k], actual: (nc.surface as any)[k] })
-          }
-        }
-      }
     }
     if (rec.vendored?.state === "vendored") {
       if (now.vendored.state !== "vendored") failures.push({ lane: lang, check: "vendored source tree vanished", recorded: rec.vendored.dir, actual: now.vendored.state })
@@ -1728,9 +1743,6 @@ export function selfTestGate(): { passed: number; failures: string[] } {
   const base = (): { record: PinRecord; actual: Record<string, MeasuredLane> } => {
     const m: MeasuredLane = {
       wired: { file: "wasm/x.wasm", sha256: "deadbeef", bytes: 10 },
-      // markdown is the first two-grammar lane, so the self-test lane carries a
-      // companion too — a gate branch with no negative is a claim, not a check.
-      companions: [{ file: "wasm/x_inline.wasm", sha256: "c0ffee", bytes: 20, surface: { ...surface, ids: 12, idOrderDigest: "e" } }],
       surface: { ...surface },
       copies: [{ label: "mirror", path: "~/.bb/wasm/x.wasm", sha256: "deadbeef", byteIdentical: true }],
       vendored: { state: "vendored", dir: "grammars/x", files: { "grammar.js": { sha256: "f00d", bytes: 3 } }, digest: "d", fileCount: 1 },
@@ -1750,7 +1762,6 @@ export function selfTestGate(): { passed: number; failures: string[] } {
       lanes: {
         x: {
           wired: { ...m.wired },
-          companions: JSON.parse(JSON.stringify(m.companions)),
           surface: { ...surface },
           copies: JSON.parse(JSON.stringify(m.copies)),
           vendored: JSON.parse(JSON.stringify(m.vendored)),
@@ -1762,37 +1773,10 @@ export function selfTestGate(): { passed: number; failures: string[] } {
     return { record, actual: { x: m } }
   }
 
-  // 1. an intact record passes — INCLUDING a lane with a companion grammar, which is
-  //    the shape markdown has.
+  // 1. an intact record passes.
   {
     const { record, actual } = base()
     check("intact record passes", verifyPins(record, actual).length === 0)
-  }
-  // 1b. COMPANION negatives. Four ways a companion can change and the gate must say
-  //     so: different bytes, a different surface, a companion added without a
-  //     record, and a companion silently dropped. The last matters most — a dropped
-  //     companion is how tree-sitter-markdown's inline grammar would stop being
-  //     loaded while every primary-grammar hash stayed identical, which is the
-  //     exact shape of the M49 W16 CSS incident.
-  {
-    const { record, actual } = base()
-    actual.x.companions![0].sha256 = "deadc0de"
-    check("companion sha drift fails", verifyPins(record, actual).some((x) => /companion wasm sha256 drifted/.test(x.check)))
-  }
-  {
-    const { record, actual } = base()
-    actual.x.companions![0].surface.idOrderDigest = "zzz"
-    check("companion surface drift fails", verifyPins(record, actual).some((x) => /companion surface idOrderDigest drifted/.test(x.check)))
-  }
-  {
-    const { record, actual } = base()
-    actual.x.companions!.push({ file: "wasm/x_extra.wasm", sha256: "aa", bytes: 1, surface: { ...surface } })
-    check("companion added without a record fails", verifyPins(record, actual).some((x) => /companion grammar set changed/.test(x.check)))
-  }
-  {
-    const { record, actual } = base()
-    actual.x.companions = []
-    check("companion dropped fails", verifyPins(record, actual).some((x) => /companion grammar set changed/.test(x.check)))
   }
   // 2. a wasm byte change fails.
   {
@@ -1870,13 +1854,9 @@ async function main() {
 
   const measured: Record<string, MeasuredLane> = {}
   for (const [lang, lane] of Object.entries(LANES)) {
-    const m = await measureLane(lane.wired, lane.companionWasm ?? [])
+    const m = await measureLane(lane.wired)
     const { namedUnique, uniqueNames } = await measureSurface(path.join(ROOT, lane.wired))
-    // Every grammar this lane wires, keyed by path, so a copy can declare which one
-    // it mirrors. markdown's inline registry copy is a copy of the COMPANION.
-    const shasByFile: Record<string, string> = { [lane.wired]: m.wired.sha256 }
-    for (const c of m.companions ?? []) shasByFile[c.file] = c.sha256
-    m.copies = measureCopies(lane, shasByFile)
+    m.copies = measureCopies(lane, m.wired.sha256)
     m.vendored = measureVendored(ROOT, lane)
     m.sourceVsWasm = sourceVsWasmFor(ROOT, lane, namedUnique, uniqueNames)
     measured[lang] = m
@@ -1937,15 +1917,14 @@ async function main() {
       generatedAt: new Date().toISOString(),
       commit: execSync("git rev-parse HEAD", { cwd: ROOT }).toString().trim(),
       scope: "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
-      scope: "every lane with an entry in the LANES map of script/m14/verify-grammar-pins.ts (clean, clojure, css, elixir, erlang, fsharp, haskell, json, markdown, powershell, yaml — 11 lanes as of this write). The MAP is the authority and this string is only a reader's summary of it, which is exactly why it was wrong for months: it said \"the six functional-family lanes\" while the map held ten. A field that describes a list should not be a hand-maintained copy of that list, and the cheapest way to stop it drifting is to name the map as the source of truth rather than to re-type the members as prose.",
       rule:
-        "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. A lane that loads MORE THAN ONE grammar at runtime — markdown does: the block grammar plus the tree-sitter-markdown_inline companion the engine pre-parses every inline node with — records its companions under `companions` and is gated on them identically: bytes, length and all ten surface keys, in BOTH directions, so a companion that appears, vanishes, or changes a single node-type id fails. The companions exist because the alternative was measured: the inline grammar carried no sha256 anywhere in this repository while supplying every `uses` edge the lane emits, and the F1 grammar audit had already been fooled once by an oracle that read only the primary grammar. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
+        "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
       lanes: {},
       decisions: {},
     }
     for (const [lang, lane] of Object.entries(LANES)) {
       const m = measured[lang]
-      record.lanes[lang] = { wired: m.wired, companions: m.companions, surface: m.surface, copies: m.copies, vendored: m.vendored, sourceVsWasm: m.sourceVsWasm }
+      record.lanes[lang] = { wired: m.wired, surface: m.surface, copies: m.copies, vendored: m.vendored, sourceVsWasm: m.sourceVsWasm }
       record.decisions[lang] = {
         provenance: lane.provenance,
         source: lane.source,
