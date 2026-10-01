@@ -125,6 +125,25 @@ const SEARCH_OPTIONS_BY_MODE: Record<string, readonly string[]> = {
  * different hat. Refused with the rule named, not clamped.
  */
 function validateModeSpecificArguments(tool: string, args: Record<string, unknown>): void {
+  // M64.D: `paths` asks about specific files, so every way it can be wrong is a
+  // way it can LIE. A blank entry would resolve to the project root; a duplicate
+  // would report a file twice; a huge list would turn a one-file question into a
+  // project scan. All three are loud refusals rather than silently dropped
+  // entries — a dropped path is a path the caller believes was checked.
+  if (tool === "bb_health" && args.paths !== undefined) {
+    const list = args.paths
+    if (!Array.isArray(list)) throw new Error("bb_health paths must be an array of project-relative file paths")
+    if (list.length === 0) throw new Error("bb_health paths must name at least one file — an empty list would check nothing while looking like a completed check; omit the option for a project-wide report")
+    if (list.length > 50) throw new Error(`bb_health paths accepts at most 50 files (got ${list.length}) — for a whole-project census use freshness="complete" instead of naming files`)
+    for (const p of list) {
+      if (typeof p !== "string" || p.trim().length === 0) throw new Error("bb_health paths entries must be non-empty strings")
+    }
+    const trimmed = list.map((p) => (p as string).trim())
+    if (new Set(trimmed).size !== trimmed.length) {
+      const dupes = trimmed.filter((p, i) => trimmed.indexOf(p) !== i)
+      throw new Error(`bb_health paths contains duplicate entries: ${[...new Set(dupes)].join(", ")} — each file is checked once, and a duplicate would report it twice`)
+    }
+  }
   if (tool === "bb_health" && args.sampleSize !== undefined) {
     const n = Number(args.sampleSize)
     if (!Number.isInteger(n) || n < 1) {
