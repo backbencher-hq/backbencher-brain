@@ -7,37 +7,37 @@
   "yieldedNoTree": 0,
   "grammarErrors": 139,
   "symbols": 209247,
-  "relationships": 1032783,
-  "oracleRelationships": 1032783,
+  "relationships": 1032785,
+  "oracleRelationships": 1032785,
   "unexplained": 0,
   "missing": 0,
   "lineMismatch": 0,
   "symbolMismatch": 0,
   "macroModuleRemotes": 3324,
-  "grammarDamaged": 25,
+  "grammarDamaged": 23,
   "missingChunks": 0,
   "perCorpus": {
     "cowboy": {
       "files": 189,
       "symbols": 3426,
       "relationships": null,
-      "ms": 6860
+      "ms": 7073
     },
     "otp": {
       "files": 4156,
       "symbols": 199105,
       "relationships": null,
-      "ms": 696797
+      "ms": 351608
     },
     "rebar3": {
       "files": 272,
       "symbols": 6716,
       "relationships": null,
-      "ms": 28256
+      "ms": 19671
     }
   },
   "verdict": "PASS",
-  "method": "Every `.erl` AND `.hrl` file in otp@de741b7, rebar3@3c1b417 and cowboy@c965d1a \u2014 all 4,617 of them, no stride sample. `.hrl` was added because the 291 include fragments are the heart of ER-D32's domain (a header with no `-module` at all), so the ruling that governs them most was the one ruling never verified by two implementations. Both lenses read the same parse tree: the analyzer, and a second implementation of the whole contract written from the language reference. 32 chunks, each a fresh process, because the WASM parser cannot survive a corpus in one.",
+  "method": "Every `.erl` AND `.hrl` file in otp@de741b7, rebar3@3c1b417 and cowboy@c965d1a \u2014 all 4,617 of them, no stride sample. `.hrl` was added because the 291 include fragments are the heart of ER-D32's domain (a header with no `-module` at all), so the ruling that governs them most was the one ruling never verified by two independent implementations. Both lenses read the same parse tree: the analyzer, and a second implementation of the whole contract written from the language reference. 32 chunks, each a fresh process, because the WASM parser cannot survive a corpus in one (three separate failures forced that; see erlang-census-all.sh). Re-measured on the final analyzer.",
   "ruledClasses": {
     "macroModuleRemotes": {
       "count": 3324,
@@ -45,9 +45,9 @@
       "meaning": "a remote call or fun value whose MODULE is a macro names no derivable callee; only `?MODULE:f/1` does"
     },
     "wholeFileGrammarDamage": {
-      "count": 25,
+      "count": 23,
       "ruling": "ER-D38",
-      "meaning": "wx api_gen markup, OTP abstract-format `-record #r{}` and generated lexer tables yield nothing rather than edges recovered from error-recovery wreckage"
+      "meaning": "ERROR nodes present AND no recoverable declaration of any kind: wx api_gen markup, OTP abstract-format `-record #r{}` and generated lexer tables yield nothing rather than edges recovered from error-recovery wreckage. A file with no errors and no declarations (comment-only, directive-only, include-only) is NOT damage"
     }
   }
 }
