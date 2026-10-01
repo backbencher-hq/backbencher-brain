@@ -291,3 +291,23 @@ same-owner duplicates, which DARTD20 forbids: **zero**.
 ## Issue
 
 Closes M12.11 (GitHub issue #150).
+
+## Member naming: operators are a lane contract
+
+An operator member is published as `operator <token>` — `operator ==`,
+`operator []`, `operator +` — never as the bare token. This is a deliberate
+cross-language contract, the same shape kotlin's phantom members use, and it is
+load-bearing rather than cosmetic:
+
+- `operator_signature` has **no name field and no named children**. The member's
+  identity lives in an anonymous token, so there is nothing to name it from
+  without walking children positionally.
+- The bare token is not a legal identifier and collides with unrelated
+  syntax. A synthesized spelling that can never collide with a real Dart
+  identifier is what makes the member nameable at all.
+- Both the analyzer and `script/m14/oracles/dart-contains.ts` implement the
+  contract independently — the oracle from the contract, never from the
+  analyzer's table.
+
+Reading a bare `==` off an `operator_signature` is therefore a bug in either
+implementation, and the fixture battery pins the contract in both directions.
