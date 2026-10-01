@@ -1817,7 +1817,17 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** The symbol every edge inside the current declaration belongs to. */
   private currentSource(ctx: ErlangContext): string | undefined {
     const top = ctx.declStack[ctx.declStack.length - 1]
-    return top?.source ?? ctx.moduleName
+    // ER-D32, applied to EDGES and not only to ownership. This fell back to the
+    // module name alone, so in a module-less include fragment a FILE-SCOPE edge had
+    // no source at all and was silently dropped. The corpus found it:
+    // `epp_SUITE_data/mac2.erl` is four `-define` blocks and one `-plupp({?p,
+    // ?'p', ?P, ?'P'})` with no `-module` and no function, so all four macro uses
+    // sat at file scope with no enclosing declaration — the analyzer published the
+    // four macro constants and their `contains` edges and then dropped the four
+    // references that say those macros are USED. `ownerNameOf` is the same fallback
+    // ownership already uses, so the two can no longer disagree about who owns a
+    // declaration that has no module.
+    return top?.source ?? this.ownerNameOf(ctx)
   }
 
   /**
