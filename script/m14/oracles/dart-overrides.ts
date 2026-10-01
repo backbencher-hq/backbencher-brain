@@ -197,6 +197,35 @@ function declarationName(node: any): string | null {
 }
 
 /** Every method name a declaration owns. Names only — see rule 1. */
+
+/** Does this member carry an `@override` annotation?
+ *
+ *  The annotation is a preceding SIBLING of the member it decorates — the same
+ *  shape the analyzer reads off `decorators`, and the reason a member is
+ *  overridable at all rather than merely present. Checked on the member and one
+ *  hop out, because some shapes nest the annotation one level from the signature. */
+function hasOverrideAnnotation(m: any): boolean {
+  for (let cur = m, hop = 0; cur && hop < 3; hop++) {
+    const sib = cur.previousNamedSibling
+    if (sib) {
+      if (/@override\b/.test(sib.text ?? "")) return true
+      if (sib.type.includes("annotation") || sib.type.includes("metadata")) {
+        for (let i = 0; i < sib.namedChildCount; i++) {
+          const c = sib.namedChild(i)
+          if (c && /@?override\b/.test(c.text ?? "")) return true
+        }
+      }
+    }
+    cur = sib
+  }
+  return false
+}
+function firstIdentifierText(n: any): string | null {
+  if (n.type === "identifier") return n.text
+  for (const c of named(n)) { const r = firstIdentifierText(c); if (r) return r }
+  return null
+}
+
 function methodNames(node: any, bodyType: string): string[] {
   const out: string[] = []
   const body = named(node).find((c: any) => c.type === bodyType)
@@ -226,6 +255,39 @@ function methodNames(node: any, bodyType: string): string[] {
         if (NAME_WRAPPERS.has(c.type)) {
           const nm = field(c, "name")
           if (nm && IDENT.test(nm)) add(nm)
+        }
+        // AN ANNOTATED FIELD IS OVERRIDABLE. In Dart a field can override an
+        // inherited getter or setter, and `@override` is how that is marked:
+        //
+        //   final class VoteError extends VoteState implements ConnectionErrorState {
+        //     @override
+        //     final String message;
+        //     const VoteError(this.message);
+        //   }
+        //
+        // reads as `VoteError.message` overriding `ConnectionErrorState.message`,
+        // which is a getter in an interface. This function only collected NAME_WRAPPERS
+        // — signature nodes — so it saw no member called `message` and derived no
+        // edge, while the analyzer published one at 0.95 and the row read as a
+        // disagreement. The analyzer was right.
+        //
+        // GATED ON `@override`, which is the whole reason the analyzer is right to
+        // publish it: a Dart field cannot be overridden by another field, only by an
+        // accessor, and the annotation is what says this one is shadowing an
+        // inherited accessor rather than declaring a new one. An UNANNOTATED field
+        // is a declaration, not an override, and is excluded here for the reason
+        // PYTHON's spec excludes class variables — an ungated field would make a
+        // base's field satisfy "this base declares the name" and fabricate edges at
+        // full confidence.
+        if (c.type === "initialized_identifier_list" || c.type === "static_final_declaration_list") {
+          if (hasOverrideAnnotation(m)) {
+            for (const id of named(c)) {
+              if (id.type === "initialized_identifier" || id.type === "static_final_declaration") {
+                const nm = field(id, "name") ?? firstIdentifierText(id)
+                if (nm && IDENT.test(nm)) add(nm)
+              }
+            }
+          }
         }
       }
     }

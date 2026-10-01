@@ -319,8 +319,16 @@ Both differential lanes, `--dart-deps=direct`, freshly measured (each run report
 
 | lane | coverage | MISSING | unexplained |
 |---|---|---|---|
-| proxicall:dart | 100% | 0 | 3–7 (rotation-dependent) |
-| dart-http:dart | 100% | 0 | 37 |
+| proxicall:dart | 100% | 0 | **0** |
+| dart-http:dart | 100% | 0 | 4 |
+
+The 4 remaining on dart-http are `dart:io` SDK types (`WebSocket.connect`,
+`BaseClient.send`, `OutgoingConnectionWindowHandler.peerWindowSize`) at confidence
+0.95. They are unresolvable in principle, not a gap: `dart:io` ships no source in
+the pub cache or the repository, and that corpus has no `.dart_tool` and no
+`pubspec.lock` — 18 of its 32 direct dependencies have more than one version in
+the cache, so indexing them would be guessing, which is the equatable-2.0.8-vs-2.1.0
+trap.
 
 Fixtures 12/12, mutants 42/42, parse 0 errors on 1,294 `lib` files, 202.5 s.
 
