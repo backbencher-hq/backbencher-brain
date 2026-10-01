@@ -11,9 +11,35 @@
   ],
   "checks": [
     {
-      "name": "corpus rake/lib/rake (Ruby): present",
-      "pass": false,
-      "detail": "$HOME/fixtures/repositories/rake/lib/rake missing"
+      "name": "corpus rake/lib/rake (Ruby): symbols-mode finds Application",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): result carries a real file path",
+      "pass": true,
+      "detail": "application.rb"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): result carries a language",
+      "pass": true,
+      "detail": "ruby"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): content-mode finds Application",
+      "pass": true,
+      "detail": "got 4"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=Application@20 p2=application@8"
+    },
+    {
+      "name": "corpus rake/lib/rake (Ruby): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
     },
     {
       "name": "corpus graphql-js/src (TypeScript): present",
@@ -21,21 +47,73 @@
       "detail": "$HOME/fixtures/repositories/graphql-js/src missing"
     },
     {
-      "name": "corpus rebar3/apps (Erlang): present",
-      "pass": false,
-      "detail": "$HOME/fixtures/repositories/rebar3/apps missing"
+      "name": "corpus rebar3/apps (Erlang): symbols-mode finds rebar_agent",
+      "pass": true,
+      "detail": "got 1"
     },
     {
-      "name": "corpus go-tools/go/analysis/passes (Go): present",
-      "pass": false,
-      "detail": "$HOME/fixtures/repositories/go-tools/go/analysis/passes missing"
+      "name": "corpus rebar3/apps (Erlang): result carries a real file path",
+      "pass": true,
+      "detail": "rebar/src/rebar_agent.erl"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): result carries a language",
+      "pass": true,
+      "detail": "erlang"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): content-mode finds rebar_agent",
+      "pass": true,
+      "detail": "got 1"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=rebar_agent@3 p2=rebar_api@3"
+    },
+    {
+      "name": "corpus rebar3/apps (Erlang): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): symbols-mode finds unreachable",
+      "pass": true,
+      "detail": "got 2"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a real file path",
+      "pass": true,
+      "detail": "unreachable/doc.go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): result carries a language",
+      "pass": true,
+      "detail": "go"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): content-mode finds unreachable",
+      "pass": true,
+      "detail": "got 3"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): pagination offset honored (distinct pages)",
+      "pass": true,
+      "detail": "p1=unreachable@1 p2=unreachable@1"
+    },
+    {
+      "name": "corpus go-tools/go/analysis/passes (Go): modified file's result is flagged stale (never fresh) [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "stale=true"
     }
   ],
-  "negativeCases": 0,
+  "negativeCases": 3,
   "summary": {
-    "total": 4,
-    "passed": 0,
-    "failed": 4
+    "total": 19,
+    "passed": 18,
+    "failed": 1
   },
   "decisions": {
     "sample": "one small sub-directory per major language family (Ruby, TypeScript, Erlang, Go, Zig) so indexing completes in seconds per entry — the proof is the search contract + freshness truthfulness, not exhaustive coverage",
@@ -46,5 +124,10 @@
     "Only a small sub-directory per repo is indexed (full 29-repo indexing is hours-long); broader coverage is M14.",
     "A sub-directory with no resolvable symbol is skipped (recorded, not failed)."
   ],
-  "generatedAt": "2026-09-29T07:50:46.851Z"
+  "generatedAt": "2026-09-05T20:58:15.478Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-09-14T23:42:48.299Z",
+    "contentSha256": "1ba98cfeb2748a8ae9278416f7474c5c43af80571d33a31f6744e23a96d2207f"
+  }
 }

@@ -586,18 +586,19 @@ export async function admitsShellShebang(filePath: string): Promise<boolean> {
  *
  * This column exists so content search can reach a word that appears only
  * inside a function — measured unreachable for 27% of body-only words on rake
- * and 38% on ripgrep, because `searchContent` selected only
+ * and 38% on ripgrep, because `searchContent` selects only
  * name/qualified_name/docstring and the body was indexed solely as a
  * 50-dimensional hash that cannot be queried by word.
  *
  * Bounded for two measured reasons:
  *  - size. A 25 599-character body was measured on rake (a whole class body).
  *    `searchContentClassic` loads every symbol row for a project, so an
- *    unbounded body would make content search memory scale with total source
- *    rather than with the query.
- *  - diminishing returns past the cap. The median measured body is 28 tokens
- *    and p90 is 69, so a few hundred lines is generous: a word a developer
- *    remembers is overwhelmingly likely to be near the top of the symbol.
+ *    unbounded body would make content search's memory scale with total
+ *    source rather than with the query.
+ *  - usefulness past the cap. A body is truncated at the first MAX_BODY_SOURCE_LINES
+ *    lines because a word developers remember is overwhelmingly likely to be
+ *    near the top; the number below is generous relative to the median
+ *    measured body (28 tokens, p90 69).
  *
  * Returns null when there is no body, so the column reads as "this symbol has
  * no body to search" rather than as an empty string that matches everything.
@@ -608,8 +609,8 @@ const MAX_BODY_SOURCE_LINES = 200
 function boundSourceText(snippet: string | undefined | null, startLine: number, endLine: number): string | null {
   if (!snippet) return null
   let text = String(snippet)
-  // The analyzer's snippet is occasionally the whole file when line information
-  // is missing. Trust the line range when we have one.
+  // The analyzer's snippet is occasionally the whole file when line
+  // information is missing. Trust the line range when we have one.
   if (endLine > startLine && startLine > 0) {
     const lines = text.split("\n")
     if (lines.length > endLine - startLine + 1) {
@@ -2806,6 +2807,10 @@ export async function storeResults(
                // retrieval path — 27% of body-only words on rake, 38% on
                // ripgrep. The body was in the database only as a
                // 50-dimensional hash, which cannot be queried by word.
+               //
+               // Bounded for the same reason the docstring above is: a symbol
+               // can be very large (a 25 599-character body was measured on
+               // rake) and this table is scanned by content search.
                boundSourceText(symbol.snippet, symbolStartLine, symbolEndLine),
                // #837: the DDL column (scope_kind) and the typed schema
                // existed for years while this INSERT silently omitted them —

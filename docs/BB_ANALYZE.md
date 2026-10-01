@@ -12,8 +12,7 @@ come from.
 
 Every claim here is pinned by a corpus test in `fixtures/analyze/` (204 claims)
 and every magnitude is measured on real code — `backbencher-brain/src` at
-8,565 symbols and 52,597 relationships, and `node_modules/commander` — not on a
-fixture.
+7,196 symbols and `node_modules/commander` — not on a fixture.
 
 ## Modes
 
@@ -74,39 +73,9 @@ repository's own `src`:
   internal branch's 10 ms** for the same symbol, to contribute 15 of 21 rows.
 
 At a 50-node budget that is seconds per target, and the recursion multiplies it:
-`mode:"callers" target:"push"` was measured at **613 seconds** for `trace`.
-
-**A bound that is declared but does not bound is the defect**, so there is now a
-wall-clock budget. It preserves every current answer exactly: a bound that fires
-*with work left* is declared through `timeBudgetExhausted` and
-`truncationReason: "walk-time-budget-exhausted"`.
-
-It is also not sufficient, and finding out why is the more useful part. A
-wall-clock budget is checked **between** nodes, and a single SQL statement is
-not interruptible. One took **28,864 ms**:
-
-```sql
-LEFT JOIN brain_symbol s ON 0
-LEFT JOIN brain_file f ON 0
-```
-
-The callee query is a `UNION ALL`. Its second arm reports relationships whose
-`target_symbol_id` is NULL — the store saying it could not resolve the target.
-There is no target symbol, so its nine target columns are constants, and `ON 0`
-produced them while keeping the compound's column shape aligned. SQLite cannot
-flatten a compound arm containing a join it cannot eliminate, so the arm lost
-the index it was eligible for and read **every relationship row in the project**.
-Emitting the same nine `NULL`s as literals took the statement to **828 ms**.
-
-| | before | after |
-|---|---|---|
-| one callee statement | 28,864 ms | **828 ms** |
-| `mode:"callees" target:"push"` | no answer in 30 s | 1,675 ms |
-| `mode:"callees" target:"getProjectStats"` | no answer in 45 s | 2,105 ms |
-| all nine gate cases | four did not answer | **all ≤ 2,328 ms** |
-
-The query belongs to the graph engine, so `bb_graph` and `bb_impact` were on the
-same 29-second floor. `fixtures/analyze/latency-gate.sh` gates it.
+`mode:"callers" target:"push"` was measured at **613 seconds** for `trace`. The
+budget does not raise the quality of a deep answer; it converts a ten-minute
+wait into a declared partial one.
 
 ## Not-found is four answers, not one
 
@@ -186,21 +155,9 @@ does not match `src/utilities`. It was a substring `includes()`, which made
 `score` counts resolved internal edges and dependents only: a dependency on
 `node:fs` is a constant of the ecosystem, not coupling to this project.
 
-Neither list on a row carries `fileId`. A file id is
-`<40-hex project id>:<relative path>`, so it repeated the path printed next to
-it — 506 edges carried 506 copies, 56,540 of 121,340 bytes on a default page.
-The **path is the locator**; the row above still carries the id for the file the
-row is about, and the freshness flag is resolved from the path. What survives is
-`resolution`, because that is the part a path cannot tell you.
-
 Provenance is on the **report**, not repeated on every row. It is one engine and
 one set of limitations; at 20 rows the repetition was about a third of the
 payload.
-
-This is the largest answer the tool produces — **75,911 bytes (~21k tokens)** for
-a default 20-file page of a 183-file project, which is 506 internal edges that
-genuinely exist between those files. `limit` is honoured and declared; a caller
-who wants less says so rather than paying for a page they will not read.
 
 ## `complexity` (`analyzeComplexity`)
 
@@ -297,10 +254,9 @@ the ranking and the summary counts still use the complete set.
 - `fixtures/analyze/analyze.test.ts` — 101 claims, the first review: honest
   bounds, targets as values, right answers, one not-found contract, `limit`,
   the regressions.
-- `fixtures/analyze/round2.test.ts` — 114 claims, the second review: the answer
+- `fixtures/analyze/round2.test.ts` — 103 claims, the second review: the answer
   fits in a context window, the answer contains nothing unasked for, metrics out
-  of domain, `stats`, hostile parameters, provenance, the wall-clock bound, the
-  unresolved-target arm, and the per-entry identity.
+  of domain, `stats`, hostile parameters, provenance, the wall-clock bound.
 - `fixtures/analyze/latency-gate.sh` — the wall-clock half of the latency
   finding, on the real corpus.
 - `script/verify-analyze.ts` — the in-repo engine gate (coupling, dependencies,

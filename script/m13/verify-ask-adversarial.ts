@@ -22,7 +22,6 @@ import { semanticVectorSearch } from "../../src/intelligence/search/semantic-sea
 import { PUBLIC_TOOL_DESCRIPTORS } from "../../src/mcp/tool-registry"
 import { validateToolArguments } from "../../src/mcp/tool-validation"
 import { Harness } from "./harness"
-import { noNanSimilarity } from "./harness"
 
 const harness = new Harness({
   issue: "M13.25",
@@ -76,8 +75,7 @@ await indexProjectParallel(projectId, root, {})
   } else {
     harness.check("missing embeddings: keyword-fallback with explicit reason, no crash", meta.method === "keyword-fallback" && typeof meta.fallbackReason === "string" && meta.fallbackReason.length > 0, JSON.stringify(meta))
   }
-  harness.check("missing embeddings: results carry no NaN similarity", res.results.every(noNanSimilarity),
-    JSON.stringify(res.results.map((r: any) => ({ name: r.symbolName, sim: String(r.similarity) }))))
+  harness.check("missing embeddings: results carry no NaN similarity", res.results.every((r) => Number.isFinite(r.similarity)))
 }
 
 // ── 4+5. Model mismatch + corrupt vectors ─────────────────────────────────
@@ -114,7 +112,7 @@ await indexProjectParallel(projectId, root, {})
     harness.negative("corrupt: NaN vector row is never returned", !ids.includes("adv-nan-symbol"))
     harness.negative("corrupt: non-numeric vector row is never returned", !ids.includes("adv-nonnum-symbol"))
     harness.negative("corrupt: wrong-dimension row is never returned", !ids.includes("adv-wrongdim-symbol"))
-    harness.negative("corrupt: no NaN similarity anywhere in results", res.results.every(noNanSimilarity), JSON.stringify(res.results.map((r: any) => ({ name: r.symbolName, sim: String(r.similarity) }))).slice(0, 160))
+    harness.negative("corrupt: no NaN similarity anywhere in results", res.results.every((r) => Number.isFinite(r.similarity)), JSON.stringify(res.results.map((r) => r.similarity)).slice(0, 120))
     harness.check("corrupt: metadata reports scan/filter counts", typeof res.metadata?.scannedRows === "number" && res.metadata.scannedRows > 0, JSON.stringify(res.metadata))
   }
 }

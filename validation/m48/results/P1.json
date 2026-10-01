@@ -1,10 +1,10 @@
 {
   "status": "verified",
-  "currentCommit": "d1ad94bb83a1eba9ee067ae49575843bb983537e",
+  "currentCommit": "40b4324f841ff25835ec56b5078c30083d4564d0",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "bun run script/m48/verify-p1-impact-unity.ts",
   "evidenceFile": "P1.json",
-  "generatedAt": "2026-09-30T03:45:29.704Z",
+  "generatedAt": "2026-09-30T00:24:16.255Z",
   "passed": 28,
   "failed": 0,
   "negativeCases": 3,

@@ -351,13 +351,8 @@ findings. `recordRun` explicitly persists analysis history; status is otherwise 
 
 ### `bb_security`
 
-Current public mode is `findings`. The **text** response prints, per finding: severity, label,
-symbol, `file:line`, source type, sink type, and a `[mitigated]`/`[stale]` marker, plus a
-`[scan: N flow(s) → M finding(s) …]` census line so a capped scan is never mistaken for a
-complete one. One-sided flows are listed separately as unvalidated observations with their real
-severity. It is static analysis, not penetration testing. Confidence, `evidence`,
-`limitations`, the resolved source node and the full path are computed by the engine and carried
-on the typed report / into `recordRun` history — they are not rendered in the text mode.
+Current public mode is `findings`. Reports source/sink taint evidence, normalized labels,
+confidence, mitigations, and limitations. It is static analysis, not penetration testing.
 
 ```json
 {"recordRun":true,"limit":20}
