@@ -299,10 +299,17 @@ labelled the same way at the batch level, and the deduplicated figure is
 `effort.totalHours`; the two are reconciled in `effort.reconciliation`.
 
 Wave 3 above is **cycle members**. `computeDependencyOrder` cannot emit a symbol
-that sits in a cycle — Kahn's algorithm never reaches indegree 0 for it — so 26 of
-88 planned symbols were simply **absent from the wave plan**. A cycle is a group
-that cannot be split, so its members are collected into one trailing wave. The
-wave plan now accounts for every planned symbol.
+that sits in a cycle — Kahn's algorithm never reaches indegree 0 for it — so those
+symbols were simply **absent from the wave plan**. Measured on the one-file cobra
+cohort: **25 of 100** planned symbols sit in cycles. A cycle is a group that cannot
+be split, so its members are collected into one trailing wave, and the wave plan
+accounts for every planned symbol.
+
+Two same-named components in one file are still **one wave label**. `waves` is a
+list of names, so when two plans share a name the label cannot say which file is
+meant — `cappedNames` has the same ambiguity and resolves it by rendering
+`name (file)`. Use `cohort.wavePlan` for the identity a caller can index: the same
+partition keyed by `symbolId`, where every plan appears exactly once.
 
 `paths` and `symbolIds` may name the same component. The union de-duplicates by
 id, so it is planned once — the path loader's own de-dup cannot cover this case,
