@@ -101,7 +101,21 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
   const push = (rawOwner: string, rawMember: string): void => {
     const owner = stripZigQuoting(rawOwner)
     const member = stripZigQuoting(rawMember)
-    if (!owner || !member || member === "_") return
+    // Z53: the blank-identifier test belongs on the RAW spelling, not the
+    // canonicalized one. `const _ = 1;` and `var _ = x;` bind the blank identifier
+    // and declare nothing (Z8/GO5), and their node text is exactly `_`. An ENUM
+    // MEMBER spelled `@"_"` is a real, deliberately named member — zig's x86 backend
+    // does exactly this: `const Label = enum { @"0:", @"1:", …, @"_", pseudo }` —
+    // and testing the STRIPPED form threw it away, so the analyzer published
+    // `contains Label -> _` and the truth had no row for it: 3 unexplained rows at
+    // full corpus, in files no 200-file draw reached.
+    //
+    // This is Z46's distinction (a blank in a BINDING is a discard; a blank in a
+    // DECLARATION is a name) applied to the oracle for the first time. Three fixes
+    // in three places is not three coincidences: it is one rule that was never
+    // written as a rule.
+    const isBlankIdentifier = String(rawMember ?? "").trim() === "_"
+    if (!owner || !member || isBlankIdentifier) return
     // `~~` cannot occur inside a zig identifier, so the composite key is
     // unambiguous. A literal NUL would do the same job and did — but it made this
     // file BINARY to git, and an oracle nobody can read as text is an oracle
@@ -123,7 +137,7 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
         p.namedChild(p.namedChildCount - 1)?.id === n.id
       if (declRhs) {
         const nameKid = p && p.namedChildCount > 0 ? p.namedChild(0) : null
-        const name = nameKid && nameKid.type === "identifier" ? String(nameKid.text) : null
+        const name = nameKid && nameKid.type === "identifier" ? stripZigQuoting(String(nameKid.text ?? "")) : null
         // Z22: a container inside an executable body is a LOCAL type. It is
         // declared, so it has a name — but it owns nothing, and the analyzer
         // publishes none of its members, so deriving any would be a MISSING row
@@ -194,7 +208,7 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
     if (n.type === "error_set_declaration" && !nextAnon && !nextExec) {
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && c.type === "identifier") push(nextOwner ?? "", String(c.text))
+        if (c && c.type === "identifier") push(nextOwner ?? "", stripZigQuoting(String(c.text ?? "")))
       }
     }
     if (EXECUTABLE.has(n.type)) nextExec = true
@@ -360,14 +374,14 @@ export function deriveZigInstantiation(root: any): { label: string; from: string
       if (t && (t.type === "builtin_type" || t.type === "identifier") && String(t.text) === "type") {
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
-          if (c && c.type === "identifier") { typeFns.add(String(c.text)); break }
+          if (c && c.type === "identifier") { typeFns.add(stripZigQuoting(String(c.text ?? ""))); break }
         }
       }
     }
     if (n.type === "struct_declaration" || n.type === "enum_declaration" || n.type === "union_declaration" || n.type === "opaque_declaration") {
       const p = n.parent
       if (p && p.type === "variable_declaration" && p.namedChildCount > 0 && p.namedChild(0)?.type === "identifier") {
-        typeNames.add(String(p.namedChild(0).text))
+        typeNames.add(stripZigQuoting(String(p.namedChild(0).text ?? "")))
       }
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) inv(c) }
@@ -737,7 +751,7 @@ export function deriveZigEdgesWithSource(
   const leafOf = (fe: any): string | undefined => {
     if (!fe) return undefined
     const last = fe.namedChildCount > 0 ? fe.namedChild(fe.namedChildCount - 1) : null
-    if (last && last.type === "identifier") return last.text
+    if (last && last.type === "identifier") return stripZigQuoting(String(last.text ?? ""))
     return undefined
   }
   // Z37: the ENCLOSING FUNCTION, carried as a stack, so every row names the symbol
@@ -750,7 +764,14 @@ export function deriveZigEdgesWithSource(
     if (n.type === "function_declaration" || n.type === "test_declaration") {
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && c.type === "identifier") return String(c.text)
+        // Z51: canonicalized, and this is the SECOND of two scope sites. The first
+        // fix landed on the bare-read pass's copy, and the full-corpus run still
+        // reported 364 wrong-source rows concentrated in aro/Hideset.zig, where
+        // `pub fn @"union"(...)` is a legal quoted-keyword function and this site
+        // returned `@"union"` raw against an analyzer that publishes `union`. Two
+        // copies of one rule, and fixing one of them is precisely the mistake
+        // Z24/Z25/Z29 were about: the rule is written once and called from both.
+        if (c && c.type === "identifier") return stripZigQuoting(String(c.text ?? ""))
       }
     }
     return fn
@@ -1122,7 +1143,25 @@ export function deriveZigBareUsesWithSource(
     if (t === "function_declaration" || t === "test_declaration") {
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c && c.type === "identifier") { nextFn = String(c.text); break }
+        if (c && c.type === "identifier") {
+          // Z51: CANONICALIZE. `pub fn @"union"(...)` is legal Zig and common in
+          // the corpus (aro's Hideset.zig does exactly this, because `union` is a
+          // keyword), and an `identifier` node's text carries the `@"..."` syntax
+          // while the analyzer publishes the name without it. Raw here, the truth
+          // derived the source `@"union"` and the analyzer published `union`, so
+          // every read and call inside that function came out as a phantom AND a
+          // miss — 410 symmetric rows across 3 files at full-corpus extent, in a
+          // 200-file draw of which none appeared.
+          //
+          // This is the SAME mistake as Z41 (a read name looked up raw against a
+          // canonicalized inventory) and Z43 (a verifier key built from raw text
+          // against canonicalized symbols), now in a fourth place: the enclosing
+          // SCOPE name. Three fixes in three places is not three coincidences; it
+          // is one rule that was never written down as a rule, which is why the
+          // canonicalizer is now applied at every point where a node becomes a name.
+          nextFn = stripZigQuoting(String(c.text ?? ""))
+          break
+        }
       }
     }
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
