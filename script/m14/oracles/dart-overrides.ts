@@ -307,7 +307,24 @@ function directSupertypes(node: any): string[] {
   return out
 }
 
-export function deriveDartOverridesTruth(root: any): TruthEdge[] {
+/**
+ * Derive the file's `overrides` truth.
+ *
+ * `companion` is the CROSS-REPOSITORY index — class name -> member names it
+ * declares — and it is a FALLBACK, not a merge. DARTD16's resolution is ordered in
+ * passes: in-file breadth-first over `extends`/`implements`/`with`, THEN the
+ * companion, THEN an annotation-gated external first-parent. That order is the
+ * whole of "nearest wins", so the companion must be consulted only once the
+ * in-file walk has failed to find the member — if it were merged in from the start,
+ * a distant framework base could displace an in-file intermediate that actually
+ * declares the method, and the edge would answer a different question.
+ *
+ * A supertype the companion knows but that declares no match ENDS the walk, because
+ * the companion is a flat map and cannot be walked further. That is a real limit of
+ * a cross-repository index, not a shortcut, and it is why the in-file subset and
+ * the cross-file subset are measured as two numbers rather than one.
+ */
+export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<string>>): TruthEdge[] {
   // index the file: declaration name -> the methods it declares
   const methodsOf = new Map<string, string[]>()
   const supertypesOf = new Map<string, string[]>()
@@ -353,12 +370,26 @@ export function deriveDartOverridesTruth(root: any): TruthEdge[] {
         if (seen.has(sup)) continue
         seen.add(sup)
         const supMethods = methodsOf.get(sup)
-        if (supMethods && supMethods.includes(m)) {
-          add(`${cls}.${m}`, `${sup}.${m}`)
-          resolved = true
+        if (supMethods) {
+          // declared IN THIS FILE — the higher-priority pass
+          if (supMethods.includes(m)) {
+            add(`${cls}.${m}`, `${sup}.${m}`)
+            resolved = true
+            break
+          }
+          // known here but no match: keep walking, its own supertypes are in-file too
+          for (const up of supertypesOf.get(sup) ?? []) if (!seen.has(up)) direct.push(up)
+          continue
+        }
+        // not declared here — the companion pass, and the end of the road if it
+        // does not have the member either
+        if (companion && companion.has(sup)) {
+          if (companion.get(sup)!.has(m)) {
+            add(`${cls}.${m}`, `${sup}.${m}`)
+            resolved = true
+          }
           break
         }
-        for (const up of supertypesOf.get(sup) ?? []) if (!seen.has(up)) direct.push(up)
       }
     }
   }
