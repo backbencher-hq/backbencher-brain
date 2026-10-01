@@ -338,9 +338,16 @@ export namespace DependencyGraphVisualizer {
   .note{margin-top:10px;padding-top:9px;border-top:1px solid var(--edge);
     color:var(--muted);font-size:11.5px}
   .warnrow{color:var(--warn)}
+  /* MEASURED: a screenshot caught the hint wrapping to two lines and printing
+     straight through the detail panel, because both are anchored to the bottom of
+     the viewport. It is one line that ellipsises, and it steps aside whenever the
+     detail panel is open. */
   #hint{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
     color:var(--muted);font-size:11.5px;background:var(--panel);
-    border:1px solid var(--edge);border-radius:999px;padding:6px 14px}
+    border:1px solid var(--edge);border-radius:999px;padding:6px 14px;
+    max-width:36vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    transition:opacity .18s ease}
+  body.detail-open #hint{opacity:0;pointer-events:none}
   #progress{position:absolute;left:50%;top:16px;transform:translateX(-50%);
     color:var(--accent);font-size:11.5px;background:var(--panel);
     border:1px solid var(--edge);border-radius:999px;padding:6px 14px;
@@ -604,17 +611,39 @@ export namespace DependencyGraphVisualizer {
     }
     /** Copy the current positions onto the nodes the renderer draws. */
     function publish() {
-      var nx = Infinity, ny = Infinity, ax = -Infinity, ay = -Infinity;
-      for (var q2 = 0; q2 < n; q2++) {
-        if (pos[q2].x < nx) nx = pos[q2].x;
-        if (pos[q2].x > ax) ax = pos[q2].x;
-        if (pos[q2].y < ny) ny = pos[q2].y;
-        if (pos[q2].y > ay) ay = pos[q2].y;
+      // Normalise on a PERCENTILE, not on the extremes.
+      //
+      // A screenshot showed 1,200 nodes squashed into a tight central blob with a
+      // handful of isolated pairs flung to the far corners, leaving most of the
+      // canvas empty. That is this function's fault rather than the layout's: a
+      // graph with a few disconnected components has a handful of nodes that
+      // repulsion pushes much further out than the rest, and mapping min..max onto
+      // the world box lets those few dictate the scale for everyone. The dense core
+      // -- the part a reader came for -- ended up occupying a small fraction of the
+      // frame, which is exactly the "mess" complaint.
+      //
+      // So the extent comes from the 2nd and 98th percentiles and anything beyond
+      // is CLAMPED to the rim: the core fills the canvas, outliers sit on the edge
+      // instead of compressing everything else, and panning out still finds them.
+      // This runs for the first painted frame as well as the settled one, so the
+      // graph does not jump when the simulation finishes.
+      var xs = new Array(n), ys = new Array(n)
+      for (var q2 = 0; q2 < n; q2++) { xs[q2] = pos[q2].x; ys[q2] = pos[q2].y }
+      xs.sort(function (a, b) { return a - b })
+      ys.sort(function (a, b) { return a - b })
+      function pct(arr, f) {
+        var i = Math.round((arr.length - 1) * f)
+        return arr[Math.max(0, Math.min(arr.length - 1, i))]
       }
-      var sx = (ax - nx) || 1, sy = (ay - ny) || 1;
+      var lo_x = pct(xs, 0.02), hi_x = pct(xs, 0.98), lo_y = pct(ys, 0.02), hi_y = pct(ys, 0.98)
+      var sx = (hi_x - lo_x) || 1, sy = (hi_y - lo_y) || 1
       for (var q3 = 0; q3 < n; q3++) {
-        nodes[q3].x = ((pos[q3].x - nx) / sx - 0.5) * 2000;
-        nodes[q3].y = ((pos[q3].y - ny) / sy - 0.5) * 1400;
+        var fx = (pos[q3].x - lo_x) / sx
+        var fy = (pos[q3].y - lo_y) / sy
+        fx = fx < 0 ? 0 : fx > 1 ? 1 : fx
+        fy = fy < 0 ? 0 : fy > 1 ? 1 : fy
+        nodes[q3].x = (fx - 0.5) * 2000
+        nodes[q3].y = (fy - 0.5) * 1400
       }
     }
     return { step: step, total: total, done: function () { return it >= total; } };
@@ -1076,9 +1105,9 @@ export namespace DependencyGraphVisualizer {
   }
 
   var det = document.getElementById("detail"), dbody = document.getElementById("dbody");
-  document.getElementById("dclose").onclick = function () { det.classList.remove("on"); sel = null; draw(); };
+  document.getElementById("dclose").onclick = function () { det.classList.remove("on"); document.body.classList.remove("detail-open"); sel = null; draw(); };
   function show(o) {
-    if (!o) { det.classList.remove("on"); return; }
+    if (!o) { det.classList.remove("on"); document.body.classList.remove("detail-open"); return; }
     var isNode = o.name !== undefined;
     var rows = isNode
       ? [["name", o.name], ["type", o.type], ["language", o.group], ["file", o.filePath],
@@ -1096,6 +1125,7 @@ export namespace DependencyGraphVisualizer {
     dbody.innerHTML = "<h3>" + (isNode ? "Symbol" : "Relationship") + "</h3><dl>" +
       rows.map(function (r) { return "<dt>" + esc(r[0]) + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + "</dl>";
     det.classList.add("on");
+    document.body.classList.add("detail-open");
   }
 
   var input = document.getElementById("q"), qstat = document.getElementById("qstat");
