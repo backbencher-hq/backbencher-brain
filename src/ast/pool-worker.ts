@@ -734,6 +734,11 @@ export async function parseFile(filePath: string, projectPath: string, context?:
           // in the analyzer's payload and in no consumer's hands — the same seam as
           // `docstring` above, and the same terms: additive, nothing read it before.
           license: (s as any).license ?? (s.metadata as any)?.license ?? null,
+          // SOL-23: the NatSpec-vs-signature findings, per symbol. Additive on the same
+          // terms as the rest of this block.
+          undocumentedParameters: (s as any).undocumentedParameters ?? null,
+          overDocumentedParameters: (s as any).overDocumentedParameters ?? null,
+          returnDocumentedWithoutReturn: (s as any).returnDocumentedWithoutReturn ?? false,
           docstringKind: (s as any).docstringKind ?? (s.metadata as any)?.docstringKind ?? null,
           docTags: (s as any).docTags ?? (s.metadata as any)?.docTags ?? null,
           comments: (s as any).comments ?? (s.metadata as any)?.comments ?? null,

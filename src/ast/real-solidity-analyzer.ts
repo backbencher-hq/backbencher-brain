@@ -343,6 +343,75 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     ])
 
     /**
+     * SOL-23 — cross-check NatSpec AGAINST THE SIGNATURE.
+     *
+     * SOL-16 reads the documentation; this asks whether the documentation is TRUE. A
+     * `@param` naming a parameter that does not exist, or a parameter with no `@param`,
+     * is a real defect in the source — and it is the one class of NatSpec finding that
+     * is fully decidable per file, because both halves are in the same tree.
+     *
+     * THE THREE VERDICTS, kept separate because they are different failures with
+     * different owners:
+     *
+     *   undocumented-parameter  a parameter with no `@param`. Usually benign — plenty
+     *     of code documents only the interesting ones.
+     *   over-documented-parameter  a `@param` naming nothing. This one is a real error:
+     *     the documentation describes a parameter the function does not have, and a
+     *     reader following it will look for an argument that is not there.
+     *   return-documented-without-return  a `@return` on a function that returns
+     *     nothing. Also a real error, and the mirror of over-documented-parameter.
+     *
+     * Reported as COUNTS plus samples rather than as relationships. This is a finding
+     * ABOUT the code, not a fact about the graph's shape: there is no second symbol and
+     * no second file for an edge to connect, and inventing an edge to a parameter that
+     * may not exist would put a target in the graph that no project declares — the
+     * exact shape SOL-19 exists to refuse.
+     *
+     * Zero regex: the tag scan reads a leading `@` and takes the run of tag characters,
+     * then the whitespace-delimited name after it. `@custom:` and friends fall out of
+     * the same walk with no list to maintain.
+     */
+    const natSpecParamCheck = (
+      doc: string,
+      paramNames: string[],
+      hasReturn: boolean,
+    ): { undocumented: string[]; overDocumented: string[]; returnWithoutReturn: boolean } => {
+      const undocumented = paramNames.filter((n) => n !== "")
+      const overDocumented: string[] = []
+      let returnWithoutReturn = false
+      const documented = new Set<string>()
+      for (const line of doc.split("\n")) {
+        const t = line.trim()
+        if (!t.startsWith("@")) continue
+        let end = 1
+        while (end < t.length) {
+          const c = t.charAt(end)
+          if (c === " " || c === "\t") break
+          end++
+        }
+        const tag = t.slice(0, end)
+        // `@param x …` names a parameter; the name runs to the next whitespace.
+        if (tag === "@param") {
+          let rest = end
+          while (rest < t.length && (t.charAt(rest) === " " || t.charAt(rest) === "\t")) rest++
+          let nameEnd = rest
+          while (nameEnd < t.length && t.charAt(nameEnd) !== " " && t.charAt(nameEnd) !== "\t") nameEnd++
+          const nm = t.slice(rest, nameEnd)
+          if (nm === "") continue
+          documented.add(nm)
+          if (!paramNames.includes(nm)) overDocumented.push(nm)
+        } else if (tag === "@return") {
+          if (!hasReturn) returnWithoutReturn = true
+        }
+      }
+      for (const n of documented) {
+        const at = undocumented.indexOf(n)
+        if (at >= 0) undocumented.splice(at, 1)
+      }
+      return { undocumented, overDocumented, returnWithoutReturn }
+    }
+
+    /**
      * SOL-22 — read the licence identifier off the file's first comment run.
      *
      * Solidity's own convention is `SPDX-License-Identifier: <id>`, and the grammar's
@@ -448,6 +517,13 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
     let commentsAttached = 0
     let documentedSymbols = 0
     let symbolsWithComplexity = 0
+    let natSpecUndocumentedParams = 0
+    let natSpecOverDocumentedParams = 0
+    let natSpecReturnWithoutReturn = 0
+    let symbolsWithUndocumentedParams = 0
+    let symbolsWithOverDocumentedParams = 0
+    const overDocumentedSamples: string[] = []
+    const returnWithoutReturnSamples: string[] = []
     let symbolsWithQualifiedCalls = 0
     {
       // RUNS, not single comments — and the first version was wrong in a way that
@@ -776,6 +852,38 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         const tags = natSpecTags(doc.text)
         if (tags.length > 0) meta.docTags = tags
         documentedSymbols++
+        // SOL-23 — documentation checked against the signature. Only for callables:
+        // a struct field or a state variable has parameters in no sense, and running
+        // the check on one would report every `@param` it documents as over-documented.
+        if (parameters !== undefined && Array.isArray(parameters)) {
+          const check = natSpecParamCheck(
+            doc.text,
+            parameters.map((pp) => pp.name).filter((n): n is string => typeof n === "string"),
+            typeof meta.returnType === "string" && meta.returnType !== "",
+          )
+          if (check.undocumented.length > 0) {
+            meta.undocumentedParameters = check.undocumented
+            natSpecUndocumentedParams += check.undocumented.length
+            symbolsWithUndocumentedParams++
+          }
+          if (check.overDocumented.length > 0) {
+            meta.overDocumentedParameters = check.overDocumented
+            natSpecOverDocumentedParams += check.overDocumented.length
+            symbolsWithOverDocumentedParams++
+            overDocumentedSamples.push(`${fileName}:${line} ${clean} documents @param ${check.overDocumented.join(", ")}`)
+          }
+          // ALWAYS set, for every callable the check ran on, true or false. A boolean
+          // that is present only when TRUE cannot be told from "the check did not run"
+          // — and the fixture runner calls `analyze()` directly, so it sees the RAW
+          // symbol where the field was simply absent, and an expectation of `false`
+          // failed against `undefined`. That is the same class of error as the
+          // never-fired branch: an interface that cannot express "checked, and clean".
+          meta.returnDocumentedWithoutReturn = check.returnWithoutReturn
+          if (check.returnWithoutReturn) {
+            natSpecReturnWithoutReturn++
+            returnWithoutReturnSamples.push(`${fileName}:${line} ${clean} has @return but returns nothing`)
+          }
+        }
       } null
       const owner = top().owner
       const key = `${owner}\u0000${clean}\u0000${kind}`
@@ -801,6 +909,16 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         // it), so it is set top-level as well as in metadata, for the same reason
         // `docstring` is.
         ...(typeof meta.ownerKind === "string" ? { ownerKind: meta.ownerKind as string } : {}),
+        // SOL-23 — top-level as well, because `parseFile` returns every symbol with
+        // `metadata: undefined` (pool-worker drops the object at the worker boundary),
+        // so a value only in metadata is invisible to a fixture — which is exactly how
+        // the first version of this feature looked like it had never run.
+        ...(Array.isArray(meta.undocumentedParameters)
+          ? { undocumentedParameters: meta.undocumentedParameters as string[] } : {}),
+        ...(Array.isArray(meta.overDocumentedParameters)
+          ? { overDocumentedParameters: meta.overDocumentedParameters as string[] } : {}),
+        ...(typeof meta.returnDocumentedWithoutReturn === "boolean"
+          ? { returnDocumentedWithoutReturn: meta.returnDocumentedWithoutReturn } : {}),
         ...(typeof meta.docstring === "string"
           ? {
             docstring: meta.docstring,
@@ -872,6 +990,38 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         const tags = natSpecTags(doc.text)
         if (tags.length > 0) meta.docTags = tags
         documentedSymbols++
+        // SOL-23 — documentation checked against the signature. Only for callables:
+        // a struct field or a state variable has parameters in no sense, and running
+        // the check on one would report every `@param` it documents as over-documented.
+        if (parameters !== undefined && Array.isArray(parameters)) {
+          const check = natSpecParamCheck(
+            doc.text,
+            parameters.map((pp) => pp.name).filter((n): n is string => typeof n === "string"),
+            typeof meta.returnType === "string" && meta.returnType !== "",
+          )
+          if (check.undocumented.length > 0) {
+            meta.undocumentedParameters = check.undocumented
+            natSpecUndocumentedParams += check.undocumented.length
+            symbolsWithUndocumentedParams++
+          }
+          if (check.overDocumented.length > 0) {
+            meta.overDocumentedParameters = check.overDocumented
+            natSpecOverDocumentedParams += check.overDocumented.length
+            symbolsWithOverDocumentedParams++
+            overDocumentedSamples.push(`${fileName}:${line} ${clean} documents @param ${check.overDocumented.join(", ")}`)
+          }
+          // ALWAYS set, for every callable the check ran on, true or false. A boolean
+          // that is present only when TRUE cannot be told from "the check did not run"
+          // — and the fixture runner calls `analyze()` directly, so it sees the RAW
+          // symbol where the field was simply absent, and an expectation of `false`
+          // failed against `undefined`. That is the same class of error as the
+          // never-fired branch: an interface that cannot express "checked, and clean".
+          meta.returnDocumentedWithoutReturn = check.returnWithoutReturn
+          if (check.returnWithoutReturn) {
+            natSpecReturnWithoutReturn++
+            returnWithoutReturnSamples.push(`${fileName}:${line} ${clean} has @return but returns nothing`)
+          }
+        }
       }
       // SOL-14 — the store refuses this name, so declaring it would publish a
       // `contains` edge pointing at a symbol that never reaches the store. Refuse
@@ -2535,6 +2685,16 @@ const meta = modifiersOf(node)
         symbolsWithComplexity,
         symbolsWithQualifiedCalls,
         inheritanceKindsResolvedProjectWide,
+        natSpecCheck: {
+          symbolsWithUndocumentedParams,
+          symbolsWithOverDocumentedParams,
+          undocumentedParams: natSpecUndocumentedParams,
+          overDocumentedParams: natSpecOverDocumentedParams,
+          returnDocumentedWithoutReturn: natSpecReturnWithoutReturn,
+          overDocumentedSamples: overDocumentedSamples.slice(0, 10),
+          returnWithoutReturnSamples: returnWithoutReturnSamples.slice(0, 10),
+          _note: "SOL-23. Documentation checked against the signature, both halves in the same tree. `undocumentedParameters` is usually benign — plenty of code documents only the interesting parameters. The other two are real errors in the source: a `@param` naming a parameter the function does not have, and a `@return` on a function that returns nothing. Reported as counts and samples, never as relationships: there is no second symbol and no second file for an edge to connect, and an edge to a parameter that may not exist would put a target in the graph no project declares.",
+        },
         callKinds,
         overridesEmitted,
         overridesEmittedExternal,

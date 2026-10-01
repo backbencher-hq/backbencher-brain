@@ -546,6 +546,36 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
     caughtBy: "solidity/external-override-sol11",
   },
   {
+    id: "solidity/natspec-over-documented-undetected",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-23 REVERT: stop reporting a `@param` that names a parameter the function does not have. The corpus reports ZERO of these across 389 files — entirely believable for OpenZeppelin, and indistinguishable from a checker that never fires. That indistinguishability is why natspec-check-sol23 forces the branch: without it, the zero would have been unfalsifiable. Caught by its `overDocumented` row.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) => {
+        if (!Array.isArray(s.overDocumentedParameters)) return s
+        const y: any = { ...s }
+        delete y.overDocumentedParameters
+        return y
+      }),
+    }),
+    caughtBy: "solidity/natspec-check-sol23",
+  },
+  {
+    id: "solidity/natspec-check-always-clean",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-23 REVERT, the over-claim direction: report `returnDocumentedWithoutReturn: false` on EVERY symbol, including the ones the check never ran on. This is the mirror defect and it is the more dangerous one, because it would make the corpus figure of zero mean NOTHING — a field that says 'checked and clean' on symbols that were never checked is worse than no field at all, and it is the same failure this repo calls a clean-looking zero for a thing that is not zero. Caught by natspec-check-sol23, whose `overDocumented` and `returnWithoutReturn` rows both require the flag to be present-and-false only where the check actually ran.",
+    transform: (r: any) => ({
+      ...r,
+      symbols: (r.symbols ?? []).map((s: any) =>
+        s.kind === "method" || s.kind === "constructor" ? { ...s, returnDocumentedWithoutReturn: false } : s),
+    }),
+    caughtBy: "solidity/natspec-check-sol23",
+  },
+  {
     id: "solidity/licence-dropped",
     language: "solidity",
     defectClass: "payload-loss",
