@@ -309,35 +309,35 @@ export namespace FrameworkIntelligence {
 
     private detectPythonFrameworks(imports: ASTEngine.ImportInfo[], content: string, frameworks: Set<string>) {
       // Web frameworks
-      if (this.hasImport(imports, "django") || content.includes("from django")) {
+      if (this.hasModule(imports, "django") || content.includes("from django")) {
         frameworks.add("django")
       }
-      if (this.hasImport(imports, "flask") || content.includes("from flask")) {
+      if (this.hasModule(imports, "flask") || content.includes("from flask")) {
         frameworks.add("flask")
       }
-      if (this.hasImport(imports, "fastapi")) {
+      if (this.hasModule(imports, "fastapi")) {
         frameworks.add("fastapi")
       }
-      if (this.hasImport(imports, "tornado")) {
+      if (this.hasModule(imports, "tornado")) {
         frameworks.add("tornado")
       }
 
       // Data science
-      if (this.hasImport(imports, "pandas")) {
+      if (this.hasModule(imports, "pandas")) {
         frameworks.add("pandas")
       }
-      if (this.hasImport(imports, "numpy")) {
+      if (this.hasModule(imports, "numpy")) {
         frameworks.add("numpy")
       }
-      if (this.hasImport(imports, "tensorflow") || this.hasImport(imports, "tf")) {
+      if (this.hasModule(imports, "tensorflow") || this.hasModule(imports, "tf")) {
         frameworks.add("tensorflow")
       }
-      if (this.hasImport(imports, "torch") || this.hasImport(imports, "pytorch")) {
+      if (this.hasModule(imports, "torch") || this.hasModule(imports, "pytorch")) {
         frameworks.add("pytorch")
       }
 
       // Testing
-      if (this.hasImport(imports, "pytest") || content.includes("def test_")) {
+      if (this.hasModule(imports, "pytest") || content.includes("def test_")) {
         frameworks.add("pytest")
       }
     }
@@ -816,6 +816,41 @@ export namespace FrameworkIntelligence {
 
     private hasImport(imports: ASTEngine.ImportInfo[], module: string): boolean {
       return imports.some(imp => (imp.module || "").includes(module))
+    }
+
+    /**
+     * Does any import name this MODULE — matched by its root segment or in full, NOT by
+     * substring?
+     *
+     * `hasImport` above is a substring test, and it is the right test for a prefix-shaped
+     * needle like `org.springframework`. It is catastrophically wrong for a SHORT one. The
+     * concrete damage, measured over the python corpus (PY-17):
+     *
+     *   · `"platform".includes("tf")` is **true**, so the TensorFlow alias `tf` fired on every
+     *     file that imports `platform`. 34 corpus files reported `tensorflow` on the strength
+     *     of a stdlib import — including `requests/src/requests/help.py` and
+     *     `ansible/lib/ansible/modules/cron.py`, neither of which has anything to do with it.
+     *   · `"numpydoc".includes("numpy")` is **true**, so `import numpydoc` reported numpy.
+     *
+     * A two-character needle matched against a whole dotted module path matches almost
+     * anything. The fix is not to shorten the table but to match what "imports this framework"
+     * actually means: the import names the framework, optionally with a submodule —
+     * `django.db`, `starlette.applications` — so the root segment must EQUAL the framework,
+     * and a longer module that merely CONTAINS it is a different library.
+     *
+     * ADDITIVE, deliberately: `hasImport` is left exactly as it was, because it is correct for
+     * every other caller in this file and 20-odd other lanes read it. Changing a shared
+     * predicate's semantics to fix one lane's table is the move this repo's own comments keep
+     * warning against; adding the precise one and using it where precision is required is not.
+     */
+    private hasModule(imports: ASTEngine.ImportInfo[], module: string): boolean {
+      const want = module.toLowerCase()
+      return imports.some(imp => {
+        const m = (imp.module || "").toLowerCase()
+        if (m === want) return true
+        const dot = m.indexOf(".")
+        return dot > 0 && m.slice(0, dot) === want
+      })
     }
 
     private initializePatterns() {
