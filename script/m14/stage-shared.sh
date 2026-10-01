@@ -50,37 +50,6 @@
 # up someone else's work?" into a hard error instead of something to notice three commits later.
 set -euo pipefail
 
-# ---- commit-tree: exact blobs, no shared index, no worktree -----------------------------------
-# The only form that cannot sweep in a peer's work, because it reads and writes NO index at all and
-# never takes content from the working tree. It commits a named blob to a named path, seeded from
-# HEAD in a scratch GIT_INDEX_FILE. Use it when the change is not in the worktree verbatim -- a
-# rebuilt-from-HEAD edit, or a file a peer is actively editing.
-#
-#   stage-shared.sh --commit-tree <msg-file> <blob-file>=<path> [<blob-file>=<path> ...]
-if [ "${1:-}" = "--commit-tree" ]; then
-  MSG="${2:?--commit-tree needs a message file}"
-  shift 2
-  [ "$#" -ge 1 ] || { echo "--commit-tree needs at least one blob=path pair" >&2; exit 2; }
-  ISOLATED="$(mktemp)"; rm -f "$ISOLATED"
-  export GIT_INDEX_FILE="$ISOLATED"
-  git read-tree HEAD
-  for pair in "$@"; do
-    B="${pair%%=*}"; T="${pair#*=}"
-    [ -f "$B" ] || { echo "no such blob file: $B" >&2; unset GIT_INDEX_FILE; exit 2; }
-    git ls-files --error-unmatch "$T" >/dev/null 2>&1 || { echo "not tracked: $T" >&2; unset GIT_INDEX_FILE; exit 2; }
-    BLOB="$(git hash-object -w "$B")"
-    MODE="$(git ls-tree HEAD "$T" | awk '{print $1}')"
-    git update-index --cacheinfo "$MODE,$BLOB,$T"
-  done
-  echo "exact blobs staged (worktree and shared index untouched):"
-  git diff --cached --numstat | sed 's/^/    /'
-  git commit -q -F "$MSG"
-  unset GIT_INDEX_FILE; rm -f "$ISOLATED"
-  echo "committed: $(git show --stat --format='%h %s' -1 | head -1)"
-  exit 0
-fi
-
-
 # ---- commit form: allowlist, then assert, then commit -----------------------------------------
 if [ "${1:-}" = "--commit" ]; then
   MSG="${2:?--commit needs a message file}"
