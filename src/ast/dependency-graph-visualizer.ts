@@ -345,6 +345,10 @@ export namespace DependencyGraphVisualizer {
     color:var(--accent);font-size:11.5px;background:var(--panel);
     border:1px solid var(--edge);border-radius:999px;padding:6px 14px;
     font-variant-numeric:tabular-nums}
+  #shown{position:absolute;left:50%;top:52px;transform:translateX(-50%);
+    color:var(--muted);font-size:11px;background:var(--panel);
+    border:1px solid var(--edge);border-radius:999px;padding:5px 13px;
+    font-variant-numeric:tabular-nums;text-align:center;max-width:70vw}
   @media (max-width:760px){#legend,#hint{display:none}#hud{max-width:56vw}}
 </style>
 </head>
@@ -372,7 +376,8 @@ export namespace DependencyGraphVisualizer {
 </div>
 <div class="panel" id="detail"><span class="close" id="dclose">&#10005;</span><div id="dbody"></div></div>
 <div id="progress" style="display:none"></div>
-<div id="hint">drag to pan &middot; scroll to zoom &middot; click a node or edge for its stored facts</div>
+<div id="shown" style="display:none"></div>
+<div id="hint">drag to pan &middot; scroll to zoom &middot; click a node to focus, click an edge to frame both ends, double-click a node to fill the view with its neighbours</div>
 <noscript><p style="padding:24px">This map is interactive and needs JavaScript. The graph data is embedded below.</p></noscript>
 <script id="bb-graph-data" type="application/json">${json.replace(/</g, "\\u003c")}</script>
 <script>
@@ -643,6 +648,11 @@ export namespace DependencyGraphVisualizer {
     if (timerId) { clearTimeout(timerId); timerId = 0; }
     if (!lay || lay.done()) return;
     var p = lay.step(12);
+    // Positions moved, so the spatial index built from them is stale. Rebuilding
+    // per slice would be wasteful at 60 slices; the grid is only needed for
+    // CULLING, which is an optimisation, so it is simply invalidated here and
+    // rebuilt lazily on the next frame that asks for it.
+    grid = null;
     draw();
     if (progressEl) {
       progressEl.style.display = p < 1 ? "block" : "none";
@@ -656,72 +666,309 @@ export namespace DependencyGraphVisualizer {
   for (var gi = 0; gi < N.length; gi++) gmax = Math.max(gmax, N[gi].gravity || 0);
   function radius(nd) { return 4 + 13 * Math.sqrt((nd.gravity || 0) / gmax); }
 
-  // ---- render
   function resize() {
     W = cv.clientWidth; H = cv.clientHeight;
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   function toScreen(x, y) { return [W / 2 + (x * view.k + view.x), H / 2 + (y * view.k + view.y)]; }
-  // Labels are drawn only when they can actually be READ. A canvas text draw is
-  // roughly an order of magnitude dearer than a bare arc, so at 2000 nodes the
-  // label pass also dominated the frame -- and 2000 overlapping labels are
-  // unreadable mush, which makes drawing them a legibility defect and not only a
-  // cost. The reader is never left without names: the search box narrows to a
-  // handful, selecting or hovering one always labels it, and zooming in past
-  // LABEL_ZOOM brings the rest back.
-  var LABEL_MAX_NODES = 140, LABEL_ZOOM = 2.2;
-  function labelsVisible() {
-    if (sel || hover || q) return true;
-    return N.length <= LABEL_MAX_NODES && view.k >= 1;
+
+  // ---- spatial index over world space.
+  //
+  // Positions are fixed once the layout settles, so this is built once and reused.
+  // It is what makes deep zoom possible at all: a frame asks the grid which cells
+  // the viewport touches and draws only those, instead of stroking 3,831 edges and
+  // throwing away the 3,700 that are off-screen.
+  // The grid's minimum cell pitch, in world units. It lives HERE rather than in
+  // the enclosing scope because buildGrid reads it: MEASURED, with the constant in
+  // the outer scope the function computed NaN for its cell size (typeof CELL was
+  // undefined inside it), so the grid dimensions were NaN and the cell allocation
+  // threw RangeError -- which killed the entire renderer, leaving a blank canvas and
+  // nothing in the console to explain it. A helper that cannot be broken by an outer
+  // binding is worth more here than a shared constant.
+  // The grid pitch FOLLOWS THE ZOOM, and this is the second-order version of the
+  // culling bug. MEASURED: with a fixed 80-world-unit pitch, zooming took the
+  // visible set from 1,148 nodes to 207 and then STUCK at 207 for every further
+  // step, all the way to the 600x ceiling -- because one cell is 80 units, which at
+  // high zoom is thousands of pixels, so the viewport still intersected the same
+  // handful of cells. A uniform grid can only cull down to its own resolution.
+  //
+  // So the pitch is rebuilt to match the current scale: a cell is about a twelfth of
+  // the viewport height, which keeps the culling equally effective at every zoom.
+  // A rebuild is O(nodes + edges) -- about 5,000 steps for a large graph, well
+  // under a millisecond -- and it happens only when the zoom moves by more than 60%,
+  // so panning never pays for it and zooming pays rarely.
+  var grid = null, gW = 0, gH = 0, gOX = 0, gOY = 0, cellSize = 80;
+  var gridAtK = 0;
+  function buildGrid() {
+    var n = N.length;
+    if (!n) return;
+    var minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+    for (var i = 0; i < n; i++) {
+      var px = N[i].x, py = N[i].y;
+      // A grid that meets one non-finite coordinate must not take the renderer down
+      // with it. MEASURED: buildGrid threw "Invalid array length" on the first frame
+      // because a NaN span propagated into the cell count, which killed the whole
+      // script -- the canvas stayed blank with no console clue about the cause.
+      // Non-finite nodes are placed off-grid and simply never cull into view, which
+      // is the honest degradation: a node with no position cannot be zoomed to.
+      if (!isFinite(px) || !isFinite(py)) { N[i].x = 1e7; N[i].y = 1e7; px = 1e7; py = 1e7 }
+      if (px < minx) minx = px;
+      if (px > maxx) maxx = px;
+      if (py < miny) miny = py;
+      if (py > maxy) maxy = py;
+    }
+    if (!isFinite(minx) || !isFinite(maxx) || !isFinite(miny) || !isFinite(maxy)) return;
+    var spanX = Math.max(1, maxx - minx), spanY = Math.max(1, maxy - miny);
+    // A cell is about a twelfth of the visible height, in world units, so the
+    // culling stays equally sharp whatever the zoom.
+    var minCell = Math.max(0.35, (H / Math.max(view.k, 1e-6)) / 12);
+    var pitch = Math.max(minCell, Math.max(spanX, spanY) / 220);
+    // Hard cap, so no extent can ask for an allocation the process cannot satisfy.
+    if (Math.ceil(spanX / pitch) * Math.ceil(spanY / pitch) > 65536) pitch = Math.max(pitch, Math.max(spanX, spanY) / 256);
+    // The pitch is a CHOICE made from the extent, so visible() must divide by the
+    // same number the build used. Leaving it at the nominal CELL made the lookup
+    // index the wrong cells — the grid existed and disagreed with itself about its
+    // own geometry, which is why the first version of this culling drew nothing.
+    gW = Math.max(1, Math.ceil(spanX / pitch) + 1);
+    gH = Math.max(1, Math.ceil(spanY / pitch) + 1);
+    gOX = minx; gOY = miny;
+    cellSize = pitch;
+    gridAtK = view.k;
+    if (!isFinite(gW * gH) || gW * gH <= 0 || gW * gH > 4e6) { grid = null; return }
+    grid = new Array(gW * gH);
+    for (var c = 0; c < grid.length; c++) grid[c] = { n: [], e: [] };
+    for (var j = 0; j < n; j++) {
+      var cx = Math.min(gW - 1, Math.max(0, Math.floor((N[j].x - gOX) / pitch)));
+      var cy = Math.min(gH - 1, Math.max(0, Math.floor((N[j].y - gOY) / pitch)));
+      grid[cy * gW + cx].n.push(j);
+    }
+    // An edge lives in every cell its bounding box crosses, so a long edge is
+    // visible from any cell along it rather than only where it started.
+    for (var e = 0; e < L.length; e++) {
+      var a = byId[L[e].source], b = byId[L[e].target];
+      if (!a || !b) continue;
+      var ax = Math.min(gW - 1, Math.max(0, Math.floor((Math.min(a.x, b.x) - gOX) / pitch)));
+      var bx = Math.min(gW - 1, Math.max(0, Math.floor((Math.max(a.x, b.x) - gOX) / pitch)));
+      var ay = Math.min(gH - 1, Math.max(0, Math.floor((Math.min(a.y, b.y) - gOY) / pitch)));
+      var by2 = Math.min(gH - 1, Math.max(0, Math.floor((Math.max(a.y, b.y) - gOY) / pitch)));
+      for (var yy = ay; yy <= by2; yy++) {
+        for (var xx = ax; xx <= bx; xx++) grid[yy * gW + xx].e.push(e);
+      }
+    }
   }
+  /** The world rectangle currently visible, with a margin in pixels. */
+  function viewport(marginPx) {
+    var m = (marginPx || 0) / view.k;
+    var hw = W / 2 / view.k + m, hh = H / 2 / view.k + m;
+    return { x0: -view.x / view.k - hw, x1: -view.x / view.k + hw, y0: -view.y / view.k - hh, y1: -view.y / view.k + hh };
+  }
+  /** Indices of the nodes and edges that can touch the viewport, de-duplicated. */
+  function visible(marginPx) {
+    if (!grid || Math.abs(Math.log(view.k / Math.max(gridAtK, 1e-9))) > 0.47) buildGrid();
+    var v = viewport(marginPx);
+    var ax = Math.min(gW - 1, Math.max(0, Math.floor((v.x0 - gOX) / cellSize)));
+    var bx = Math.min(gW - 1, Math.max(0, Math.floor((v.x1 - gOX) / cellSize)));
+    var ay = Math.min(gH - 1, Math.max(0, Math.floor((v.y0 - gOY) / cellSize)));
+    var by = Math.min(gH - 1, Math.max(0, Math.floor((v.y1 - gOY) / cellSize)));
+    var seenN = {}, nodes = [], seenE = {}, edges = [];
+    for (var y = ay; y <= by; y++) {
+      for (var x = ax; x <= bx; x++) {
+        var cellRef = grid[y * gW + x];
+        if (!cellRef) continue;
+        for (var i = 0; i < cellRef.n.length; i++) {
+          var ni = cellRef.n[i];
+          if (!seenN[ni]) { seenN[ni] = 1; nodes.push(ni); }
+        }
+        for (var j = 0; j < cellRef.e.length; j++) {
+          var ei = cellRef.e[j];
+          if (!seenE[ei]) { seenE[ei] = 1; edges.push(ei); }
+        }
+      }
+    }
+    return { n: nodes, e: edges };
+  }
+
+  // ---- adjacency: what touches what.
+  //
+  // Without this, selecting a node cannot dim the rest of the graph, so the edge
+  // you are trying to trace is one of several thousand drawn at the same strength.
+  var adj = null;
+  function buildAdjacency() {
+    adj = [];
+    for (var i = 0; i < N.length; i++) adj.push([]);
+    for (var e = 0; e < L.length; e++) {
+      var a = byId[L[e].source], b = byId[L[e].target];
+      if (!a || !b) continue;
+      var ai = N.indexOf(a), bi = N.indexOf(b);
+      if (ai >= 0) adj[ai].push(e);
+      if (bi >= 0 && bi !== ai) adj[bi].push(e);
+    }
+  }
+  var nodeIndex = null;
+  function idxOf(nd) {
+    if (!nodeIndex) {
+      nodeIndex = {};
+      for (var i = 0; i < N.length; i++) nodeIndex[N[i].id] = i;
+    }
+    return nodeIndex[nd.id];
+  }
+  /** When something is selected, the edges worth seeing are its own; everything
+   *  else becomes a ghost. Returns null when nothing is focused. */
+  function focusSet() {
+    var target = sel || hover;
+    if (!target) return null;
+    if (target.name !== undefined) {
+      var i = idxOf(target);
+      if (i == null || !adj) return null;
+      var keep = {};
+      for (var j = 0; j < adj[i].length; j++) keep[adj[i][j]] = 1;
+      return { node: i, edges: keep };
+    }
+    var keep2 = {};
+    keep2[L.indexOf(target)] = 1;
+    return { node: -1, edges: keep2 };
+  }
+
+  // ---- labels that can be READ.
+  //
+  // Placed in importance order and any label whose box overlaps one already placed
+  // this frame is skipped. The earlier version drew every visible node's name, so
+  // add_deps, add_unit_deps and add_deps_for_unit printed on top of one
+  // another -- a screenshot showed them as an illegible smear. Skipping is not
+  // losing: the search box, the hover and the selection always name their target,
+  // and zooming in spreads labels apart until more of them fit.
+  var labelBoxes = [];
+  function placeLabel(nd, s, r, important) {
+    var text = nd.name || "";
+    if (!text) return;
+    ctx.font = (important ? "600 " : "") + "11px ui-sans-serif,system-ui,sans-serif";
+    var w = ctx.measureText(text).width;
+    var x0 = s[0] - w / 2 - 2, x1 = s[0] + w / 2 + 2;
+    var y0 = s[1] + r + 4, y1 = y0 + 12;
+    for (var i = 0; i < labelBoxes.length; i++) {
+      var b = labelBoxes[i];
+      if (x0 < b[2] && x1 > b[0] && y0 < b[3] && y1 > b[1]) return;
+    }
+    labelBoxes.push([x0, y0, x1, y1]);
+    ctx.save();
+    ctx.globalAlpha = important ? 1 : 0.9;
+    ctx.fillStyle = important ? "#ffffff" : "#cfd4e0";
+    ctx.textAlign = "center";
+    // a dark plate behind the text, so a name stays readable over a dense mesh
+    ctx.fillStyle = "rgba(8,8,12,0.72)";
+    ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+    ctx.fillStyle = important ? "#ffffff" : "#cfd4e0";
+    ctx.fillText(text, s[0], s[1] + r + 13);
+    ctx.restore();
+  }
+
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    var showLabel = labelsVisible() || view.k >= LABEL_ZOOM;
+    var focus = focusSet();
+    var vis = visible(80);
+    var visEdges = vis.e, visNodes = vis.n;
     var q2 = q.toLowerCase();
-    for (var i = 0; i < L.length; i++) {
-      var l = L[i], a = byId[l.source], b = byId[l.target];
+    labelBoxes = [];
+
+    // edges first, so nodes read on top of them
+    for (var ei = 0; ei < (visEdges ? visEdges.length : 0); ei++) {
+      var l = L[visEdges[ei]];
+      var a = byId[l.source], b = byId[l.target];
       if (!a || !b) continue;
       var hit = hover === l || sel === l;
+      var inFocus = !focus || hit || focus.edges[visEdges[ei]];
       var p1 = toScreen(a.x, a.y), p2 = toScreen(b.x, b.y);
+      // cheap segment-vs-viewport reject before any stroking work
+      if (Math.max(p1[0], p2[0]) < 0 || Math.min(p1[0], p2[0]) > W ||
+          Math.max(p1[1], p2[1]) < 0 || Math.min(p1[1], p2[1]) > H) continue;
       var conf = (typeof l.confidence === "number") ? l.confidence : 0.5;
-      // Cross-language edges first, so the local structure is legible on top of
-      // them; they are the sparse, structurally interesting ones.
       ctx.save();
       if (l.crossLanguage) {
-        ctx.globalAlpha = hit ? 1 : 0.72;
-        ctx.strokeStyle = "#f0abfc"; ctx.lineWidth = hit ? 3.2 : 1.9 + weightOf(l);
+        ctx.globalAlpha = hit ? 1 : (inFocus ? 0.85 : 0.07);
+        ctx.strokeStyle = "#f0abfc";
+        ctx.lineWidth = hit ? 3.2 : (inFocus ? 1.4 : 0.6) + weightOf(l);
         ctx.setLineDash(hit ? [] : edgeDash(l));
       } else {
-        ctx.globalAlpha = hit ? 1 : (0.16 + 0.62 * conf);
-        ctx.strokeStyle = col(l.type); ctx.lineWidth = hit ? 2.4 + weightOf(l) : 0.6 + weightOf(l);
+        ctx.globalAlpha = hit ? 1 : (inFocus ? (0.2 + 0.7 * conf) : 0.05);
+        ctx.strokeStyle = col(l.type);
+        ctx.lineWidth = hit ? 2.6 + weightOf(l) : (inFocus ? 0.5 : 0.35) + weightOf(l);
         ctx.setLineDash(hit ? [] : edgeDash(l));
       }
       ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
       ctx.restore();
     }
-    for (var n2 = 0; n2 < N.length; n2++) {
-      var nd = N[n2], s = toScreen(nd.x, nd.y), r = radius(nd);
+
+    // nodes, most important first, so labels land on the ones a reader wants
+    var order = visNodes ? visNodes.slice() : [];
+    if (order.length) {
+      order.sort(function (p, q2i) {
+        var np = N[p], nq = N[q2i];
+        var sp = (sel === np ? 2 : 0) + (hover === np ? 2 : 0) + (np.gravity || 0) / 1e6;
+        var sq = (sel === nq ? 2 : 0) + (hover === nq ? 2 : 0) + (nq.gravity || 0) / 1e6;
+        return sq - sp;
+      });
+    }
+    var focusIdx = focus && focus.node >= 0 ? focus.node : -1;
+    for (var oi = 0; oi < order.length; oi++) {
+      var ni = order[oi], nd = N[ni], s = toScreen(nd.x, nd.y), r = radius(nd);
+      if (s[0] < -r - 40 || s[0] > W + r + 40 || s[1] < -r - 40 || s[1] > H + r + 40) continue;
       var on = !q2 || (nd.name || "").toLowerCase().indexOf(q2) >= 0;
       var isSel = sel === nd, isHov = hover === nd;
+      var near = focusIdx < 0 || ni === focusIdx;
       ctx.save();
-      ctx.globalAlpha = on ? 1 : 0.16;
+      ctx.globalAlpha = on ? (focusIdx < 0 || near || (adj && adj[focusIdx] && false) ? 1 : 0.22) : 0.12;
       ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 6.2832);
       if (nd.stale) { ctx.strokeStyle = "#fbbf24"; ctx.lineWidth = 1.6; ctx.stroke(); }
       else { ctx.fillStyle = isSel || isHov ? "#ffffff" : (nd.group === "unknown" ? "#64748b" : "#5eead4"); ctx.fill(); }
       if (isSel || isHov) { ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 2; ctx.stroke(); }
       ctx.restore();
-      if (on && showLabel) {
-        ctx.save();
-        ctx.globalAlpha = on ? 0.92 : 0.14;
-        ctx.fillStyle = "#cfd4e0"; ctx.font = (isSel ? "600 " : "") + "11px ui-sans-serif,system-ui,sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(nd.name || "", s[0], s[1] + r + 12);
-        ctx.restore();
+      if (on) placeLabel(nd, s, r, isSel || isHov || (focusIdx >= 0 && ni === focusIdx));
+    }
+
+    // the readout says what the frame actually drew, so a culled view is not
+    // mistaken for a small graph
+    var shownEl = document.getElementById("shown");
+    if (shownEl) {
+      var drawnE = visEdges ? visEdges.length : 0, drawnN = order.length;
+      if (drawnE < L.length || drawnN < N.length) {
+        shownEl.style.display = "block";
+        shownEl.textContent = "showing " + drawnN + " of " + N.length + " nodes and " +
+          drawnE + " of " + L.length + " edges in view — " + (view.k < 1 ? "zoom out for the whole graph" : "zoom in, or click a node to focus");
+      } else {
+        shownEl.style.display = "none";
       }
     }
   }
-  // (byId is built at the top, before anything can draw \u2014 see above)
+
+  /** Animate the view to a target scale and offset. Used by the two interactions a
+   *  reader actually asks for: frame an edge's endpoints, frame a node's
+   *  neighbourhood. Both are eased so the reader can see WHERE they were taken. */
+  var anim = null;
+  function animateTo(k, cx, cy, done) {
+    var from = { k: view.k, x: view.x, y: view.y };
+    // the target offset that puts world point (cx, cy) at the viewport centre
+    var to = { k: k, x: -cx * k, y: -cy * k };
+    var t0 = Date.now(), dur = 420;
+    if (anim) cancelAnimationFrame(anim);
+    function frame() {
+      var p = Math.min(1, (Date.now() - t0) / dur);
+      var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      view.k = from.k + (to.k - from.k) * e;
+      view.x = from.x + (to.x - from.x) * e;
+      view.y = from.y + (to.y - from.y) * e;
+      draw();
+      if (p < 1) anim = requestAnimationFrame(frame);
+      else { anim = null; if (done) done(); }
+    }
+    anim = requestAnimationFrame(frame);
+  }
+  /** The scale at which a world-space box fills the viewport with a margin. */
+  function fitScale(x0, y0, x1, y1, marginPx) {
+    var w = Math.max(1e-6, x1 - x0), h = Math.max(1e-6, y1 - y0);
+    var m = marginPx || 90;
+    return Math.max(0.02, Math.min(3000, Math.min((W - m * 2) / w, (H - m * 2) / h)));
+  }
 
   // ---- interaction: pan, zoom, pick
   var drag = null, moved = false;
@@ -739,31 +986,87 @@ export namespace DependencyGraphVisualizer {
   });
   window.addEventListener("mouseup", function (ev) {
     cv.classList.remove("dragging");
-    if (drag && !moved) { var p = pick(ev.clientX, ev.clientY); sel = p; show(p); draw(); }
+    if (drag && !moved) {
+      var p = pick(ev.clientX, ev.clientY);
+      sel = p; show(p); draw();
+      // Clicking an EDGE frames the two things it connects. A side panel that NAMES
+      // the endpoints answers "what are these" only on paper; framing them answers
+      // it in the picture, which is what the reader was reaching for.
+      if (p && p.name === undefined) frameEndpoints(p);
+    }
     drag = null;
   });
+  function frameEndpoints(l) {
+    var a = byId[l.source], b = byId[l.target];
+    if (!a || !b) return;
+    var padX = Math.max(60, Math.abs(a.x - b.x) * 0.18), padY = Math.max(60, Math.abs(a.y - b.y) * 0.18);
+    animateTo(
+      fitScale(Math.min(a.x, b.x) - padX, Math.min(a.y, b.y) - padY, Math.max(a.x, b.x) + padX, Math.max(a.y, b.y) + padY, 120),
+      (a.x + b.x) / 2, (a.y + b.y) / 2,
+    );
+  }
+  /** Double-clicking a node frames it AND its neighbours \u2014 the "zoom in to a single
+   *  node" that used to dead-end against the zoom ceiling in a wall of lines. */
+  cv.addEventListener("dblclick", function (ev) {
+    var p = pick(ev.clientX, ev.clientY);
+    if (p && p.name !== undefined) {
+      var i = idxOf(p);
+      var lo = p, hi = p;
+      if (adj && adj[i]) {
+        for (var j = 0; j < adj[i].length; j++) {
+          var l = L[adj[i][j]];
+          var other = byId[l.source] === p ? byId[l.target] : byId[l.source];
+          if (!other) continue;
+          if (other.x < lo.x) lo = other;
+          if (other.x > hi.x) hi = other;
+          if (other.y < lo.y) lo = other;
+          if (other.y > hi.y) hi = other;
+        }
+      }
+      var pad = 40;
+      animateTo(
+        fitScale(lo.x - pad, lo.y - pad, hi.x + pad, hi.y + pad, 110),
+        (lo.x + hi.x) / 2, (lo.y + hi.y) / 2,
+      );
+    } else if (p) {
+      frameEndpoints(p);
+    }
+  });
+  // The ceiling is 600x rather than 14x, and is only safe BECAUSE a frame now draws
+  // what is visible: at 600x that is a handful of primitives instead of five
+  // thousand. The old ceiling was the "point where you cannot zoom in anymore" a
+  // reader hit, and it hit it while still drawing the entire graph.
   cv.addEventListener("wheel", function (ev) {
     ev.preventDefault();
     var f = Math.exp(-ev.deltaY * 0.0016);
-    var nk = Math.max(0.06, Math.min(14, view.k * f));
+    var nk = Math.max(0.02, Math.min(600, view.k * f));
     var mx = ev.clientX - W / 2, my = ev.clientY - H / 2;
     view.x = mx - (mx - view.x) * (nk / view.k);
     view.y = my - (my - view.y) * (nk / view.k);
     view.k = nk; draw();
   }, { passive: false });
   function pick(cx, cy) {
-    var best = null, bd = 16;
-    for (var i = 0; i < N.length; i++) {
-      var s = toScreen(N[i].x, N[i].y), d = Math.hypot(s[0] - cx, s[1] - cy) - radius(N[i]);
-      if (d < bd) { bd = d; best = N[i]; }
+    // only what is on screen is pickable, which also keeps picking O(visible)
+    var vis = visible(24);
+    var list = vis.n;
+    var best = null, bd = 18;
+    for (var i = 0; list && i < list.length; i++) {
+      var nd = N[list[i]];
+      var s = toScreen(nd.x, nd.y), d = Math.hypot(s[0] - cx, s[1] - cy) - radius(nd);
+      if (d < bd) { bd = d; best = nd; }
     }
     if (best) return best;
-    for (var j = 0; j < L.length; j++) {
-      var l = L[j], a = byId[l.source], b = byId[l.target]; if (!a || !b) continue;
+    // edges, tightest first, and only near the cursor \u2014 the old loop tested every
+    // edge in the graph on every mousemove
+    var el = vis.e, ebest = null, ebd = 7;
+    for (var j = 0; el && j < el.length; j++) {
+      var l = L[el[j]], a = byId[l.source], b = byId[l.target];
+      if (!a || !b) continue;
       var p1 = toScreen(a.x, a.y), p2 = toScreen(b.x, b.y);
-      if (distSeg(cx, cy, p1, p2) < 5) return l;
+      var d2 = distSeg(cx, cy, p1, p2);
+      if (d2 < ebd) { ebd = d2; ebest = l; }
     }
-    return null;
+    return ebest;
   }
   function distSeg(px, py, a, b) {
     var vx = b[0] - a[0], vy = b[1] - a[1], wx = px - a[0], wy = py - a[1];
@@ -803,6 +1106,20 @@ export namespace DependencyGraphVisualizer {
     draw();
   });
 
+  // The grid and the adjacency table need settled positions, so they are built
+  // once the layout reports done and rebuilt if it is still running when the first
+  // frame is painted.
+  buildAdjacency();
+  function ensureIndexes() { if (!grid) buildGrid(); }
+  if (lay && lay.done()) ensureIndexes();
+  else if (progressEl) {
+    var waited = 0;
+    var idxTimer = setInterval(function () {
+      waited += 120;
+      if (!lay || lay.done()) { ensureIndexes(); clearInterval(idxTimer) }
+      else if (waited > 30000) { ensureIndexes(); clearInterval(idxTimer) }
+    }, 120);
+  }
   window.addEventListener("resize", function () { resize(); draw(); });
   resize(); draw();
   if (N.length === 0) {
