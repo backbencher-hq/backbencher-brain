@@ -1,10 +1,10 @@
 {
   "gate": "M60.solidity-surface",
   "title": "Solidity analyzer surface over the pinned real corpus",
-  "at": "2026-09-30T23:04:44.724Z",
-  "commit": "3716c6dc6bce69bdbe96a4d4e7002a74d703ecd5",
+  "at": "2026-09-30T23:57:58.683Z",
+  "commit": "9f91923ea50bd1b803ced5611fd211ec874b20d3",
   "loadContext": {
-    "loadAvg1": 22.87,
+    "loadAvg1": 26.21,
     "cores": 8,
     "memoryPsiFullAvg10": "0.00"
   },
@@ -36,7 +36,7 @@
       "missing": 0
     },
     "symbols": 5976,
-    "relationships": 26350,
+    "relationships": 26803,
     "kinds": {
       "contains": 5587,
       "extends": 537,
@@ -44,7 +44,7 @@
       "overrides": 422,
       "exports": 487,
       "references": 1303,
-      "calls": 3878,
+      "calls": 4331,
       "implements": 7,
       "instantiates": 1
     },
@@ -54,13 +54,13 @@
     "notExercisedNote": "`imports` is expected here and is NOT a gap: imports are modelled as `references` edges carrying `metadata.import: true`, the settled convention for this repo (PowerShell PS-7 for the same reason). The count of those edges is `tiers.import_based`, and every one of them is checked by the fixtures' `expectImports`.",
     "tiers": {
       "structural": 6619,
-      "usage_contextual": 18410,
+      "usage_contextual": 18863,
       "inferred": 422,
       "import_based": 899
     },
     "lineNumber": {
-      "withLine": 26350,
-      "total": 26350,
+      "withLine": 26803,
+      "total": 26803,
       "pct": "100.00"
     },
     "unknownTargets": {
@@ -75,17 +75,36 @@
       "count": 0,
       "samples": []
     },
+    "callCalleeKinds": {
+      "eventEmission": 168,
+      "errorRevert": 453,
+      "namespaceBuiltin": 269,
+      "external": 1677,
+      "localFunction": 1721,
+      "inheritedMember": 7,
+      "inFileTypeMember": 5,
+      "modifierInvocation": 31,
+      "_note": "SOL-15. Every `calls` edge carries a `calleeKind`, so the `unresolvedCallTargets` count below no longer mixes four unrelated things. `conversion` and `namespaceBuiltin` name a primitive type word or a member of `abi`/`type`/`super`/`this` — provably not project symbols, and excluded from it. `localFunction`/`inheritedMember`/`libraryFunction`/`modifierInvocation` resolve against THIS FILE's declarations and the inheritance closure. `external` is the real residue: a member or free function declared in another file, which a per-file analyzer cannot see — measured at 0 for localFunction and inheritedMember over the whole corpus, because OpenZeppelin is modularised so thoroughly that almost every call leaves the file."
+    },
     "unresolvedCallTargets": {
-      "count": 1786,
-      "distinct": 482,
+      "byCalleeKind": {
+        "external": 1642,
+        "errorRevert": 148,
+        "eventEmission": 59,
+        "_note": "The point of SOL-15: the unresolved count is no longer one undifferentiated class. `errorRevert` dominates because SOL-15 REPAIRED the `revert_statement` case, which had never fired for any input — so these 453 custom-error call edges did not exist in this lane at all before, and the unresolved count ROSE when the lane got more correct. `external` is the genuine residue: a member or free function declared in another file."
+      },
+      "excludedCalleeKinds": [
+        "conversion",
+        "namespaceBuiltin"
+      ],
+      "count": 1849,
+      "distinct": 543,
       "topTargets": [
         "_msgSender x88",
         "min x46",
-        "encode x35",
         "toUint x34",
         "unsafeAccess x31",
         "_mint x30",
-        "encodePacked x28",
         "wrap x27",
         "initializer x24",
         "panic x21",
@@ -93,7 +112,9 @@
         "_hashTypedDataV4 x19",
         "timestamp x18",
         "unwrap x18",
-        "readUint256 x18"
+        "readUint256 x18",
+        "push x16",
+        "_burn x16"
       ],
       "samples": [
         "fv/harnesses/AccountHarness.sol:11 -> EIP712",
@@ -123,9 +144,9 @@
       "storeRefusedDeclarations": 2
     },
     "perf": {
-      "wallMs": 24850,
-      "perFileMs": 63.881,
-      "factsPerMs": 1300.858
+      "wallMs": 30966,
+      "perFileMs": 79.604,
+      "factsPerMs": 1058.555
     }
   },
   "method": "Candidates are the corpus's production (non-test) tracked .sol files, drawn by a hash of `repo/relative-path` so the sample is unbiased and reproducible; the digest is recorded so a re-run that drew a DIFFERENT set says so instead of being compared. Every file goes through the production `parseFile`. `damage` is measured with a separate parser and is the GRAMMAR's number, independent of any analyzer decision. `lineNumber` counts relationships carrying a positive line — the analyzer REFUSES a non-positive line at its single emit helper, so this ratio is a completeness check on the emit path, not a quality score. `tiers` is read from the analyzer's own central `evidenceClassFor`, not recomputed here, so it cannot drift from the emit path. `unknownTargets` counts ONLY the kinds whose both ends are locally declared by definition — contains, overrides, extends, implements, exports. `calls`, `uses`, `instantiates` and `references` are excluded because their targets may be external, a Yul function, a language-supplied type, or an EVM member. `dupKeys` counts (file, owner, name, kind) tuples emitted more than once; the owner IS part of the key, because a local declared in two functions is two correct declarations. `reservedTargets` uses the lane's own imported predicate (src/ast/solidity-reserved-tokens.ts) — one copy of the rule, because a sibling lane's two instruments each held their own and silently disagreed.",
