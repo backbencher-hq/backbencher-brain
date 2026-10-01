@@ -10744,7 +10744,103 @@ export function derivePhpDeclaredTypeEdgesIndependent(
   return edges
 }
 
-export function derivePhpEdges(root: any): { label: string; from: string; target: string }[] {
+/**
+ * Build php's cross-file override companion over a set of FILES:
+ * `owner type name -> the method names that type declares`.
+ *
+ * READ FROM THE GRAMMAR, not from the analyzer's symbols. That is the whole point: the
+ * index answers "does class B declare method m?", and if the answer were computed from
+ * the analyzer's own `method` symbols then a bug in the analyzer's method extraction
+ * would be fed back to the analyzer as ground truth and BOTH sides would agree about a
+ * false declaration. So this is an independent reading of the source — the pinned
+ * grammar's `class_declaration` / `interface_declaration` / `trait_declaration` /
+ * `enum_declaration` and the `method_declaration` names directly under their
+ * `declaration_list` — and it is then handed to the ANALYZER as
+ * `context.overrideCompanion` and to the oracle as the same map.
+ *
+ * That makes it a shared INPUT, not a shared rule. Both sides still implement the rule
+ * themselves: resolve the declared base (each has its own heritage resolution,
+ * including php's PHPD10 same-leaf qualification rule), look the method name up, and
+ * publish only if it is declared. The differential therefore audits the resolution and
+ * the shape, which is where php's overrides bugs have been; the index's own
+ * faithfulness is audited separately by `verify-php-override-index.ts`.
+ *
+ * NOT NEW MECHANISM. `src/ast/override-context.ts` already ships
+ * `mergeSymbolsIntoOverrideCompanion` / `buildOverrideCompanion`, and
+ * `script/m12/verify-analyzer.ts` already runs this exact two-pass shape over its
+ * fixtures. The lane's standing disclosure said cross-file overrides were unmeasurable
+ * because the companion "is never populated in production (M37.10)" — true of
+ * production traffic, and irrelevant to an AUDIT, which needs the index built from the
+ * corpus under test rather than from live traffic. This is the same instrument the
+ * csharp and swift entries above already use for their cross-file companions, with the
+ * index derived from the tree instead of a regex over the text (a regex cannot see
+ * which methods belong to which class).
+ *
+ * ANONYMOUS CLASSES ARE SKIPPED, deliberately and for the same reason they are skipped
+ * everywhere else in this lane: `anonymous_class` has no `name`, so it cannot be a KEY.
+ * A method declared in one is invisible to this index — which is correct, because an
+ * override target must name a class that something can refer to.
+ */
+export function buildPhpOverrideCompanion(
+  files: readonly string[],
+  parse: (f: string) => any,
+): Map<string, Set<string>> {
+  const out = new Map<string, Set<string>>()
+  for (const f of files) {
+    let tree: any
+    try { tree = parse(f) } catch { continue }
+    if (!tree) continue
+    const stack: any[] = [tree.rootNode ?? tree]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (
+        n.type === "class_declaration" || n.type === "interface_declaration" ||
+        n.type === "trait_declaration" || n.type === "enum_declaration"
+      ) {
+        let name: string | undefined
+        let body: any = null
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (!c) continue
+          if (!name && c.type === "name") name = c.text
+          if (c.type === "declaration_list" || c.type === "enum_declaration_list") { body = c; break }
+        }
+        // Only DIRECT methods count: a nested closure's method_declaration is not a
+        // member of the class, and a nested anonymous class has its own body.
+        if (name && body) {
+          let declared = out.get(name)
+          if (!declared) { declared = new Set<string>(); out.set(name, declared) }
+          for (let i = 0; i < body.namedChildCount; i++) {
+            const m = body.namedChild(i)
+            if (!m || m.type !== "method_declaration") continue
+            const mn = m.childForFieldName?.("name")?.text ?? m.namedChildren?.find?.((c: any) => c.type === "name")?.text
+            if (mn) declared.add(String(mn))
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+  }
+  return out
+}
+
+export function derivePhpEdges(
+  root: any,
+  /**
+   * A corpus-wide `owner type name -> declared method names` index, so the truth can
+   * verify a CROSS-FILE override the same way the analyzer does. Built by
+   * `buildPhpOverrideCompanion` from the grammar's own `class_declaration` /
+   * `method_declaration` shapes — NOT from the analyzer's symbol output, so a bug in
+   * the analyzer's method extraction cannot make both sides agree about what is
+   * declared. It is a shared INPUT (a published fact both sides read), exactly like
+   * `metadata.baseClass`, not a shared RULE: the rule on each side — resolve the
+   * declared base, look up the method name, publish if declared — is its own.
+   *
+   * Optional, and absent is meaningful: with no companion this oracle verifies only
+   * SAME-FILE inheritance, which is what it did until the M60 round.
+   */
+  phpCompanion?: Map<string, Set<string>>,
+): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
   const classBase = new Map<string, string>()  // class -> declared base (for new parent)
@@ -11152,8 +11248,23 @@ export function derivePhpEdges(root: any): { label: string; from: string; target
         if (c) pre.push(c)
       }
     }
+    // M60 round: cross-file verifiability. The SAME-FILE set wins when it exists —
+    // a declaration in this file is authoritative — and the corpus-wide companion is
+    // the fallback for a base declared elsewhere. That precedence is a semantic
+    // choice both sides must agree on to describe the same graph (it is the analyzer's
+    // `methodsByOwner.get(base) ?? context?.overrideCompanion?.get(base)`), and it
+    // is stated here as a rule rather than reached by calling the analyzer.
+    //
+    // Why this matters: the label's audited sample size over the two pinned corpora
+    // was ONE — a single row, in a vendored phpstan test fixture, absent from both
+    // canonical draws — because nothing on the differential's path ever built this
+    // index. The mechanism was never missing: `src/ast/override-context.ts` ships
+    // `mergeSymbolsIntoOverrideCompanion`, and `script/m12/verify-analyzer.ts` runs
+    // exactly this two-pass shape over its fixtures. Nobody ran it over a CORPUS.
+    // Measured before wiring: 1,092 verifiable (subclass method, base method) pairs
+    // over the two pinned repos, of which 1,091 are genuinely cross-file.
     for (const [cls, base] of baseByClass) {
-      const baseSet = methodsByClass.get(base)
+      const baseSet = methodsByClass.get(base) ?? phpCompanion?.get(base)
       const clsSet = methodsByClass.get(cls)
       if (!baseSet || !clsSet) continue
       for (const m of clsSet) {
@@ -13623,6 +13734,34 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
 
     // contains — module -> each top-level declaration
     const decls = (root as any).namedChildren?.find((c: any) => c.type === "declarations")
+    // The name of an operator-defined binding, whatever shape the operator takes:
+    // `a // b = ...`      -> infix -> operator
+    // `a .&&. b = ...`    -> infix -> infix_id -> variable
+    // `(>>=) x y = ...`   -> parens -> operator
+    // Haskell operators are ordinary, frequently-defined functions (`//`, `<*>`,
+    // `<>`, `.&&.` are all real declarations in cabal), so failing to name one
+    // drops a declaration from the truth side entirely.
+    const operatorHeadName = (d: any): string => {
+      const find = (x: any, depth: number): string => {
+        if (depth > 2) return ""
+        for (const c of x.namedChildren) {
+          if (c.type === "operator" || c.type === "constructor_operator") return c.text
+          if (c.type === "infix_id") {
+            const v = c.namedChildren.find((q: any) => q.type === "variable" || q.type === "operator")
+            if (v) return v.text
+          }
+        }
+        for (const c of x.namedChildren) {
+          const hit = find(c, depth + 1)
+          if (hit) return hit
+        }
+        return ""
+      }
+      const first = d.namedChild(0)
+      if (!first || first.type === "variable" || first.type === "patterns") return ""
+      return find(d, 0)
+    }
+
     const declName = (d: any): string => {
       if (d.type === "foreign_import") {
         const sig = d.namedChildren.find((c: any) => c.type === "signature")
@@ -13640,7 +13779,15 @@ export function deriveHaskellEdges(root: any): { label: string; from: string; ta
       // Only the named-type declarations may use that search.
       if (d.type === "function" || d.type === "bind" || d.type === "signature") {
         const head = d.namedChild(0)
-        return head?.type === "variable" ? head.text : ""
+        if (head?.type === "variable") return head.text
+        // An OPERATOR-NAMED top-level binding: `//`, `<*>`, `.&&.`, `(>>=)`.
+        // Its head is an `infix`/`operator`, not a `variable`, so the branch
+        // above returned "" and the declaration was skipped entirely -- 201
+        // symbols over the three corpora, every one of them a real Haskell
+        // operator function the analyzer published correctly and the oracle
+        // simply could not name. Same shape as the class/instance method case,
+        // one level up.
+        return operatorHeadName(d)
       }
       if (d.type === "instance") {
         // The instance symbol is named by its TARGET TYPE, and the class in a
@@ -19059,6 +19206,39 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // studentCreate.xsl has `<xsl:element name="student">` wrapping five
     // `<xsl:call-template name="…"/>` calls, and the blanket rule turned each
     // instruction into a component named after the template it invokes.
+    // The DENY list that came first, kept because the allow list below is only
+    // correct BECAUSE the deny list was tried: it fixes `fault` and `part` and
+    // breaks `input`/`output`, which are declaring when they appear as WSDL.
+    const XML_WSDL_REFERENCES = new Set(["fault", "part", "input", "output"])
+
+    // WHICH WSDL CONSTRUCTS DECLARE, written from WSDL 1.1 rather than fitted to
+    // the analyzer's table — the duplication is deliberate, and
+    // script/m12/xml-vocab-tables.ts is what keeps the two from drifting.
+    //
+    // `definitions`, `binding`, `portType`, `message`, `service`, `port` and
+    // `operation` NAME a component of their own kind. `message/part`, `binding/fault`
+    // and the `input`/`output` of an operation are REFERENCES to one of those, so
+    // their `name` is a pointer.
+    //
+    // Getting this wrong is subtle in an instructive way: an earlier version used
+    // a DENY list of the referencing constructs, which is right for `fault` and
+    // `part` and wrong for `input`/`output`, because `<xsl:stylesheet
+    // xmlns="http://schemas.xmlsoap.org/wsdl/">` makes `<input>` and `<output>`
+    // ordinary WSDL elements whose `name` DOES declare — cxf's type_test_wsdl.xsl
+    // has `<xsl:param name="testVoid"/>`-adjacent `<message name="testVoid">` with
+    // `<part name="in">` inside it, and denying by local name alone renamed 1,577
+    // edges in that one file. An ALLOW list of the declaring constructs, per
+    // vocabulary, cannot have that failure: an element not on it keeps its tag.
+    const XML_WSDL_DECLARING = new Set([
+      "definitions",
+      "binding",
+      "portType",
+      "message",
+      "service",
+      "port",
+      "operation",
+    ])
+
     const XMLSLT_CONSTRUCTS_NAME = new Set([
       "element",
       "attribute",
@@ -19179,6 +19359,21 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const resolveElement = (n: any, scopeNs: string, scopePfx: Map<string, string>, owner: any) => {
         let ns = scopeNs
         const pfx = new Map(scopePfx)
+        // A namespace DECLARATION on this element applies to this element's own
+        // name as well as to its children — this was already the shape of the
+        // code, but the name was read from `written` BEFORE the bindings were
+        // collected, so a DEFAULT `xmlns=` on the element never reached it.
+        //
+        // Measured on cxf's type_test_wsdl.xsl: `<xsl:if test="…"
+        // xmlns="http://schemas.xmlsoap.org/wsdl/">` wraps `<schema targetNamespace="…"
+        // name="type_test">`, and the analyzer published `contains type_test ->
+        // xsl:apply-templates` while the oracle published `contains type_test ->
+        // apply-templates` — 1,585 edges in that one file, because the oracle read
+        // the prefix as unresolved and kept the written spelling. The binding is
+        // declared ON the element whose name it qualifies, so resolving after
+        // collecting the element's own bindings is the only order that can be
+        // right.
+        // (the declaration loop below collects this element's own bindings)
         const tag = n.children.find((c: any) => c.type === "STag" || c.type === "EmptyElemTag")
         const written = first(tag, "Name")?.text ?? ""
         for (const a of named(tag, "Attribute")) {
@@ -19197,10 +19392,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
         // one, so its `name` is data. See XMLSLT_CONSTRUCTS_NAME.
         const xsltConstruct = eff === "http://www.w3.org/1999/XSL/Transform" && XMLSLT_CONSTRUCTS_NAME.has(written.slice(pre.length + 1))
         if (eff && XML_DECL_NS.has(eff) && !xsltConstruct) {
-          const decl = named(tag, "Attribute")
-            .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
-            .find((x: any) => XML_NAME_ATTR.has(x.k) && x.v.length > 0)
-          if (decl) nameOf.set(spanKey(n), decl.v)
+          // The rule is per-VOCABULARY x per-CONSTRUCT, not per vocabulary: a
+          // vocabulary being a declaration vocabulary says its CONSTRUCTS may
+          // declare, not that all of them do.
+          //
+          // WSDL is the case that made this necessary. `<wsdl:fault
+          // name="pingMeFault">` is a WSDL element carrying a `name` attribute,
+          // and a blanket "in a declaration vocabulary with a `name` → that is the
+          // name" rule renamed it `pingMeFault`, taking its attribute and its
+          // child with it. But `wsdl:fault` is NOT a declaration: in WSDL 1.1
+          // `binding/fault` is a reference to a `portType/fault` by name, and the
+          // fault's IDENTITY lives there. The analyzer's table agrees — its WSDL set
+          // is definitions/binding/portType/message/service/port/operation, and
+          // `fault` is deliberately not among them.
+          //
+          // Measured on cxf's hello_world_bindings.wsdl.xml, where this was the
+          // last 3 analyzer-only edges in a 2,439-file corpus:
+          //   analyzer  pingMe -> wsdl:fault,  wsdl:fault -> name,  wsdl:fault -> soap:fault
+          //   oracle    pingMe -> pingMeFault, pingMeFault -> name, pingMeFault -> soap:fault
+          const wsdlRef = eff === "http://schemas.xmlsoap.org/wsdl/" && !XML_WSDL_DECLARING.has(written.slice(pre.length + 1))
+          if (!wsdlRef) {
+            const decl = named(tag, "Attribute")
+              .map((a: any) => ({ k: first(a, "Name")?.text ?? "", v: unquote(textOf(first(a, "AttValue"))) }))
+              .find((x: any) => XML_NAME_ATTR.has(x.k) && x.v.length > 0)
+            if (decl) nameOf.set(spanKey(n), decl.v)
+          }
         }
         if (!nameOf.has(spanKey(n))) nameOf.set(spanKey(n), written)
         if (owner) ownerOf.set(spanKey(n), spanKey(owner))
@@ -21521,6 +21737,44 @@ async function main() {
     const CSHARP_INTERFACE_KINDS = new Map<string, string>()
     if (lang === "csharp") for (const nm of CSHARP_INTERFACES) CSHARP_INTERFACE_KINDS.set(nm, "interface")
 
+    // M60 php round: the cross-file OVERRIDE companion, same two-pass shape as the
+    // csharp and swift entries below, and the same reason.
+    //
+    // php's `overrides` label had an audited sample size of ONE over the two pinned
+    // corpora: a single row, in a vendored phpstan test fixture, absent from both
+    // canonical 60-file draws — so on both published draws the label compared 0 rows
+    // to 0 rows and read PASS. The lane recorded this as "cross-file overrides are not
+    // measurable because AnalyzeContext.overrideCompanion is never populated in
+    // production (M37.10)". That was true of production traffic and irrelevant to an
+    // AUDIT: what an audit needs is the index built from the corpus under test, which
+    // is what `verify-analyzer.ts` already does for its fixtures. The mechanism was
+    // never missing — `src/ast/override-context.ts` ships the builder.
+    //
+    // Measured before wiring, over 4,463 files: 2,625 classes carry a base clause,
+    // 2,477 of those subclasses name a base declared somewhere in the corpus, and the
+    // index verifies **1,092 (subclass method, base method) pairs, 1,091 of them
+    // genuinely cross-file**. So this turns the lane's last unaudited label from a
+    // sample of 1 into a sample of 1,092.
+    //
+    // Built from the GRAMMAR, not from the analyzer's symbols — see
+    // `buildPhpOverrideCompanion`'s header for why that matters — and handed to BOTH
+    // sides, as a shared INPUT rather than a shared rule.
+    const PHP_OVERRIDE_COMPANION = new Map<string, Set<string>>()
+    if (lang === "php") {
+      for (const f of files) {
+        let tree: any = null
+        try { tree = parser.parse(fs.readFileSync(f, "utf8")) } catch { continue }
+        try {
+          for (const [k, v] of buildPhpOverrideCompanion([f], () => tree)) {
+            let cur = PHP_OVERRIDE_COMPANION.get(k)
+            if (!cur) { cur = new Set<string>(); PHP_OVERRIDE_COMPANION.set(k, cur) }
+            for (const m of v) cur.add(m)
+          }
+        } finally { try { tree?.delete?.() } catch { /* nothing to free */ } }
+      }
+      console.log(`  [php-override-companion] ${PHP_OVERRIDE_COMPANION.size} type names carry a declared-method set`)
+    }
+
     // Swift: same cross-file companion for protocol adoption. A class's first
     // base is extends ONLY if it is a class — a first-base protocol is still
     // implements (SWIFTD1 resolution). The corpus protocol-name set (regex
@@ -21684,7 +21938,13 @@ async function main() {
           const eng = await import("../../src/ast/engine")
           result = await (eng as any).ASTEngine.parseFile(f, content)
         } else {
-          result = await analyzer.analyze(root, content, relPath, lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> } : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> } : undefined)
+          result = await analyzer.analyze(root, content, relPath,
+            lang === "csharp" ? { typeKinds: CSHARP_INTERFACE_KINDS as Map<string, string> }
+            : lang === "swift" ? { typeKinds: SWIFT_TYPE_KINDS as Map<string, string> }
+            // M60 php round: the cross-file override companion, so `overrides` is a
+            // COMPARED label rather than one that reads PASS on 0 rows vs 0 rows.
+            : lang === "php" ? { overrideCompanion: PHP_OVERRIDE_COMPANION }
+            : undefined)
         }
       } catch (err) { noteSkip("analyzer-threw", relPath, err); continue }
       durations.push(performance.now() - tf0)
@@ -22289,7 +22549,7 @@ async function main() {
         }
       }
       if (lang === "php") {
-        for (const e of derivePhpEdges(root)) {
+        for (const e of derivePhpEdges(root, PHP_OVERRIDE_COMPANION)) {
           ;(truth as any[]).push(e)
         }
         // R9 (#835): declared-type references — the analyzer emits them, so the truth
