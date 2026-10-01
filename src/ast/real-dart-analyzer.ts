@@ -1062,6 +1062,27 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       const companion = overrideCompanion?.get(base)
       return !!companion && companion.has(method)
     }
+    // Every type name DECLARED in this file, distinct from every member name. The
+    // Pass-1 `declares` check answers "does this base have the member", which is
+    // not the question the fallback gate needs: it needs "is this base in this
+    // file at all", and only a declaration inventory answers that.
+    //
+    // Declarations ONLY. A base named in an `extends` clause is not thereby
+    // declared here — that is the whole premise of the external fallback — so
+    // harvesting extends/implements targets into this set would mark every
+    // external base as in-file and refute every fallback. It did exactly that on
+    // the first attempt: `class Banner extends StatelessWidget` lost its
+    // `toString -> StatelessWidget.toString` edge, which the
+    // `dart/dedup-and-attribution` fixture correctly pins. A failing fixture caught
+    // it, which is the argument for pinning behaviour at all.
+    const TYPE_KINDS = new Set<ASTEngine.SymbolKind>([
+      ASTEngine.SymbolKind.Class, ASTEngine.SymbolKind.Interface,
+      ASTEngine.SymbolKind.Enum, ASTEngine.SymbolKind.Type,
+    ])
+    const inFileTypes = new Set<string>()
+    for (const s of symbols) {
+      if (typeof s.name === "string" && s.name && TYPE_KINDS.has(s.kind)) inFileTypes.add(s.name)
+    }
     const seenOverride = new Set<string>()
     for (const s of symbols) {
       if ((s.kind === ASTEngine.SymbolKind.Method || s.kind === ASTEngine.SymbolKind.Property) && s.ownerName) {
@@ -1111,9 +1132,37 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
           // (`Poly.sides -> Shape.sides`).
           const hasOverrideAnn = (s.decorators ?? []).some((d) => d.includes("@override"))
           if (hasOverrideAnn) {
-            target = firstHeritage.get(s.ownerName) ?? null
-            confidence = 0.8
-            metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+            const first = firstHeritage.get(s.ownerName) ?? null
+            // A fallback may only fire where there is NO EVIDENCE AGAINST it. The
+            // first heritage parent is the right guess when it lives in another
+            // repository, because then nothing in this file can refute it. But if
+            // Pass 1 already walked an in-file base and PROVED it does not declare
+            // this member, claiming it is a fabricated edge, not a guess: the edge
+            // asserts "this member overrides that member in that base", and the base
+            // demonstrably has no such member.
+            //
+            // freezed is the case that reaches it. `sealed class TemplateState
+            // extends Equatable` declares no `props`; `class TemplateInitial
+            // extends TemplateState` does, annotated `@override` (freezed emits the
+            // annotation). Pass 1 walks TemplateState in-file, finds no `props`, and
+            // cannot reach Equatable; Pass 3 then attributed the override to
+            // TemplateState — a class that does not override anything. The real
+            // base is Equatable. Measured 91 such rows on 1,294 ProxiCall/lib
+            // files, all of them freezed `props` / `hashCode` / `toString` /
+            // `operator ==` against Equatable.
+            //
+            // The genuine external cases are untouched: `FmsCubit extends Cubit` and
+            // `InventoryCategoryException implements Exception` have a first parent
+            // that is NOT in this file, so there is no evidence against and the
+            // fallback still fires.
+            const refuted = first !== null && !declares(first, s.name) &&
+              (byName.get(s.name)?.some((bm) => bm.ownerName === first) ?? false) === false &&
+              (heritageByClass.has(first) || inFileTypes.has(first))
+            if (!refuted) {
+              target = first
+              confidence = 0.8
+              metadata = { isOverride: true, relationshipType: "method_override", isExternalBase: true }
+            }
           }
         }
         if (!target) continue
