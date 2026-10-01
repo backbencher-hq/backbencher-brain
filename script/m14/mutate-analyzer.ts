@@ -16582,6 +16582,16 @@ export const MUTANTS: Mutant[] = [
       relationships: (r.relationships ?? []).filter(x => !String(x.target).includes("typerel.base.")),
     }),
   },
+  {
+    id: "clojure/ownerless-reference-dropped",
+    language: "clojure",
+    defectClass: "relationship-loss",
+    description: "F5-cert: a file with no `ns` form has no namespace in force, so its references are attributed to `user`; dropping them leaves a dependency edge with only one end - 70 across the corpus - references-user-ns pins catch it",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(x => !(x.type === "references" && x.source === "user")),
+    }),
+  },
 ]
 
 async function realAnalyzer(lang: string): Promise<any> {

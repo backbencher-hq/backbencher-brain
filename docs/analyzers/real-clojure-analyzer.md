@@ -364,6 +364,17 @@ and the newly-exposed `references` residual is recorded instead. 471 misses now 
 CLJ-D40 taught the `calls` derivation and not this one) and
 `clojure.core.reducers/reduce` — both alias gaps of the same family, both next.
 
+**`references` reads the alias timeline, and a file with no `ns` still has a source
+(CLJ-D50).** This derivation read aliases from the `ns` form's clauses only, so a
+top-level `(require '[clojure.java.io :as jio])` was invisible and `core.clj:7267`
+published the bare `clojure.core -> jio` — CLJ-D40's defect in a derivation CLJ-D40
+never reached. It was **invisible** while the shared alias table was also wrong about
+prefix lists: two errors in the same direction cancel in a diff. And `nsAt` returns `""`
+for a file with no `ns` form, so 70 edges were published as `references||…` — a
+relationship with only one end. CLJ-D47 taught that fallback to `calls`; the halves
+drifting apart is the same lesson as the alias tables: **one language fact re-derived
+in four places, each copy drifting differently.**
+
 ## Where the derived `calls` oracle stands
 
 On the 143-file clojure corpus the derivation reports 6,251 truth edges with
