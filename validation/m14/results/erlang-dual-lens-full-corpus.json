@@ -1,43 +1,43 @@
 {
-  "gate": "ER3 corpus dual lens (erlang) \u2014 full corpus, chunked, two independent implementations",
+  "gate": "ER3 corpus dual lens (erlang) \u2014 full corpus INCLUDING include fragments, chunked, two independent implementations",
   "chunksPresent": 32,
   "chunksAttempted": 32,
-  "filesRead": 4326,
-  "examinedByBothLenses": 4326,
+  "filesRead": 4617,
+  "examinedByBothLenses": 4617,
   "yieldedNoTree": 0,
-  "grammarErrors": 132,
-  "symbols": 181529,
-  "relationships": 994670,
-  "oracleRelationships": 994670,
+  "grammarErrors": 139,
+  "symbols": 209247,
+  "relationships": 1032783,
+  "oracleRelationships": 1032783,
   "unexplained": 0,
   "missing": 0,
   "lineMismatch": 0,
   "symbolMismatch": 0,
   "macroModuleRemotes": 3324,
-  "grammarDamaged": 12,
+  "grammarDamaged": 25,
   "missingChunks": 0,
   "perCorpus": {
     "cowboy": {
-      "files": 188,
-      "symbols": 3424,
+      "files": 189,
+      "symbols": 3426,
       "relationships": null,
-      "ms": 4628
+      "ms": 6860
     },
     "otp": {
-      "files": 3874,
-      "symbols": 171701,
+      "files": 4156,
+      "symbols": 199105,
       "relationships": null,
-      "ms": 239870
+      "ms": 696797
     },
     "rebar3": {
-      "files": 264,
-      "symbols": 6404,
+      "files": 272,
+      "symbols": 6716,
       "relationships": null,
-      "ms": 9021
+      "ms": 28256
     }
   },
   "verdict": "PASS",
-  "method": "Every .erl file in otp@de741b7, rebar3@3c1b417 and cowboy@c965d1a \u2014 all 4,326 of them, no stride sample. Both lenses read the same parse tree: the analyzer, and a second implementation of the whole contract written from the language reference (script/m14/tmp/erlang-oracle.ts). Agreement is exact on every axis: every relationship either is derived by the oracle from the grammar or is counted in a named, written-down boundary class. 32 chunks, each a fresh process, because the WASM parser cannot survive a corpus in one (three separate failures forced that; see erlang-census-all.sh).",
+  "method": "Every `.erl` AND `.hrl` file in otp@de741b7, rebar3@3c1b417 and cowboy@c965d1a \u2014 all 4,617 of them, no stride sample. `.hrl` was added because the 291 include fragments are the heart of ER-D32's domain (a header with no `-module` at all), so the ruling that governs them most was the one ruling never verified by two implementations. Both lenses read the same parse tree: the analyzer, and a second implementation of the whole contract written from the language reference. 32 chunks, each a fresh process, because the WASM parser cannot survive a corpus in one.",
   "ruledClasses": {
     "macroModuleRemotes": {
       "count": 3324,
@@ -45,9 +45,9 @@
       "meaning": "a remote call or fun value whose MODULE is a macro names no derivable callee; only `?MODULE:f/1` does"
     },
     "wholeFileGrammarDamage": {
-      "count": 12,
+      "count": 25,
       "ruling": "ER-D38",
-      "meaning": "wx api_gen code-generation markup and OTP's abstract-format `-record #r{}` are unparseable; a file with no recoverable declaration of any kind yields nothing rather than edges recovered from error-recovery wreckage"
+      "meaning": "wx api_gen markup, OTP abstract-format `-record #r{}` and generated lexer tables yield nothing rather than edges recovered from error-recovery wreckage"
     }
   }
 }
