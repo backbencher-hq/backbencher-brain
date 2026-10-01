@@ -1579,7 +1579,7 @@
     },
     "solidity:solidity": {
       "missing": 2,
-      "unexplained": 18,
+      "unexplained": 21,
       "heuristic": 0,
       "perf": {
         "avgMsPerFile": 5.3
@@ -1642,5 +1642,12 @@
     "kubernetes:markdown": "850beced0f7f393d",
     "element-plus:scss": "dd6619b1d6986840",
     "solidity:solidity": "e9708e750546e983"
+  },
+  "floorMoves": {
+    "solidity:solidity": {
+      "from": 18,
+      "to": 21,
+      "why": "SOL-15. The floor moved UP, which is the direction that normally means a regression, so the reason is recorded rather than the number quietly edited. Two repairs landed together. (1) The analyzer's `revert_statement` case had NEVER FIRED \u2014 it tested `namedChild(0).type === \"identifier\"` and the grammar puts an `expression` wrapper there for every spelling \u2014 so 453 custom-error call edges over the 389-file corpus did not exist in this lane at all. (2) The ORACLE had the identical dead branch, which is why F5 agreed at zero: two instruments that are both dead look like corroboration. Fixing only the analyzer made the pair disagree and F5 reported 37 unexplained edges that no re-run would clear, because `sweepStateKey` hashed every analyzer in src/ast but NOT script/m14/oracles \u2014 so an oracle edit left the journal key byte-identical and the next run printed `RESUMED` with the previous truth function's numbers. All three are fixed: the oracles are now part of the sweep state. On the adjudication draw the oracle repair cut calls-unexplained from 47 to 2. The residual 3 is custom-error calls to an error declared in ANOTHER file, classified `evm-member-call` alongside the rest of the cross-file residue; `unclassifiable` is 0."
+    }
   }
 }

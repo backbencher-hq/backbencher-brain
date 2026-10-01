@@ -731,12 +731,45 @@ export function deriveSolidityCallReferenceEdges(
   }
 
   // `revert MyError(...)` — a custom error is a CALL.
+  // A custom error IS a call. This derivation was dead code for exactly as long as
+  // the analyzer's was: `namedChildren(d)[0]` is an `expression` WRAPPER for every
+  // spelling — `revert Boom(1);`, `revert Solo;`, `revert("x");` — so the guard was
+  // false for every possible input and `udtName()` on a wrapper returns "".
+  //
+  // Both sides being wrong is why F5 never noticed: the analyzer and the oracle
+  // agreed at zero. Agreement between two instruments that are both dead is not
+  // corroboration, and when SOL-15 repaired the ANALYZER the pair immediately
+  // disagreed — 37 unexplained edges that were never fabrications, only a truth
+  // side that had nothing to say. An oracle has to be repaired when the thing it
+  // measures changes, or it silently becomes a rubber stamp for whatever the
+  // analyzer does next.
   for (const d of descendants(root, "revert_statement")) {
     if (damaged(d)) continue
     const first = namedChildren(d)[0]
     if (!first) continue
-    const name = first.type === "identifier" ? first.text : udtName(first)
+    // `revert Boom(1)` puts the name in the call's `function:` field; `revert Solo`
+    // puts it directly under the wrapper; `revert("x")` yields neither, and a
+    // string is not a name, so deriving nothing there is correct rather than a miss.
+    const callee = first.type === "call_expression"
+      ? descendTo(first.childForFieldName?.("function"))
+      : descendTo(first)
+    if (!callee) continue
+    const name = callee.type === "identifier" ? callee.text
+      : callee.type === "user_defined_type" ? udtName(callee)
+        : ""
     if (name !== "") push("calls", nearestScope(d), name)
+  }
+
+  /** Descend through `expression` wrappers to the first name-bearing node. */
+  function descendTo(node: any, depth = 0): any {
+    if (!node || depth > 6) return null
+    if (node.type === "identifier" || node.type === "user_defined_type" ||
+        node.type === "member_expression") return node
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const got = descendTo(node.namedChild(i), depth + 1)
+      if (got) return got
+    }
+    return null
   }
 
   // Yul: a `yul_function_call` whose `function:` is a `yul_identifier` is a project

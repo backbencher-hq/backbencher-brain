@@ -487,8 +487,6 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
       ),
     }),
     caughtBy: "solidity/external-override-sol11",
-    id_hint: "SOL-11",
-    id: "solidity/external-override-suppressed",
   },
   {
     id: "solidity/external-override-overstated",
@@ -546,6 +544,51 @@ export const SOLIDITY_MUTANTS: Mutant[] = [
       return { ...r, relationships: [...(r.relationships ?? []), ...added] }
     },
     caughtBy: "solidity/external-override-sol11",
+  },
+  {
+    id: "solidity/call-callee-kind-dropped",
+    language: "solidity",
+    defectClass: "payload-loss",
+    description:
+      "SOL-15 REVERT, the payload half: strip `calleeKind` from every `calls` edge. No COUNT changes — 4,331 edges stay 4,331 and every kind's edge count stays put — so nothing but the gate can notice. What is lost is the one field that says whether a callee is a symbol at all, and with it the difference between `abi.encode` (a language namespace), a custom error, and a member declared in another file. That difference is the whole content of the 1,849-row unresolved figure. Caught by call-resolution-sol15's four `meta.calleeKind` pins.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "calls") return x
+        const { calleeKind: _drop, ...rest } = (x.metadata ?? {})
+        return { ...x, metadata: rest }
+      }),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
+  },
+  {
+    id: "solidity/call-callee-kind-flattened",
+    language: "solidity",
+    defectClass: "correctness",
+    description:
+      "SOL-15 REVERT, the RULE half: report every call as `external`. This is the classifier as it behaves when resolution never runs — and it is what the lane effectively shipped before SOL-15, except that the field did not exist then, so a consumer could not even tell resolution had been skipped. With the field present and flat, the four kinds collapse to one and every count stays identical. Caught by call-resolution-sol15's three `meta.calleeKind` forbids — which is where the closure-order bug WOULD have been caught, had the fixture existed when the bug was written.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).map((x: any) => {
+        if (x.type !== "calls") return x
+        return { ...x, metadata: { ...(x.metadata ?? {}), calleeKind: "external" } }
+      }),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
+  },
+  {
+    id: "solidity/custom-error-revert-dropped",
+    language: "solidity",
+    defectClass: "coverage-loss",
+    description:
+      "SOL-15 REVERT, the never-fired branch: revert the `revert_statement` case to its original form, which tested `node.namedChild(0).type === \"identifier\"` and was therefore FALSE for every possible input, because the grammar puts an `expression` wrapper there for `revert Boom(1)`, `revert Solo` and `revert(\"x\")` alike. That is 453 custom-error call edges over the 389-file corpus that this lane did not emit AT ALL, and no gate noticed — the kind had a case in the source, so it read as covered. Caught by call-resolution-sol15's `boom -> Boom` row and its `errorRevert` forbid.",
+    transform: (r: any) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "calls" && (x.metadata ?? {}).isCustomErrorRevert === true),
+      ),
+    }),
+    caughtBy: "solidity/call-resolution-sol15",
   },
   {
     id: "solidity/import-edges-unannotated",

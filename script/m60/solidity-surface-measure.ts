@@ -160,10 +160,25 @@ const dupSeen = new Map<string, number>()
 const unknown: { file: string; line: number; type: string; target: string }[] = []
 const reserved: string[] = []
 const unresolvedCalls: string[] = []
+/** SOL-15 — the only two `calleeKind`s whose TARGET IS NOT A PROJECT SYMBOL BY
+ *  CONSTRUCTION, and therefore must never be counted as an unknown one:
+ *    · `conversion`      — `uint256(x)`. The callee is a primitive TYPE word; the
+ *      target is a type, not a declaration, and `isPrimitiveTypeToken` recognises it
+ *      mechanically.
+ *    · `namespaceBuiltin` — `abi.encode(…)`, `type(IERC20).interfaceId`, `super.f()`,
+ *      `this.f()`. The target is a member of a language NAMESPACE.
+ *  Everything else stays IN the unresolved count on purpose: an `eventEmission`,
+ *  `errorRevert`, `structConstructor` and `modifierInvocation` all name something a
+ *  contract really declares, so a cross-file one is a genuine cross-file target and
+ *  hiding it would be the dishonest direction. */
+const NON_SYMBOL_CALLEE_KINDS = new Set(["conversion", "namespaceBuiltin"])
+const callCalleeKinds: Record<string, number> = {}
+const unresolvedByKind: Record<string, number> = {}
 const declaredNames = new Set<string>()
 const allDeclaredNames = new Set<string>()
 const owners = new Set<string>()
 let getterSymbols = 0
+const callKindsTotal: Record<string, number> = {}
 let overridesEmitted = 0
 let overridesEmittedExternal = 0
 let overridesUnresolved = 0
@@ -243,8 +258,15 @@ for (const f of files) {
     // A `calls` target that resolves to NO symbol in the file and is not a known
     // engine builtin is either external or an EVM/ABI member. Both are real; the
     // point is that they are REPORTED with samples rather than counted as good.
-    if (t === "calls" && target && !names.has(target) && !ENGINE_FUNCTION_NAMES.has(target)) {
+    if (t === "calls") {
+      const ck = String((x.metadata as Record<string, unknown> | undefined)?.calleeKind ?? "")
+      callCalleeKinds[ck] = (callCalleeKinds[ck] ?? 0) + 1
+    }
+    if (t === "calls" && target && !names.has(target) && !ENGINE_FUNCTION_NAMES.has(target) &&
+        !NON_SYMBOL_CALLEE_KINDS.has(String((x.metadata as Record<string, unknown> | undefined)?.calleeKind ?? ""))) {
       unresolvedCalls.push(`${f.rel}:${x.line_number} -> ${target}`)
+      const uk = String((x.metadata as Record<string, unknown> | undefined)?.calleeKind ?? "(unclassified)")
+      unresolvedByKind[uk] = (unresolvedByKind[uk] ?? 0) + 1
     }
   }
   declaredNames.add(names.size.toString())
@@ -252,6 +274,8 @@ for (const f of files) {
   overridesEmitted += Number(md.overridesEmitted ?? 0)
   overridesUnresolved += Number(md.overridesUnresolved ?? 0)
   overridesEmittedExternal += Number(md.overridesEmittedExternal ?? 0)
+  const ck = (md.callKinds ?? {}) as Record<string, number>
+  for (const k of Object.keys(ck)) callKindsTotal[k] = (callKindsTotal[k] ?? 0) + ck[k]
   overridesAmbiguousBaseCount += Number(md.overridesAmbiguousBaseCount ?? 0)
   implementsCrossFileUnresolved += Number(md.implementsCrossFileUnresolved ?? 0)
   engineCallsSuppressed += Number(md.engineCallsSuppressed ?? 0)
@@ -296,7 +320,16 @@ const out = {
     unknownTargets: { count: unknown.length, samples: unknown.slice(0, 12) },
     dupKeys: { count: dups.length, samples: dups.slice(0, 12).map(([k, n]) => `${k} x${n}`) },
     reservedTargets: { count: reserved.length, samples: reserved.slice(0, 12) },
+    callCalleeKinds: {
+      ...callCalleeKinds,
+      _note: "SOL-15. Every `calls` edge carries a `calleeKind`, so the `unresolvedCallTargets` count below no longer mixes four unrelated things. `conversion` and `namespaceBuiltin` name a primitive type word or a member of `abi`/`type`/`super`/`this` — provably not project symbols, and excluded from it. `localFunction`/`inheritedMember`/`libraryFunction`/`modifierInvocation` resolve against THIS FILE's declarations and the inheritance closure. `external` is the real residue: a member or free function declared in another file, which a per-file analyzer cannot see — measured at 0 for localFunction and inheritedMember over the whole corpus, because OpenZeppelin is modularised so thoroughly that almost every call leaves the file.",
+    },
     unresolvedCallTargets: {
+      byCalleeKind: {
+        ...unresolvedByKind,
+        _note: "The point of SOL-15: the unresolved count is no longer one undifferentiated class. `errorRevert` dominates because SOL-15 REPAIRED the `revert_statement` case, which had never fired for any input — so these 453 custom-error call edges did not exist in this lane at all before, and the unresolved count ROSE when the lane got more correct. `external` is the genuine residue: a member or free function declared in another file.",
+      },
+      excludedCalleeKinds: [...NON_SYMBOL_CALLEE_KINDS],
       count: unresolvedCalls.length,
       distinct: new Set(unresolvedCalls.map((s) => s.slice(s.lastIndexOf("-> ") + 3))).size,
       topTargets: [...unresolvedCalls.reduce((m, s) => {
