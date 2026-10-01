@@ -12216,6 +12216,67 @@ export const MUTANTS: Mutant[] = [
     },
   },
   {
+    id: "python/nested-class-owner-dropped",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "REVERT of the first genuine analyzer defect the independent oracle found: a class written " +
+      "in a CLASS BODY loses its owner again, so no `contains` is derived for it. `Outer.Inner` " +
+      "resolves in python with no lookup machinery, so the nesting is containment rather than a " +
+      "lexical coincidence, and the pre-fix state was 66 `contains` edges the tree supports and " +
+      "the lane did not emit, across 24 corpus files including `_Multipart._Part` in " +
+      "`urllib/parse.py`. The transform drops `ownerName`/`ownerKind` from class symbols whose " +
+      "metadata says `isNestedClass`, which is the pre-fix state exactly. Caught by " +
+      "python/nested-class-containment, whose `contains Outer -> Inner` row is the fix and whose " +
+      "FORBID row — `contains Outer -> Local`, a class in a METHOD — is what stops the eager " +
+      "version from passing: the mutant models the lazy side, the forbid models the eager side, " +
+      "and a change that gets the containment without the guard satisfies one and fails the other.",
+    transform: r => ({
+      ...r,
+      symbols: ((r.symbols ?? []) as any[]).map((s) => {
+        if (!(s.metadata as any)?.isNestedClass) return s
+        const y: any = { ...s }
+        delete y.ownerName
+        delete y.ownerKind
+        return y
+      }),
+    }),
+  },
+  {
+    id: "python/class-variable-binding-suppressed",
+    language: "python",
+    defectClass: "relationship-loss",
+    description:
+      "The EAGER side of the binding-scope line: a class-body variable binding is suppressed " +
+      "outright, not only when a lambda or comprehension encloses it. Every Property carrying " +
+      "`isClassVariable` is dropped along with its `contains` edge, so no class body publishes a " +
+      "member at all. This is the direction a fix for the lambda-parameter fabrication is most " +
+      "likely to overshoot into — 'stop publishing names bound in a scope' is one step from 'stop " +
+      "publishing names bound in a class body' — and the two differ on every real member: " +
+      "`walrus_direct` IS a class attribute in python, verified with `vars()`, as are " +
+      "`via_lambda` and `from_comprehension`. Caught by python/lambda-scope-is-not-class-scope, " +
+      "whose positives were read out of CPython rather than asserted, which is the only reason " +
+      "this line has both directions pinned: the fabrication side by FORBID rows and the " +
+      "over-suppression side by positive rows. A fixture carrying only one of the two would " +
+      "accept half the possible fixes. Stated honestly: the faithful revert of the scope guard " +
+      "itself cannot be written here, because the guard asks a question about the TREE and a " +
+      "ParseResult does not carry one. A no-op reporting 0 -> 0 would have looked like a survivor " +
+      "while modelling nothing, which is the trap three earlier mutants in this lane fell into.",
+    transform: r => {
+      const dropped = new Set<string>()
+      for (const s of (r.symbols ?? []) as any[]) {
+        if ((s.metadata as any)?.isClassVariable) dropped.add(String(s.name))
+      }
+      return {
+        ...r,
+        symbols: ((r.symbols ?? []) as any[]).filter((s) => !dropped.has(String(s.name))),
+        relationships: ((r.relationships ?? []) as any[]).filter(
+          (x) => !(x.type === "contains" && dropped.has(String(x.target))),
+        ),
+      }
+    },
+  },
+  {
     id: "python/owner-name-stripped",
     language: "python",
     defectClass: "identity-loss",

@@ -933,6 +933,41 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
   }
 
+  /**
+   * Is this node inside a BINDING SCOPE that is not the class body — a `lambda` or a
+   * comprehension?
+   *
+   * Both open an implicit function, so a name bound inside one is a local of that function
+   * and not a member of whatever class encloses it. The parent chain is the direct way to
+   * ask, and it needs no state: a counter threaded through the walk would have to be
+   * balanced on entry and exit for every such node, and one missed decrement would leave the
+   * guard open for the rest of the file rather than for one node.
+   *
+   * The comprehension half is not a guess about Python's rules. A named expression in a
+   * comprehension binds in the ENCLOSING scope, which in a class body would mean binding
+   * into the class — and Python refuses that outright:
+   *
+   *     class C:
+   *         from_comp = [(r := i * 2) for i in range(3)]
+   *     SyntaxError: assignment expression within a comprehension cannot be used in a class body
+   *
+   * So for this shape there is no correct member to publish: the class body does not compile.
+   * tree-sitter is error-tolerant and parses it anyway, and the lane was publishing
+   * `contains C -> r` for a class that cannot exist. Inside a FUNCTION the same construct is
+   * legal and binds in the function, so it is a local there too — which is why the guard
+   * covers both rather than special-casing the class body.
+   */
+  private insideNonClassScope(node: Node): boolean {
+    let cur: Node | null = node.parent
+    while (cur) {
+      const t = cur.type
+      if (t === "lambda" || t === "list_comprehension" || t === "set_comprehension" ||
+          t === "dictionary_comprehension" || t === "generator_expression") return true
+      cur = cur.parent
+    }
+    return false
+  }
+
   private extractAssignment(node: Node, ctx: PythonContext) {
     const left = node.namedChild(0)
     if (!left) return
@@ -1018,6 +1053,29 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (ctx.currentClass) {
       const classSymbol = ctx.symbols[ctx.functionSymbolIndex[`::${ctx.currentClass}`]]
       if (classSymbol?.kind === ASTEngine.SymbolKind.Enum) return
+      // A LAMBDA IS A FUNCTION SCOPE, and an assignment inside one is a LOCAL of it.
+      //
+      // This is the second genuine analyzer defect the independent oracle found, and it is
+      // the worse of the two: it FABRICATES a member rather than missing one. In
+      // `cython/tests/run/extra_walrus.py`, a class body contains
+      // `x1 = (lambda y_global: (y_global := y_global + 1) + y_global)(2) + y_global`, and
+      // the walrus target `y_global` — a LAMBDA PARAMETER — was published as a member of
+      // the class. `C.y_global` does not resolve in Python; the name belongs to the lambda.
+      //
+      // The oracle found it, and the ground truth is not a matter of opinion: CPython was
+      // asked, and for a class body holding a direct walrus, a lambda call, a walrus inside a
+      // lambda, and a method with its own walrus, `vars(C)` returns exactly three names and
+      // `q` — the lambda parameter — is not among them. Everything else this branch emits
+      // for that file is correct: a walrus directly in a class body genuinely does create a
+      // class attribute, so the rule cannot simply be "no walrus in a class body".
+      //
+      // Which is why the guard is a SCOPE test and not a syntax test. Walking the parent
+      // chain is the direct way to ask "is there a function boundary between this node and
+      // the class body", and it needs no state threaded through the walk — the alternative,
+      // a lambda counter, would have to be incremented on entry and decremented on exit for
+      // every lambda in the file, and a single missed decrement would silently re-open this
+      // defect for the rest of the walk.
+      if (this.insideNonClassScope(node)) return
       ctx.symbols.push({
         name,
         kind: ASTEngine.SymbolKind.Property,
