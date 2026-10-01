@@ -1218,7 +1218,13 @@ export namespace ASTEngine {
     filePath: string,
     content: string,
     language: SupportedLanguage,
-  ): Promise<{ parser: any; tree: any; transientLuaGrammar: any }> {
+  ): Promise<{
+    parser: any
+    tree: any
+    transientLuaGrammar: any
+    /** PY-19: non-null when the input was cut at the 1 MiB limit, so `parseFile` can disclose it. */
+    truncated: { originalSize: number; parsedSize: number } | null
+  }> {
     let parser: any
     let transientLuaGrammar: any = null
 
@@ -1243,6 +1249,20 @@ export namespace ASTEngine {
     }
 
     // Protect against very large files that might hang the parser
+    //
+    // PY-19. This used to be a `log.warn` and nothing else, which made the condition
+    // INVISIBLE to every consumer that reads the result: the indexer stored the file's symbols
+    // and relationships as though they were complete, the fixtures compared counts that were
+    // silently short, and the differential reported agreement on a partial parse as though it
+    // were agreement on the file. A log line is not a disclosure — it reaches a terminal, not a
+    // caller, and it is gone by the time anyone asks why a number looks low.
+    //
+    // So truncation is now a first-class `ParseError` on the result, alongside the syntax errors
+    // a caller already has to look at, and it carries the two numbers a reader needs to judge
+    // how much of the file is missing: the original size and the size actually parsed. The
+    // threshold is unchanged — this is about making an existing decision observable, not about
+    // changing which files are truncated.
+    let truncated: { originalSize: number; parsedSize: number } | null = null
     if (content.length > 1024 * 1024) {
       // 1MB limit for parsing
       log.warn("large file detected, using truncated content", {
@@ -1250,6 +1270,7 @@ export namespace ASTEngine {
         originalSize: content.length,
         truncatedSize: 1024 * 1024,
       })
+      truncated = { originalSize: content.length, parsedSize: 1024 * 1024 }
       content = content.substring(0, 1024 * 1024)
     }
 
@@ -1326,7 +1347,7 @@ export namespace ASTEngine {
       }
     }
 
-    return { parser, tree, transientLuaGrammar }
+    return { parser, tree, transientLuaGrammar, truncated }
   }
 
   // Wrap parseRaw with a timeout so a stuck grammar cannot hang the process.
@@ -1334,7 +1355,13 @@ export namespace ASTEngine {
     filePath: string,
     content: string,
     language: SupportedLanguage,
-  ): Promise<{ parser: any; tree: any; transientLuaGrammar: any }> {
+  ): Promise<{
+    parser: any
+    tree: any
+    transientLuaGrammar: any
+    /** PY-19: non-null when the input was cut at the 1 MiB limit, so `parseFile` can disclose it. */
+    truncated: { originalSize: number; parsedSize: number } | null
+  }> {
     const parsePromise = parseRaw(filePath, content, language)
     let timeoutId: NodeJS.Timeout
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -1378,7 +1405,7 @@ export namespace ASTEngine {
     }
 
     // Add timeout protection for parser operations
-    const { parser, tree, transientLuaGrammar } = await parseWithTimeout(filePath, content, language)
+    const { parser, tree, transientLuaGrammar, truncated } = await parseWithTimeout(filePath, content, language)
 
     // Detect Syntax Errors
     const treeErrors: ParseError[] = []
@@ -1679,7 +1706,28 @@ export namespace ASTEngine {
         relationships: result.relationships || [],
         imports: result.imports || [],
         exports: result.exports || [],
-        errors: [...(result.errors || []), ...treeErrors],
+        errors: [
+      ...(result.errors || []),
+      ...treeErrors,
+      // PY-19: see the truncation branch above. Declared as an error because a partial parse is
+      // exactly what a caller reading `errors` needs to know, and `severity: "warning"` because
+      // the analysis that WAS produced is sound — it is incomplete, not wrong. The percentage is
+      // in the message on purpose: "1 file was truncated" is not actionable, "75% of this file
+      // was never parsed" is.
+      ...(truncated
+        ? ([
+            {
+              message:
+                `input truncated at the 1 MiB parse limit: ${truncated.parsedSize} of ` +
+                `${truncated.originalSize} bytes parsed ` +
+                `(${Math.round((100 * truncated.parsedSize) / truncated.originalSize)}%), so ` +
+                `symbols, relationships and imports below may be incomplete`,
+              range: { startLine: 1, startColumn: 1, endLine: 1, endColumn: 1 },
+              severity: `warning`,
+            },
+          ] as ParseError[])
+        : []),
+    ],
         rawContent: result.rawContent,
         metadata: {
           // The analyzer's OWN metadata is spread FIRST, so a lane's own keys
@@ -1691,6 +1739,19 @@ export namespace ASTEngine {
           // whose analyzer stamps `m60-vb-1`. A disclosure that is computed and
           // then thrown away is not a disclosure.
           ...meta,
+          // PY-19: the same disclosure as the `errors` entry, but STRUCTURED. The message is for
+          // a human reading a result; this is for a caller that has to reproduce the parse
+          // exactly — the M14 oracle mirrors the engine's byte-for-byte, and it used to do that
+          // by copying the 1 MiB constant out of this file. A copied constant drifts silently:
+          // move the limit and the oracle keeps cutting at the old value, the two sides parse
+          // different byte ranges, and every relationship past the cut reports as a phantom
+          // analyzer defect. Reading the limit back from here means there is nothing to drift.
+          //
+          // Spread CONDITIONALLY. A `truncated: null` on every file in the corpus would be true
+          // and useless, and it would put a new key into the FILE-level metadata of every lane's
+          // results in order to say nothing. Only a truncated file learns that it was truncated,
+          // which also means no other lane's metadata shape changes at all.
+          ...(truncated ? { truncated } : {}),
           complexity: meta.complexity || 0,
           linesOfCode: content.split("\n").length,
           cyclomaticComplexity: meta.cyclomaticComplexity,

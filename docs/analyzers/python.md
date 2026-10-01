@@ -179,6 +179,6 @@ Filed in the review, not fixed, each with the reason:
   average 41.85** and re-measures at ~193 ms/file at load 3.8. The distribution is skewed
   (p50 55 ms, p99 2,497 ms, 8 files = 41% of the time), so the mean describes no file in it.
   Budget on total time and p95 instead.
-- **PY-19** — content over **1 MiB** is truncated before parsing and only a log line records it.
+- **PY-19** — content over **1 MiB** is truncated before parsing. The truncation is now **disclosed on the result** (`errors` entry plus a structured `metadata.truncated`), so a consumer can tell an incomplete parse from a complete one; 1 of 3,271 files is affected (`cython/tests/run/extsubscript.py`, 26% of it unread). The threshold itself is unchanged.
   1 of 3,271 corpus files is affected (`cython/tests/run/extsubscript.py`, 357 KiB / 25% of it
   never parsed). Cross-lane, in `engine.ts`.
