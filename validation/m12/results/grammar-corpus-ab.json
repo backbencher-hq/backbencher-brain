@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-10-01T08:04:54.137Z",
+  "sides": [
+    {
+      "label": "wired (pre-repair)",
+      "file": "$HOME/backbencher-brain/validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm",
+      "bytes": 50008
+    },
+    {
+      "label": "patched (M60 xml lane)",
+      "file": "$HOME/backbencher-brain/wasm/tree-sitter-xml.wasm",
+      "bytes": 50255
+    }
+  ],
+  "corpus": {
+    "files": 8888,
+    "bytes": 33602167,
+    "extensions": [
+      "*.xml",
+      "*.xsd",
+      "*.dtd",
+      "*.xsl",
+      "*.xslt",
+      "*.svg",
+      "*.rng"
+    ],
+    "maxBytes": 4000000
+  },
+  "perSide": {
+    "wired (pre-repair)": {
+      "files": 8888,
+      "clean": 8685,
+      "errorFiles": 203,
+      "errorNodes": 48934,
+      "missingNodes": 32,
+      "nodes": 6686204,
+      "bytes": 33602167
+    },
+    "patched (M60 xml lane)": {
+      "files": 8888,
+      "clean": 8708,
+      "errorFiles": 180,
+      "errorNodes": 48877,
+      "missingNodes": 10,
+      "nodes": 6689145,
+      "bytes": 33602167
+    }
+  },
+  "improved": 31,
+  "regressed": 2,
+  "unchanged": 8855,
+  "improvedSample": [
+    "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/gormwhite.svg  1E/0M -> 0E/0M",
+    "grails-core/grails-data-docs/data-mapping-website/src/main/resources/images/groovy.svg  1E/0M -> 0E/0M",
+    "docx4j/docx4j-core-tests/src/test/resources/2010/2010-mcAlternateContent-in-header.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-core-tests/src/test/resources/OpenDoPE/escaped-xhtml.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/2003/word2003xml.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/2010/2010-mcAlternateContent-in-header.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/databinding/NumberSearch.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/databinding/component-host.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/sample-docx.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/table-features.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/table-spans.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-docx4j/sample-docs/test-docs/endnotes.xml  2E/0M -> 0E/0M",
+    "docx4j/docx4j-samples-pptx4j/sample-docs/pptx-basic.xml  2E/0M -> 0E/0M",
+    "libxml2/test/errors/754946.xml  2E/1M -> 2E/0M",
+    "libxml2/test/errors/759579.xml  1E/1M -> 0E/0M",
+    "libxml2/test/errors10/781205.xml  2E/1M -> 2E/0M",
+    "libxml2/test/errors10/781361.xml  2E/1M -> 2E/0M",
+    "libxml2/test/recurse/lol_ep.xml  1E/1M -> 0E/0M",
+    "libxml2/test/recurse/lol_param.xml  41E/1M -> 41E/0M",
+    "libxml2/test/relaxng/OASIS/spectest.xml  21E/0M -> 1E/0M",
+    "libxml2/test/valid/dtds/cond_sect1.dtd  11E/0M -> 8E/0M",
+    "libxml2/test/valid/huge.xml  1E/1M -> 0E/0M",
+    "libxml2/test/valid/index.xml  1E/1M -> 0E/0M",
+    "libxml2/test/valid/pe-latin1.xml  1E/1M -> 0E/0M",
+    "libxml2/test/valid/t8.xml  1E/3M -> 0E/0M",
+    "libxml2/test/valid/t8a.xml  1E/3M -> 0E/0M",
+    "libxml2/test/valid/t9.xml  1E/3M -> 0E/0M",
+    "libxml2/test/valid/t9a.xml  1E/3M -> 0E/0M",
+    "libxslt/tests/docbook/dtd/3.1.7/docbookx.dtd  14E/0M -> 11E/0M",
+    "libxslt/tests/docbook/dtd/simple/3.1.7.1/sdocbook-custom.dtd  92E/0M -> 91E/0M",
+    "libxslt/tests/docbook/test/test.xml  2E/0M -> 0E/0M"
+  ],
+  "regressedSample": [
+    "libxml2/test/errors/759573-2.xml  5E/1M -> 9E/0M",
+    "libxml2/test/valid/dtds/cond_sect2.dtd  8E/0M -> 9E/0M"
+  ]
+}
