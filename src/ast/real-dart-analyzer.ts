@@ -1196,9 +1196,26 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
             // `InventoryCategoryException implements Exception` have a first parent
             // that is NOT in this file, so there is no evidence against and the
             // fallback still fires.
+            // Two refutations, and the second is only possible once a project index
+            // exists. The first is in-file evidence: this file declares the base and
+            // the base has no such member. The second is PROJECT-WIDE evidence: the
+            // index knows the base, and the inheritance-closed member set says it does
+            // not EXPOSE the member. That is the same standard as the first one, at a
+            // wider scope, and it is what the gate was missing — it was written before
+            // the companion existed and could only ever look at this file.
+            //
+            // It matters because a 0.8 first-parent claim is wrong the moment the base
+            // is KNOWN. dart-http's `WebSocketSink` is `abstract interface class
+            // WebSocketSink implements DelegatingStreamSink` and declares only
+            // `close`; `done`, `add`, `addError` and `addStream` come from
+            // `DelegatingStreamSink`. So every `X.done -> WebSocketSink.done` names a
+            // base that does not have the member — 37 rows on that lane alone, all
+            // @0.8, all unrefuted only because the base was declared in a DIFFERENT
+            // file of the same repository.
+            const indexKnowsBase = first !== null && companionForPass2?.has(first) === true
             const refuted = first !== null && !declares(first, s.name) &&
               (byName.get(s.name)?.some((bm) => bm.ownerName === first) ?? false) === false &&
-              (heritageByClass.has(first) || inFileTypes.has(first))
+              ((heritageByClass.has(first) || inFileTypes.has(first)) || indexKnowsBase)
             if (!refuted) {
               target = first
               confidence = 0.8
