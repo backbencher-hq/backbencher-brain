@@ -436,6 +436,14 @@ export interface GraphTraversalResult {
      *  is what bounds it, and `truncated` is true when it fires. */
     timeBudgetMs: number
     timeBudgetExhausted: boolean
+    /** Stored rows the vendored/generated/fixture/noise policy removed before any
+     *  bound applied. Non-zero means the edge sets are smaller than the store's BY
+     *  POLICY, not because nothing was found — so an empty edge set with
+     *  `truncated: false` does not mean "nothing references this". Reported here
+     *  rather than as a truncation reason: a bound means the walk stopped early,
+     *  a filter means it finished and removed rows, and `truncated` must not mean
+     *  both. */
+    noiseFiltered: { callers: number; callees: number }
     crossLanguageEdges: number
     truncated: boolean
     truncationReason?: string
