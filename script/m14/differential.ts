@@ -45,7 +45,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
+import { extendsTargetName, isCppSpelledName, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -4173,10 +4173,33 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
               // expression: all source text, never a name).
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
-                // #924 mirror: a builtin TYPE keyword is not a function name —
-                // the grammar classifies `unsigned(x)` as an `identifier`
-                // callee, and the analyzer refuses it, so truth must too.
-                if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return ""
+// #924 mirror: a builtin TYPE keyword is not a function name —
+              // the grammar classifies `unsigned(x)` as an `identifier`
+              // callee, and the analyzer refuses it, so truth must too.
+              //
+              // D1 SUPERSEDES THIS, and the narrow set was the defect rather
+              // than the fix — exactly as the analyzer's own D1 comment records
+              // ("the enumeration was the defect, not the fix"). #924 enumerated
+              // ONE class of impossible callee (17 builtin TYPE keywords). The
+              // full-corpus register then found the class is far larger: 5,496
+              // `calls` edges to keywords over 1,502 files, led by `static_cast`
+              // (4,812) and `reinterpret_cast` (472), and including `if` (25),
+              // `for` (4) and `switch` (6) as CALL TARGETS. The C++ lane's ruling
+              // is one set, three gates, one impossibility, and the analyzer
+              // exports `isCppSpelledName` for precisely this consumer:
+              //
+              //   "Exported because the F5 oracle must answer the SAME question
+              //    with the SAME set — #916's lesson (leaving truth behind
+              //    converts a recovery into a fabrication)."
+              //
+              // This oracle was left behind: it mirrored the PRE-D1 set, so every
+              // keyword the analyzer now correctly refuses was reported as a
+              // MISSING true edge. Measured on the 60-file nlohmann-json draw:
+              // MISSING rows were `static_cast`, `reinterpret_cast`, `typeid`,
+              // `noexcept`, `static_assert`, `defined`, `__has_include`, `if` and
+              // `for` — the analyzer right, truth wrong, on the lane's
+              // most-argued ruling. That is the #916 failure verbatim.
+              if (t === "identifier" && !isCppSpelledName(cur.text)) return ""
                 return cur.text
               }
               return ""
@@ -16507,10 +16530,27 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           const typeNode =
             c.childForFieldName?.("name") ??
             c.namedChildren.find((x: any) => /type_identifier|qualified_identifier|template_type/.test(x.type)) ?? c
-          let baseName = typeNode.text
-          const lt2 = baseName.indexOf("<")
-          if (lt2 !== -1) baseName = baseName.slice(0, lt2)
-          baseName = lastSegment(baseName)
+          // D2 mirror. A class cannot inherit from itself, and the leaf clean that
+          // produces the impossible `X extends X` is the same clean that threw away
+          // the one piece of information the edge carried — WHICH class was inherited
+          // from. Two real shapes, measured at 49 rows over 1,722 C++ files:
+          //
+          //   template <unsigned N> struct priority_tag : priority_tag<N - 1> {};
+          //   //  -> a different INSTANTIATION
+          //   namespace nlohmann { namespace detail {
+          //     template <typename T> struct char_traits : std::char_traits<T> {}; }}
+          //   //  -> a DIFFERENT CLASS, in std — and the inheritance is real
+          //
+          // So the ruling is not "skip self-inheritance" but that a base whose leaf
+          // equals the class's own leaf cannot be named as an edge target. The
+          // analyzer's `extendsTargetName` states it, and its own comment explains
+          // why it exists in exactly this shape: the analyzer and the oracle spell a
+          // class differently for a good reason (`formatter` vs
+          // `formatter<std::byte, Char>`), and comparing those two literally would let
+          // `formatter<std::byte, Char> : formatter<…>` straight through. One rule,
+          // one normalization, both sides — the analyzer's override resolver already
+          // refused these bases with this exact reasoning; the EDGE did not.
+          const baseName = extendsTargetName(typeNode.text, clsName)
           if (baseName && /^[A-Za-z_]/.test(baseName)) {
             edges.push({ label: "extends", from: clsName, target: baseName })
           }
