@@ -204,7 +204,10 @@ paper over.
 
 **The harness also reports, permanently:** 6,787 declared guesses confirmed by the tree **0**
 times, and 1 file truncated at the 1 MiB parse limit whose unread tail is a PY-19 coverage
-concern rather than an analyzer error. Multiplicity disagreement is **5**, all the
+concern rather than an analyzer error — now **disclosed on the result** rather than in a log
+line, as an `errors` entry carrying both byte counts and the percentage, plus a structured
+`metadata.truncated` so the oracle mirrors the parse without copying the limit constant.
+Multiplicity disagreement is **5**, all the
 line-continuation shape (PY-22): the store keys a `calls` edge on `(source, type, target,
 line)`, so two calls of one name on one line collapse and the same two on two lines do not.
 
