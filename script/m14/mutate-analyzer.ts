@@ -5332,6 +5332,56 @@ export const MUTANTS: Mutant[] = [
     transform: dropAllLineNumbers,
   },
   {
+    id: "xml/parameter-entity-reference-dropped",
+    language: "xml",
+    defectClass: "relationship-loss",
+    description:
+      "M18 (PEReference round) regression: a parameter entity reference stops being a USE. `<!DOCTYPE root [ <!ENTITY % defroot \u2019…\u2019> %defroot; ]>` is how a DTD pulls in another one, which is the same fact `entity_external_id` already recorded for `<!ENTITY % pe SYSTEM \"common.dtd\">` reached by reference instead of by ExternalID \u2014 and it was recorded only for the ExternalID form. All 24 PEReference sites in the corpus produced no edge at all, so the graph could say a document imports a DTD and nothing about the `%defroot;` the author actually wrote. Reverted by dropping every `parameter_entity_reference` edge, which also removes the `unresolved` label on an undeclared parameter entity.",
+    transform: (r) => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter((x: any) => (x.metadata as any)?.role !== "parameter_entity_reference"),
+    }),
+  },
+  {
+    id: "xml/parameter-entity-value-form-published",
+    language: "xml",
+    defectClass: "relationship-fabrication",
+    description:
+      "M18 (PEReference round) regression: the parameter-entity VALUE form is published as a reference. `% name \'replacement\'` is how a parameter entity is DEFINED and names nothing \u2014 libxml2's corpus holds `% zz \'&#60;\'` right beside real references, precisely so a rule accepting any `%\u2026;` is caught. Accepting it invents names out of literal percent signs, so the mutant adds an edge from every value-form site. The fixture forbids `references -> zz` and this is what that forbid half is for; a forbid that can never match is worse than none, because it reads as coverage.",
+    // The transform is handed the SOURCE as its second argument, which is what a
+    // source-derived revert needs. The first version read it off the result
+    // object instead, where no such field exists, so it fabricated nothing and
+    // SURVIVED — caught by this lane's own contract, which is the whole reason a
+    // surviving mutant is an error here and not a note.
+    transform: (r: any, source?: string) => {
+      const rels = [...(r.relationships ?? [])]
+      const owner = (r.symbols ?? []).find((s: any) => s.metadata?.isDoctype)?.name
+      if (owner && typeof source === "string") {
+        // A value form is `% <name> '...'` — NO SEMICOLON, which is the
+        // discriminator the fixture's `forbid` half pins.
+        const re = /%\s+([A-Za-z_][\w.\-]*)\s+['\"]/g
+        let m: RegExpExecArray | null
+        while ((m = re.exec(source)) !== null) {
+          const line = source.slice(0, m.index).split("\n").length
+          rels.push({
+            source: owner,
+            target: m[1],
+            type: "references",
+            confidence: 1,
+            line_number: line,
+            metadata: {
+              role: "parameter_entity_reference",
+              resolvable: "unresolved",
+              danglingEntityReference: true,
+              occurrences: 1,
+            },
+          })
+        }
+      }
+      return { ...r, relationships: rels }
+    },
+  },
+  {
     id: "xml/predefined-entities-unresolvable",
     language: "xml",
     defectClass: "wrong-edge",
