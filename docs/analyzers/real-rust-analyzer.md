@@ -82,13 +82,19 @@
 
 ## Unsupported / explicit-unknown constructs
 
-- The 79 corpus `grammarErrorFiles` are cargo testsuite files using
-  `str![[r#"..."]]` — **double-bracket macro delimiters** (`m![[...]]`), a
-  modern Rust macro-invocation syntax the newest available tree-sitter-rust
-  grammar (0.24.0) cannot parse — all valid Rust, recorded honestly in the
-  manifest (precedent: C 122, C++ 124, kotlin 51, fsharp 108). The cargo
-  package manager's own test suite is the most idiomatic real-world Rust
-  corpus, but its `str!` helper exercises this grammar-edge syntax
+- The corpus `grammarErrorFiles` are cargo files using the `str!` macro —
+  **CORRECTED 2026-09-30: this was recorded for years as a double-bracket
+  delimiter gap (`str![[r#"..."]]`) and that diagnosis was WRONG.** Minimal cases
+  settle it: `str![1]` and `str!["x"]` fail to parse with EITHER bracket count,
+  while `Str![1]`, `xstr!["x"]`, `my_str![1]` and `vec![1, 2]` all parse clean.
+  `str` lexes as the **primitive-type keyword** in tree-sitter-rust, so it can
+  never be a macro name. The double-bracket form is a second, smaller gap on top.
+  `str!` is the most common macro in modern cargo code, and this one token costs
+  more than any other grammar limitation in the lane: **475 of the 476 affected
+  files parse completely after a same-length substitution** — `str!` → `Str!` are
+  both three characters, so every line and offset survives. Still valid Rust,
+  still recorded honestly in the manifest (precedent: C 122, C++ 124, kotlin 51,
+  fsharp 108). See `RUST-D23`.
 - `type Foo = Bar;` aliases, `if let`/`while let` (cyclomatic counter), and
   trait-bound node names are referenced defensively under names absent from
   both grammars (`type_alias_declaration`, `if_let_expression`,
