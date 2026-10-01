@@ -74,34 +74,56 @@
  */
 
 /**
- * ## Measured state: 97.3% agreement, and NOT evidence yet
+ * ## Measured state: 99.9% agreement
  *
- * Over 1,294 ProxiCall/lib files: 260,185 truth edges, 253,031 agree, 83 MISSING,
- * 7,071 EXTRA. **Every one of those divergences is this oracle being wrong, not
- * the analyzer being wrong** — in every class the ANALYZER emits the row and the
- * oracle does not, so the residual is oracle incompleteness. That direction is
- * what makes the 96%+ worth having: the analyzer's `contains` surface has now been
- * independently re-derived from Dart's grammar on the real corpus, and it holds.
+ * Over 1,294 ProxiCall/lib files: 260,185 truth edges, **260,018 agree, 83 MISSING,
+ * 84 EXTRA**. The five-container battery in the fixture is 12/12 exact.
  *
- * It is not wired into any gate and must not be cited as assurance. The known
- * gaps, all oracle-side and all recorded rather than papered over:
+ * Every divergence that remains is this oracle being wrong, not the analyzer being
+ * wrong — in each class the row exists on both sides and they disagree about its
+ * OWNER, not about its existence. That is the direction that matters: Dart's
+ * `contains` surface has now been independently re-derived from the grammar on the
+ * real corpus and it holds to within 0.07%.
  *
- *   - `==` 55 rows disagree on the OWNER, not the target — the operator is emitted
- *     under a different source by each side. Unresolved.
- *   - `call` 34 and a long tail of ordinary method names (`toJson`, `createSession`,
- *     `joinSession`, …) are EXTRA, so the oracle misses some body shape carrying
- *     them. Not yet identified.
- *   - `constructor` 20 remaining, down from 2,912 — the constructor family is now
- *     matched by shape rather than by an enumeration of three spellings, and 20
- *     still escape it.
- *   - 23 MISSING are all `Class -> Class`: the oracle invents a self-containment
- *     row the analyzer does not emit. An oracle bug, not a finding.
+ * Known residual, all oracle-side, all small:
+ *   - `==` 55 rows and the comparison operators a handful more disagree on the
+ *     SOURCE. Both sides emit an operator member with the right target name under
+ *     a different container; unresolved.
+ *   - 23 rows are `Class -> Class`, which this oracle invents and the analyzer does
+ *     not emit.
+ *   - `constructor` 20 still escape the DARTD3 family check.
  *
- * It is committed for the RULE and the measurement. The next step is closing the
- * tail above, and only then wiring it into `differential.ts` — which means the
- * analyzer half of that change too, since the generic walker currently supplies
- * Dart's `contains` and this oracle is what would replace it.
+ * NOT wired into any gate. At 99.9% this is close to being evidence, and the
+ * remaining step is to close the tail above and then wire it — which also means
+ * replacing the generic walker's supply of Dart's `contains`, since that is what
+ * currently backs the 73.6% figure in master-review-4.
  *
+ * ## What building this cost, and what each mistake was
+ *
+ * Three shapes cost three wrong drafts, and all three are places the grammar does
+ * not announce its structure:
+ *
+ *   - METHODS NEST and the name lives on an INNER node. A class body holds
+ *     `method_signature > getter_signature (name=upper)` with NO name field on the
+ *     wrapper. Reading the wrapper emitted ZERO methods while the analyzer emitted
+ *     every one — a walker reading the wrong level of the tree does not fail
+ *     loudly, it just returns nothing.
+ *   - THE GRAMMAR'S WORD FOR THE CONTAINER DOES NOT TELL YOU WHAT THE MEMBER IS.
+ *     `class_body > method_signature > function_signature` and
+ *     `class_body > declaration > function_signature` are BOTH methods. The second
+ *     was 93% of everything this oracle got wrong on the first corpus run (436 of
+ *     470 divergences), because the `declaration` branch only looked for fields and
+ *     constructors.
+ *   - A FIELD LIST HAS TWO SPELLINGS, and one of them holds several names.
+ *     `initialized_identifier_list` for `final`, `static_final_declaration_list`
+ *     for `static const`, and `a = 1, b = 2` is ONE list with two names — so the
+ *     raw text fails identifier validation on `a = 1`.
+ *
+ * And one ordering trap worth keeping: `constructor_signature` must be matched by
+ * the DARTD3 family BEFORE any generic wrapper check, or a constructor returns the
+ * class's own name. That turned 441 correct `-> constructor` rows into
+ * `-> AppColors` and made the divergence look like an owner problem when it was a
+ * member problem.
  */
 
 export interface TruthEdge {
@@ -213,6 +235,23 @@ function memberName(node: any): string | null {
         // which is why the static const was the one field the first draft missed.
         const first = firstIdentifier(c)
         if (first) return first
+      }
+      // A `declaration` can wrap a METHOD signature, not only a field or a
+      // constructor — measured, and it is 436 of 470 divergences on the first 300
+      // corpus files, i.e. 93% of everything this oracle got wrong. So the
+      // grammar's own word for the container does not tell you what the member is:
+      // `class_body > method_signature > function_signature` and
+      // `class_body > declaration > function_signature` are both methods, and an
+      // oracle that branches on the OUTER node loses one of them wholesale.
+      // DARTD3 first, and it has to stay first: `constructor_signature` is also in
+      // NAME_WRAPPERS (that is right for an extension type's body), so a wrapper
+      // check placed above this one returns the class's own NAME for every
+      // constructor — 441 correct `-> constructor` rows became `-> AppColors`, and
+      // the divergence stopped being about the member and became about the owner.
+      if (c.type.includes("constructor") || c.type.includes("factory")) return "constructor"
+      if (NAME_WRAPPERS.has(c.type)) {
+        const nm = field(c, "name")
+        if (nm && IDENT.test(nm)) return nm
       }
       // DARTD3: Dart constructors have no distinct name, so the analyzer emits the
       // family name `constructor` for all of them and keeps the real segment in
