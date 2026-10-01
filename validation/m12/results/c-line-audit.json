@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "instrument": "c-line-audit",
+  "claim": "an edge's line_number names a line that mentions the edge's target token; exceptions are enumerated, not assumed away",
+  "knownLegitimateExceptions": [
+    "macro-expanded edges: the target is defined in a replacement list, so the use site spells the macro's arguments instead",
+    "edges from a glued or ERROR-recovered declaration: the line is the enclosing declaration's, which is the closest truthful anchor",
+    "edges whose target is a scope name rather than a token (`global`, a function-local owner)"
+  ],
+  "generatedAt": "2026-10-01T08:15:49.905Z",
+  "repos": [
+    "curl",
+    "libgit2",
+    "redis",
+    "zig"
+  ],
+  "limit": 900,
+  "perType": [
+    {
+      "type": "calls",
+      "onLine": 285234,
+      "total": 285234,
+      "onToken": 285234
+    },
+    {
+      "type": "uses",
+      "onLine": 97090,
+      "total": 97090,
+      "onToken": 97090
+    },
+    {
+      "type": "contains",
+      "onLine": 25615,
+      "total": 25615,
+      "onToken": 25615
+    },
+    {
+      "type": "references",
+      "onLine": 20672,
+      "total": 20672,
+      "onToken": 20672
+    },
+    {
+      "type": "imports",
+      "onLine": 13201,
+      "total": 13201,
+      "onToken": 13201
+    },
+    {
+      "type": "exports",
+      "onLine": 957,
+      "total": 957,
+      "onToken": 957
+    },
+    {
+      "type": "instantiates",
+      "onLine": 5,
+      "total": 5,
+      "onToken": 5
+    }
+  ],
+  "samples": []
+}
