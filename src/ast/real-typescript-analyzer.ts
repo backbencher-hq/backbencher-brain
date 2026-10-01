@@ -3609,6 +3609,14 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isIndexSignature: true,
         indexParameter: indexParam,
+        // The name `[key]` is INVENTED — the source writes `[key: string]`, and
+        // `[key]` is not a member any caller can pass, which is why the Vue lane
+        // suppresses the same shape on its own inline-type-literal path (VSD34).
+        // Declaring it with the m60 surface audit's general mechanism keeps it out
+        // of the "name not present in source" channel without an allowlist that
+        // would have to enumerate every parameter name. Found via the Vue lane's
+        // own audit, where it was the last of 125 findings.
+        synthesized: true,
       },
     }
 
@@ -4198,21 +4206,57 @@ class TypeScriptAnalysisRunner {
    * body a decorator position (its decorators are siblings of
    * method_definition, never ancestors of the body).
    */
-  private inDecoratorPosition(n: Node): boolean {
+  /**
+   * Is `node` a DECORATOR boundary? Used as the terminating condition of
+   * `inDecoratorPosition`.
+   *
+   * PERF: this used to climb `.parent` from every node, and web-tree-sitter
+   * implements `.parent` with a WASM DESCENDANT SEARCH (`ts_node_child_with_descendant`),
+   * so the climb was O(depth) expensive calls per node and O(n x depth) per
+   * traversal — measured at 5.2% of total wall clock on the vue lane's profile,
+   * because a Vue SFC's TypeScript blocks go through this exact walk. The flag is
+   * now THREADED down the recursion instead of recomputed: a decorator child sets
+   * it true, any boundary sets it false, otherwise it is inherited. Same answer
+   * (the decorator on a METHOD is a sibling of `method_definition`, never an
+   * ancestor of the body), one boolean per node instead of a walk per node.
+   */
+  private isDecoratorBoundary(nodeType: string): boolean {
+    return (
+      nodeType === "class_declaration" ||
+      nodeType === "abstract_class_declaration" ||
+      nodeType === "class" ||
+      nodeType === "function_declaration" ||
+      nodeType === "method_definition" ||
+      nodeType === "statement_block" ||
+      nodeType === "program"
+    )
+  }
+
+  /**
+   * Whether `n` has a `decorator` ancestor with no intervening boundary.
+   *
+   * `ancestorInDecorator` is that same answer as already computed for `n`'s
+   * parent by the traversal, so this is O(1). The `node.parent` climb remains as
+   * the CORRECTNESS REFERENCE for callers outside a threaded walk; it is not on
+   * the hot path any more.
+   */
+  /**
+   * The decorator-position flag for a CHILD of `n`: a decorator opens the region,
+   * a boundary closes it, anything else inherits. Pure and total, so the traversal
+   * needs no ancestor bookkeeping beyond this one argument.
+   */
+  private nextDecoratorFlag(n: Node, inherited: boolean): boolean {
+    if (n.type === "decorator") return true
+    if (this.isDecoratorBoundary(n.type)) return false
+    return inherited
+  }
+
+  private inDecoratorPosition(n: Node, ancestorInDecorator?: boolean): boolean {
+    if (ancestorInDecorator !== undefined) return ancestorInDecorator
     let p: Node | null = n.parent
     while (p) {
       if (p.type === "decorator") return true
-      if (
-        p.type === "class_declaration" ||
-        p.type === "abstract_class_declaration" ||
-        p.type === "class" ||
-        p.type === "function_declaration" ||
-        p.type === "method_definition" ||
-        p.type === "statement_block" ||
-        p.type === "program"
-      ) {
-        return false
-      }
+      if (this.isDecoratorBoundary(p.type)) return false
       p = p.parent
     }
     return false
@@ -4232,13 +4276,21 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
+    // PERF: `ancestorInDecorator` is threaded rather than recomputed per node.
+    // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
+    // search, so the old per-node climb was O(n x depth) of expensive calls and
+    // profiled at 5.2% of the vue lane's wall clock.
+    const processNode = (
+      n: Node,
+      currentSymbol: ASTEngine.UniversalSymbol | null,
+      ancestorInDecorator = false,
+    ): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
       // M59 (#861): no call edge is emitted for a decorator invocation — see
       // inDecoratorPosition. The subtree is skipped whole, so a call nested in a
       // decorator's ARGUMENTS (`@inject(makeToken())`) is decorator position too,
       // which is exactly what the oracle now skips.
-      if (this.inDecoratorPosition(n)) return
+      if (this.inDecoratorPosition(n, ancestorInDecorator)) return
 
       // Extract call expressions, instantiations and JSX component usages
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
@@ -4259,7 +4311,7 @@ class TypeScriptAnalysisRunner {
               this.pushInstantiation(callee, n, callSource, relationships)
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4289,7 +4341,7 @@ class TypeScriptAnalysisRunner {
             ) {
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4314,7 +4366,7 @@ class TypeScriptAnalysisRunner {
               // arguments still carry real calls (see the import branch note).
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4390,12 +4442,12 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) {
-          processNode(child, currentSymbol)
+          processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
         }
       }
     }
 
-    processNode(node, null)
+    processNode(node, null, false)
   }
 
   private extractUsageRelationships(
