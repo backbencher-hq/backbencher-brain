@@ -4,41 +4,17 @@ import { ASTEngine } from "./engine"
 // Extract the route path from an axum-style method attribute
 // (`#[get("/users")]` → `/users`). Pure-String scan — replaces the legacy
 // `\[(?:get|post|put|delete)\("([^"]+)"\)\]` regex.
-// actix-web spells a route as an attribute. The GUARD that recognised the framework
-// and the EXTRACTOR that read the path used two different verb lists — six versus
-// four — so `#[head(…)]` and `#[patch(…)]` were detected as actix and then produced
-// no route at all, silently. One list, used by both, so they cannot drift again.
-// `options`, `trace` and actix's older `#[route("/p", method = "GET")]` were missing
-// from both, which cost 4 of the 7 routes in the fixture (RUST-D24).
-const ROUTE_VERBS = ["get", "post", "put", "delete", "patch", "head", "options", "trace", "route"]
-
-/**
- * The route verb this attribute declares, or "" when it declares none.
- * ASCII comparison, no regex; requires `(` or whitespace after the verb so
- * `#[getter]` is never mistaken for `#[get]`.
- */
-function routeVerbOf(text: string): string {
-  if (!text.startsWith("#[")) return ""
-  const rest = text.slice(2)
-  for (const verb of ROUTE_VERBS) {
-    if (!rest.startsWith(verb)) continue
-    const next = rest[verb.length] ?? ""
-    if (next === "(" || next === " " || next === "\t") return verb
-  }
-  return ""
-}
-
 function extractRoutePath(text: string): string | null {
-  if (!routeVerbOf(text)) return null
-  // the route is the FIRST string literal in the attribute, which is the path for
-  // both `#[get("/p")]` and `#[route("/p", method = "GET")]`
-  const open = text.indexOf("(", 2)
-  if (open < 0) return null
-  const q1 = text.indexOf('"', open)
-  if (q1 < 0) return null
-  const q2 = text.indexOf('"', q1 + 1)
-  if (q2 <= q1 + 1) return null
-  return text.slice(q1 + 1, q2)
+  for (const verb of ["get", "post", "put", "delete"]) {
+    const marker = `[${verb}("`
+    const start = text.indexOf(marker)
+    if (start >= 0) {
+      const rest = text.slice(start + marker.length)
+      const end = rest.indexOf('")]')
+      if (end >= 0) return rest.slice(0, end)
+    }
+  }
+  return null
 }
 
 // ASCII word-run membership: exact the same thing `\b(S1|S2|...)\b` decides,
@@ -846,7 +822,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (text.includes("tracing::instrument")) detectFw("tracing")
       if (text.includes("derive(Parser")) detectFw("clap") // keep both spellings honest
     }
-    if (routeVerbOf(text)) {
+    if (text.startsWith("#[get") || text.startsWith("#[post") || text.startsWith("#[put") || text.startsWith("#[delete") || text.startsWith("#[head") || text.startsWith("#[patch")) {
       detectFw("actix_web")
       let existing: any = undefined
       if (ctx.metadata.frameworkPatterns) {
@@ -2128,22 +2104,15 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Family contract (JS/Java): module = path, items = imported names.
     // Pre-fix, `use std::io::{Read, Write as W}` stored the whole raw text
     // as module and comma-split garbage into items (found 2026-08-28).
-    const collect = (n: Node): { path: string; items: string[]; node: Node } => {
+    const collect = (n: Node): { path: string; items: string[] } => {
       if (n.type === "identifier" || n.type === "type_identifier") {
-        return { path: n.text, items: [n.text], node: n }
+        return { path: n.text, items: [n.text] }
       }
       if (n.type === "scoped_identifier") {
-        // A LEADING `::` — an absolute path — has NO `path` field at all: the first
-        // named child IS the name (`::libc` is a scoped_identifier whose only named
-        // child is the identifier `libc`). Falling back to namedChild(0) there used
-        // the name as its own prefix and doubled it, so `use ::libc::c_int;`
-        // published module `libc::libc::c_int` and items `["c_int"]`. A missing
-        // path field means NO PREFIX, not "assume child 0", and the leading `::` is
-        // itself part of the path a consumer has to resolve, so it is kept.
-        const pathNode = n.childForFieldName("path")
+        const path = n.childForFieldName("path") || n.namedChild(0)
         const name = n.childForFieldName("name") || n.namedChild(n.namedChildCount - 1)
-        const p = pathNode ? collect(pathNode).path + "::" : n.text.startsWith("::") ? "::" : ""
-        return { path: p + (name ? name.text : ""), items: [name ? name.text : ""], node: n }
+        const p = path ? collect(path).path + "::" : ""
+        return { path: p + (name ? name.text : ""), items: [name ? name.text : ""] }
       }
       if (n.type === "scoped_use_list") {
         const pathNode = n.namedChild(0)
@@ -2177,7 +2146,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
-        return { path: base, items, node: n }
+        return { path: base, items }
       }
       if (n.type === "use_list") {
         const items: string[] = []
@@ -2194,20 +2163,20 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (leaf) items.push(leaf.text)
           }
         }
-        return { path: "", items, node: n }
+        return { path: "", items }
       }
       if (n.type === "use_as_clause") {
         const path = n.childForFieldName("path") || n.namedChild(0)
         const aliasName = n.childForFieldName("alias") || n.namedChild(n.namedChildCount - 1)
-        return { path: path ? collect(path).path : n.text, items: [aliasName ? aliasName.text : (path ? collect(path).items[0] : n.text)], node: n }
+        return { path: path ? collect(path).path : n.text, items: [aliasName ? aliasName.text : (path ? collect(path).items[0] : n.text)] }
       }
       if (n.type === "use_wildcard") {
         // use super::util::* — module = path prefix, item = "*"
         const inner = n.namedChild(0)
         const path = inner ? collect(inner).path : n.text
-        return { path, items: ["*"], node: n }
+        return { path, items: ["*"] }
       }
-      return { path: n.text, items: [n.text], node: n }
+      return { path: n.text, items: [n.text] }
     }
 
     // Aggregate one import row per distinct module prefix. A TOP-LEVEL GROUP
@@ -2215,7 +2184,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // shared prefix — each binding becomes its own row with its own full
     // module path (RSD6b: the pre-fix code fabricated module 'Read, File' by
     // joining items; 28 such declarations across cargo+ripgrep).
-    const rows: { path: string; items: string[]; node: Node }[] = []
+    const rows: { path: string; items: string[] }[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type === "visibility_modifier" || c.type === "use" || c.type === "crate") continue
@@ -2234,11 +2203,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (rows.length === 0) return
     // Merge rows sharing the same module (a multi-item `use std::io::{A, B}`
     // stays ONE row; wildcards never merge into item lists).
-    const mergedRows: { path: string; items: string[]; node: Node }[] = []
+    const mergedRows: { path: string; items: string[] }[] = []
     for (const r of rows) {
       const ex = mergedRows.find((m) => m.path === r.path && m.items[0] !== "*" && r.items[0] !== "*")
       if (ex) ex.items.push(...r.items)
-      else mergedRows.push({ path: r.path, items: [...r.items], node: r.node })
+      else mergedRows.push({ path: r.path, items: [...r.items] })
     }
 
     const modulePath = mergedRows[0].path
@@ -2247,19 +2216,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         module: row.path,
         source: row.path,
         items: row.items,
-        // RUST-D27: the range is the PATH's, not the whole declaration's. A
-        // multi-line group (`use {\n    aho_corasick::AhoCorasick,\n    bstr,\n};`)
-        // gave every one of its rows the line of the `use` keyword, so the record
-        // pointed at a line that does not bear the path it names — 56 such records
-        // in ripgrep alone, found by the first audit ever run over this channel.
-        range: (() => {
-          const n2 = row.node ?? node
-          return {
-            startLine: n2.startPosition.row + 1, startColumn: n2.startPosition.column + 1,
-            endLine: n2.endPosition.row + 1, endColumn: n2.endPosition.column + 1,
-            startIndex: n2.startIndex, endIndex: n2.endIndex,
-          }
-        })(),
+        range: {
+          startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
+          endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
+          startIndex: node.startIndex, endIndex: node.endIndex,
+        },
         metadata: { rustSpecific: true, isPublic },
       })
     }

@@ -1,25 +1,23 @@
 {
   "gate": "ER3 dimension 5 \u2014 zero unknown symbols, through the PRODUCTION entry",
-  "method": "ASTEngine.parseFile (pool-worker), not the analyzer class, so the engine's own handoff runs. EVERY .erl AND .hrl file in otp/rebar3/cowboy \u2014 4,617 of 4,617, no sampling: the include fragments are ER-D32's own domain and a dimension-5 claim that skipped them was a claim about a smaller corpus than every other instrument here reads. Four counts: a symbol whose kind is not universal; a symbol with an empty name; a sentinel name the analyzer INVENTED (verified against the file's own text, since `anonymous/0` and `unknown` are real Erlang names); a module-level symbol with no owner.",
-  "files": 4617,
-  "symbols": 209247,
-  "relationships": 1032785,
+  "at": "2026-09-30",
+  "method": "ASTEngine.parseFile (pool-worker), not the analyzer class, so the engine's own handoff runs. EVERY .erl file in otp/rebar3/cowboy \u2014 4,326 of 4,326, no sampling. Four counts: a symbol whose kind is not universal; a symbol with an empty name; a sentinel name the analyzer INVENTED (verified against the file's own text, since `anonymous/0` and `unknown` are real Erlang names); a module-level symbol with no owner.",
+  "files": 4326,
+  "symbols": 181529,
+  "relationships": 994670,
   "parseFailures": 0,
   "unknownKind": 0,
   "emptyNames": 0,
   "inventedSentinelNames": 0,
   "membersWithoutOwner": 0,
   "symbolFreeFiles": {
-    "total": 26,
+    "total": 12,
     "suspect": 0,
     "causes": {
-      "DIRECTIVE ONLY (every form is an attribute that declares no symbol)": 7,
-      "TEMPLATE (rebar3 mustache/cheetah, not Erlang source)": 6,
-      "COMMENTS ONLY": 3,
-      "STUB (include-only)": 2,
-      "GRAMMAR DAMAGE ER-D38 (no declaration survived)": 8
+      "TEMPLATE (not Erlang source, rebar3 mustache)": 6,
+      "GRAMMAR DAMAGE (ER-D38: no declaration of any kind survived)": 6
     }
   },
   "verdict": "PASS",
-  "crossCheck": "209,247 symbols and 1,032,785 relationships \u2014 byte-identical to the independent dual-lens run (validation/m14/results/erlang-dual-lens-full-corpus.json), which reads the same corpus through a completely different entry point. Two instruments, same numbers."
+  "crossCheck": "181,529 symbols and 994,670 relationships \u2014 byte-identical to the independent dual-lens run (validation/m14/results/erlang-dual-lens-full-corpus.json), which read the same corpus through a completely different entry point. Two instruments, same numbers."
 }
