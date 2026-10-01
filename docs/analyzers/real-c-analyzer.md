@@ -730,6 +730,45 @@ struct h1_tunnel_state {
   BIT(close_connection);
 ```
 
+### #981 ruling: a macro argument inside a field declaration is dropped entirely
+
+Before patching, the four adjacent shapes were measured so the ruling rests on
+what the analyzer already gets right:
+
+    struct S { int nsent; BIT(chunked_encoding); };   contains:S->nsent
+    struct S { int nsent; MYINT foo; };               contains:S->nsent  contains:S->foo
+    struct S { int nsent; union { int a; float b; } u; };  contains:S->nsent
+                                                            contains:S->u  contains:S.u->a
+    void f(void){ BIT(chunked_encoding); }            calls:f->BIT
+
+The tree-sitter shape for the first is
+`field_declaration > macro_type_specifier > type_descriptor > type_identifier`,
+so the field NAME sits inside a macro ARGUMENT. Consequences:
+
+* `MYINT foo` already works, because there the macro is the type and `foo` is a
+  sibling `field_identifier`. Only the "name nested in the macro argument" shape
+  loses the name.
+* An anonymous union field is handled correctly and mints `S.u`.
+* The fourth line is the wider finding: a macro invocation in a BODY emits
+  `calls:f->BIT` but no `uses` for its argument, so #908's "a real macro invocation
+  pairs `calls` + `uses`" is only half-implemented today.
+
+**Ruling.** Two claims with different warrant, resolved differently:
+
+1. `uses:S->chunked_encoding` is PROVABLE. The identifier occurs in the
+   declaration, and #908 already treats macro arguments as real uses. Publishing it
+   closes the gap that case 4 exposes.
+2. `contains:S->chunked_encoding` is NOT provable. `contains` asserts the struct
+   OWNS the member, which is only true if `BIT` expands to a bitfield whose name is
+   its argument. That expansion is exactly what C-D2 forbids, and a macro that took
+   two arguments or renamed its parameter would make the edge false.
+
+So claim 1 ships, claim 2 does not. The oracle's 30 misses become a DECLARED LIMIT
+in the same shape as #963's typedef-return marker loss: real, measured, named, and
+deliberately unclaimed rather than fabricated to close the gap. Expanding `BIT` in
+the payload would mean carrying macro definitions into every compile unit, which
+C-D2 exists to prevent.
+
 **Under-emission (the 30 misses).** `chunked_encoding`, `close_connection`,
 `maybe_folded`, `leading_unfold`, `udp_tunnel` and the rest are `BIT(...)` fields.
 `BIT` is a curl macro that expands to a bitfield declaration, so the field name sits
