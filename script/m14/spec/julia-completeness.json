@@ -1,0 +1,167 @@
+{
+  "language": "julia",
+  "grammar": "tree-sitter-julia.wasm",
+  "grammarPin": {
+    "upstream": "npm tree-sitter-julia@0.23.1 (vendored to grammars/tree-sitter-julia, PATCHED)",
+    "rev": "0.23.1",
+    "note": "NOT the stock artifact. The prebuilt wasm from the npm tarball fails to parse real Julia: 185 of 966 corpus files carry ERROR nodes. Four constructs were patched into the vendored grammar and the wasm rebuilt \u2014 \u221e literal, `const global x = 1` as one node, `abstract type` with a body, operator function definitions \u2014 taking it to 177. A stock wasm cannot silently return: script/m11/verify-grammar-pins.ts checks source\u2194wasm parity and script/m60/julia-census.ts records the defect inventory. The pin matters more than usual because the lane is REGISTERED, so a stock wasm would parse badly rather than fail."
+  },
+  "corpus": {
+    "_note": "Every one of the grammar's 89 produced named types occurs in the measured corpus, so nothing here is classified from the grammar alone. `ERROR` and `MISSING` are tree-sitter's runtime nodes, absent from node-types.json by design; ERROR is observed on 205 of 941 files. The partition is exhaustive and disjoint: 33 handled + 57 silent = 90, which is the 89 declared-and-produced types plus the two built-ins.",
+    "files": 941,
+    "grammarTypesObserved": 89,
+    "grammarTypesNotObserved": [],
+    "filesWithErrorNodes": 205,
+    "errorNodes": 1947,
+    "filesConsidered": 949
+  },
+  "handled_verified": {
+    "_rule": "the analyzer reads this node to produce a symbol, a relationship, an import, an export, or a metadata value. Derived MECHANICALLY: the set of `case \"<type>\"` labels and `.type === \"<type>\"` comparisons in real-julia-analyzer.ts, intersected with the types the census observed \u2014 not hand-listed, because a hand-list drifts from the code silently.",
+    "types": [
+      "abstract_definition",
+      "adjoint_expression",
+      "assignment",
+      "binary_expression",
+      "broadcast_call_expression",
+      "call_expression",
+      "const_statement",
+      "curly_expression",
+      "export_statement",
+      "field_expression",
+      "function_definition",
+      "global_statement",
+      "identifier",
+      "import_alias",
+      "import_path",
+      "import_statement",
+      "local_statement",
+      "macro_definition",
+      "macro_identifier",
+      "macrocall_expression",
+      "module_definition",
+      "operator",
+      "parametrized_type_expression",
+      "parenthesized_expression",
+      "primitive_definition",
+      "public_statement",
+      "quote_expression",
+      "scoped_identifier",
+      "struct_definition",
+      "tuple_expression",
+      "typed_expression",
+      "using_statement",
+      "where_expression"
+    ]
+  },
+  "internal_silent": {
+    "_rule": "the analyzer walks the node and correctly emits no declaration of its own \u2014 a literal, a delimiter, a clause, or a construct owned by a form that IS handled elsewhere. Also includes `ERROR`, which is tree-sitter's runtime node and is deliberately not the analyzer's to classify. `ERROR` and `MISSING` are both tree-sitter runtime nodes, absent from node-types.json by design, and neither is the analyzer's to classify \u2014 a MISSING node means the grammar expected a token the scanner did not produce, which is a grammar-side fact recorded in the census, not an emission gap.",
+    "types": [
+      "ERROR",
+      "MISSING",
+      "argument_list",
+      "arrow_function_expression",
+      "block_comment",
+      "boolean_literal",
+      "break_statement",
+      "catch_clause",
+      "character_literal",
+      "command_literal",
+      "compound_assignment_expression",
+      "compound_statement",
+      "comprehension_expression",
+      "content",
+      "continue_statement",
+      "do_clause",
+      "else_clause",
+      "elseif_clause",
+      "escape_sequence",
+      "finally_clause",
+      "float_literal",
+      "for_binding",
+      "for_clause",
+      "for_statement",
+      "if_clause",
+      "if_statement",
+      "index_expression",
+      "integer_literal",
+      "interpolation_expression",
+      "juxtaposition_expression",
+      "let_binding",
+      "let_statement",
+      "line_comment",
+      "macro_argument_list",
+      "matrix_expression",
+      "matrix_row",
+      "named_argument",
+      "named_field",
+      "open_tuple",
+      "prefixed_command_literal",
+      "prefixed_string_literal",
+      "quote_statement",
+      "range_expression",
+      "return_statement",
+      "selected_import",
+      "signature",
+      "source_file",
+      "splat_expression",
+      "string_interpolation",
+      "string_literal",
+      "ternary_expression",
+      "try_statement",
+      "type_head",
+      "unary_expression",
+      "unary_typed_expression",
+      "vector_expression",
+      "while_statement"
+    ]
+  },
+  "gap": {
+    "_description": "No confirmed emission gap remains. Every relationship kind the analyzer emits is covered by a lane-owned F5 oracle (calls, contains, extends, instantiates, references, uses \u2014 the six measured types sum to 160,558, the exact reported total, so no seventh kind exists unaccounted). Two silent categories were CLOSED by this classification rather than ruled: `adjoint_expression` (`A'`, 22 corpus files) and `broadcast_call_expression` (`f.(x)`, 74 files) were real invocations that produced no edge at all, and both now publish a `calls` edge.",
+    "gaps": []
+  },
+  "design_decision": {
+    "decisions": [
+      {
+        "id": "JUL-D1",
+        "node_type": "overrides",
+        "status": "RULED",
+        "question": "Julia has multiple dispatch, not overriding. Can two same-named methods override one another?",
+        "resolution": "NO. `Area(::Circle)` and `Area(::Square)` are both live and neither replaces the other, so an `overrides` edge between them states a falsehood and there is no correct substitute relation. The analyzer emits 0 and fixture forbids assert the absence, so a future change that starts emitting them fails a gate rather than quietly improving a count."
+      },
+      {
+        "id": "JUL-D2",
+        "node_type": "implements",
+        "status": "RULED",
+        "question": "Does `struct S <: I` mean S implements interface I?",
+        "resolution": "NO. `abstract type` participates in a TYPE HIERARCHY via `<:`, the same relation S does, not a distinct protocol-conformance relation. Publishing it as `implements` would be the managed-OO ontology applied to a language that has no such concept. `<:` is published as `extends` only, for a real supertype."
+      },
+      {
+        "id": "JUL-D3",
+        "node_type": "a type PARAMETER's upper bound",
+        "status": "RULED",
+        "question": "Is `T<:Real` inside `struct Circle{T<:Real} <: Shape` a statement that Circle <: Real?",
+        "resolution": "NO \u2014 it bounds the PARAMETER, and a parameter list is a wall, not a road. Reading it as a supertype publishes a false edge; mutant julia/parameter-bound-as-supertype is the revert and is caught by a scoped forbid on (Circle, Real) and (Square, Real)."
+      },
+      {
+        "id": "JUL-D4",
+        "node_type": "a macro's quoted body",
+        "status": "RULED",
+        "question": "Does `macro cached(e) quote local v = \u2026; v end` mean the macro declares `v`?",
+        "resolution": "NO. Quoted code expands at the CALL SITE and `esc` reaches the caller's scope, so `v` is a temporary in generated code. Found by the F5 contains oracle as an analyzer false positive; the binding is no longer published."
+      },
+      {
+        "id": "JUL-D5",
+        "node_type": "FIVE `case` labels naming types the grammar does not have",
+        "status": "RULED",
+        "resolution": "`list_litteral` (misspelled, and `list_literal` does not exist either), `ccall` (`ccall(...)` is a `call_expression`, so the label can never fire), `macrocall_expression_head`, `import_list`, and `value`/`name`/`right`/`mutable` are FIELD names not node types. Dead branches, not missing features \u2014 recorded because 'the analyzer handles X' is otherwise unfalsifiable for an X that does not exist."
+      },
+      {
+        "id": "JUL-D6",
+        "node_type": "scoped_identifier",
+        "status": "RULED",
+        "question": "Does `scoped_identifier` exist in this grammar, and is it what a qualified call callee is?",
+        "resolution": "BOTH, and an earlier claim in this lane said NEITHER. Measured: the node IS produced \u2014 401 occurrences across 186 files \u2014 and it is never the callee of a call_expression. A scan for it *as a call callee* returns 0, which is a narrower question than 'does this type occur', and the narrower answer was reported as the broader one and written into a permanent artifact. Qualified ACCESS is a `field_expression`; the analyzer routes dotted names through `fieldPath` and is right. Recorded because the error is the reusable one: ask the census the question it actually answers."
+      }
+    ]
+  }
+}

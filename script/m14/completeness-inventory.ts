@@ -702,6 +702,36 @@ const LANG_CONFIGS: Record<string, LangConfig> = {
   // docs/analyzers/real-hcl-analyzer.md, and the `terraform:hcl` /
   // `tf-aws-components:hcl` rows this file's section E reads), and the hcl lane
   // should confirm them.
+  julia: {
+    id: "julia",
+    wasm: "tree-sitter-julia.wasm",
+    classification: "julia-completeness.json",
+    fixturesDir: "validation/m14/fixtures/julia",
+    docs: ["docs/analyzers/julia.md"],
+    differentialCheck: "differential-julia",
+    perfKey: "julia:julia",
+    // The six kinds the analyzer actually emits, measured: calls 85,174 · references 34,898 ·
+    // uses 25,766 · contains 10,215 · instantiates 2,720 · extends 1,785 — which sum to 160,558,
+    // the exact reported total, so there is no seventh kind in existence. `overrides` and
+    // `implements` are RULED (JUL-D1/D2) rather than required, for the same reason HCL omits
+    // `calls`: requiring a kind the language deliberately never emits would demand a fixture
+    // assert an edge the lane is right to decline. That the fixtures FORBID those two is the
+    // stronger statement — it fails a gate if a change starts emitting them.
+    requiredKinds: ["contains", "extends", "calls", "uses", "references", "instantiates"],
+    // Documented-residual floor, the C-D4 mechanism. The residual is ADJUDICATED, not untriaged: the
+    // `unexplained` rows are dominated by the oracles' own declared scope limits — they deliberately
+    // decline to resolve a callee across files, because a `calls` edge whose target is a name in
+    // another module cannot be verified from one tree and guessing would make a wrong truth row, which
+    // is worse than an absent one. The remaining `missing` rows are `@eval module` bodies, quoted-block
+    // declarations and type annotations reached through a namespace path.
+    //
+    // So the counts are PINNED rather than required to be zero, and the ruling that explains them is
+    // named here so a future fix that lowers the residual has to update the config and the baseline
+    // together — which is the point of the mechanism. `covered` is 98-99.3% across probes.
+    floorResidual: { ruling: "JUL-D1..D6 (script/m14/spec/julia-completeness.json)", missing: 83, unexplained: 434 },
+    payloads: {},
+    title: "julia wave (M60, 2026-10-01; dynamic multiple-dispatch, no managed-OO vocabulary)",
+  },
   hcl: {
     id: "hcl",
     wasm: "tree-sitter-hcl.wasm",

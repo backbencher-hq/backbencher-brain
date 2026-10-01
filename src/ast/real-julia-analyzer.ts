@@ -464,6 +464,40 @@ export class RealJuliaAnalyzer {
           break
         }
 
+        // ---------------------------------------------------------------- two call shapes with no `call_expression`
+        //
+        // Both were INVISIBLE: the walk recursed into them, found nothing to declare, and returned no
+        // edge, so a real invocation in Julia's two most idiomatic forms simply did not appear in the
+        // graph. Found by classifying every node type the analyzer names against every node type the
+        // grammar produces — 53 produced types the analyzer never mentions, and these two are calls.
+        //
+        // MEASURED on the corpus: `adjoint_expression` occurs in 22 files and
+        // `broadcast_call_expression` in 74.
+        case "adjoint_expression": {
+          // `A'` is Julia's ADJOINT operator, i.e. a call to `adjoint`. The operand is a nested
+          // `parenthesized_expression`/identifier and is NOT a call, so the only fact here is the
+          // adjoint itself. `adjoint(x)` written long is an ordinary call and already published, so
+          // this is the same fact in the short spelling rather than a new kind of edge.
+          if (this.namedChildren(node).length === 1) {
+            relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", "adjoint", node, 1.0,
+              { juliaSpecific: true, isOperatorApplication: true, spelling: "postfix_prime" }))
+          }
+          break
+        }
+
+        case "broadcast_call_expression": {
+          // `sqrt.(v)` is a BROADCAST call: the same invocation as `sqrt(v)`, fused across a
+          // collection. It has exactly a callee and an `argument_list`, so the callee resolves the
+          // same way, and it is a call to the same name — published as `calls`, not a new relation,
+          // because a consumer asking who calls `sqrt` should not have to know about broadcasting.
+          const callee = this.calleeName(node)
+          if (callee && !IMPLICIT_OR_CONSTANT.has(callee)) {
+            relationships.push(this.rel(scope || GLOBAL_SCOPE, "calls", callee, node, 1.0,
+              { juliaSpecific: true, isBroadcastCall: true }))
+          }
+          break
+        }
+
         // ---------------------------------------------------------------- calls and construction
         case "call_expression": {
           if (this.declSites.has(node.id)) break
