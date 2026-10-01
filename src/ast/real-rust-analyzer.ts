@@ -4,17 +4,41 @@ import { ASTEngine } from "./engine"
 // Extract the route path from an axum-style method attribute
 // (`#[get("/users")]` → `/users`). Pure-String scan — replaces the legacy
 // `\[(?:get|post|put|delete)\("([^"]+)"\)\]` regex.
-function extractRoutePath(text: string): string | null {
-  for (const verb of ["get", "post", "put", "delete"]) {
-    const marker = `[${verb}("`
-    const start = text.indexOf(marker)
-    if (start >= 0) {
-      const rest = text.slice(start + marker.length)
-      const end = rest.indexOf('")]')
-      if (end >= 0) return rest.slice(0, end)
-    }
+// actix-web spells a route as an attribute. The GUARD that recognised the framework
+// and the EXTRACTOR that read the path used two different verb lists — six versus
+// four — so `#[head(…)]` and `#[patch(…)]` were detected as actix and then produced
+// no route at all, silently. One list, used by both, so they cannot drift again.
+// `options`, `trace` and actix's older `#[route("/p", method = "GET")]` were missing
+// from both, which cost 4 of the 7 routes in the fixture (RUST-D24).
+const ROUTE_VERBS = ["get", "post", "put", "delete", "patch", "head", "options", "trace", "route"]
+
+/**
+ * The route verb this attribute declares, or "" when it declares none.
+ * ASCII comparison, no regex; requires `(` or whitespace after the verb so
+ * `#[getter]` is never mistaken for `#[get]`.
+ */
+function routeVerbOf(text: string): string {
+  if (!text.startsWith("#[")) return ""
+  const rest = text.slice(2)
+  for (const verb of ROUTE_VERBS) {
+    if (!rest.startsWith(verb)) continue
+    const next = rest[verb.length] ?? ""
+    if (next === "(" || next === " " || next === "\t") return verb
   }
-  return null
+  return ""
+}
+
+function extractRoutePath(text: string): string | null {
+  if (!routeVerbOf(text)) return null
+  // the route is the FIRST string literal in the attribute, which is the path for
+  // both `#[get("/p")]` and `#[route("/p", method = "GET")]`
+  const open = text.indexOf("(", 2)
+  if (open < 0) return null
+  const q1 = text.indexOf('"', open)
+  if (q1 < 0) return null
+  const q2 = text.indexOf('"', q1 + 1)
+  if (q2 <= q1 + 1) return null
+  return text.slice(q1 + 1, q2)
 }
 
 // ASCII word-run membership: exact the same thing `\b(S1|S2|...)\b` decides,
@@ -822,7 +846,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (text.includes("tracing::instrument")) detectFw("tracing")
       if (text.includes("derive(Parser")) detectFw("clap") // keep both spellings honest
     }
-    if (text.startsWith("#[get") || text.startsWith("#[post") || text.startsWith("#[put") || text.startsWith("#[delete") || text.startsWith("#[head") || text.startsWith("#[patch")) {
+    if (routeVerbOf(text)) {
       detectFw("actix_web")
       let existing: any = undefined
       if (ctx.metadata.frameworkPatterns) {
@@ -2109,9 +2133,16 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         return { path: n.text, items: [n.text] }
       }
       if (n.type === "scoped_identifier") {
-        const path = n.childForFieldName("path") || n.namedChild(0)
+        // A LEADING `::` — an absolute path — has NO `path` field at all: the first
+        // named child IS the name (`::libc` is a scoped_identifier whose only named
+        // child is the identifier `libc`). Falling back to namedChild(0) there used
+        // the name as its own prefix and doubled it, so `use ::libc::c_int;`
+        // published module `libc::libc::c_int` and items `["c_int"]`. A missing
+        // path field means NO PREFIX, not "assume child 0", and the leading `::` is
+        // itself part of the path a consumer has to resolve, so it is kept.
+        const pathNode = n.childForFieldName("path")
         const name = n.childForFieldName("name") || n.namedChild(n.namedChildCount - 1)
-        const p = path ? collect(path).path + "::" : ""
+        const p = pathNode ? collect(pathNode).path + "::" : n.text.startsWith("::") ? "::" : ""
         return { path: p + (name ? name.text : ""), items: [name ? name.text : ""] }
       }
       if (n.type === "scoped_use_list") {

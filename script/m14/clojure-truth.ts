@@ -992,6 +992,20 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
   // `resolvedNs !== currentNamespace` is part of the RULE and not a guard added
   // afterwards.
   const timeline = namespaceTimeline(root)
+  // CLJ-D50: THE ALIAS TIMELINE, NOT THE `ns` FORM.
+  //
+  // This derivation read its aliases from `namespaceTimeline`, which only sees the
+  // `ns` form's clauses. A TOP-LEVEL `(require '[clojure.java.io :as jio])` is not in
+  // an `ns` form at all, so `jio` was never in the table and core.clj:7267 published
+  // the bare, unresolvable `references: clojure.core -> jio`.
+  //
+  // This is CLJ-D40's defect in a derivation CLJ-D40 never reached, and it was
+  // INVISIBLE while the shared alias table was also wrong about prefix lists: two
+  // errors in the same direction cancel in a diff. `aliasTimelineOf` handles the
+  // quoted top-level form, the `:as-alias` positional spelling and the relative
+  // libspec, and it is already the `calls` derivation's source — one reader, one
+  // answer.
+  const aliasTl = aliasTimelineOf(root)
   const walkAliasedUses = (): void => {
     walk(root, (node) => {
       if (node.type !== "list_lit") return
@@ -1000,7 +1014,7 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
       if (!h || h.type !== "sym_lit") return
       const form = symName(h)
       if (NON_CODE_HEADS.has(form)) return
-      const al = aliasesAt(timeline, node.startIndex)
+      const al = aliasesInForce(aliasTl, node.startIndex)
       const ns = nsAt(timeline, node.startIndex)
       const mark = (name: string, line: number) => {
         const slash = name.indexOf("/")
@@ -1023,11 +1037,19 @@ export function deriveClojureReferencesTruth(root: Node, isSuppressed: (name: st
         // fabrications, and the fix is one `??`.
         const prefix = name.slice(0, slash)
         const resolved = al.get(prefix) ?? prefix
-        if (resolved === ns) return
-        const id = `references|${ns}->${resolved}@${line}`
+        // CLJ-D50, THE OTHER HALF: the FROM side needs the fallback chain CLJ-D47
+        // gave the `calls` derivation. `nsAt` returns "" for a file with no `ns` form
+        // and the analyzer attributes those references to `user`, so 70 edges in this
+        // corpus were published as `references||…` — a relationship with only one end,
+        // which is what the "all extracted, resolved and emitted" contract exists to
+        // prevent. The two halves drifting apart is the same lesson as the alias
+        // tables: one language fact re-derived in four places, each copy differing.
+        const from = ns !== "" ? ns : "user"
+        if (resolved === from) return
+        const id = `references|${from}->${resolved}@${line}`
         if (seen.has(id)) return
         seen.add(id)
-        out.push({ label: "references", from: ns, to: resolved, line })
+        out.push({ label: "references", from, to: resolved, line })
       }
       // NOT yet restricted to call-shaped positions. Restricting it traded 31
       // fewer misses for 653 MORE fabrications — a worse net residual (894
