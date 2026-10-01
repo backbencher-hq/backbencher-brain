@@ -415,7 +415,13 @@
   },
   "label_coverage": {
     "_description": "Which relationship labels this lane actually COMPARES, and which admitted labels have no oracle behind them. Measured by script/m14/verify-label-coverage.ts and script/m14/verify-truth-existence.ts.",
-    "declared_gaps": [],
+    "declared_gaps": [
+      {
+        "label": "contains",
+        "reason": "An oracle EXISTS (script/m14/oracles/fsharp-contains.ts) and is deliberately NOT wired. Measured on a 40-file fsharp draw it derives 1,178 truth rows of which 1,021 agree (86.7%), leaving 1,563 analyzer rows with no truth and 157 truth rows the analyzer does not publish. Admitting the label with that oracle would replace \"not compared\" with \"compared against an oracle wrong in both directions\", which is strictly less honest — the erlang and dart oracles were only wired after reaching ZERO disagreement in both directions. The known misses are members of `type ... as this` classes and of .fsi signature files, and a `let` with a return-type annotation whose name extraction falls through to raw node text.",
+        "closes_when": "the oracle reaches zero analyzer-only and truth-only rows, then wire it with its allowlist entry"
+      }
+    ],
     "declared_no_truth": [
       {
         "label": "calls",
