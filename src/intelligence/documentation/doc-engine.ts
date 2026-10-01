@@ -85,6 +85,19 @@ export interface DocQuality {
   completeness: { passed: boolean; covered: number; expected: number; unknown: number }
   freshness: { passed: boolean; snapshot: string; staleClaims: number }
   budget: { passed: boolean; estimatedTokens: number; maxTokens: number }
+  /**
+   * The two evidence bounds, per section, as numbers rather than as prose.
+   *
+   * The per-section cap was reported in a sentence and never applied, so the
+   * sentence was the only description of it and it was false. Publishing the
+   * arithmetic makes the claim checkable by a consumer and by the gate:
+   * `emitted + droppedForBudget === capped`, and `emitted` is the section's real
+   * fact count. `available` is what the section had before any bound.
+   */
+  bounds: {
+    perSection: number
+    sections: Array<{ id: string; available: number; capped: number; droppedForBudget: number; emitted: number }>
+  }
   warnings: string[]
 }
 
@@ -611,13 +624,22 @@ async function targetSymbols(raw: any, projectId: string, request: DocRequest, f
     return { symbols, feature: null }
   }
   if (request.mode === "api") {
+    // Two disjoint routes to the same surface, because only one of them has ever
+    // matched anything: a declared contract or a route-ish symbol type, and a
+    // symbol the index attributes to a file it marks as an HTTP framework. The
+    // first was empty on all 8 measured corpora; the second is not.
+    const placeholders = HTTP_FRAMEWORK_TYPES.map(() => "?").join(",")
     return {
       symbols: queryRows(
         raw,
-        `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
-         WHERE s.project_id=? AND (s.api_contract_path IS NOT NULL OR lower(s.symbol_type) IN ('route','endpoint','controller'))
+        `SELECT s.*, f.path, f.relative_path, f.id AS source_file_id, f.framework_type FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+         WHERE s.project_id=?
+           AND (s.api_contract_path IS NOT NULL
+                OR lower(s.symbol_type) IN ('route','endpoint','controller')
+                OR (f.framework_type IN (${placeholders}) AND lower(s.symbol_type) IN ('function','method')))
+           AND s.visibility IN ('export','public')
            AND (?='' OR s.api_contract_path=? OR f.relative_path=? OR f.relative_path LIKE ?) ORDER BY f.relative_path, s.line_start LIMIT ?`,
-        projectId, target, target, target, `${normalizeTarget(target)}/%`, limit,
+        projectId, ...HTTP_FRAMEWORK_TYPES, target, target, target, `${normalizeTarget(target)}/%`, limit,
       ),
       feature: null,
     }
@@ -676,13 +698,13 @@ function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citat
       // Risks section under 65 identical-shaped unknowns on a real corpus, and
       // a `risks` unknown that describes `lib/libc/include/.../activdbg.h` is
       // not a risk finding.
-      unknowns.push({ statement: `Syntax validity for ${rel} is unknown because the index recorded parser errors, so its symbols and byte bounds may be wrong.`, reason: "not-observed", affectedSection: "overview" })
+      unknowns.push({ statement: `Syntax validity for ${rel} is unknown because the index recorded parser errors, so its symbols and byte bounds may be wrong.`, reason: "not-observed", affectedSection: concern("syntax") })
     }
     const freshness = resolver.of(String(file.id))
     if (freshness === "stale") {
-      unknowns.push({ statement: `Current source for ${rel} cannot be confirmed: the file changed after indexing.`, reason: "stale-evidence", affectedSection: "stale" })
+      unknowns.push({ statement: `Current source for ${rel} cannot be confirmed: the file changed after indexing.`, reason: "stale-evidence", affectedSection: concern("freshness") })
     } else if (freshness === "missing") {
-      unknowns.push({ statement: `${rel} is indexed but no longer exists on disk.`, reason: "not-indexed", affectedSection: "stale" })
+      unknowns.push({ statement: `${rel} is indexed but no longer exists on disk.`, reason: "not-indexed", affectedSection: concern("freshness") })
     }
   }
   return facts
@@ -711,10 +733,20 @@ function formatParameters(raw: unknown): string | null {
   return text.replace(/^\(|\)$/g, "") || null
 }
 
-function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[] } {
+function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
   const api: DocFact[] = []
   const behavior: DocFact[] = []
   const tests: DocFact[] = []
+  // The `limitations` section used to be a literal `facts: []` behind a
+  // reassuring lead, so it was empty in 100% of cases on every corpus and every
+  // detail level, and nothing said why. It is now built from the SAME branch
+  // that decides each gap, so the section and the note cannot disagree: there is
+  // no second measurement to drift, and no limit asserted without a citation.
+  const limitations: DocFact[] = []
+  const syntaxErrorFiles = includeLimitations
+    ? new Map(queryRows(raw, "SELECT id, relative_path, error_report FROM brain_file WHERE project_id=? AND has_syntax_errors=1", symbols[0]?.project_id ?? "")
+        .map((row) => [String(row.id), row] as const))
+    : new Map<string, Row>()
   for (const symbol of symbols) {
     const rel = String(symbol.relative_path ?? "")
     const start = Number(symbol.line_start ?? 0)
@@ -731,13 +763,44 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
     if (symbol.api_contract_path) api.push(fact("extracted", `${symbol.name} is bound to the API contract ${symbol.api_contract_path}.`, [id], citations))
     if (symbol.visibility) api.push(fact("extracted", `${symbol.name} is declared ${symbol.visibility}.`, [id], citations))
 
-    behavior.push(fact("extracted", `${symbol.name} is defined in ${rel} at line ${start}${symbol.return_type ? ` and returns ${collapse(symbol.return_type)}` : ""}.`, [id], citations))
+    // The parameters belong here, not only inside the signature rendered into
+    // the `api` section: `inputs-outputs` is handed these facts, and it was
+    // reporting "returns void" while never stating what the function takes, so
+    // the section named for inputs said nothing about them.
+    const takes = parameters ? `, takes ${parameters}` : ""
+    behavior.push(fact("extracted", `${symbol.name} is defined in ${rel} at line ${start}${takes}${symbol.return_type ? ` and returns ${collapse(symbol.return_type)}` : ""}.`, [id], citations))
     const docstring = symbol.docstring || reader.docstring(symbol.path, start)
     if (docstring) {
       const from = symbol.docstring ? "the index" : "the source file on disk"
       behavior.push(fact("extracted", `Its documentation (${from}) says: ${collapse(docstring)}`, [id], citations))
     } else {
-      unknowns.push({ statement: `No docstring was indexed for ${symbol.name} and none is present in the comment style this tool reads.`, reason: "not-observed", affectedSection: "behavior" })
+      unknowns.push({ statement: `No docstring was indexed for ${symbol.name} and none is present in the comment style this tool reads.`, reason: "not-observed", affectedSection: concern("docstring") })
+      if (includeLimitations) {
+        // "Has no documentation" and "this tool cannot see its documentation"
+        // are different claims, and the language's own comment marker is what
+        // tells them apart. Reporting the second as the first is a false
+        // negative about the code, produced by a limit of the reader.
+        const language = String(symbol.language ?? "").toLowerCase()
+        const marker = UNREADABLE_COMMENT_MARKERS[language]
+        limitations.push(marker === undefined
+          ? fact("extracted", `${symbol.name} has no indexed docstring, and ${language || "this language"} uses a comment marker this tool's source reader does read, so the absence of documentation is a finding about the code.`, [id], citations)
+          : fact("extracted", `${symbol.name} has no indexed docstring, but ${language} documentation is written with "${marker}" and this tool's source reader reads only ${READABLE_COMMENT_MARKERS.join(", ")} — whether it is documented is unverified, not absent.`, [id], citations))
+      }
+    }
+    if (includeLimitations) {
+      const freshness = resolver.of(String(symbol.source_file_id ?? ""))
+      if (freshness !== "fresh") {
+        limitations.push(fact("extracted", `${rel} is ${freshness === "stale" ? "changed on disk since it was indexed" : freshness === "missing" ? "indexed but no longer present on disk" : "not among the files whose freshness could be resolved"}, so every statement about ${symbol.name} here describes the indexed state rather than the current source.`, [id], citations))
+      }
+      const broken = syntaxErrorFiles.get(String(symbol.source_file_id ?? ""))
+      if (broken) {
+        const brokenId = addCitation(citations, {
+          kind: "file", idParts: [String(broken.relative_path ?? "")], relPath: String(broken.relative_path ?? ""),
+          evidence: `Indexed with parser errors: ${String(broken.error_report ?? "errors recorded")}`.slice(0, 300),
+          fileId: String(broken.id ?? ""),
+        }, resolver)
+        limitations.push(fact("extracted", `${rel} is indexed with parser errors, so ${symbol.name}'s symbol bounds and any relationship touching it may be wrong.`, [brokenId], citations))
+      }
     }
     if (symbol.complexity != null) behavior.push(fact("extracted", `${symbol.name} has a measured complexity of ${symbol.complexity}.`, [id], citations))
     if (symbol.is_async) behavior.push(fact("extracted", `${symbol.name} is asynchronous.`, [id], citations))
@@ -781,13 +844,66 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
             statement: testFiles.length
               ? `No indexed test relationship for ${symbol.name}, and no indexed test file names it.`
               : `No test files are indexed in this project, so ${symbol.name} cannot be checked for test coverage.`,
-            reason: "not-observed", affectedSection: "tests",
+            reason: "not-observed", affectedSection: concern("tests"),
           })
+          if (includeLimitations) {
+            limitations.push(fact("extracted", testFiles.length
+              ? `${testFiles.length} test file(s) are indexed in this project and none names ${symbol.name}, so its test coverage is unestablished rather than absent.`
+              : `No test file is indexed in this project, so ${symbol.name} cannot be checked for test coverage at all.`, [id], citations))
+          }
         }
       }
     }
   }
-  return { api, behavior, tests }
+  return { api, behavior, tests, limitations }
+}
+
+/**
+ * One honest statement per endpoint.
+ *
+ * Selecting every exported symbol of an HTTP-attributed file was wrong in a way
+ * only a real repository showed: measured on go_tools, the 25 `net_http` files
+ * hold 281 exported symbols, of which 121 are property accessors, 25 are module
+ * declarations, 19 are structs, 18 are variables and 3 are interfaces. A section
+ * called Endpoints reported `module blog()` and `struct Config()` as endpoints,
+ * which is the name-against-content defect this review exists to remove.
+ *
+ * So a symbol reaches this section only if the index gives it an authoritative
+ * route signal (a contract path, or a route/endpoint/controller type) or it is
+ * callable in a file the index attributes to an HTTP framework. And every
+ * statement says what the index does and does not record about the route: the
+ * framework attribution is a property of the FILE, so it establishes that the
+ * file is on an HTTP surface, not that any particular symbol answers a request.
+ */
+function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver): DocFact[] {
+  const facts: DocFact[] = []
+  for (const symbol of symbols) {
+    const rel = String(symbol.relative_path ?? "")
+    const start = Number(symbol.line_start ?? 0)
+    const end = Number(symbol.line_end ?? start)
+    const parameters = formatParameters(symbol.parameters)
+    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const framework = String(symbol.framework_type ?? "")
+    const id = addCitation(citations, {
+      kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
+      lineStart: start || undefined, lineEnd: end || undefined,
+      evidence: `${symbol.symbol_type} ${symbol.name} in ${rel}${framework ? ` (index framework: ${framework})` : ""}`,
+      fileId: String(symbol.source_file_id ?? ""),
+    }, resolver)
+    if (symbol.api_contract_path) {
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end} and is bound to the API contract ${symbol.api_contract_path}.`, [id], citations))
+      continue
+    }
+    if (framework) {
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.`, [id], citations))
+      continue
+    }
+    // The selection admits `controller` as well as `route` and `endpoint`, so
+    // this must not claim the symbol IS a route: it says the index typed it as
+    // route-bearing and that the request it answers is not recorded.
+    facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end} and the index types it ${String(symbol.symbol_type)}, one of the types it records for a route-bearing symbol. No method or path is recorded for it.`, [id], citations))
+  }
+  return facts
 }
 
 function addPublicSymbolFacts(raw: any, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[]): DocFact[] {
@@ -953,7 +1069,7 @@ function addFindingFacts(raw: any, resolver: FreshnessResolver, projectId: strin
   const brokenFiles = Number((queryRows(raw, "SELECT count(*) AS c FROM brain_file WHERE project_id=? AND has_syntax_errors=1", projectId)[0]?.c ?? 0))
   const complexityFacts: DocFact[] = []
   if (rows.length === 0 && brokenFiles === 0) {
-    unknowns.push({ statement: "No open analysis finding, no recorded parser error and no complexity outlier is indexed for this project, so no risk is asserted here — the absence of evidence is not evidence of absence.", reason: "not-indexed", affectedSection: "risks" })
+    unknowns.push({ statement: "No open analysis finding, no recorded parser error and no complexity outlier is indexed for this project, so no risk is asserted here — the absence of evidence is not evidence of absence.", reason: "not-indexed", affectedSection: concern("risk") })
   }
   if (brokenFiles > 0) {
     const healthId = addCitation(citations, {
@@ -1077,17 +1193,23 @@ function addEntryPointFacts(raw: any, resolver: FreshnessResolver, projectId: st
 
 function addOptionalUnknowns(request: DocRequest, unknowns: DocUnknown[]): void {
   if (request.includeExamples === true) {
-    unknowns.push({ statement: "No example was emitted: an example requires a cited source snippet or a verified API contract, and neither was available in this scope.", reason: "not-observed", affectedSection: "examples" })
+    unknowns.push({ statement: "No example was emitted: an example requires a cited source snippet or a verified API contract, and neither was available in this scope.", reason: "not-observed", affectedSection: concern("examples") })
   }
   if (request.includeDiagrams === true) {
-    unknowns.push({ statement: "No diagram was emitted: a diagram requires cited graph nodes and links, and this implementation does not resolve them.", reason: "not-observed", affectedSection: "diagrams" })
+    unknowns.push({ statement: "No diagram was emitted: a diagram requires cited graph nodes and links, and this implementation does not resolve them.", reason: "not-observed", affectedSection: concern("diagrams") })
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // section assembly
 // ─────────────────────────────────────────────────────────────────────────────
-interface SectionDraft {
+/**
+ * Exported, with `explainEmptyRequiredSections` and
+ * `assertUnknownsNameRenderedSections`, so the gate can prove each guard can
+ * actually fail. A guard that is only ever exercised by the code it guards
+ * cannot be evidence about that code: it would pass if it were `return`.
+ */
+export interface SectionDraft {
   id: string
   heading: string
   required: boolean
@@ -1097,6 +1219,142 @@ interface SectionDraft {
   facts: DocFact[]
   /** Prose that adds orientation only — never a restatement of the facts. */
   lead?: string
+  /**
+   * What this section would have contained, stated as a search that was run and
+   * came back empty — never "no data available".
+   *
+   * Every REQUIRED section declares one, and `explainEmptyRequiredSections`
+   * throws if a required section renders empty with neither a fact nor a note:
+   * a section wired to a source nothing produces is indistinguishable from a
+   * measurement that found nothing, and that is how `Risks` shipped empty on
+   * every corpus and eight more sections audited empty in 100% of cases.
+   */
+  emptyExplanation?: string
+}
+
+/**
+ * Every rendered required section that has no facts must say why, in its own
+ * words, naming the section it applies to.
+ *
+ * This is the sweep that makes the rule structural instead of per-mode: a
+ * required section cannot reach a reader unexplained, and a new mode or a
+ * renamed section fails here rather than quietly shipping a placeholder.
+ */
+export function explainEmptyRequiredSections(sections: DocSection[], drafts: SectionDraft[], unknowns: DocUnknown[], explaining?: Map<string, Set<UnknownConcern | "declared">>): void {
+  for (const draft of drafts) {
+    if (!draft.required) continue
+    const section = sections.find((item) => item.id === draft.id)
+    // The RENDERED section is the truth here, not the draft: the draft is capped
+    // on its way into the section, so a draft with facts can still render empty.
+    if (!section || section.facts.length > 0) continue
+    const reasons = explaining?.get(section.id)
+    if (reasons && [...reasons].some((reason) => reason === "declared" || EMPTINESS_EXPLAINING.has(reason))) continue
+    if (explaining === undefined && unknowns.some((unknown) => unknown.affectedSection === section.id)) continue
+    if (draft.emptyExplanation === undefined) {
+      throw new Error(`bb_doc: required section "${draft.id}" can render empty and declares no emptyExplanation, so it would ship unexplained. Every required section must state what would have filled it.`)
+    }
+    unknowns.push({ statement: draft.emptyExplanation, reason: "not-indexed", affectedSection: section.id })
+  }
+}
+
+/**
+ * The comment markers this tool's source reader recognises.
+ *
+ * A doc comment written with any other marker is invisible to the reader, so a
+ * symbol whose only documentation uses one is counted as undocumented by a
+ * measurement that could not have seen it. That is a false negative about the
+ * CODE, produced by a limit of this tool, and the `unsupported` section is where
+ * it belongs. The analyzer lane owns the other markers; this is the honest
+ * statement of what the reader does with.
+ */
+const READABLE_COMMENT_MARKERS = ["/**", "*", "//"] as const
+
+/** Line-comment marker per language whose doc comments this reader cannot see. */
+const UNREADABLE_COMMENT_MARKERS: Record<string, string> = {
+  python: "#", ruby: "#", bash: "#", shell: "#", yaml: "#", toml: "#", perl: "#", r: "#",
+  lua: "--", sql: "--", haskell: "--", ada: "--", vhdl: "--",
+  clojure: ";", lisp: ";", assembly: ";", vb: "'", erlang: "%", tex: "%",
+}
+
+/**
+ * What this tool could not measure about a coverage scope.
+ *
+ * Two real sources, both cited:
+ *  1. files the index recorded parser errors for, whose symbols and byte bounds
+ *     may be wrong, so their documentation verdict is unreliable;
+ *  2. symbols in a language whose comment marker the reader does not read and
+ *     which the analyzer left without a docstring — the verdict "undocumented"
+ *     is then a statement about the reader, not about the code.
+ */
+function unsupportedFacts(symbols: Row[], files: Row[], reader: SourceReader, citations: DocCitation[], resolver: FreshnessResolver): DocFact[] {
+  const facts: DocFact[] = []
+  const broken = files.filter((row) => Boolean(row.has_syntax_errors))
+  for (const row of broken.slice(0, 3)) {
+    const rel = String(row.relative_path ?? "")
+    const id = addCitation(citations, {
+      kind: "file", idParts: [rel], relPath: rel,
+      evidence: `Indexed with parser errors: ${String(row.error_report ?? "errors recorded")}`.slice(0, 300),
+      fileId: String(row.id ?? ""),
+    }, resolver)
+    facts.push(fact("extracted", `${rel} is indexed with parser errors (${String(row.error_report ?? "no report stored").slice(0, 120)}), so its symbols and byte bounds may be wrong and its documentation verdict is unreliable.`, [id], citations))
+  }
+  if (broken.length > 3) {
+    facts.push(fact("extracted", `${broken.length - 3} further file(s) in this scope are indexed with parser errors and are not listed here.`, facts.map((item) => item.citationIds[0]).filter(Boolean), citations))
+  }
+  // Grouped by language so the count is a measurement, not a per-symbol recital.
+  const unverifiable = new Map<string, { symbols: number; citations: string[] }>()
+  for (const symbol of symbols) {
+    if (symbol.docstring) continue
+    const start = Number(symbol.line_start ?? 0)
+    if (start > 0 && reader.docstring(symbol.path, start)) continue
+    const language = String(symbol.language ?? files.find((row) => row.id === symbol.file_id)?.language ?? "").toLowerCase()
+    const marker = UNREADABLE_COMMENT_MARKERS[language]
+    if (marker === undefined) continue
+    const group = unverifiable.get(marker) ?? { symbols: 0, citations: [] }
+    group.symbols += 1
+    if (group.citations.length < 3) group.citations.push(coverageCitation(symbol, citations, resolver))
+    unverifiable.set(marker, group)
+  }
+  for (const [marker, group] of [...unverifiable].sort((a, b) => b[1].symbols - a[1].symbols)) {
+    facts.push(fact("extracted", `${group.symbols} symbol(s) counted as undocumented are in a language whose comment marker is "${marker}", which this tool's source reader does not read (it reads ${READABLE_COMMENT_MARKERS.join(", ")}). Their documentation verdict is unverified rather than absent.`, group.citations, citations))
+  }
+  return facts
+}
+
+/**
+ * How much of an HTTP surface the index actually attributes to this project.
+ *
+ * `api` mode was measured against 8 corpora and found `api_contract_path` empty
+ * in every one and no route/endpoint/controller symbol type anywhere, so its
+ * four required sections rendered empty on 100% of cases while the only content
+ * it produced — a list of imports — landed in the OPTIONAL dependencies section.
+ * The mode had no honest input, and said nothing about that.
+ *
+ * What the index does hold is `framework_type` on the file, so the surface is
+ * the exported symbols of files the index attributes to an HTTP framework. The
+ * set below is the index's own vocabulary as measured across those corpora, not
+ * a guess at what frameworks exist; a framework absent from it contributes no
+ * endpoint, and `apiSurface` is what lets the document say so.
+ */
+const HTTP_FRAMEWORK_TYPES = ["net_http"] as const
+
+function apiSurfaceIndex(raw: any, projectId: string): { files: number; placeholders: string[]; contracts: number; routes: number; callables: number } {
+  const placeholders = HTTP_FRAMEWORK_TYPES.map(() => "?").join(",")
+  const counts = (sql: string, ...params: any[]): number => {
+    try { return Number((raw.prepare(sql).get(projectId, ...params) as any)?.c ?? 0) } catch { return 0 }
+  }
+  return {
+    placeholders: HTTP_FRAMEWORK_TYPES.map(String),
+    files: counts("SELECT count(*) c FROM brain_file WHERE project_id=? AND framework_type IN (" + placeholders + ")", ...HTTP_FRAMEWORK_TYPES),
+    contracts: counts("SELECT count(*) c FROM brain_symbol WHERE project_id=? AND api_contract_path IS NOT NULL"),
+    routes: counts("SELECT count(*) c FROM brain_symbol WHERE project_id=? AND lower(symbol_type) IN ('route','endpoint','controller')"),
+    callables: counts(
+      `SELECT count(*) c FROM brain_symbol s JOIN brain_file f ON f.id=s.file_id
+       WHERE s.project_id=? AND f.framework_type IN (${placeholders}) AND s.visibility IN ('export','public')
+         AND s.line_start>0 AND lower(s.symbol_type) IN ('function','method')`,
+      ...HTTP_FRAMEWORK_TYPES,
+    ),
+  }
 }
 
 function buildProse(draft: SectionDraft, citationCount: number): string {
@@ -1146,10 +1404,10 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const local = localPathIndex(raw, projectId)
 
   if (scope.truncated > 0) {
-    unknowns.push({ statement: `The scope contains more indexed files than the evidence limit allows; ${scope.truncated} file(s) were not examined.`, reason: "output-budget", affectedSection: "inventory" })
+    unknowns.push({ statement: `The scope contains more indexed files than the evidence limit allows; ${scope.truncated} file(s) were not examined.`, reason: "output-budget", affectedSection: concern("scope") })
   }
   if (feature?.semanticError) {
-    unknowns.push({ statement: `Semantic candidate discovery did not run: ${feature.semanticError}. Only lexical candidates are used, so feature recall is lower than the mode's ceiling.`, reason: "not-observed", affectedSection: "entry-points" })
+    unknowns.push({ statement: `Semantic candidate discovery did not run: ${feature.semanticError}. Only lexical candidates are used, so feature recall is lower than the mode's ceiling.`, reason: "not-observed", affectedSection: concern("semantic") })
   }
 
   // Freshness is resolved ONCE for every file this generation could cite, not
@@ -1163,15 +1421,16 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
   const symbolParts = usesSymbolFacts
-    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests)
-    : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[] }
+    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol")
+    : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[], limitations: [] as DocFact[] }
+  const apiSurface = mode === "api" ? apiSurfaceIndex(raw, projectId) : null
   const relationshipParts = addRelationshipFacts(raw, resolver, symbols, citations)
   const importFacts = addImportFacts(raw, resolver, files, citations, local)
   const inventory = mode === "project" || mode === "module" ? addInventoryFacts(raw, resolver, projectId, files, citations) : { facts: [] as DocFact[], languages: [] as Array<{ language: string; files: number; symbols: number }> }
   const findingFacts = mode === "file" || mode === "project" || mode === "module" ? addFindingFacts(raw, resolver, projectId, files, citations, unknowns) : []
   const entryPointFacts = mode === "project" || mode === "module" ? addEntryPointFacts(raw, resolver, projectId, citations) : []
   if (relationshipParts.unresolved > 0) {
-    unknowns.push({ statement: `${relationshipParts.unresolved} relationship(s) name a target the index did not resolve to a symbol; those edges are reported as inferred, not extracted.`, reason: "not-indexed", affectedSection: "flow" })
+    unknowns.push({ statement: `${relationshipParts.unresolved} relationship(s) name a target the index did not resolve to a symbol; those edges are reported as inferred, not extracted.`, reason: "not-indexed", affectedSection: concern("graph") })
   }
 
   // Every mode emits its DECLARED section set (docs/BB_DOC.md), whether or not
@@ -1181,44 +1440,67 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   const push = (draft: SectionDraft) => { drafts.push(draft) }
 
   if (mode === "symbol") {
-    push({ id: "api", heading: "API", required: true, audience: "all", facts: symbolParts.api })
-    push({ id: "behavior", heading: "Behavior", required: true, audience: "all", facts: symbolParts.behavior, lead: "Read from the index and, where the index has none, from the comment block above the definition on disk." })
-    push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...relationshipParts.facts, ...importFacts], lead: "Edges are read from the graph; an edge whose target the index did not resolve is marked inferred." })
-    push({ id: "tests", heading: "Tests", required: true, audience: "all", facts: symbolParts.tests })
-    push({ id: "limitations", heading: "Limitations", required: true, audience: ["maintainer", "website"], facts: [], lead: "What this document cannot say is stated here rather than filled in." })
+    push({ id: "api", heading: "API", required: true, audience: "all", facts: symbolParts.api, emptyExplanation: "No declaration with a return type or parameter list is indexed for this symbol, so its API shape is not described here." })
+    push({ id: "behavior", heading: "Behavior", required: true, audience: "all", facts: symbolParts.behavior, lead: "Read from the index and, where the index has none, from the comment block above the definition on disk.", emptyExplanation: "No docstring is indexed for this symbol and none is present in the comment styles this tool reads, and no relationship or import describes what it does." })
+    push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...relationshipParts.facts, ...importFacts], lead: "Edges are read from the graph; an edge whose target the index did not resolve is marked inferred.", emptyExplanation: "No indexed relationship or import names this symbol, so it has no dependency edge to report." })
+    push({ id: "tests", heading: "Tests", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names this symbol and no indexed relationship reaches it from a test, so its test coverage is not established." })
+    push({ id: "limitations", heading: "Limitations", required: true, audience: ["maintainer", "website"], facts: symbolParts.limitations, lead: "What this document cannot say is stated here rather than filled in.", emptyExplanation: "None of the measured limits applies to this symbol: its docstring, test, relationship and source-freshness checks all returned a result." })
   } else if (mode === "file") {
-    push({ id: "overview", heading: "Overview", required: true, audience: "all", facts: fileFacts })
-    push({ id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations) })
-    push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts] })
-    push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts })
+    push({ id: "overview", heading: "Overview", required: true, audience: "all", facts: fileFacts, emptyExplanation: "No indexed file matched this target, so there is nothing about it to describe." })
+    push({ id: "public-symbols", heading: "Public symbols", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations), emptyExplanation: "No exported or public symbol is indexed in this file." })
+    push({ id: "dependencies", heading: "Dependencies", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts], emptyExplanation: "No import of this file and no relationship out of it is indexed, so its dependency edge is not established." })
+    push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts, emptyExplanation: "No analysis finding, parser error or complexity outlier is indexed for this file, so no risk is asserted — the absence of evidence is not evidence of absence." })
   } else if (mode === "module") {
-    push({ id: "purpose", heading: "Purpose", required: true, audience: "all", facts: fileFacts, lead: "The files this module is made of, as the index sees them." })
-    push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: entryPointFacts })
-    push({ id: "public-surface", heading: "Public surface", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations) })
-    push({ id: "module-graph", heading: "Module graph", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts, ...inventory.facts] })
+    push({ id: "purpose", heading: "Purpose", required: true, audience: "all", facts: fileFacts, lead: "The files this module is made of, as the index sees them.", emptyExplanation: "No indexed file lies under this module, so its composition is not established." })
+    push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: entryPointFacts, emptyExplanation: "No indexed file in this module is marked as an entry point, and no exported symbol is reachable from the module root without passing through another module." })
+    push({ id: "public-surface", heading: "Public surface", required: true, audience: "all", facts: addPublicSymbolFacts(raw, resolver, symbols, citations), emptyExplanation: "No exported or public symbol is indexed in this module." })
+    push({ id: "module-graph", heading: "Module graph", required: true, audience: "all", facts: [...importFacts, ...relationshipParts.facts, ...inventory.facts], emptyExplanation: "No import between the files of this module, and no relationship or inventory row, is indexed for it." })
   } else if (mode === "feature") {
-    push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: symbolParts.api })
-    push({ id: "flow", heading: "Flow", required: true, audience: "all", facts: relationshipParts.facts, lead: feature ? `Candidates came from ${feature.lexical} lexical and ${feature.semantic} semantic match(es) in ${feature.ms}ms.` : undefined })
-    push({ id: "components", heading: "Components", required: true, audience: "all", facts: [...fileFacts, ...symbolParts.behavior] })
-    push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests })
+    push({ id: "entry-points", heading: "Entry points", required: true, audience: "all", facts: symbolParts.api, emptyExplanation: "No declaration with a return type or parameter list was found among this feature's candidates, so no entry point is described." })
+    push({ id: "flow", heading: "Flow", required: true, audience: "all", facts: relationshipParts.facts, lead: feature ? `Candidates came from ${feature.lexical} lexical and ${feature.semantic} semantic match(es) in ${feature.ms}ms.` : undefined, emptyExplanation: "No indexed relationship connects this feature's candidates, so no flow is described." })
+    push({ id: "components", heading: "Components", required: true, audience: "all", facts: [...fileFacts, ...symbolParts.behavior], emptyExplanation: "No indexed file and no described behaviour was resolved for this feature, so no component is listed." })
+    push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names a candidate of this feature and no indexed relationship reaches one from a test, so its test coverage is not established." })
   } else if (mode === "api") {
-    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: symbolParts.api })
-    push({ id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: symbolParts.behavior })
-    push({ id: "errors", heading: "Errors", required: true, audience: ["developer", "maintainer", "website"], facts: [], lead: "No error surface is asserted: an endpoint's failures are not inferable from its signature, and the index does not record them." })
-    push({ id: "examples", heading: "Examples", required: true, audience: "all", facts: [] })
+    const surface = apiSurface ?? { files: 0, placeholders: [] as string[], contracts: 0, routes: 0, callables: 0 }
+    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver), lead: symbols.length === 0
+        ? `No HTTP surface is indexed for this project: ${surface.contracts} API contract path(s), ${surface.routes} route/endpoint/controller symbol(s), and ${surface.files} file(s) attributed to an HTTP framework holding ${surface.callables} callable exported symbol(s). This tool will not infer an endpoint from a function's name.`
+        : `The index attributes ${surface.files} file(s) to an HTTP framework and holds ${surface.callables} callable exported symbol(s) in them. Framework attribution is a property of the FILE, so it places a symbol on an HTTP surface; it does not say which request the symbol answers, and no method or path is recorded.`, emptyExplanation: `No endpoint is indexed. This tool looked for an API contract path, a route, endpoint or controller symbol, and a callable symbol in a file the index attributes to an HTTP framework; the index holds ${surface.contracts} contract path(s), ${surface.routes} route-ish symbol type(s), and ${surface.files} HTTP-attributed file(s) with ${surface.callables} callable exported symbol(s). It will not infer an endpoint from a function's name.` })
+    push({ id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: symbolParts.behavior, emptyExplanation: "No endpoint is indexed, so there is no signature whose parameters or return type could be reported." })
+    push({ id: "errors", heading: "Errors", required: true, audience: ["developer", "maintainer", "website"], facts: [], lead: "No error surface is asserted: an endpoint's failures are not inferable from its signature, and the index does not record them.", emptyExplanation: "The index has no table, column or symbol type that records a thrown, raised or returned error, so no error surface can be reported for any endpoint. This is a limit of what is indexed, not a finding that the code cannot fail." })
+    push({ id: "examples", heading: "Examples", required: true, audience: "all", facts: [], emptyExplanation: "No endpoint carries a docstring containing a call to itself and no indexed test names one, so no usage example can be quoted from cited source." })
   } else if (mode === "project") {
-    push({ id: "architecture", heading: "Architecture", required: true, audience: "all", facts: inventory.facts, lead: "Counts and language mix as measured in the index." })
-    push({ id: "inventory", heading: "Inventory", required: true, audience: "all", facts: [...entryPointFacts, ...fileFacts] })
-    push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts })
-    push({ id: "documentation-map", heading: "Documentation map", required: true, audience: "all", facts: coverageFacts(symbols, reader, resolver, citations) })
+    push({ id: "architecture", heading: "Architecture", required: true, audience: "all", facts: inventory.facts, lead: "Counts and language mix as measured in the index.", emptyExplanation: "The index holds no file row for this project, so no architecture is measured." })
+    push({ id: "inventory", heading: "Inventory", required: true, audience: "all", facts: [...entryPointFacts, ...fileFacts], emptyExplanation: "No indexed file and no entry point is recorded for this project." })
+    push({ id: "risks", heading: "Risks", required: true, audience: "all", facts: findingFacts, emptyExplanation: "No analysis finding, parser error or complexity outlier is indexed for this project, so no risk is asserted — the absence of evidence is not evidence of absence." })
+    push({ id: "documentation-map", heading: "Documentation map", required: true, audience: "all", facts: coverageFacts(symbols, reader, resolver, citations), emptyExplanation: "No symbol is indexed for this project, so its documentation state cannot be mapped." })
   } else {
     // coverage
     const documented = symbols.filter((symbol) => Boolean(symbol.docstring || reader.docstring(symbol.path, Number(symbol.line_start ?? 0))))
     const undocumented = symbols.filter((symbol) => !documented.includes(symbol))
-    push({ id: "documented", heading: "Documented", required: true, audience: "all", facts: documented.map((symbol) => fact("extracted", coverageStatement(symbol, true), [coverageCitation(symbol, citations, resolver)], citations)) })
-    push({ id: "undocumented", heading: "Undocumented", required: true, audience: "all", facts: undocumented.map((symbol) => fact("unknown", coverageStatement(symbol, false), [coverageCitation(symbol, citations, resolver)], citations)) })
-    push({ id: "stale", heading: "Stale", required: true, audience: "all", facts: symbols.filter((symbol) => resolver.of(String(symbol.source_file_id ?? "")) !== "fresh").map((symbol) => fact("extracted", `${symbol.name} is in a file that changed after indexing.`, [coverageCitation(symbol, citations, resolver)], citations)) })
-    push({ id: "unsupported", heading: "Unsupported", required: true, audience: ["maintainer", "website"], facts: [] })
+    const staleSymbols = symbols.filter((symbol) => resolver.of(String(symbol.source_file_id ?? "")) !== "fresh")
+    const documentedFacts = documented.map((symbol) => fact("extracted", coverageStatement(symbol, true), [coverageCitation(symbol, citations, resolver)], citations))
+    const undocumentedFacts = undocumented.map((symbol) => fact("unknown", coverageStatement(symbol, false), [coverageCitation(symbol, citations, resolver)], citations))
+    const staleFacts = staleSymbols.map((symbol) => fact("extracted", `${symbol.name} is in a file that changed after indexing.`, [coverageCitation(symbol, citations, resolver)], citations))
+    // An EMPTY `undocumented` or `stale` section is a POSITIVE result, not a gap:
+    // "every symbol here is documented" and "nothing here is stale" are the
+    // answers a reader came for. Emitting an empty section instead made a good
+    // result indistinguishable from a section wired to a source nothing writes.
+    const documentedCitations = documentedFacts.flatMap((item) => item.citationIds)
+    const staleCitations = staleFacts.flatMap((item) => item.citationIds)
+    const verifiedFreshCitations = files
+      .filter((row) => resolver.of(String(row.id ?? "")) === "fresh")
+      .slice(0, 3)
+      .map((row) => addCitation(citations, { kind: "file", idParts: [String(row.relative_path ?? "")], relPath: String(row.relative_path ?? ""), evidence: `Source freshness verified against disk: ${row.relative_path}`, fileId: String(row.id ?? "") }, resolver))
+    if (documented.length > 0 && undocumented.length === 0) {
+      undocumentedFacts.push(fact("extracted", `All ${documented.length} indexed symbol(s) in this scope carry a docstring, so no symbol is listed as undocumented.`, documentedCitations.slice(0, 3), citations))
+    }
+    if (symbols.length > 0 && staleSymbols.length === 0 && verifiedFreshCitations.length > 0) {
+      staleFacts.push(fact("extracted", `No cited source in this scope changed after indexing: the on-disk hash and mtime of all ${files.length} file(s) examined still match the index.`, verifiedFreshCitations, citations))
+    }
+    push({ id: "documented", heading: "Documented", required: true, audience: "all", facts: documentedFacts, emptyExplanation: "No symbol is indexed in this scope, so its documentation state cannot be measured." })
+    push({ id: "undocumented", heading: "Undocumented", required: true, audience: "all", facts: undocumentedFacts, emptyExplanation: "No symbol is indexed in this scope, so nothing can be listed as undocumented." })
+    push({ id: "stale", heading: "Stale", required: true, audience: "all", facts: staleFacts, emptyExplanation: "No symbol is indexed in this scope, so no citation can be stale." })
+    push({ id: "unsupported", heading: "Unsupported", required: true, audience: ["maintainer", "website"], facts: unsupportedFacts(symbols, files, reader, citations, resolver), lead: "What this tool could not measure about the scope, so the verdicts above are read with it in hand.", emptyExplanation: "Every file in this scope parsed without error and is in a language whose comment style this tool reads, so nothing in the documentation verdicts above is unmeasured." })
   }
 
   // The OPTIONAL sections are what `audience` and `detail` select. A REQUIRED
@@ -1258,17 +1540,30 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   // section's own count is the truth. The budget pass measures what it actually
   // removed from the already-capped list, so the arithmetic closes.
   const sections: DocSection[] = []
-  const cappedOut: Array<{ heading: string; emitted: number; available: number }> = []
+  // The id travels with the record so the note names the section it capped.
+  // Matching back by heading and falling back to a literal "overview" made a
+  // note possible that pointed at a section the result does not render.
+  const cappedOut: Array<{ id: string; heading: string; emitted: number; available: number }> = []
   for (const draft of selectedDrafts) {
     const capped = draft.facts.slice(0, perSection)
     if (capped.length < draft.facts.length) {
-      cappedOut.push({ heading: draft.heading, emitted: capped.length, available: draft.facts.length })
+      cappedOut.push({ id: draft.id, heading: draft.heading, emitted: capped.length, available: draft.facts.length })
     }
-    sections.push(assembleSection(draft, citations))
+    // The cap is APPLIED here, to the list that is emitted.
+    //
+    // It used to be measured and reported but the section was assembled from the
+    // UNCAPPED draft, so the note said the opposite of what the document did:
+    // measured on rebar3 at `brief`, it claimed "115 of 120 inventory items were
+    // not selected" while emitting far more than the 5 it said it had kept, and
+    // on go_tools at `standard` it claimed 20 dependencies items and emitted 12 —
+    // a number that came from the token budget's halving, not from this cap. The
+    // note was a fabricated bound, and it was the only description of the cap the
+    // reader got.
+    sections.push(assembleSection({ ...draft, facts: capped }, citations))
   }
 
   if (!files.length && !symbols.length) {
-    unknowns.push({ statement: `No indexed evidence matched ${request.target ?? mode}.`, reason: "not-indexed", affectedSection: selectedDrafts[0]?.id ?? "overview" })
+    unknowns.push({ statement: `No indexed evidence matched ${request.target ?? mode}.`, reason: "not-indexed", affectedSection: concern("evidence") })
   }
   addOptionalUnknowns(request, unknowns)
 
@@ -1276,13 +1571,20 @@ export async function generateDocumentation(projectId: string, projectPath: stri
   // the same unknown SENTENCE twice, so `unknowns` was a multiset of sentences
   // rather than a set of distinct gaps. Dedupe on the whole record.
   for (const record of cappedOut) {
-    const section = sections.find((s) => s.heading === record.heading)
     unknowns.push({
       statement: `The per-section evidence cap is ${perSection} at detail "${detail}", so ${record.available - record.emitted} of ${record.available} ${record.heading.toLowerCase()} items were not selected. The output budget may have shortened this further; it reports its own count.`,
       reason: "output-budget",
-      affectedSection: section?.id ?? "overview",
+      affectedSection: record.id,
     })
   }
+  // Every section now exists, so every concern becomes a section id. Dedupe runs
+  // afterwards, on the ids the reader will actually see, so two notes that land in
+  // the same section are collapsed only when the rendered claim is identical.
+  const explaining = resolveUnknownSections(sections, unknowns)
+  // Then the sweep: anything still unexplained is a required section that would
+  // ship as a placeholder, and it either declares what would have filled it or
+  // the generation throws.
+  explainEmptyRequiredSections(sections, selectedDrafts, unknowns, explaining)
   const distinctUnknowns: DocUnknown[] = []
   const seenUnknown = new Set<string>()
   for (const unknown of unknowns) {
@@ -1299,6 +1601,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     // The per-section cap is a bound of its own, announced where the cap is
     // applied, so the two bounds never recount the same facts.
     cappedOut, perSection,
+    availableCounts: selectedDrafts.map((draft) => ({ id: draft.id, available: draft.facts.length })),
   })
 }
 
@@ -1359,12 +1662,19 @@ function citationBroken(projectPath: string, reader: SourceReader, citation: Doc
  * files this query happened to select. The old id concatenated the first
  * `limit` hashes, so it changed when `limit` changed — which would have made
  * a website's documented cache key move without the index moving.
+ *//**
+ * Field separator for the scope fingerprint. Written as an escape on purpose:
+ * a raw 0x00 byte inside a string literal is valid TypeScript but makes the
+ * source file read as BINARY to every text tool, so `read` refuses it and grep
+ * stops reporting line numbers.
  */
+const HASH_FIELD_SEPARATOR = "\u0000"
+
 function indexSnapshotId(raw: any, projectId: string): string {
   const rows = raw.prepare("SELECT file_hash FROM brain_file WHERE project_id=? ORDER BY relative_path").all(projectId) as Array<{ file_hash: string }>
   const hash = createHash("sha256")
   hash.update(String(rows.length))
-  for (const row of rows) { hash.update(" "); hash.update(String(row.file_hash ?? "")) }
+  for (const row of rows) { hash.update(HASH_FIELD_SEPARATOR); hash.update(String(row.file_hash ?? "")) }
   return hash.digest("hex").slice(0, 32)
 }
 
@@ -1399,8 +1709,17 @@ interface MakeResultArgs {
   /** One reader per generation, so each source file is read at most once. */
   reader: SourceReader
   /** Sections the per-section evidence cap shortened, with the counts it used. */
-  cappedOut: Array<{ heading: string; emitted: number; available: number }>
-  /** The per-section cap that applied, for the message that names it. */
+  cappedOut: Array<{ id: string; heading: string; emitted: number; available: number }>
+  /**
+   * Every section's fact count BEFORE any bound, keyed by id.
+   *
+   * It has to be captured here rather than read off the finished section: the
+   * budget pass trims first, so a count read afterwards is the post-trim number
+   * and the bounds then report `9 emitted + 10 dropped != 9 available` — a real
+   * miscount that the identity check caught on its first run.
+   */
+  availableCounts: Array<{ id: string; available: number }>
+  /** The per-section cap that applied, for the bounds and the message that names it. */
   perSection: number
   projectId: string
   projectPath: string
@@ -1463,6 +1782,9 @@ function makeResult(args: MakeResultArgs): DocResult {
       completeness: { passed: false, covered: 0, expected, unknown: unknowns.length },
       freshness: { passed: false, snapshot: snapshotId, staleClaims: stale },
       budget: { passed: false, estimatedTokens: 0, maxTokens },
+      // The real figures are written once the budget pass has finished trimming;
+      // this placeholder exists only so that pass can measure the payload.
+      bounds: { perSection: 0, sections: [] },
       warnings: [],
     },
     reference: {
@@ -1538,6 +1860,7 @@ function makeResult(args: MakeResultArgs): DocResult {
       completeness: { passed: covered === expected, covered, expected, unknown: result.unknowns.length },
       freshness: { passed: stale === 0 && missing === 0, snapshot: snapshotId, staleClaims: stale },
       budget: { passed: budgetPassed, estimatedTokens: estimated, maxTokens },
+      bounds: result.quality.bounds,
       warnings,
     }
   }
@@ -1585,7 +1908,7 @@ function makeResult(args: MakeResultArgs): DocResult {
     result.unknowns.push({ statement: `${record.dropped} more ${record.heading.toLowerCase()} item(s) were dropped to stay inside the ${maxTokens}-token budget.`, reason: "output-budget", affectedSection: id })
   }
   if (!result.quality.budget.passed) {
-    result.unknowns.push({ statement: `The required sections cannot fit inside ${maxTokens} tokens: the smallest honest rendering is ${result.quality.budget.estimatedTokens} tokens. Raise maxTokens (hard maximum ${MAX_TOKEN_BUDGET}) or narrow the target.`, reason: "output-budget", affectedSection: "overview" })
+    result.unknowns.push({ statement: `The required sections cannot fit inside ${maxTokens} tokens: the smallest honest rendering is ${result.quality.budget.estimatedTokens} tokens. Raise maxTokens (hard maximum ${MAX_TOKEN_BUDGET}) or narrow the target.`, reason: "output-budget", affectedSection: result.sections[0].id })
   }
   // One final build-and-measure so the reported figure describes the object
   // exactly as returned, whatever the last pass appended.
@@ -1595,8 +1918,27 @@ function makeResult(args: MakeResultArgs): DocResult {
   // the placeholder, so leaving it there reported `budget.passed: false` on a
   // 3 763-of-4 000-token document. Both writes hold a 6-digit number, so the
   // second changes no length and the measurement still holds.
+  // The bounds, as numbers. `emitted` is read back off the section rather than
+  // carried forward, so the identity below is a check and not a restatement.
+  const availableById = new Map(args.availableCounts.map((record) => [record.id, record.available]))
+  result.quality.bounds = {
+    perSection: args.perSection,
+    sections: result.sections.map((section) => {
+      const available = availableById.get(section.id) ?? section.facts.length
+      const capped = Math.min(available, args.perSection)
+      const droppedForBudget = droppedPerSection.get(section.id)?.dropped ?? 0
+      return { id: section.id, available, capped, droppedForBudget, emitted: section.facts.length }
+    }),
+  }
+  const miscounted = result.quality.bounds.sections.filter((row) => row.emitted + row.droppedForBudget !== row.capped)
+  if (miscounted.length > 0) {
+    throw new Error(`bb_doc: evidence bounds do not account for every fact in ${miscounted.length} section(s), first "${miscounted[0].id}": ${miscounted[0].emitted} emitted + ${miscounted[0].droppedForBudget} dropped != ${miscounted[0].capped} capped of ${miscounted[0].available} available`)
+  }
   writeQuality(ESTIMATE_PLACEHOLDER)
   writeQuality(measure())
+  // Last, so it covers the notes the budget pass appended above as well as the
+  // ones assembly produced.
+  assertUnknownsNameRenderedSections(result)
   return result
 }
 
@@ -1609,6 +1951,156 @@ const REQUIRED_SECTION_IDS: Record<DocMode, string[]> = {
   api: ["endpoints", "inputs-outputs", "errors", "examples"],
   project: ["architecture", "inventory", "risks", "documentation-map"],
   coverage: ["documented", "undocumented", "stale", "unsupported"],
+}
+
+/**
+ * What a note is ABOUT, as distinct from which section it lands in.
+ *
+ * Every unknown used to carry a hardcoded section id, and eight of those ids
+ * named a section that only exists in ONE mode: the test gap said `tests` while
+ * `feature` renders `test-coverage`, the unresolved-edge note said `flow` while
+ * `module` renders `module-graph` and `project` renders no `flow` at all, and
+ * the scope-truncation note said `inventory` while four modes have no such
+ * section. A note aimed at a section the reader cannot see is not an
+ * explanation, so those sections read as unexplained placeholders while a
+ * message appeared to cover them — which is how a placeholder survives a gate
+ * that asks "is this section explained?".
+ *
+ * A note now names its CONCERN, and the section is resolved once, after the
+ * mode's sections exist, against the sections that are actually rendered.
+ */
+type UnknownConcern =
+  | "tests" | "graph" | "scope" | "risk" | "examples" | "diagrams"
+  | "semantic" | "freshness" | "docstring" | "syntax" | "evidence" | "budget"
+
+/** Marks an `affectedSection` that is still a concern and not yet a section id. */
+const CONCERN_PREFIX = "@concern:"
+
+/**
+ * For each concern, the sections that can carry it, best first. The first one
+ * the result RENDERS wins, so a mode without a graph section gets its own
+ * architecture section rather than a pointer to a section it does not have.
+ */
+const CONCERN_SECTION_PREFERENCE: Record<UnknownConcern, string[]> = {
+  // `symbol` renders `tests`; `feature` renders `test-coverage`; no other mode
+  // builds test facts at all.
+  tests: ["tests", "test-coverage"],
+  // Where the edge facts themselves are rendered.
+  graph: ["dependencies", "module-graph", "flow", "endpoints"],
+  // Truncation removes evidence from the whole document, so it belongs on
+  // whichever section enumerates the scope, and otherwise on the document lead.
+  scope: ["overview", "purpose", "inventory", "documented"],
+  risk: ["risks", "overview", "purpose", "inventory"],
+  examples: ["examples", "api"],
+  // No mode has a `diagrams` section: a diagram is only ever emitted into the
+  // examples or API surface, so those are the only honest targets.
+  diagrams: ["examples", "api"],
+  semantic: ["entry-points", "flow", "components"],
+  freshness: ["stale", "overview", "purpose", "inventory", "api", "components", "endpoints", "architecture", "documented", "public-symbols"],
+  docstring: ["behavior", "components", "inputs-outputs", "public-surface", "documented"],
+  syntax: ["overview", "purpose", "inventory", "stale", "architecture", "public-symbols", "components", "api", "entry-points", "documented"],
+  // Both of these describe the document as a whole, so they take the lead.
+  evidence: [],
+  budget: [],
+}
+
+/** Name a concern now; `resolveUnknownSections` turns it into a section id later. */
+function concern(about: UnknownConcern): string {
+  return `${CONCERN_PREFIX}${about}`
+}
+
+/**
+ * Rewrite every concern token into the id of a section this result renders.
+ *
+ * Resolution happens HERE, after assembly, because only now is the rendered set
+ * known — and the rendered set is not the declared set: `project` and `api` gain
+ * an optional `dependencies` section, and `deep` adds `all-edges` everywhere. A
+ * resolver that read only the declared table would aim project-mode edges at
+ * `architecture` while the edges are rendered under `dependencies`.
+ *
+ * A concern with no candidate in this mode falls to the document's lead section,
+ * which every mode renders and which is where "this document is partial" belongs.
+ */
+export function resolveUnknownSections(sections: DocSection[], unknowns: DocUnknown[]): Map<string, Set<UnknownConcern | "declared">> {
+  const rendered = sections.map((section) => section.id)
+  const bySection = new Map<string, Set<UnknownConcern | "declared">>()
+  const note = (id: string, about: UnknownConcern | "declared") => {
+    const set = bySection.get(id) ?? new Set<UnknownConcern | "declared">()
+    set.add(about)
+    bySection.set(id, set)
+  }
+  // Whether a resolution was CHOSEN or DEFAULTED. A concern whose preferred
+  // section does not exist in this mode falls to the document's lead, and a note
+  // that landed there by fallback was never about that section: the scope note
+  // says how much of the project was not examined, which is not a reason the
+  // Endpoints section has no endpoints. It was enough to explain one anyway,
+  // because a 5 282-file typescript index truncated its scope and the Endpoints
+  // section then showed only that and never said no endpoint was indexed.
+  const aimed = new Map<string, boolean>()
+  const lead = rendered[0]
+  if (lead === undefined) return bySection
+  for (const unknown of unknowns) {
+    if (!unknown.affectedSection.startsWith(CONCERN_PREFIX)) {
+      // A note that names its section outright — the evidence-cap and budget
+      // notes — is about that section's own contents, so it can explain it.
+      note(unknown.affectedSection, "declared")
+      continue
+    }
+    const about = unknown.affectedSection.slice(CONCERN_PREFIX.length) as UnknownConcern
+    const preference = CONCERN_SECTION_PREFERENCE[about]
+    if (preference === undefined) {
+      throw new Error(`bb_doc: unknown concerns cannot be resolved: ${about}`)
+    }
+    const chosen = preference.find((id) => rendered.includes(id))
+    unknown.affectedSection = chosen ?? lead
+    // A note that names the section outright is aimed at it by construction.
+    aimed.set(`${unknown.affectedSection}|${about}`, chosen !== undefined)
+    note(unknown.affectedSection, about)
+  }
+  // Only an AIMED absence-explaining note can excuse an empty section.
+  for (const [id, set] of bySection) {
+    for (const about of set) {
+      if (about === "declared") continue
+      if (!EMPTINESS_EXPLAINING.has(about)) continue
+      if (aimed.get(`${id}|${about}`) !== true) set.delete(about)
+    }
+  }
+  return bySection
+}
+
+/**
+ * Concerns whose subject IS the absence of evidence, so a note about one
+ * explains why its section is empty.
+ *
+ * The rest are CAVEATS. `freshness` says a source moved under the index and
+ * `syntax` says a file did not parse; both are true, both belong on the section
+ * whose facts they qualify, and neither says why that section has no facts. When
+ * they were allowed to stand in for an explanation, an `api` document whose
+ * endpoints section was empty showed only "src/server.ts changed after indexing"
+ * and never said that no endpoint is indexed — a section that looked accounted
+ * for and was not.
+ */
+const EMPTINESS_EXPLAINING: ReadonlySet<UnknownConcern> = new Set<UnknownConcern>([
+  "tests", "graph", "scope", "risk", "examples", "diagrams", "semantic", "docstring", "evidence",
+])
+
+/**
+ * The invariant every result must satisfy: no note points at a section the
+ * reader cannot see.
+ *
+ * A note that names a section the result does not render is a claim about
+ * something invisible, and it is the failure mode that let eight sections read
+ * as unexplained. This runs on every returned result, so a future section rename
+ * fails loudly here instead of quietly producing a dangling pointer. It is
+ * checked again from outside the tool (T21) because an assertion inside the code
+ * under test cannot be evidence about that code.
+ */
+export function assertUnknownsNameRenderedSections(result: Pick<DocResult, "mode" | "sections" | "unknowns">): void {
+  const rendered = new Set(result.sections.map((section) => section.id))
+  const dangling = result.unknowns.filter((unknown) => !rendered.has(unknown.affectedSection))
+  if (dangling.length > 0) {
+    throw new Error(`bb_doc: ${dangling.length} note(s) name a section that is not rendered, first: ${dangling[0].affectedSection} in ${result.mode} (rendered: ${[...rendered].join(", ")})`)
+  }
 }
 
 function summarize(mode: DocMode, fileCount: number, symbolCount: number, sections: DocSection[], citationCount: number): string {

@@ -237,6 +237,38 @@ type EdgeRow = {
  *  in the edge's callSite/metadata — but it means callers/callees sets at any
  *  depth are a superset of naive exact-target SQL. Tools and docs MUST
  *  disclose this (M48 post-closure accuracy fix; see docs/tools/bb_graph.md). */
+/**
+ * Compiled-statement cache, keyed on the connection and then on the SQL text.
+ *
+ * A traversal's SQL depends only on (relationshipTypes, edgeLimit) — the traced
+ * symbol, the project, the cascade bounds and the cap are all BOUND, never
+ * interpolated — so every symbol in a walk re-compiles a byte-identical
+ * statement. Measured on the pinned tree: 84–132 compilations per call across
+ * only 11–12 distinct statements, the busiest text compiled 52 times per call
+ * (`fixtures/bb_graph/suites/27-statement-cost.ts`).
+ *
+ * Keyed on the connection so that a closed database and its statements are
+ * collected together, and so a pooled replacement never inherits a dead
+ * statement. Safe to share because every call site is `prepare(...).all(...)` in
+ * one synchronous expression with no `await` in between, so a statement cannot
+ * be re-entered on a single event loop.
+ */
+const STATEMENT_CACHE = new WeakMap<object, Map<string, unknown>>()
+
+function prepared(db: unknown, sql: string): { all: (...params: unknown[]) => unknown[] } {
+  let cache = STATEMENT_CACHE.get(db as object)
+  if (!cache) {
+    cache = new Map()
+    STATEMENT_CACHE.set(db as object, cache)
+  }
+  let statement = cache.get(sql)
+  if (!statement) {
+    statement = (db as { prepare: (s: string) => unknown }).prepare(sql)
+    cache.set(sql, statement)
+  }
+  return statement as { all: (...params: unknown[]) => unknown[] }
+}
+
 function cascadeBounds(symbolId: string): { prefix: string; upper: string } {
   const prefix = symbolId.includes(":") ? symbolId.slice(0, symbolId.lastIndexOf(":") + 1) : ""
   return { prefix, upper: prefix + ";" }
@@ -479,12 +511,53 @@ export async function traverseGraph(
   /** Count what the uncapped query would return, bounded by a scan ceiling. */
   const countSurviving = (sqlWithoutLimit: string, params: unknown[], nameOf: (row: EdgeRow) => string | null): number => {
     let total = 0
-    const scanned = raw.prepare(sqlWithoutLimit + " LIMIT ?").all(...params, MAX_TOTAL_COUNT_SCAN) as EdgeRow[]
+    const scanned = prepared(raw, sqlWithoutLimit + " LIMIT ?").all(...params, MAX_TOTAL_COUNT_SCAN) as EdgeRow[]
     for (const row of scanned) {
       if (survivesFilters(row, nameOf(row), includeCrossLanguage)) total++
     }
     if (total >= MAX_TOTAL_COUNT_SCAN) totalsAreLowerBounds = true
     return total
+  }
+
+  // The cascade member's name and file, resolved for the rows that SURVIVED the
+  // cap rather than joined for every row the cap discarded.
+  //
+  // Measured: the two joins these replace cost 14,267 ms of a 19,753 ms capped
+  // caller query on scala3 — 72% of the statement — and `matchedMember` returns
+  // `undefined` for every exact match, so nearly all of that was discarded work.
+  // The ids are memoised for the traversal because a member recurs across edges.
+  const matchedIdentities = new Map<string, { name: string; file: string }>()
+
+  const attachMatchedIdentities = (rows: EdgeRow[], tracedId: string): void => {
+    const wanted: string[] = []
+    for (const row of rows) {
+      const id = row.matchedId
+      if (id == null || id === tracedId || matchedIdentities.has(id)) continue
+      if (!wanted.includes(id)) wanted.push(id)
+    }
+    if (wanted.length === 0) return
+    // Chunked so a long edge list cannot exceed SQLite's bound-variable limit.
+    for (let i = 0; i < wanted.length; i += 400) {
+      const chunk = wanted.slice(i, i + 400)
+      const got = prepared(
+        raw,
+        "SELECT s.id AS id, s.name AS name, f.relative_path AS file FROM brain_symbol s LEFT JOIN brain_file f ON f.id = s.file_id WHERE s.id IN (" +
+          chunk.map(() => "?").join(",") +
+          ")",
+      ).all(...chunk) as Array<{ id: string; name: string; file: string | null }>
+      for (const g of got) matchedIdentities.set(g.id, { name: g.name, file: g.file || "" })
+    }
+    for (const row of rows) {
+      const id = row.matchedId
+      if (id == null) continue
+      const hit = matchedIdentities.get(id)
+      // An id that is not a symbol leaves the field unset, exactly as the
+      // `LEFT JOIN brain_symbol mt` it replaces would have.
+      if (hit) {
+        row.matchedName = hit.name
+        row.matchedFile = hit.file
+      }
+    }
   }
 
   const registerNode = (node: GraphNode) => {
@@ -577,7 +650,7 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "f.relative_path AS srcFileRel, NULL AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      "casc.id AS matchedId, " +
       KIND_RANK_SQL +
       "FROM brain_relationship r " +
       "JOIN brain_symbol s ON s.id = r.source_symbol_id AND s.project_id = r.project_id " +
@@ -588,8 +661,6 @@ export async function traverseGraph(
       // Command.Execute, attributed to its owner". Binding order follows the
       // text, so the cascade's four parameters now precede the WHERE clause's.
       "JOIN (" + cascade + ") casc ON casc.id = r.target_symbol_id " +
-      "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
-      "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
       "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ")"
     const callerParams = [symbolId, prefix, upper, projectId, projectId, ...relTypes]
     // Deterministic order (M59.A12, #888 sibling of #885): a bare LIMIT on an
@@ -607,11 +678,13 @@ export async function traverseGraph(
     // The extra row is never emitted: the first `edgeLimit` rows of a
     // deterministically ordered query are exactly the rows the old query
     // returned, so the visible answer is unchanged for every non-capped call.
-    const fetched = raw
-      .prepare(callerSql + " ORDER BY " + CALLER_ORDER + " LIMIT ?")
-      .all(...callerParams, edgeLimit + 1) as EdgeRow[]
+    const fetched = prepared(raw, callerSql + " ORDER BY " + CALLER_ORDER + " LIMIT ?").all(
+      ...callerParams,
+      edgeLimit + 1,
+    ) as EdgeRow[]
     const capped = fetched.length > edgeLimit
     const rows = capped ? fetched.slice(0, edgeLimit) : fetched
+    attachMatchedIdentities(rows, symbolId)
     if (capped) {
       cappedQueries++
       noteReason(depth === 0 ? "caller-site-limit" : "caller-site-limit-at-depth")
@@ -748,7 +821,7 @@ export async function traverseGraph(
       "s.complexity AS complexity, s.symbol_type AS symType, " +
       "f.relative_path AS fileRel, f.path AS filePath, f.language AS fileLang, " +
       "src.relative_path AS srcFileRel, r.target_external AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      "casc.id AS matchedId, " +
       KIND_RANK_SQL
 
     // The same shape with the TARGET-symbol columns as literal NULLs.
@@ -773,7 +846,7 @@ export async function traverseGraph(
       "NULL AS complexity, NULL AS symType, " +
       "NULL AS fileRel, NULL AS filePath, NULL AS fileLang, " +
       "src.relative_path AS srcFileRel, r.target_external AS extName, " +
-      "casc.id AS matchedId, mt.name AS matchedName, mf.relative_path AS matchedFile, " +
+      "casc.id AS matchedId, " +
       KIND_RANK_SQL
 
     let rows: EdgeRow[]
@@ -788,8 +861,6 @@ export async function traverseGraph(
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
-          "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
-          "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NOT NULL " +
           "UNION ALL " +
@@ -828,8 +899,6 @@ export async function traverseGraph(
           "LEFT JOIN brain_symbol srcsym ON srcsym.id = r.source_symbol_id " +
           "LEFT JOIN brain_file src ON src.id = srcsym.file_id " +
           "JOIN (" + cascade + ") casc ON casc.id = r.source_symbol_id " +
-          "LEFT JOIN brain_symbol mt ON mt.id = casc.id " +
-          "LEFT JOIN brain_file mf ON mf.id = mt.file_id " +
           "WHERE r.project_id = ? AND r.relationship_type IN (" + relPlaceholders + ") " +
           "AND r.target_symbol_id IS NULL AND r.target_external IS NOT NULL"
       const calleeParams = [
@@ -840,9 +909,10 @@ export async function traverseGraph(
       // Same one-row-over rule as the callers side: `LIMIT edgeLimit` cannot
       // tell "exactly at the limit" from "over it", and a compound query needs
       // the probe row just as much as a simple one.
-      const fetched = raw.prepare(calleeSql + calleeOrder + " LIMIT ?").all(...calleeParams, edgeLimit + 1) as EdgeRow[]
+      const fetched = prepared(raw, calleeSql + calleeOrder + " LIMIT ?").all(...calleeParams, edgeLimit + 1) as EdgeRow[]
       const capped = fetched.length > edgeLimit
       rows = capped ? fetched.slice(0, edgeLimit) : fetched
+      attachMatchedIdentities(rows, symbolId)
       if (capped) {
         cappedQueries++
         noteReason(depth === 0 ? "callee-site-limit" : "callee-site-limit-at-depth")
@@ -993,11 +1063,41 @@ export async function traverseGraph(
   }
 }
 
+/**
+ * How the root symbol was found, from most to least specific.
+ *
+ * `found: true` used to mean only "a root was found", which is not the same
+ * claim. The third step is a documented near-miss fallback — fuzzy CONTAINMENT
+ * among structural kinds — and its result was indistinguishable from a hit in
+ * the payload. Measured on the atlas corpus: `target: "ub"` answered
+ * `found: true` with root `hub`, and `target: "_"` answered `found: true` with
+ * root `build_registry` (no symbol is named `_`). An agent asking "who calls
+ * `ub`?" got a confident answer about a different symbol and nothing saying so.
+ *
+ * `containment` is also how a CASE difference is resolved, which is not a near
+ * miss at all and must not read like one: the exact step is `name = ?`
+ * (case-sensitive) while the fallback is `LIKE '%…%'`, and SQLite's LIKE is
+ * case-insensitive for ASCII. So `target: "HUB"` finds `hub` by containment.
+ * Declaring the step makes both facts visible in one field.
+ */
+export type RootMatch = "exact" | "exact-any-kind" | "containment"
+
 // Resolve a symbol name to its highest-gravity match (exact, then fuzzy).
+//
+// The winning step is returned, not just its row. `candidates` says how many
+// the step chose between; `match` says what the step WAS. A caller that reports
+// `found: true` without reporting this reports half the answer.
 export async function resolveGraphRootDetailed(
   projectId: ProjectID,
   name: string,
-): Promise<{ root: SymbolRow | null; candidates: number }> {
+):
+  // A discriminated union, so a caller that has a root also has a `match`
+  // without an assertion. The two are set together and are not independent:
+  // `match: null` means "no root", and a root without a step never happens.
+  | Promise<
+      | { root: null; candidates: 0; match: null }
+      | { root: SymbolRow; candidates: number; match: RootMatch }
+    > {
   const raw = await BrainDatabase.getRawInstance(projectId)
   const STRUCTURAL = "('function','method','class','interface','trait','struct','enum','macro')"
   const base =
@@ -1020,6 +1120,8 @@ export async function resolveGraphRootDetailed(
   const exactStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name = ?`
   const exactAnyKind = base + "AND s.name = ?"
   const fuzzyStructural = base + `AND s.symbol_type IN ${STRUCTURAL} AND s.name LIKE ? ESCAPE '\\'`
+  // Set alongside `predicate`, so what is REPORTED cannot drift from what RAN.
+  let match: RootMatch = "exact"
 
   // 1) exact name among the structural kinds the graph can traverse
   let predicate = exactStructural
@@ -1035,6 +1137,7 @@ export async function resolveGraphRootDetailed(
     rows = raw.prepare(exactAnyKind + RANK).all(projectId, name) as SymbolRow[]
     predicate = exactAnyKind
     param = name
+    match = "exact-any-kind"
   }
   if (rows.length === 0) {
     // 3) documented near-miss fallback: fuzzy containment among structural kinds.
@@ -1051,13 +1154,14 @@ export async function resolveGraphRootDetailed(
     rows = raw.prepare(fuzzyStructural + RANK).all(projectId, pattern) as SymbolRow[]
     predicate = fuzzyStructural
     param = pattern
+    match = "containment"
   }
   const root = rows[0] ?? null
-  if (!root) return { root: null, candidates: 0 }
+  if (!root) return { root: null, candidates: 0, match: null }
   // How many stored symbols the winning step had to choose between, counted
   // with that step's own predicate and parameter.
   const countRow = raw.prepare("SELECT COUNT(*) c FROM (" + predicate + ")").get(projectId, param) as any
-  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)) }
+  return { root, candidates: Math.max(1, Number(countRow?.c ?? 1)), match }
 }
 
 /**
@@ -1085,7 +1189,7 @@ export async function graphTraversal(
   name: string,
   options: GraphTraversalOptions = {},
 ): Promise<GraphTraversalResult> {
-  const { root, candidates } = await resolveGraphRootDetailed(projectId, name)
+  const { root, candidates, match } = await resolveGraphRootDetailed(projectId, name)
   if (!root) throw new Error(`Symbol '${name}' not found`)
   const {
     callers,
@@ -1125,6 +1229,10 @@ export async function graphTraversal(
   return {
     root: rootNode,
     rootCandidates: candidates,
+    // WHICH step found the root, beside the root itself. Without this a
+    // containment match is indistinguishable from the symbol that was asked
+    // for, and the whole answer is confidently about the wrong symbol.
+    rootMatch: match,
     callers,
     callees,
     nodes,

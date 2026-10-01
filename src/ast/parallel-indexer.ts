@@ -582,6 +582,47 @@ export async function admitsShellShebang(filePath: string): Promise<boolean> {
 }
 
 /**
+ * The symbol body as stored in `brain_symbol.source_text`, bounded.
+ *
+ * This column exists so content search can reach a word that appears only
+ * inside a function — measured unreachable for 27% of body-only words on rake
+ * and 38% on ripgrep, because `searchContent` selected only
+ * name/qualified_name/docstring and the body was indexed solely as a
+ * 50-dimensional hash that cannot be queried by word.
+ *
+ * Bounded for two measured reasons:
+ *  - size. A 25 599-character body was measured on rake (a whole class body).
+ *    `searchContentClassic` loads every symbol row for a project, so an
+ *    unbounded body would make content search memory scale with total source
+ *    rather than with the query.
+ *  - diminishing returns past the cap. The median measured body is 28 tokens
+ *    and p90 is 69, so a few hundred lines is generous: a word a developer
+ *    remembers is overwhelmingly likely to be near the top of the symbol.
+ *
+ * Returns null when there is no body, so the column reads as "this symbol has
+ * no body to search" rather than as an empty string that matches everything.
+ */
+const MAX_BODY_SOURCE_CHARS = 4000
+const MAX_BODY_SOURCE_LINES = 200
+
+function boundSourceText(snippet: string | undefined | null, startLine: number, endLine: number): string | null {
+  if (!snippet) return null
+  let text = String(snippet)
+  // The analyzer's snippet is occasionally the whole file when line information
+  // is missing. Trust the line range when we have one.
+  if (endLine > startLine && startLine > 0) {
+    const lines = text.split("\n")
+    if (lines.length > endLine - startLine + 1) {
+      text = lines.slice(0, endLine - startLine + 1).join("\n")
+    }
+  }
+  const lines = text.split("\n")
+  if (lines.length > MAX_BODY_SOURCE_LINES) text = lines.slice(0, MAX_BODY_SOURCE_LINES).join("\n")
+  if (text.length > MAX_BODY_SOURCE_CHARS) text = text.slice(0, MAX_BODY_SOURCE_CHARS)
+  return text.length > 0 ? text : null
+}
+
+/**
  * Tokenize code snippet + name for TF-IDF semantic embedding.
  * Splits camelCase, PascalCase, snake_case, kebab-case identifiers
  * and returns token-weight pairs for similarity matching.
@@ -1921,8 +1962,8 @@ export async function storeResults(
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, is_declaration, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, source_text, scope_kind, is_declaration, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -2759,6 +2800,13 @@ export async function storeResults(
                // docstring-based evidence matching in bb_doc (feature/api
                // lexical SQL) and degrading symbol-mode doc facts.
                symbol.docstring || null,
+               // The symbol's own source text, bounded. Content search selects
+               // name/qualified_name/docstring, so without this a word that
+               // appears ONLY inside a function was unreachable by every
+               // retrieval path — 27% of body-only words on rake, 38% on
+               // ripgrep. The body was in the database only as a
+               // 50-dimensional hash, which cannot be queried by word.
+               boundSourceText(symbol.snippet, symbolStartLine, symbolEndLine),
                // #837: the DDL column (scope_kind) and the typed schema
                // existed for years while this INSERT silently omitted them —
                // every scope value every analyzer emitted died at the store

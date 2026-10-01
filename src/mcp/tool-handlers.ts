@@ -29,7 +29,7 @@ import { graphTraversal } from "../intelligence/graph/graph-engine"
 import { computeImpact, IMPACT_BUDGET } from "../lsp/impact"
 import { tierForCrossLanguageEdge, factsFromRows, storedCrossLanguageRows, storedCrossLanguageFactsByName, CROSS_LANGUAGE_DEFAULT_LIMIT, CROSS_LANGUAGE_MAX_LIMIT } from "../lsp/cross_language_hover"
 import { getProjectStats } from "../intelligence/analysis/project-stats"
-import { getFileDependencies, dependencyProvenance, dependencyPageProvenance } from "../intelligence/analysis/dependencies"
+import { getFileDependencies, dependencyProvenance, dependencyPageProvenance, normalizeScopePath, scopeFileCount } from "../intelligence/analysis/dependencies"
 import { analyzeComplexity } from "../intelligence/analysis/complexity"
 import { testMapping, testGaps, testImpact } from "../intelligence/testing/test-intel"
 import { makeProvenance } from "../intelligence/evidence"
@@ -65,6 +65,19 @@ function derivedStaleness(raw: any, projectId: string, relPaths: Array<string | 
     summary,
   }
 }
+
+// bb_security response bounds. The two WINDOW values are what the agent sees;
+// the CENSUS cap is how many findings `recordRun` persists so that a capped
+// scan can never auto-resolve findings that were merely not looked at
+// (completeAnalysisRun resolves any prior `open` finding absent from the set).
+// Exported so the security verifiers can pin them rather than re-deriving
+// magic numbers that used to be inline literals.
+export const SECURITY_FINDINGS_WINDOW = 20
+export const SECURITY_SUSPICIOUS_WINDOW = 5
+/** Cap for the live (non-recording) scan. Matches the engine's own default. */
+export const SECURITY_SCAN_CAP = 500
+/** Cap for the recording scan — large enough that a real project is not truncated. */
+export const SECURITY_RECORD_RUN_CENSUS_CAP = 50_000
 
 export interface ToolContext {
   projectPath: string
@@ -216,6 +229,8 @@ async function canonicalImpactReport(
     depthReached: 0,
     totalSymbols: 0,
     totalSymbolsIfKnown: null,
+    // No root, so no match — the same key set in every state.
+    root: null,
     notFoundReason: "absent",
     source: "impact@lsp-canonical (computeImpact, M48.P1) — no walk was performed",
     provenance: makeProvenance({
@@ -230,6 +245,17 @@ async function canonicalImpactReport(
   })
   let capturedEdges: Array<any> = []
   let capturedNodes: Record<string, any> = {}
+  // WHICH symbol the walk actually rooted at. `computeImpact` roots the same way
+  // the graph modes do — exact, then exact-any-kind, then a containment
+  // near-miss — and the report never said so, because this payload has no
+  // `root` at all. Measured on the atlas corpus: `target: "ub"` answered
+  // `found: true` with `directSymbols` and `affectedFiles` computed from
+  // `hub`, and there was no field anywhere naming `hub` or saying that `ub` was
+  // never a symbol. A risk level attached to an unnamed symbol cannot be checked
+  // or reproduced, which is the one thing a blast radius is for.
+  let capturedRoot: any = null
+  let capturedRootCandidates = 1
+  let capturedRootMatch: string | null = null
   // computeImpact draws its line at "traversable root / absent". A symbol that
   // IS indexed but is a namespace, constant, type alias or enum member is
   // neither, and reporting it as "absent" is a confident FALSE NEGATIVE.
@@ -247,6 +273,9 @@ async function canonicalImpactReport(
         const r = await graphTraversal(pid, symbol, opts)
         capturedEdges = r.callers ?? []
         capturedNodes = r.nodes ?? {}
+        capturedRoot = r.root ?? null
+        capturedRootCandidates = r.rootCandidates ?? 1
+        capturedRootMatch = r.rootMatch ?? null
         return r
       }) as any,
     })
@@ -336,6 +365,17 @@ async function canonicalImpactReport(
   return {
     target,
     found: true,
+    // The symbol every number below is about, and how the name resolved to it.
+    root: capturedRoot
+      ? {
+          name: capturedRoot.name,
+          symbolType: capturedRoot.symbolType,
+          file: capturedRoot.file,
+          line: capturedRoot.line,
+          candidates: capturedRootCandidates,
+          match: capturedRootMatch,
+        }
+      : null,
     scope: "transitive",
     directSymbols,
     affectedFiles,
@@ -479,6 +519,22 @@ const handlers: Record<string, ToolHandler> = {
             freshCount: results.freshCount ?? 0,
             truncated: results.truncated ?? false,
             ...(results.truncationReason ? { truncationReason: results.truncationReason } : {}),
+            // Which route matched, and how much of the corpus has a searchable
+            // body. Without these a caller cannot tell a phrase hit (the text
+            // says this verbatim) from a keyword coincidence (it discusses the
+            // same words), nor "nothing matched" from "nothing could match" on a
+            // database indexed before bodies were stored. Declared in
+            // SearchResults and populated by searchContent; carried here because a
+            // disclosure that stops at the search layer is not a disclosure.
+            ...(results.matchMode ? { matchMode: results.matchMode } : {}),
+            // Which words carried the match, when the answer is a keyword
+            // coincidence rather than the phrase that was asked for. This was
+            // computed, declared in SearchResults, and then dropped here — so
+            // the comment above ("a disclosure that stops at the search layer
+            // is not a disclosure") was true of every OTHER field on this
+            // object and false of this one.
+            ...(results.termMatch ? { termMatch: results.termMatch } : {}),
+            ...(results.bodyCoverage ? { bodyCoverage: results.bodyCoverage } : {}),
             freshness: buildStalenessEnvelope(detail.summary, { kind: "dir" }),
             results,
           },
@@ -731,9 +787,49 @@ const handlers: Record<string, ToolHandler> = {
       // dependencies". That is a measurement claim, and it was never taken.
       return textResult("bb_analyze " + mode + ": limit must be at least 1 — limit 0 returns an empty result that is indistinguishable from a real answer", true)
     }
+    // The floor is refused because an empty page is indistinguishable from a
+    // real answer; the CEILING is refused for the same reason in the other
+    // direction. `limit` had a floor and no ceiling, so the schema's "maximum
+    // items returned" named no maximum: `limit: 2147483648` was accepted and
+    // answered with the whole corpus, which on a large project is an answer too
+    // big to read rather than one too big to hold.
+    //
+    // It is refused, not clamped. Clamping would return a page that looks like
+    // the caller's request was honoured, which is the failure this whole
+    // parameter exists to prevent.
+    const LIMIT_CEILING: Record<string, number> = {
+      callers: 5_000,
+      callees: 5_000,
+      trace: 5_000,
+      dependencies: 2_000,
+      test_mapping: 2_000,
+      test_gaps: 2_000,
+      test_quality: 2_000,
+    }
+    if (args.limit !== undefined && Number(args.limit) > LIMIT_CEILING[mode]) {
+      return textResult(
+        `bb_analyze ${mode}: limit must be between 1 and ${LIMIT_CEILING[mode]} — refused rather than clamped, so a returned page always means the page asked for. Above this the answer stops being readable (measured on this repository's own src: 20 dependency files of 183 is already 75,911 bytes ~21k tokens, and the per-file edge lists are capped separately).`,
+        true,
+      )
+    }
+    // A target is echoed into the answer's `reason` and `target` fields. A
+    // 4,000-character target therefore produced a 9,409-byte "not found" —
+    // about 2.6k tokens spent on two words of information. The echo is kept,
+    // because it is how a caller tells WHICH name was looked up, and elided
+    // with its length stated so nothing is silently shortened.
+    const MAX_TARGET_ECHO = 200
     const unused = Object.keys(args).filter((key) => !allowed.has(key))
     if (unused.length) return textResult(`bb_analyze ${mode || "unknown"}: irrelevant options: ${unused.join(", ")}`, true)
     const target = args.target ? String(args.target) : ""
+    // The search term and the ECHO are different things. A 4,000-character
+    // target produced a 9,409-byte "not found" (~2.6k tokens for two words of
+    // information) because it is echoed into `target` and `reason`. Truncating
+    // the SEARCH TERM to fix that would search for a different symbol than the
+    // caller asked for — a wrong answer instead of a long one. So the full
+    // string is resolved and only the echo is bounded, with its full length
+    // stated so nothing is silently shortened.
+    const echo = (t: string): string =>
+      t.length > MAX_TARGET_ECHO ? `${t.slice(0, MAX_TARGET_ECHO)}…(+${t.length - MAX_TARGET_ECHO} more characters)` : t
     const targetModes = new Set(["callers", "callees", "trace", "complexity", "impact", "test_impact"])
     // filePath scopes dependencies plus the three test-intel modes (path
     // prefix); stats stays project-wide and rejects filePath.
@@ -828,12 +924,14 @@ const handlers: Record<string, ToolHandler> = {
         return withFreshness(
           {
             mode,
-            target,
+            target: echo(target),
             found: false,
             notFoundReason: "absent",
-            reason: `bb_analyze ${mode}: symbol '${target}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
+            reason: `bb_analyze ${mode}: symbol '${echo(target)}' is not in the indexed graph — no caller or callee set exists for it (this is a declared absence, not an empty answer). Index the project (bb index), or check the spelling.`,
             root: null,
             rootCandidates: 0,
+            // No root, so no step: null, not a guess.
+            rootMatch: null,
             callers: [],
             callees: [],
             nodes: {},
@@ -952,7 +1050,15 @@ const handlers: Record<string, ToolHandler> = {
       )
     }
     if (mode === "dependencies") {
-      const deps = await getFileDependencies(projectId as any, { filePath: args.filePath ? String(args.filePath) : target || undefined, limit: Number(args.limit ?? 20) })
+      // The scope is normalized ONCE, here, and the NORMALIZED value goes to
+      // both the engine and the denominator. Previously the engine stripped
+      // trailing slashes and this count did not, so `filePath: "src/wide/"`
+      // returned 20 of 68 files with `totalFiles: 0` and `truncated: false` —
+      // a false statement of completeness, 48 files hidden. There is no second
+      // copy of the rule to disagree with.
+      const rawScope = args.filePath ? String(args.filePath) : target || undefined
+      const scopePath = rawScope ? normalizeScopePath(rawScope) : null
+      const deps = await getFileDependencies(projectId as any, { filePath: scopePath ?? undefined, limit: Number(args.limit ?? 20) })
       const rows = deps.flatMap((d) => [
         { fileId: d.fileId },
         // Neither list ships a file id any more — a file id is
@@ -967,18 +1073,11 @@ const handlers: Record<string, ToolHandler> = {
       // one returned 20 files of 90 with no summary at all. The total is
       // counted over the SCOPE — filePath is a path PREFIX, so the honest
       // denominator is the files under that prefix, not the whole project.
-      const scopePath = args.filePath ? String(args.filePath) : null
-      const totalFiles = scopePath
-        ? Number(
-            (
-              raw
-                .prepare(
-                  "SELECT COUNT(*) c FROM brain_file WHERE project_id = ? AND (relative_path = ? OR relative_path LIKE ? ESCAPE '\\')",
-                )
-                .get(projectId, scopePath, scopePath.replace(/[\\%_]/g, (c) => "\\" + c) + "/%") as { c: number }
-            )?.c ?? 0,
-          )
-        : Number((raw.prepare("SELECT COUNT(*) c FROM brain_file WHERE project_id = ?").get(projectId) as { c: number }).c)
+      // The denominator comes from the engine, which computed the rows with the
+      // same normalization and the same segment boundary. A count written here
+      // is a second opinion about the same question, and it is how the scope
+      // came to disagree with itself.
+      const totalFiles = await scopeFileCount(projectId as any, scopePath)
       return withFreshness(
         {
           dependencies: deps,
@@ -1231,43 +1330,102 @@ const handlers: Record<string, ToolHandler> = {
       const history = await getAnalysisHistory(projectId, "security", Number(args.limit ?? 20))
       return textResult(JSON.stringify(history, null, 2))
     }
-    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(projectId)
+    // A1: `recordRun` persists a SNAPSHOT whose completeness decides whether
+    // still-real findings are auto-resolved. `completeAnalysisRun` marks every
+    // prior `open` finding that is absent from the persisted set as `resolved`,
+    // so a scan capped at the engine default (500) silently resolved everything
+    // past 500 on a project that really had them. `bb_patterns` already guards
+    // this with a census cap + a cap note (tool-handlers.ts:1174-1224); the
+    // security path had no guard at all. Recording asks for a census-sized
+    // scan; the DISPLAY still renders the ordinary window.
+    const recordRun = args.recordRun === true
+    const result: any = await CrossLanguageSecurityAnalysis.analyzeSecurityAcrossLanguages(
+      projectId,
+      { maxResults: recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP },
+    )
     const findings = result?.findings ?? []
     const suspicious = result?.suspiciousSources ?? []
     const summary = result?.summary
     // M35.S2: a stale taint/flow finding says so — security honesty. History
     // paths (above) keep their recorded state; this is the live read.
+    //
+    // B3: the unvalidated-source rows are ALSO derived from indexed files, so
+    // they are resolved for freshness too. They were left out, which presented
+    // stale observations as current fact. `derivedStaleness` filters null, and
+    // `file` is now honestly `null` when neither endpoint resolved (it was the
+    // `"?"` sentinel, which resolved to nothing and counted as `missing`).
     const rawDb = await BrainDatabase.getRawInstance(projectId as any)
-    const derived = derivedStaleness(rawDb, projectId as any, findings.map((f: any) => f.file))
+    const derived = derivedStaleness(rawDb, projectId as any, [...findings, ...suspicious].map((f: any) => f.file))
+    // A1: the engine's own census vs. what is on screen. Silence here is what
+    // made a 5000-flow project read as "20 findings" with no indication that
+    // 4980 were unseen — the same contract bb_visualize and bb_search use.
+    const capNote = result?.truncatedFindings > 0
+      ? ` — CAPPED at ${(recordRun ? SECURITY_RECORD_RUN_CENSUS_CAP : SECURITY_SCAN_CAP).toLocaleString("en-US")}; ${result.deduplicatedFlows} findings exist and ${result.truncatedFindings} were not examined`
+      : ""
+    const countLine =
+      `\n[scan: ${result?.scannedFlows ?? 0} taint flow(s) indexed → ${result?.deduplicatedFlows ?? 0} finding(s)` +
+      `${result?.truncatedFindings ? ` (${result.truncatedFindings} beyond the cap)` : ""};` +
+      ` showing ${Math.min(findings.length, SECURITY_FINDINGS_WINDOW)} finding(s)` +
+      `${suspicious.length ? ` and ${Math.min(suspicious.length, SECURITY_SUSPICIOUS_WINDOW)} of ${suspicious.length} unvalidated observation(s)` : ""}]`
+    // B2: the severity counts are the indexer's, and `taint.ts` now normalizes
+    // severity into exactly these five buckets, so the head line cannot print
+    // "0 critical" above a list of critical findings.
     const head = summary
-      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
+      ? `security: ${summary.critical} critical / ${summary.high} high / ${summary.medium} medium / ${summary.low} low${summary.unknown ? ` / ${summary.unknown} unknown` : ""} (${summary.resolved} resolved flows, ${summary.unresolvedSources} unvalidated sources, ${summary.mitigated} mitigated)`
       : `security findings (${findings.length})`
-    const lines = findings.slice(0, 20).map(
-      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${finding.file}:${finding.line ?? "?"}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${derived.isStale(finding.file) ? " [stale]" : ""}`,
+    const where = (f: any) => (f.file ? `${f.file}:${f.line ?? "?"}` : "<unresolved location>")
+    const lines = findings.slice(0, SECURITY_FINDINGS_WINDOW).map(
+      (finding: any) => `  [${finding.severity}] ${finding.label ?? finding.type}${finding.symbol ? ` (${finding.symbol})` : ""} @ ${where(finding)}${finding.sourceType ? ` <- ${finding.sourceType}` : ""}${finding.sinkType ? ` -> ${finding.sinkType}` : ""}${finding.mitigated ? " [mitigated]" : ""}${finding.file && derived.isStale(finding.file) ? " [stale]" : ""}`,
     )
-    const sourceLines = suspicious.slice(0, 5).map(
-      (source: any) => `  [info] unvalidated input${source.symbol ? ` ${source.symbol}` : ""} @ ${source.file}:${source.line ?? "?"} (no sink reached)`,
-    )
-    if (args.recordRun === true) {
+    // B1: the two observation states are DIFFERENT facts and were rendered with
+    // one sentence. `source_only` genuinely has no sink ("no sink reached").
+    // `unresolved` has a RESOLVED SINK and is missing the source — the old
+    // text claimed the opposite for it, on the exact rows the indexer's
+    // heuristic detectors produce (they write `source_symbol_id = NULL`).
+    // B2 again: these rows carry the indexer's real severity (an isolated
+    // command-injection sink is `critical`) and were all printed as `[info]`.
+    const sourceLines = suspicious.slice(0, SECURITY_SUSPICIOUS_WINDOW).map((source: any) => {
+      const isSourceOnly = source.state === "source_only"
+      return `  [${source.severity}] unvalidated ${isSourceOnly ? "input source" : "sink"}: ${source.label ?? source.type}${source.symbol ? ` ${source.symbol}` : ""} @ ${where(source)} (${isSourceOnly ? "no sink reached" : "sink found; source endpoint not resolved to an indexed symbol"})${source.file && derived.isStale(source.file) ? " [stale]" : ""}`
+    })
+    if (recordRun) {
       const findingCount = findings.length
       const recorded = await executeAnalysis({
         projectId,
         kind: "security",
         input: { options: args },
         persist: () => findings.map((finding: any): AnalysisFindingInput => ({
-          fingerprint: finding.fingerprint ?? `${finding.file}:${finding.line ?? "?"}:${finding.label ?? finding.type}`,
-          rule: finding.label ?? finding.type ?? "security",
+          // A7: the persisted identity must be stable across runs AND distinct
+          // per sink. The old key was `file:line:label`, which put a DISPLAY
+          // label in the identity: re-labelling a vulnerability type would
+          // resolve the old finding and mint a new one for a flow that never
+          // changed. The key is now the normalized type + sink type + location,
+          // so re-grading `severity` is a repeat and only a genuine move or
+          // change of vulnerability type produces a new row.
+          fingerprint: `taint:${finding.type}:${finding.sinkType ?? "?"}:${finding.file ?? "?"}:${finding.line ?? "?"}`,
+          rule: finding.type ?? "security",
           title: finding.label ?? finding.type ?? "security finding",
           severity: finding.severity ?? "medium",
-          confidence: finding.confidence ?? null,
+          // A7: the engine calibrates 0.7/0.4/0.3 by state; the legacy mapping
+          // dropped it, so this read `?? null` and every persisted security
+          // finding recorded NULL confidence.
+          confidence: typeof finding.confidence === "number" ? finding.confidence : null,
+          // A7: likewise `evidence` was always `[]` — history recorded security
+          // findings with no evidence at all.
           evidence: finding.evidence ?? [],
+          limitations: finding.limitations ?? [],
+          evidenceClass: "static_finding",
+          engine: "taint@intelligence",
           location: finding.file ? `${finding.file}:${finding.line ?? "?"}` : null,
           state: finding.mitigated ? "mitigated" : undefined,
         })),
       })
-      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded` + (lines.length ? "\n" + lines.join("\n") : "") + (derived.footer ? `\n${derived.footer}` : ""))
+      return textResult(head + `\nrecorded run: ${recorded.report.run.id}\nnew=${recorded.report.newFindings} repeated=${recorded.report.repeatedFindings} resolved=${recorded.report.resolvedFindings}` + "\n" + `${findingCount} findings recorded${capNote}` + (lines.length ? "\n" + lines.join("\n") : "") + countLine + (sourceLines.length ? `\n\nunvalidated sources (not persisted):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n${derived.footer}` : ""))
     }
-    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  clean") + (sourceLines.length ? `\n\nunvalidated input sources:\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
+    // The zero-findings case still states the census. "clean" alone is
+    // indistinguishable from "found nothing" when the scan was capped or the
+    // index has no taint rows at all, and those are very different facts.
+    return textResult(head + "\n" + (lines.length ? lines.join("\n") : "  no findings with both endpoints resolved") + countLine + (sourceLines.length ? `\n\nunvalidated observations (leads, not confirmed exploitable paths):\n${sourceLines.join("\n")}` : "") + (derived.footer ? `\n\n${derived.footer}` : ""))
   },
 
   bb_visualize: async (args, { projectId }) => {
@@ -1320,10 +1478,44 @@ const handlers: Record<string, ToolHandler> = {
     return textResult(vizOut + vizFooter)
   },
 
-  bb_migrate: async (args, { projectId }) => {
+  bb_migrate: async (args, { projectId, projectPath }) => {
     const symbolNames = Array.isArray(args.symbolNames) ? args.symbolNames.map(String) : args.symbolName ? [String(args.symbolName)] : []
-    if (!symbolNames.length || !args.targetLanguage) return textResult("bb_migrate requires symbolNames (or symbolName) and targetLanguage", true)
-    const result = await generateMigrationPlans(projectId, { symbolNames, targetLanguage: String(args.targetLanguage) })
+    // A file or directory path joins the request, so a whole module can be
+    // planned in one call. Union with symbolNames, not a replacement: naming a
+    // symbol AND a path that contains it plans it once.
+    // A path inside the project is accepted however the caller spells it. An
+    // agent holding an absolute path is not wrong, and rejecting it taught
+    // nothing except that the tool wants a different string than the one that
+    // works everywhere else. A path OUTSIDE the project is still refused by the
+    // resolver, which is where the project boundary actually lives.
+    const projectRoot = path.resolve(String(projectPath ?? "."))
+    const normalizeCohortPath = (raw: string): string => {
+      const value = String(raw ?? "").trim().replace(/\\/g, "/")
+      if (!value) return value
+      const absolute = path.isAbsolute(value) ? path.resolve(value) : path.resolve(projectRoot, value)
+      const relative = path.relative(projectRoot, absolute).replace(/\\/g, "/")
+      return relative === "" ? "." : relative.startsWith("..") ? value : relative
+    }
+    const paths = Array.isArray(args.paths) ? args.paths.map(normalizeCohortPath) : []
+    // An indexed symbol id is the only unambiguous way to name a component, and
+    // it is what the ambiguity refusal points at. Accepting it is what makes
+    // that advice true instead of aspirational.
+    const symbolIds = Array.isArray(args.symbolIds) ? args.symbolIds.map(String).map((id) => id.trim()).filter(Boolean) : []
+    if (!symbolNames.length && !paths.length && !symbolIds.length) return textResult("bb_migrate requires one of symbolNames (or symbolName), symbolIds, or paths, and targetLanguage", true)
+    if (!args.targetLanguage) return textResult("bb_migrate requires targetLanguage", true)
+    const result = await generateMigrationPlans(projectId, { symbolNames, symbolIds, paths, targetLanguage: String(args.targetLanguage) })
+    // A path that matched no indexed file is reported by name. Without this a
+    // typo'd path is indistinguishable from a directory with no symbols in it,
+    // and both look like a clean empty answer.
+    const unmatchedIds = (result.unsupported ?? []).filter((u: any) => u.unsupportedReason === "missing-symbol").map((u: any) => u.symbolName)
+    // ANY unmatched id refuses, matching how an unmatched path behaves: a
+    // partially-resolved request reads like a complete answer otherwise.
+    if (symbolIds.length && unmatchedIds.length > 0) {
+      return textResult(`bb_migrate: no indexed symbol carries the id(s) ${unmatchedIds.map((id: string) => `"${id}"`).join(", ")}. Ids come from an earlier result's plans or from an ambiguity refusal's candidates.`, true)
+    }
+    if (paths.length && result.cohort?.pathsUnmatched?.length) {
+      return textResult(`bb_migrate: no indexed file matches ${result.cohort.pathsUnmatched.map((p: string) => `"${p}"`).join(", ")}. Paths are project-relative; check the spelling against the project root.`, true)
+    }
     // M35.S3: a migration plan is a claim about CURRENT code. Resolve each
     // plan's source file and flag plans whose file changed since the index —
     // a stale plan says so up front instead of silently planning against
@@ -1590,10 +1782,55 @@ const handlers: Record<string, ToolHandler> = {
     // caller lives in. `describe` renders one endpoint out of the engine's own
     // node map — already computed by the traversal, previously discarded here
     // — so each edge is self-contained and needs no second call.
+    // A symbol id is `<projectHash40>:<path>:<name>:<line>`, and the hash is the
+    // same for every symbol in one answer — so it is repeated on BOTH endpoints
+    // of every edge, twice per edge, to say something the payload already states
+    // once in `root.id`. Measured: a median id is 65-80 characters of which 40
+    // is that hash, and `from.id` + `to.id` is 28.6% of every edge's bytes.
+    //
+    // So the per-edge copy drops the hash. It stays a plain string and stays
+    // resolvable: prepend the hash from `root.id` to get the stored id back.
+    // `root.id` itself is left FULL, deliberately — it appears once, so it costs
+    // ~80 bytes, and it is the one place a reader can find the hash this
+    // compaction depends on. Stripping it would save nothing and remove the only
+    // way to undo the rest.
+    //
+    // Conservative by construction: only a first segment that is exactly 40 hex
+    // characters is dropped, so an `ext:` node, a foreign id shape, and anything
+    // this lane has not seen come back untouched rather than guessed at.
+    const compactId = (id: string): string => {
+      if (typeof id !== "string" || id.length <= 41) return id
+      const at = id.indexOf(":")
+      if (at !== 40) return id
+      if (!/^[0-9a-f]{40}$/.test(id.slice(0, at))) return id
+      return id.slice(at + 1)
+    }
     const describe = (id: string) => {
       const n = (result.nodes as Record<string, any> | undefined)?.[id]
       if (!n) return null
-      return { id: n.id, name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+      return { id: compactId(n.id), name: n.name, symbolType: n.symbolType, file: n.file, line: n.line, isExternal: n.isExternal === true }
+    }
+    // A stored relationship id is
+    //   `<projectHash>:rel:<projectHash>:<sourceSymbolId>:<kind>:<occurrence>`
+    // and the first two segments are constant across one answer: the hash is the
+    // same for every row, and it is already the segment before the first `:` of
+    // every symbol id in this payload. Dropping them leaves a string that is
+    // still a complete handle — prepend `<projectHash>:rel:` to get the stored id
+    // back — and shortens it by 45 of 127-134 characters.
+    //
+    // Idempotent and conservative: anything not shaped like the stored form is
+    // returned untouched, so an id this lane has not seen is reported rather than
+    // guessed at. `rel` cannot be a path segment's first token in practice, and
+    // the second occurrence of the hash is what makes the match unambiguous.
+    const compactRowId = (rowId: unknown): string | null => {
+      if (typeof rowId !== "string" || rowId.length === 0) return null
+      const marker = ":rel:"
+      const at = rowId.indexOf(marker)
+      if (at <= 0) return rowId
+      const projectHash = rowId.slice(0, at)
+      const rest = rowId.slice(at + marker.length)
+      if (!rest.startsWith(projectHash + ":")) return rowId
+      return rest
     }
     const edgesOf = (list: any[], direction: "caller" | "callee") =>
       list.map((e) => ({
@@ -1620,7 +1857,22 @@ const handlers: Record<string, ToolHandler> = {
         // still traces to a stored relationship row") was a claim the payload
         // gave an agent no way to check. An edge nobody can audit is an edge
         // they have to take on faith.
-        rowId: e.rowId ?? null,
+        //
+        // The stored id is `<projectHash>:rel:<projectHash>:<sourceId>:<kind>:<n>`
+        // — 127-134 characters on the corpora measured, 149 on average and 248 at
+        // the worst. The leading `<projectHash>:rel:` is a constant within one
+        // answer, and the project hash is already the segment before the first
+        // `:` of every `id` in this payload, so those 45 characters repeat what
+        // the payload already says. At 28-31% of every edge's bytes on every
+        // corpus measured, that redundancy was the single largest item in the
+        // answer.
+        //
+        // So the rendered id drops the prefix and stays a COMPLETE handle: the
+        // stored id is `<projectHash>:rel:` followed by exactly this string, and
+        // `<projectHash>` is readable from any `id` here. Nothing is lost, and the
+        // engine's own rowId — which the traversal uses as its dedup key and the
+        // IDE door returns in full — is untouched.
+        rowId: compactRowId(e.rowId),
       }))
     return textResult(JSON.stringify({
       symbol,
@@ -1637,6 +1889,12 @@ const handlers: Record<string, ToolHandler> = {
         // is > 1 the graph below is about ONE of them, so `root` is the thing
         // to confirm before reading the edges.
         candidates: result.rootCandidates ?? 1,
+        // WHICH step resolved the name. `containment` means the answer is about
+        // a symbol whose name CONTAINS the one asked for — measured on the
+        // atlas corpus, `target: "ub"` answers about `hub` and `target: "_"`
+        // about `build_registry`, with nothing else in the payload saying the
+        // name was not itself a symbol.
+        match: result.rootMatch ?? null,
       },
       callers: edgesOf(result.callers as any[], "caller"),
       callees: edgesOf(result.callees as any[], "callee"),
@@ -1832,8 +2090,17 @@ const handlers: Record<string, ToolHandler> = {
             rule: impact.rule,
             budget: impact.budget,
             traversal: impact.traversal,
+            cascade: impact.cascade,
+            countVerification: impact.countVerification,
+            reproducible: impact.reproducible,
             ...(autoRefreshText ? { autoRefresh: autoRefreshText } : {}),
-            impact: dependents,
+            // The component's own bookkeeping does not ride the wire. `tracedId`
+            // is the walk node a cascade row was found at — deciding `via` needs
+            // it and a reader has no use for an opaque id, so the payload
+            // publishes the DECLARED fact (`via`, `viaMember`) and not the
+            // intermediate it was derived from. Everything else on a dependent is
+            // a fact about the stored row or about the file.
+            impact: dependents.map(({ tracedId: _internal, ...declared }) => declared),
             shownCount: impact.shownCount,
             directCount: impact.directCount,
             totalCountIfKnown: impact.totalCountIfKnown,
