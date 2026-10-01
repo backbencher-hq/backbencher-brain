@@ -112,8 +112,8 @@ the same token competes with the scanner that owns it, and a `prec("suffix")`
 rule cannot win that contest the way an ordinary production can.
 
 **The patch stays unapplied and the wasm stays unwired.** The full patch is
-preserved at `$HOME/fixtures/nim/out/0001-nim-dopragma.patch` and the
-rebuilt candidate wasm at `$HOME/fixtures/nim/out/nim-dopragma.wasm`
+preserved at `grammars/_vendored/nim/0001-nim-dopragma.patch` and the
+rebuilt candidate wasm at a `nim-dopragma.wasm` (NOT vendored — 5.9 MB, and this repo gitignores grammars/*.wasm by policy; it rebuilds from the patch)
 (5,914,156 B) for whoever takes it on — a real fix has to reach the SCANNER, not
 only the grammar.
 
