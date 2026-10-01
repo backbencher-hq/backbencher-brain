@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url)
 import { cpus } from "os"
 import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
+import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
@@ -648,14 +649,71 @@ function tokenizeCodeForEmbedding(snippet: string, name: string): { token: strin
     .map(([token, count]) => ({ token, weight: count / total }))
 }
 
+/**
+ * M64.C: the files this project WOULD index, under the indexer's own rules.
+ *
+ * Exported for bb_health, which needs to answer "is my new file in the index?"
+ * and cannot answer it from the index alone: an absent file is indistinguishable
+ * from an unindexed one without asking the indexer what it considers a file.
+ *
+ * Read-only by construction. It performs no database write, does not open the
+ * project database at all, and the `eligible-only` mode suppresses the stale-file
+ * cleanup that the indexing path performs — a health read must not delete index
+ * rows to answer a question.
+ *
+ * The rules are the indexer's, not a copy: .gitignore, .bbignore, the skip
+ * directories, the compiled-mode path filter, nested `.git` boundaries, the
+ * depth cap, the extension and shell-shebang gates, and the >5MB size skip. A
+ * second implementation would report gitignored files, `node_modules` and
+ * binaries as unindexed, and would drift the first time a rule was added here.
+ *
+ * Cost is the same as one index run's discovery phase — a stat per eligible
+ * file and no parsing — so callers should treat it as opt-in rather than part of
+ * a default health call.
+ */
+export async function discoverIndexableFiles(
+  projectPath: string,
+  excludePatterns?: string[],
+): Promise<string[]> {
+  const throwaway = {
+    totalFiles: 0, processedFiles: 0, skippedFiles: 0, failedFiles: 0,
+    totalSymbols: 0, totalRelationships: 0, workerBatchSize: 0, dbBatchSize: 0,
+    retries: 0, noop: false,
+  } as unknown as ParallelIndexingStats
+  return discoverAndFilterFiles("" as ProjectID, projectPath, throwaway, undefined, excludePatterns, "eligible-only")
+}
+
 async function discoverAndFilterFiles(
   projectId: ProjectID,
   projectPath: string,
   stats: ParallelIndexingStats,
   filesOverride?: string[],
   excludePatterns?: string[],
+  /**
+   * M64.C: "eligible-only" answers a different question from "changed", using
+   * the SAME rules.
+   *
+   * "index" (default, unchanged) returns the files that need re-parsing: the
+   * eligible set minus whatever the mtime+size check calls untouched. That is
+   * the right answer for an index run and the wrong one for a health question.
+   *
+   * "eligible-only" returns every file the indexer WOULD write, changed or not.
+   * bb_health needs that set to answer "is my new file in the index?", and there
+   * must be exactly ONE implementation of "what counts as an indexable file" —
+   * this one, which knows .gitignore, .bbignore, the skip directories, the
+   * compiled-mode path filter, nested .git boundaries, the depth cap, the
+   * extension and shebang gates, and the size tiers. A second copy of those rules
+   * inside the health provider would report gitignored files, node_modules and
+   * .pngs as unindexed, and would begin lying the moment anyone added a rule
+   * here.
+   *
+   * It is an early branch, not a move: not one line of the walk changes, so the
+   * indexer's own path is unchanged by construction.
+   */
+  mode: "index" | "eligible-only" = "index",
 ): Promise<string[]> {
   const files: string[] = []
+  const eligibleOnly = mode === "eligible-only"
   const startTime = Date.now()
   const { readFile, stat: statFile } = await import("fs/promises")
   const { createHash } = await import("crypto")
@@ -680,11 +738,19 @@ async function discoverAndFilterFiles(
     }
   }
 
-  // Fetch existing stats for incremental checking
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
-  let existingRecords = []
+  // Fetch existing stats for incremental checking.
+  // M64.C: an eligible-only run never consults them, so it does not open the
+  // project database at all — a health read must not create or migrate one.
+  const rawDb = eligibleOnly ? null : await BrainDatabase.getRawInstance(projectId)
+  let existingRecords: { path: string; last_modified: number; size_bytes: number }[] = []
 
-  if (filesOverride && filesOverride.length > 0) {
+  if (eligibleOnly) {
+    // M64.C: nothing below needs the index, and `rawDb` is deliberately null
+    // here. The guard has to be a branch rather than a `rawDb &&` on each use:
+    // the first version assigned null and then dereferenced it two lines later,
+    // so the whole walk threw and bb_health reported UNKNOWN_SCAN_FAILED on
+    // every call.
+  } else if (filesOverride && filesOverride.length > 0) {
     // Only fetch stats for the specific files being overridden
     const placeholders = filesOverride.map(() => "?").join(",")
     existingRecords = rawDb
@@ -735,7 +801,14 @@ async function discoverAndFilterFiles(
         // Send to fallback extraction which handles large files gracefully
       }
 
-      // Incremental check: skip unchanged files
+      // Incremental check: skip unchanged files.
+      // M64.C: in eligible-only mode the caller wants the whole eligible set —
+      // "would the indexer write this file?" — and not "does it need
+      // re-parsing?", so the mtime+size shortcut must not narrow the answer.
+      if (eligibleOnly) {
+        files.push(fullPath)
+        return
+      }
       const existing = existingStats.get(fullPath)
       const mtimeMs = Math.floor(fileStat.mtimeMs)
 
@@ -868,8 +941,11 @@ async function discoverAndFilterFiles(
   }
 
   // Cleanup stale files (files in DB but no longer on disk)
-  // Only do this for a full run (when there are no filesOverride)
-  if (!filesOverride || filesOverride.length === 0) {
+  // Only do this for a full run (when there are no filesOverride).
+  // M64.C: NEVER on an eligible-only run. That caller is asking what is on disk,
+  // and deleting index rows to "answer" a health question would make the
+  // question destructive — a read-only tool that mutated the index.
+  if (!eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
     const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
@@ -2187,7 +2263,40 @@ export async function storeResults(
        for (const result of batch) {
          if (!result.success) continue
  
-         let relativePath = path.relative(projectPath, result.filePath)
+         // M68: the relative path is computed from REAL paths on BOTH sides.
+         //
+         // `projectPath` and `result.filePath` reach this line spelled two
+         // different ways, and have done all along. `result.filePath` is the
+         // caller's own string — `results.push({ filePath: file, ... })` at the
+         // top of this loop, straight out of the `files` list — while
+         // `projectPath` is whatever the CALLER passed to indexProjectParallel.
+         // bb_edit is the one caller that realpath'd its project root, so for it
+         // the pair was `/private/var/folders/X` against `/var/folders/X`: the
+         // same directory, two spellings, and `path.relative` between them
+         // returned `../../../../var/folders/X/src/a.ts` instead of `src/a.ts`.
+         //
+         // The consequence was the worst kind of silent. `fileId` below is built
+         // from this value, so it matched no existing row, every DELETE ran
+         // against zero rows, and the INSERT created a SECOND brain_file row for
+         // a file that was already indexed. The file then appeared twice, its
+         // symbols appeared twice, and the second bb_edit on that file failed
+         // permanently with "symbol is ambiguous". MEASURED: bb_edit was usable
+         // exactly ONCE per file on macOS.
+         //
+         // No bb_edit gate saw it, because every one of them edits each symbol
+         // exactly once. A gate that only ever performs the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // Both sides are realpath'd HERE rather than at the call sites, because
+         // this is the one place the two are combined and seven callers reach it.
+         // The file side falls back to its own spelling when realpath throws,
+         // which is the create-a-new-file case where the leaf does not exist yet;
+         // for that the nearest existing ancestor's spelling is what matters and
+         // it is already consistent with the project root.
+         const realFilePath = (() => {
+           try { return realpathSync(result.filePath) } catch { return result.filePath }
+         })()
+         let relativePath = path.relative(realpathSync(projectPath), realFilePath)
          const fileId = `${projectId}:${relativePath}`
          // #756: per-file buffer for auto-generated contains edges (see the
          // symbol loop below) — flushed after the file's symbol rows exist.
@@ -2212,7 +2321,43 @@ export async function storeResults(
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
-         relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         // M68: `relativePath` is NOT recomputed here. The line this replaces was
+         //
+         //   relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         //
+         // which is a STRING replace standing in for a path operation, and it
+         // OVERWROTE the correct `path.relative(projectPath, result.filePath)`
+         // computed 25 lines above. It is only right when `result.filePath`
+         // literally contains `projectPath` as a prefix — which is false on
+         // macOS, where /var and /tmp are symlinks into /private. There
+         // projectPath is the unresolved spelling and result.filePath is a
+         // realpath, so the replace matches nothing and `relativePath` becomes
+         // the absolute path with its leading "/" stripped.
+         //
+         // The two spellings then disagree inside the SAME row: `fileId` on line
+         // 2191 came from the correct relative path, `relative_path` came from the
+         // broken one. So reindexing an already-indexed file computed a fileId
+         // that matched no existing row, every DELETE above hit zero rows, and the
+         // INSERT created a SECOND brain_file row for the same file — filed under
+         // the absolute path.
+         //
+         // MEASURED, through bb_edit, which is how this was found. Editing ONE
+         // symbol in a fresh project left:
+         //   brain_file    src/a.ts                  (the original)
+         //                 var/folders/.../src/a.ts  (the duplicate)
+         //   brain_symbol  alpha  x2
+         // and the consequence is that THE SYMBOL COULD NEVER BE EDITED AGAIN —
+         // the second edit failed with "symbol alpha is ambiguous; provide
+         // filePath and lineStart", permanently, because the duplicate never goes
+         // away. bb_edit was usable exactly once per file, on macOS.
+         //
+         // Not one bb_edit gate caught it, because every one of them edits each
+         // symbol exactly once. A gate that only ever does the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // `path.relative` is the operation that was always meant here, and it is
+         // already what the fileId above uses. If the two ever need to differ,
+         // that deserves a loud failure rather than a second spelling.
          const pathLower = relativePath.toLowerCase()
  
          let fileLayer = "core"
@@ -5244,6 +5389,36 @@ export async function reindexFilesParallel(
    *  not whether to retry, and not whether the failure is transient. Bounded, so a
    *  large failure cannot become a large payload. */
   errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  // M68: normalise the project root ONCE, here, so every `path.relative` in this
+  // function and in storeResults agrees with what the INITIAL index wrote.
+  //
+  // The defect this fixes was found through bb_edit and is the worst in this file.
+  // A caller may spell the project root either way — `/var/folders/X` or
+  // `/private/var/folders/X` are the same directory on macOS — and the initial
+  // index and the incremental reindex were being handed DIFFERENT spellings by
+  // different callers. `storeResults` then computed
+  //
+  //   fileId        = `${projectId}:${path.relative(projectPath, filePath)}`   (correct)
+  //   relative_path = filePath.replace(projectPath, "").replace(/^\//, "")     (broken)
+  //
+  // so a reindex of an already-indexed file produced a fileId matching no
+  // existing row: every DELETE hit zero rows and the INSERT created a SECOND
+  // brain_file row filed under the absolute path. The file then appeared twice,
+  // its symbols appeared twice, and the second bb_edit on that file failed for
+  // good with "symbol is ambiguous". MEASURED: editing one symbol left
+  //
+  //   brain_file    src/a.ts                  (original)
+  //                var/folders/.../src/a.ts  (duplicate)
+  //   brain_symbol  alpha  x2
+  //
+  // and no bb_edit gate saw it, because every one of them edits each symbol once.
+  //
+  // `realpathSync` is the operation that collapses the two spellings to one. It
+  // is applied HERE rather than at each call site because seven callers pass this
+  // path and one of them passing it differently is all it takes — bb_edit was the
+  // only one that realpath'd it, and it was enough to break the whole incremental
+  // path for that project.
+  const realProjectPath = realpathSync(projectPath)
   const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
@@ -5272,7 +5447,7 @@ export async function reindexFilesParallel(
 
       const tx = rawDb.transaction(() => {
         for (const change of deleted) {
-          const relativePath = path.relative(projectPath, change.path)
+          const relativePath = path.relative(realProjectPath, change.path)
           const fileId = `${projectId}:${relativePath}`
           deleteRelationships.run(fileId)
           deleteTaints.run(fileId, fileId)
@@ -5292,7 +5467,7 @@ export async function reindexFilesParallel(
   const toIndex = changes
     .filter((c) => c?.type !== "deleted")
     .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip("/" + path.relative(projectPath, c.path)))
+    .filter((c) => !shouldSkip("/" + path.relative(realProjectPath, c.path)))
     .map((c) => c.path)
 
   if (toIndex.length > 0) {
@@ -5303,9 +5478,9 @@ export async function reindexFilesParallel(
       // then the incremental run inside applies the bounded post-pass — so
       // bb_edit / LSP / MCP file-mode leave derived data consistent, not just
       // re-parsed. Snapshot cost folds into this call (pre-parse window).
-      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(realProjectPath, f)}`)
       const snapshot = await snapshotInEdges(projectId, touchedFileIds)
-      const indexResult = await indexProjectParallel(projectId, projectPath, {
+      const indexResult = await indexProjectParallel(projectId, realProjectPath, {
         files: toIndex,
         isIncremental: true,
         skipDiscovery: true,

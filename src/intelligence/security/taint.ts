@@ -288,8 +288,16 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
   // `maxSeverity: "low"`, i.e. a finding the indexer could not grade was
   // reported to the agent as a minor one. Seeding with the worst bucket makes
   // the fold a true max over the findings that exist.
+  //
+  // SYMBOL hotspots are keyed by `file::symbol`, not by the bare name. A bare
+  // name is ambiguous by construction: measured on this repository's own index,
+  // 213 of 1,433 distinct finding symbol names spanned more than one file, and
+  // the single top hotspot was `main` with 290 critical findings drawn from 223
+  // different files. A reader told "the hotspot is `main`" learns nothing
+  // actionable, and the count inflates in proportion to how common the name is —
+  // which is exactly backwards from "where should I look first".
   const fileCounts = new Map<string, { n: number; sev: Severity }>()
-  const symCounts = new Map<string, { n: number; sev: Severity }>()
+  const symCounts = new Map<string, { n: number; sev: Severity; name: string }>()
   const worse = (a: Severity, b: Severity) => (severityRank(a) <= severityRank(b) ? a : b)
   for (const f of findings) {
     if (f.file) {
@@ -297,13 +305,18 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
       fileCounts.set(f.file, { n: cur.n + 1, sev: worse(cur.sev, f.severity) })
     }
     if (f.symbol) {
-      const cur = symCounts.get(f.symbol) ?? { n: 0, sev: "unknown" as Severity }
-      symCounts.set(f.symbol, { n: cur.n + 1, sev: worse(cur.sev, f.severity) })
+      // `file::name` disambiguates; when no file resolved the bare name is the
+      // only key available, and `::` keeps the two spaces of the keyspace apart.
+      const key = f.file ? `${f.file}::${f.symbol}` : `::${f.symbol}`
+      const cur = symCounts.get(key) ?? { n: 0, sev: "unknown" as Severity, name: f.symbol }
+      symCounts.set(key, { n: cur.n + 1, sev: worse(cur.sev, f.severity), name: cur.name })
     }
   }
   const hotspots: SecurityHotspot[] = [
     ...Array.from(fileCounts.entries()).map(([key, v]) => ({ key, kind: "file" as const, findings: v.n, maxSeverity: v.sev })),
-    ...Array.from(symCounts.entries()).map(([key, v]) => ({ key, kind: "symbol" as const, findings: v.n, maxSeverity: v.sev })),
+    // The KEY is the qualified form (that is the identity); `name` carries the
+    // bare symbol for a reader who wants to search on it.
+    ...Array.from(symCounts.entries()).map(([key, v]) => ({ key, kind: "symbol" as const, name: v.name, findings: v.n, maxSeverity: v.sev })),
   ]
     .sort((a, b) => b.findings - a.findings || severityRank(a.maxSeverity) - severityRank(b.maxSeverity))
     .slice(0, 20)

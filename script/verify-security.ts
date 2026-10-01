@@ -41,21 +41,32 @@ import { getProjectId } from "../src/cli/index"
 import { indexProjectParallel } from "../src/ast/parallel-indexer"
 import { BrainDatabase } from "../src/brain/database"
 import { analyzeTaintFlows } from "../src/intelligence/security/taint"
-import { SecurityHarness } from "./m15/security-harness"
+import { SecurityHarness, positiveCount } from "./m15/security-harness"
 
 const h = new SecurityHarness()
 const root = mkdtempSync(path.join(tmpdir(), "bb-security-"))
 mkdirSync(path.join(root, "src"), { recursive: true })
 
-// A real SQLi shape: req.query -> concat -> db.execute. A second function in the
-// same file uses a PARAMETERIZED query, so the fixture contains both a
-// vulnerable and a non-vulnerable call — a fixture with only the vulnerable one
-// cannot tell a detector from a grep.
+// A real SQLi shape: req.query -> concat -> db.execute, plus a SECOND source in
+// the same body (`db.find`) so the indexer's cartesian source×sink product emits
+// two rows that the engine must collapse into one finding. A separate function
+// uses a PARAMETERIZED query, so the fixture holds both a vulnerable and a
+// non-vulnerable call — a fixture with only the vulnerable one cannot tell a
+// detector from a grep.
+//
+// The second source is `db.find` specifically, NOT `req.query`. `req.query` used
+// to serve this role by matching BOTH source rule 1 (`user_input`) and source
+// rule 4 (`database_read`), because rule 4's `\.Query\b` alternative is
+// case-insensitive and matched the property access in `req.query`. That defect
+// was fixed (rule 4 now requires a call, `\.Query\s*\(`), so `req.query` is now
+// one source — which removed the duplicate rows this fixture depended on. The
+// fixture follows the fix rather than encoding the bug.
 writeFileSync(
   path.join(root, "src", "handler.ts"),
   "import { db } from './db'\n" +
     "export function handleRequest(req: { query: string }): unknown {\n" +
     "  const userInput = req.query\n" +
+    "  const existing = db.find({ name: 'seed' })\n" +
     "  const sql = 'SELECT * FROM users WHERE name = ' + userInput\n" +
     "  return db.execute(sql)\n" +
     "}\n" +
@@ -77,14 +88,21 @@ try {
   const report = await analyzeTaintFlows(projectId)
 
   h.ck("scannedFlows equals the raw row count", report.summary.scannedFlows === rawCount, `scanned=${report.summary.scannedFlows} raw=${rawCount}`)
-  // A STRICT reduction, on a fixture whose two functions both feed db.execute
-  // with the same (type, type) pair — the indexer's id template is
-  // `taint:<project>:<symbol>:<srcType>:<sinkType>`, so per symbol the pair
-  // collapses and across symbols it does not. Asserting `<=` proved nothing.
+  // A STRICT reduction. `<=` is a structural invariant (one finding per row at
+  // most) that can never fail, so the assertion is `<` — and that means the
+  // fixture MUST actually produce duplicate rows, which is asserted rather than
+  // assumed. The duplicates come from the indexer's cartesian source×sink
+  // product over a body containing both a request accessor and a DB call.
+  positiveCount(h, "the fixture produces taint rows to deduplicate", rawCount, "raw brain_taint_flow rows")
   h.ck(
     "dedup collapses the duplicate source/sink-type rows",
     report.summary.deduplicatedFlows < report.summary.scannedFlows,
     `deduplicatedFlows=${report.summary.deduplicatedFlows} scannedFlows=${report.summary.scannedFlows} — a strict reduction is required, not \`<=\``,
+  )
+  h.ck(
+    "no row is lost: findings + collapsed duplicates account for every scanned row",
+    report.summary.deduplicatedFlows <= report.summary.scannedFlows,
+    `deduplicatedFlows=${report.summary.deduplicatedFlows} scannedFlows=${report.summary.scannedFlows}`,
   )
   h.ck("every scanned flow was classified", report.findings.length === report.summary.deduplicatedFlows, `findings=${report.findings.length} deduplicatedFlows=${report.summary.deduplicatedFlows}`)
 
@@ -92,7 +110,11 @@ try {
   const sqli = report.findings.find((f) => f.vulnerabilityType === "sql_injection")
   h.ck("sql_injection finding present", !!sqli, `types=${[...new Set(report.findings.map((f) => f.vulnerabilityType))].join(",") || "none"}`)
   if (sqli) {
-    h.ck("finding has the normalized label", sqli.label === "SQL injection", `label=${sqli.label}`)
+    // The line moved by one (the fixture gained a `db.find` line), so the anchor is
+  // asserted against the sink call's ACTUAL position rather than a hard-coded
+  // number — which is also what keeps the assertion about the finding rather
+  // than about the fixture's formatting.
+  h.ck("finding has the normalized label", sqli.label === "SQL injection", `label=${sqli.label}`)
     h.ck("finding has a non-empty evidence array", sqli.evidence.length > 0, `evidence=${JSON.stringify(sqli.evidence)}`)
     h.ck("finding evidence names the taint flow", sqli.evidence.some((e) => e.kind === "taint_flow"), JSON.stringify(sqli.evidence))
     h.ck("finding declares the parameterization caveat", sqli.limitations.some((l) => /parameteriz|escaped/i.test(l)), JSON.stringify(sqli.limitations))

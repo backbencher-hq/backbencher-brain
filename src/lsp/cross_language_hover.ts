@@ -114,7 +114,12 @@ export function crossLanguageSection(facts: CrossLanguageFact[]): string {
 
 /** Minimal db surface (structural, stubbable). */
 export interface CrossLanguageDb {
-  prepare(sql: string): { all(...params: unknown[]): unknown }
+  // `get` was missing until M63.CL5 needed two scalar queries (the true copy count
+  // and the depth>=2 descendant count). The driver has always provided it — see
+  // src/storage/db.node.ts, which returns { get, all, run } — so the interface was
+  // narrower than the thing it describes. Widening it here rather than casting to
+  // `any` at the two call sites, which would have left it still lying.
+  prepare(sql: string): { get(...params: unknown[]): unknown; all(...params: unknown[]): unknown }
 }
 
 // ---------------------------------------------------------------------------
@@ -232,6 +237,19 @@ export interface CrossLanguageNameCopy {
 export interface CrossLanguageNameResult {
   copies: CrossLanguageNameCopy[]
   copyCount: number
+  /** M63.CL5: true when the copy list was capped, so `copies` is a prefix of the
+   *  copies that exist rather than all of them. The edges are unaffected — every
+   *  copy holding a cross-language row is added by the row scan whatever the cap —
+   *  but the caller is told rather than left to assume. */
+  copiesTruncated: boolean
+  /** The cap that was applied, so the number is a fact about the answer and not a
+   *  constant the caller has to know. */
+  copiesCap: number
+  /** M63.CL5: cross-language rows on members-of-members and deeper. Reported, never
+   *  cascaded into the owner's facts — CL2's ruling — so that the answer can say
+   *  the cascade does not reach them instead of declaring an absence that reads as
+   *  "this symbol is unconnected". */
+  deeperDescendantRowCount: number
   /** distinct non-empty languages across the copies, sorted */
   languages: string[]
   ambiguous: boolean
@@ -324,12 +342,52 @@ ORDER BY self_file, self_line, direction, other_file, other_line, row_id`
  *  cannot see the difference will read "one of my six `f` symbols is
  *  cross-language" as "`f` is cross-language". The gate caught this: the copy
  *  count disagreed with the index for every ambiguous name (CL1 A2). */
+/**
+ * How many copies the answer carries, whatever the caller asked for.
+ *
+ * M63.CL5. `limit` governs FACTS. It said nothing about the copy list, which is as
+ * long as the index says the name is ambiguous — measured at 844KB for a name with
+ * 5,000 copies and a single cross-language row, at BOTH `limit: 1` and `limit: 200`,
+ * with `truncated: false` asserting that nothing had been dropped. The response was
+ * not bounded, and the one field a caller would read to find that out said the
+ * opposite.
+ *
+ * Exported, and a named constant rather than an inline literal, for two reasons
+ * that have each already cost a round: a mutation suite needs a stable anchor, and
+ * the corpus-free wiring check needs to assert the bound is still declared.
+ */
+export const CROSS_LANGUAGE_COPY_CAP = 200
+
 const ALL_COPIES_SQL = `
 SELECT s.id AS id, s.name AS name, f.relative_path AS file, f.language AS language, s.line_start AS line
 FROM brain_symbol s
 JOIN brain_file f ON f.id = s.file_id
 WHERE s.project_id = ? AND s.name = ?
-ORDER BY f.relative_path, s.line_start, s.id`
+ORDER BY f.relative_path, s.line_start, s.id
+LIMIT ?`
+
+/** The TRUE number of copies, counted independently of the cap.
+ *
+ *  This exists because `copyCount` used to be `copyList.length`, so capping the list
+ *  would have silently turned the total into the cap — and a 227-copy name capped
+ *  at 1 would have reported itself `ambiguous: false`. An honest number needs its
+ *  own query, not a length of a truncated array. */
+const COPY_COUNT_SQL = `
+SELECT COUNT(*) AS total
+FROM brain_symbol
+WHERE project_id = ? AND name = ?`
+
+/** The languages the copies carry, DISTINCT and independent of the cap.
+ *
+ *  Previously derived from the returned array, so a cap would have dropped every
+ *  language whose only copy fell past it — and `languages` is what tells a caller
+ *  whether the copies agree. */
+const COPY_LANGUAGES_SQL = `
+SELECT DISTINCT f.language AS language
+FROM brain_symbol s
+JOIN brain_file f ON f.id = s.file_id
+WHERE s.project_id = ? AND s.name = ? AND f.language IS NOT NULL AND TRIM(f.language) <> ''
+ORDER BY f.language`
 
 /** The cross-language rows held by the MEMBERS of the copies — reported, and
  *  never counted as the owner's own.
@@ -368,6 +426,37 @@ ORDER BY f.relative_path, s.line_start, s.id`
  *
  *  A member that is ALSO a copy of the asked name is excluded: its rows are own
  *  rows, and counting them twice would inflate every number in the envelope. */
+/**
+ * Cross-language rows on DESCENDANTS at depth two or more.
+ *
+ * M63.CL5. The member cascade follows `owner_symbol_id`, so it is one level deep,
+ * and it was reporting `declaredAbsent: true` for symbols whose grandchildren hold
+ * cross-language rows — measured at 141 such rows across 19 owners on the JVM
+ * corpus and 27 across 4 on elixir, with nesting reaching depth 4 and depth 6.
+ *
+ * This is a COUNT and not a cascade, deliberately. CL2 ruled that a member's edges
+ * are reported as the member's, never absorbed into the owner's, so that `bb_graph`'s
+ * larger cascaded count stays visible instead of being reconciled away. Emitting
+ * these as facts would be exactly the laundering that ruling forbids; counting them
+ * lets the absence stop over-claiming without pretending the owner owns them.
+ *
+ * Note also that `bb_graph` reports NOTHING for these symbols either (measured,
+ * 8/8 owners), so this is a shared blind spot rather than the cross-tool
+ * contradiction CL2 found one level up.
+ */
+const DEEPER_DESCENDANT_ROWS_SQL = `
+WITH RECURSIVE down(id, depth) AS (
+  SELECT m.id, 1
+  FROM brain_symbol m JOIN brain_symbol o ON o.id = m.owner_symbol_id
+  WHERE o.project_id = ? AND o.name = ?
+  UNION ALL
+  SELECT m.id, down.depth + 1
+  FROM brain_symbol m JOIN down ON m.owner_symbol_id = down.id
+)
+SELECT COUNT(DISTINCT r.id) AS n
+FROM brain_relationship r JOIN down ON down.id = r.target_symbol_id
+WHERE r.project_id = ? AND r.is_cross_language = 1 AND down.depth >= 2`
+
 const MEMBER_FACTS_SQL = `
 SELECT r.id AS row_id, r.relationship_type AS relationship_type, r.confidence AS confidence,
        r.bridge_mechanism AS bridge_mechanism, r.metadata AS metadata, 'caller' AS direction,
@@ -469,9 +558,18 @@ export function storedCrossLanguageFactsByName(
 ): CrossLanguageNameResult {
   const rows = db.prepare(AGENT_FACTS_SQL).all(projectId, name, projectId, name) as unknown as AgentFactRow[]
   const memberRows = db.prepare(MEMBER_FACTS_SQL).all(projectId, name, projectId, name) as unknown as MemberFactRow[]
-  const allCopies = db.prepare(ALL_COPIES_SQL).all(projectId, name) as unknown as Array<{
+  const allCopies = db.prepare(ALL_COPIES_SQL).all(projectId, name, CROSS_LANGUAGE_COPY_CAP) as unknown as Array<{
     id: string; name: string; file: string | null; language: string | null; line: number | null
   }>
+  // How many cross-language rows sit at depth >= 2 below the copies. A COUNT, so
+  // the answer can declare that the cascade does not reach them.
+  const deeperDescendantRows = (db.prepare(DEEPER_DESCENDANT_ROWS_SQL).get(projectId, name, projectId) as unknown as { n: number }).n
+
+  // The true total and the language set, each from its own query, because both used
+  // to be derived from the array above and a cap would have made both wrong.
+  const copyTotal = (db.prepare(COPY_COUNT_SQL).get(projectId, name) as unknown as { total: number }).total
+  const copyLanguages = (db.prepare(COPY_LANGUAGES_SQL).all(projectId, name) as unknown as Array<{ language: string }>)
+    .map((r) => r.language)
 
   // Every copy first, so a copy with no rows is still declared; the row scan
   // then adds each copy's row count.
@@ -518,15 +616,42 @@ export function storedCrossLanguageFactsByName(
     if (fact) memberFacts.push(fact)
   }
 
-  const copyList = [...copies.values()].sort((a, b) =>
+  const sorted = [...copies.values()].sort((a, b) =>
     (a.file ?? "").localeCompare(b.file ?? "") || (a.line ?? 0) - (b.line ?? 0) || a.id.localeCompare(b.id))
-  const languages = [...new Set(copyList.map((c) => c.language).filter((l): l is string => Boolean(l)))].sort()
+  // THE SLICE IS THE BOUND; the SQL's LIMIT is a FETCH OPTIMISATION. Both are here
+  // deliberately, and they are not equal.
+  //
+  // The SQL LIMIT avoids fetching copies nobody will see. This slice is what makes
+  // the answer BOUNDED, because the row scan above adds a copy for every row whose
+  // source symbol fell outside the capped SELECT — which is every copy holding a
+  // cross-language row. A SQL-only cap therefore would NOT have bounded this array:
+  // it would have passed the byte measurement on a fixture with one cross row and
+  // failed on any name whose copies mostly have edges.
+  //
+  // Removing either one alone leaves the other standing, which is worth stating
+  // plainly: it means neither is redundant, and it means a mutation suite must
+  // target THIS line to test the bound. The gate's M16 does, and the first version
+  // of it asserted a byte threshold that the SQL LIMIT alone would have satisfied —
+  // so the mutant passed a defect it did not reproduce, and the gate said so.
+  const copyList = sorted.slice(0, CROSS_LANGUAGE_COPY_CAP)
+  const languages = copyLanguages.slice().sort()
 
   return {
     copies: copyList,
-    copyCount: copyList.length,
+    // The TRUE total, never the length of a truncated array.
+    copyCount: copyTotal,
+    // The languages the copies carry, from COPY_LANGUAGES_SQL rather than from the
+    // capped array — and RETURNED, which the first draft of CL5 computed and then
+    // dropped. The variable was assigned, so nothing warned: the field just
+    // disappeared from the envelope, and only the typecheck noticed.
     languages,
-    ambiguous: copyList.length > 1,
+    // M63.CL5: `ambiguous` was `copyList.length > 1`, so a cap below the real count
+    // would have let a 227-copy name report itself unambiguous — the exact silent
+    // choice the union-over-copies rule exists to prevent.
+    ambiguous: copyTotal > 1,
+    copiesTruncated: copyTotal > copyList.length,
+    copiesCap: CROSS_LANGUAGE_COPY_CAP,
+    deeperDescendantRowCount: deeperDescendantRows,
     facts,
     memberFacts,
     storedRowCount: rows.length + memberRows.length,

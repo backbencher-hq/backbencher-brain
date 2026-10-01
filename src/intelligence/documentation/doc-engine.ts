@@ -716,6 +716,79 @@ function addFileFacts(raw: any, resolver: FreshnessResolver, files: Row[], citat
  * `define_task ([{"name":"task_class"},{"name":"args"}])`. The names are the
  * parameter list; the rest of each object is not a signature.
  */
+/**
+ * How a signature is rendered when the index records no parameter list.
+ *
+ * `name()` is a CLAIM that the symbol takes no arguments, and where the index
+ * has no parameter list that claim is false. Measured across six languages by
+ * reading the declaration off disk for every sampled symbol whose `parameters`
+ * column is empty: **1 218 of 1 218 have a real parameter list** (excluding
+ * declarations whose list is genuinely empty or C's explicit `(void)`).
+ * Concrete: `Malloc(size_t size)` in a C header rendered as `Malloc()`,
+ * `application(app)` in Ruby as `application()`, `empty?(head, tail)` in Ruby
+ * as `empty?()`. 842 Ruby callables, 1 681 Perl, and every C and C++ header
+ * declaration the analyzer does not record are affected.
+ *
+ * So an absent list renders as an absent list — the parentheses are omitted
+ * rather than emptied — and the caller says the arguments are not described.
+ * This is the same asymmetry the return type already had: an absent
+ * `return_type` produced no clause, while an absent `parameters` produced one.
+ */
+/**
+ * Which symbol kinds in THIS PROJECT the index records parameter lists for.
+ *
+ * A hand-written list of "kinds that take arguments" is a guess, and the guess
+ * was wrong: measured over the eight corpora, every one of `function`,
+ * `method`, `macro` and `constructor` carries parameter lists — and so do 343
+ * `property` symbols, which the list excluded on the reasoning that a field does
+ * not take arguments. There is no way to settle that by reading source, because
+ * a one-line window cannot tell a declaration's argument list from a call or a
+ * cast on the same line: scanning `variable` rows that way reported
+ * `Is(require("./is"))` and `enum_member Key(enum)` as parameter lists, 100% of
+ * the time, for every type — a measurement of nothing.
+ *
+ * So the tool does not guess. It asks the index what it has: if the project
+ * records parameter lists for a kind at all, then a symbol of that kind without
+ * one is a gap the document must name. A kind the index never gives arguments to
+ * gets no caveat, because there the absence is the expected shape rather than a
+ * hole. That is measured per project, needs no maintenance as analyzers add
+ * symbol kinds, and cannot go stale the way a list does.
+ */
+function symbolTypesWithParameters(raw: any, projectId: string): ReadonlySet<string> {
+  try {
+    const rows = raw.prepare(
+      `SELECT DISTINCT lower(symbol_type) t FROM brain_symbol
+       WHERE project_id=? AND parameters IS NOT NULL AND trim(parameters)<>''`,
+    ).all(projectId) as any[]
+    return new Set(rows.map((row) => String(row.t)))
+  } catch {
+    return new Set<string>()
+  }
+}
+
+function renderSignature(kind: string, name: string, parameters: string | null): string {
+  return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`
+}
+
+/**
+ * The parameter list a signature shows, as the index records it.
+ *
+ * The index stores a JSON list of `{name, type, isOptional}` for 5 021 of the
+ * 6 067 entries measured across the eight corpora -- 82.8% -- and the renderer
+ * was reading `name` and dropping the rest. So `Join(s S)` was documented as
+ * `Join(s)`: the section named Inputs and outputs was reporting the NAMES of the
+ * inputs and nothing about their types, while the types sat in the row it had
+ * just read. Discarding evidence you have already loaded is the same defect as
+ * rendering a claim the index does not support, in the opposite direction.
+ *
+ * Three rules, each from what the data holds:
+ *  - a recorded type is shown, and an absent one is omitted rather than guessed;
+ *  - `isOptional` is stated in words, because `name?: type` is TypeScript syntax
+ *    and would be wrong in a Go or Java document (17 entries, so the wording costs
+ *    nothing and discards nothing);
+ *  - a plain string list and a raw text list render as they always did, so no
+ *    analyzer's existing shape changes.
+ */
 function formatParameters(raw: unknown): string | null {
   const text = collapse(raw)
   if (!text || text === "[]" || text === "null") return null
@@ -723,17 +796,25 @@ function formatParameters(raw: unknown): string | null {
     try {
       const parsed = JSON.parse(text)
       if (Array.isArray(parsed)) {
-        const names = parsed
-          .map((item: any) => (typeof item === "string" ? item : item && typeof item === "object" ? String(item.name ?? item.parameter ?? "") : ""))
+        const rendered = parsed
+          .map((item: any) => {
+            if (typeof item === "string") return item
+            if (!item || typeof item !== "object") return ""
+            const name = String(item.name ?? item.parameter ?? "")
+            const type = item.type == null ? "" : collapse(item.type)
+            if (!name && !type) return ""
+            const shown = type ? `${name || "?"}: ${type}` : name
+            return item.isOptional === true ? `${shown} (optional)` : shown
+          })
           .filter(Boolean)
-        return names.length ? names.join(", ") : null
+        return rendered.length ? rendered.join(", ") : null
       }
     } catch { /* not JSON after all — fall through to the raw text */ }
   }
   return text.replace(/^\(|\)$/g, "") || null
 }
 
-function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
+function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResolver, symbols: Row[], citations: DocCitation[], unknowns: DocUnknown[], includeTests: boolean, includeLimitations: boolean, typesWithParameters: ReadonlySet<string>): { api: DocFact[]; behavior: DocFact[]; tests: DocFact[]; limitations: DocFact[] } {
   const api: DocFact[] = []
   const behavior: DocFact[] = []
   const tests: DocFact[] = []
@@ -757,9 +838,17 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
       evidence: `Indexed ${symbol.symbol_type} ${symbol.name}`, fileId: String(symbol.source_file_id ?? ""),
     }, resolver)
     const parameters = formatParameters(symbol.parameters)
-    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
     const returns = symbol.return_type ? `: ${collapse(symbol.return_type)}` : ""
-    api.push(fact("extracted", `${signature}${returns} is defined in ${rel} at lines ${start}-${end}.`, [id], citations))
+    // The caveat rides on the signature itself, not in a separate fact and not
+    // only in `limitations`: this fact is rendered as symbol mode's API and as
+    // feature mode's Entry points, and a bare `name` with no clause anywhere
+    // beside it is how a reader concludes the symbol takes no arguments. One
+    // sentence, on the line where the misreading would happen.
+    const noArgs = parameters === null && typesWithParameters.has(String(symbol.symbol_type).toLowerCase())
+      ? "; the index records no parameter list for it, so its arguments are not described here"
+      : ""
+    api.push(fact("extracted", `${signature}${returns} is defined in ${rel} at lines ${start}-${end}${noArgs}.`, [id], citations))
     if (symbol.api_contract_path) api.push(fact("extracted", `${symbol.name} is bound to the API contract ${symbol.api_contract_path}.`, [id], citations))
     if (symbol.visibility) api.push(fact("extracted", `${symbol.name} is declared ${symbol.visibility}.`, [id], citations))
 
@@ -875,14 +964,14 @@ function addSymbolFacts(raw: any, reader: SourceReader, resolver: FreshnessResol
  * framework attribution is a property of the FILE, so it establishes that the
  * file is on an HTTP surface, not that any particular symbol answers a request.
  */
-function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver): DocFact[] {
+function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: FreshnessResolver, typesWithParameters: ReadonlySet<string>): DocFact[] {
   const facts: DocFact[] = []
   for (const symbol of symbols) {
     const rel = String(symbol.relative_path ?? "")
     const start = Number(symbol.line_start ?? 0)
     const end = Number(symbol.line_end ?? start)
     const parameters = formatParameters(symbol.parameters)
-    const signature = `${symbol.symbol_type} ${symbol.name}${parameters ? `(${parameters})` : "()"}`
+    const signature = renderSignature(String(symbol.symbol_type), String(symbol.name), parameters)
     const framework = String(symbol.framework_type ?? "")
     const id = addCitation(citations, {
       kind: "symbol", idParts: [rel, symbol.name, `${start}-${end}`], relPath: rel, symbol: String(symbol.name ?? ""),
@@ -895,7 +984,12 @@ function addEndpointFacts(symbols: Row[], citations: DocCitation[], resolver: Fr
       continue
     }
     if (framework) {
-      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.`, [id], citations))
+      const noArgs = parameters === null && typesWithParameters.has(String(symbol.symbol_type).toLowerCase())
+        ? " The index records no parameter list for it either, so the inputs this endpoint accepts are not described."
+        : ""
+      // An endpoint is callable by construction here — the selection admits only
+      // a route-signalled symbol or a function/method — so no type test is needed.
+      facts.push(fact("extracted", `${signature} is defined in ${rel} at lines ${start}-${end}, in a file the index attributes to the HTTP framework ${framework}. The index records no method, path or route for it, so the endpoint it answers cannot be named.${noArgs}`, [id], citations))
       continue
     }
     // The selection admits `controller` as well as `route` and `endpoint`, so
@@ -1420,8 +1514,17 @@ export async function generateDocumentation(projectId: string, projectPath: stri
 
   const fileFacts = addFileFacts(raw, resolver, files, citations, unknowns)
   const usesSymbolFacts = mode === "symbol" || mode === "feature" || mode === "api"
+  // Asked once per generation, and only for the modes that render a signature.
+  // `usesSymbolFacts` already covers `api`, so this condition carries no extra
+  // clause: the `|| mode === "api"` this line used to have was dead, and
+  // TypeScript said so -- it narrows `mode` away from "api" by the time the
+  // right-hand operand is reached. The dead clause shipped in 02b80ed5 and was
+  // missed because the check that would have caught it ran while a concurrent
+  // edit elsewhere in the tree was failing, and a failure there made the whole
+  // run untrustworthy rather than obviously wrong.
+  const typesWithParameters = usesSymbolFacts ? symbolTypesWithParameters(raw, projectId) : new Set<string>()
   const symbolParts = usesSymbolFacts
-    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol")
+    ? addSymbolFacts(raw, reader, resolver, symbols, citations, unknowns, includeTests, mode === "symbol", typesWithParameters)
     : { api: [] as DocFact[], behavior: [] as DocFact[], tests: [] as DocFact[], limitations: [] as DocFact[] }
   const apiSurface = mode === "api" ? apiSurfaceIndex(raw, projectId) : null
   const relationshipParts = addRelationshipFacts(raw, resolver, symbols, citations)
@@ -1462,7 +1565,7 @@ export async function generateDocumentation(projectId: string, projectPath: stri
     push({ id: "test-coverage", heading: "Test coverage", required: true, audience: "all", facts: symbolParts.tests, emptyExplanation: "No indexed test file names a candidate of this feature and no indexed relationship reaches one from a test, so its test coverage is not established." })
   } else if (mode === "api") {
     const surface = apiSurface ?? { files: 0, placeholders: [] as string[], contracts: 0, routes: 0, callables: 0 }
-    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver), lead: symbols.length === 0
+    push({ id: "endpoints", heading: "Endpoints", required: true, audience: "all", facts: addEndpointFacts(symbols, citations, resolver, typesWithParameters), lead: symbols.length === 0
         ? `No HTTP surface is indexed for this project: ${surface.contracts} API contract path(s), ${surface.routes} route/endpoint/controller symbol(s), and ${surface.files} file(s) attributed to an HTTP framework holding ${surface.callables} callable exported symbol(s). This tool will not infer an endpoint from a function's name.`
         : `The index attributes ${surface.files} file(s) to an HTTP framework and holds ${surface.callables} callable exported symbol(s) in them. Framework attribution is a property of the FILE, so it places a symbol on an HTTP surface; it does not say which request the symbol answers, and no method or path is recorded.`, emptyExplanation: `No endpoint is indexed. This tool looked for an API contract path, a route, endpoint or controller symbol, and a callable symbol in a file the index attributes to an HTTP framework; the index holds ${surface.contracts} contract path(s), ${surface.routes} route-ish symbol type(s), and ${surface.files} HTTP-attributed file(s) with ${surface.callables} callable exported symbol(s). It will not infer an endpoint from a function's name.` })
     push({ id: "inputs-outputs", heading: "Inputs and outputs", required: true, audience: "all", facts: symbolParts.behavior, emptyExplanation: "No endpoint is indexed, so there is no signature whose parameters or return type could be reported." })
@@ -2142,18 +2245,40 @@ export function formatDocumentation(result: DocResult, format: DocFormat = "mark
     return `[${n}](${encodeURI(citation.path)}${span})${stale}`
   }
   const lines: string[] = [`# ${result.title}`, "", result.summary, ""]
+  // A statement is a sentence ABOUT source, not markdown, so every character
+  // markdown would act on has to be neutralised before it is rendered.
+  //
+  // It already was a hazard and nobody had to look: a Go return type of
+  // `*Server` reached the page unescaped, and a statement quoting a type with
+  // two pointers -- `map[string]*Server` -- would render the middle as italics.
+  // Rendering the indexed parameter types multiplies the exposure, because 82.8%
+  // of the 6 067 parameter entries measured carry a type and 1 105 of those
+  // types contain `*`.
+  //
+  // Scanned, not matched: the project carries no regex by default. Only the
+  // statement is escaped, never the citation markers, which are appended after it
+  // and must keep resolving to the Sources list.
+  const escapeMarkdown = (text: string): string => {
+    let out = ""
+    for (const ch of text) {
+      if (ch === "\\" || ch === "*" || ch === "_" || ch === "`" || ch === "[" || ch === "]" || ch === "<" || ch === ">") out += "\\"
+      out += ch
+    }
+    return out
+  }
+
   for (const section of result.sections) {
     lines.push(`## ${section.heading}`, "", section.prose, "")
     for (const item of section.facts) {
       const cites = item.citationIds.map(markerFor).join("")
       const confidence = item.confidence == null ? "" : ` _(${Math.round(item.confidence * 100)}%)_ `
-      lines.push(`- ${confidence}${item.statement}${cites}`)
+      lines.push(`- ${confidence}${escapeMarkdown(item.statement)}${cites}`)
     }
     lines.push("")
   }
   if (result.unknowns.length) {
     lines.push("## Unknowns", "")
-    for (const unknown of result.unknowns) lines.push(`- ${unknown.statement} _(${unknown.reason}, affects: ${unknown.affectedSection})_`)
+    for (const unknown of result.unknowns) lines.push(`- ${escapeMarkdown(unknown.statement)} _(${unknown.reason}, affects: ${unknown.affectedSection})_`)
     lines.push("")
   }
   const q = result.quality

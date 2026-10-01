@@ -111,7 +111,23 @@ export function resolveSafeEditPath(projectPath: string, requested: string): str
   // it is the nearest existing directory that will hold it.
   const realExisting = realpathSync(existing)
   if (!inside(root, realExisting)) {
-    throw new Error(`path escapes project root: ${requested}${raw === existing ? "" : ` (via ${existing})`}`)
+    // TWO DISTINCT REFUSALS, and the wording is load-bearing rather than
+    // cosmetic. script/m13/verify-edit-unit asserts the exact phrase "through
+    // symlink" for a symlink pointing outside the project and a plain escape for
+    // `../`, and it is right to: they are different failures with different
+    // causes. A `../` is a caller who built a bad path; a symlink escape is a
+    // link inside the project pointing at something outside it, which is a
+    // property of the PROJECT and not of the request. A caller told only
+    // "escapes project root" cannot tell whether to fix their path or go and look
+    // at the tree.
+    //
+    // The first version of this rewrite collapsed both into one message and the
+    // gate failed on the wording — correctly. The refusal was still safe; only
+    // the diagnosis had been lost.
+    const viaSymlink = realExisting !== existing
+    throw new Error(
+      `path escapes project root${viaSymlink ? " through symlink" : ""}: ${requested}${raw === existing ? "" : ` (via ${existing})`}`,
+    )
   }
   if (raw !== existing) {
     // Creating a new file, possibly in directories that do not exist yet. The
@@ -449,6 +465,18 @@ async function uniqueSymbol(
   return match
 }
 
+/** A file's base name with no extension — how brain_import spells a relative
+ *  module specifier (`./target` for `src/target.ts`). */
+function basenameNoExt(fileId: string): string {
+  return path.basename(fileId, path.extname(fileId))
+}
+
+/** Best-effort project-relative path, for a message a human has to act on. */
+function relativeTo(root: string, file: string): string {
+  const rel = path.relative(root, file)
+  return rel && !rel.startsWith("..") ? rel : path.basename(file)
+}
+
 async function validateFile(filePath: string, content: string): Promise<void> {
   const result = await ASTEngine.parseFile(filePath, content)
   const errors = (result.errors ?? []).filter((error: any) => /syntax error/i.test(error.message ?? ""))
@@ -619,13 +647,87 @@ async function planEdit(projectPath: string, projectId: string, request: EditReq
     const leftovers = parsedAfter.occurrences
       .filter((o) => o.text === symbolName && isReferenceSite(o, ""))
       .map((o) => `line ${o.startLine}: ${o.parentType || "reference"}`)
-    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
-    if ((callers > 0 || leftovers.length > 0) && request.force !== true) {
-      const detail = [indexedCallers, leftovers.length > 0 ? `${leftovers.length} live reference(s) surviving deletion (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})` : null].filter(Boolean).join("; ")
-      throw new Error(`cannot delete ${symbolName}: ${detail}; pass force=true after reviewing impact`)
+
+    // M68: check the files that IMPORT this module, not only this one.
+    //
+    // MEASURED, three call shapes, same declaration, same index:
+    //
+    //   import { target } from './target'          2 edges -> 'calls'    GUARDED
+    //   import { target as aliased } from './...'  1 edge  -> 'exports' ONLY
+    //
+    // So in the aliased shape the analyzer never resolved the call site to the
+    // imported symbol, the `calls` edge does not exist, and the guard's two inputs
+    // were both empty: zero indexed callers, and zero occurrences of the name in
+    // the DECLARATION file. The delete proceeded, and the result was
+    // caller.ts still calling a function that no longer exists — a build break
+    // reported as SUCCESS.
+    //
+    // The fix is not to trust the edges more (they are what failed here) but to
+    // consult the one index table that DID record the dependency: brain_import.
+    // For each file whose import resolves to this module, parse that file and look
+    // for the deleted NAME. An aliased import still spells the original name in
+    // its specifier — `import { target as aliased }` contains `target`, with
+    // parent=import_specifier — so the alias case is caught by name, not by
+    // needing to resolve the alias.
+    //
+    // WHY THIS DOES NOT OVER-REFUSE, which was the real design risk: refusing on
+    // any unresolved edge would make `delete` unusable on any project with
+    // imperfect edges, which is most of them. This instead requires POSITIVE
+    // evidence in each importing file — the name must actually appear there — so a
+    // file that imports the module for something else is not blocked. A `side-
+    // effect` import that never mentions the name is correctly not a reference.
+    // `import_path` is stored as the WRITTEN specifier — `./target`, not `target`
+    // — and `imported_name` duplicates it, so a comparison against the bare stem
+    // matched nothing. Measured: the query returned zero rows for a project whose
+    // importer was plainly recorded, which is why the first version of this guard
+    // still let the aliased delete through. The stem is compared on both the
+    // written form and the bare form so a specifier recorded either way matches.
+    const stem = basenameNoExt(match.fileId)
+    const importerRows = raw.prepare(
+      "SELECT DISTINCT i.file_id AS fileId, f.path AS path FROM brain_import i JOIN brain_file f ON f.id = i.file_id " +
+        "WHERE i.project_id = ? AND i.is_external = 0 AND i.file_id <> ? " +
+        "AND (i.import_path = ? OR i.import_path = ? OR i.imported_name = ? OR i.imported_name = ?)",
+    ).all(projectId, match.fileId, stem, `./${stem}`, stem, `./${stem}`) as Array<{ fileId: string; path: string }>
+
+    const importerLeftovers: string[] = []
+    for (const importer of importerRows) {
+      let importerText: string
+      try { importerText = readFileSync(importer.path, "utf8") } catch { continue }
+      if (!importerText.includes(symbolName)) continue
+      let importerParsed
+      try { importerParsed = await parseForSafety(importer.path, importerText) } catch { continue }
+      for (const o of importerParsed.occurrences) {
+        if (o.text !== symbolName) continue
+        // An import specifier naming this symbol is the dangling dependency
+        // itself; anything else is a call. Both are survivors of the deletion.
+        if (!isReferenceSite(o, "") && !/import/.test(o.parentType)) continue
+        importerLeftovers.push(`${relativeTo(projectPath, importer.path)}:${o.startLine}`)
+      }
     }
-    if (leftovers.length > 0) {
-      warnings.push(`delete ${symbolName} (forced): ${leftovers.length} reference(s) remain in ${match.fileId}: ${leftovers.slice(0, 10).join("; ")}${leftovers.length > 10 ? "; …" : ""}`)
+
+    const indexedCallers = callers > 0 ? `${callers} indexed caller(s)` : null
+    const totalLeftovers = leftovers.length + importerLeftovers.length
+    if ((callers > 0 || totalLeftovers > 0) && request.force !== true) {
+      const parts = [
+        indexedCallers,
+        // The phrase "surviving deletion" is kept because script/m13/verify-edit-unit
+        // asserts on it, and a gate that greps for it is checking that the
+        // refusal SAYS what survives — which is right. The WHERE is new
+        // information layered on top, not a replacement: the declaring file and
+        // the importing files are different risks and the message distinguishes
+        // them.
+        leftovers.length > 0
+          ? `${leftovers.length} live reference(s) surviving deletion in the declaring file (${leftovers.slice(0, 5).join(", ")}${leftovers.length > 5 ? ", …" : ""})`
+          : null,
+        importerLeftovers.length > 0
+          ? `${importerLeftovers.length} reference(s) surviving deletion in importing file(s) — ${[...new Set(importerLeftovers.map((l) => l.split(":")[0]))].slice(0, 4).join(", ")}`
+          : null,
+      ].filter(Boolean).join("; ")
+      throw new Error(`cannot delete ${symbolName}: ${parts}; pass force=true after reviewing impact`)
+    }
+    if (totalLeftovers > 0) {
+      const where = [...leftovers.map((l) => `${path.basename(match.fileId)} ${l}`), ...importerLeftovers]
+      warnings.push(`delete ${symbolName} (forced): ${totalLeftovers} reference(s) remain — ${where.slice(0, 10).join("; ")}${where.length > 10 ? "; …" : ""}`)
     }
     const pruned = await ImportPruner.prune(deleted, match.fileId)
     return { changes: [{ path: match.fileId, before: original, after: pruned }], warnings }
@@ -734,6 +836,17 @@ export async function executeEdit(projectPath: string, projectId: string, reques
   // string, which is fine for a diff preview) while the bytes are what ROLLBACK
   // restores.
   const snapshots = new Map(changes.map((change) => [change.path, snapshotOf(change.path)]))
+  // M66: which files were ACTUALLY replaced on disk, as opposed to merely
+  // planned. A file whose write never happened needs no restore, and trying to
+  // restore one is actively harmful: if the write failed because the directory is
+  // read-only, the restore into that same directory fails too, and the rollback
+  // then reports a file as "NOT restored" that was never modified in the first
+  // place. The engine did that until script/m67 made the failure real with a
+  // read-only directory: the commit failed on `writeFileSync(temp)` with EACCES,
+  // nothing had been written, and the answer came back "ROLLBACK INCOMPLETE" for
+  // a file that was never at risk. A false alarm in a safety mechanism is how you
+  // train people to ignore it.
+  const committed: string[] = []
   // Track every temp file created during the write loop so the catch block can
   // scrub orphans (a renameSync failure after writeFileSync leaves a temp).
   const temps: string[] = []
@@ -750,6 +863,9 @@ export async function executeEdit(projectPath: string, projectId: string, reques
       // asked for and cannot see in a diff.
       const originalMode = snapshots.get(change.path)!.mode
       renameSync(temporary, change.path)
+      // Past this point the file on disk is NOT the pre-edit file, so putting it
+      // back is the engine's responsibility.
+      committed.push(change.path)
       if (originalMode !== null) {
         try { chmodSync(change.path, originalMode) } catch { /* best effort: content is the contract */ }
       }
@@ -782,12 +898,19 @@ export async function executeEdit(projectPath: string, projectId: string, reques
     // the catch block: the remaining files were never restored, the
     // orphaned-temp scrub after it never ran, and the original error was REPLACED
     // by the rollback's — the caller saw "EPERM" instead of the validation failure
-    // that caused the rollback, with a half-reverted working tree. Now every file
-    // is attempted, failures are collected, temps are always scrubbed, and the
-    // ORIGINAL error still propagates — annotated, because a partial rollback is
-    // the most important thing a caller can be told.
+    // that caused the rollback, with a half-reverted working tree. Now every
+    // COMMITTED file is attempted, failures are collected, temps are always
+    // scrubbed, and the ORIGINAL error still propagates — annotated, because a
+    // partial rollback is the most important thing a caller can be told.
+    //
+    // Only `committed` paths are restored. A path that was planned but never
+    // replaced on disk is already correct, and attempting a restore of it can only
+    // fail and raise a false alarm — which is exactly what happened: a write that
+    // failed because its directory was read-only produced "ROLLBACK INCOMPLETE"
+    // for a file nothing had been written to.
     const rollbackFailures: string[] = []
-    for (const [file, snapshot] of snapshots) {
+    for (const file of committed) {
+      const snapshot = snapshots.get(file)!
       try {
         if (snapshot.existed) writeBytesPreservingMode(file, snapshot.bytes!, snapshot.mode)
         else rmSync(file, { force: true })
