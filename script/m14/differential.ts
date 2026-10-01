@@ -36,6 +36,10 @@ import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 // M60 label-coverage sweep: dart published the largest single-label blob of any
 // unadmitted label (7,698 contains edges per 25-file sample) with no oracle at all.
 import { deriveDartContainsTruth } from "./oracles/dart-contains"
+// M60: clojure's CONTAINS oracle already existed in script/m14/clojure-truth.ts and
+// was wired to NOTHING in this file — only a tmp gate consumed it — so clojure
+// published `contains` that nothing compared while the lane printed a percentage.
+import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStaticUsesTruth } from "./clojure-truth"
 // M60 label-coverage sweep: these two oracles were BUILT (846 lines, each with
 // its rule documented) and wired to NOTHING — zero imports anywhere in the repo.
 // typescript meanwhile published `references` and `uses` edges that the allowlist
@@ -20836,6 +20840,29 @@ async function main() {
         for (const e of deriveClojureEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // M60 label-coverage sweep: clojure publishes `contains` and the allowlist
+        // dropped it, so none of it was compared. The oracle was ALREADY written
+        // (script/m14/clojure-truth.ts, deriveClojureContainsTruth) and had no
+        // consumer in this file at all — only script/m14/tmp/clj-uses-contains-gate.ts
+        // called it. Wired here with its allowlist entry, per the full-mirror rule.
+        // Shape adapter only: clojure-truth speaks {source,target,type}, this
+        // harness's truth rows are {label,from,target}. No rule is reinterpreted.
+        for (const e of deriveClojureContainsTruth(root).edges) {
+          ;(truth as any[]).push({ label: "contains", from: e.source, target: e.target })
+        }
+        // The same story for `uses`: deriveClojureUsesTruth and
+        // deriveClojureStaticUsesTruth were both already written in
+        // clojure-truth.ts, and the only caller anywhere was a tmp gate. The static
+        // half needs the analyzer's OWN core-builtin suppression predicate, which is
+        // imported at the top of this file (CLOJURE_CORE_BUILTINS) — sharing THAT is
+        // legitimate (it is the family contract, not a resolution rule) and mirrors
+        // how the tmp gate called it.
+        for (const e of deriveClojureUsesTruth(root)) {
+          ;(truth as any[]).push({ label: "uses", from: e.source, target: e.target })
+        }
+        for (const e of deriveClojureStaticUsesTruth(root, (h) => Boolean(CLOJURE_CORE_BUILTINS[h as keyof typeof CLOJURE_CORE_BUILTINS]))) {
+          ;(truth as any[]).push({ label: "uses", from: e.source, target: e.target })
+        }
       }
       if (lang === "clean") {
         // F5 wave (CLEAN): dedicated clean
@@ -21011,6 +21038,13 @@ async function main() {
           // because truth without the allowance is the #910 shape where a new
           // oracle's rows read as MISSING.
           ...(lang === "dart" ? ["contains"] : []),
+          // M60: clojure joins too — its contains oracle already existed and had no
+          // consumer in this file, so the label was unadmitted AND unmeasured.
+          ...(lang === "clojure" ? ["contains"] : []),
+          // M60: clojure's `uses` oracle existed in clojure-truth.ts with no consumer
+          // in this file, so the label was unadmitted AND unmeasured — the same
+          // finished-but-unconnected shape as typescript and contains.
+          ...(lang === "clojure" ? ["uses"] : []),
           // M60 S1 (2026-09-27): scala joins the uses-audited set. Measured
           // before this change: scala emitted 8 labels and the allowlist compared
           // 5, so uses/contains/references — 59-62% of everything the analyzer
