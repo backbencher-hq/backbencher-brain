@@ -3734,6 +3734,33 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       const nf0 = p?.childForFieldName?.("name")
       if (nf0 && nf0.startIndex === node.startIndex && nf0.endIndex === node.endIndex) return true
     }
+    // CS-D8 (2026-09-28, the bare-`uses`-oracle round): the same reasoning reaches a
+    // `parameter`, which the D7 rule above never covered because a parameter's type is a direct
+    // `parameter > type` field, not nested under `variable_declaration`. A parameter type that
+    // collides with a Property-kind member of an enclosing class published a read of a name
+    // that position does not carry -- and the source attribution put it in the enclosing
+    // METHOD, so the row was stamped on a signature rather than on a read:
+    //
+    //     private CollectionMatch<SyntaxNode>? TryAnalyzeForeachStatement(
+    //         SemanticModel semanticModel, TStatementSyntax foreachStatement)
+    //                                                        ^^^^^^^^^^^^ a TYPE, published as
+    //     `uses TryAnalyzeStatementForCollectionExpression -> SemanticModel` at confidence 1.0
+    //
+    // 6 rows over 200 roslyn files, across all three parameter shapes that carry a type: method
+    // parameters, primary-constructor parameters, and lambda parameters. Probes:
+    // script/m14/tmp/cs-deep-33-param-type-scope.ts (scope), cs-deep-32-row-origin.ts (origin).
+    //
+    // The containment test is SPAN-based, not equality-based, and that is deliberate: for
+    // `List<Widget> widgets` the `type` field is a `generic_name` and `Widget` is nested inside
+    // it, so an equality test against the field's own offsets would miss the very case it was
+    // written for. The D7 rule above still compares offsets exactly, which is why
+    // `public List<Widget> Widgets;` in a class with a `Widget` member was a latent hole until
+    // this round measured it -- same rule, same reason, one span test instead of two equality
+    // tests.
+    if (p.type === "parameter") {
+      const t = p.childForFieldName("type")
+      if (t && node.startIndex >= t.startIndex && node.endIndex <= t.endIndex) return true
+    }
     // The same round, second half: for a PROPERTY the first direct identifier is the TYPE, so
     // the rule below gated the type and let the property's own NAME through — and a property
     // whose name collides with a member published a read of ITSELF (`public Widget Widget
