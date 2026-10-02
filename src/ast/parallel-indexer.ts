@@ -479,6 +479,42 @@ export interface ParallelIndexingStats {
      *  Reported rather than prevented: each vector is valid for its own model,
      *  so per-vector validation cannot stop this. */
     embedModels?: Array<{ model: string; dimension: number; count: number }>
+    /** Vector-integrity census for this project.
+     *
+     *  Exists because a corrupt vector is invisible in every other number:
+     *  `vector_dimension` is written as `vec.length`, so a bad vector records a
+     *  dimension that describes itself and the row looks internally consistent.
+     *  Nothing re-derives the true length at read time, so the row surfaces much
+     *  later as a silently missing search result.
+     *
+     *  `dimensions` are OBSERVED lengths rather than the declared
+     *  `vector_dimension`, deliberately: reading back the declared value would
+     *  report the corrupt row as healthy, which is the one thing this census
+     *  exists to prevent. A model whose observed lengths disagree with each
+     *  other is the signal.
+     *
+     *  Contract pinned by script/a3-relationship-enrichment/verify-embedding-integrity.ts. */
+    embeddingIntegrity?: {
+      /** Rows in brain_semantic_embedding for this project. */
+      total: number
+      /** One entry per DISTINCT embedding_model. */
+      models: Array<{ model: string; rows: number; dimensions: number[] }>
+      /** More than one model — `bb_ask` reads the index under a single label. */
+      mixed: boolean
+      /** Rows whose OBSERVED length disagrees with their declared vector_dimension. */
+      dimensionMismatches: number
+      /** Rows whose vector does not scan to finite numbers. */
+      malformedVectors: number
+      /** mismatches + malformed. Coverage must EXCLUDE these, not count them. */
+      unusableEmbeddings: number
+      /** Vectors actually inspected. Below `total` when the scan was bounded. */
+      scanned?: number
+      /** True when the bounded scan did not cover every row, so the counts
+       *  above describe a SAMPLE. Reported rather than implied: a partial
+       *  census presented as complete is the same dishonesty as an uncounted
+       *  corrupt row. */
+      truncated?: boolean
+    }
     /** How the files were parsed: `worker-pool` or `in-process`.
      *
      *  When the pool's fork test fails the run degrades to in-process parsing and
@@ -1957,6 +1993,185 @@ export async function surveyEmbeddingModels(
   } catch (e: any) {
     log.warn("could not survey embedding models", { error: e?.message })
     return []
+  }
+}
+
+/**
+ * Census the actual vectors, not the numbers that describe them.
+ *
+ * `brain_semantic_embedding.vector_dimension` is written as `vec.length`, so it
+ * is self-describing and cannot detect a corrupt row. This walks the stored
+ * vectors instead:
+ *
+ *   - observed length vs declared `vector_dimension` -> dimension mismatch
+ *   - a vector that does not scan to finite numbers   -> malformed
+ *
+ * The malformed check is not theoretical: a non-finite component makes every
+ * downstream cosine NaN, and the read path filters NaN — so such a row is
+ * counted in `total` and in coverage while being unreachable by search.
+ *
+ * Bounded on purpose. A project with 500k vectors cannot afford to JSON.parse
+ * all of them on every run, so above `MAX_INTEGRITY_SCAN_VECTORS` this reports
+ * what it measured and sets `scanned`/`truncated` so a caller can say the census
+ * is partial rather than implying full coverage.
+ */
+const MAX_INTEGRITY_SCAN_VECTORS = 50_000
+
+export async function surveyEmbeddingIntegrity(projectId: ProjectID): Promise<{
+  total: number
+  models: Array<{ model: string; rows: number; dimensions: number[] }>
+  mixed: boolean
+  dimensionMismatches: number
+  malformedVectors: number
+  unusableEmbeddings: number
+  scanned: number
+  truncated: boolean
+}> {
+  const empty = {
+    total: 0,
+    models: [],
+    mixed: false,
+    dimensionMismatches: 0,
+    malformedVectors: 0,
+    unusableEmbeddings: 0,
+    scanned: 0,
+    truncated: false,
+  }
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    const total = Number(
+      (raw
+        .prepare("SELECT COUNT(*) c FROM brain_semantic_embedding WHERE project_id = ?")
+        .get(projectId) as any)?.c ?? 0,
+    )
+
+    // Per-model row counts and declared dimensions, straight from SQL.
+    const byModel = raw
+      .prepare(
+        `SELECT embedding_model AS model, COUNT(*) AS rows, vector_dimension AS declared
+         FROM brain_semantic_embedding WHERE project_id = ?
+         GROUP BY embedding_model, vector_dimension`,
+      )
+      .all(projectId) as Array<{ model: string; rows: number; declared: number }>
+
+    const models = new Map<string, { model: string; rows: number; dimensions: number[] }>()
+    for (const r of byModel) {
+      const cur = models.get(r.model) ?? { model: r.model, rows: 0, dimensions: [] }
+      cur.rows += r.rows
+      models.set(r.model, cur)
+    }
+
+    // Now actually look at the vectors, within a bounded scan.
+    const limit = Math.min(total, MAX_INTEGRITY_SCAN_VECTORS)
+    const rows = raw
+      .prepare(
+        `SELECT embedding_model AS model, embedding_vector AS vec, vector_dimension AS declared
+         FROM brain_semantic_embedding WHERE project_id = ? LIMIT ?`,
+      )
+      .all(projectId, limit) as Array<{ model: string; vec: string | null; declared: number | null }>
+
+    let dimensionMismatches = 0
+    let malformedVectors = 0
+
+    for (const r of rows) {
+      let observed: number | null = null
+      let ok = true
+      if (r.vec) {
+        try {
+          const parsed = JSON.parse(r.vec)
+          if (Array.isArray(parsed)) {
+            observed = parsed.length
+            for (const v of parsed) {
+              if (typeof v !== "number" || !Number.isFinite(v)) {
+                ok = false
+                break
+              }
+            }
+          } else {
+            ok = false
+          }
+        } catch {
+          ok = false
+        }
+      } else {
+        ok = false
+      }
+
+      const entry = models.get(r.model)
+      if (entry && observed !== null && !entry.dimensions.includes(observed)) {
+        entry.dimensions.push(observed)
+      }
+      if (!ok) malformedVectors++
+      if (observed !== null && r.declared !== null && observed !== r.declared) {
+        dimensionMismatches++
+      }
+    }
+
+    const modelList = [...models.values()]
+      .map((m) => ({ model: m.model, rows: m.rows, dimensions: m.dimensions.sort((a, b) => a - b) }))
+      .sort((a, b) => b.rows - a.rows)
+
+    return {
+      total,
+      models: modelList,
+      mixed: modelList.length > 1,
+      dimensionMismatches,
+      malformedVectors,
+      // A row can be both (wrong length AND non-finite), so count the union:
+      // "unusable" is a count of rows, not of findings.
+      unusableEmbeddings: rows.length - rows.filter((r) => {
+        try {
+          const p = JSON.parse(r.vec as string)
+          if (!Array.isArray(p)) return false
+          if (r.declared !== null && p.length !== r.declared) return false
+          return p.every((v) => typeof v === "number" && Number.isFinite(v))
+        } catch {
+          return false
+        }
+      }).length,
+      scanned: rows.length,
+      truncated: total > limit,
+    }
+  } catch (e: any) {
+    log.warn("could not survey embedding integrity", { error: e?.message })
+    return empty
+  }
+}
+
+/**
+ * Render the integrity census through the indexer's logger.
+ *
+ * Shared by both summary paths (derived-pass and no-op incremental) and used
+ * instead of two inline copies, so the logger and the CLI cannot drift into
+ * reporting different things about the same index. Silent when healthy.
+ */
+function reportEmbeddingIntegrity(
+  _log: { log: (s: string) => void },
+  integ: Awaited<ReturnType<typeof surveyEmbeddingIntegrity>> | undefined,
+): void {
+  if (!integ || (integ.models.length <= 1 && integ.unusableEmbeddings === 0)) return
+  if (integ.mixed) {
+    _log.log(
+      `  ⚠ index holds ${integ.models.length} embedding models — search compares only one, so the rest are ignored:`,
+    )
+    for (const m of integ.models) {
+      _log.log(
+        `      ${m.model}: ${m.rows.toLocaleString()} vectors (observed dims ${m.dimensions.join(", ")})`,
+      )
+    }
+  }
+  if (integ.unusableEmbeddings > 0) {
+    _log.log(
+      `  ⚠ ${integ.unusableEmbeddings} of ${integ.total.toLocaleString()} vectors are unusable ` +
+        `(${integ.dimensionMismatches} dimension mismatch, ${integ.malformedVectors} malformed) — ` +
+        `counted as coverage, unreachable by search`,
+    )
+    _log.log(`      fix: reindex with a single provider — bb index --force`)
+  }
+  if (integ.truncated) {
+    _log.log(
+      `      (integrity census sampled ${(integ.scanned ?? 0).toLocaleString()} of ${integ.total.toLocaleString()} vectors)`,
+    )
   }
 }
 
@@ -4684,10 +4899,20 @@ export async function indexProjectParallel(
         // run that parses nothing, and that is exactly the condition a user
         // needs told about.
         embedModels: await surveyEmbeddingModels(projectId),
+        // The full census, not just the model list: a corrupt vector is invisible
+        // to every other number because vector_dimension is self-describing.
+        embeddingIntegrity: await surveyEmbeddingIntegrity(projectId),
         // Nothing was parsed, so there was no parse mode to choose. Declared
         // rather than left undefined so "no parse ran" is a value and not a gap.
         parseMode: "worker-pool",
       }
+
+      // Report here too, not only on the derived-pass path. A no-op incremental
+      // run is exactly the case where an index already holds defects and the
+      // user is told nothing happened — so the defects must still be surfaced.
+      // Sourced from the summary rather than duplicated: one computation, two
+      // renderings, so the logger and the CLI cannot disagree.
+      reportEmbeddingIntegrity(_log, stats.summary.embeddingIntegrity)
 
       // M40.A2: an incremental noop run can still observe DELETIONS —
       // discovery only walks files present on disk, so a removed file leaves
@@ -5288,6 +5513,7 @@ export async function indexProjectParallel(
       // vector population is known. A provider that died mid-run leaves the
       // index holding two models, and the search path will read it with one.
       stats.summary.embedModels = await surveyEmbeddingModels(projectId)
+      stats.summary.embeddingIntegrity = await surveyEmbeddingIntegrity(projectId)
       stats.summary.embedOutcome = {
         queued: backgroundEmbedMetrics.queued,
         embedded: backgroundEmbedMetrics.embedded,
@@ -5297,6 +5523,13 @@ export async function indexProjectParallel(
         invalid: backgroundEmbedMetrics.invalid,
       }
     }
+
+    // Say it through the indexer's own logger too, not only via the summary.
+    // Every other honesty line on this path does this, and a library consumer
+    // (an MCP host, an embedding library) never sees the CLI — so a defect
+    // reported only in `cli/index.ts` is silent for everyone else. Bounded on
+    // `mixed`/defects so a healthy index adds nothing.
+    reportEmbeddingIntegrity(_log, stats.summary?.embeddingIntegrity)
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
       projectId,
