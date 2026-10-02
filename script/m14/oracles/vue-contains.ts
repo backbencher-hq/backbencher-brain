@@ -124,7 +124,7 @@ function optionsObjects(root: any): Array<{ key: string; value: any }> {
       }
       for (let i = 0; i < x.namedChildCount; i++) {
         const c = x.namedChild(i)
-        if (c) stack.push(c)
+        if (c && !isTypeDecl(c)) stack.push(c)
       }
     }
   }
@@ -157,6 +157,108 @@ function optionsObjects(root: any): Array<{ key: string; value: any }> {
  * declaration, and the contract is an EDGE, which is the line the analyzer draws
  * too.
  */
+/**
+ * Members of a TYPE DECLARED IN THIS FILE, for `defineProps<Props>()` where
+ * `Props` is a local `interface Props { … }` rather than an imported one.
+ *
+ * The rule above deliberately skips a NAMED declaration, because an IMPORTED
+ * one's members belong to that declaration and the contract is an edge. A LOCAL
+ * interface is different in the way that matters: it is declared in this
+ * component, it has no other owner, and the template reads those members
+ * directly (`cascader-panel/src/menu.vue`'s `props.nodes` and `props.index` come
+ * from `interface Props { nodes: CascaderNode[]; index: number }`, and the
+ * analyzer publishes both). Skipping the local case left the oracle 2 rows short
+ * on a component whose contract is written out in full, in the file.
+ */
+function localTypeMembers(root: any, typeName: string): string[] {
+  const out: string[] = []
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const isIface = n.type === "interface_declaration" || n.type === "type_alias_declaration"
+    if (isIface) {
+      const name = directChild(n, "type_identifier")?.text
+      if (name === typeName) {
+        const body = directChild(n, "object_type")
+        if (body) {
+          for (const m of directChildren(body, "property_signature")) {
+            const pid = directChild(m, "property_identifier")
+            if (pid) out.push(unquote(pid.text))
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+/** String literal TYPE arguments, through the union/paren wrappers they sit in. */
+function collectStringLiterals(n: any, out: string[]): void {
+  if (!n) return
+  if (n.type === "string") { out.push(unquote(n.text)); return }
+  if (n.type === "union_type" || n.type === "parenthesized_type") {
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) collectStringLiterals(c, out)
+    }
+  }
+}
+
+/**
+ * Members named by a macro's `type_arguments`, recursing through the INTERSECTION
+ * and UNION wrappers those arguments are written in.
+ *
+ * Reading only the direct children of `type_arguments` handled
+ * `defineProps<{ a: string }>()` and stopped there, so cascader-panel's menu.vue —
+ * `defineProps<{ nodes: CascaderNode[]; index: number } & Pick<CascaderCommonProps,
+ * 'virtualScroll' | 'itemSize' | 'height'>>()` — contributed neither the object
+ * literal nor the three `Pick` key literals, because both are a level down inside
+ * an `intersection_type`.
+ *
+ * The recursion is deliberately narrow. It descends `intersection_type`,
+ * `union_type` and `parenthesized_type` looking for `object_type`,
+ * `call_signature` and `generic_type` NODES; it never collects a bare `string` as
+ * a member on its own, so `defineProps<{ a: 'x' | 'y' }>()` still yields `a` alone
+ * and not the two literals it happens to allow. String literals count only where
+ * they genuinely name members: a `Pick<T, 'a'>` key set, and an emit's call
+ * signature.
+ */
+function typeArgumentMembers(typeArgs: any): string[] {
+  const out: string[] = []
+  const walk = (n: any): void => {
+    if (!n) return
+    if (n.type === "object_type") {
+      for (const m of directChildren(n, "property_signature")) {
+        const pid = directChild(m, "property_identifier")
+        if (pid) out.push(unquote(pid.text))
+      }
+      return
+    }
+    if (n.type === "call_signature") {
+      const fps = directChild(n, "formal_parameters")
+      for (const prm of fps ? directChildren(fps, "required_parameter") : []) collectStringLiterals(prm, out)
+      return
+    }
+    if (n.type === "generic_type") {
+      const ga = directChild(n, "type_arguments")
+      if (ga) collectStringLiterals(ga, out)
+    }
+    if (n.type === "type_arguments" || n.type === "intersection_type" || n.type === "union_type" ||
+        n.type === "parenthesized_type") {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) walk(c)
+      }
+    }
+  }
+  walk(typeArgs)
+  return out
+}
+
 function macroMembers(root: any, which: "props" | "emits"): string[] {
   const out: string[] = []
   const stack: any[] = [root]
@@ -172,25 +274,13 @@ function macroMembers(root: any, which: "props" | "emits"): string[] {
           const first = args?.namedChildren?.[0]
           if (first?.type === "object") out.push(...objectKeys(first))
           else if (first?.type === "array") out.push(...arrayStrings(first))
-          else if (first?.type === "type_arguments") {
-            // the INLINE type literal: `defineProps<{ a: string }>()`
-            const obj = first.namedChildren?.find((c: any) => c.type === "object_type")
-            if (obj) {
-              for (const m of directChildren(obj, "property_signature")) {
-                const pid = directChild(m, "property_identifier")
-                if (pid) out.push(unquote(pid.text))
-              }
-              for (const m of directChildren(obj, "call_signature")) {
-                const fps = directChild(m, "formal_parameters")
-                for (const p of fps ? directChildren(fps, "required_parameter") : []) {
-                  const t = directChild(p, "type_annotation")
-                  for (const lit of t ? directChildren(t, "string") : []) out.push(unquote(lit.text))
-                  const u = t ? directChild(t, "union_type") : null
-                  if (u) for (const lit of directChildren(u, "string")) out.push(unquote(lit.text))
-                }
-              }
-            }
-          }
+          // The GENERIC form has NO runtime argument at all — `defineProps<{ a: string }>()`
+          // passes nothing — so the type lives on the CALL's own `type_arguments`,
+          // not inside `arguments`. Reading it from `arguments` (the first version
+          // did) silently skipped every generic contract: measured on the corpus,
+          // node.vue's `node`/`menuId` and menu.vue's `nodes`/`index` were four
+          // MISSING component-owned rows that the analyzer was emitting all along.
+          out.push(...typeArgumentMembers(directChildren(n, "type_arguments")[0]))
         }
       }
     }
@@ -253,12 +343,21 @@ export function vueComponentName(scriptRoots: any[], fileStem: string): string {
       }
       for (let i = 0; i < n.namedChildCount; i++) {
         const c = n.namedChild(i)
-        if (c) stack.push(c)
+        if (c && !isTypeDecl(c)) stack.push(c)
       }
     }
     if (found) return found
   }
   return fileStem
+}
+
+/** Node types that hold a TYPE, not a value: `type X = { … }`, `interface X { … }`. */
+function isTypeDecl(n: any): boolean {
+  return (
+    n.type === "type_alias_declaration" ||
+    n.type === "interface_declaration" ||
+    n.type === "enum_declaration"
+  )
 }
 
 /**
@@ -267,9 +366,110 @@ export function vueComponentName(scriptRoots: any[], fileStem: string): string {
  * @param scriptRoots the embedded `<script>` trees (JS or TS), already extracted
  * @param fileStem    the file's stem, used when no `name:` option is declared
  */
+/**
+ * The keys of `provide(key, { … })` — which are the COMPONENT's own members.
+ *
+ * This is F2's ownership rule: a provided object's keys are published by nothing
+ * else, so the analyzer ANNOTATES ownership onto them rather than re-pushing
+ * (the store's symbol key excludes owner, so a second symbol at the same name and
+ * line would replace it — VSD25). Measured: tour.vue's
+ * `provide(tourKey, { currentStep, current, total, showClose: …, updateModelValue, onClose, onFinish })`
+ * is 8 of the component-owned rows the oracle was missing.
+ */
+function provideMembers(root: any, declared: Set<string>): string[] {
+  const out: string[] = []
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = directChild(n, "identifier")
+      if (fn?.text === "provide") {
+        const args = directChild(n, "arguments")
+        let value = args?.namedChildren?.find((c: any) => c.type === "object")
+        // The provided value is usually WRAPPED: cascader-panel's
+        // `provide(CASCADER_PANEL_INJECTION_KEY, reactive({ config, nodes, index, … }))`
+        // publishes every one of those keys, but reading only the direct `object`
+        // argument found nothing because the object is `reactive`'s argument.
+        // Unwrap ONE call layer — `reactive` / `readonly` / `markRaw` / `computed`
+        // all take the object as their first argument — and no more: two layers
+        // deep is not a shape this oracle should be guessing at.
+        if (!value) {
+          for (const c of args?.namedChildren ?? []) {
+            if (c.type !== "call_expression") continue
+            const inner = directChild(c, "arguments")?.namedChildren?.find((x: any) => x.type === "object")
+            if (inner) { value = inner; break }
+          }
+        }
+        if (value) {
+          for (let i = 0; i < value.namedChildCount; i++) {
+            const c = value.namedChild(i)
+            if (!c) continue
+            // A SHORTHAND shares a declared local, and a `key: value` PAIR names a
+            // property of the INJECTED value. BOTH are members a consumer reaches,
+            // so both are derived — including `trigger: toRef(props, 'trigger')`,
+            // which publishes a `trigger` whether or not this file declares the
+            // name. The earlier version filtered pairs to `declared.has(k)` on the
+            // reasoning that the analyzer could only ANNOTATE a symbol that
+            // already existed (VSD25) and so had nothing to publish otherwise.
+            // That limit is gone: the analyzer now SYNTHESIZES the missing member,
+            // marked `metadata.synthesized` so the m60 surface audit still governs
+            // it. Filtering on `declared` therefore had the oracle disagreeing
+            // with the analyzer on 12 real provided rows.
+            //
+            // A bracket-led key (`[key]`) stays excluded: that is a runtime
+            // expression, not a name anything can be reached by.
+            if (c.type === "shorthand_property_identifier") out.push(c.text)
+            else if (c.type === "method_definition") {
+              // A shorthand METHOD is a member like any other: tour.vue's
+              // `provide(tourKey, { updateModelValue(m) { … }, onClose() { … } })`
+              // publishes exactly those three keys, and the analyzer publishes
+              // them because it reads the same three shapes.
+              const mk = directChild(c, "property_identifier")
+              if (mk) out.push(unquote(mk.text))
+            } else if (c.type === "pair") {
+              const raw = directChild(c, "property_identifier")?.text ?? directChild(c, "string")?.text
+              if (raw && !raw.startsWith("[")) out.push(unquote(raw))
+            }
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+/** Every identifier this script tree DECLARES, so the provide rule can ask. */
+function declaredNames(roots: any[]): Set<string> {
+  const out = new Set<string>()
+  for (const root of roots) {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "variable_declarator") {
+        const nm = directChild(n, "identifier")
+        if (nm?.text) out.add(nm.text)
+      }
+      if (n.type === "function_declaration" || n.type === "class_declaration") {
+        const nm = directChild(n, "name")
+        if (nm?.text) out.add(nm.text)
+      }
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+  return out
+}
+
 export function deriveVueContainsTruth(scriptRoots: any[], fileStem: string): ContainsRow[] {
   const out: ContainsRow[] = []
   const component = vueComponentName(scriptRoots, fileStem)
+  const declared = declaredNames(scriptRoots)
   const seen = new Set<string>()
   const add = (target: string): void => {
     if (!target || target === component) return
@@ -281,6 +481,7 @@ export function deriveVueContainsTruth(scriptRoots: any[], fileStem: string): Co
   for (const root of scriptRoots) {
     for (const name of macroMembers(root, "props")) add(name)
     for (const name of macroMembers(root, "emits")) add(name)
+    for (const name of provideMembers(root, declared)) add(name)
     for (const { key, value } of optionsObjects(root)) {
       if (key === "props" || key === "emits") {
         for (const name of [...objectKeys(value), ...arrayStrings(value)]) add(name)
