@@ -626,7 +626,29 @@ function isBindingFnPosition(node: Node): boolean {
   if (node.namedChild(1)?.type !== "vec_lit") return false
   // the value position of a binding pair
   for (let i = 1; i < vec.namedChildCount; i += 2) {
-    if (vec.namedChild(i)?.startIndex === node.startIndex) return true
+    if (vec.namedChild(i)?.startIndex !== node.startIndex) continue
+    // CLJ-D59: THE BINDING KEY IS THE DISCRIMINATOR, and the first version of CLJ-D57
+    // missed it. A value under a DESTRUCTURING pattern is a function binding; a value
+    // under a PLAIN SYMBOL is an ordinary call, however much it looks like one.
+    //
+    //   (let [{:keys [session-key]} (saml-request [url] (with-open [in (Inflater.)] …))]
+    //         …)                                       ;^ destructuring -> a real fn
+    //   (let [^java.util.Properties properties (with-open [version-stream …] …)]
+    //         …)                                       ;^ plain symbol -> the `with-open` MACRO
+    //
+    // The second one is the same two children in the same order and the same arglist
+    // vector, so CLJ-D57's position-plus-arglist test matched it and made `with-open` the
+    // owner of every constructor in its body. In clojure/core.clj that published
+    // `with-open -> java.util.Properties` at 7375 for the whole tail of the file.
+    //
+    // This is the NINTH time one sample was read as a rule, and the failure had already
+    // been measured and RATIONALISED rather than diagnosed: CLJ-D57's own commit message
+    // recorded "small instantiates 99.71% -> 99.33%" as part of a "net gain of 7". The
+    // small-corpus half of that was this bug, not a trade-off. A number that moves in the
+    // wrong direction inside a change described as a win is evidence, not a footnote.
+    const key = vec.namedChild(i - 1)
+    if (!key || key.type === "sym_lit") return false
+    return true
   }
   return false
 }
