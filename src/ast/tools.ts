@@ -157,11 +157,43 @@ export namespace PatternBrainTools {
     })
     for (const finding of ruleFindings) patterns.push(finding)
 
-    // 3. Statistics mapping (canonical-safe aggregation). M57.T3: the orphan
-    // contribution comes from the candidate census (identical numbers to the
-    // old materialize-everything path — same constants, same mean). The orphan
-    // page entries in `patterns` are census-covered, so the loop below must
-    // count ONLY non-orphan (rule) findings — otherwise the page double-counts.
+    // 3. Rank the whole census, then slice. M57.T3: the orphan page is BOUNDED
+    // at the scan (the old call used maxResults: Number.MAX_SAFE_INTEGER, which
+    // materialized every finding object with evidence arrays on for a display of
+    // at most maxResults items). The full census comes from the summary
+    // aggregates.
+    //
+    //    But the bound was applied to the CONCATENATION, orphan branch first:
+    //
+    //      for (const finding of orphanReport.findings) patterns.push(...)
+    //      for (const finding of ruleFindings)        patterns.push(...)
+    //      displayedPatterns = patterns.slice(0, opts.maxResults)
+    //
+    //    So on any repository with more orphan candidates than maxResults, the
+    //    anti-pattern branch was sliced out of the response entirely — 806
+    //    high-complexity functions, 214 god classes, 18 long-parameter lists and
+    //    20 framework findings on a 45,018-symbol index, all invisible, while
+    //    includeAntiPatterns defaulted to true and the registry advertised "the
+    //    full pattern scan". Ranking the merged census fixes it: a 0.9 god
+    //    class outranks a 0.7 dead helper, which is also the order a reader
+    //    wants them in.
+    const severityRank = { error: 0, warning: 1, info: 2 } as const
+    const orphanPage = patterns.filter((p) => String(p.type).startsWith("orphaned_"))
+    const rulePage = patterns.filter((p) => !String(p.type).startsWith("orphaned_"))
+    patterns.length = 0
+    const ranked = [...orphanPage, ...rulePage].sort((a, b) => {
+      if (b.confidence !== a.confidence) return b.confidence - a.confidence
+      const sa = severityRank[a.severity as keyof typeof severityRank] ?? 3
+      const sb = severityRank[b.severity as keyof typeof severityRank] ?? 3
+      if (sa !== sb) return sa - sb
+      return String(a.location?.file ?? "").localeCompare(String(b.location?.file ?? ""))
+    })
+    patterns.push(...ranked)
+
+    // Statistics over the census. The orphan contribution comes from the
+    // candidate census; the rule contribution from the returned rule findings.
+    // The orphan PAGE entries are census-covered, so the loop counts only
+    // non-orphan findings — otherwise the page double-counts.
     const byType: Record<string, number> = { ...orphanByType }
     const bySeverity: Record<string, number> = {}
     for (const k of Object.keys(orphanByType)) bySeverity["info"] = (bySeverity["info"] ?? 0) + orphanByType[k]
@@ -175,21 +207,94 @@ export namespace PatternBrainTools {
       confidenceSum += pattern.confidence
     }
 
-    const displayedPatterns = patterns.slice(0, opts.maxResults)
+    // M69: a class the caller EXPLICITLY asked for must not vanish because the
+    // page filled up with another class.
+    //
+    // MEASURED on rebar3/apps with the repo's own corpus gate, which asks for
+    // `{ scope: "all", includeFramework: true, confidenceThreshold: 0.51 }`:
+    //
+    //   framework types in the index : Erlang, cowboy, eunit, otp, rebar3  (5)
+    //   framework findings on the page: 0
+    //
+    // The ranking above is by confidence, and an orphan candidate carries up to
+    // 0.7 while a framework finding carries a fixed 0.6. With more than
+    // `maxResults` orphan candidates scoring above 0.6, every framework and
+    // anti-pattern finding is displaced off the page — not filtered out by the
+    // threshold, never rendered at all. `graphql-js` and `cabal` emit 4 and 2
+    // respectively; only the corpus with a deep orphan census loses them.
+    //
+    // So a caller who passed `includeFramework: true` received none, with nothing
+    // in the answer to distinguish "no framework here" from "the page was full".
+    // The census line reports totals, so the information existed — but the caller
+    // asked for a class and got none of it, which is the thing that breaks an
+    // agent deciding whether to raise `limit` or accept the answer.
+    //
+    // The fix keeps the budget and the ranking: the page is filled as ranked, and
+    // then, for each class the caller requested that has findings but no
+    // representation, its highest-ranked finding is promoted in place of the
+    // lowest-ranked item on the page. One slot per requested class, not a quota —
+    // a repository with 900 god classes still returns one god class, and a caller
+    // still gets its frameworks.
+    const REQUESTED = [
+      { on: opts.includeOrphaned !== false, match: (t: string) => t.startsWith("orphaned_") },
+      { on: opts.includeFramework !== false, match: (t: string) => t === "framework-detected" },
+      {
+        on: opts.includeAntiPatterns !== false,
+        match: (t: string) => ["high-complexity-function", "long-parameter-list", "god-class"].includes(t),
+      },
+    ]
+    const page = patterns.slice(0, opts.maxResults)
+    if (patterns.length > opts.maxResults && page.length > 0) {
+      for (const req of REQUESTED) {
+        if (!req.on) continue
+        const onPage = page.some((p) => req.match(String(p.type)))
+        if (onPage) continue
+        const best = patterns.find((p) => req.match(String(p.type)))
+        if (!best) continue
+        // Displace the lowest-ranked page item that is NOT the sole
+        // representative of another requested class, so one promotion cannot
+        // silence a different one.
+        let victim = -1
+        for (let i = page.length - 1; i >= 0; i--) {
+          const others = REQUESTED.filter((r) => r.on && r.match(String(page[i].type)))
+          if (others.length > 1) continue
+          if (page.filter((p, j) => j < i && others.some((r) => r.match(String(p.type)))).length > 0) continue
+          victim = i
+          break
+        }
+        if (victim === -1) continue
+        page[victim] = best
+      }
+      page.sort((a, b) => {
+        if (b.confidence !== a.confidence) return b.confidence - a.confidence
+        const sa = severityRank[a.severity as keyof typeof severityRank] ?? 3
+        const sb = severityRank[b.severity as keyof typeof severityRank] ?? 3
+        if (sa !== sb) return sa - sb
+        return String(a.location?.file ?? "").localeCompare(String(b.location?.file ?? ""))
+      })
+    }
+    const displayedPatterns = page
+    const censusTotal = orphanCandidates + ruleFindingCount
     return {
       patterns: displayedPatterns,
       statistics: {
-        totalFound: displayedPatterns.length,
+        // The census, not the page. This field was the returned page's length
+        // while byType / bySeverity / averageConfidence beside it all described
+        // the census, so one object reported two different universes and the
+        // handler printed the page length under the words "patterns (N)".
+        // With a default limit of 20 the tool fetched 100, printed 20, and
+        // reported 100. `scan.displayed` is the page length.
+        totalFound: censusTotal,
         byType,
         bySeverity,
-        averageConfidence: orphanCandidates + ruleFindingCount > 0 ? confidenceSum / (orphanCandidates + ruleFindingCount) : 0,
+        averageConfidence: censusTotal > 0 ? confidenceSum / censusTotal : 0,
       },
       recommendations: [],
       scan: {
-        candidatesEvaluated: orphanCandidates + ruleFindingCount,
-        findingsBeforeDisplayLimit: orphanCandidates + ruleFindingCount,
+        candidatesEvaluated: censusTotal,
+        findingsBeforeDisplayLimit: censusTotal,
         displayed: displayedPatterns.length,
-        truncated: orphanCandidates + ruleFindingCount > displayedPatterns.length,
+        truncated: censusTotal > displayedPatterns.length,
       },
     }
   }

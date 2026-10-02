@@ -132,17 +132,32 @@ Four shape facts the whole analyzer is built on, each measured:
 | a comprehension generator's `<-` is **inside a `generator` node** | `lc_or_zc_expr -> generator -> {LHS, <-, RHS}`. Reading `lc_or_zc_expr`'s own children finds no operator (ER-D25) |
 | a malformed `-record #r{...}` wraps the **whole file** in one `ERROR` node | `-module`, the record and the `-export` lists all become `ERROR`'s children (`rec_remote_unknown.erl`) |
 
+### The kind partition is 8 emitted + 17 ruled, and the 8 + 17 is the enum
+
+The store's `SymbolKind` has 25 distinct values (31 members, 6 backward-compat
+aliases). This analyzer emits 8 of them and rules the other 17 with a reason
+each, recorded in `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`.
+The audit exists because `macro` was in the enum, named by the LSP identity list,
+emitted by 8 analyzers — and emitted by no Erlang symbol at all until ER-D39.
+The same pass over the relationship enum found two more (`exports`, `imports`).
+Reading the analyzer for what looks missing finds none of those three; comparing
+it against the enum finds all three.
 ## Symbol contract
 
 | field | supported | how it is derived |
 |---|---|---|
 | `name` | yes | `-module` -> module · `-record` -> record · `-define` -> macro (`var` child of `macro_lhs`) · `-type`/`-opaque`/`-nominal` -> type · `-callback` -> method · clause head -> function, **including a `?MODULE()` head** (ER-D25/D28) |
+| `kind` | yes | `module`, `struct` (a record), `property` (a record field), `macro` (a FUNCTION-LIKE `-define`), `constant` (an OBJECT-LIKE `-define`, which really is a compile-time value), `type`, `method` (a callback), `function` (ER-D39) |
 | `kind` | yes | `module`, `struct` (a record), `property` (a record field), `constant` (a macro), `type`, `method` (a callback), `function` |
 | `ownerName` | yes | the module for functions/methods/types/records/macros; **the record** for its fields |
 | `range` | yes | the declaration node; a function's range spans every clause of that (name, arity) |
 | `parameters` | yes | one per clause-head element. A head is a PATTERN, so each carries `name` (only for a plain variable) and always `pattern`, plus `type` when a `-spec` supplies it (ER-D21) |
 | `returnType` | yes | the `-spec` return expression. A `-spec` declares no symbol; the `fun_decl` does (ER-D3/D27) |
 | `complexity` | yes | per symbol: 1 + decision points (ER-D17) |
+| `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists: recorded on `ExportInfo` AND emitted as `exports` edges (ER-D40) |
+| `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
+| `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
+| `isCallback` / `isOpaque` / `isNominal` / `isMacro` / `isFunctionLike` | yes (metadata) | the declaration forms that are easy to lose; `isFunctionLike` is what splits `macro` from `constant` (ER-D39) |
 | `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists, recorded on `ExportInfo` |
 | `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
 | `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
@@ -163,6 +178,9 @@ and defines a callback yields ONE symbol whose kind and line are the
 | `uses` | record member read (`S#r.f`, `#r.f`) and record update (`S#r{f=…}`) | java/kotlin member-read parity (ER-D24) |
 | `instantiates` | a record construction outside pattern position | an UPDATE is `uses`, never `instantiates` (ER-D4) |
 | `references` | include / include_lib / import; a `?MACRO` use; a fun VALUE (`fun f/1`, `fun m:f/2`); a type dependency from a `-type`/`-opaque`/`-nominal`/`-spec`/`-callback` body, from a record field's type, and a record named in a type | a qualified TYPE keeps its module (ER-D31) |
+| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A (ER-D34; see `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`) |
+| `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name |
+| `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
 | `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A |
 | `exports` (as a relationship) | **never** | the language export list is `ExportInfo`; no analyzer in the family emits an exports *relationship* for it |
 
@@ -281,6 +299,50 @@ path), and the two mean different things when a stub exists:
   named function to exist, so an entry with no symbol there is a genuine unresolved
   reference and is counted, not invented.
 
+## When the grammar gives up (ER-D38)
+
+Not every Erlang file is Erlang to this grammar. Two real classes in OTP are not:
+
+- **wx's `api_gen` sources are code-generation templates.** The body is markup —
+  `<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>` — and after it the top level
+  returns as a run of ERROR nodes with loose `call`/`atom`/`ann_type` fragments
+  between them and not one `fun_decl` in the file.
+- **The pre-R16 two-argument module form**, `-module(pmod, [Props])`, is likewise
+  unparseable.
+
+A file with **no recoverable declaration of any kind** — no `fun_decl`,
+`module_attribute`, `pp_define`, `record_decl`, `type_alias`/`opaque`/`nominal`,
+`import_attribute`, `export_attribute`, `export_type_attribute`,
+`pp_include`, `pp_include_lib` — **and** ERROR/MISSING nodes present, therefore
+yields **no symbols and no relationships** and publishes its error count instead.
+`metadata.grammarDamaged` says so.
+
+Both halves of that condition are load-bearing, and each was added because the probe
+caught the rule being wrong. Without the error requirement it labelled
+comment-only and directive-only headers "damaged" — a header holding a single
+`-compile({parse_transform, …})` is not a parse that went wrong. Without the include
+forms it labelled include-only headers unreadable, when `-include("other.hrl")` is a
+real dependency worth recording. Absence of a declaration is not evidence of damage;
+the presence of ERROR nodes is.
+
+Every edge recoverable from those fragments is fabricated: the lines and the nesting
+are whatever error recovery produced, so `calls wxe_util:get_cbId@31` describes
+structure the source does not have. 12 files corpus-wide.
+
+The boundary is deliberately narrow, and the other side of it matters just as much:
+a file with no functions and no `-module` but with `-define` blocks is derived
+normally, including its file-scope macro references. `epp_SUITE_data/mac2.erl` is
+four `-define`s and one `-plupp({?p, ?'p', ?P, ?'P'})` with no module and no
+function, and it must keep yielding four macro constants, four `contains` edges and
+four references.
+
+Worth recording how this hole opened: it was made by a *correctness* fix earlier in
+the same wave. ER-D32 gave `currentSource` a file-path fallback so file-scope
+references would stop being dropped — and that removed the only thing suppressing the
+wreckage, because an undefined source makes `pushRel` a no-op. Nothing noticed for a
+full corpus run. A fix can open a hole as easily as close one, and it will not come
+with a boundary unless someone writes one.
+
 ## Complexity model
 
 Per symbol: `1 + arms + extra clauses`, and the file total is `1 + every branch
@@ -305,6 +367,50 @@ arity strip, function-name strip, parse-type strip) are pure char scans:
 
 ## Measured envelope
 
+Measured over EVERY file in the corpus — otp@de741b7, rebar3@3c1b417,
+cowboy@c965d1a, 4,326 `.erl` files — not a sample.
+
+| what | measurement |
+|---|---|
+| files | 4,617 read (`.erl` AND `.hrl`), 4,617 examined, 139 grammar errors (3.01%), **0 unexamined** |
+| symbols | 209,247 |
+| relationships | 1,032,785 |
+| relationship types emitted | `calls`, `references`, `contains`, `uses`, `instantiates`, `implements` |
+| dual lens vs an independently written oracle | **0** unexplained, **0** missing, **0** line mismatches, **0** symbol mismatches |
+| unknown symbols through the production entry | 4,617 files, **0** unknown kinds, **0** empty names, **0** invented sentinel names, **0** ownerless members, all 26 symbol-free files accounted for with 0 suspect |
+| parse-error taxonomy | **20 named causes, 0 unclassified**; 112 of the 139 failing files are not defects in anything |
+| M60 line coverage (six dimensions) | 974,203 relationships, **100.000%** with an in-bounds, non-blank, 1-based line; 206,699 symbols with a start and end line |
+| regexes in the analyzer | **0** (verified with comments stripped: no `RegExp`, no `.match/.replace/.test/.search/.matchAll`, no regex literal) |
+
+Two deliberately-empty classes are counted rather than hidden:
+
+| class | count | ruling |
+|---|---|---|
+| remote call / fun value whose **module** is a macro | 3,324 | ER-D35 |
+| whole-file grammar damage, no declaration survived | 23 | ER-D38 |
+
+### Performance
+
+Interleaved min-of-11, both analyzers alternating inside one loop on the same trees,
+so host interference can only ever ADD time and the minimum of each is the
+interference-free estimate. Against the pre-ER3 analyzer restored from git:
+
+| node-count quartile | files | node range | ER3 us/node | pre-ER3 us/node | ratio |
+|---|---|---|---|---|---|
+| Q1 | 30 | 17 - 338 | 1.4 | 1.4 | **1.0x** |
+| Q2 | 30 | 382 - 1,375 | 2.9 | 2.3 | 1.2x |
+| Q3 | 30 | 1,388 - 3,766 | 1.7 | 1.6 | **1.0x** |
+| Q4 | 30 | 3,793 - 49,028 | 1.9 | 1.9 | **1.0x** |
+
+At parity per node while publishing **2.08x more relationships per node**, the
+rewrite no longer pays for its extra output. It is at parity, not faster: Q2 is
+still 1.2x and the row says so.
+
+This measurement was RED for most of the wave, at 6.7x on Q4, and the review
+reported the cause unattributed after six ablations failed to find it. The cause was
+one line: `prePassForms(rootNode)` called in the loop CONDITION and again in the loop
+BODY, making the pre-pass O(forms^2) on every file. Six ablations missed it because
+every one ablated SEMANTICS rather than counting INVOCATIONS.
 **RED on cost, and the row carries its load context.** Measured with the
 interleaved-minimum design (`bun run script/m14/tmp/erlang-scaling-robust.ts
 --reps 5`): the two analyzers alternate inside one loop on the same trees, so

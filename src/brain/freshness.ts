@@ -111,6 +111,140 @@ export function statSizeMtime(path: string): { size: number; mtime: number } | n
 export type RowFreshnessStatus = "fresh" | "stale" | "missing"
 export type FreshnessMode = "sampled" | "complete"
 
+// ══ M64: deterministic UNBIASED file selection ══════════════════════════════
+//
+// bb_health and the integrity battery both need to check a bounded number of
+// files while (a) returning the same answer for identical state, and (b) not
+// systematically missing part of the index.
+//
+// The history, because both requirements are easier to break than they look:
+//
+//   `ORDER BY relative_path LIMIT n`   a PREFIX. On this repo's 1,654-file
+//       index the first 200 were 189 docs/ files and ZERO of 166 src/ files —
+//       the first src/ file is at rank 1452. The default freshness answer was
+//       structurally an answer about Markdown. Deterministic, biased, useless.
+//
+//   `ORDER BY RANDOM() LIMIT n`        unbiased but NOT reproducible. Five
+//       integrity calls on one unchanging index answered 21, 17, 22, 19, 16 of
+//       200 for a true value of 40, and the warn/error threshold sits at 10% —
+//       so the same index flipped severity from one second to the next.
+//
+//   `ROW_NUMBER() ... WHERE (rn-1) % k = 0`   deterministic and spread across
+//       the whole range, but ALIASES with any periodic structure in the sort
+//       order. Measured against a corpus where every 10th file was edited: the
+//       stride reported a 20% drift rate against a true 10%, because every 10th
+//       index is also every 5th sampled index. A stride is a deterministic
+//       sample of positions, and a corpus with a period in its file names (one
+//       generated file per k, numbered fixtures, any repeated basename pattern)
+//       defeats it.
+//
+// What is left is a deterministic pseudo-random sample: rank the files by a
+// stable hash of their id and take the lowest N. That is uniform over the set
+// and independent of the sort order, so it cannot alias with a period, and it
+// is a pure function of the id set, so identical state gives an identical
+// answer. FNV-1a with a murmur finalizer — chosen over sha256 because this
+// runs over the whole file list and the only requirement is uniformity, not
+// cryptographic quality.
+//
+// The row read is one indexed query; the selection is in JS so no window
+// function is required and no ORDER BY has to be stable.
+
+/** 32-bit FNV-1a + murmur3 finalizer. Stable across runs and processes. */
+export function stableFileHash(id: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < id.length; i++) {
+    h ^= id.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  h ^= h >>> 16
+  h = Math.imul(h, 0x85ebca6b)
+  h ^= h >>> 13
+  h = Math.imul(h, 0xc2b2ae35)
+  h ^= h >>> 16
+  return h >>> 0
+}
+
+export interface FileSelectionRow { id: string; relative_path: string }
+
+/**
+ * Choose up to `limit` files from `rows` deterministically and without bias
+ * toward any region of the sort order. Returns the selection ordered by
+ * relative_path so the rendered report is stable between calls.
+ *
+ * M64.P2 (cost): this first shipped as `rows.map(...).sort().slice()`, which
+ * ranks the WHOLE file set — O(n log n) time and O(n) allocations. Measured at
+ * 2,448 ms for 264,000 files (the size this repo's own schema comments cite for
+ * "too expensive to full-scan"). That is not a selection cost, that is the
+ * dominant cost of a default health call, and it would have blown the 2,000 ms
+ * warm-`bb_health` budget the latency work is holding on a large repository.
+ *
+ * The fix is a pure complexity change with IDENTICAL output: keep only the `k`
+ * smallest hashes, in a `k`-length array held in ascending order, and reject
+ * each candidate against the current worst in O(1). Only a candidate that
+ * beats the worst is inserted, and for a uniform hash that happens about
+ * k·ln(n/k) times over the whole scan — roughly 1,000 insertions for
+ * n=264,000, k=200 — so the allocation and the work both stop scaling with the
+ * corpus. Ties break on `id` so the selected SET is a total order, not
+ * hash-collision dependent.
+ *
+ * Nothing about the selection changes: the same rows give the same k files, so
+ * every property the gate asserts (whole-range coverage, determinism,
+ * order-independence, unbiasedness) holds for the fast path unchanged.
+ */
+export function selectSampleFiles<T extends FileSelectionRow>(rows: T[], limit: number): T[] {
+  const k = Math.min(limit, rows.length)
+  if (k <= 0) return []
+  // "Take everything" is not a selection: no hash is needed, and the caller
+  // only wants a stable order.
+  if (k >= rows.length) {
+    return [...rows].sort((a, b) => cmpPath(a.relative_path, b.relative_path) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+  }
+  const kept: Array<{ r: T; h: number; i: number }> = []
+  // `precedes(a, b)` — is a strictly before b in the total order
+  // (hash, id, original index)? The index term only matters when two rows share
+  // a hash AND an id, which the real caller cannot produce because
+  // brain_file.id is the PRIMARY KEY — but an accidental tie-break is worse than
+  // a defined one, and with this term the selection is provably identical to a
+  // STABLE sort by (hash, id) truncated to k, whatever the input.
+  //
+  // Getting the operand order right here is not a detail. An earlier version of
+  // this wrote the reject as `if (!precedes(worst, candidate)) continue`, which
+  // skips a candidate that is SMALLER than the incumbent — so the first
+  // incumbent was never displaced and the "sample" was whatever the scan saw
+  // first among the rows that happened to arrive early. The equivalence
+  // assertion at the bottom of the m64 gate caught it; nothing else would have.
+  const precedes = (ah: number, aid: string, ai: number, bh: number, bid: string, bi: number) =>
+    ah < bh || (ah === bh && (aid < bid || (aid === bid && ai < bi)))
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i]
+    const h = stableFileHash(r.id)
+    if (kept.length === k) {
+      const worst = kept[k - 1]
+      // Reject without allocating: the fast path is taken by almost every row,
+      // so it costs one comparison and no allocation.
+      if (!precedes(h, r.id, i, worst.h, worst.r.id, worst.i)) continue
+    }
+    let lo = 0, hi = kept.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (precedes(kept[mid].h, kept[mid].r.id, kept[mid].i, h, r.id, i)) lo = mid + 1
+      else hi = mid
+    }
+    kept.splice(lo, 0, { r, h, i })
+    if (kept.length > k) kept.pop()
+  }
+  return kept
+    .map((x) => x.r)
+    .sort((a, b) => cmpPath(a.relative_path, b.relative_path) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+}
+
+/** `, id` as a tiebreak: relative_path alone is not a total order. */
+export function cmpPath(a: string, b: string): number {
+  if (a === b) return 0
+  return a < b ? -1 : 1
+}
+
+
 export interface FreshnessSummary {
   fresh: number
   stale: number
@@ -171,7 +305,7 @@ function batchLoadRows(raw: CoreDatabase, ids: string[], paths: string[]): Map<s
   return rows
 }
 
-function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: RowFreshnessStatus; reason: string } {
+function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: RowFreshnessStatus; reason: RowFreshnessReason } {
   const stat = statFor(row.path)
   if (!stat.exists) return { status: "missing", reason: "file-gone" }
   // mtime+size fast path (must match the indexer's stat convention).
@@ -194,11 +328,49 @@ function classifyRow(row: FileRow, statFor: (p: string) => StatInfo): { status: 
   }
 }
 
+/**
+ * M64.R: why a row was classified as it was.
+ *
+ * This was a bare `Map<string, string>` whose possible values were only
+ * documented in a comment, so a consumer had to read the implementation to know
+ * the vocabulary — and bb_health, the one consumer that wanted to publish the
+ * breakdown, discarded it instead. Named here, exported, and used as the key
+ * type of a tally that is initialised with every value present.
+ *
+ * The nesting under status is fixed and is what makes the categories a
+ * partition rather than a list:
+ *
+ *   fresh   ← "metadata-fast-path" | "hash-match"
+ *   stale   ← "hash-differs"
+ *   missing ← "file-gone" | "unreadable" | "no-row"
+ *
+ * `metadata-fast-path` is the one to read carefully: it is a verdict reached
+ * WITHOUT reading the file, from an mtime+size match. `hash-match` read the
+ * bytes. Both are reported "fresh" and they are not the same claim.
+ */
+export type RowFreshnessReason =
+  | "no-row"
+  | "file-gone"
+  | "unreadable"
+  | "metadata-fast-path"
+  | "hash-match"
+  | "hash-differs"
+
+/** Every value, so a tally can be built without a lookup table at each site. */
+export const ROW_FRESHNESS_REASONS: readonly RowFreshnessReason[] = [
+  "no-row",
+  "file-gone",
+  "unreadable",
+  "metadata-fast-path",
+  "hash-match",
+  "hash-differs",
+]
+
 export interface RowsFreshnessResult {
   /** fileId (or filePath when the row had no fileId) -> status. */
   statuses: Map<string, RowFreshnessStatus>
-  /** same keys -> why ("no-row" | "file-gone" | "unreadable" | "metadata-fast-path" | "hash-match" | "hash-differs") */
-  reasons: Map<string, string>
+  /** same keys -> why. Typed, not a bare string: see RowFreshnessReason. */
+  reasons: Map<string, RowFreshnessReason>
   summary: FreshnessSummary
 }
 
@@ -242,7 +414,7 @@ export function resolveRowsFreshnessDetailed(
   const byId = batchLoadRows(raw, [...uniqueIds], [...uniquePaths])
 
   const statuses = new Map<string, RowFreshnessStatus>()
-  const reasons = new Map<string, string>()
+  const reasons = new Map<string, RowFreshnessReason>()
   for (const id of uniqueIds) {
     const row = byId.get(id)
     if (!row) {

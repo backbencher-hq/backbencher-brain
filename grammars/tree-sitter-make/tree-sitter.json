@@ -1,0 +1,35 @@
+{
+  "grammars": [
+    {
+      "name": "make",
+      "camelcase": "Make",
+      "scope": "source.make",
+      "path": ".",
+      "file-types": [
+        "mk"
+      ],
+      "injection-regex": "^(make|makefile)$"
+    }
+  ],
+  "metadata": {
+    "version": "1.1.1",
+    "license": "MIT",
+    "description": "Make grammar for tree-sitter",
+    "authors": [
+      {
+        "name": "tree-sitter-grammars"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/tree-sitter-grammars/tree-sitter-make"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true
+  }
+}

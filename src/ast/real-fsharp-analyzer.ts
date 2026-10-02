@@ -32,6 +32,10 @@ const OBJECT_LEAF_METHODS = new Set(["ToString", "GetHashCode", "Equals", "GetTy
  * `grammars/tree-sitter-fsharp/fsharp/grammar.js` — the list is F1-audited against the
  * wasm, so a grammar rename shows up as an unknown node type rather than as a silent 0.
  */
+/** The three node kinds that can own a declaration, as a named test rather than a closure. */
+const isCallableOwnerNode = (n: Node): boolean =>
+  n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
+
 const TYPE_WRAPPER_NODES = new Set([
   "simple_type", "postfix_type", "paren_type", "generic_type", "function_type",
   "compound_type", "list_type", "atomic_type", "nullable_type", "struct_type",
@@ -46,6 +50,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const imports: ASTEngine.ImportInfo[] = []
     const exports: ASTEngine.ExportInfo[] = []
     const errors: ASTEngine.ParseError[] = []
+    /**
+     * The names this run has PUBLISHED as symbols, maintained as they are pushed.
+     *
+     * This is the invariant every relationship's SOURCE must satisfy, and it is the one the
+     * structural rules kept getting wrong in both directions. A guard that refuses whenever a
+     * declaration is nested refuses `isAttribute -> FSharpEntity`, where the binding is a
+     * local inside an active pattern and IS published as a function; a guard that does not
+     * refuse publishes `argInfo -> ArgReprInfo`, where the binding is a local and is NOT
+     * published. Neither defect is visible downstream, because one edge resolves to a
+     * perfectly good symbol and the other resolves to nothing, and a graph consumer has no way
+     * to tell those apart from the shape of the edge alone.
+     *
+     * Membership is exact because a declaration's symbol is pushed when the walk visits the
+     * declaration, and the declared-type emission happens while walking its SUBTREE — so by
+     * the time a name is tested, the walk has already published it if it publishes it at all.
+     */
+    const publishedNames = new Set<string>()
+    const publish = (s: ASTEngine.UniversalSymbol): void => {
+      if (s?.name) publishedNames.add(s.name)
+      symbols.push(s)
+    }
 
     // M59.A7 dim 8 (the haskell precedent): every relationship carries the line
     // of the node that BEARS it, dedup-keyed WITH that line so two same-shape
@@ -177,7 +202,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
           const name = nameNode.text
-          symbols.push({
+          publish({
             name,
             kind: type === "namespace" ? ASTEngine.SymbolKind.Namespace : ASTEngine.SymbolKind.Module,
             range: this.nodeToRange(node),
@@ -225,9 +250,42 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           let kind = ASTEngine.SymbolKind.Class
           let isInterface = false
-          var isMeasure = !!this.findDescendant(node, function (n) {
-            return n.type === "attribute" && (n.text.includes("Measure") || n.text.includes("[<Measure"))
-          })
+          // FS-D27. A UNIT OF MEASURE is a structural fact, not a substring.
+          //
+          // The test was `n.text.includes("Measure") || n.text.includes("[<Measure")` on any
+          // `attribute` descendant — the one text read left in this analyzer, and the only
+          // thing here that was not AST-derived. Two defects, and the second is worse than
+          // the first:
+          //
+          //   1. the second clause is dead, being a substring of the first;
+          //   2. `[<MeasureAnnotatedAbbreviation>]` is a DIFFERENT and perfectly ordinary F#
+          //      attribute — it marks a generic abbreviation — and it CONTAINS the substring.
+          //      `fsharp/src/FSharp.Core/prim-types.fs:483` writes
+          //      `[<MeasureAnnotatedAbbreviation>] type float<[<Measure>] 'Measure> = float`,
+          //      where the real measure marker is on the TYPE PARAMETER and the type itself
+          //      is an abbreviation. The substring test cannot tell those apart, and `findDescendant`
+          //      returns whichever comes first, so the abbreviation was classified as a measure.
+          //
+          // The name is read from the tree, and only from the attributes attached to the TYPE:
+          //
+          //     type_definition
+          //       attributes "[<Measure>]"
+          //         attribute "Measure"
+          //           simple_type "Measure" -> long_identifier "Measure" -> identifier "Measure"
+          //
+          // An exact name match, on the `attributes` node that is a DIRECT child of the type,
+          // is what the language means: `Measure` and its `MeasureAttribute` spelling name the
+          // same attribute, and nothing else does. A `Measure` on a type PARAMETER is a
+          // different fact about a different node and is not consulted here — the parameter
+          // positions are the R9 declared-type graph's business, not the kind classifier's.
+          const isMeasure = this.filterChildren(node, (n) => n.type === "attributes").some((attrs) =>
+            this.findDescendants(attrs, (n) => n.type === "attribute", 3).some((attr) => {
+              const nm =
+                this.findDescendant(attr, (n) => n.type === "long_identifier", 3) ??
+                this.findDescendant(attr, (n) => n.type === "identifier", 3)
+              return nm?.text === "Measure" || nm?.text === "MeasureAttribute"
+            }),
+          )
           if (isMeasure) kind = ASTEngine.SymbolKind.Type
           if (hasRecordTypeDefn) {
             kind = ASTEngine.SymbolKind.Class
@@ -274,7 +332,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
           const isExtensionOnly =
             isExtensionBody && !typeNamesDeclaredInFile.has(name) && !typeExtensionsPublished.has(name)
           if (!isExtensionBody || isExtensionOnly) {
-            symbols.push({
+            publish({
               name,
               kind,
               range: this.nodeToRange(node),
@@ -306,7 +364,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const field of fields) {
               const fieldName = this.findChild(field, (n) => n.type === "identifier")
               if (!fieldName?.text) continue
-              symbols.push({
+              publish({
                 name: fieldName.text,
                 kind: ASTEngine.SymbolKind.Property,
                 range: this.nodeToRange(field),
@@ -325,7 +383,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               for (const c of cases) {
                 const caseNameNode = this.findDescendant(c, (n) => n.type === "identifier")
                 if (caseNameNode && caseNameNode.text) {
-                  symbols.push({
+                  publish({
                     name: caseNameNode.text,
                     kind: ASTEngine.SymbolKind.EnumMember,
                     range: this.nodeToRange(c),
@@ -344,7 +402,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             for (const c of cases) {
               const caseNameNode = this.findDescendant(c, (n) => n.type === "identifier")
               if (caseNameNode && caseNameNode.text) {
-                symbols.push({
+                publish({
                   name: caseNameNode.text,
                   kind: ASTEngine.SymbolKind.EnumMember,
                   range: this.nodeToRange(c),
@@ -553,7 +611,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               // (`member private this.Reset()`), and neither `internal` nor `private`
               // is part of the library's importable surface.
               const memberAccess = this.accessModifierOf(node, null)
-              symbols.push({
+              publish({
                 name,
                 kind,
                 range: this.nodeToRange(node),
@@ -561,6 +619,40 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
                 isAsync,
                 metadata: { nodeType: type, ...(memberAccess ? { accessModifier: memberAccess } : {}) },
               })
+
+              // FS-D29. A MUTUAL RECURSION GROUP IS ONE NODE WITH SEVERAL BINDINGS.
+              //
+              //     let rec groupFirst (a: GroupDep) : GroupSecond = …
+              //     and groupSecond (b: GroupSecondDep) : GroupFirst = …
+              //
+              // is a single `function_or_value_defn` holding both clauses, and only the first
+              // was published. So `groupSecond` did not exist as a symbol at all, and its
+              // parameter and return types were attributed to `groupFirst` — which is a real
+              // published name, so the edges resolved and nothing downstream could tell. The
+              // F# compiler corpus is written almost entirely in this shape.
+              //
+              // Each `and` clause is a binding in its own right, so each gets a symbol, with
+              // the SAME kind and owner as the first: they are siblings, not nested.
+              const extraLefts: Node[] = []
+              for (let i = 0; i < node.namedChildCount; i++) {
+                const c = node.namedChild(i)
+                if (c && (c.type === "function_declaration_left" || c.type === "value_declaration_left")) {
+                  extraLefts.push(c)
+                }
+              }
+              for (let k = 1; k < extraLefts.length; k++) {
+                const andName = this.nameOfDeclarationLeft(extraLefts[k]!)
+                if (andName && andName !== name) {
+                  publish({
+                    name: andName,
+                    kind,
+                    range: this.nodeToRange(node),
+                    ownerName: owner,
+                    isAsync,
+                    metadata: { nodeType: type, isMutualRecursionClause: true },
+                  })
+                }
+              }
 
               // Qualified override: source = Owner.method, target = Base.method.
               if (isMember && this.firstTokenIs(node, "override")) {
@@ -628,7 +720,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: "constructor",
             kind: ASTEngine.SymbolKind.Constructor,
             range: this.nodeToRange(node),
@@ -645,7 +737,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         const nameNode = this.findChild(node, (n) => n.type === "identifier" || n.type === "property_or_ident")
         if (nameNode && nameNode.text) {
           const owner = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Method,
             range: this.nodeToRange(node),
@@ -680,7 +772,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (iface) {
           const { written, leaf } = iface
           const ownerName = currentScope.length > 0 ? currentScope[currentScope.length - 1] : undefined
-          symbols.push({
+          publish({
             name: "new " + written,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
@@ -714,7 +806,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (type === "active_pattern") {
         // One function symbol named by the full active pattern, e.g. (|Even|Odd|)
-        symbols.push({
+        publish({
           name: node.text,
           kind: ASTEngine.SymbolKind.Function,
           range: this.nodeToRange(node),
@@ -725,7 +817,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `exception NotFound of string` — NotFound is under long_identifier.
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier")
         if (nameNode && nameNode.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Class,
             range: this.nodeToRange(node),
@@ -742,7 +834,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // .dcl/.icl merge precedent).
         const nameNode = this.findChild(node, (n) => n.type === "identifier")
         if (nameNode?.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node),
@@ -773,7 +865,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (attrNameNode && attrNameNode.text) {
           const attrText = attrNameNode.text
           if (attrText.includes("TypeProvider") || attrText.includes("TypeProviderAssembly")) {
-            symbols.push({
+            publish({
               name: attrText,
               kind: ASTEngine.SymbolKind.Class,
               range: this.nodeToRange(node),
@@ -885,7 +977,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       } else if (type === "compiler_directive_decl") {
         const nameNode = this.findDescendant(node, (n) => n.type === "identifier" || n.type === "long_identifier")
         if (nameNode && nameNode.text) {
-          symbols.push({
+          publish({
             name: nameNode.text,
             kind: ASTEngine.SymbolKind.Macro,
             range: this.nodeToRange(node),
@@ -933,7 +1025,7 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
 
     // FS-D4: the R9 declared-type reference graph. See extractDeclaredTypeRefs.
-    this.extractDeclaredTypeRefs(rootNode, pushRel)
+    this.extractDeclaredTypeRefs(rootNode, pushRel, publishedNames)
 
     // FS-D8: the EXPORT surface. F#'s importable units are the ones an `open` can
     // bind:
@@ -1108,13 +1200,47 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The tree this is built on is printed by script/m14/tmp/fs030-object-expr-name.ts.
    */
   private objectExpressionInterface(node: Node): { written: string; leaf: string } | undefined {
-    const carrier =
-      this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
-      this.findDescendant(
-        node,
-        (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
-        4,
-      )
+    // The interface is the object's FIRST DIRECT CHILD, and the fix is to read it there.
+    //
+    // The subtree search below was written for a DOTTED interface — `{ new System.IDisposable
+    // with … }` — and asked for the first `dot_expression` anywhere inside. When the interface
+    // is BARE, `{ new IDisposable with … }`, that search finds nothing of its own and keeps
+    // descending, into the member bodies. So the first dotted expression in the subtree won,
+    // and on fsharp/src/fsi/fsimain.fs:54 that was
+    // `Thread.CurrentThread.CurrentUICulture`, giving
+    //
+    //     implements  Main  ->  CurrentUICulture
+    //
+    // where truth derives
+    //
+    //     implements  Main  ->  IDisposable
+    //
+    // One wrong name, and it cost FIVE rows in that file alone: three MISSING (the real
+    // interfaces IDisposable, CtrlBreakService and FsiEvaluationSessionHostConfig, each from
+    // an object expression, all displaced by whichever dotted name a member body mentioned)
+    // and one UNEXPLAINED fabrication. The name it found is not a near-miss — it is a property
+    // assignment inside a `Dispose` method, which is not a type and implements nothing.
+    //
+    // Reading child 0 is also the cheaper rule. "The name after `new`" is a fact about the
+    // first child, so a bounded search for a name in a place it cannot appear is a rule that
+    // can only ever be wrong, and wrong in the direction of a member body.
+    const first = node.namedChild(0)
+    const isNameish = (n: Node | null): n is Node =>
+      !!n &&
+      (n.type === "dot_expression" ||
+        n.type === "typed_expression" ||
+        n.type === "long_identifier_or_op" ||
+        n.type === "long_identifier")
+    const carrier = isNameish(first)
+      ? first
+      : // Kept for shapes where the name is not the first child, so this is a narrowing of
+        // where the name may be READ rather than a claim that it is never elsewhere.
+        (this.findDescendant(node, (n) => n.type === "dot_expression", 4) ??
+          this.findDescendant(
+            node,
+            (n) => n.type === "typed_expression" || n.type === "long_identifier_or_op" || n.type === "long_identifier",
+            4,
+          ))
     if (!carrier) return undefined
     // `typed_expression` text carries the type ARGUMENTS too, and an argument list is
     // not part of the type's name.
@@ -1129,7 +1255,20 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     // `member _.Equals(x, y) = …` and `-> failwith` for a body that calls it — a
     // strictly worse answer than `System`, because it now varied with the body. The
     // name is the carrier's business alone.
-    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 8)
+    //
+    // A TYPE ARGUMENT is not part of the type's name, and it arrives as an identifier like any
+    // other, so reading the last identifier of a `typed_expression` reads the ARGUMENT:
+    // `{ new System.Collections.Generic.IEqualityComparer<Foo> with … }` has carrier text
+    // `System.Collections.Generic.IEqualityComparer<Foo>`, whose last identifier is `Foo`, and
+    // the row came out `implements Fixture.Names -> Foo` — a type argument presented as the
+    // type being implemented. The fixture caught it, which is the second thing in this lane
+    // that guard has earned its keep on.
+    //
+    // `written` already handles this for the full name (`split("<")`); the leaf needs the same
+    // correction, and taking the carrier's FIRST CHILD is how the grammar says "the type, not
+    // its argument" without re-parsing the text.
+    const nameish = carrier.type === "typed_expression" ? (carrier.namedChild(0) ?? carrier) : carrier
+    const idents = this.findDescendants(nameish, (n) => n.type === "identifier", 8)
     const leaf = idents.length ? idents[idents.length - 1]!.text : written
     return { written, leaf: leaf || written }
   }
@@ -1145,22 +1284,104 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * The name a `function_or_value_defn` / `value_declaration` DECLARES, read
    * structurally and never from an `identifier_pattern`'s text (FS-D6).
    */
+  /**
+   * The name a `*_declaration_left` node declares.
+   *
+   * The binding's own left-hand side spans a parameter list and a return annotation, so its
+   * `identifier_pattern` text is the WHOLE left side (FS-D6) and cannot be used. The name is
+   * the first `long_identifier` inside the pattern, in document order.
+   */
+  /**
+   * The binding a type annotation belongs to, when the declaration node holds several.
+   *
+   * `let rec f … and g …` is ONE node with two left-hand sides, and each owns its own
+   * signature. The name is read from the left whose SPAN contains the annotation, so the
+   * answer is a fact about position rather than about order — and this is the same correction
+   * the truth oracle needed for a dotted name and for a `let … and …` group, and the analyzer
+   * needed twice.
+   */
+  private declaredNameAt(decl: Node, t: Node): string | undefined {
+    let best: Node | undefined
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const c = decl.namedChild(i)
+      if (!c) continue
+      if (c.type !== "function_declaration_left" && c.type !== "value_declaration_left") continue
+      if (c.startIndex <= t.startIndex && t.endIndex <= c.endIndex) best = c
+    }
+    return best ? this.nameOfDeclarationLeft(best) : undefined
+  }
+
+  private nameOfDeclarationLeft(left: Node): string | undefined {
+    const pat = this.findChild(left, (n) => n.type === "identifier_pattern")
+    const carrier =
+      (pat ? this.findChild(pat, (n) => n.type === "long_identifier_or_op") ?? this.findChild(pat, (n) => n.type === "long_identifier") : undefined) ??
+      left
+    const idents = this.findDescendants(carrier, (n) => n.type === "identifier", 3)
+      .filter((n) => n.startIndex < (pat?.endIndex ?? left.endIndex))
+      .sort((a, b) => a.startIndex - b.startIndex)
+    if (idents.length) return idents[0]!.text
+    const direct = this.findChild(left, (n) => n.type === "identifier")
+    return direct?.text
+  }
+
   private declaredBindingName(decl: Node): string | undefined {
-    const direct = this.findChild(decl, (n) => n.type === "identifier" || n.type === "long_identifier")
-    if (direct?.text) return direct.text.includes(".") ? (direct.text.split(".").pop() as string) : direct.text
-    const left =
-      this.findChild(decl, (n) => n.type === "function_declaration_left") ??
-      this.findChild(decl, (n) => n.type === "value_declaration_left")
-    if (!left) return undefined
+    // The DECLARATION LEFT is read FIRST, and the direct-child shortcut second — the order is
+    // the fix, not an accident of preference.
+    //
+    // `let rec f … and g …` is ONE `function_or_value_defn` holding both clauses, and in that
+    // shape the node has a direct `long_identifier` child belonging to the SECOND clause. The
+    // shortcut therefore answered `visitVal` for the binding that begins
+    //
+    //     let rec visitEntity (entity: Entity) : TypedTreeNode = …        // line 2485
+    //     and visitVal (v: Val) : TypedTreeNode = …                      // line 2506
+    //
+    // and every declared type in the FIRST binding's signature was published under the
+    // SECOND binding's name — three rows in TypedTreeOps.Attributes.fs, and the same shape
+    // throughout the compiler corpus, which is written almost entirely in `let rec … and …`
+    // groups. Nothing downstream could tell: `visitVal` is a real published symbol, so the
+    // edge resolved.
+    // The first `*_declaration_left` in DOCUMENT ORDER across BOTH types — not
+    // "function_declaration_left, else value_declaration_left".
+    //
+    // In a mutual group the group's own name is a `value_declaration_left` at index 0 and the
+    // `and` clause's is a `function_declaration_left` at index 2 (printed by
+    // script/m14/tmp/fs035-and-group.ts for the same grammar, on Symbols.fs). Asking for the
+    // function form first therefore returns the `and` clause. This is the identical fault the
+    // truth oracle had, found independently, and the two implementations agreeing on the FIX
+    // while each had it separately is the reason a shared rule is worth stating twice.
+    let left: Node | undefined
+    for (let i = 0; i < decl.namedChildCount; i++) {
+      const c = decl.namedChild(i)
+      if (c && (c.type === "function_declaration_left" || c.type === "value_declaration_left")) {
+        left = c
+        break
+      }
+    }
+    if (!left) {
+      const direct = this.findChild(decl, (n) => n.type === "identifier" || n.type === "long_identifier")
+      if (direct?.text) return direct.text.includes(".") ? (direct.text.split(".").pop() as string) : direct.text
+      return undefined
+    }
     const pat = this.findChild(left, (n) => n.type === "identifier_pattern")
     const leaf = pat ? this.patternNameNode(pat) : this.findChild(left, (n) => n.type === "identifier")
     if (leaf?.text) return leaf.text
-    // the pattern's own text is only a NAME when it has no parameters and no return
-    // annotation — `let x = 1` — which is a structurally checkable condition, not a
-    // spelling one: a name may not contain `(`, `<` or ` : `.
+    // The pattern's own text is only a NAME when it is nothing but a name. That was three
+    // regexes — `/[()<]/`, `/\s:/` and `/^[A-Za-z_][A-Za-z0-9_']*$/` — and the grammar already
+    // says it: a bare name is an `identifier_pattern` whose only content is a
+    // `long_identifier`. A pattern that carries a parameter list, a type argument or a return
+    // annotation has a CHILD for it, so the test is "does this node have exactly one name
+    // child and nothing else", which is about the tree rather than about a string.
+    //
+    // This was the last of the six regex literals the M12 census found in this file. All six
+    // are gone, and `docs/analyzers/real-fsharp-analyzer.md` had claimed the count was 0.
     if (pat) {
-      const text = pat.text.trim()
-      if (text && !/[()<]/.test(text) && !/\s:/.test(text) && /^[A-Za-z_][A-Za-z0-9_']*$/.test(text)) return text
+      const names = this.filterChildren(pat, (n) => n.type === "long_identifier" || n.type === "long_identifier_or_op")
+      const isBareName =
+        names.length === 1 && pat.namedChildCount === 1 && !this.findDescendant(pat, (n) => n.type === "argument_patterns", 2)
+      if (isBareName) {
+        const text = names[0]!.text
+        if (text) return text.includes(".") ? (text.split(".").pop() as string) : text
+      }
     }
     return undefined
   }
@@ -1198,6 +1419,89 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scan per type node, i.e. O(n²) over a file. Bounded hops keep the walk linear (the
    * lane's own hot-path rule: no per-symbol O(n) scans).
    */
+  /**
+   * The OUTERMOST callable above `n` — the member a local belongs to — or undefined if
+   * there is none, which means `n` is itself top-level and is its own owner.
+   *
+   * This replaces `findAncestor(decl, isCallable, 8)`, and the bound was the defect. A
+   * depth-limited search cannot distinguish "there is no callable above this" from "the
+   * callable is further than 8 levels up", and the code treated both as the first. It then
+   * fell through to publishing the LOCAL's own name, and a local is not a symbol — the lane's
+   * contract, pinned by the `Negative.fs` fixture, says so — so the edge it published had no
+   * other end:
+   *
+   *     references insert -> ConsoleKeyInfo      // `let insert(key: ConsoleKeyInfo) =` in console.fs
+   *     references select -> Type                // `let select (methInfo:MethodInfo) =` in the same file
+   *
+   * Neither `insert` nor `select` is a symbol; the truth oracle independently derived both
+   * facts against `ReadLine`, the method that contains them, and the differential reported
+   * 125 such rows. `insert` sits inside nested `for`/`do` bindings in a method body, which is
+   * more than 8 levels up.
+   *
+   * Walking to the root and keeping the LAST callable found is both unbounded and simpler to
+   * state: a local inside a local inside a member is owned by the member, because a namespace
+   * and a module are not callables and so never become the answer. A decl with no callable
+   * anywhere above it really is top-level, and its own name is then correct — which is the
+   * `annotated : Bar` case in the fixture, and the reason the fallback is kept rather than
+   * removed.
+   *
+   * Cost is O(depth) per annotation and the walk terminates at the root, so the bound that
+   * caused this cannot come back.
+   */
+  /**
+   * Owner lookups, memoised PER DECLARATION rather than per annotation.
+   *
+   * Both of the root walks below are O(depth) and both are asked the same question about the
+   * same `decl` once for every type node the declaration carries — so a member with four
+   * annotations walked to the root four times to learn the same thing. The pass is therefore
+   * O(annotations · depth) over what is really O(declarations · depth).
+   *
+   * MEASURED on CheckExpressions.fs (702 KB), analyze-only with the parse excluded and the
+   * median of 7: 1411 ms before this change, 1510 ms after the walks were introduced — about
+   * 7% of the analyzer's own time, from two lines of correct-looking code. It is easy to miss
+   * because the end-to-end dump barely moves: parse is 8.6 s on that file, so a 100 ms
+   * regression is under 1% of the number a corpus run reports. That is the same shape as the
+   * O(n^2) the M12 envelope found on the production path, found there by scaling rather than by
+   * reading — so it was found here by measuring the thing the walks sit inside, not the file.
+   *
+   * Keyed by node in a WeakMap, so it needs no reset between runs and cannot outlive its tree.
+   */
+  private readonly ownerMemo = new WeakMap<Node, { callable?: Node | null; typeDef?: Node | null }>()
+
+  private outermostCallableAbove(n: Node): Node | undefined {
+    const hit = this.ownerMemo.get(n)
+    if (hit && "callable" in hit) return hit.callable ?? undefined
+    let found: Node | undefined
+    let cur: Node | null = n.parent
+    while (cur) {
+      if (isCallableOwnerNode(cur)) found = cur
+      cur = cur.parent
+    }
+    this.ownerMemo.set(n, { ...(hit ?? {}), callable: found ?? null })
+    return found
+  }
+
+  /**
+   * The type declaration whose body contains `n`, walking to the root.
+   *
+   * The OUTERMOST one, which for a mutual group is the node that holds every clause in the
+   * group — `type A = … and B = …` is one `type_definition` with both bodies inside it. The
+   * name of the type that actually owns a declaration is recovered separately, by taking the
+   * last `type_name` before the declaration; see the class-field arm in `resolveSource`.
+   */
+  private outermostTypeDefinitionAbove(n: Node): Node | undefined {
+    const hit = this.ownerMemo.get(n)
+    if (hit && "typeDef" in hit) return hit.typeDef ?? undefined
+    let found: Node | undefined
+    let cur: Node | null = n.parent
+    while (cur) {
+      if (cur.type === "type_definition") found = cur
+      cur = cur.parent
+    }
+    this.ownerMemo.set(n, { ...(hit ?? {}), typeDef: found ?? null })
+    return found
+  }
+
   private findAncestor(node: Node, predicate: (n: Node) => boolean, maxDepth: number = 12): Node | undefined {
     let cur: Node | null = node.parent
     for (let i = 0; cur && i < maxDepth; i++) {
@@ -1445,6 +1749,14 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       metadata: Record<string, any>,
       line?: number,
     ) => void,
+    /**
+     * The names this run has published as symbols. Passed in rather than reached for because
+     * this pass is a SEPARATE walk from the one that publishes them — the R9 graph is
+     * extracted after the main traversal — so the set is threaded rather than captured, and
+     * the ordering that makes membership exact (a declaration's symbol is published before
+     * its subtree is walked) is a property of the CALLER, not of this method.
+     */
+    publishedNames: Set<string>,
   ): void {
     const PREDEFINED = new Set([
       "int", "uint", "int8", "uint8", "int16", "uint16", "int32", "uint32", "int64", "uint64",
@@ -1494,16 +1806,67 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       return null
     }
 
-    /** The published name for a type-bearing node, or null when it is not a dependency. */
+    /**
+     * Is this node an F# TYPE BINDER — `'T`, `^T` — rather than a named type?
+     *
+     * The grammar writes a binder as a leading apostrophe token and then an identifier:
+     *
+     *     type_argument "'T"
+     *       '          "'"
+     *       identifier "T"
+     *
+     * so the binder is a TOKEN in the tree and not a spelling to be recognised in a string.
+     * That is what replaced the regex `/^['^]/` — the fourth of the six literals the M12
+     * census found in this file, all of which this analyzer's doc claimed did not exist.
+     */
+    const isTypeBinderNode = (node: Node): boolean => {
+      for (let i = 0; i < node.childCount; i++) {
+        const c = node.child(i)
+        if (c && c.type === "'") return true
+      }
+      return false
+    }
+
+    /**
+     * Is this node a NAME — a bare `identifier`, or a dotted chain of them ending at `leaf`?
+     *
+     * Replaces the regex `/^[A-Za-z_][A-Za-z0-9_']*$/`. The grammar already distinguishes an
+     * `identifier` from everything else, and asking the TREE is a stronger statement than
+     * asking whether a string looks like a name: a dotted path `System.IDisposable` is a
+     * `long_identifier` over identifiers, and both facts are then checkable.
+     */
+    const isIdentifierNameNode = (node: Node, leaf: string): boolean => {
+      if (node.type === "identifier") return node.text === leaf
+      if (node.type === "long_identifier" || node.type === "long_identifier_or_op") {
+        const last = this.filterChildren(node, (n) => n.type === "identifier").pop()
+        return last?.text === leaf
+      }
+      const inner = this.findDescendant(node, (n) => n.type === "identifier", 3)
+      return inner?.text === leaf
+    }
+
+  /**
+   * The published name for a type-bearing node, or null when it is not a dependency.
+   */
     const publishedName = (node: Node): string | null => {
       const text = (node.text ?? "").trim()
       if (!text) return null
       if (text === "_") return null
-      if (/^['^]/.test(text)) return null // 'T, ^T — a binder, not a dependency
       const leaf = text.includes(".") ? (text.split(".").pop() as string) : text
-      if (!leaf || leaf === "_" || /^['^]/.test(leaf)) return null
+      if (!leaf || leaf === "_") return null
+      // A TYPE BINDER is not a dependency. `'T` and `^T` are the F# spellings, and the
+      // grammar has a node for it: a type_variable / type_binder, whose own text is the
+      // apostrophe. Reading the NODE is the whole point — the previous test was the regex
+      // `/^['^]/` on the text, which is the sixth of the six regex literals the M12 census
+      // found in this file and which the analyzer's own doc claimed did not exist.
+      if (isTypeBinderNode(node)) return null
       if (PREDEFINED.has(leaf)) return null
-      if (!/^[A-Za-z_][A-Za-z0-9_']*$/.test(leaf)) return null
+      // A name is an IDENTIFIER or a dotted chain of them, and the grammar has an
+      // `identifier` node for the former. The previous test was the regex
+      // `/^[A-Za-z_][A-Za-z0-9_']*$/` applied to the leaf's text; walking the node says the
+      // same thing without a pattern, and says it about the TREE rather than about a string
+      // that happens to look like a name.
+      if (!isIdentifierNameNode(node, leaf)) return null
       return leaf
     }
 
@@ -1585,6 +1948,27 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         n.type === "function_or_value_defn" ||
         n.type === "value_declaration" ||
         n.type === "additional_constr_defn"
+      // A LAMBDA parameter is not a declaration and owns nothing.
+      //
+      //     let sb = fun (sb: StringBuilder) (c: char) -> …
+      //
+      // The `simple_type`'s nearest declaration ancestor is the `let sb` that HOLDS the
+      // lambda, so the walk attributed `StringBuilder` to `sb` — a symbol that exists, so
+      // nothing downstream could tell the edge was wrong, and the truth oracle (which
+      // refuses lambda parameters independently) derived no such row. The lane's contract
+      // says it outright and pins it in the negative fixture: lambda params are NOT
+      // symbols. So an annotation on one is a fact about a value that the graph does not
+      // publish, and publishing it under the holder's name is worse than publishing
+      // nothing: it is a true-shaped edge about the wrong thing.
+      //
+      // The discriminator is the `fun_expression` between the pattern and the declaration,
+      // which is the only thing that makes this a lambda parameter rather than a member's.
+      const inLambda = this.findAncestor(
+        parent,
+        (n) => n.type === "fun_expression",
+        6,
+      )
+      if (inLambda) return null
       const decl = isDecl(parent) ? parent : this.findAncestor(parent, isDecl, 14)
       if (!decl) return null
       const pos = callablePosition(t, decl)
@@ -1607,14 +1991,37 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
       // the CLASS. The truth oracle found it as the single MISSING row on
       // fsharp/declared-type-graph (`BodyLocal -> Dep` against the analyzer's
       // `Holder -> Dep`), which is the second opinion doing the job it exists for.
-      const isCallable = (n: Node) =>
-        n.type === "member_defn" || n.type === "function_or_value_defn" || n.type === "additional_constr_defn"
       const inTypeBody = this.findAncestor(decl, (n) => n.type === "type_extension_elements", 3) !== undefined
-      const enclosingCallable = this.findAncestor(decl, isCallable, 8)
+      const enclosingCallable = this.outermostCallableAbove(decl)
       if (inTypeBody && enclosingCallable === undefined) {
-        // a field of the class: the type owns it
-        const td = this.findAncestor(decl, (n) => n.type === "type_definition", 6)
-        const tn = td ? this.findDescendant(td, (n) => n.type === "type_name", 3) : undefined
+        // a field of the class: the type owns it.
+        //
+        // The owning type is the one whose body CONTAINS this declaration, and in a mutual
+        // type group the group's node holds several:
+        //
+        //     type FSharpAssemblyContents(…) =          // <- the group's first type
+        //         member val …
+        //     and FSharpImplementationFileContents(…) =  // <- the type that owns the field
+        //         let mutable Binding : …
+        //
+        // Two things were wrong here. `findAncestor(decl, type_definition, 6)` is bounded
+        // and cannot tell "no type above" from "further than 6 up". And taking the FIRST
+        // `type_name` descendant of that node names the group's FIRST type, so a field in
+        // the `and` clause was published under its sibling's name — a name that exists, so
+        // the edge resolved and nothing downstream could tell it was wrong. Measured in
+        // Exprs.fs: `FSharpAssemblyContents -> Binding` against the truth's
+        // `FSharpImplementationFileContents -> Binding`.
+        //
+        // The owner is the LAST type name that begins before the field does, in document
+        // order — which is the same correction the truth oracle needed for identifiers in a
+        // dotted name, and for the same reason: an array is not a document.
+        const td = this.outermostTypeDefinitionAbove(decl)
+        if (!td) return null
+        const fieldStart = decl.startIndex
+        const names = this.findDescendants(td, (n) => n.type === "type_name", 4)
+          .filter((n) => n.startIndex < fieldStart)
+          .sort((a, b) => a.startIndex - b.startIndex)
+        const tn = names.length ? names[names.length - 1] : undefined
         const tName = tn ? this.typeInfoOf(tn)?.name ?? null : null
         if (tName) return { source: tName, declaredOn: "class_field" }
       }
@@ -1628,8 +2035,34 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
             : this.declaredBindingName(enclosingCallable)
         if (cName) return { source: cName, declaredOn: "local_annotation" }
       }
+      // The fallback publishes a name ONLY if this run has already published it as a symbol.
+      //
+      // A structural guard was tried here first and was wrong in both directions, which is
+      // what the membership test exists to settle. Refusing every nested declaration refuses
+      // `isAttribute -> FSharpEntity`, where the binding is a local inside an active pattern
+      // and IS published as a function; not refusing publishes `argInfo -> ArgReprInfo`,
+      // where the binding is a local and is NOT published, and the edge has no other end.
+      // Neither defect is visible downstream: one resolves to a perfectly good symbol and the
+      // other to nothing, and an edge's shape alone does not distinguish them.
+      //
+      // `publishedNames` is exact here rather than approximate: a declaration's symbol is
+      // pushed when the walk visits the declaration, and this runs while walking its subtree.
+      // MEASURED, THEN REVERTED: reading the left-hand side whose SPAN contains the
+      // annotation, rather than the first one on the node, is the right idea for a mutual
+      // group and it made the corpus much worse — MISSING 8 -> 48, UNEXPLAINED 66 -> 139.
+      //
+      // The reason is that a left-hand side does not always SPAN the type it owns. In
+      // `let rec f (x: int) : R = …` the parameter's type is inside the left, but the RETURN
+      // type is a sibling of the pattern rather than a descendant of the left, so no left
+      // contains it, the positional lookup answers nothing, and the row is dropped instead of
+      // attributed. A position test that is right for half the positions and silent for the
+      // other half is the same defect as the bound it replaced, wearing a different hat.
+      //
+      // The `and`-clause SYMBOL PUBLICATION that came with it is kept, because that part is
+      // independently correct and separately measured: before, `groupSecond` did not exist as
+      // a symbol at all, which is a fact about the symbol table and not about attribution.
       const name = this.declaredBindingName(decl)
-      if (name) return { source: name, declaredOn: pos }
+      if (name && publishedNames.has(name)) return { source: name, declaredOn: pos }
       return null
     }
 
@@ -1637,6 +2070,23 @@ export class RealFsharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const stack: Node[] = [rootNode]
     while (stack.length > 0) {
       const n = stack.pop()!
+      // FS-D30: this pass is a SECOND WALK, and it had none of the recovery rule the first
+      // walk got. `visit` refuses to descend into an `ERROR` node and discloses it instead,
+      // because the tree there is the parser's reconstruction rather than the program — but
+      // this loop started at the root and took every node it met, so on a file the grammar
+      // cannot read it mined the recovery artifact anyway and published its rows.
+      //
+      // The evidence is a corpus file that is large enough to be worth parsing:
+      // CheckExpressions.fs, 702 KB, produced ZERO symbols and 147 relationships, every one
+      // of them a `references` row with an EMPTY target — `RecursiveBindingInfo -> `,
+      // `CheckedBindingInfo -> `, `ValScheme -> `. An edge with no target is not a wrong
+      // answer, it is the absence of one, and 147 of them is what a walk through a
+      // reconstruction looks like when it is asked to read meaning out of it.
+      //
+      // So the rule is now the SAME rule in both walks, which is the only way "a recovery
+      // region is disclosed and not mined" can be a property of the analyzer rather than a
+      // property of one of its two loops.
+      if (n.type === "ERROR" || n.isMissing) continue
       if (TYPE_WRAPPER_NODES.has(n.type)) {
         // only the OUTERMOST wrapper, so a postfix_type inside a list_type is not
         // counted once per layer

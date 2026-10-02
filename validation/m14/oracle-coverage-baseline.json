@@ -1,0 +1,164 @@
+{
+  "bash": [
+    "calls",
+    "contains",
+    "exports",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "c": [
+    "calls",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "clean": [
+    "calls",
+    "references"
+  ],
+  "clojure": [
+    "calls",
+    "references"
+  ],
+  "cpp": [
+    "calls",
+    "uses"
+  ],
+  "csharp": [
+    "calls",
+    "contains",
+    "references",
+    "uses",
+    "extends",
+    "implements",
+    "instantiates"
+  ],
+  "css": [
+    "contains",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "dart": [
+    "calls",
+    "uses"
+  ],
+  "elixir": [
+    "calls",
+    "references"
+  ],
+  "erlang": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "fsharp": [
+    "calls",
+    "references"
+  ],
+  "go": [
+    "calls"
+  ],
+  "groovy": [
+    "calls",
+    "uses"
+  ],
+  "haskell": [
+    "calls"
+  ],
+  "html": [
+    "contains",
+    "uses"
+  ],
+  "java": [
+    "calls",
+    "contains",
+    "references",
+    "uses"
+  ],
+  "javascript": [
+    "calls",
+    "contains",
+    "exports",
+    "references",
+    "uses"
+  ],
+  "kotlin": [
+    "calls",
+    "contains",
+    "references",
+    "uses"
+  ],
+  "markdown": [
+    "contains",
+    "uses"
+  ],
+  "objc": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "php": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "powershell": [
+    "calls",
+    "contains",
+    "exports",
+    "references",
+    "uses"
+  ],
+  "python": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "ruby": [
+    "calls",
+    "uses"
+  ],
+  "rust": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "scala": [
+    "calls"
+  ],
+  "scss": [
+    "contains",
+    "imports",
+    "references",
+    "uses"
+  ],
+  "svelte": [
+    "calls"
+  ],
+  "swift": [
+    "calls",
+    "references",
+    "uses"
+  ],
+  "toml": [
+    "contains"
+  ],
+  "typescript": [
+    "calls",
+    "contains"
+  ],
+  "vue": [
+    "calls"
+  ],
+  "zig": [
+    "calls",
+    "contains",
+    "exports",
+    "imports",
+    "instantiates",
+    "references",
+    "uses"
+  ]
+}

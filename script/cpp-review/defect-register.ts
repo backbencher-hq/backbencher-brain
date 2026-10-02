@@ -74,6 +74,87 @@ const SKIP = new Set([".git", "build", "node_modules", ".github", "cmake-build-d
 const OUT = process.env.CPP_OUT ?? "/tmp/opencode/cpp-review"
 const SAMPLE = 12
 
+/** D8's first identifier down the declarator chain — the macro's bare name. */
+const d8BareName = (decl: any): string | null => {
+  let cur = decl
+  for (let i = 0; i < 8 && cur; i++) {
+    if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+    const next = cur.childForFieldName?.("declarator") ?? null
+    if (!next) {
+      for (let k = 0; k < cur.namedChildCount; k++) {
+        const c = cur.namedChild(k)
+        if (c && (c.type === "identifier" || c.type === "field_identifier")) return c.text
+      }
+      return null
+    }
+    cur = next
+  }
+  return null
+}
+
+/**
+ * D8's discriminator, restated independently of the analyzer's copy: does this
+ * macro invocation CONTINUE the declaration in front of it?
+ *
+ * Three versions of this rule were measured and two were wrong, so the reasoning is
+ * recorded rather than just the result:
+ *
+ *   * "the body's being empty" — false. The annotation node CARRIES the real
+ *     function's body, so it is never empty.
+ *   * "the previous named sibling is a `declaration`" — false, twice over.
+ *     `prevNamedSibling` is `null` throughout this grammar, and finding the
+ *     predecessor by index flags a real `TEST(Suite, Name)` that happens to follow
+ *     a function declaration. `TEST` is spelled in all caps, so the macro-name test
+ *     cannot separate the two families.
+ *   * "skip comments while scanning backwards" — false, and subtly so: the scan
+ *     meets the comment's TEXT before its `//`, so a comment ending in a letter
+ *     reads as a continuation and every `TEST` preceded by a comment is deleted.
+ *     That deleted 20 real headings in one gmock file before it was caught.
+ *
+ * What holds: the character before the macro, ignoring whitespace, is the end of a
+ * parameter list or a declarator suffix (`)` `&` `>` `*`), or the tail of a
+ * trailing keyword (`const`, `noexcept`, …) — and NO comment intervenes.
+ */
+const d8ContinuesDeclaration = (startIndex: number, content: string): boolean => {
+  let j = startIndex - 1
+  while (j >= 0) {
+    const c = content[j]
+    if (c === " " || c === "\t" || c === "\r" || c === "\n") { j--; continue }
+    break
+  }
+  if (j < 0) return false
+  const tail = content.slice(Math.max(0, j - 40), startIndex)
+  if (tail.indexOf("//") !== -1 || tail.indexOf("/*") !== -1) return false
+  const c = content[j]
+  if (c === ")" || c === "&" || c === ">" || c === "*") return true
+  const upTo = content.slice(Math.max(0, j - 12), j + 1).toLowerCase()
+  let letters = ""
+  for (let k = 0; k < upTo.length; k++) {
+    const ch = upTo[k]
+    if (ch >= "a" && ch <= "z") letters += ch
+  }
+  for (const kw of ["const", "noexcept", "override", "final", "mutable", "volatile"]) {
+    if (letters.endsWith(kw)) return true
+  }
+  return false
+}
+
+/** D8, all four conditions. See the D8 contract above for why each is needed. */
+const d8IsTrailingAnnotation = (n: any, content: string): boolean => {
+  if (n.type !== "function_definition") return false
+  if (n.childForFieldName?.("type")) return false                 // C++ has no body-less return type here
+  if (!n.childForFieldName?.("body")) return false
+  let decl: any = null
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c && c.type === "function_declarator") { decl = c; break }
+  }
+  if (!decl || !decl.childForFieldName?.("parameters")) return false
+  const bare = d8BareName(decl)
+  if (!bare || !/^[A-Z][A-Z0-9_]*$/.test(bare)) return false
+  return d8ContinuesDeclaration(n.startIndex, content)
+}
+
 const walk = (d: string, out: string[] = [], depth = 0): string[] => {
   if (depth > 10) return out
   let es: string[]
@@ -97,6 +178,128 @@ const reg: any = {
   assertsOn: "analyzer OUTPUT (published symbols and relationships), not tree shapes",
   classes: {},
 }
+/**
+ * D14: an owner symbol's range does not span the edges it owns.
+ *
+ * Stated HERE, independently of the analyzer's `expandedFrom: "macro-heading"`, for
+ * D9's reason: a gate that imports the code under test cannot be run against the code
+ * it gates. So this re-derives the OWNER LEXICALLY — for each edge, the owner is the
+ * LAST symbol of that name starting at or before the edge's own line — and then asks
+ * only whether that owner's range covers the line.
+ *
+ * The lexical rule is what makes this a statement about ownership rather than about
+ * names. Matching edges to owners by name alone reads 39,787 violations, but most of
+ * that is the gate's own error: the corpora contain five separate headings spelled
+ * `SECTION( "A" )` in one file (catch2 SelfTest/IntrospectiveTests/Details.tests.cpp
+ * at lines 186, 203, 206, 212, 224), and a name-only match charges one of them for
+ * another's edges. Attributing each edge to the nearest preceding symbol of its name
+ * leaves a signal that is real: with the defect present, every one of those edges
+ * belonged to a macro heading whose range was the single heading line.
+ */
+
+/**
+ * D15: a class whose HEAD is decorated by a macro is never published.
+ *
+ * The grammar cannot read `class GTEST_API_ Widget { … };`. What it does instead is
+ * worse than giving up: it recovers the whole declaration as a FUNCTION —
+ *
+ *     function_definition
+ *       class_specifier "class GTEST_API_"
+ *         type_identifier "GTEST_API_"    <- the specifier's `name` field is the MACRO
+ *       identifier "Widget"                <- the real class name, a bare SIBLING
+ *       compound_statement "{ … }"         <- the class BODY
+ *
+ * so the specifier carries no body of its own, the forward-declaration rule declines
+ * it, and THE CLASS IS NEVER PUBLISHED. Two things follow, and the second is why
+ * this is a published-fact defect and not a tree-shape one: the bare sibling reads
+ * as a function declarator, and the out-of-line definitions of that class's members
+ * (`Widget::reset() {…}`) resolve their owner by the `Widget::` qualifier to
+ * whichever `Widget` symbol exists — the CONSTRUCTOR, which shares the class's name.
+ *
+ * Measured before the fix on fmt/test/gtest/gmock-gtest-all.cc: `UnitTestImpl` was
+ * published at `902-902`, the constructor's own declaration line, and owned 91 edges
+ * spread over lines 902-1354. After it, the class spans `900-1355` and every one of
+ * those 91 edges is inside it.
+ *
+ * The three conditions below are all required, and the third is what keeps D11 honest
+ * (see the note beside `macroDecoratedClassDecl`).
+ */
+
+/**
+ * D15: the real class name of a declaration the grammar recovered as a FUNCTION
+ * because its head carries a macro — `class GTEST_API_ Widget { … };`.
+ *
+ * All three conditions are required, and the third is what keeps D11 honest:
+ *   (1) the specifier's own `name` is an ALL-CAPS identifier — a macro spelling;
+ *   (2) a bare `identifier` is its SIBLING, outside the body — that is the real name;
+ *   (3) the parent's `compound_statement` is the class body.
+ * Condition (1) alone fires on `class X f() { … }`, an elaborated return type, where
+ * the compound_statement is the FUNCTION's body — the node D11 exists to stop
+ * publishing. Condition (2) is what separates them: in `class X f() {…}` the `f` sits
+ * inside a `function_declarator`, never as a bare sibling of the specifier.
+ *
+ * Stated HERE rather than imported from the analyzer, for D8's reason.
+ */
+const decoratedClassName = (spec: any): string | null => {
+  if (spec.type !== "class_specifier" && spec.type !== "struct_specifier" && spec.type !== "union_specifier") return null
+  for (const c of (spec.namedChildren ?? []) as any[]) {
+    if (c.type === "class_body" || c.type === "field_declaration_list") return null
+  }
+  const nf = spec.childForFieldName?.("name")?.text?.trim()
+  if (!nf || !/^[A-Z][A-Z0-9_]*$/.test(nf)) return null
+  const par = spec.parent
+  if (!par || par.type !== "function_definition") return null
+  const sibs = (par.namedChildren ?? []) as any[]
+  const body = sibs.find((c) => c.type === "compound_statement")
+  if (!body) return null
+  for (const c of sibs) {
+    if (c === spec || c === body) continue
+    if (c.type === "identifier" && c.endIndex <= body.startIndex) return c.text
+  }
+  return null
+}
+
+/** D13: does this friend declaration carry a function BODY (i.e. define, not declare)? */
+function friendDeclHasBody(decl: any): boolean {
+  for (let i = 0; i < decl.namedChildCount; i++) {
+    const c = decl.namedChild(i)
+    if (!c) continue
+    if (c.type === "function_definition" || c.type === "compound_statement") return true
+  }
+  return false
+}
+
+/** D13: the friend definition's body range, in 1-based lines. */
+function friendDeclBody(decl: any): { startLine: number; endLine: number } | null {
+  for (let i = 0; i < decl.namedChildCount; i++) {
+    const c = decl.namedChild(i)
+    if (c && (c.type === "function_definition" || c.type === "compound_statement"))
+      return { startLine: c.startPosition.row + 1, endLine: c.endPosition.row + 1 }
+  }
+  return null
+}
+
+/**
+ * D13: the name of the class a friend declaration is written INSIDE.
+ *
+ * Walks up past `field_declaration_list` to the specifier. A friend at namespace
+ * scope has no enclosing class and returns null, which is correct: there is no
+ * class to have wrongly owned the body.
+ */
+function enclosingClassName(node: any): string | null {
+  let cur = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    const t = cur.type
+    if (t === "class_specifier" || t === "struct_specifier" || t === "union_specifier") {
+      return cur.childForFieldName?.("name")?.text ?? null
+    }
+    if (t === "namespace_definition" || t === "function_definition" || t === "translation_unit") return null
+    cur = cur.parent
+  }
+  return null
+}
+
 const cls = (id: string, title: string, contract: string, gated = true) => {
   const c = { id, title, contract, gated, n: 0, byName: new Map<string, number>(), sites: [] as any[] }
   reg.classes[id] = c
@@ -122,20 +325,177 @@ const D6 = cls("D6", "the analyzer's own source uses a regex",
   "The regex census is the honesty artifact; the doc's claim of zero must be true, not asserted.")
 const D7 = cls("D7", "a specifier's name arrives as a qualified_identifier, so the class publishes as `anonymous`",
   "A class/struct may have a qualified name (an explicit specialization) and its LEAF is the name; an enum has NO qualified name in C++, so one in that slot is a C++23 [[=attr]] the recovery displaced, and the declared name is the identifier beside it. Publishing `anonymous` also collides with the analyzer's own no-name sentinel.")
+
+// D8's contract is stated HERE for the same reason D7's is: a gate that imports the
+// code under test cannot be run against the code it is gating. The analyzer
+// implements this in `isTrailingAnnotationMacro`; the five lines below are a second,
+// independent statement of the same contract, and one of the two has to be able to
+// run when the other is broken.
+const D8 = cls("D8", "a trailing ANNOTATION macro is published as a function or method symbol",
+  "A thread-safety annotation written after a parameter list decorates the declaration before it and declares nothing. The grammar ends that declaration at the `)` and recovers a SECOND function_definition whose declarator is the macro and whose BODY is the real function's, so publishing it invents a symbol AND misattributes the body's reads to a macro. A test-macro HEADING (`TEST(Suite, Name) { body }`) is the opposite case and is NOT this defect: it genuinely defines the function it is named after, and it has no `declaration` sibling to continue.")
+
 const R1 = cls("R1", "REPORTED, not gated: a class/struct node that ends before the source's own brace balance",
   "A tree-sitter-cpp 0.23.4 limitation on legal macro-heavy C++. The analyzer cannot invent a class node the grammar did not produce, so this is reported with its measured count rather than hidden or worked around.",
   false)
 
+/**
+ * D13: a read inside a friend function DEFINITION is attributed to the enclosing class.
+ *
+ * Stated HERE, independently of the analyzer's three D13 helpers
+ * (`enclosingFriendDeclaration`, `nodeHasFunctionBody`, `enclosingScopeOf`), for
+ * D8's reason: a gate that imports the code under test cannot be run against the
+ * code it gates. The check below re-derives the friend, its body and the
+ * containing class from the tree and asks only whether a published `uses` edge
+ * inside that body is owned by that class.
+ *
+ * A friend is not a member of the class it is written in, so its body is not the
+ * class's. CP2 established that a friend declaration mints no member; extending
+ * that to a friend's DEFINITION left the body unowned, and the walk then attributed
+ * its reads to the class. Measured at `absl/random/uniform_int_distribution.h:87`
+ * as `uses param_type -> b` — a read of a PARAMETER owned by the class, where the
+ * class also has members named `a()` and `b()`, so the edge is indistinguishable
+ * from reading them. It was the single UNEXPLAINED analyzer edge on abseil-cpp.
+ */
+const D13 = cls("D13", "a read inside a friend function DEFINITION is attributed to the enclosing class",
+  "A friend function is not a member of the class whose body it is written in, so nothing in that body belongs to the class. Reading a friend definition's parameters as members of the class that merely encloses them is a scope-attribution error, and a misleading one wherever a member shares the parameter's name.")
+
+const D14 = cls("D14", "an owner symbol's range does not span the edges it owns",
+  "An owner is a spatial claim: if an edge says a symbol owns it, that symbol's range must contain the edge. A heading macro the analyzer publishes with a one-line range while its body emits edges hundreds of lines below is an owner that cannot account for what it owns, and every consumer that filters a graph by range silently loses those edges.")
+const D15 = cls("D15", "a class whose HEAD is decorated by a macro is not published as a class",
+  "`class GTEST_API_ Widget { … };` declares a class named Widget. The macro decorates the head; it does not rename the class, and it cannot hide the declaration. A class that exists, is named, and is defined in the translation unit must be published as a class, or every consumer that asks 'what is in this file' is told it is not there.")
+
+/**
+ * D11: a function is published whose RETURN TYPE is a class DEFINITION.
+ *
+ * The shape tree-sitter's recovery invents when it reads a whole class as a
+ * return type — see the `returnTypeIsClassDefinition` guard for the measured
+ * node. Asserted on the OUTPUT (a published symbol whose range IS such a node),
+ * D8's way, because the node exists in the tree either way and only the
+ * publication is the defect.
+ *
+ * This gate is CORPUS-BASED and cannot be a fixture, which is a property of the
+ * defect rather than a shortcut. It does not reproduce in any slice: the full
+ * 1,608-line span that contains the class, the constructor and the glue parses
+ * CLEAN, and it only appears when the whole 32,725-row amalgamation is parsed,
+ * because it depends on parser state accumulated across the entire file. A
+ * fixture built from a synthetic reproducer was tried and does not exist, so
+ * there is no mutant to add in the fixture harness either. The evidence for this
+ * guard is therefore the corpus measurement beside it (110 `basic_json` members
+ * published and `basic_json` a `class`, against 0 and a `variable` without it)
+ * plus this gate, and that is all there is.
+ */
+const D11 = cls("D11", "a function is published whose return type is a class DEFINITION",
+  "C++ has no such thing: a function returns a class TYPE, never a class definition. A `function_definition` whose `type` field is a class/struct/union specifier carrying a BODY is the recovery's invention, and publishing it invents a function whose return type is thousands of lines of class body.")
+
+/**
+ * D9: a same-file read of a `#define`d name resolves to nothing.
+ *
+ * Stated HERE, independently of the analyzer's branch, for D8's reason: a gate
+ * that imports the code under test cannot be run against the code it gates.
+ * The analyzer mints the declaration in its `preproc_def` /
+ * `preproc_function_def` branch; the check below re-derives the name from the
+ * raw source text and asks only whether a symbol of that name exists.
+ *
+ * The scope is deliberately the SAME FILE and nothing else. Cross-file
+ * non-resolution is the documented per-file boundary of a single-TU graph, and
+ * counting it would be this check measuring itself — the mistake that made R1
+ * read 715 instead of 23. A name the same file `#define`s is a declaration the
+ * consumer can reach, so a read of it that resolves to nothing is a real gap.
+ */
+const D9 = cls("D9", "a read of a macro the SAME file defines resolves to no published symbol",
+  "A `#define` DECLARES a name whatever its body — that is the C lane's #901 ruling and this lane now shares it. A read of such a name in the same file must resolve to the declaration. Cross-file reads are out of scope: see D9's contract. The scope is further narrowed to definitions the GRAMMAR produced a `preproc_def`/`preproc_function_def` node for, because a definition the grammar destroyed is R2's defect and gating it here would be gating a thing the analyzer cannot fix.")
+
+/**
+ * D10: no file's content was truncated before the parser saw it.
+ *
+ * The engine used to cut any file over 1 MiB to its first 1 MiB, so the tail was
+ * not mis-parsed — it was simply ABSENT, and nothing downstream could tell that
+ * from a file that genuinely ends there. This lane spent a bisection, three dead
+ * ends and a withdrawn grammar patch chasing a "truncation" that was this cap:
+ * `basic_json` runs rows 26,011-32,291 in a 1.27 MB amalgamation, so it was cut
+ * at row 27,085 and no grammar could have finished it.
+ *
+ * The cap is now 16 MiB, which covers every file in this corpus, and the loss is
+ * COUNTED (`ASTEngine.parseTruncation`) so it can be failed rather than merely
+ * logged. This gate is that failure: it is 0 only while the cap is high enough,
+ * and it names the offenders when it is not.
+ */
+const D10 = cls("D10", "a file's content was truncated before the parser saw it",
+  "Truncation is silent data loss: every symbol in the dropped tail is missing with no error and no counter. The byte cap exists to bound a pathological parse, but the 120s `parseWithTimeout` and the 120s `parseBomb` self-destruct already do that, and tree-sitter is linear (~1.45 s/MB measured), so the cap only ever removes real code.")
+
+/**
+ * R2 (reported, not gated): a `#define` the grammar's ERROR recovery destroyed.
+ *
+ * The same argument as R1, applied to the preprocessor. All measured sites have
+ * one shape — a COMMENT between the `#if` and the `#define` — e.g.
+ * `unit-class_parser.cpp:2161-2163`, where `#if JSON_DIAGNOSTIC_POSITIONS` /
+ * `// Macro for all test cases…` / `#define SETUP_TESTCASES()` parses as an
+ * `ERROR` node over rows 2163-2168 that DOES carry `preproc_params` and
+ * `preproc_arg` children: the grammar recognised the shape and not the rule.
+ * With no node there is no declaration to mint, so the read cannot resolve and
+ * D9 must not be charged for it. Reported with its count, like R1.
+ */
+const R2 = cls("R2", "REPORTED, not gated: a `#define` the grammar's ERROR recovery destroyed, so its declaration cannot be published",
+  "A tree-sitter-cpp 0.23.4 limitation, same family as R1 and the same fix: the vendored fork. The analyzer cannot invent a node the grammar did not produce.",
+  false)
+
 let files = 0, syms = 0, rels = 0
 const t0 = Date.now()
-const sourceClassEnd = (content: string, startRow: number): number => {
-  let depth = 0, started = false
-  for (let i = startRow; i < content.length; i++) {
+/**
+ * The source-side end of a class body, with string and comment literals skipped.
+ *
+ * The original counted every `{` and `}` in the raw source, so a brace inside a
+ * message string or a comment before the real body end made a class look truncated
+ * when the grammar had read it perfectly. That is a FALSE POSITIVE, and a report that
+ * cannot tell a real loss from its own instrumentation has not measured anything.
+ */
+const sourceClassEnd = (content: string, from: number): number => {
+  let depth = 0, started = false, i = from
+  while (i < content.length) {
     const c = content[i]
+    if (c === '"' || c === "'") {
+      const q = c
+      i++
+      while (i < content.length) {
+        if (content[i] === "\\") { i += 2; continue }
+        if (content[i] === q) { i++; break }
+        i++
+      }
+      continue
+    }
+    if (c === "/" && content[i + 1] === "/") {
+      const nl = content.indexOf("\n", i)
+      i = nl === -1 ? content.length : nl
+      continue
+    }
+    if (c === "/" && content[i + 1] === "*") {
+      const close = content.indexOf("*/", i + 2)
+      i = close === -1 ? content.length : close + 2
+      continue
+    }
     if (c === "{") { depth++; started = true }
-    else if (c === "}") { depth--; if (started && depth === 0) return i }
+    else if (c === "}") {
+      depth--
+      if (started && depth === 0) return i
+    }
+    i++
   }
   return -1
+}
+
+/** Does this specifier HAVE a body? A forward declaration has none to truncate. */
+const specifierBody = (n: any): any | null => {
+  for (let i = 0; i < n.namedChildCount; i++) {
+    const c = n.namedChild(i)
+    if (c && (c.type === "field_declaration_list" || c.type === "class_body" || c.type === "enumerator_list")) return c
+  }
+  return null
+}
+
+const rowAt = (content: string, index: number): number => {
+  let r = 0
+  for (let i = 0; i < index && i < content.length; i++) if (content[i] === "\n") r++
+  return r
 }
 
 for (const repo of REPOS) {
@@ -151,6 +511,8 @@ for (const repo of REPOS) {
     // D7: the `anonymous` publications this file made, resolved against the tree
     // after the walk. Declared BEFORE the D1/D5 loops that push into it.
     const pendingAnon: { kind: string; line: number; file: string; repo: string }[] = []
+    // D15: real class names whose HEAD carries a macro, found by asking the tree.
+    const pendingDecorated: string[] = []
     syms += r.symbols?.length ?? 0
     rels += r.relationships?.length ?? 0
 
@@ -167,6 +529,44 @@ for (const repo of REPOS) {
     for (const x of (r.relationships ?? []) as any[]) {
       if (x.type === "extends" && String(x.source) === String(x.target)) {
         add(D2, `self:${x.source}`, { repo, file: rel, line: x.line_number, source: x.source, target: x.target })
+      }
+    }
+    // D9 — a read of a macro THIS FILE defines, with no symbol of that name.
+    // The name is re-derived from the raw source (`#define NAME`, tolerating a
+    // function-like `#define NAME(...)`), not from the analyzer's output, so
+    // this cannot be satisfied by the branch it is gating. Cross-file is
+    // deliberately out of scope: see D9's contract.
+    {
+      const definedHere = new Set<string>()
+      const defRe = /^[ \t]*#[ \t]*define[ \t]+([A-Za-z_]\w*)/gm
+      let dm: RegExpExecArray | null
+      while ((dm = defRe.exec(content))) definedHere.add(dm[1]!)
+      // Which of those the GRAMMAR kept. A definition it destroyed is R2's
+      // defect, and it is separated here rather than ignored: a name in
+      // `destroyed` and not in `grammarNodes` is counted under R2, so the
+      // split is visible in the register instead of being a silent exclusion.
+      const grammarNodes = new Set<string>()
+      const destroyed = new Set<string>()
+      const scanDefs = (n: any): void => {
+        if (n.type === "preproc_def" || n.type === "preproc_function_def") {
+          const nm = n.childForFieldName("name")?.text?.trim()
+          if (nm) grammarNodes.add(nm)
+        }
+        for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) scanDefs(c) }
+      }
+      scanDefs(tree.rootNode)
+      for (const nm of definedHere) if (!grammarNodes.has(nm)) destroyed.add(nm)
+      const published = new Set<string>()
+      for (const s of (r.symbols ?? []) as any[]) published.add(String(s.name))
+      const seenD9 = new Set<string>()
+      for (const x of (r.relationships ?? []) as any[]) {
+        const t = String(x.target)
+        if (!definedHere.has(t) || published.has(t)) continue
+        if (seenD9.has(t)) continue
+        seenD9.add(t)
+        const site = { repo, file: rel, line: x.line_number, source: x.source, target: t, type: x.type }
+        if (destroyed.has(t)) add(R2, `destroyed-define:${t}`, { ...site, shape: "#define between a comment and its #if" })
+        else add(D9, `${x.type}:${t}`, site)
       }
     }
     // D3 — contains + references only, per file. `calls` excluded by contract.
@@ -228,15 +628,152 @@ for (const repo of REPOS) {
         }
       }
       if (n.type === "class_specifier" || n.type === "struct_specifier" || n.type === "union_specifier") {
-        const se = sourceClassEnd(content, n.startIndex)
-        if (se > n.endIndex) {
-          const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
-          add(R1, n.type, { repo, file: rel, line: n.startPosition.row + 1, name: nm?.text, grammarEndsAt: n.endPosition.row + 1, sourceEndsAt: se + 1, linesOutside: se - n.endIndex })
+        // A FORWARD DECLARATION has no body, and tree-sitter gives it a
+        // `class_specifier` with no body child — which is correct, because there is
+        // nothing to truncate. Asking a body-less node "does the source's brace
+        // balance end later than you do?" gets YES from the next unrelated `{ … }`
+        // anywhere later in the file, and that is where almost all of this class's
+        // count came from. A truncation is a body that ENDS EARLY; it cannot be a
+        // body that was never there. Measured on the register's own corpus: 891
+        // forward declarations, and the naive check was reporting 18 real ones.
+        const body = specifierBody(n)
+        if (body) {
+          const se = sourceClassEnd(content, n.startIndex)
+          if (se > n.endIndex) {
+            const nm = n.childForFieldName?.("name") ?? n.namedChild(0)
+            add(R1, n.type, {
+              repo, file: rel, line: n.startPosition.row + 1, name: nm?.text,
+              grammarEndsAtRow: n.endPosition.row + 1, sourceEndsAtRow: rowAt(content, se) + 1,
+              rowsOutside: rowAt(content, se) - n.endPosition.row,
+              charsOutside: se - n.endIndex,
+            })
+          }
         }
       }
+      // D8 — a symbol published for a trailing annotation. Asserted on the OUTPUT
+      // (a published symbol whose range IS such a node), not on the shape alone:
+      // the node exists in every macro-heavy file either way, and only the
+      // publication is the defect.
+      if (d8IsTrailingAnnotation(n, content)) {
+        const inside = symRanges.find((sy) =>
+          sy.start !== undefined && sy.end !== undefined &&
+          sy.start === n.startIndex && sy.end === n.endIndex)
+        if (inside) {
+          add(D8, `published-annotation:${inside.name}`, {
+            repo, file: rel, line: n.startPosition.row + 1,
+            name: inside.name, kind: inside.kind,
+            annotation: n.text.replace(/\s+/g, " ").slice(0, 90),
+            continuesSource: content.slice(Math.max(0, n.startIndex - 46), n.startIndex).replace(/\s+/g, " "),
+          })
+        }
+      }
+      // D13 — a `uses` edge inside a friend function DEFINITION's body, owned by
+      // the class the friend is written in. Stated from the tree, not from the
+      // analyzer's helpers, so the gate can run against the code it gates.
+      if (n.type === "friend_declaration" && friendDeclHasBody(n)) {
+        const cls = enclosingClassName(n)
+        const body = friendDeclBody(n)
+        if (cls && body) {
+          for (const x of (r.relationships ?? []) as any[]) {
+            if (x.type !== "uses") continue
+            if (String(x.source) !== cls) continue
+            const ln = Number(x.line_number ?? -1)
+            if (ln >= body.startLine && ln <= body.endLine) {
+              add(D13, `${cls}->${x.target}`, {
+                repo, file: rel, line: ln, owner: cls, target: x.target,
+                friendLine: n.startPosition.row + 1,
+              })
+            }
+          }
+        }
+      }
+      // D11 — a published symbol whose range IS a function_definition that
+      // returns a class DEFINITION. Stated here independently of the analyzer's
+      // `returnTypeIsClassDefinition`, for D8's reason: a gate that imports the
+      // code under test cannot be run against the code it gates.
+      if (n.type === "function_definition") {
+        const ty = n.childForFieldName?.("type")
+        const spec = ty?.type === "macro_prefixed_type_specifier"
+          ? (ty.namedChildren ?? []).find((c: any) =>
+              c.type === "class_specifier" || c.type === "struct_specifier" || c.type === "union_specifier")
+          : ty
+        if (spec && (spec.namedChildren ?? []).some((c: any) => c.type === "class_body" || c.type === "field_declaration_list")) {
+          const published = symRanges.find((sy) =>
+            sy.start !== undefined && sy.end !== undefined &&
+            sy.start === n.startIndex && sy.end === n.endIndex)
+          if (published) {
+            add(D11, `published-returning-class:${published.name}`, {
+              repo, file: rel, line: n.startPosition.row + 1,
+              name: published.name, kind: published.kind,
+              returnType: spec.type, rows: n.endPosition.row - n.startPosition.row + 1,
+            })
+          }
+        }
+      }
+      const dec = decoratedClassName(n)
+      if (dec) pendingDecorated.push(dec)
       for (let i = 0; i < n.childCount; i++) { const c = n.child(i); if (c) visit(c) }
     }
     visit(tree.rootNode)
+
+    // D15 — a class whose HEAD is decorated by a macro must be published as a class.
+    // The conditions are re-derived from the TREE here, never imported from the
+    // analyzer's `macroDecoratedClassDecl`, for D8's reason.
+    if (pendingDecorated.length) {
+      const classes = new Map<string, any[]>()
+      for (const s of (r.symbols ?? []) as any[]) {
+        if (s.kind !== "class") continue
+        const a = classes.get(s.name) ?? []
+        a.push(s)
+        classes.set(s.name, a)
+      }
+      for (const nm of pendingDecorated) {
+        if (!classes.has(nm)) add(D15, `unpublished-decorated-class:${nm}`, { repo, file: rel, name: nm })
+      }
+    }
+
+    // D14 — every edge's owner must span that edge. Scoped to macro-heading symbols,
+    // because those are the owners whose range is computed from the HEADING alone;
+    // an ordinary symbol's range is its own source extent by construction, so the
+    // question does not arise there. The owner is the LEXICAL one: the last symbol of
+    // the edge's source name starting at or before the edge's line. See D14's contract
+    // for why a name-only match over-counts by two orders of magnitude and why that
+    // would be this gate's error rather than a finding.
+    //
+    // `expandedFrom` is used only to SELECT which published symbols to check. The
+    // assertion — that a range must span what it owns — is independent of how the
+    // range was computed, so the gate still runs against an analyzer that computes it
+    // wrongly, which is the whole point of it.
+    {
+      const syms = ((r.symbols ?? []) as any[]).filter((s) =>
+        s.range && s.name && s.metadata?.expandedFrom === "macro-heading")
+      if (syms.length) {
+        const byName = new Map<string, any[]>()
+        for (const s of syms) {
+          const a = byName.get(s.name) ?? []
+          a.push(s)
+          byName.set(s.name, a)
+        }
+        for (const a of byName.values()) a.sort((x, y) => x.range.startLine - y.range.startLine)
+        for (const x of (r.relationships ?? []) as any[]) {
+          const ln = Number(x.line_number ?? -1)
+          if (!Number.isFinite(ln) || ln < 1) continue
+          const cands = byName.get(String(x.source))
+          if (!cands || !cands.length) continue
+          let owner: any = null
+          for (const s of cands) if (s.range.startLine <= ln && (!owner || s.range.startLine > owner.range.startLine)) owner = s
+          if (!owner) continue
+          if (ln > owner.range.endLine) {
+            add(D14, `${owner.name}@${owner.range.startLine}-${owner.range.endLine}<-${ln}`, {
+              repo, file: rel, line: ln, owner: owner.name, ownerKind: owner.kind,
+              ownerRange: `${owner.range.startLine}-${owner.range.endLine}`,
+              target: x.target, edgeType: x.type,
+              expandedFrom: owner.metadata?.expandedFrom,
+            })
+          }
+        }
+      }
+    }
 
     // D7 verdict: for every specifier carrying a name the analyzer published as
     // `anonymous`, the name was legible. And for every enum whose name the
@@ -270,8 +807,23 @@ for (const repo of REPOS) {
       pendingAnon.length = 0
     }
   }
-  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} R1=${R1.n}\n`)
+  process.stderr.write(`${repo} done files=${files} D1=${D1.n} D2=${D2.n} D3=${D3.n} D4=${D4.n} D5=${D5.n} D7=${D7.n} D8=${D8.n} D9=${D9.n} D10=${D10.n} D11=${D11.n} D13=${D13.n} D14=${D14.n} D15=${D15.n} R1=${R1.n} R2=${R2.n}\n`)
 }
+
+// D10 — the engine's own byte cap. Counted by the engine, not by this script, so
+// the gate is a read of what actually happened rather than a second opinion.
+try {
+  const trunc: any = (ASTEngine as any).parseTruncation
+  D10.n = trunc?.files ?? -1
+  D10.sites = (trunc?.worst ?? []).map((w: any) => ({
+    repo: "(engine)", file: w.filePath, bytesDropped: w.bytesDropped,
+  }))
+  if (trunc?.bytesDropped) {
+    // one entry per truncated file so the count and the site list agree
+    for (const w of trunc.worst) add(D10, `truncated:${w.filePath.split("/").pop()}`, { file: w.filePath, bytesDropped: w.bytesDropped })
+    D10.n = trunc.files
+  }
+} catch { D10.n = -1 }
 
 // D6 — the analyzer's own source, by the same shape the repo's census records.
 try {

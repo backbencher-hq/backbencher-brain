@@ -83,7 +83,34 @@ const MALLOC_FUNCTIONS = ["malloc", "calloc", "realloc", "kmalloc", "vmalloc"]
 const FREE_FUNCTIONS = ["free", "kfree", "vfree"]
 const UNSAFE_STRINGS = ["strcpy", "sprintf", "gets"]
 const SAFE_STRINGS = ["strncpy", "snprintf"]
-const EXPORT_MACROS = ["EXPORT_SYMBOL", "EXPORT_SYMBOL_GPL"]
+/**
+ * Macros that mark a declaration as part of a module's PUBLIC API.
+ *
+ * The kernel convention (`EXPORT_SYMBOL`) and the userspace one are BOTH here, and
+ * they are structurally different, which is why the exported name is read from two
+ * different places (#963).
+ *
+ * Measured over the three corpora, the userspace markers appear 955 (`GIT_EXTERN`),
+ * 163 (`CURL_EXTERN`) and 401 (`REDISMODULE_API`) times -- 1,519 real API markers that
+ * produced NOTHING, because until #963 the list held only the two kernel macros, which
+ * appear zero times in three userspace codebases.
+ *
+ * `GIT_EXTERN` is included for completeness but is NOT reachable: its 400 uses are all
+ * the parenthesised form `GIT_EXTERN(int) git_revert(...)`, which is not valid C -- a
+ * macro call in declaration position -- so the grammar yields an ERROR node. That is a
+ * declared limit, not an oversight, and it is why the name is read from the DECLARATOR:
+ * in the userspace bare form the name is where C puts it.
+ */
+const EXPORT_MACROS = [
+  // Kernel: the exported NAME is the macro's first argument.
+  "EXPORT_SYMBOL",
+  "EXPORT_SYMBOL_GPL",
+  // Userspace: the macro is a storage-class-like PREFIX, and the name is the
+  // declarator's. All 555 uses of these two parse cleanly.
+  "CURL_EXTERN",
+  "REDISMODULE_API",
+  "GIT_EXTERN",
+]
 const FORMAT_FUNCTIONS = ["printf", "fprintf", "sprintf", "snprintf", "scanf", "fscanf", "sscanf", "syslog", "dprintf"]
 const DANGEROUS_FUNCTIONS = ["system", "popen", "execve", "execvp", "execl", "execlp"]
 const SIGNAL_FUNCTIONS = ["signal", "sigaction", "sigprocmask", "sigemptyset", "sigfillset", "sigaddset", "sigdelset", "sigwait", "sigpending", "sigsuspend"]
@@ -587,6 +614,17 @@ export function wrappedBodyAfter(header: Node): Node | null {
 }
 
 /**
+ * #985: the two node types tree-sitter-c uses for a macro in TYPE position.
+ *
+ * `git_array_t(size_t) line_index;` gives a `macro_type_specifier`;
+ * `FOO unsigned x;` (a macro applied to a base type) gives a
+ * `macro_prefixed_type_specifier`. Both hold the macro's OWN name as their first
+ * named child, which is why every list that treats "type node" as "not a
+ * declarator" has to name both -- see the field extractor's skip list.
+ */
+const MACRO_TYPE_NODES = ["macro_type_specifier", "macro_prefixed_type_specifier"]
+
+/**
  * #928: is this `field_declaration` a member the analyzer can NAME?
  *
  * A vendored C family declares fields through a macro:
@@ -846,10 +884,41 @@ class CScopeManager {
     this.pushScope(ScopeKind.Global, "global", null as any)
   }
 
+  /**
+   * #961: the enclosing function's NAME, or null at file scope.
+   *
+   * This is what makes a function-local TYPE publishable without ambiguity. CGD20
+   * dropped these types entirely, so the question of naming them never arose; once
+   * they are published it has to be answered, and the measurement says the bare name
+   * does not work: across the three corpora, 3 of 20 function-local type names
+   * collide with a FILE-SCOPE type of the same name (`transfer`
+   * curl/lib/vssh/libssh2.c:3465, `entry` curl/tests/libtest/lib1915.c:35,
+   * `clar_counter` libgit2/deps/clar/clar/counter.h:86). Publishing `entry` twice in
+   * one file produces two symbols with one name and makes every `contains` edge
+   * from either of them ambiguous.
+   *
+   * Qualifying by the enclosing function resolves all three, and each step of the
+   * resulting path is a real symbol -- the function is a symbol, the type is a
+   * symbol -- so a `contains` edge anchored on it is resolvable rather than dangling.
+   * This is NOT the block-scope naming the contract forbids (`core_init.block_211`
+   * names no symbol); the block is still not used, and the function that encloses it
+   * is.
+   */
+  enclosingFunctionName(): string | null {
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      if (this.stack[i].kind === ScopeKind.Function) return this.stack[i].name
+    }
+    return null
+  }
+
   // CGD20 (M37 #601): does the current scope chain sit inside a FUNCTION
-  // body? Function locals (block vars, local struct/union/enum/typedef
-  // definitions) are execution artifacts (C-D1) — only file-scope
-  // declarations become symbols.
+  // body? CGD20 used this to DROP function-local type definitions as "execution
+  // artifacts"; #961 withdrew that reading (a struct definition emits no code) and
+  // this predicate now only distinguishes a local type from a file-scope one, so
+  // that the local can be published under a qualified name.
+  //
+  // Function-local VARIABLES remain unpublished, which is the part of C-D1 that was
+  // always right: `int counter = 0;` names no entity.
   isInsideFunction(): boolean {
     for (let i = this.stack.length - 1; i >= 0; i--) {
       if (this.stack[i].kind === ScopeKind.Function) return true
@@ -942,6 +1011,12 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const errors: ASTEngine.ParseError[] = []
     const scopeManager = new CScopeManager()
     const emittedUseRelationships = new Set<string>()
+    // #963: one `exports` edge per (name, marker) pair, for the same per-pair reason
+    // every other dedup key in this file uses.
+    const emittedExports = new Set<string>()
+    // #962: one `instantiates` edge per (function, type) pair, beside the `uses` set
+    // for the same per-pair-not-per-line reason.
+    const emittedInstantiates = new Set<string>()
     const functionLocals = new Map<string, Set<string>>()
     // #383 payload: call targets per enclosing function
     const qcByFunction = new Map<string, string[]>()
@@ -951,10 +1026,38 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     this.primitiveAliases = this.buildPrimitiveAliases(rootNode)
     this.aliasTargets = this.buildAliasTargets(rootNode)
 
-    const structs: Record<string, any[]> = {}
-    const globalVars: Record<string, boolean> = {}
-    const unions: Record<string, any[]> = {}
-    const enums: Record<string, boolean> = {}
+    // #972: PROTOTYPE-LESS records. These four are keyed by arbitrary C identifiers,
+    // and `{}` inherits Object.prototype, so every lookup of a name that happens to be
+    // an Object.prototype member returned a truthy INHERITED value instead of
+    // undefined. `structs["constructor"]` is `Object`, `structs["toString"]` is a
+    // function -- both truthy.
+    //
+    // Measured: zig/lib/libc/mingw/winpthreads/thread.c:92
+    //
+    //   static void __attribute__((constructor))
+    //   ctor (void)
+    //
+    // `constructor` is a gcc attribute token declared NOWHERE, and the analyzer
+    // published `uses ctor -> constructor` -- a dangling edge to a name with no
+    // symbol, the exact defect class #962 was created to remove. The trace showed all
+    // four maps claiming the name at once (globalVars=true structs=true unions=true
+    // enums=true), which is the signature of the inherited lookup rather than of a
+    // declaration. isResolvableUseTarget's `if (globalVars[name] || structs[name] ||
+    // unions[name] || enums[name]) return true` then admitted it.
+    //
+    // `constructor` is the rare name; `toString` and `valueOf` are ORDINARY C
+    // identifiers, so this is a live class, not a curiosity.
+    //
+    // Object.create(null) is the whole fix and it is deliberately done HERE, at the
+    // four declarations, rather than at the 11 read sites and 12 write sites: every
+    // lookup becomes correct at once, and it also closes a write hazard -- a
+    // declaration of a struct named `__proto__` would otherwise ASSIGN the prototype
+    // rather than add a key. A hasOwnProperty guard at each site would have left the
+    // write path and the other sites exposed to the next one that got added.
+    const structs: Record<string, any[]> = Object.create(null)
+    const globalVars: Record<string, boolean> = Object.create(null)
+    const unions: Record<string, any[]> = Object.create(null)
+    const enums: Record<string, boolean> = Object.create(null)
     const patterns: Record<string, boolean> = {}
 
     // Pre-pass: collect every type DECLARATION name in the file (struct/union/
@@ -1509,9 +1612,29 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "struct_specifier": {
-          // CGD20: function-local struct definitions are execution artifacts
-          // (C-D1) — no scope, no symbol, no field registration.
-          if (scopeManager.isInsideFunction()) break
+          // #961: A FUNCTION-LOCAL TYPE IS A COMPILE-TIME TYPE, NOT AN EXECUTION
+          // ARTIFACT. CGD20 read the exclusion the other way -- "function-local
+          // struct definitions are execution artifacts (C-D1)" -- and dropped them with
+          // no scope, no symbol and no field registration. That reading does not
+          // survive contact with C. A struct definition EMITS NO CODE: the local
+          // VARIABLE is the execution artifact, and the struct is a type whose type is
+          // fully determined at compile time and whose VISIBILITY the block merely
+          // limits.
+          //
+          // Measured over the three corpora: 20 function-local named types carrying 65
+          // members across 15 files, of which NONE were published. They are used, not
+          // decoration -- deps/jemalloc/test/unit/malloc_io.c:14 `struct test_s` (6
+          // members, 4 references), src/ebuckets.c:2230 `struct TestParams` (the
+          // parameter table for the benchmark below it), src/listpack.c:1920
+          // `struct pick`, src/module.c:4590 `KeyMetaConfAllVersions` and
+          // src/module.c:7568 `typemethods.v2`-`v5`.
+          //
+          // THE DECISIVE ARGUMENT WAS IN THIS LANE'S OWN OUTPUT. The payload already
+          // published `uses local_type_in_use -> index` and `-> order` -- uses of
+          // members of a type CGD20 declined to declare. Those edges were unresolved in
+          // the strict sense: the only way to resolve `index` was the declaration that
+          // had been suppressed. A lane that will not publish a type is not consistent
+          // about declining to publish uses OF it.
           const nameNode = node.childForFieldName("name")
     let structName = "anonymous_struct"
     if (nameNode && nameNode.text.trim()) {
@@ -1520,6 +1643,9 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) structName = declNode.text.trim()
     }
+    // #961: the FUNCTION-QUALIFIED name for a function-local struct lives in the
+    // Struct scope pushed below, because `extractStruct` names the symbol from
+    // `getScopeName()` rather than from this local. See the note there.
           // Only a struct WITH a body is a definition site — forward/reference
           // declarations (`struct Point;`, `typedef struct Point Point;`) push
           // no scope so the typedef name cannot self-reference its own scope.
@@ -1542,8 +1668,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "union_specifier": {
-          // CGD20: function-local unions are execution artifacts (C-D1).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a union definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
           // #951: as the struct path.
     const unionNameNode = node.childForFieldName("name")
     let unionName = this.specifierOwnName(node)
@@ -1559,10 +1688,18 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         }
         case "enum_specifier":
-          // CGD20: function-local enums are execution artifacts (C-D1) —
-          // their members must not leak as file-scope EnumMember symbols
-          // (measured: BackupSubCommandEnum/MB_enum members in sqlite).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a enum definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
+          //
+          // What the original exclusion was RIGHT about is preserved by the
+          // qualification rather than by silence: a local enum's MEMBERS are owned by
+          // the qualified type, so they cannot leak as file-scope EnumMember symbols --
+          // which was the measured harm CGD20 cited (BackupSubCommandEnum, MB_enum in
+          // sqlite). Publishing the type with a member path fixes the leak at its
+          // cause instead of refusing the type.
           this.extractEnum(
             node,
             symbols,
@@ -1574,6 +1711,74 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           break
         case "declaration":
           {
+            // #963: a declaration introduced by an export marker, in the USERSpace
+            // spelling, where the marker is a PREFIX rather than a call.
+            //
+            //   kernel      EXPORT_SYMBOL(my_function, GPL);   <- a call_expression
+            //   userspace   CURL_EXTERN int curl_strequal(...); <- a bare identifier
+            //
+            // The kernel spelling reaches the `call_expression` branch and the
+            // EXPORT_MACROS test there; the userspace one never does, which is half of
+            // why `exports` fired zero times in 2,798 files -- the other half being
+            // that the list held only kernel macros. So the marker is tested HERE, on
+            // the declaration's FIRST child, which is where C puts a
+            // storage-class-like prefix.
+            //
+            // The exported NAME is the declarator's, never the marker's argument: the
+            // marker's argument here is a RETURN TYPE (`CURL_EXTERN(int)`) or nothing
+            // at all (`REDISMODULE_API` is defined empty), so reading it would publish
+            // `exports int -> CURL_EXTERN` -- a type as an exported name, the same
+            // defect #962 corrected for `instantiates`.
+            {
+              // The marker arrives as a `macro_prefixed_type_specifier` -- the node #743's
+              // grammar wave added for `MACRO int` -- whose FIRST CHILD is a
+              // `macro_specifier` holding the macro name, with the real type after it.
+              // `CURL_EXTERN int curl_strequal(...)` parses as
+              //   declaration
+              //     macro_prefixed_type_specifier
+              //       macro_specifier "CURL_EXTERN"
+              //       primitive_type    "int"
+              //     function_declarator "curl_strequal(...)"
+              // so the marker is one level down and the declaration's own first child is
+              // NOT an identifier -- which is why testing `namedChild(0).type ===
+              // "identifier"` found nothing and `exports` stayed at zero after the
+              // macro list was widened.
+              const first = node.namedChild(0)
+              let marker = ""
+              if (first && (first.type === "identifier" || first.type === "field_identifier")) {
+                marker = first.text.trim()
+              } else if (first && (first.type === "macro_prefixed_type_specifier" || first.type === "macro_type_specifier")) {
+                for (let i = 0; i < first.namedChildCount; i++) {
+                  const c = first.namedChild(i)
+                  if (c && (c.type === "macro_specifier" || c.type === "identifier")) {
+                    marker = c.text.trim()
+                    break
+                  }
+                }
+              }
+              if (marker && inArray(EXPORT_MACROS, marker) && node.childForFieldName("declarator")) {
+                const idNode = this.exportedDeclarationName(node)
+                // The exported NAME can never be the marker itself; a recovery-split
+                // declaration reaches the marker and must publish nothing.
+                if (idNode && idNode.text.trim() === marker) continue
+                if (idNode) {
+                  const xKey = `${idNode.text}::exports::${marker}`
+                  if (!emittedExports.has(xKey)) {
+                    emittedExports.add(xKey)
+                    isKernelExport = true
+                    patterns["Public API export"] = true
+                    relationships.push({
+                      source: idNode.text,
+                      target: marker,
+                      type: ASTEngine.RelationshipType.Exports,
+                      confidence: 1.0,
+                      line_number: this.nodeLine(idNode),
+                      metadata: { relationshipType: "module_export", exportMacro: marker },
+                    })
+                  }
+                }
+              }
+            }
             // #918, the DECLARATION spelling of the same heading — recovery cut
             // the region at the first parameter (`declaration` + an ERROR holding
             // the rest of the parameter list and the body's opening — measured:
@@ -1628,8 +1833,11 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           )
           break
         case "type_definition":
-          // CGD20: function-local typedefs are execution artifacts (C-D1).
-          if (scopeManager.isInsideFunction()) break
+          // #961: CGD20 dropped function-local types as 'execution artifacts'; the
+          // ruling is withdrawn -- a typedef definition EMITS NO CODE. The local VARIABLE is
+          // the execution artifact, and this is a type whose VISIBILITY the block merely
+          // limits. Published under the enclosing function's qualified path, for the
+          // reason and the three corpus collisions stated at `extractStruct`.
           this.extractTypedef(node, symbols, structs, scopeManager.getScopeName(), isConditional)
           break
         case "preproc_def":
@@ -1752,6 +1960,65 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         // subtree — calls INSIDE cast arguments vanished. The walk now
         // always recurses; only the calls edge is suppressed.
         let suppressCall = false
+        // A call in a preprocessor DIRECTIVE is not a call. The preprocessor is
+        // line-anchored text (C-D2): `#if !defined(A) && !defined(B)` never
+        // executes, and `defined` is a preprocessor OPERATOR, not a callable
+        // name, so `calls global -> defined` is a fabricated edge.
+        //
+        // The `uses` path has carried both guards against this since CGD40
+        // (isDirectiveConditionText + isHashLineMention, lines 2063/2071); the
+        // `calls` path had neither, which is why this class survived. Measured
+        // over 200 files per corpus by call-edge-fidelity.ts: 61 over-emitted
+        // call sites -- `defined` in `#if`/`#elif` conditions in curl
+        // (curl_trc.c, http.c, protocol.c, openldap.c, cf-ip-happy.c) and redis.
+        //
+        // BOTH guards are needed, for the two different ways a directive loses
+        // its identity:
+        //
+        //   isDirectiveConditionText  a cleanly-parsed directive keeps its
+        //     `preproc_*` ancestor, so the walk up finds it immediately.
+        //
+        //   isHashLineMention  an initializer list left OPEN across interleaved
+        //     `#ifdef`s (curl_trc.c:530-556 -- `{ "a", 1 },` guarded entries
+        //     with the `};` eight lines later) puts the `#if` line inside an
+        //     ERROR with NO preproc_* ancestor, so the structural guard is
+        //     blind. The preprocessor is still line-anchored: the physical line
+        //     starts with '#', which is the fact C-D2 rests on.
+        //
+        // A clean `#if defined(X)` needed neither -- a clean directive never
+        // produces a call_expression at all -- so a fixture written from the
+        // tidy version of this defect reproduces nothing and the mutant
+        // SURVIVES. The reproducing shape is the damaged one.
+        //
+        //
+        // TWO SEPARATE TESTS, and conflating them is a regression I introduced and
+        // then measured: the first version of this guard was
+        // `isDirectiveConditionText(node) || isHashLineMention(node)` and it
+        // suppressed 15 REAL calls in curl/lib (curl_sasl.c:531-545, cfilters.c,
+        // strerr.c -- agreement fell from 99.97% to 99.89%).
+        //
+        // `isDirectiveConditionText` alone is too coarse, and the reason is
+        // structural: a `preproc_ifdef` has the directive line AND the guarded
+        // BODY as children, so walking up from a call inside the body reaches
+        // `preproc_ifdef` and answers "this is directive text". It is not. The
+        // body is ordinary code and must keep its `calls` edge -- the same
+        // "conditional CODE inside #ifdef blocks still walks and emits" rule the
+        // `uses` path states at its own guard. Measured ancestor chain for
+        // curl_sasl.c:534 `sasl_choose_gsasl(data, &sctx)`, which is real code on
+        // a line that does NOT start with '#': `ERROR < preproc_ifdef`.
+        //
+        // So the structural test is dropped here and the LINE-ANCHORED one is
+        // kept: a preprocessor directive is text that begins with '#' on its
+        // physical line (C-D2), and a call_expression on such a line is
+        // directive text whatever its ancestors say. That is the case the whole
+        // guard exists for -- `#if !defined(A) && !defined(B)` inside the
+        // swallowed initializer, where isHashLineMention is the ONLY test that
+        // fires because the ERROR node removed the preproc_* ancestor.
+        //
+        // The structural test is not discarded, it is simply not the right test
+        // for THIS question: it answers "is any ancestor a directive", when the
+        // question is "is THIS TOKEN directive text".
+        const inDirectiveCondition = this.isHashLineMention(node)
         if (fnNode) {
           let target = fnNode.text
           let isFuncPtr = false
@@ -1856,6 +2123,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
 
           if (
             !suppressCall &&
+            !inDirectiveCondition &&
             target && target.trim() !== "" &&
             // Malformed recovery guard: include-adjacent macros produced
             // targets containing quotes/newlines (never real callees).
@@ -1886,10 +2154,73 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               if (activeFunctionSymbol && activeFunctionSymbol.metadata) {
                 activeFunctionSymbol.metadata.usesMalloc = true
               }
-              // malloc allocates BYTES, not a named type - an Instantiates
-              // edge to the literal 'malloc' could never resolve to a type
-              // symbol and was pure noise (removed; allocation tracking
-              // lives in metadata + patterns).
+              // #962: publish `instantiates` for the TYPE this allocation produces.
+              //
+              // The type comes from the CAST, which is where C states it:
+              // `(Buffer *)malloc(sizeof(Buffer))` allocates a `Buffer`. Two positions
+              // are read, in order, and the first that yields a declared type wins:
+              //
+              //   1. an enclosing `cast_expression` whose VALUE is this call
+              //   2. `sizeof(<type>)` in the argument list -- `sizeof(Buffer)` names
+              //      the same type and is often the only one present
+              //
+              // The target must be a type the file DECLARES. An allocation into `void *`
+              // with no cast instantiates no named type, so no edge is published and
+              // the `calls` edge plus `metadata.usesMalloc` remain the record -- which
+              // is the honest outcome rather than an edge to a function that is not a
+              // type.
+              //
+              // The dedup key matches the `calls` one (per PAIR, not per line) for the
+              // same reason and with the same consequence: two allocations of the same
+              // type in one function are one fact.
+              if (qcFn) {
+                const instantiated = this.allocatedTypeName(node, declaredTypes, structs, unions, enums)
+                if (instantiated) {
+                  const iKey = `${qcFn}::instantiates::${instantiated}`
+                  if (!emittedInstantiates.has(iKey)) {
+                    emittedInstantiates.add(iKey)
+                    relationships.push({
+                      source: qcFn,
+                      target: instantiated,
+                      type: ASTEngine.RelationshipType.Instantiates,
+                      confidence: 1.0,
+                      line_number: this.nameLine(fnNode),
+                      metadata: {
+                        relationshipType: "c_allocation",
+                        allocator: target,
+                        evidenceClass: "usage_contextual",
+                      },
+                    })
+                  }
+                }
+              }
+              // #962: `instantiates` IS PUBLISHED, and it targets the TYPE the
+              // allocation produces -- not the allocator.
+              //
+              // The M12 truth defines this C-specifically: "instantiates = allocator
+              // calls (malloc/calloc/realloc family -- C-specific allocation
+              // semantic)", and pins `rel:Module.c:instantiates:buffer_create:malloc`
+              // with the note "calls + instantiates pair is intentional: call graph
+              // fact + allocation". So the semantic is wanted and the `calls` edge
+              // alone does not carry it.
+              //
+              // WHAT WAS WRONG WAS THE TARGET, NOT THE RELATIONSHIP. Measured across
+              // all 25 languages whose M12 truth pins an `instantiates` edge, the
+              // target is always a TYPE: `Point`, `HashMap`, `List`, `Dictionary`,
+              // `User`, `UserService`, `MemoryStorage`, `Shape`. C's `-> malloc` was
+              // the only non-type target in the family, and the original removal
+              // reasoned exactly that -- "malloc allocates BYTES, not a named type".
+              // True, and it is why the TARGET is wrong.
+              //
+              // The faithful C edge reads the CAST. Module.c:26 is
+              // `Buffer *buf = (Buffer *)malloc(sizeof(Buffer));` -- the allocation
+              // produces a `Buffer`, the code says so in the cast, and `Buffer` is a
+              // type symbol in the same file. So the edge is
+              // `instantiates buffer_create -> Buffer`, which satisfies the truth's
+              // definition AND the family's meaning. With no cast naming a type there
+              // is nothing to instantiate and no edge is published -- an allocator call
+              // into a `void *` genuinely instantiates no type, and the `calls` edge
+              // plus `metadata.usesMalloc` already record the allocation.
             } else if (inArray(FREE_FUNCTIONS, target)) {
               freeCount++
             } else if (inArray(UNSAFE_STRINGS, target)) {
@@ -1898,18 +2229,37 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
               hasSafeStrings = true
             } else if (inArray(EXPORT_MACROS, target)) {
               isKernelExport = true
+              // #963: the exported NAME is read from TWO places, because the two
+              // conventions put it in two places.
+              //
+              //   kernel      EXPORT_SYMBOL(my_function, GPL);
+              //               the name IS the macro's first argument
+              //   userspace   CURL_EXTERN int curl_strequal(const char*, const char*);
+              //               the macro is a PREFIX -- here it expands to `extern`,
+              //               so the declaration is ordinary C -- and the name is the
+              //               DECLARATOR's
+              //
+              // Reading only the argument (the previous behaviour) is why `exports`
+              // fired zero times in 2,798 files: the kernel macros appear nowhere in
+              // three userspace codebases, and the userspace markers take the other
+              // shape. Adding the userspace macros while still reading only the
+              // argument would have published `exports int -> CURL_EXTERN` for 157 curl
+              // declarations -- a TYPE as the exported name, which is the same defect
+              // #962 corrected for `instantiates`.
               const arg = node.childForFieldName("arguments")?.namedChild(0)
-              if (arg && arg.text.trim()) {
+              const declName = this.exportedDeclarationName(node)
+              const nameNode = declName ?? (arg && arg.text.trim() ? arg : null)
+              if (nameNode) {
                 relationships.push({
-                  source: arg.text,
-                  target: "KERNEL_EXPORT",
+                  source: nameNode.text,
+                  target: target,
                   type: ASTEngine.RelationshipType.Exports,
                   confidence: 1.0,
-                  // M59.A7: the exported NAME is written in the macro argument;
-                  // the marker target (KERNEL_EXPORT) is synthesised and the
-                  // oracle verifies this edge by its SOURCE token.
-                  line_number: this.nodeLine(arg),
-                  metadata: { relationshipType: "linux_kernel_export", exportMacro: target },
+                  // M59.A7: the exported NAME is the edge's SOURCE token; the marker
+                  // target is the macro as written, so a consumer can tell an
+                  // `__declspec(dllexport)` boundary from a kernel `EXPORT_SYMBOL` one.
+                  line_number: this.nodeLine(nameNode),
+                  metadata: { relationshipType: "module_export", exportMacro: target },
                 })
               }
             } else if (inArray(FORMAT_FUNCTIONS, target)) {
@@ -1946,7 +2296,47 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
         // into it), RHS reads stay genuine (java JAD1 family contract).
         const parent = node.parent
         const lhs = parent ? parent.namedChild(0) : null
+        // #960: A WRITE TO A FIELD IS A `uses`. SCD1 (M37 #599) excluded an
+        // assignment LHS on the grounds that it is a write "never a read", and the
+        // exclusion is withdrawn on two grounds, one of which holds regardless of
+        // any oracle.
+        //
+        // THE ANALYZER WAS ALREADY INCONSISTENT WITH ITSELF. Measured on a
+        // five-line reproducer:
+        //
+        //   p->f++     ->  uses published
+        //   p->f += 1  ->  NOT published
+        //   p->f = 1   ->  NOT published
+        //   p->g &= ~3 ->  NOT published
+        //
+        // `p->f++` and `p->f += 1` are the same operation in C. The difference is
+        // that the pinned grammar folds a compound assignment into
+        // `assignment_expression` -- which this gate tests -- while `++` is an
+        // `update_expression` and never reached it. There is no semantic reading
+        // under which `f++` is a use and `f += 1` is not.
+        //
+        // THE PINNED M12 TRUTH AGREES WITH THE INCLUSIVE READING, and says so in
+        // its own contract text: `uses:buffer_create:capacity` is pinned for
+        // `buf->capacity = clamp(...)`, an assignment. So all FIVE facts the truth
+        // marks "not produced" are assignment targets -- three field writes
+        // (capacity/length/data) and two global-variable writes
+        // (`initialized = 1`, `initialized = 0` in module_init/module_shutdown).
+        // Removing the gate takes M12 truth drift from 5 not-produced to 0.
+        //
+        // WHAT THIS DOES NOT CLAIM. A write is not a READ, and the edge is not
+        // relabelled: it stays `uses` with `field_access` metadata, because the
+        // ontology has no `writes` kind (the vocabulary is calls, contains,
+        // exports, extends, implements, imports, instantiates, overrides,
+        // references, uses). Before, a write produced NO edge at all, which is not a
+        // stronger statement -- it is an ABSENCE, and the fact that this function
+        // writes this field was unrepresented anywhere in the graph. With this
+        // change it is represented once, and a consumer that cares about writes can
+        // see it; a consumer that wants reads has the same information it had,
+        // because the metadata does not claim a read.
         const isWrite = parent && parent.type === "assignment_expression" && lhs && lhs.startIndex === node.startIndex && lhs.endIndex >= node.endIndex
+        // `isWrite` is still computed: the identifier branch below keeps its own
+        // copy of the same test, and this one stays for the metadata below so the
+        // edge carries the fact that it is a write rather than a read.
         // CGD17 (M37 #601): a field_expression in the CALLEE position is a
         // CALL, not a read — `p->xClose(p)` emitted BOTH `calls xClose`
         // (from the call_expression branch) and `uses xClose [field_access]`
@@ -1956,7 +2346,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           parent.childForFieldName("function")?.startIndex === node.startIndex
         const field = node.childForFieldName("field")
         const obj = node.childForFieldName("argument") || node.namedChild(0)
-        if (field && field.text.trim() && !isWrite && !isCallee) {
+        if (field && field.text.trim() && !isCallee) {
           const sourceScope = scopeManager.getRelationshipSource()
           // One name occurrence, ONE edge. The key is shared with the identifier
           // branch below on purpose (`::uses::` on BOTH sides): a field read is
@@ -2148,17 +2538,22 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
             (node.parent.parent.namedChild(0)?.endIndex ?? 0) >= node.parent.endIndex &&
             node.parent.childForFieldName("field")?.startIndex === node.startIndex
           ) &&
-          // CGD1 (M37 #601): an assignment LHS is a WRITE, never a read —
-          // plain and compound assignments both parse as
-          // assignment_expression with the LHS as its first named child
-          // (probe c-shapes1 P5). `g_counter += 1` / `g_counter = 5` leaked a
-          // bogus `uses g_counter` (SCD1 class; C was the last unprobed
-          // systems language for that sweep). Span-match the LHS exactly —
-          // web-tree-sitter returns FRESH node objects per child() call, so
-          // reference identity never matches (the DAD3 oracle lesson).
-          !(node.parent?.type === "assignment_expression" &&
-            node.parent.namedChild(0)?.startIndex === node.startIndex &&
-            (node.parent.namedChild(0)?.endIndex ?? 0) >= node.endIndex) &&
+          // #960: the same withdrawal as the field branch above, on the IDENTIFIER
+          // path -- an assignment to a plain value (`initialized = 1`) rather than to
+          // a field. CGD1 (M37 #601) excluded it for the same reason SCD1 excluded
+          // the field form, and the reasoning fails identically: the grammar folds
+          // `g_counter = 5` and `g_counter += 1` into `assignment_expression` while
+          // `g_counter++` is an `update_expression` that never reaches this gate, so
+          // the analyzer already published a `uses` for the increment form and not for
+          // the two assignment forms. There is no reading under which that is
+          // consistent.
+          //
+          // The pinned M12 truth requires this edge: `uses:module_init:initialized`
+          // and `uses:module_shutdown:initialized` are both assignment targets, and
+          // they are the last TWO facts the truth reports as "not produced" once the
+          // field branch is fixed. Span-match the LHS exactly -- web-tree-sitter
+          // returns FRESH node objects per child() call, so reference identity never
+          // matches (the DAD3 oracle lesson).
           // A C KEYWORD can never name a value — reserved words are lexed as
           // keywords, so an `identifier` whose TEXT is one is grammar-recovery
           // debris, never a read. Measured (resolve.c L1336): the `#endif`-glued
@@ -2622,6 +3017,46 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (structName === "anonymous_struct") {
       structName = this.inlineAggregateOwnerName(node) ?? "anonymous_struct"
     }
+    // #961: A FUNCTION-LOCAL TYPE IS QUALIFIED BY ITS ENCLOSING FUNCTION.
+    //
+    // The bare name does not survive the corpus: measured over the three corpora, 3 of
+    // the 20 function-local named types collide with a FILE-SCOPE type of the same name
+    // -- `transfer` (curl/lib/vssh/libssh2.c:3465), `entry`
+    // (curl/tests/libtest/lib1915.c:35) and `clar_counter`
+    // (libgit2/deps/clar/clar/counter.h:86). Publishing `entry` twice in one file
+    // yields two symbols with one name and makes every `contains` edge from either
+    // ambiguous.
+    //
+    // `scope` is `getScopeName()`, which joins every scope below global, so for a
+    // local struct it is exactly the qualified path (`lpRandomEntries.pick`) and at
+    // file scope it is the bare tag. It is therefore used AS the name rather than
+    // prefixed onto one -- an earlier draft prefixed and produced
+    // `lpRandomEntries.lpRandomEntries.pick.pick`, and a second draft that prefixed
+    // only in the caller produced `lpRandomEntries.lpRandomEntries.pick` because the
+    // caller had already qualified the Struct scope it pushes.
+    //
+    // The qualification belongs HERE and not in the `struct_specifier` case in
+    // `analyze`: that case's `structName` never reaches the symbol, because this
+    // extractor derives its own from `specifierOwnName`, which reads the source tag.
+    // The qualified name was computed in the caller and dropped -- the trace showed
+    // `enclosingFunctionName="lpRandomEntries"` while the payload published a bare
+    // `pick`.
+    //
+    // Every step of the resulting path is a real symbol -- the function and the type --
+    // so a `contains` edge anchored on it RESOLVES. That is what distinguishes this
+    // from the block-scope naming the contract forbids: `block_1920` names no symbol,
+    // and the enclosing function does.
+    //
+    // It applies ONLY to a type DECLARATION, never to an inline aggregate. An inline
+    // aggregate (`struct { ... } inner;` as a MEMBER) already has the correct owner
+    // path from `inlineAggregateOwnerName` -- #950's `S.val` and #958's
+    // `R.val.verbatim` -- and taking `scope` for it destroyed those three pinned rows,
+    // because the scope chain at that point is the ENCLOSING type (`envelope.body`),
+    // not the aggregate being named (`envelope.body.verbatim`). An inline aggregate's
+    // specifier sits in a `field_declaration`, which is exactly what
+    // `inlineAggregateOwnerName` keys on, so a null there is the precise test for "this
+    // is a declaration and not a member".
+    if (scope && scope !== "global" && this.inlineAggregateOwnerName(node) === null) structName = scope
     // A struct_specifier without a body is a forward/reference declaration
     // (e.g. `typedef struct Point Point;` or `struct Point *p;`). It is not a
     // definition site — skip it to avoid phantom duplicates; the definition
@@ -2657,8 +3092,53 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     // trailing-marker case and a confidently wrong one everywhere else.
     const hasUnnamedBitfield = this.bodyHasUnnamedBitfield(bodyList)
     if (bodyList) {
-      for (let i = 0; i < bodyList.namedChildCount; i++) {
-        const field = bodyList.namedChild(i)
+      // #957: a member declared inside a preprocessor CONDITION is a member.
+      //
+      // `struct eventNotifier { #ifdef HAVE_EVENT_FD int efd; #else int pipefd[2];
+      // #endif } eventNotifier;` (redis/src/eventnotifier.h:19-25) parses with the
+      // `preproc_ifdef` as a DIRECT child of the `field_declaration_list` and NO
+      // `field_declaration` at that level, so iterating named children found nothing
+      // to publish and the struct was emitted with a symbol and ZERO `contains`
+      // edges. Found by contains-vs-clang.ts, which is the first oracle in this
+      // lane to judge `contains` against a parser that is not the one the analyzer
+      // uses -- every tree-sitter-based counter had reported this file as clean,
+      // because the payload and the parse agree that there is no field_declaration
+      // to find. Agreement between a payload and the grammar that produced it is not
+      // evidence about the grammar.
+      //
+      // A conditional member is a REAL member: the project compiles with one of the
+      // arms, and the struct is unusable without it. The preprocessor is textual
+      // (C-D2), so the analyzer cannot know WHICH arm -- it publishes every arm's
+      // members, which is the honest superset and matches what a C consumer needs to
+      // see. `pipefd` and `efd` coexisting in one payload is a true statement about
+      // the two possible compilations, and is the same shape as the macro-mediated
+      // members already published for #908.
+      const memberNodes: Node[] = []
+      const collectMembers = (list: Node) => {
+        for (let i = 0; i < list.namedChildCount; i++) {
+          const child = list.namedChild(i)
+          if (!child) continue
+          if (child.type === "preproc_ifdef" || child.type === "preproc_if") {
+            // Only the CONDITION is directive text; both arms are code.
+            for (let j = 0; j < child.namedChildCount; j++) {
+              const arm = child.namedChild(j)
+              if (!arm) continue
+              if (arm.type === "field_declaration") memberNodes.push(arm)
+              else if (arm.type === "preproc_else" || arm.type === "preproc_elif") {
+                // An `#else` arm's members are nested one level deeper.
+                for (let k = 0; k < arm.namedChildCount; k++) {
+                  const inner = arm.namedChild(k)
+                  if (inner?.type === "field_declaration") memberNodes.push(inner)
+                }
+              }
+            }
+            continue
+          }
+          memberNodes.push(child)
+        }
+      }
+      collectMembers(bodyList)
+      for (const field of memberNodes) {
         // #950: an INLINE aggregate member -- `struct { ... } name;` or
         // `union { ... } name;`. Its fields are registered under a synthetic key
         // before the member guard below, and the member record picks the key up.
@@ -2736,6 +3216,40 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   "enum_specifier",
                   ",",
                   "bitfield_clause",
+                  // #985. THE FIX. `git_array_t(size_t) line_index;` parses as
+                  //
+                  //   field_declaration
+                  //     macro_type_specifier   <- the TYPE, whose identifier is the
+                  //                                      MACRO'S OWN NAME
+                  //     field_identifier       <- the real member
+                  //
+                  // and this loop treats every child that is not a type node as a
+                  // DECLARATOR. A macro_type_specifier was in neither list, so it was
+                  // descended for its identifier and published as a member BESIDE the
+                  // real one:
+                  //
+                  //   contains git_blame -> git_array_t   <- phantom, clang has no such member
+                  //   contains git_blame -> line_index    <- correct
+                  //
+                  // #928 fixed the ADJACENT shape -- `BIT(closing);`, where the macro
+                  // owns the name and the declaration has no declarator at all, so
+                  // `fieldDeclarationHasDeclarator` refuses it. This is the shape
+                  // #928's test cannot see, because here a declarator IS present: the
+                  // macro is the TYPE, and a separate declarator names the member.
+                  // Measured over the four declared corpora (3,997 files): 60 phantom
+                  // `contains` edges, 48 of them beside the correct member, across 19
+                  // macro names -- git_array_t x13 (libgit2), ql_elm x11 / ql_head x5 /
+                  // rb_node x5 (jemalloc), STACK_OF (curl), HRESULT and ULONG
+                  // (libgit2's winhttp header), GIT_ALIGN, plus C++-header debris
+                  // (noexcept, decltype, operator) that tree-sitter-c parses out of
+                  // libstdc++/libc++. clang's independent judgement of the libgit2 half
+                  // reports them as PHANTOM members.
+                  //
+                  // This is the #928 defect verbatim -- a member named after a macro,
+                  // a name no C declaration in the file gives to any member. It is NOT
+                  // C-D2: the real member (`line_index`, `sk`, `cols`) is in the parse
+                  // and is already published, so only the duplicate goes.
+                  ...MACRO_TYPE_NODES,
                 ],
                 rawDecl.type,
               )
@@ -2909,6 +3423,20 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (unionName === "anonymous_union") {
       unionName = this.inlineAggregateOwnerName(node) ?? "anonymous_union"
     }
+    // #961: a FUNCTION-LOCAL union is qualified by its enclosing function, exactly as the
+    // struct and enum paths are. The first draft of this wave fixed struct and enum and
+    // MISSED union, so `local_union_and_enum`'s anonymous union still published as the
+    // PLACEHOLDER `anonymous_union` with `as_int` and `as_float` owned by it -- the #958
+    // defect class, on the one arm of the ruling that was left unfixed. A ruling that covers
+    // two of the three spellings is half a ruling, and the fixture caught it by naming the
+    // arm in a row of its own.
+    //
+    // The inline-aggregate test mirrors the struct path: an inline union that is a MEMBER
+    // already has its correct owner path from `inlineAggregateOwnerName` (#951's `S.val`),
+    // and taking `scope` for it would name the ENCLOSING type instead.
+    if (scope && scope !== "global" && unionName === "anonymous_union" && this.inlineAggregateOwnerName(node) === null) {
+      unionName = scope
+    }
 
     const fields: any[] = []
     // #950: as the struct path.
@@ -2998,6 +3526,40 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   "enum_specifier",
                   ",",
                   "bitfield_clause",
+                  // #985. THE FIX. `git_array_t(size_t) line_index;` parses as
+                  //
+                  //   field_declaration
+                  //     macro_type_specifier   <- the TYPE, whose identifier is the
+                  //                                      MACRO'S OWN NAME
+                  //     field_identifier       <- the real member
+                  //
+                  // and this loop treats every child that is not a type node as a
+                  // DECLARATOR. A macro_type_specifier was in neither list, so it was
+                  // descended for its identifier and published as a member BESIDE the
+                  // real one:
+                  //
+                  //   contains git_blame -> git_array_t   <- phantom, clang has no such member
+                  //   contains git_blame -> line_index    <- correct
+                  //
+                  // #928 fixed the ADJACENT shape -- `BIT(closing);`, where the macro
+                  // owns the name and the declaration has no declarator at all, so
+                  // `fieldDeclarationHasDeclarator` refuses it. This is the shape
+                  // #928's test cannot see, because here a declarator IS present: the
+                  // macro is the TYPE, and a separate declarator names the member.
+                  // Measured over the four declared corpora (3,997 files): 60 phantom
+                  // `contains` edges, 48 of them beside the correct member, across 19
+                  // macro names -- git_array_t x13 (libgit2), ql_elm x11 / ql_head x5 /
+                  // rb_node x5 (jemalloc), STACK_OF (curl), HRESULT and ULONG
+                  // (libgit2's winhttp header), GIT_ALIGN, plus C++-header debris
+                  // (noexcept, decltype, operator) that tree-sitter-c parses out of
+                  // libstdc++/libc++. clang's independent judgement of the libgit2 half
+                  // reports them as PHANTOM members.
+                  //
+                  // This is the #928 defect verbatim -- a member named after a macro,
+                  // a name no C declaration in the file gives to any member. It is NOT
+                  // C-D2: the real member (`line_index`, `sk`, `cols`) is in the parse
+                  // and is already published, so only the duplicate goes.
+                  ...MACRO_TYPE_NODES,
                 ],
                 rawDecl.type,
               )
@@ -3145,6 +3707,47 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) enumName = declNode.text.trim()
     }
+    // #986: an ANONYMOUS enum used as a MEMBER's type is the member PATH, exactly as
+    // an anonymous inline struct or union is -- `inlineAggregateOwnerName` already
+    // composes `<container>.<member>` for those (#950/#951), and the tagged enum
+    // spelling already keeps its own tag as the owner:
+    //
+    //   typedef union { enum { A_ONE, A_TWO } first;   int n; } U;
+    //   typedef union { enum E { B_ONE, B_TWO } first; int n; } V;
+    //   typedef union { struct { int x; } pt;           int n; } W;
+    //
+    //   before   contains U  -> A_ONE, A_TWO          <- collapsed onto the container
+    //            contains E  -> B_ONE, B_TWO          <- correct, the tag names it
+    //            contains W.pt -> x                   <- correct, #950/#958
+    //   after    contains U.first -> A_ONE, A_TWO
+    //
+    // Without this the members are published as members of the CONTAINER, so a
+    // consumer reading `U` sees `A_ONE` beside `first` and `n` and has no way to
+    // learn that `first` is a struct of its own with two enumerators.
+    //
+    // It must come BEFORE the #961 scope rule below, and it does, because that rule
+    // fires on the same `anonymous_enum` placeholder and would otherwise win: for
+    // this shape `scope` is the CONTAINER's name (`U`), which is precisely the name
+    // the member path is trying to refine. #961's own case -- a FUNCTION-local enum,
+    // which has no member path -- is untouched, because `inlineAggregateOwnerName`
+    // returns null when the specifier is not a field's type.
+    if (enumName === "anonymous_enum") {
+      const memberPath = this.inlineAggregateOwnerName(node)
+      if (memberPath) enumName = memberPath
+    }
+    // #961: a FUNCTION-LOCAL enum is qualified by its enclosing function, exactly as the
+    // struct path is. Without it an anonymous local enum publishes as the PLACEHOLDER
+    // `anonymous_enum` whose members are owned by that placeholder -- the #958 defect
+    // class -- and two anonymous enums in one file produce two symbols with one name.
+    //
+    // `c/macro-wrapped-heading-917` pinned the CGD20 behaviour precisely because
+    // publishing leaked `BufSize` and `PlainSize` as file-scope EnumMembers (the
+    // measured harm CGD20's own comment cited). Qualifying the type fixes that leak at
+    // its CAUSE: the members are owned by `cmpp_stream.anonymous_enum` and
+    // `plain_stream.anonymous_enum`, both real symbols, instead of by a name that
+    // resolves to nothing. A named local enum is left alone -- the qualifier is only
+    // needed where the source has no name to carry the identity.
+    if (scope && scope !== "global" && enumName === "anonymous_enum") enumName = scope
     enums[enumName] = true
 
     const values: string[] = []
@@ -3312,8 +3915,64 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (c.type === "function_declarator") {
             isFuncType = true
             const innerDecl = c?.childForFieldName("declarator")
+            // #971: a `parenthesized_declarator` here is NOT automatically a function
+            // pointer. Parentheses around a declarator are GROUPING and mean nothing
+            // (C 6.7.6.3), so these two are opposite constructs that differ only by what
+            // the parens CONTAIN:
+            //
+            //   int (grouped)(int n);        function_declarator
+            //                                     parenthesized_declarator
+            //                                       identifier "grouped"      <- a FUNCTION
+            //
+            //   int (*fnptr)(int n);         function_declarator
+            //                                     parenthesized_declarator
+            //                                       pointer_declarator
+            //                                         identifier "fnptr"     <- a VARIABLE
+            //
+            // The old test keyed on the parens alone, so every GROUPED declarator was
+            // published as a `variable`:
+            //
+            //   int (luaL_register)(lua_State *L, const char *libname, ...);
+            //     symbols: paren_proto:variable  paren_ptr:variable  paren_void:variable
+            //
+            // A wrong symbol KIND, not a missing one -- consumers resolve calls and
+            // references against it, so these functions were invisible to call
+            // resolution while looking like data. Measured at
+            // redis/deps/lua/src/lauxlib.c:229. Definitions were never affected
+            // (`paren_defn:function`), because they take the function_definition path
+            // at CGD38, which descends the chain properly -- so the defect was specific
+            // to PROTOTYPES, and invisible to any test that only defined its functions.
+            //
+            // The test is now what the parens CONTAIN: a pointer_declarator inside means
+            // pointer-to-function (a variable); anything else means grouping (a
+            // function).
             if (innerDecl && innerDecl.type === "parenthesized_declarator") {
-              isFuncType = false // function pointer
+              // The descent must SKIP ERROR/MISSING children, exactly as
+              // getIdentifierFromDeclarator does (#916-C). A macro-eaten declaration
+              // puts the parens in this shape:
+              //
+              //   parenthesized_declarator
+              //     ERROR [ SQLITE_CDECL ]      <- namedChild(0), the macro
+              //     pointer_declarator
+              //       identifier "sqlite3IoTrace"
+              //
+              // so `childForFieldName("declarator") ?? namedChild(0)` descends into the
+              // ERROR, follows the MACRO's name, and never reaches the
+              // pointer_declarator -- which would classify a real function pointer as a
+              // function and lose the `sqlite3IoTrace` variable symbol entirely. Caught
+              // by c/macro-truncated-declarator-916 on the first run of this fix.
+              const descendsToPointer = (start: Node): boolean => {
+                let q: Node | null = start
+                for (let depth = 0; q && depth < 8; depth++) {
+                  if (q.type === "pointer_declarator") return true
+                  const byField = q.childForFieldName("declarator")
+                  if (byField) { q = byField; continue }
+                  const kids = (q.namedChildren ?? []).filter((k: Node | null): k is Node => !!k)
+                  q = kids.find((k: Node) => !k.isError && !k.isMissing) ?? null
+                }
+                return false
+              }
+              if (descendsToPointer(innerDecl)) isFuncType = false // a genuine function POINTER
             }
             break
           }
@@ -3804,9 +4463,26 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     const ownerSpecifier = body.parent
     if (!ownerSpecifier) return null
     if (ownerSpecifier.type !== "struct_specifier" && ownerSpecifier.type !== "union_specifier") return null
+
+    // #958: when the OWNER is itself an inline aggregate, the owner's own name is
+    // not the type's name -- it is the MEMBER that carries it, one level further
+    // out. `struct R { union { ... struct { ... } verbatim_str; ... } val; }` has
+    // `verbatim_str` inside the union's field_declaration_list, whose owner
+    // specifier is the ANONYMOUS union, so `specifierOwnName` returns the
+    // placeholder `anonymous_union` and the path came out as
+    // `anonymous_union.verbatim_str` (redis/src/call_reply.c:30-38, where
+    // `CallReply.val.verbatim_str.str` and `.format` were published under a
+    // placeholder owner while the union's own members got the right path).
+    //
+    // The correct path composes from the member that carries the outer aggregate:
+    // the outer specifier's own `field_declaration` names it (`val`), and THAT
+    // specifier's owner is named `R`. So the answer is `R.val.verbatim_str`, and
+    // the same question for the outer aggregate itself (`R.val`) already had a
+    // working answer, which is why the two disagreed.
     const ownerName = this.specifierOwnName(ownerSpecifier)
     if (!ownerName) return null
-    return `${ownerName}.${memberName.text.trim()}`
+    const carried = this.inlineAggregateOwnerName(ownerSpecifier)
+    return carried ? `${carried}.${memberName.text.trim()}` : `${ownerName}.${memberName.text.trim()}`
   }
 
   /**
@@ -4066,7 +4742,38 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
     return (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_"
   }
 
-  /** True when every character is arithmetic this method is willing to evaluate. */
+  /**
+ * #975 (P11): true when `s` is one or more decimal digits followed by zero or more
+ * C integer-suffix letters (`u`, `U`, `l`, `L`) and nothing else.
+ *
+ * This replaces the last regex literal in this file, `/^\d+[uUlL]*$/`, which decided
+ * whether an enumerator's value is a plain integer (so the implicit ++ chain can
+ * continue) or something the evaluator cannot follow (so it must stop and report the
+ * value as unknown rather than guess).
+ *
+ * Written as a character scan for two reasons. P11 forbids regex literals in this
+ * analyzer, because a regex is opaque to the AST the rest of the file reasons from
+ * and the lane's rule is that structure decides, not pattern-matching. And the file
+ * already has the idiom — `isIdentifierStart` and `isArithmeticOnly` are both
+ * character loops over an allowed set — so this is the house style rather than a new
+ * shape.
+ *
+ * Equivalence with the regex is exact, including that `\d` is ASCII-only in JS: the
+ * digit test below is `>= "0" && <= "9"`, so a Unicode digit is refused by both.
+ */
+  private isDecimalWithUnsignedOrLongSuffix(s: string): boolean {
+  if (!s) return false
+  let i = 0
+  while (i < s.length && s[i] >= "0" && s[i] <= "9") i++
+  if (i === 0) return false // `\d+` needs at least one digit
+  for (; i < s.length; i++) {
+    const c = s[i]
+    if (c !== "u" && c !== "U" && c !== "l" && c !== "L") return false
+  }
+  return true
+}
+
+/** True when every character is arithmetic this method is willing to evaluate. */
   private isArithmeticOnly(text: string): boolean {
     const allowed = "0123456789+-*/|&<>() \t"
     for (const ch of text) if (!allowed.includes(ch)) return false
@@ -4277,7 +4984,7 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nm = e.childForFieldName("name") || e.namedChild(0)
           const val = e.childForFieldName("value")
           if (val) {
-            const literal = /^\d+[uUlL]*$/.test(val.text.trim())
+            const literal = this.isDecimalWithUnsignedOrLongSuffix(val.text.trim())
             if (!literal) {
               next = Number.NaN // unknown: the chain stops here
               continue
@@ -5315,6 +6022,154 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
   // reset at `analyze()` entry is what keeps the array from outliving its file.
   private lineIndex: Int32Array | null = null
   private lineIndexContent = ""
+  /**
+   * #962: the TYPE an allocator call produces, read from the cast or from `sizeof`.
+   *
+   * Returns null when the allocation names no declared type -- an allocation into
+   * `void *` with no cast, or a cast to a type the file does not declare -- because in
+   * that case there is no `instantiates` edge to publish. `instantiates` targets a TYPE
+   * in all 25 M12 truths that pin one (`Point`, `User`, `List`, `Dictionary`,
+   * `MemoryStorage`), so an edge to `malloc` would be the only non-type target in the
+   * family and could never resolve to a type symbol.
+   *
+   * `sizeof(Buffer)` is read as well as the cast, because the two frequently disagree in
+   * which one carries the type: `p = malloc(sizeof(Buffer))` names it only in `sizeof`,
+   * and `Buffer *p = (Buffer *)realloc(old, n)` names it only in the cast.
+   */
+  private allocatedTypeName(
+    call: Node,
+    declaredTypes: Set<string>,
+    structs: Record<string, any[]>,
+    unions: Record<string, any[]>,
+    enums: Record<string, boolean>,
+  ): string | null {
+    // A type NAME in the source, whatever node carries it. `(Buffer *)` is a
+    // `type_descriptor` around a `type_identifier`; `(struct Buf *)` is a
+    // `type_descriptor` around a `struct_specifier`; `(struct Buf *)`'s descriptor
+    // text is `"struct Buf *"`, WITH the keyword and the pointer, so matching the
+    // descriptor's own text against a declared-type set never hits. Reading only the
+    // `type_identifier` case -- the first draft -- published no edge at all, and
+    // `(Buffer *)malloc(...)` and `(struct Buf *)malloc(...)` are the same fact.
+    const typeNameOf = (n: Node | null | undefined): string | null => {
+      if (!n) return null
+      if (n.type === "type_identifier") return n.text
+      if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier") {
+        return n.childForFieldName("name")?.text ?? null
+      }
+      if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"))
+      // `sizeof_expression` has NO `argument` FIELD in this grammar -- its operand is
+      // `namedChild(0)`. Reading the field returned undefined, so every `sizeof`-only
+      // allocation silently produced no edge: `struct Node *nd = malloc(sizeof(struct
+      // Node));` published nothing while `(struct Buf *)malloc(sizeof(struct Buf))`
+      // published correctly through its CAST. The two spellings disagree about which
+      // one carries the type, which is why both are read, and one of the two was
+      // reading a field that does not exist.
+      if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0))
+      if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0))
+      // NOT `elaborated_specifier`: that node type does not exist in tree-sitter-c --
+      // it is Java/TypeScript's, and the F1 grammar oracle caught the literal on the
+      // first run of this change ("unknown=1"), which is exactly the finding it exists
+      // to make: a string compared against a node type that can never match. Verified
+      // by scanning 60 corpus files for the node type across the whole grammar.
+      return null
+    }
+    const declared = (name: string | null | undefined): string | null => {
+      if (!name || !name.trim()) return null
+      const n = name.trim()
+      if (declaredTypes.has(n) || structs[n] || unions[n] || enums[n]) return n
+      return null
+    }
+
+    // 1. An enclosing cast whose VALUE is this call: `(Buffer *)malloc(...)`.
+    let p: Node | null = call.parent
+    for (let depth = 0; p && depth < 4; depth++, p = p.parent) {
+      if (p.type !== "cast_expression") continue
+      const value = p.childForFieldName("value")
+      if (value && value.id === call.id) {
+        // `(Buffer *)` parses as a `type_descriptor` wrapping the `type_identifier`,
+        // so the descriptor's own text is `"Buffer *"` -- WITH the pointer -- and
+        // matching that against a declared-type set never hits. The inner node is the
+        // name. Measured on Module.c:26, where the payload emitted no `instantiates`
+        // for exactly this reason.
+        const hit = declared(typeNameOf(p.childForFieldName("type")))
+        if (hit) return hit
+      }
+      break
+    }
+
+    // 2. `sizeof(<type>)` in the argument list.
+    const args = call.childForFieldName("arguments")
+    if (args) {
+      for (let i = 0; i < args.namedChildCount; i++) {
+        const a = args.namedChild(i)
+        if (a?.type !== "sizeof_expression") continue
+        // `typeNameOf` reads `namedChild(0)`, because `sizeof_expression` has no
+        // `argument` FIELD in this grammar. This call site still read the field, so the
+        // whole `sizeof` path returned undefined and every allocation that carried its
+        // type ONLY in `sizeof` published no edge -- which is half the cases the ruling
+        // is about. The two spellings disagree in practice: `malloc(sizeof(struct Node))`
+        // has no cast at all, and `(struct Buf *)realloc(p, n)` has no sizeof.
+        const hit = declared(typeNameOf(a))
+        if (hit) return hit
+      }
+    }
+    return null
+  }
+
+  /**
+   * #963: the DECLARATOR's identifier for a declaration introduced by an export marker.
+   *
+   * `CURL_EXTERN int curl_strequal(const char *a, const char *b);` -- the macro is a
+   * prefix (it expands to `extern`), the declaration is ordinary C, and the exported
+   * name is the function's own identifier. That is the same question the member
+   * extractor asks, so it is asked with the same helper: walk the declarator chain and
+   * take the first `identifier`.
+   *
+   * Returns null when the marker introduces nothing declarable -- a marker on a
+   * forward reference whose declarator did not survive recovery, or a marker in an
+   * ERROR span with no recoverable declarator. Null means NO EDGE, which is the honest
+   * outcome: an `exports` edge whose source names nothing a consumer can resolve is the
+   * defect #962 corrected, not a partial result.
+   */
+  private exportedDeclarationName(callNode: Node): Node | null {
+    // `callNode` is the MARKER's call (the kernel spelling) or the DECLARATION itself
+    // (the userspace spelling, where this is reached from the `declaration` case). Both
+    // are accepted, because the two conventions differ in where the marker sits -- and
+    // a helper that assumed one of them returned null for the other with no error, which
+    // is why `exports` stayed at zero after the macro list was widened.
+    let decl: Node | null =
+      callNode.type === "declaration" || callNode.type === "function_definition" ? callNode : null
+    for (let depth = 0; !decl && callNode && depth < 6; depth++) {
+      const up: Node | null = callNode.parent
+      if (!up) break
+      if (up.type === "declaration" || up.type === "function_definition") decl = up
+      else if (up.type === "preproc_ifdef" || up.type === "preproc_if") return null
+      callNode = up
+    }
+    if (!decl) return null
+    const declarator = decl.childForFieldName("declarator")
+    if (!declarator) return null
+    let n: Node | null = declarator
+    for (let depth = 0; n && depth < 12; depth++) {
+      if (n.type === "identifier") {
+        // A declaration whose marker was DETACHED from its declarator by recovery --
+        // curl_setup.h:1343 `CURL_EXTERN curl_socket_t curl_dbg_socket(` spans two
+        // lines, and the parse hands back a declaration node starting at
+        // `curl_socket_t`, with the `CURL_EXTERN` prefix consumed separately. The
+        // walk then reaches the marker itself and would publish
+        // `exports CURL_EXTERN -> CURL_EXTERN` -- the marker naming itself, which is the
+        // phantom class this whole change exists to avoid. An exported name can never
+        // BE the marker, so the walk rejects it here rather than publishing it.
+        return n.text.trim() ? n : null
+      }
+      if (n.type === "type_identifier" || n.type === "primitive_type") return null
+      // A `macro_specifier` on this path is the MARKER, not a name.
+      if (n.type === "macro_specifier" || n.type === "macro_type_specifier") return null
+      n = n.childForFieldName("declarator") || n.namedChild(0)
+    }
+    return null
+  }
+
   private isHashLineMention(node: Node): boolean {
     const bol = this.analyzeContent.lastIndexOf("\n", node.startIndex - 1) + 1
     let i = bol
@@ -5423,6 +6278,27 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       "enumerator",
       "preproc_def",
       "preproc_function_def",
+      // #971: a PARENTHESISED declarator name. Wrapping the declarator in parens is
+      // legal C and means nothing but grouping, yet the grammar gives it its own node,
+      // so the name sat under `parenthesized_declarator` -- absent from this list --
+      // and was classified as a READ of itself:
+      //
+      //   redis/deps/lua/src/lauxlib.c:229
+      //     LUALIB_API void (luaL_register) (lua_State *L, const char *libname, ...)
+      //
+      //   function_definition / declaration
+      //     function_declarator
+      //       parenthesized_declarator
+      //         identifier "luaL_register"    <- a DECLARATION, published as
+      //                                            `uses global -> luaL_register`
+      //       parameter_list "(lua_State *L, ...)"
+      //
+      // The declared name is not a read of itself, and the function symbol IS emitted
+      // from the same occurrence, so the edge was both wrong and redundant.
+      // isDeclaringChainLeftmost already handles the node correctly -- it matches on
+      // endsWith("declarator") and descends to the leftmost identifier -- so listing
+      // the parent type is the whole fix; no new traversal is needed.
+      "parenthesized_declarator",
     ]
     if (!inArray(declParents, p.type)) return false
     // CGD12-mirror: within a declarator-chain parent only the leftmost

@@ -61,6 +61,123 @@ function lastScopeSegment(text: string): string {
 }
 
 /**
+ * D15: does this `function_definition` exist only because the grammar could not read a
+ * macro-decorated class head?
+ *
+ * Scans the CHILDREN for a specifier that `macroDecoratedClassDecl` recognises rather
+ * than reading the `type` FIELD: on this shape the grammar does not populate that field,
+ * so a field read never fires and the duplicate publication stood. Verified on the
+ * minimal repro — the first version of this guard changed nothing, for exactly that
+ * reason.
+ */
+function isMacroDecoratedClassFunction(node: Node): boolean {
+  for (let i = 0; i < node.namedChildCount; i++) {
+    const c = node.namedChild(i)
+    if (c && macroDecoratedClassDecl(c)) return true
+  }
+  return false
+}
+
+
+/**
+ * D15: a class/struct whose HEAD is decorated by a macro — `class GTEST_API_ Widget {…};`
+ *
+ * The grammar cannot read this shape, and what it does instead is worse than giving up.
+ * It recovers the whole declaration as a FUNCTION:
+ *
+ *     function_definition
+ *       class_specifier "class GTEST_API_"
+ *         type_identifier "GTEST_API_"      <- the specifier's name field is the MACRO
+ *       identifier "Widget"                  <- the real class name, a bare SIBLING
+ *       compound_statement "{ … }"           <- the class BODY
+ *
+ * Three consequences, all measured. The specifier has no body of its own, so the
+ * forward-declaration rule declines it and the CLASS IS NEVER PUBLISHED; the bare sibling
+ * identifier reads as a function declarator; and the out-of-line definitions of that
+ * class's members (`Widget::reset() {…}`) then resolve their owner by the `Widget::`
+ * qualifier to whichever `Widget` symbol exists — the CONSTRUCTOR, since a constructor
+ * shares the class's name.
+ *
+ * MEASURED over the five pinned C++ corpora: **32 macro-prefixed class/struct
+ * declarations, and in all 32 the grammar's name field holds the MACRO. None is published
+ * as a class.** In `fmt/test/gtest/gmock-gtest-all.cc` alone that is
+ * `ScopedFakeTestPartResultReporter`, `SingleFailureChecker`, `UnitTestOptions`,
+ * `UnitTestImpl`, `TestSuite`, `TestInfo`, `Expectation`, and more — and it is why
+ * `contains UnitTestImpl -> GetGlobalTestPartResultReporter` had an owner whose range was
+ * the single line `902-902`, the constructor's declaration.
+ *
+ * The three conditions below are all required, and the third is what keeps D11 honest:
+ *
+ *   1. the specifier's own `name` is an ALL-CAPS identifier (a macro spelling);
+ *   2. a bare `identifier` is its SIBLING, outside the body — that is the real name; and
+ *   3. the parent's `compound_statement` is the CLASS BODY, not a function body.
+ *
+ * Condition 1 alone would fire on `class X f() { … }`, an elaborated return type, where the
+ * compound_statement is the FUNCTION's body — exactly the node D11 exists to stop
+ * publishing, so the distinction is load-bearing rather than tidiness. Condition 2 is what
+ * separates them: in `class X f() {…}` the `f` sits inside a `function_declarator`, never
+ * as a bare sibling of the specifier.
+ */
+/**
+ * Is this identifier a MACRO SPELLING rather than a class's own name?
+ *
+ * Spelled out in char codes rather than as a pattern because D6 holds the analyzer to
+ * ZERO regular expressions in its own source — the regex census is the honesty
+ * artifact, and a doc's claim of zero has to be true rather than asserted. The first
+ * character must be `A`-`Z`; the rest `A`-`Z`, `0`-`9` or `_`. This is exactly
+ * `/^[A-Z][A-Z0-9_]*$/`, which is how the register states it independently.
+ *
+ * It was written, verified against D6 (0 hits), lost to a file restore during the
+ * differential A/B, and committed as the pattern instead — which is how D6 read 1
+ * for a whole run after a green check said 0. The check was right; the file that got
+ * committed was not the file that had been checked.
+ */
+function isMacroSpelling(s: string): boolean {
+  if (s.length < 1) return false
+  const first = s.charCodeAt(0)
+  if (first < 65 || first > 90) return false
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    const upper = c >= 65 && c <= 90
+    const digit = c >= 48 && c <= 57
+    if (!upper && !digit && c !== 95) return false
+  }
+  return true
+}
+
+function macroDecoratedClassDecl(spec: Node): { name: string; nameNode: Node; body: Node; owner: Node } | null {
+  if (spec.type !== "class_specifier" && spec.type !== "struct_specifier" && spec.type !== "union_specifier") return null
+  // (a) a real specifier carries its own body and needs none of this
+  for (let i = 0; i < spec.namedChildCount; i++) {
+    const c = spec.namedChild(i)
+    if (c && (c.type === "class_body" || c.type === "field_declaration_list")) return null
+  }
+  // (1) the name field must read as a MACRO, not as the class's own name
+  const nameField = spec.childForFieldName?.("name")?.text?.trim()
+  if (!nameField || !isMacroSpelling(nameField)) return null
+  const parent = spec.parent
+  if (!parent || parent.type !== "function_definition") return null
+  // (3) the parent's compound_statement is the class body
+  let body: Node | null = null
+  for (let i = 0; i < parent.namedChildCount; i++) {
+    const c = parent.namedChild(i)
+    if (c && c.type === "compound_statement") { body = c; break }
+  }
+  if (!body) return null
+  // (2) the real name is a bare identifier SIBLING of the specifier, outside the body
+  for (let i = 0; i < parent.namedChildCount; i++) {
+    const c = parent.namedChild(i)
+    if (!c || c === spec || c === body) continue
+    if (c.type !== "identifier") continue
+    if (c.endIndex <= body.startIndex) {
+      return { name: c.text.trim(), nameNode: c, body, owner: parent }
+    }
+  }
+  return null
+}
+
+
+/**
  * D2: the base-class name an `extends` edge may name, or `null` when the base
  * cannot be named — which is the case the analyzer had been publishing anyway.
  *
@@ -94,6 +211,89 @@ function lastScopeSegment(text: string): string {
  * (#916's lesson — a copied rule is a second answer, and the two sides
  * cancelling out of every count is how a wrong edge survives a year of gates).
  */
+function enclosingFriendDeclaration(node: Node): Node | null {
+  let cur: Node | null = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    if (cur.type === "friend_declaration") return cur
+    cur = cur.parent
+  }
+  return null
+}
+
+/**
+ * D13: does this friend declaration DEFINE a function (carry a body), rather than
+ * merely declare one? A declaration has no `compound_statement` anywhere under it.
+ */
+function nodeHasFunctionBody(decl: Node): boolean {
+  let cur: Node | null = decl
+  let guard = 0
+  while (cur && guard++ < 64) {
+    if (cur.type === "compound_statement" || cur.type === "function_definition") return true
+    for (let i = 0; i < cur.namedChildCount; i++) {
+      const c = cur.namedChild(i)
+      if (c && (c.type === "compound_statement" || c.type === "function_definition")) return true
+    }
+    cur = cur.parent
+  }
+  return false
+}
+
+/**
+ * D13: the scope that lexically ENCLOSES the class a friend definition sits in.
+ *
+ * Walked off the tree rather than carried on `Scope`, which holds no owner link. A
+ * friend function is not a member of that class, so its body's reads belong to
+ * whatever contains the class — a namespace, an outer class, or the file.
+ */
+/**
+ * D13: the scope a friend function's body belongs to.
+ *
+ * A friend defined in a class body is NOT a member of that class, so the class is
+ * skipped outright and the walk continues to whatever genuinely encloses it — a
+ * namespace, an enclosing function, or the file.
+ *
+ * The first version of this helper returned the CONTAINING CLASS, which is the one
+ * scope a friend's body can never belong to; it therefore re-attributed the reads to
+ * exactly the owner the fix was written to remove, and the reproducer did not move at
+ * all. That is why there is no class/struct/union arm here rather than merely a
+ * reordered one: for this rule a class is never the answer.
+ */
+function enclosingScopeOf(node: Node): { node: Node; name: string; kind: ASTEngine.SymbolKind } {
+  let cur: Node | null = node.parent
+  let guard = 0
+  while (cur && guard++ < 64) {
+    const t = cur.type
+    // class_specifier / struct_specifier / union_specifier are deliberately absent:
+    // a friend of a class is not a member of it, so no enclosing class owns the body.
+    // An unnamed enclosing scope falls back to `global`, NEVER to the string
+    // "anonymous": that string is the analyzer's own no-name SENTINEL, and D7's
+    // contract calls the collision out explicitly ("Publishing `anonymous` also
+    // collides with the analyzer's own no-name sentinel"). Measured: a first
+    // version of this helper used `nm || "anonymous"` and moved 239 edges ONTO
+    // the sentinel corpus-wide — trading one wrong named owner for a worse one,
+    // since a sentinel owner cannot be told apart from a class whose name the
+    // analyzer failed to read.
+    if (t === "namespace_definition") {
+      const nm = cur.childForFieldName?.("name")?.text
+      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Namespace }
+      break
+    }
+    if (t === "function_definition" || t === "function_declarator") {
+      const nm = cur.childForFieldName?.("declarator")?.text
+      if (nm) return { node: cur, name: nm, kind: ASTEngine.SymbolKind.Function }
+      break
+    }
+    if (t === "translation_unit") {
+      return { node: cur, name: "global", kind: ASTEngine.SymbolKind.Function }
+    }
+    cur = cur.parent
+  }
+  // Nothing above it but classes: a friend defined at file scope belongs to the file,
+  // which is the same `global` owner an out-of-line definition already gets.
+  return { node, name: "global", kind: ASTEngine.SymbolKind.Function }
+}
+
 export function extendsTargetName(baseText: string, className: string): string | null {
   const leafOf = (raw: string): string => {
     let t = stripAccessSpecifier(raw)
@@ -115,6 +315,43 @@ export function extendsTargetName(baseText: string, className: string): string |
   if (leaf === leafOf(className)) return null
   return leaf
 }
+
+/**
+ * CPP ORACLE CONTRACT — the rules this analyzer exports FOR the F5 oracle.
+ *
+ * Eight of these functions are documented above as existing so that truth and
+ * analysis cannot disagree, and every one of those doc comments names the oracle
+ * as the reason. That intent was documented four times and wired **zero** times:
+ * the oracle mirrored the analyzer's **pre-D1** keyword set, then its **pre-D2**
+ * extends rule, then missed `destructor_name` in the shared `DECL_PARENT` set and
+ * D1's second gate position. Measured cost of that silence, at full coverage over
+ * the three repos the lane pins: **387 MISSING rows and 97.6-99.1% coverage**,
+ * where the analyzer was right and truth was wrong on every one.
+ *
+ * A prose convention cannot hold that line, because nothing checks it. So the
+ * contract is DECLARED here and enforced from both directions by
+ * `script/m14/cpp-oracle-contract.ts`:
+ *
+ *   1. every export whose doc comment names the oracle must appear below, so a
+ *      new rule written with that same careful comment cannot be forgotten; and
+ *   2. every name below must have a CONSUMER in the oracle, so a declared
+ *      contract cannot sit there unwired — which is precisely how all four of
+ *      these died, and how the next one would have died.
+ *
+ * Direction 2 is the one that matters. An export nothing calls reads as coverage
+ * and measures as nothing, which is the sentence this lane has had to learn
+ * repeatedly about inert rules.
+ */
+export const CPP_ORACLE_CONTRACT: readonly string[] = [
+  "macroDeclaredBody",              // #919: a macro-declared BODY is a function body
+  "isCppSpelledName",               // D1: one set, three gates, one impossibility
+  "extendsTargetName",              // D2: a class definition is never a base
+  "qualifiedDeclaratorLeaf",        // the qualified declarator's LEAF is the name
+  "templateWrappedDeclaratorName",  // CPPD15/16: a wrapped declarator declares
+  "recoveredDeclaredName",          // D4: the name beside an error-recovered declarator
+  "specifierDeclaredName",          // D7: a specifier's name is its leaf
+  "attributeDisplacedEnumName",     // D7: an enum name the attribute displaced
+]
 
 import type { Node } from "web-tree-sitter"
 import { ASTEngine } from "./engine"
@@ -918,6 +1155,20 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       // CP6 (second review): `auto [x, y]` bindings declare (see the
       // carve-out in isDeclarationPosition — all names, not first-only).
       "structured_binding_declarator",
+      // A DESTRUCTOR's name is declared, never read: `~json_sax()` puts the
+      // class name inside a `destructor_name` node, and without this entry the
+      // guard below returned false and the class name read as a value use. The
+      // analyzer's behaviour was already correct — the destructor branch reads
+      // the name to BUILD the symbol and never emitted a `uses` for it — so
+      // this entry changes no output here; it is here so the SET matches the
+      // F5 oracle's, because the oracle was the side that got it wrong and the
+      // whole point of a shared set is that neither side can drift alone.
+      // Measured on the oracle: 27 `uses` truth rows for names that are all
+      // constructor/destructor declarations in nlohmann's ABI test header
+      // (`json_sax`, `lexer`, `binary_reader`, `iter_impl`, `nonesuch`,
+      // `file_input_adapter`, `input_stream_adapter`, `json_sax_dom_parser`) —
+      // the analyzer published ZERO `uses` for every one of them.
+      "destructor_name",
       // F6 audit: `template_type_parameter` / `template_value_parameter` are
       // NOT types in the pinned tree-sitter-cpp grammar — template parameters
       // parse as `type_parameter_declaration` (`typename T` / `class T`) and
@@ -1603,6 +1854,88 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
             metadata: { isTypeAlias: true, nameLine: this.nodeLine(typeId) },
           })
         }
+      } else if (type === "preproc_def" || type === "preproc_function_def") {
+        // D9: a `#define` DECLARES a name, and this lane published none.
+        //
+        // Measured on the six pinned C++ corpora (1,722 files, 238,191 edges):
+        // **53,765 edges target a name spelled like a macro** and the lane
+        // published **0** symbols with kind `macro` — 51,113 of those edges
+        // named a macro with no published symbol anywhere. Cross-file
+        // (47,243) is the documented per-file scope, but **3,870 edges in 82
+        // files** name a macro the SAME file `#define`s, and 0 of those 3,870
+        // were function-like: they are object-like constants (`NOMINMAX`,
+        // `WIN32_LEAN_AND_MEAN`, `JSON_DIAGNOSTICS`) and a `calls` edge to a
+        // constant cannot be right. Those 3,870 edges name a declaration that
+        // was sitting in the same file, unresolvable.
+        //
+        // The contract is not new and the fix is not mine: the C lane already
+        // implements it (`real-c-analyzer.ts` `extractMacro`), with the rule
+        // written out — "a `#define` DECLARES a name whatever its body …
+        // minting the symbol is what makes the read resolvable; the
+        // alternative — leaving the name unresolvable so the read stays
+        // silent — is a missing true edge, and the family's contract is that a
+        // missing edge is a defect while a DECLARATION is not an edge". The
+        // kinds are the C lane's exactly: function-like is `Macro`,
+        // object-like is `Constant`.
+        //
+        // Two guards, both from measured collisions:
+        //   * A name the file ALREADY publishes at global scope gets no macro
+        //     symbol. ATL's `DECLARE_INTERFACE_`/`STDMETHOD_` and
+        //     `__declspec`-style `SHSTDAPI_` GENERATE the class or method, so
+        //     the analyzer already publishes a symbol carrying that name; two
+        //     symbols of one name is a graph collision, and the generated
+        //     declaration is the more useful of the two.
+        //   * Only when nothing else claims the name, which is why the minted
+        //     count is 2,999 rather than the 3,031 `#define`s on this corpus.
+        //
+        // Blast radius: +2,999 symbols (1,578 `Macro` + 1,421 object-like
+        // `Constant`) and +2,999 `contains` edges on the six pinned corpora —
+        // exactly one containment edge per minted symbol (`global -> NAME`),
+        // which is the declaration's own place in the graph. That was MEASURED,
+        // not assumed: the first draft of this comment claimed the branch
+        // minted no edge at all, and the count said otherwise. No
+        // `calls`/`uses`/`references` edge is added or removed here, so the
+        // branch can only make existing reads resolvable, never invent one.
+        // Macro BODIES are still never walked as code (`isPreprocText`), so a
+        // read inside a macro body stays silent exactly as before.
+        //
+        // 3,870 -> 21, and the 21 are a GRAMMAR limit, not this branch: a
+        // `#define` the ERROR recovery swallowed yields no
+        // `preproc_function_def` to mint from. All 5 remaining names share one
+        // shape — a COMMENT between the `#if` and the `#define`. At
+        // `unit-class_parser.cpp:2161-2163`, `#if JSON_DIAGNOSTIC_POSITIONS`
+        // / `// Macro for all test cases…` / `#define SETUP_TESTCASES()`
+        // parses as an `ERROR` node over rows 2163-2168 that DOES carry
+        // `preproc_params` and `preproc_arg` children: the grammar recognised
+        // the shape and not the rule. Same family as R1, same fix — the
+        // vendored fork.
+        const nameNode = node.childForFieldName("name")
+        const macroName = nameNode?.text?.trim()
+        if (macroName && isCppSpelledName(macroName) && !symbols.some((s) => s.name === macroName)) {
+          const isFunctionLikeMacro = type === "preproc_function_def"
+          const parameters: ASTEngine.Parameter[] = []
+          if (isFunctionLikeMacro) {
+            const paramsNode = node.childForFieldName("parameters") ?? this.findChild(node, "preproc_params")
+            if (paramsNode) {
+              for (let i = 0; i < paramsNode.childCount; i++) {
+                const param = paramsNode.child(i)
+                if (param && param.isNamed) parameters.push({ name: param.text, type: "any" })
+                else if (param && (param.type === "..." || param.text === "...")) {
+                  parameters.push({ name: "...", type: "variadic", modifiers: [] })
+                }
+              }
+            }
+          }
+          symbols.push({
+            name: macroName,
+            kind: isFunctionLikeMacro ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Constant,
+            range: this.nodeToRange(node),
+            scope: "global",
+            visibility: "public",
+            parameters: isFunctionLikeMacro ? parameters : undefined,
+            metadata: { isMacro: true, isFunctionLikeMacro, nameLine: this.nodeLine(nameNode) },
+          })
+        }
       } else if (type === "preproc_include") {
         const text = node.text
         // Family contract (c wave): ImportInfo canonical fields are
@@ -1743,11 +2076,55 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // push (matches the C negative contract: forward decls produce no
         // symbol). Only the type identifier lives inside, so walk children
         // (harmless) and continue.
-        const bodyNode = this.findChild(node, "class_body") || this.findChild(node, "field_declaration_list")
+        let bodyNode = this.findChild(node, "class_body") || this.findChild(node, "field_declaration_list")
         if (!bodyNode) {
+          // D15: this specifier has no body, but it may still BE a class whose head
+          // carries a macro — `class GTEST_API_ Widget { … };`, which the grammar
+          // recovers as a `function_definition` with the MACRO as the specifier's name
+          // field and the real name as a bare sibling. Declining it here is what lost 32
+          // classes outright, and it left their members' `contains` edges owned by a
+          // same-named CONSTRUCTOR. The body and the name both come off the parent.
+          const decorated = macroDecoratedClassDecl(node)
+          if (decorated) {
+            symbols.push({
+              name: decorated.name,
+              kind: ASTEngine.SymbolKind.Class,
+              range: {
+                startLine: node.startPosition.row + 1,
+                startColumn: node.startPosition.column + 1,
+                endLine: decorated.body.endPosition.row + 1,
+                endColumn: decorated.body.endPosition.column + 1,
+                startIndex: node.startIndex,
+                endIndex: decorated.body.endIndex,
+              },
+              scope: "global",
+              visibility: parentContext?.visibility || "public",
+              metadata: {
+                isCppClass: true,
+                isTemplate: false,
+                nameLine: this.nodeLine(decorated.nameNode),
+                macroDecoratedHead: node.childForFieldName?.("name")?.text?.trim() ?? "",
+              },
+            })
+            // The bare sibling is the NAME, not a declarator: descending into it would
+            // mint a function symbol for the class's own name.
+            newContext = {
+              node: decorated.owner,
+              name: decorated.name,
+              kind: ASTEngine.SymbolKind.Class,
+              visibility: "public",
+              isTemplate: false,
+              isAbstract: false,
+              friends: [],
+              locals: new Set<string>(),
+            } as any
+            pushedScope = true
+            stack.push({ node: decorated.body, parentContext: newContext })
+            continue
+          }
           newContext = parentContext
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
-            const child = node.namedChild(i)
+            const child = node.child(i)
             if (child) stack.push({ node: child, parentContext: newContext })
           }
           continue
@@ -1876,7 +2253,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         symbols.push(sym)
         newContext.symbolRef = sym
-      } else if (type === "compound_statement" && enclosingFunctionScope() === null && macroDeclaredBody(node)) {
+      } else if (
+        type === "compound_statement" && enclosingFunctionScope() === null &&
+        macroDeclaredBody(node) &&
+        // D8: a trailing ANNOTATION's body reaches this branch looking exactly like
+        // a macro-declared heading's body, and publishing it here is what produced
+        // `function GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom:
+        // "macro-heading"` — a symbol for a macro, carrying the REAL function's
+        // statements. The `function_definition` branch refuses the annotation
+        // itself; this is the second half of the same suppression, because the body
+        // is a SEPARATE node and arrives here on its own.
+        //
+        // The body's statements are still walked (the branch is only skipped, not
+        // the subtree), so its reads keep a real owner instead of a macro's.
+        !this.isTrailingAnnotationMacro(node.parent as Node, content)
+      ) {
         // #919: the body of a macro-declared heading (see `macroDeclaredBody`).
         // Publishing the definition the heading WRITES — the heading text
         // itself, never an invented identifier (`TEST(format_test, enum)`
@@ -1893,10 +2284,38 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // the paren, the cap) is REFUSED: the block is walked as before — no
         // scope, no symbol — rather than published under a damaged name.
         if (headingText) {
+          // D14: the range spans the HEADING AND THE BODY, because the body is part
+          // of the function this symbol names.
+          //
+          // `macroDeclaredBody` steps BACK from the compound statement to find the
+          // heading, so `rec.heading` is the macro invocation line alone and
+          // `nodeToRange(rec.heading)` recorded a ONE-LINE range for a function whose
+          // body can run to hundreds of lines. The edges were attributed correctly —
+          // this symbol exists precisely so the body's reads have a real owner — but
+          // the owner did not CONTAIN them.
+          //
+          // MEASURED across the five pinned C++ corpora (1,502 files, 212,476 edges):
+          // **1,053 macro-heading symbols and 38,899 edges** whose owner's recorded
+          // range excludes the edge's own line — 99.9% of every out-of-range owner in
+          // the corpus, the other 39 being 33 template functions and 6 namespaces. The
+          // attribute is the same failure the 1 MiB parse cap was: nothing is wrong
+          // and nothing is missing, so a consumer that finds symbols BY RANGE simply
+          // cannot see them. `fmt/test/printf-test.cc:553` owns edges at 554, 556, …
+          // through a symbol whose range is `553-553`.
+          //
+          // Fixing the OWNER here would have been wrong: the owner is right and D13
+          // is the case where it is not. This is the other half — the owner is right
+          // and its extent is wrong.
+          const headingRange = this.nodeToRange(rec.heading)
           const sym: ASTEngine.UniversalSymbol = {
             name: headingText,
             kind: ASTEngine.SymbolKind.Function,
-            range: this.nodeToRange(rec.heading),
+            range: {
+              ...headingRange,
+              endLine: node.endPosition.row + 1,
+              endColumn: node.endPosition.column + 1,
+              endIndex: node.endIndex,
+            },
             visibility: "public",
             metadata: {
               isCppFunction: false,
@@ -1975,8 +2394,34 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (private) Method symbol for someone else's function. The subtree
         // still walks (parameter names bind nothing observable), but no
         // symbol is emitted.
+        //
+        // D13: that rule is right for a friend DECLARATION and wrong for a friend
+        // DEFINITION, which has a BODY whose reads belong to the friend and not
+        // to the class. Measured on `abseil-cpp/absl/random/uniform_int_distribution.h:86`:
+        //
+        //   friend bool operator==(const param_type& a, const param_type& b) {
+        //     return a.lo_ == b.lo_ && a.range_ == b.range_;
+        //   }
+        //
+        // published `uses param_type -> lo_`, `-> a` and `-> b`, because no symbol
+        // owns the body and the walk therefore attributed it to the enclosing class.
+        // The read is real; the OWNER is wrong, and wrong in the worst direction:
+        // `param_type` also has member functions named `a()` and `b()` (lines 81-82),
+        // so the edge is indistinguishable from reading those. 1 unexplained row on
+        // abseil, 2 more on spdlog's out-of-line constructor (`basic_file_sink-inl.h:21`,
+        // owned by `global`), 3 of 22,806 analyzer edges over 1,028 files.
+        //
+        // The fix keeps CP2 exactly as it was for a declaration — still no symbol —
+        // and only re-OWNs a definition's body, to the scope that lexically encloses
+        // the CLASS rather than the class itself. A friend is not a member, so its
+        // body is not the class's.
         if (hasFriendAncestor(node)) {
           newContext = parentContext
+          const friendDecl = enclosingFriendDeclaration(node)
+          if (friendDecl && nodeHasFunctionBody(friendDecl)) {
+            const outer = enclosingScopeOf(friendDecl)
+            newContext = { ...parentContext!, node: outer.node, name: outer.name, kind: outer.kind }
+          }
           for (let i = node.namedChildCount - 1; i >= 0; i--) {
             const child = node.namedChild(i)
             if (child) stack.push({ node: child, parentContext: newContext })
@@ -2011,6 +2456,101 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
         // why the duplicate call was worth removing).
         const fnParameters = declaratorParameters(fnDeclarator)
         const fnReturnType = declaredReturnType(node, fnDeclarator)
+
+        // D8: a TRAILING ANNOTATION is not a declaration, so it is refused HERE,
+        // before `funcDetails` — and the placement is load-bearing, not tidiness.
+        // `getFunctionDetails` returns null for a node with no return type, and the
+        // macro-shape check below lives INSIDE `if (funcDetails)`, so an annotation
+        // (which has no return type by construction) skipped it entirely and was
+        // published as a real method. The first cut of this fix put the rule beside
+        // the existing macro check, where it could not fire, and the fixture still
+        // published `method GTEST_LOCK_EXCLUDED_`.
+        if (type === "function_definition" && this.isTrailingAnnotationMacro(node, content)) {
+          // Its body is empty by construction, so there is nothing to walk into a
+          // scope; the children are still pushed so a nested declaration inside an
+          // argument would still be seen.
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (child) stack.push({ node: child, parentContext })
+          }
+          continue
+        }
+
+        // A class DEFINITION is never a function's return type, so a
+        // `function_definition` whose `type` field is a class/struct/union
+        // specifier WITH A BODY is the recovery's invention, not a declaration.
+        //
+        // This is fork patch 4's side effect, and it is the half of patch 4 that
+        // the analyzer has to absorb. tree-sitter-cpp's
+        // `macro_prefixed_type_specifier` (fork patch 2) lets a bare macro stand
+        // before a class specifier in type position, and nlohmann writes exactly
+        // that:
+        //
+        //   NLOHMANN_BASIC_JSON_TPL_DECLARATION
+        //   class basic_json { ... 2,600+ lines ... };
+        //   ...
+        //   basic_json(initializer_list_t init, ...) { ... }   <- a CONSTRUCTOR
+        //
+        // Once patch 4 (the macro access-specifier label) recovered the rest of
+        // that class body, the parser could reach the constructor, and it completed
+        // the shape by reading the WHOLE CLASS as the return type:
+        //
+        //   function_definition[26010-27617]
+        //     type:       macro_prefixed_type_specifier[26010-27550]  <- the class
+        //     declarator: function_declarator[27554-27556]            <- the ctor
+        //     body:       compound_statement[27557-27617]
+        //
+        // Publishing that invents a function whose "return type" is 2,540 lines of
+        // class body, and it cost the class its identity: `basic_json` stopped
+        // publishing as a `class` and became a `variable`. The class is still fully
+        // parsed — this drops the FUNCTION, not the class, and the children are
+        // still walked so the class and its members are seen.
+        // PRECEDENCE (D11 vs D15). This guard MUST run before
+        // `returnTypeIsClassDefinition` below. On the macro-decorated shape the
+        // grammar also populates the `type` FIELD with a `class_specifier` — the one
+        // naming the MACRO — so D11 read it as an elaborated return type, descended the
+        // body under the enclosing scope, and published every member a second time with
+        // no owner: `constructor`+`method value` alongside `function UnitTestImpl` and
+        // `function value`. D11 itself is unaffected — on a real elaborated return type
+        // (`class X f() { … }`) the specifier names `X`, `macroDecoratedClassDecl`
+        // declines it, and D11 still fires.
+
+        // D15, second half: the grammar recovers `class MACRO Name { … };` as a
+        // `function_definition`, and the class_specifier branch publishes the class and
+        // walks its body. Without this guard the FUNCTION branch also runs and publishes
+        // everything a second time — measured on the minimal repro as
+        // `constructor constructor` AND `function UnitTestImpl`, `method value` AND
+        // `function value`. The class branch already consumed the body, so this node has
+        // nothing left to do but re-publish it.
+        if (type === "function_definition" && isMacroDecoratedClassFunction(node)) {
+          // DESCEND, but NOT into the body. This node is visited BEFORE its own
+          // `class_specifier` child (the walk is a stack), so a bare `continue` starved
+          // the specifier branch and published NOTHING — measured: `symbols: (empty)`.
+          // And pushing the `compound_statement` as well walked the body TWICE, once
+          // under the class context (publishing `constructor` and `method value`) and
+          // once under the enclosing scope (publishing `function UnitTestImpl` and
+          // `function value`) — the duplicate this guard exists to stop. So: push
+          // everything EXCEPT the class body, which the specifier branch owns.
+          // Skip by TYPE, not by node identity: comparing `child !== classBody`
+          // re-pushed the body (measured `guardPushes: 3`, expected 2), which walked
+          // every member twice — once owned by the class, once owned by nothing. On
+          // this shape the `compound_statement` child of the `function_definition` IS
+          // the class body; the specifier branch owns it.
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.namedChild(i)
+            if (!child || child.type === "compound_statement") continue
+            stack.push({ node: child, parentContext })
+          }
+          continue
+        }
+
+        if (type === "function_definition" && this.returnTypeIsClassDefinition(node)) {
+          for (let i = node.namedChildCount - 1; i >= 0; i--) {
+            const child = node.child(i)
+            if (child) stack.push({ node: child, parentContext })
+          }
+          continue
+        }
 
         if (funcDetails) {
           const { name: funcName, scope: explicitScope, isDestructor, isOperator, nameNode: funcNameNode } = funcDetails
@@ -2078,7 +2618,21 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
           // decorator fragments) keeps the anonymous scope, because there is no
           // heading to read.
           if (!isDestructor && this.isMacroFunctionShape(node, funcName)) {
-            const macroHeading = this.macroHeadingText(node, content, funcName)
+            // D8: a trailing ANNOTATION macro is not a function definition at
+            // all — it decorates the definition immediately before it and
+            // declares nothing, so it earns NO symbol and NO scope. Publishing
+            // it made `GTEST_LOCK_EXCLUDED_` and `GTEST_EXCLUSIVE_LOCK_REQUIRED_(m)`
+            // members of the class they annotate, one fabricated method per
+            // annotated method, and the argument list in the second case became
+            // part of the published NAME.
+            //
+            // A test-macro HEADING is the opposite case and is deliberately kept:
+            // `TEST(Suite, Name) { …body… }` genuinely defines the function it is
+            // named after, and its body holds the statements. The discriminator
+            // is the body — an annotation's is empty, a heading's is not — and it
+            // lives in `isMacroFunctionShape`, which is where the shape is decided.
+            const annotation = this.isTrailingAnnotationMacro(node, content)
+            const macroHeading = annotation ? null : this.macroHeadingText(node, content, funcName)
             let sym: ASTEngine.UniversalSymbol | null = null
             if (macroHeading) {
               sym = {
@@ -3052,10 +3606,66 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
     return false
   }
 
+  /**
+   * Is this `function_definition` actually a MACRO INVOCATION?
+   *
+   * Two independent signals, and the second is the one that catches the annotation
+   * class. The first is the historical one: an ALL-CAPS name whose parameters are
+   * typeless (`TEST(a, b) { … }`).
+   *
+   * D8: a THREAD-SAFETY ANNOTATION is recovered as a whole extra function
+   * definition. Given
+   *
+   *     virtual void SetReaction(int obj, long r) GTEST_LOCK_EXCLUDED_(mu) {}
+   *
+   * the grammar emits the real definition AND a second, phantom one whose entire
+   * text is `GTEST_LOCK_EXCLUDED_(mu) {}` — the annotation, parsed as a function
+   * named after the macro. The analyzer published that phantom as a real method,
+   * so `GTEST_LOCK_EXCLUDED_` and `GTEST_EXCLUSIVE_LOCK_REQUIRED_(m)` became
+   * members of the class. (In the second one the published name even carried the
+   * argument list, because the declarator is an identifier followed by a
+   * parenthesised argument the grammar reads as a function-pointer declarator.)
+   *
+   * Why the existing parameter test could not see it: the argument of an
+   * annotation is an EXPRESSION — a mutex variable, a member name — and
+   * `internal::g_mutex` is spelled exactly like a parameter that has a type, so
+   * `paramHasType` said yes and the function-shape test bailed. Testing the
+   * parameter was always a proxy for "is this a macro invocation", and the
+   * RETURN TYPE is the real thing: **C++ has no function definition without one.**
+   * A constructor or destructor has no return type either, but its declarator
+   * names the class, and a class name spelled in all caps is not a shape this
+   * codebase has to survive. Measured on this lane's corpora: the annotation
+   * phantoms are uniformly `type=(NONE)` while every real definition carries
+   * `primitive_type`, `sized_type_specifier`, `qualified_identifier` or a
+   * `macro_prefixed_type_specifier`.
+   */
   private isMacroFunctionShape(node: Node, funcName: string): boolean {
-    if (!this.isAllCapsName(funcName)) return false
     const decl = this.findChild(node, "function_declarator")
     if (!decl) return false
+    // D8: the all-caps test must run on the BARE declarator name, not on
+    // `funcName`. For an annotation the two differ, because the declarator is an
+    // identifier followed by a parenthesised argument the grammar reads as a
+    // function-pointer declarator — so `funcName` arrives as
+    // `GTEST_LOCK_EXCLUDED_(internal::g_mutex)`, which contains `(`, `:` and
+    // lower case and therefore FAILS an all-caps test. Testing the whole string
+    // is why this class slipped past a check that was otherwise working.
+    const bare = this.bareDeclaratorName(decl) ?? funcName
+    if (!this.isAllCapsName(bare)) return false
+
+    // D8 arm 1: NO return type at all. C++ has no function definition without
+    // one, and a constructor/destructor names its class rather than being
+    // all-caps. The empty body is what separates a TRAILING ANNOTATION from a
+    // test-macro heading: `GTEST_LOCK_EXCLUDED_(mu) {}` is an annotation that
+    // decorates the definition before it and declares nothing, whereas
+    // `TEST(Suite, Name) { …body… }` is a macro that genuinely defines the
+    // function it is named after, and that one still earns its heading symbol.
+    if (!node.childForFieldName?.("type")) {
+      const body = this.findChild(node, "compound_statement")
+      if (this.findChild(decl, "parameters") && body && body.namedChildCount === 0) return true
+    }
+
+    // D8 arm 0 (historical): ALL-CAPS name with TYPELESS parameters — the
+    // `TEST(a, b) { … }` test-macro shape.
     const params = decl.childForFieldName("parameters")
     if (!params || params.namedChildCount === 0) return false
     for (let i = 0; i < params.namedChildCount; i++) {
@@ -3065,6 +3675,188 @@ export class RealCppAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (this.paramHasType(p)) return false
     }
     return true
+  }
+
+  /**
+   * The BARE name a declarator chain declares: the first `identifier` /
+   * `field_identifier` down the chain, with no argument list and no qualifier.
+   * For `GTEST_LOCK_EXCLUDED_(mu)` that is `GTEST_LOCK_EXCLUDED_`; for
+   * `namespace::detail::Widget` it is `Widget`. Returns null when the chain has
+   * no spelled name, so a caller can fall back to the name it already has.
+   */
+  /**
+   * D8: is this no-return-type `function_definition` a TRAILING ANNOTATION — one
+   * that decorates the declaration immediately before it and declares nothing?
+   *
+   * The shape is fixed by the grammar. Given
+   *
+   *     void SetReaction(int obj, long r) GTEST_LOCK_EXCLUDED_(mu) { …body… }
+   *
+   * the grammar ends the `declaration` at the `)` and starts a SECOND
+   * `function_definition` whose declarator is the annotation and whose BODY is the
+   * real function's body. So the node is not a phantom with an empty body — it
+   * carries the statements — and publishing it as a method both invents a symbol
+   * and misattributes every read in that body to the macro.
+   *
+   * The discriminator is structural and it is the only one that held up against
+   * the corpus. Everything else tried was confounded by real data:
+   *
+   *   * the annotation's ARGUMENT looks like a parameter type
+   *     (`internal::g_gmock_mutex`), so the historical "params are typeless" test
+   *     cannot see it
+   *   * the body's being empty does not hold — this node HAS the body
+   *   * the character before the macro in the SOURCE does not hold: it is `)` for
+   *     some sites and `t` (of a trailing `const`) for others, and a `TEST` macro
+   *     preceded by a comment ending in `)` reads as `)` too
+   *   * `prevNamedSibling` is `null` throughout this grammar
+   *
+   * What does hold: the annotation's immediately preceding NAMED SIBLING is the
+   * `declaration`/`field_declaration` of the function it decorates, and that
+   * declaration carries a `function_declarator` — the grammar cut it at the `)`.
+   * A `TEST(Suite, Name) { …body… }` heading has no such predecessor: it is the
+   * first thing in its statement, so its previous named sibling is a comment, a
+   * brace, or another `function_definition`. The `function_declarator` requirement
+   * is what keeps `int x;` immediately before a `TEST` from being read as a
+   * continuation.
+   *
+   * Node-only on purpose: it must be decidable WITHOUT `getFunctionDetails`, which
+   * is null for exactly the nodes this rule is about.
+   */
+  /**
+   * Is this `function_definition`'s return type a class DEFINITION?
+   *
+   * C++ has no such thing: a function cannot return a class *definition*, only a
+   * class type (by name, or an elaborated `class X` with no body). So a
+   * `function_definition` whose `type` field resolves to a `class_specifier` /
+   * `struct_specifier` / `union_specifier` that CARRIES A BODY is the recovery's
+   * invention.
+   *
+   * The unwrap matters: fork patch 2's `macro_prefixed_type_specifier` puts the
+   * class one level down, so the `type` field is that node and the specifier is its
+   * child. Requiring a body is what separates this from the legal
+   * `class X f() { ... }` (an elaborated return type), which has no body and must
+   * keep publishing its function.
+   */
+  private returnTypeIsClassDefinition(node: Node): boolean {
+    const t = node.childForFieldName?.("type")
+    if (!t) return false
+    const spec =
+      t.type === "macro_prefixed_type_specifier"
+        ? (t.namedChildren ?? []).find(
+            (c: any) =>
+              c.type === "class_specifier" || c.type === "struct_specifier" || c.type === "union_specifier",
+          )
+        : t
+    if (!spec) return false
+    if (
+      spec.type !== "class_specifier" &&
+      spec.type !== "struct_specifier" &&
+      spec.type !== "union_specifier"
+    ) {
+      return false
+    }
+    return (spec.namedChildren ?? []).some(
+      (c: any) => c.type === "class_body" || c.type === "field_declaration_list",
+    )
+  }
+
+  private isTrailingAnnotationMacro(node: Node, content: string): boolean {
+    if (node.childForFieldName?.("type")) return false
+    const body = this.findChild(node, "compound_statement")
+    if (!body) return false
+    const decl = this.findChild(node, "function_declarator")
+    if (!decl || !this.findChild(decl, "parameter_list")) return false
+    const bare = this.bareDeclaratorName(decl)
+    if (bare === null || !this.isAllCapsName(bare)) return false
+    return this.continuesADeclaration(node.startIndex, content)
+  }
+
+  /**
+   * D8's discriminator, and the only formulation that held up against the corpus:
+   * does this macro invocation CONTINUE the declaration in front of it?
+   *
+   * Everything structural was confounded by real data, and each was tried and
+   * measured before being dropped:
+   *
+   *   * the annotation's ARGUMENT looks like a parameter type
+   *     (`internal::g_gmock_mutex`), so the historical "params are typeless" test
+   *     cannot see it
+   *   * the body's being empty does not hold — the node CARRIES the real body
+   *   * the previous named sibling is unreliable: `prevNamedSibling` is `null`
+   *     throughout this grammar, and finding the predecessor by index in the
+   *     parent's child list yields `declaration` for a real annotation AND for a
+   *     `TEST` that happens to follow a function declaration — that version
+   *     deleted every gtest heading, which is the largest single loss available
+   *   * `TEST` is itself spelled in all caps, so the macro-name test cannot
+   *     separate the two families
+   *
+   * What separates them is where the invocation SITS. An annotation is trailing:
+   * it follows the parameter list (and possibly a trailing `const`/`&`/`noexcept`)
+   * of the declaration it decorates. A heading is a statement in its own right.
+   * So scan back over whitespace and comments; if the previous significant
+   * character could END a statement, this macro OPENS one and is not an
+   * annotation.
+   *
+   * Comments must be skipped, and that is not a refinement — the first attempt
+   * did not skip them and read a `TEST` preceded by a comment ending in `)` as an
+   * annotation, which is how the first version of this rule deleted the whole
+   * gtest suite's worth of headings.
+   */
+  private continuesADeclaration(startIndex: number, content: string): boolean {
+    let j = startIndex - 1
+    while (j >= 0) {
+      const c = content[j]
+      if (c === " " || c === "\t" || c === "\r" || c === "\n") { j--; continue }
+      break
+    }
+    if (j < 0) return false
+
+    // If a comment sits between the macro and whatever precedes it, the macro was
+    // written at STATEMENT position. This check is what makes the rest of the rule
+    // safe to read backwards: the first attempt tried to skip comments while
+    // scanning backwards, which cannot work — the scan meets the comment's TEXT
+    // before its `//`, so a comment ending in a letter read as a continuation and
+    // every `TEST` preceded by a comment was deleted.
+    const tail = content.slice(Math.max(0, j - 40), startIndex)
+    if (tail.indexOf("//") !== -1 || tail.indexOf("/*") !== -1) return false
+
+    const c = content[j]
+    // the end of a parameter list, or a declarator suffix
+    if (c === ")" || c === "&" || c === ">" || c === "*") return true
+    // a trailing return-type / specifier SUFFIX, which sits between the parameter
+    // list and the annotation: `int f() const GTEST_LOCK_EXCLUDED_(mu)`. Read
+    // backwards, so the word appears reversed.
+    // …and the word ENDS at the character we stopped on, so the window must include
+    // it. An off-by-one here reads "cons" instead of "const" and silently drops
+    // every annotation written after a trailing `const` — which is the majority of
+    // the gmock sites.
+    const upTo = content.slice(Math.max(0, j - 12), j + 1).toLowerCase()
+    let letters = ""
+    for (let k = 0; k < upTo.length; k++) {
+      const ch = upTo[k]
+      if (ch >= "a" && ch <= "z") letters += ch
+    }
+    for (const kw of ["const", "noexcept", "override", "final", "mutable", "volatile"]) {
+      if (letters.endsWith(kw)) return true
+    }
+    return false
+  }
+
+  private bareDeclaratorName(decl: Node): string | null {
+    let cur: Node | null = decl
+    for (let i = 0; i < 8 && cur; i++) {
+      if (cur.type === "identifier" || cur.type === "field_identifier") return cur.text
+      const next: Node | null = cur.childForFieldName?.("declarator") ?? null
+      if (!next) {
+        for (let k = 0; k < cur.namedChildCount; k++) {
+          const c = cur.namedChild(k)
+          if (c && (c.type === "identifier" || c.type === "field_identifier")) return c.text
+        }
+        return null
+      }
+      cur = next
+    }
+    return null
   }
 
   // #915: a bare top-level macro must not become a `variable`. Two consecutive

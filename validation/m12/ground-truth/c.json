@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "truthSource": "manual_audit",
-  "source": "Independent hand audit of validation/m12/fixtures/c/*.{c,h} against C semantics and the M11 C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: functions (definitions + prototypes) -> function; structs with bodies -> struct with fields -> property; unions with bodies -> type with fields -> property; enums -> enum with members -> enum_member; typedefs (function pointers, aliases) -> type when the alias differs from the specifier name; object-like macros with bodies -> constant, function-like macros -> macro; file-scope static vars -> variable (private). Noise: include guards (#define NAME with no value body), forward declarations (struct without body — no symbol), function-local variables (no symbol), anonymous typedef'd structs/enums named by their typedef declarator (ONE symbol). Relationships (family contract, matches Java M12.01): contains = REAL container ownership only (struct->field, union->field, enum->member) — never `global contains X`; calls = function -> callee; uses = field access (a->x) and value identifier usage (global var, enum member, local function ref) — never both uses+references for the same pair; references = include dependencies (global -> header) and type usage (declared in-file type identifiers, incl. bare return types); instantiates = allocator calls (malloc/calloc/realloc family — C-specific allocation semantic). Relationship sources are the enclosing FUNCTION name (not block scopes like the legacy `core_init.block_211` dangling identity); top-level file-scope relationships use `global`. Cross-file declarations (e.g. Buffer/Status declared in Module.h, used in Module.c) do not resolve in a per-file parse — production wiring of the companion index is tracked by M12.44 (same note as Java).",
+  "source": "Independent hand audit of validation/m12/fixtures/c/*.{c,h} against C semantics and the M11 C contract (validated 1.000/1.000 in M11.10; symbols only). Symbols: functions (definitions + prototypes) -> function; structs with bodies -> struct with fields -> property; unions with bodies -> type with fields -> property; enums -> enum with members -> enum_member; typedefs (function pointers, aliases) -> type when the alias differs from the specifier name; object-like macros with bodies -> constant, function-like macros -> macro; file-scope static vars -> variable (private). Noise: include guards (#define NAME with no value body), forward declarations (struct without body \u2014 no symbol), function-local variables (no symbol), anonymous typedef'd structs/enums named by their typedef declarator (ONE symbol). Relationships (family contract, matches Java M12.01): contains = REAL container ownership only (struct->field, union->field, enum->member) \u2014 never `global contains X`; calls = function -> callee; uses = field access (a->x) and value identifier usage (global var, enum member, local function ref) \u2014 never both uses+references for the same pair; references = include dependencies (global -> header) and type usage (declared in-file type identifiers, incl. bare return types); instantiates = allocator calls (malloc/calloc/realloc family \u2014 C-specific allocation semantic). Relationship sources are the enclosing FUNCTION name (not block scopes like the legacy `core_init.block_211` dangling identity); top-level file-scope relationships use `global`. Cross-file declarations (e.g. Buffer/Status declared in Module.h, used in Module.c) do not resolve in a per-file parse \u2014 production wiring of the companion index is tracked by M12.44 (same note as Java).",
   "facts": [
     {
       "id": "sym:Module.c:7:variable:initialized",
@@ -9,8 +9,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 7,
-      "attributes": { "name": "initialized", "symbolKind": "variable" },
-      "evidence": { "authority": "manual_audit", "reference": "static int initialized = 0; file-scope static -> private variable symbol" }
+      "attributes": {
+        "name": "initialized",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "static int initialized = 0; file-scope static -> private variable symbol"
+      }
     },
     {
       "id": "sym:Module.c:9:function:clamp",
@@ -18,8 +24,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 9,
-      "attributes": { "name": "clamp", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "static int clamp(int value, int lo, int hi) { ... } definition -> function" }
+      "attributes": {
+        "name": "clamp",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "static int clamp(int value, int lo, int hi) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:15:function:module_init",
@@ -27,8 +39,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 15,
-      "attributes": { "name": "module_init", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int module_init(void) { ... } definition -> function" }
+      "attributes": {
+        "name": "module_init",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int module_init(void) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:20:function:module_shutdown",
@@ -36,8 +54,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 20,
-      "attributes": { "name": "module_shutdown", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int module_shutdown(void) { ... } definition -> function" }
+      "attributes": {
+        "name": "module_shutdown",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int module_shutdown(void) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:25:function:buffer_create",
@@ -45,8 +69,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 25,
-      "attributes": { "name": "buffer_create", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "Buffer *buffer_create(int capacity) { ... } definition -> function" }
+      "attributes": {
+        "name": "buffer_create",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Buffer *buffer_create(int capacity) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:34:function:buffer_destroy",
@@ -54,8 +84,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 34,
-      "attributes": { "name": "buffer_destroy", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "void buffer_destroy(Buffer *buf) { ... } definition -> function" }
+      "attributes": {
+        "name": "buffer_destroy",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "void buffer_destroy(Buffer *buf) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:40:function:buffer_append",
@@ -63,8 +99,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 40,
-      "attributes": { "name": "buffer_append", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int buffer_append(Buffer *buf, int value) { ... } definition -> function" }
+      "attributes": {
+        "name": "buffer_append",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int buffer_append(Buffer *buf, int value) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:47:function:point_distance",
@@ -72,8 +114,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 47,
-      "attributes": { "name": "point_distance", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int point_distance(const Point *a, const Point *b) { ... } definition -> function" }
+      "attributes": {
+        "name": "point_distance",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int point_distance(const Point *a, const Point *b) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.c:53:function:compare_ints",
@@ -81,8 +129,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 53,
-      "attributes": { "name": "compare_ints", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int compare_ints(const void *a, const void *b) { ... } definition -> function (qsort comparator)" }
+      "attributes": {
+        "name": "compare_ints",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int compare_ints(const void *a, const void *b) { ... } definition -> function (qsort comparator)"
+      }
     },
     {
       "id": "sym:Module.c:59:function:sort_buffer",
@@ -90,8 +144,14 @@
       "kind": "symbol",
       "file": "Module.c",
       "line": 59,
-      "attributes": { "name": "sort_buffer", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "void sort_buffer(Buffer *buf) { ... } definition -> function" }
+      "attributes": {
+        "name": "sort_buffer",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "void sort_buffer(Buffer *buf) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Module.h:10:constant:MAX_BUFFER",
@@ -99,8 +159,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 10,
-      "attributes": { "name": "MAX_BUFFER", "symbolKind": "constant" },
-      "evidence": { "authority": "manual_audit", "reference": "#define MAX_BUFFER 256 object-like macro with body -> constant" }
+      "attributes": {
+        "name": "MAX_BUFFER",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#define MAX_BUFFER 256 object-like macro with body -> constant"
+      }
     },
     {
       "id": "sym:Module.h:11:macro:MIN",
@@ -108,8 +174,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 11,
-      "attributes": { "name": "MIN", "symbolKind": "macro" },
-      "evidence": { "authority": "manual_audit", "reference": "#define MIN(a, b) ((a) < (b) ? (a) : (b)) function-like macro -> macro" }
+      "attributes": {
+        "name": "MIN",
+        "symbolKind": "macro"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#define MIN(a, b) ((a) < (b) ? (a) : (b)) function-like macro -> macro"
+      }
     },
     {
       "id": "sym:Module.h:15:struct:Point",
@@ -117,8 +189,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 15,
-      "attributes": { "name": "Point", "symbolKind": "struct" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Point { ... } definition (line 15; the typedef at line 13 is a forward ref, no symbol) -> struct" }
+      "attributes": {
+        "name": "Point",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Point { ... } definition (line 15; the typedef at line 13 is a forward ref, no symbol) -> struct"
+      }
     },
     {
       "id": "sym:Module.h:16:property:x",
@@ -126,8 +204,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 16,
-      "attributes": { "name": "x", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int x; field of Point -> property" }
+      "attributes": {
+        "name": "x",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int x; field of Point -> property"
+      }
     },
     {
       "id": "sym:Module.h:17:property:y",
@@ -135,8 +219,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 17,
-      "attributes": { "name": "y", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int y; field of Point -> property" }
+      "attributes": {
+        "name": "y",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int y; field of Point -> property"
+      }
     },
     {
       "id": "sym:Module.h:20:struct:Buffer",
@@ -144,8 +234,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 20,
-      "attributes": { "name": "Buffer", "symbolKind": "struct" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef struct { ... } Buffer; anonymous struct named by typedef declarator -> ONE struct symbol" }
+      "attributes": {
+        "name": "Buffer",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef struct { ... } Buffer; anonymous struct named by typedef declarator -> ONE struct symbol"
+      }
     },
     {
       "id": "sym:Module.h:21:property:length",
@@ -153,8 +249,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 21,
-      "attributes": { "name": "length", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int length; field of Buffer -> property" }
+      "attributes": {
+        "name": "length",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int length; field of Buffer -> property"
+      }
     },
     {
       "id": "sym:Module.h:22:property:capacity",
@@ -162,8 +264,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 22,
-      "attributes": { "name": "capacity", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int capacity; field of Buffer -> property" }
+      "attributes": {
+        "name": "capacity",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int capacity; field of Buffer -> property"
+      }
     },
     {
       "id": "sym:Module.h:23:property:data",
@@ -171,8 +279,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 23,
-      "attributes": { "name": "data", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int *data; pointer field of Buffer -> property" }
+      "attributes": {
+        "name": "data",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int *data; pointer field of Buffer -> property"
+      }
     },
     {
       "id": "sym:Module.h:26:type:Value",
@@ -180,8 +294,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 26,
-      "attributes": { "name": "Value", "symbolKind": "type" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef union { ... } Value; anonymous union named by typedef -> type symbol" }
+      "attributes": {
+        "name": "Value",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef union { ... } Value; anonymous union named by typedef -> type symbol"
+      }
     },
     {
       "id": "sym:Module.h:27:property:as_int",
@@ -189,8 +309,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 27,
-      "attributes": { "name": "as_int", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int as_int; union member -> property" }
+      "attributes": {
+        "name": "as_int",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int as_int; union member -> property"
+      }
     },
     {
       "id": "sym:Module.h:28:property:as_float",
@@ -198,8 +324,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 28,
-      "attributes": { "name": "as_float", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "float as_float; union member -> property" }
+      "attributes": {
+        "name": "as_float",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "float as_float; union member -> property"
+      }
     },
     {
       "id": "sym:Module.h:29:property:bytes",
@@ -207,8 +339,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 29,
-      "attributes": { "name": "bytes", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "char bytes[8]; array union member -> property" }
+      "attributes": {
+        "name": "bytes",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "char bytes[8]; array union member -> property"
+      }
     },
     {
       "id": "sym:Module.h:32:enum:Status",
@@ -216,8 +354,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 32,
-      "attributes": { "name": "Status", "symbolKind": "enum" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef enum { ... } Status; anonymous enum named by typedef -> enum symbol" }
+      "attributes": {
+        "name": "Status",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef enum { ... } Status; anonymous enum named by typedef -> enum symbol"
+      }
     },
     {
       "id": "sym:Module.h:33:enum_member:STATUS_OK",
@@ -225,8 +369,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 33,
-      "attributes": { "name": "STATUS_OK", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "STATUS_OK = 0 -> enum_member" }
+      "attributes": {
+        "name": "STATUS_OK",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "STATUS_OK = 0 -> enum_member"
+      }
     },
     {
       "id": "sym:Module.h:34:enum_member:STATUS_ERROR",
@@ -234,8 +384,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 34,
-      "attributes": { "name": "STATUS_ERROR", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "STATUS_ERROR = 1 -> enum_member" }
+      "attributes": {
+        "name": "STATUS_ERROR",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "STATUS_ERROR = 1 -> enum_member"
+      }
     },
     {
       "id": "sym:Module.h:35:enum_member:STATUS_TIMEOUT",
@@ -243,8 +399,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 35,
-      "attributes": { "name": "STATUS_TIMEOUT", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "STATUS_TIMEOUT = 2 -> enum_member" }
+      "attributes": {
+        "name": "STATUS_TIMEOUT",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "STATUS_TIMEOUT = 2 -> enum_member"
+      }
     },
     {
       "id": "sym:Module.h:38:type:CompareFn",
@@ -252,8 +414,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 38,
-      "attributes": { "name": "CompareFn", "symbolKind": "type" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef int (*CompareFn)(const void *, const void *); function-pointer typedef -> type" }
+      "attributes": {
+        "name": "CompareFn",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef int (*CompareFn)(const void *, const void *); function-pointer typedef -> type"
+      }
     },
     {
       "id": "sym:Module.h:40:type:Point2D",
@@ -261,8 +429,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 40,
-      "attributes": { "name": "Point2D", "symbolKind": "type" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef struct Point Point2D; alias differing from specifier name -> type symbol" }
+      "attributes": {
+        "name": "Point2D",
+        "symbolKind": "type"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef struct Point Point2D; alias differing from specifier name -> type symbol"
+      }
     },
     {
       "id": "sym:Module.h:42:function:module_init",
@@ -270,8 +444,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 42,
-      "attributes": { "name": "module_init", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int module_init(void); prototype -> function" }
+      "attributes": {
+        "name": "module_init",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int module_init(void); prototype -> function"
+      }
     },
     {
       "id": "sym:Module.h:43:function:module_shutdown",
@@ -279,8 +459,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 43,
-      "attributes": { "name": "module_shutdown", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int module_shutdown(void); prototype -> function" }
+      "attributes": {
+        "name": "module_shutdown",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int module_shutdown(void); prototype -> function"
+      }
     },
     {
       "id": "sym:Module.h:44:function:buffer_create",
@@ -288,8 +474,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 44,
-      "attributes": { "name": "buffer_create", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "Buffer *buffer_create(int capacity); prototype -> function" }
+      "attributes": {
+        "name": "buffer_create",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Buffer *buffer_create(int capacity); prototype -> function"
+      }
     },
     {
       "id": "sym:Module.h:45:function:buffer_destroy",
@@ -297,8 +489,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 45,
-      "attributes": { "name": "buffer_destroy", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "void buffer_destroy(Buffer *buf); prototype -> function" }
+      "attributes": {
+        "name": "buffer_destroy",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "void buffer_destroy(Buffer *buf); prototype -> function"
+      }
     },
     {
       "id": "sym:Module.h:46:function:buffer_append",
@@ -306,8 +504,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 46,
-      "attributes": { "name": "buffer_append", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int buffer_append(Buffer *buf, int value); prototype -> function" }
+      "attributes": {
+        "name": "buffer_append",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int buffer_append(Buffer *buf, int value); prototype -> function"
+      }
     },
     {
       "id": "sym:Module.h:47:function:point_distance",
@@ -315,8 +519,14 @@
       "kind": "symbol",
       "file": "Module.h",
       "line": 47,
-      "attributes": { "name": "point_distance", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int point_distance(const Point *a, const Point *b); prototype -> function" }
+      "attributes": {
+        "name": "point_distance",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int point_distance(const Point *a, const Point *b); prototype -> function"
+      }
     },
     {
       "id": "sym:Negative.c:15:struct:Record",
@@ -324,8 +534,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 15,
-      "attributes": { "name": "Record", "symbolKind": "struct" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef struct { int id; char *name; } Record; anonymous struct named by typedef -> ONE struct symbol (no duplicate alias)" }
+      "attributes": {
+        "name": "Record",
+        "symbolKind": "struct"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef struct { int id; char *name; } Record; anonymous struct named by typedef -> ONE struct symbol (no duplicate alias)"
+      }
     },
     {
       "id": "sym:Negative.c:16:property:id",
@@ -333,8 +549,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 16,
-      "attributes": { "name": "id", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "int id; field of Record -> property" }
+      "attributes": {
+        "name": "id",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int id; field of Record -> property"
+      }
     },
     {
       "id": "sym:Negative.c:17:property:name",
@@ -342,8 +564,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 17,
-      "attributes": { "name": "name", "symbolKind": "property" },
-      "evidence": { "authority": "manual_audit", "reference": "char *name; field of Record -> property" }
+      "attributes": {
+        "name": "name",
+        "symbolKind": "property"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "char *name; field of Record -> property"
+      }
     },
     {
       "id": "sym:Negative.c:20:enum:Color",
@@ -351,8 +579,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 20,
-      "attributes": { "name": "Color", "symbolKind": "enum" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef enum { RED, GREEN, BLUE } Color; anonymous enum named by typedef -> enum symbol" }
+      "attributes": {
+        "name": "Color",
+        "symbolKind": "enum"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef enum { RED, GREEN, BLUE } Color; anonymous enum named by typedef -> enum symbol"
+      }
     },
     {
       "id": "sym:Negative.c:20:enum_member:RED",
@@ -360,8 +594,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 20,
-      "attributes": { "name": "RED", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "RED -> enum_member" }
+      "attributes": {
+        "name": "RED",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "RED -> enum_member"
+      }
     },
     {
       "id": "sym:Negative.c:20:enum_member:GREEN",
@@ -369,8 +609,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 20,
-      "attributes": { "name": "GREEN", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "GREEN -> enum_member" }
+      "attributes": {
+        "name": "GREEN",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "GREEN -> enum_member"
+      }
     },
     {
       "id": "sym:Negative.c:20:enum_member:BLUE",
@@ -378,8 +624,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 20,
-      "attributes": { "name": "BLUE", "symbolKind": "enum_member" },
-      "evidence": { "authority": "manual_audit", "reference": "BLUE -> enum_member" }
+      "attributes": {
+        "name": "BLUE",
+        "symbolKind": "enum_member"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "BLUE -> enum_member"
+      }
     },
     {
       "id": "sym:Negative.c:22:variable:file_counter",
@@ -387,8 +639,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 22,
-      "attributes": { "name": "file_counter", "symbolKind": "variable" },
-      "evidence": { "authority": "manual_audit", "reference": "static int file_counter = 0; file-scope static -> private variable symbol" }
+      "attributes": {
+        "name": "file_counter",
+        "symbolKind": "variable"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "static int file_counter = 0; file-scope static -> private variable symbol"
+      }
     },
     {
       "id": "sym:Negative.c:24:function:record_lookup",
@@ -396,8 +654,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 24,
-      "attributes": { "name": "record_lookup", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "int record_lookup(const Record *rec, int id) { ... } definition -> function" }
+      "attributes": {
+        "name": "record_lookup",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "int record_lookup(const Record *rec, int id) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:Negative.c:33:function:pick_color",
@@ -405,8 +669,14 @@
       "kind": "symbol",
       "file": "Negative.c",
       "line": 33,
-      "attributes": { "name": "pick_color", "symbolKind": "function" },
-      "evidence": { "authority": "manual_audit", "reference": "Color pick_color(int n) { ... } definition -> function" }
+      "attributes": {
+        "name": "pick_color",
+        "symbolKind": "function"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Color pick_color(int n) { ... } definition -> function"
+      }
     },
     {
       "id": "sym:module_config.h:6:constant:CONFIG_VERSION",
@@ -414,8 +684,14 @@
       "kind": "symbol",
       "file": "module_config.h",
       "line": 6,
-      "attributes": { "name": "CONFIG_VERSION", "symbolKind": "constant" },
-      "evidence": { "authority": "manual_audit", "reference": "#define CONFIG_VERSION 2 object-like macro with body -> constant" }
+      "attributes": {
+        "name": "CONFIG_VERSION",
+        "symbolKind": "constant"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#define CONFIG_VERSION 2 object-like macro with body -> constant"
+      }
     },
     {
       "id": "rel:Module.c:references:global:Module.h",
@@ -424,8 +700,13 @@
       "file": "Module.c",
       "sourceId": "global",
       "targetId": "Module.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include \"Module.h\" local include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include \"Module.h\" local include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Module.c:references:global:stdlib.h",
@@ -434,8 +715,13 @@
       "file": "Module.c",
       "sourceId": "global",
       "targetId": "stdlib.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include <stdlib.h> system include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include <stdlib.h> system include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Module.c:uses:module_init:initialized",
@@ -444,8 +730,13 @@
       "file": "Module.c",
       "sourceId": "module_init",
       "targetId": "initialized",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "initialized = 1; global var usage inside module_init" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "initialized = 1; global var usage inside module_init"
+      }
     },
     {
       "id": "rel:Module.c:uses:module_shutdown:initialized",
@@ -454,8 +745,13 @@
       "file": "Module.c",
       "sourceId": "module_shutdown",
       "targetId": "initialized",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "initialized = 0; global var usage inside module_shutdown" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "initialized = 0; global var usage inside module_shutdown"
+      }
     },
     {
       "id": "rel:Module.c:calls:buffer_create:malloc",
@@ -464,18 +760,29 @@
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "malloc",
-      "attributes": { "type": "calls" },
-      "evidence": { "authority": "manual_audit", "reference": "malloc(sizeof(Buffer)) call (two calls, same identity — dedupes)" }
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "malloc(sizeof(Buffer)) call (two calls, same identity \u2014 dedupes)"
+      }
     },
     {
-      "id": "rel:Module.c:instantiates:buffer_create:malloc",
+      "id": "rel:Module.c:instantiates:buffer_create:Buffer",
       "layer": "relationships",
       "kind": "relationship",
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "malloc",
-      "attributes": { "type": "instantiates" },
-      "evidence": { "authority": "manual_audit", "reference": "malloc family = C-specific allocation semantic (calls + instantiates pair is intentional: call graph fact + allocation)" }
+      "attributes": {
+        "type": "instantiates",
+        "unmetUnder": "C-D2"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "RE-LEVIED #962. Originally `-> malloc`, with the note 'malloc family = C-specific allocation semantic (calls + instantiates pair is intentional: call graph fact + allocation)'. Two measured findings amend the TARGET. (1) FAMILY: across all 25 M12 truths that pin an `instantiates` edge the target is always a TYPE -- `Point`, `HashMap`, `List`, `Dictionary`, `User`, `UserService`, `MemoryStorage`, `Shape`. C's `-> malloc` was the ONLY non-type target in the family and can never resolve to a type symbol. (2) THE CAST STATES THE TYPE: Module.c:26 is `Buffer *buf = (Buffer *)malloc(sizeof(Buffer));` -- the allocation produces a `Buffer` and the code says so. The analyzer now publishes `instantiates <fn> -> <the cast or sizeof type>` and requires that type to be declared in the SAME FILE, because an `instantiates` edge must resolve to a type symbol. (3) WHY IT IS STILL UNMET: `Buffer` is declared in Module.H, so from Module.c it is cross-file and C-D2 forbids resolving it -- the same limit this truth already records for cross-file declarations. The row is therefore RETARGETED to the type the source names and recorded `unmetUnder: C-D2` rather than deleted: the semantic is wanted and now implemented, and it fires at corpus scale (2 edges in libgit2) wherever a typed allocation IS resolvable in-file. An allocation into `void *` with no cast publishes no edge, which is the honest outcome -- there is no type to instantiate."
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_create:capacity",
@@ -484,8 +791,13 @@
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "capacity",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->capacity = clamp(...) field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->capacity = clamp(...) field access"
+      }
     },
     {
       "id": "rel:Module.c:calls:buffer_create:clamp",
@@ -494,8 +806,13 @@
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "clamp",
-      "attributes": { "type": "calls" },
-      "evidence": { "authority": "manual_audit", "reference": "clamp(capacity, 1, MAX_BUFFER) call — call-target identifier does NOT also emit uses (family contract: one edge per pair)" }
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "clamp(capacity, 1, MAX_BUFFER) call \u2014 call-target identifier does NOT also emit uses (family contract: one edge per pair)"
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_create:length",
@@ -504,8 +821,13 @@
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "length",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->length = 0 field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->length = 0 field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_create:data",
@@ -514,8 +836,13 @@
       "file": "Module.c",
       "sourceId": "buffer_create",
       "targetId": "data",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->data = (int *)malloc(...) field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->data = (int *)malloc(...) field access"
+      }
     },
     {
       "id": "rel:Module.c:calls:buffer_destroy:free",
@@ -524,8 +851,13 @@
       "file": "Module.c",
       "sourceId": "buffer_destroy",
       "targetId": "free",
-      "attributes": { "type": "calls" },
-      "evidence": { "authority": "manual_audit", "reference": "free(buf->data); free(buf); two calls, same identity — dedupes" }
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "free(buf->data); free(buf); two calls, same identity \u2014 dedupes"
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_destroy:data",
@@ -534,8 +866,13 @@
       "file": "Module.c",
       "sourceId": "buffer_destroy",
       "targetId": "data",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "free(buf->data) field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "free(buf->data) field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_append:length",
@@ -544,8 +881,13 @@
       "file": "Module.c",
       "sourceId": "buffer_append",
       "targetId": "length",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->length field accesses" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->length field accesses"
+      }
     },
     {
       "id": "rel:Module.c:uses:buffer_append:data",
@@ -554,8 +896,13 @@
       "file": "Module.c",
       "sourceId": "buffer_append",
       "targetId": "data",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->data[buf->length] = value field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->data[buf->length] = value field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:point_distance:x",
@@ -564,8 +911,13 @@
       "file": "Module.c",
       "sourceId": "point_distance",
       "targetId": "x",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "a->x - b->x field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "a->x - b->x field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:point_distance:y",
@@ -574,8 +926,13 @@
       "file": "Module.c",
       "sourceId": "point_distance",
       "targetId": "y",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "a->y - b->y field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "a->y - b->y field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:sort_buffer:length",
@@ -584,8 +941,13 @@
       "file": "Module.c",
       "sourceId": "sort_buffer",
       "targetId": "length",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "buf->length field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "buf->length field access"
+      }
     },
     {
       "id": "rel:Module.c:calls:sort_buffer:qsort",
@@ -594,8 +956,13 @@
       "file": "Module.c",
       "sourceId": "sort_buffer",
       "targetId": "qsort",
-      "attributes": { "type": "calls" },
-      "evidence": { "authority": "manual_audit", "reference": "qsort(buf->data, ...) call" }
+      "attributes": {
+        "type": "calls"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "qsort(buf->data, ...) call"
+      }
     },
     {
       "id": "rel:Module.c:uses:sort_buffer:data",
@@ -604,8 +971,13 @@
       "file": "Module.c",
       "sourceId": "sort_buffer",
       "targetId": "data",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "qsort(buf->data, ...) field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "qsort(buf->data, ...) field access"
+      }
     },
     {
       "id": "rel:Module.c:uses:sort_buffer:compare_ints",
@@ -614,8 +986,13 @@
       "file": "Module.c",
       "sourceId": "sort_buffer",
       "targetId": "compare_ints",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "qsort(..., compare_ints) — comparator passed as argument (value identifier usage, not a call)" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "qsort(..., compare_ints) \u2014 comparator passed as argument (value identifier usage, not a call)"
+      }
     },
     {
       "id": "rel:Module.h:references:global:stddef.h",
@@ -624,8 +1001,13 @@
       "file": "Module.h",
       "sourceId": "global",
       "targetId": "stddef.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include <stddef.h> system include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include <stddef.h> system include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Module.h:references:global:module_config.h",
@@ -634,8 +1016,13 @@
       "file": "Module.h",
       "sourceId": "global",
       "targetId": "module_config.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include \"module_config.h\" local include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include \"module_config.h\" local include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Module.h:references:global:Point",
@@ -644,8 +1031,13 @@
       "file": "Module.h",
       "sourceId": "global",
       "targetId": "Point",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "typedef struct Point Point; forward-ref type usage — Point is declared in-file (line 15) so it resolves (never-defined forward decls like ForwardOnly emit nothing)" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "typedef struct Point Point; forward-ref type usage \u2014 Point is declared in-file (line 15) so it resolves (never-defined forward decls like ForwardOnly emit nothing)"
+      }
     },
     {
       "id": "rel:Module.h:contains:Point:x",
@@ -654,8 +1046,13 @@
       "file": "Module.h",
       "sourceId": "Point",
       "targetId": "x",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Point contains field x (real container ownership)" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Point contains field x (real container ownership)"
+      }
     },
     {
       "id": "rel:Module.h:contains:Point:y",
@@ -664,8 +1061,13 @@
       "file": "Module.h",
       "sourceId": "Point",
       "targetId": "y",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Point contains field y" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Point contains field y"
+      }
     },
     {
       "id": "rel:Module.h:contains:Buffer:length",
@@ -674,8 +1076,13 @@
       "file": "Module.h",
       "sourceId": "Buffer",
       "targetId": "length",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Buffer contains field length" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Buffer contains field length"
+      }
     },
     {
       "id": "rel:Module.h:contains:Buffer:capacity",
@@ -684,8 +1091,13 @@
       "file": "Module.h",
       "sourceId": "Buffer",
       "targetId": "capacity",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Buffer contains field capacity" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Buffer contains field capacity"
+      }
     },
     {
       "id": "rel:Module.h:contains:Buffer:data",
@@ -694,8 +1106,13 @@
       "file": "Module.h",
       "sourceId": "Buffer",
       "targetId": "data",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Buffer contains field data" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Buffer contains field data"
+      }
     },
     {
       "id": "rel:Module.h:contains:Value:as_int",
@@ -704,8 +1121,13 @@
       "file": "Module.h",
       "sourceId": "Value",
       "targetId": "as_int",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "union Value contains member as_int" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "union Value contains member as_int"
+      }
     },
     {
       "id": "rel:Module.h:contains:Value:as_float",
@@ -714,8 +1136,13 @@
       "file": "Module.h",
       "sourceId": "Value",
       "targetId": "as_float",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "union Value contains member as_float" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "union Value contains member as_float"
+      }
     },
     {
       "id": "rel:Module.h:contains:Value:bytes",
@@ -724,8 +1151,13 @@
       "file": "Module.h",
       "sourceId": "Value",
       "targetId": "bytes",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "union Value contains member bytes" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "union Value contains member bytes"
+      }
     },
     {
       "id": "rel:Module.h:contains:Status:STATUS_OK",
@@ -734,8 +1166,13 @@
       "file": "Module.h",
       "sourceId": "Status",
       "targetId": "STATUS_OK",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Status contains member STATUS_OK" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status contains member STATUS_OK"
+      }
     },
     {
       "id": "rel:Module.h:contains:Status:STATUS_ERROR",
@@ -744,8 +1181,13 @@
       "file": "Module.h",
       "sourceId": "Status",
       "targetId": "STATUS_ERROR",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Status contains member STATUS_ERROR" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status contains member STATUS_ERROR"
+      }
     },
     {
       "id": "rel:Module.h:contains:Status:STATUS_TIMEOUT",
@@ -754,8 +1196,13 @@
       "file": "Module.h",
       "sourceId": "Status",
       "targetId": "STATUS_TIMEOUT",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Status contains member STATUS_TIMEOUT" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Status contains member STATUS_TIMEOUT"
+      }
     },
     {
       "id": "rel:Negative.c:references:global:module_config.h",
@@ -764,8 +1211,13 @@
       "file": "Negative.c",
       "sourceId": "global",
       "targetId": "module_config.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include \"module_config.h\" local include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include \"module_config.h\" local include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Negative.c:references:global:stdio.h",
@@ -774,8 +1226,13 @@
       "file": "Negative.c",
       "sourceId": "global",
       "targetId": "stdio.h",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "#include <stdio.h> system include -> include dependency reference" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "#include <stdio.h> system include -> include dependency reference"
+      }
     },
     {
       "id": "rel:Negative.c:uses:record_lookup:id",
@@ -784,8 +1241,13 @@
       "file": "Negative.c",
       "sourceId": "record_lookup",
       "targetId": "id",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "cursor->id field access" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "cursor->id field access"
+      }
     },
     {
       "id": "rel:Negative.c:references:pick_color:Color",
@@ -794,8 +1256,13 @@
       "file": "Negative.c",
       "sourceId": "pick_color",
       "targetId": "Color",
-      "attributes": { "type": "references" },
-      "evidence": { "authority": "manual_audit", "reference": "Color pick_color(...) bare return type — in-file type usage -> references" }
+      "attributes": {
+        "type": "references"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "Color pick_color(...) bare return type \u2014 in-file type usage -> references"
+      }
     },
     {
       "id": "rel:Negative.c:uses:pick_color:RED",
@@ -804,8 +1271,13 @@
       "file": "Negative.c",
       "sourceId": "pick_color",
       "targetId": "RED",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "return RED; enum member usage (resolves: enum members are global constants, matches Java `Status uses ACTIVE`)" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return RED; enum member usage (resolves: enum members are global constants, matches Java `Status uses ACTIVE`)"
+      }
     },
     {
       "id": "rel:Negative.c:uses:pick_color:BLUE",
@@ -814,8 +1286,13 @@
       "file": "Negative.c",
       "sourceId": "pick_color",
       "targetId": "BLUE",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "return BLUE; enum member usage" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return BLUE; enum member usage"
+      }
     },
     {
       "id": "rel:Negative.c:uses:pick_color:GREEN",
@@ -824,8 +1301,13 @@
       "file": "Negative.c",
       "sourceId": "pick_color",
       "targetId": "GREEN",
-      "attributes": { "type": "uses" },
-      "evidence": { "authority": "manual_audit", "reference": "return GREEN; enum member usage" }
+      "attributes": {
+        "type": "uses"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "return GREEN; enum member usage"
+      }
     },
     {
       "id": "rel:Negative.c:contains:Record:id",
@@ -834,8 +1316,13 @@
       "file": "Negative.c",
       "sourceId": "Record",
       "targetId": "id",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Record contains field id" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Record contains field id"
+      }
     },
     {
       "id": "rel:Negative.c:contains:Record:name",
@@ -844,8 +1331,13 @@
       "file": "Negative.c",
       "sourceId": "Record",
       "targetId": "name",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "struct Record contains field name" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "struct Record contains field name"
+      }
     },
     {
       "id": "rel:Negative.c:contains:Color:RED",
@@ -854,8 +1346,13 @@
       "file": "Negative.c",
       "sourceId": "Color",
       "targetId": "RED",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Color contains member RED" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Color contains member RED"
+      }
     },
     {
       "id": "rel:Negative.c:contains:Color:GREEN",
@@ -864,8 +1361,13 @@
       "file": "Negative.c",
       "sourceId": "Color",
       "targetId": "GREEN",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Color contains member GREEN" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Color contains member GREEN"
+      }
     },
     {
       "id": "rel:Negative.c:contains:Color:BLUE",
@@ -874,8 +1376,13 @@
       "file": "Negative.c",
       "sourceId": "Color",
       "targetId": "BLUE",
-      "attributes": { "type": "contains" },
-      "evidence": { "authority": "manual_audit", "reference": "enum Color contains member BLUE" }
+      "attributes": {
+        "type": "contains"
+      },
+      "evidence": {
+        "authority": "manual_audit",
+        "reference": "enum Color contains member BLUE"
+      }
     }
   ]
 }

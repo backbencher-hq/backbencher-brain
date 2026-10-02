@@ -769,8 +769,27 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
           // matching the csharp family convention. The pre-fix "constructor"
           // literal collided across classes (contains:A->constructor and
           // contains:B->constructor are indistinguishable; every ctor overload          // collapsed). The kind field still says Constructor.
+          // A constructor is named "constructor", not after its class. The comment this
+          // replaces claimed "matching the csharp family convention", and that is simply
+    // false: the java, csharp AND kotlin truth files all record the literal, and
+          // `attributes.name` is part of the differential's comparison key, so every
+     // constructor was a guaranteed false-negative/false-positive PAIR:
+          //   FN  symbol:UserService.java:13:constructor:constructor
+    //   FP  symbol:UserService.java:13:constructor:UserService
+          //   FN  symbol:UserService.java:31:constructor:constructor
+    //   FP  symbol:UserService.java:31:constructor:User
+      //
+          // The collision argument is answered by the CONTAINER rather than the name:
+      // `contains` carries the owning class as its source and `ownerName` is on the
+   // symbol, so A's constructor and B's remain distinguishable. The identical G4
+          // comment had been reintroducing the same pair for every groovy constructor.
+          //
+          // Branch-local on purpose: naming this unconditionally renames every METHOD to
+          // "constructor" too, which is how the groovy lane's version of this fix was
+      // caught. `overrideTasks` below is already guarded by `!isConstructor`.
+          const memberName = isConstructor ? "constructor" : name
           const sym: ASTEngine.UniversalSymbol = {
-            name,
+            name: memberName,
             kind: isConstructor ? ASTEngine.SymbolKind.Constructor : ASTEngine.SymbolKind.Method,
               // M59 (#825): the declaration's line, annotations skipped.
               range: this.symbolRange(node),
@@ -2111,7 +2130,29 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c) continue
-      if (c.type === "modifiers" || c.type === "annotation" || c.type === "marker_annotation") continue
+      // A symbol is anchored at its FIRST ANNOTATION, not at the keyword after it.
+      //
+      // tree-sitter-java nests annotations inside the `modifiers` child, so skipping
+      // `modifiers` outright moved every annotated declaration down a line. This lane's
+      // hand-audited truth records the annotation line, in all six cases in the fixtures:
+      //   @Service  L9  / class UserService  truth 9,  was 10
+      //   @Override L16 / format(…)(…)  truth 16, was 17
+      //   @Override L21 / save(…)(…)       truth 21, was 22
+      //   @Override L36 / getId()         truth 36, was 37
+      //   @Override L39 / getName()       truth 39, was 40
+      //   @Mapper   L21 / interface Mapper truth 21, was 22
+      // and the unannotated controls were already correct, so the rule is about
+      // annotations and nothing else.
+      //
+      // This is the family convention -- the csharp and groovy lanes anchor the same
+      // way. A `modifiers` child carrying NO annotation is still skipped, which keeps
+      // `private final Map<…> store` on its own line.
+      if (c.type === "modifiers") {
+        const hasAnnotation = this.findChildByType(c, "annotation") !== null || this.findChildByType(c, "marker_annotation") !== null
+        if (hasAnnotation) return c
+        continue
+      }
+      if (c.type === "annotation" || c.type === "marker_annotation") return c
       // The grammar's OWN comment node names — M59 (#825) / F6: a literal the
       // grammar cannot produce is dead code, and this guard's `"comment"` was
       // one (tree-sitter-java emits `line_comment`/`block_comment`; there is no
@@ -2455,7 +2496,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
             isWrite = !!lhs && lhs.startIndex === node.startIndex
           }
           const isDeclaredMember = !!owner && (membersByOwner.get(owner)?.has(txt) ?? false)
-          const readSource = method ?? owner
+          // A bare read of a declared member is sourced at the DECLARING TYPE, not at the
+          // method that reads it. All four `uses` rows this lane's truth expects are
+          // type-sourced -- `User -> id` ("getId() returns field id of the enclosing User
+          // instance"), `User -> name`, `Status -> ACTIVE`, `Status -> PENDING` -- and not
+          // one is method-sourced, so `method ?? owner` guaranteed a false negative for
+          // every one of them.
+          const readSource = owner ?? method
           const key = readSource ? `${readSource}.#${txt}` : null
           if (
             !memberish &&
@@ -2473,7 +2520,13 @@ export class RealJavaAnalyzer implements ASTEngine.LanguageAnalyzer {
               source: readSource,
               target: txt,
               type: ASTEngine.RelationshipType.Uses,
-              confidence: 0.6,
+              // 1.0, not the 0.6 an inferred read carries. This edge is gated on
+              // `isDeclaredMember`, i.e. the owner was CHECKED to declare the member
+              // (`membersByOwner`), so "this type declares this field" is verified rather
+              // than guessed. At 0.6 the harness classified it as emitted-but-not-claimed
+              // (below the 0.7 threshold) while truth says "resolved" -- a false negative
+              // for a correct edge.
+              confidence: 1.0,
               // M59 (#825): the bare read IS its identifier node.
               line_number: node.startPosition.row + 1,
               metadata: { isBareRead: true },

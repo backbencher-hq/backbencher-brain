@@ -64,7 +64,10 @@ try {
   }
 
   const symbol = await generateDocumentation(projectId, root, { mode: "symbol", target: "authenticate", includeTests: true })
-  check("symbol includes docstring", symbol.sections.some((section) => section.prose.includes("Authenticates a user token")))
+  // The docstring is a CITED FACT, not prose: prose used to be the facts
+  // joined by spaces, which printed every claim three times (M20.D3).
+  check("symbol includes docstring", symbol.sections.flatMap((section) => section.facts).some((fact) => fact.statement.includes("Authenticates a user token")))
+  check("no section prose repeats its own facts", symbol.sections.every((section) => section.prose !== section.facts.map((fact) => fact.statement).join(" ")))
   check("symbol includes test evidence", symbol.citations.some((citation) => citation.kind === "test"))
 
   const feature = await generateDocumentation(projectId, root, { mode: "feature", target: "login audit", limit: 20 })
@@ -72,7 +75,7 @@ try {
   check("feature facts never cite embeddings alone", feature.sections.flatMap((section) => section.facts).every((fact) => fact.citationIds.some((id) => !id.startsWith("embedding:"))))
 
   const api = await generateDocumentation(projectId, root, { mode: "api" })
-  check("API mode reports indexed contract", api.sections.some((section) => section.prose.includes("/login")))
+  check("API mode reports indexed contract", api.sections.flatMap((section) => section.facts).some((fact) => fact.statement.includes("/login")))
 
   const coverage = await generateDocumentation(projectId, root, { mode: "coverage" })
   check("coverage reports documented state", coverage.sections[0]?.facts.some((item) => item.statement.includes("documented")) === true)
