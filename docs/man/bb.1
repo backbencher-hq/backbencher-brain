@@ -58,6 +58,32 @@ Search the index (keyword and semantic modes).
 .BI health " [dir]"
 Index health and freshness.
 .TP
+.BI stats " [dir]"
+Query index counts at any time \(em files, symbols, relationships, embeddings
+\(em and print the database path. Unlike
+.B health
+this is a count, not an assessment: use it to check what is stored.
+.TP
+.BI status " [dir]"
+Show in-flight and last-run index state with per-phase timings (discovery,
+worker startup, parse, database flush), which parse mode ran, and how many
+workers were used. This is the command to reach for when indexing felt slow:
+the phase timings say whether the time went to parsing or to the derived pass.
+.TP
+.BI projects " [options]"
+List every indexed project with its database path, size, counts and last index
+time \(em useful for finding or reclaiming disk.
+.B \-\-remove
+<id> deletes one project's index;
+.B \-\-force
+skips the confirmation.
+.TP
+.B doctor
+Diagnose embedding setup and index consistency. Read-only: it changes nothing
+and reports what to fix, including which specific environment variable or
+command resolves each problem. This is the first command to run when pool
+workers do not start or semantic search returns poor results.
+.TP
 .BI onboard " [dir]"
 Write the bb tools guidance section into
 .I <dir>/AGENTS.md
