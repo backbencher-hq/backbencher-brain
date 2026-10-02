@@ -33,7 +33,7 @@ import path from "node:path"
 import {
   createSuite, isolateDataDir, installInsertSymbolRepair, printModeBanner,
   makeTsFixture, rmFixture, projectIdFor, snapshotIndex, diffSnapshots, spawnRaw,
-  waitForExit, spawnCli, rawDb,
+  killTree, spawnCli, rawDb,
 } from "./harness"
 
 const suite = createSuite("checkpoint-durability")
@@ -120,8 +120,7 @@ suite.section("1. a checkpoint killed AFTER a complete write survives")
   const full = liveStatusPayload(pid, N / 2, TOTAL)
 
   const child = await spawnRaw(completeWriterChild(ckPath, full), { marker: "FULL_ON_DISK" })
-  child.child.kill("SIGKILL")
-  await waitForExit(child.child)
+  await killTree(child.child)
 
   const ck = readLiveStatus(pid)
   suite.check(
@@ -150,8 +149,7 @@ suite.section("2. a checkpoint killed MID-WRITE is safe (torn file, never truste
   const cut = Math.floor(full.length / 2)
 
   const child = await spawnRaw(prefixWriterChild(ckPath, full, cut), { marker: "PREFIX_ON_DISK" })
-  child.child.kill("SIGKILL")
-  await waitForExit(child.child)
+  await killTree(child.child)
 
   // The precondition of the whole section: the file really is torn.
   const onDisk = readFileSync(ckPath, "utf8")
