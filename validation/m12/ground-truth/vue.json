@@ -139,11 +139,11 @@
    }
   },
   {
-   "id": "sym:Card.vue:11:property:title",
+   "id": "sym:Card.vue:12:property:title",
    "layer": "ast_extraction",
    "kind": "symbol",
    "file": "Card.vue",
-   "line": 11,
+   "line": 12,
    "attributes": {
     "name": "title",
     "symbolKind": "property"
@@ -154,11 +154,11 @@
    }
   },
   {
-   "id": "sym:Card.vue:11:property:body",
+   "id": "sym:Card.vue:13:property:body",
    "layer": "ast_extraction",
    "kind": "symbol",
    "file": "Card.vue",
-   "line": 11,
+   "line": 13,
    "attributes": {
     "name": "body",
     "symbolKind": "property"
@@ -841,6 +841,36 @@
    "evidence": {
     "authority": "manual_audit",
     "reference": "ref(...) at setup scope (user/visible/query)"
+   }
+  },
+  {
+   "id": "sym:Card.vue:18:property:expanded",
+   "layer": "ast_extraction",
+   "kind": "symbol",
+   "file": "Card.vue",
+   "line": 18,
+   "attributes": {
+    "name": "expanded",
+    "symbolKind": "property"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "data() return key — the truth's own contract says data/computed -> property, and props title/body and emits select each already carry a symbol row, so the return key was simply omitted rather than excluded on purpose"
+   }
+  },
+  {
+   "id": "rel:Card.vue:contains:Card:expanded",
+   "layer": "relationships",
+   "kind": "relationship",
+   "file": "Card.vue",
+   "sourceId": "Card",
+   "targetId": "expanded",
+   "attributes": {
+    "type": "contains"
+   },
+   "evidence": {
+    "authority": "manual_audit",
+    "reference": "data property owned by component — same shape as contains Card -> title / body / select"
    }
   }
  ]

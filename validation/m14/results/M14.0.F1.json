@@ -112,7 +112,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 332,
         "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 61,
+        "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -167,12 +167,23 @@
         "fieldless": false,
         "oracleFieldCount": 50,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 495,
+        "oracleNodeTypeCount": 496,
         "referencedFieldLiterals": 11,
-        "referencedTypeLiterals": 83,
-        "status": "pass",
+        "referencedTypeLiterals": 88,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 153,
+            "literal": "class_body"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 3759,
+            "literal": "class_body"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-cpp.wasm"
@@ -283,7 +294,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 62,
+        "referencedTypeLiterals": 65,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -712,10 +723,21 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 80,
-        "status": "pass",
+        "referencedTypeLiterals": 86,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1915,
+            "literal": "bare_function_type"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1915,
+            "literal": "parenthesized_type"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-rust.wasm"

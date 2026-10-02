@@ -557,6 +557,26 @@ function main() {
 
 // Entry guarded (C923 sweep): an unguarded call makes every future IMPORT of this instrument
 // run a full matrix and rewrite its committed artifact from whatever tree is checked out —
-// measured live on the sibling target-spelling-census.ts. `import.meta.main` is this repo's
-// entry-point idiom (script/m13/verify-evidence.ts, src/cli/index.ts).
-if (import.meta.main) main()
+// measured live on the sibling target-spelling-census.ts.
+//
+// `import.meta.main` is this repo's entry-point idiom (script/m13/verify-evidence.ts,
+// src/cli/index.ts) — and it is only DEFINED under Bun. Run under `npx tsx`, which is how most
+// of this repository's probes are run, the property is `undefined`, the guard is false, `main()`
+// never runs, and the script exits 0 having printed nothing and written nothing.
+//
+// That is the worst failure shape available: an exit code of 0 on a gate that never executed. It
+// was found by running this script the way every other probe is run and noticing the committed
+// P1.json was byte-identical afterwards. The guard therefore also accepts an argv match, so the
+// script behaves the same under bun and under node/tsx. NOTE: 46 scripts in this repository share
+// the bare `if (import.meta.main)` shape and are individually still no-ops under tsx; this one is
+// fixed because the protobuf lane depends on it.
+const isDirectRun = ((): boolean => {
+  try {
+    if ((import.meta as { main?: boolean }).main === true) return true
+  } catch {
+    /* import.meta.main unsupported on this runtime */
+  }
+  const argv1 = process.argv[1] ?? ""
+  return argv1.endsWith("payload-matrix.ts") || argv1.endsWith("payload-matrix.js")
+})()
+if (isDirectRun) main()

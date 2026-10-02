@@ -27,6 +27,27 @@ import type { Node } from "web-tree-sitter"
  */
 const PERL_MAGIC_TOKENS = new Set(["__PACKAGE__", "__FILE__", "__LINE__", "__SUB__", "__DATA__", "__END__"])
 
+/**
+ * Perl identifier character classes, by comparison rather than by pattern.
+ *
+ * These exist because the lane's contract is ZERO regex literals — proved by
+ * script/m14/tmp/perl-zero-regex.mts on top of the M12 AST scanner, not by a
+ * grep — and the PERL-MR12 name allowlist reached for three regular expressions
+ * (`/[A-Za-z0-9_]/`, `/\s/`, and the allowlist itself). The instrument caught
+ * them on its next run.
+ *
+ * Formula section 10's point applies to the fix as much as to the defect: the
+ * metric is not "how many regexes" but regexes doing syntax work. Reading a
+ * character class is syntax work; asking whether a string is a written perl
+ * identifier is data validation, and `charCodeAt` comparisons say the same thing
+ * with nothing to parse. Written out longhand on purpose — a single shared
+ * `const IDENT = /[A-Za-z0-9_]/` would be shorter and would put the lane back in
+ * violation of its own gate.
+ */
+const isPerlIdentStart = (c: string): boolean =>
+  (c >= "a" && c <= "z") || (c >= "A" && c <= "Z") || c === "_"
+const isPerlIdentChar = (c: string): boolean => isPerlIdentStart(c) || (c >= "0" && c <= "9")
+
 export const PERL_BUILTINS = new Set([
   "abs", "accept", "alarm", "atan2", "bind", "binmode", "bless", "break", "caller", "catch", "chdir",
   "chmod", "chomp", "chop", "chown", "chr", "chroot", "close", "closedir", "cmp", "connect", "continue",
@@ -133,6 +154,90 @@ export function perlWordValues(node: Node): string[] {
     }
     return values
   }
+  // PERL-MR4. The generic recursion below used to descend into EVERY named child,
+  // which means anything reachable from an argument was published as an IMPORTED
+  // NAME. Two shapes made that visible, and tree-sitter-perl 2.0.0 is what exposed
+  // them — its `parenthesized_expression` puts argument lists where 1.2.1's
+  // multi-child paren field did not, so the same latent rule starts harvesting:
+  //
+  //   use overload '""' => sub { ... }, bool => sub { ... }, fallback => 1;
+  //        1.2.1: items=["*"]                      2.0.0: items=["\"\"","as_string","bool","fallback"]
+  //
+  // A fat-comma KEY is not an import — it is the name of an overload slot, a
+  // metaclass role, a `has` attribute, whichever pragma is in play — and the
+  // VALUE is code. Neither is a module name. So a pair is not an argument list
+  // (callers that want keys have `fatCommaKeys` for exactly that), and a
+  // sub's BODY is code (PERL-MR12 made the same refusal on the callee side, for
+  // the same reason: text that is written is not thereby a name).
+  //
+  // Measured over all seven corpora with a freshly built 2.0.0 wasm: 23 of 5,774
+  // files differ between the grammars, and the change ADDED 21 import emissions
+  // while REMOVING 11. Both directions are addressed — the added ones by this
+  // guard, the removed ones by the argument-reach fix below.
+  // PERL-MR4: there is deliberately NO `fat_comma` check here, and there was one
+  // for several hours. tree-sitter-perl has no such node type in EITHER
+  // generation -- a `=>` pair is flat children of a `list_expression` with the
+  // `=>` as an ANONYMOUS TOKEN between them -- so the check could never match.
+  // It passed the fixture suite (which runs 1.2.1, where it was equally dead) and
+  // only the F1 grammar cell caught it, by reporting an unknown type as a dead
+  // branch. Naming a type by PATTERN from another grammar's conventions instead of
+  // reading node-types.json is the mistake, and it is easy to repeat, because such
+  // a branch is invisible to every test that is not the grammar audit.
+  if (node.type === "subroutine_declaration_statement" || node.type === "anonymous_subroutine_expression" || node.type === "block" || node.type === "block_statement") return []
+
+  // PERL-MR4, third clause, and it is the same principle as the closure guard
+  // above rather than a new one: CODE IS NOT NAMES. A branch of `?:`, `and`/`or`,
+  // `||`, or `//` computes a value; it does not declare an import.
+  //
+  //   use Catalyst (
+  //       'Test::Plugin',
+  //       '+TestApp::Plugin::FullyQualified',
+  //       (eval { require MooseX::Role::Parameterized; 1 }
+  //           ? ('+TestApp::Plugin::ParameterizedRole' => { method_name => 'affe' })
+  //           : ()),
+  //   );
+  //
+  // The two plugins on top are the arguments. Inside the ternary there are no
+  // arguments at all: `+TestApp::Plugin::ParameterizedRole` is a KEY and `affe`
+  // is a hash VALUE, and which of them the import gets is decided at runtime.
+  // The node is `conditional_expression`, and its branches are reached because the
+  // harvester walks every descendant — so without this clause the recorded items
+  // were ["+TestApp::Plugin::FullyQualified","+TestApp::Plugin::ParameterizedRole",
+  // "Test::Plugin","affe","method_name"]: two real arguments, one key, and two
+  // hash values.
+  //
+  // Note this is NOT the `=>` rule above: the outer list has no top-level `=>`, so
+  // `isArgumentSpecification` correctly says "this is a name list" and the
+  // argument count is right. Only the descent into the branch is wrong.
+  if (node.type === "conditional_expression") return []
+
+  // PERL-MR4, fourth clause -- the same "code is not names" rule, now for a CALL's
+  // own arguments. This was the last disagreement between the two grammars in the
+  // whole corpus, at perl5/lib/B/Deparse-core.t:42:
+  //
+  //   use feature (sprintf(":%vd", $^V));   # to avoid relying on the feature
+  //
+  // The argument is a COMPUTED value. The bundle name is decided at runtime -- it
+  // is `:5.36` or whatever `$^V` renders to -- so there is no name here to import.
+  // 1.2.1 records ["*"], which is right. 2.0.0 recorded [":%vd"]: the FORMAT STRING
+  // of sprintf, whose `%v` is a version conversion, not a feature bundle.
+  //
+  // It is a false positive that MY OWN third fix introduced. Making
+  // `parenthesized_expression` transparent is correct, and it is also what let the
+  // walk reach into the sprintf at all. A reachability fix that stops honouring
+  // what the subtree CONTAINS ships that format string as an import name, so the
+  // wrapper has to be transparent for FINDING arguments and NOT transparent for
+  // READING them, and both halves need saying out loud.
+  //
+  // The callee name is not lost: this refuses only descending INTO the call, and
+  // `sprintf` is published by the ordinary call machinery.
+  if (node.type === "function_call_expression" || node.type === "method_call_expression" || node.type === "func0op_call_expression" || node.type === "func1op_call_expression" || node.type === "coderef_call_expression" || node.type === "ambiguous_function_call_expression") return []
+  if (node.type === "binary_expression" || node.type === "lowprec_logical_expression" || node.type === "logical_not_expression") {
+    const op = node.childForFieldName("operator") ?? node.children.find((c: any) => !c.isNamed)
+    const t = op ? op.type : ""
+    if (t === "and" || t === "or" || t === "||" || t === "&&" || t === "//") return []
+  }
+
   const values: string[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
@@ -167,6 +272,78 @@ function splitWords(text: string): string[] {
 }
 
 /**
+ * PERL-MR4: is this argument list a KEY/VALUE SPECIFICATION rather than a list of
+ * names to import?
+ *
+ *   use overload q{""} => 'as_string', bool => sub () { 1 }, fallback => 1;
+ *        q{""}      a key   -- which overload slot
+ *        'as_string' a value -- the HANDLER the file must define, not to import
+ *        bool       a key
+ *        fallback   a key
+ *
+ * None of it is an imported name. The `=>` is an ANONYMOUS TOKEN between the
+ * list's children rather than a `fat_comma` wrapper that the grammar does not have — which is why a `fat_comma`
+ * guard changed nothing when it was tried first, and why that guard is kept
+ * separately for the grammars that do wrap.
+ *
+ * The discriminator is POSITIONAL, and has to be: `as_string` and `fallback` are
+ * perfectly good identifiers, and no spelling test separates "a handler the file
+ * defines" from "a symbol a module exports". The `=>` is the only thing in the
+ * source that says so.
+ *
+ * SCOPED to import arguments, and that scoping is the whole lesson: the first
+ * version put this inside `perlWordValues`, where it also silenced
+ * `our @EXPORT_OK = (gamma => 1, delta => 2)` — a list that uses `=>` precisely
+ * because its KEYS are the exported names. One rule, applied one level too high,
+ * deleted four real exports.
+ */
+function isArgumentSpecification(statement: Node): boolean {
+  // A list WRAPPER is transparent: 2.0.0 puts the arguments in
+  // `parenthesized_expression > list_expression`, so the `=>` tokens are
+  // grandchildren of the node `perlArgumentNodes` returns. Checking only the
+  // direct children is what the first attempt did, and it silently did nothing
+  // on exactly the grammar this rule exists for — 2.0.0 still harvested
+  // `q{""}`, `as_string`, `bool`, `fallback` and the file count went UP, from 23
+  // differing to 27.
+  // `parenthesized_expression` is 2.0.0-only and deliberately NOT listed, for the
+  // reason PERL-MR11 gives for `noninterpolated_string_content`: a branch for a
+  // grammar this lane does not run is dead code by definition, and the bump
+  // requirement lives in reviews/perl/master-review.md instead.
+  const WRAPPERS = new Set(["list_expression", "array_expression", "hash_expression", "anonymous_array_expression", "anonymous_hash_expression"])
+  const hasFatArrow = (n: any): boolean => {
+    for (let i = 0; i < n.childCount; i++) {
+      const child = n.child(i)
+      if (!child) continue
+      if (!child.isNamed && child.type === "=>") return true
+    }
+    return false
+  }
+  // The `=>` tokens sit BETWEEN the arguments in the STATEMENT's own child list --
+  // `perlArgumentNodes` returns only the NAMED children, so scanning the arguments
+  // never sees them. That is why the first version of this rule was inert on
+  // 1.2.1 as well as 2.0.0: on 1.2.1 the four harvested words came back as four
+  // argument nodes with no `=>` among them. Measured directly on
+  // Moose-2.4000/lib/Moose/Exception.pm:
+  //     1.2.1  overload items=["\"\"","as_string","bool","fallback"]   <- the defect
+  //     2.0.0  overload items=["*"]
+  // so the harvest is a 1.2.1 defect and 2.0.0 is accidentally correct (it
+  // reaches no argument nodes at all). The bump would have PAPERED OVER it.
+  const nodes = [statement, ...Array.from({ length: statement.childCount }, (_, i) => statement.child(i)).filter(Boolean)] as any[]
+  for (const n of nodes) {
+    if (!n) continue
+    if (hasFatArrow(n)) return true
+    // One level of list wrappers only. Descending further would reach a closure
+    // body, where a `=>` is a hash constructor the FILE wrote, not a specifier —
+    // and treating that as "no imported names" would drop real items.
+    for (let i = 0; i < n.childCount; i++) {
+      const child = n.child(i)
+      if (child && WRAPPERS.has(child.type) && hasFatArrow(child)) return true
+    }
+  }
+  return false
+}
+
+/**
  * The argument nodes of a call or `use`, across BOTH live grammar generations
  * (see the class's own comment for the measured shape of each). EXPORTED
  * because script/m14/differential.ts's perl oracle must read arguments by the
@@ -183,8 +360,21 @@ export function perlArgumentNodes(node: Node): Node[] {
     if (child && node.fieldNameForChild(i) === "arguments" && perlWordValues(child).length > 0) fromField.push(child)
   }
   if (fromField.length) return fromField
+  // PERL-MR4: 2.0.0 inserts `parenthesized_expression` between the statement and
+  // its `list_expression`, so the direct-child lookup below cannot see the list at
+  // all and every parenthesised `use` lost its arguments. Measured on
+  // Catalyst-Runtime-5.90132/t/lib/PluginTestApp.pm:
+  //     1.2.1  Catalyst items=["+TestApp::Plugin::FullyQualified","Test::Plugin"]
+  //     2.0.0  Catalyst items=["*"]
+  // Two real plugins dropped by the bump, in every parenthesised `use` across the
+  // corpora. The wrapper is a grouping paren, so it is transparent here exactly
+  // as the `_` and `,` tokens are -- and the same transparency the
+  // `isArgumentSpecification` wrapper set already assumes, which is why that rule
+  // had to be taught to look through wrappers before it could work at all.
   const list = perlFindChildByType(node, "list_expression")
   if (list) return list.namedChildren.filter((c): c is Node => !!c && perlWordValues(c).length > 0)
+  // `parenthesized_expression` is itself a valid argument carrier when it holds a
+  // single value (`use Foo ('Bar')`), so accept it in the fallback too.
   const result: Node[] = []
   for (let i = 0; i < node.namedChildCount; i++) {
     const child = node.namedChild(i)
@@ -276,7 +466,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
     /** The node that NAMES each (owner, base) pair, so the `extends` edge
      *  emitted in the post-walk pass can carry that construct's line instead of
      *  arriving line-less while every other source-backed edge carries one. */
-    const packageBaseLine = new Map<string, Node>()
+    const packageBaseLine = new Map<string, number>()
     const packageMethods = new Map<string, Set<string>>()
     const deferredIsa: { owner: string; right: Node }[] = []
     // Inner `ambiguous_function_call_expression` nodes that are the CLASS
@@ -409,7 +599,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
      * (`use parent` vs `use base` vs `@ISA` vs `use Mojo::Base`) instead of a
      * generic "Perl inheritance".
      */
-    const addBase = (owner: string, parents: string[], reasonCode: string, nameNode?: Node) => {
+    const addBase = (owner: string, parents: string[], reasonCode: string, nameNode?: Node, parentLines?: Map<string, number>) => {
       const existing = packageBases.get(owner) || []
       for (const parent of parents) {
         if (!parent) continue
@@ -417,7 +607,23 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           existing.push(parent)
           if (!packageBaseOrigin.has(owner)) packageBaseOrigin.set(owner, reasonCode)
         }
-        if (nameNode && !packageBaseLine.has(`${owner}\u001f${parent}`)) packageBaseLine.set(`${owner}\u001f${parent}`, nameNode)
+        // The LINE is per parent. A parent's name is not on the line of the
+        // keyword that introduces it:
+        //     use parent 'Class::MOP::Module',          <- what the old code stamped
+        //              'Class::MOP::HasAttributes',     <- where HasAttributes is
+        //              'Class::MOP::HasMethods',
+        //              'Class::MOP::HasOverloads';
+        // `use parent` takes an argument LIST, so three of Moose's four bases in
+        // Class/MOP/Class.pm live on lines the `use` never touches, and the M59
+        // line oracle read all three as INCONSISTENT. One shared `nameNode` — the
+        // `parent`/`base` keyword — cannot be right for a list longer than one,
+        // and it was right for exactly the single-argument case, which is why no
+        // fixture caught it.
+        const key = `${owner}\u001f${parent}`
+        if (packageBaseLine.has(key)) continue
+        const perParent = parentLines?.get(parent)
+        if (typeof perParent === "number") packageBaseLine.set(key, perParent)
+        else if (nameNode) packageBaseLine.set(key, nameNode.startPosition.row + 1)
       }
       packageBases.set(owner, existing)
     }
@@ -640,7 +846,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           const args = this.argumentValues(node)
           imports.push({
             module,
-            items: args.length > 0 ? args : ["*"],
+            items: args.length > 0 && !isArgumentSpecification(node) ? args : ["*"],
             isDefault: true,
             range: this.nodeToRange(node),
             metadata: { perlSpecific: true, type: "use" },
@@ -649,13 +855,38 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (module === "Moose" || module === "Moo" || module === "Mojo::Base") frameworks.add(module === "Mojo::Base" ? "Mojolicious" : "Moose/Moo OOP")
           if (module === "parent" || module === "base") {
             const parents = args.filter((arg) => !this.isOption(arg))
-            if (state.packageName) addBase(state.packageName, parents, REASON.useParentDeclaration, moduleNode)
+            // Per-argument lines, from the ARGUMENT nodes — a base's name is
+            // written on its own line inside the `use parent` list.
+            const parentLines = new Map<string, number>()
+            for (const argNode of this.argumentNodes(node)) {
+              for (const value of this.wordValues(argNode)) {
+                if (this.isOption(value)) continue
+                const line = this.lineOfNameWithin(argNode, value)
+                if (line !== undefined) parentLines.set(value, line)
+              }
+            }
+            if (state.packageName) addBase(state.packageName, parents, REASON.useParentDeclaration, moduleNode, parentLines)
           } else if (module === "role") {
             // `use role 'R'` is the pre-`with` spelling of the same
             // composition; without it the role is an undeclared dependency.
-            for (const arg of args) {
-              if (this.isOption(arg)) continue
-              addRelationship(state.packageName || "global", this.leafName(arg), ASTEngine.RelationshipType.Implements, { reasonCode: REASON.useRoleComposition }, 0.9, moduleNode)
+            // Iterate ARGUMENT NODES, not the extracted strings: the string has
+            // lost the node, and the node is where the name's own line lives. The
+            // pre-fix line came from `moduleNode` — the `role` KEYWORD — so
+            // `use role 'R'` on a following line, or a role inside a `qw` list,
+            // claimed the line of the word `role`.
+            for (const argNode of this.argumentNodes(node)) {
+              for (const value of this.wordValues(argNode)) {
+                if (this.isOption(value)) continue
+                addRelationship(
+                  state.packageName || "global",
+                  this.leafName(value),
+                  ASTEngine.RelationshipType.Implements,
+                  { reasonCode: REASON.useRoleComposition },
+                  0.9,
+                  undefined,
+                  this.lineOfNameWithin(argNode, value),
+                )
+              }
             }
             if (state.packageName) frameworks.add("Moose/Moo OOP")
           }
@@ -749,6 +980,10 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "function_call_expression": {
           const functionNode = node.childForFieldName("function") || this.findChildByType(node, "function")
           const target = functionNode?.text || ""
+          // Same rule as the method side. A `function` field holding compound
+          // text is a method call the grammar typed as a function call, not a
+          // callee name — measured as `calls -> DemolishAll->new`.
+          if (!this.isWrittenCalleeName(target)) break
           if (target === "has") {
             // `has 'name' => (...)` — the attribute NAME is the first argument;
             // the symbol's range must be that name, not the whole statement.
@@ -772,6 +1007,12 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
                   { reasonCode: REASON.mooRoleComposition, mooseKeyword: target },
                   0.9,
                   arg,
+                  // `arg` is the right NODE but the wrong LINE for a `qw` list that
+                  // wraps: the list starts on the `with` line and the role names
+                  // are on the lines after it. Prefer the name's own line and keep
+                  // the node as the fallback, so a shape the offset search cannot
+                  // resolve keeps its previous (correct) line.
+                  this.lineOfNameWithin(arg, value),
                 )
                 continue
               }
@@ -798,7 +1039,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
               // cannot see. The edge is byte-identical to the direct call —
               // same leaf target, same 0.9 — and the line comes from
               // `packageBaseLine`, the same argument node.
-              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg)
+              addBase(state.packageName || "global", [value], REASON.mooExtendsKeyword, arg, new Map([[value, this.lineOfNameWithin(arg, value) ?? arg.startPosition.row + 1]]))
             }
             frameworks.add("Moose/Moo OOP")
           } else if (target === "new") {
@@ -837,6 +1078,14 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         case "method_call_expression": {
           const methodNode = this.findChildByType(node, "method")
           const method = methodNode?.text || ""
+          if (!this.isWrittenCalleeName(method)) {
+            // Symbolic deref, or a method name held in a variable: nothing is
+            // WRITTEN that names the callee, so there is no target to publish
+            // and no line that could be the target's line. `break` leaves the
+            // generic child walk below to run, so real calls inside the
+            // expression are still published.
+            break
+          }
           // `invocant` is multi-child for a parenthesised receiver
           // `(Foo)->new` / `($self || $other)->new`; the bracket markers carry
           // no name, so the first NAMED child is the receiver. Hoisted out of the
@@ -969,6 +1218,7 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
           ASTEngine.RelationshipType.Extends,
           { via: "Perl inheritance", reasonCode: origin },
           0.9,
+          undefined,
           packageBaseLine.get(`${owner}\u001f${base}`),
         )
       }
@@ -1008,14 +1258,30 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
         // about the BASE (a guess, kept honest at confidence 0.5 / `inferred`),
         // while the method being overridden is not in doubt and is written here.
         addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.baseDeclaresMethod }, 0.95, undefined, nameLineOf(symbol))
-      } else if (!context?.overrideCompanion) {
-        // Pass 3 (family parity with java/groovy resolveOverrides): the base
-        // is not declared in this file and no companion index was supplied
-        // (production callers never populate one — see M37.10). Emit the
-        // deterministic first-parent guess BELOW the patterns.ts threshold
-        // (0.7): visible in raw output, counted as heuristic (honest
-        // suspicion) by the differential. Pre-M37.10 this edge was silently
-        // dropped for every externally-declared base package.
+      } else if (!context?.overrideCompanion?.has(base) && !context?.overrideCompanion?.has(baseLeaf)) {
+        // PERL-MR14. The guard used to be `!context?.overrideCompanion` — it asked
+        // whether a companion OBJECT was supplied, not whether it had an OPINION
+        // about THIS base. So passing any companion at all silenced the guess for
+        // every base the companion did not cover, and the edge was DELETED rather
+        // than kept as a guess. Measured on a 120-file draw per corpus: 2,235
+        // guessed override edges, of which 2,215 named a base the companion did
+        // NOT contain — and 1,928 of them vanished. A companion is a partial view
+        // by construction (a sample, a subset, an incremental index), and "I have
+        // never heard of this base" is not "this base does not declare the method".
+        //
+        // The python lane already reads this correctly (`else if
+        // (!overrideCompanion?.has(base))`), which is where the correct form came
+        // from. The cost of the wrong form is invisible in the common case: it
+        // only fires when someone supplies a companion at all, and until this
+        // round nobody did (M37.10) — which is exactly how a defect that deletes
+        // the majority of a relationship label survives to be found by building
+        // the instrument that was missing.
+        //
+        // Otherwise: the base is not declared in this file and the companion has
+        // no opinion. Emit the deterministic first-parent guess BELOW the
+        // patterns.ts threshold (0.7): visible in raw output, counted as heuristic
+        // (honest suspicion) by the differential. Pre-M37.10 this edge was
+        // silently dropped for every externally-declared base package.
         addRelationship(`${symbol.ownerName}.${method}`, `${baseLeaf}.${method}`, ASTEngine.RelationshipType.Overrides, { isOverride: true, reasonCode: REASON.firstParentGuess }, 0.5, undefined, nameLineOf(symbol))
       }
     }
@@ -1218,6 +1484,107 @@ export class RealPerlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private argumentNodes(node: Node): Node[] {
     return perlArgumentNodes(node)
+  }
+
+  /**
+   * The line a NAME is written on INSIDE a node, when the node's own start line
+   * is not it. `with qw/\n  MooseRoleOne\n  MooseRoleTwo\n/` is ONE
+   * `quoted_word_list` node starting on the `with` line, so stamping the edge from
+   * that node puts `implements` two lines above the role it names.
+   *
+   * Scoped to the ARGUMENT node, never the whole statement: for
+   * `use Moose::Role 'My::Role'`, searching the statement for `Role` finds the
+   * one inside `Moose::Role` and returns the module's line — exactly the bug
+   * this avoids. Returns undefined when the name is not in the node's text, so
+   * callers fall back to the node's own line rather than inventing one.
+   */
+  private lineOfNameWithin(node: Node, name: string): number | undefined {
+    if (!name) return undefined
+    const text = String(node.text ?? "")
+    let from = 0
+    for (;;) {
+      const idx = text.indexOf(name, from)
+      if (idx < 0) return undefined
+      const before = idx > 0 ? text[idx - 1] : ""
+      const after = text[idx + name.length] ?? ""
+      if (!isPerlIdentChar(before) && !isPerlIdentChar(after)) {
+        let line = node.startPosition.row
+        for (let i = 0; i < idx; i++) if (text.charCodeAt(i) === 10) line++
+        return line + 1
+      }
+      from = idx + 1
+    }
+  }
+
+  /**
+   * Is this callee text a NAME the source actually writes?
+   *
+   * A target that is not written cannot be verified — the M59 line oracle reads
+   * every claimed target back against the file's own text, and one that is not
+   * there is a FABRICATED claim rather than a weak one. Same reasoning that
+   * removed the phantom `DSN` and `use_module` classes, applied to the method
+   * side, and found by that oracle:
+   *
+   *   Moo/Object.pm:56   calls -> DemolishAll->new
+   *   Moo/Role.pm:224    calls -> ${\( $tc->can('coercion')||sub { ... } )}
+   *
+   * Both are symbolic deref — `$self->${\( EXPR \)}`, perl's "call the method
+   * whose name this expression computes". The grammar puts the whole expression
+   * in the `method` field, so the lane published arbitrary source text as a
+   * callee name. A POSITIVE allowlist again, not a "does this look wrong" test:
+   * a negative test only enumerates the dynamic cases somebody already hit, and
+   * this pair has been wrong that way three times.
+   *
+   * Rejected: a sigil (`->$name`), braces, `$`, `->`, whitespace. For a rejected
+   * one NO edge is emitted — and the children are still walked, so the real calls
+   * INSIDE the expression survive: `Method::Generate::DemolishAll->new` inside a
+   * deref becomes its own `instantiates` edge. 19 such edges left a 14-file
+   * draw.
+   */
+  private isWrittenCalleeName(text: string): boolean {
+    const t = String(text ?? "").trim()
+    if (!t) return false
+    // Whitespace, and every character that cannot appear in a written name.
+    // Character-by-character, NOT a regular expression: this lane's contract is
+    // zero regex literals, proved by script/m14/tmp/perl-zero-regex.mts against the
+    // M12 AST scanner, and the first version of this allowlist used three of them.
+    // The zero-regex instrument caught it on its next run, which is the gate doing
+    // exactly the job it exists for — a rule written for a corpus is a rule that
+    // eventually meets its own lane's constraints.
+    for (let i = 0; i < t.length; i++) {
+      const c = t.charAt(i)
+      if (c === " " || c === "\t" || c === "\n" || c === "\r") return false
+      if (c === "$" || c === "{" || c === "}") return false
+    }
+    if (t.includes("->")) return false
+
+    // A LEADING `&` and a LEADING `::` are both written-name shapes, and rejecting
+    // them was a self-inflicted regression worth recording: the first version of
+    // this allowlist omitted both, and it cost 32 truth rows on Moo, 155 on Moose
+    // and 97 on perl5, every one of them a call the file really does make.
+    //   ::is_deeply(...)  an ABSOLUTE package path — `::foo` is how perl writes
+    //                      "the package foo, unambiguously"
+    //   &encode(...)      explicit-call syntax; whether it is a call or a code-slot
+    //                      REFERENCE is decided by `hasArgumentSyntax`, which is a
+    //                      separate and already-correct rule. Forbidding `&` here
+    //                      pre-empted it and deleted both cases.
+    let i = 0
+    if (t.charAt(i) === "&") i++
+    if (t.charAt(i) === ":" && t.charAt(i + 1) === ":") i += 2
+    // One or more `Segment::`, then a final Segment.
+    let segments = 0
+    for (;;) {
+      if (segments > 0) {
+        if (t.charAt(i) !== ":" || t.charAt(i + 1) !== ":") break
+        i += 2
+      }
+      if (!isPerlIdentStart(t.charAt(i))) return false
+      i++
+      while (isPerlIdentChar(t.charAt(i))) i++
+      segments++
+      if (i >= t.length) return true
+    }
+    return false
   }
 
   /** The node carrying an argument's NAME — `has 'x' => ...` / `has x => ...`. */

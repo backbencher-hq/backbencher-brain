@@ -666,13 +666,14 @@
       "corpusTarget": "phpunit",
       "status": "measured",
       "candidates": [
-        "phpunit@c8d6921f(clean)"
+        "phpunit@c8d6921f(clean)",
+        "phpmyadmin@4061095a(clean)"
       ],
       "measured": {
         "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
         "sample": "400 tracked *.php files (deterministic first-400 sorted slice of 3231 from phpunit@c8d6921f \u2014 sebastianbergmann/phpunit: the language-representative PHP testing framework)",
         "fixtures": 3,
-        "fixtureFacts": 49,
+        "fixtureFacts": 66,
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 3073,
@@ -952,8 +953,8 @@
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 3251,
-        "corpusRelationships": 6042,
-        "grammarErrorFiles": 1,
+        "corpusRelationships": 6423,
+        "grammarErrorFiles": 0,
         "grammarErrorNodes": 2,
         "strictAcceptanceFiles": 1,
         "trackedFiles": 2,

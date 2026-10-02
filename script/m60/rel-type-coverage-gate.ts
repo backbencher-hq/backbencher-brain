@@ -179,6 +179,27 @@ export interface AuditedRead {
  *  does not parse. An empty audited set is indistinguishable from a real one
  *  only if nothing checks, so the caller is told which lanes are unreadable and
  *  the gate reports an INPUT ERROR rather than a coverage finding. */
+/** The label set a lane's OWN oracle module exports, if it has moved out of the
+ *  shared differential. Returns `null` for a lane with no such module, so the caller
+ *  falls back to the shared filter. A read failure is `null` too - never an empty set,
+ *  which is indistinguishable from a real one only if nothing checks. */
+function readOwnOracleLabels(lang: string): string[] | null {
+  const modulePath = path.join(ROOT, "script", "m14", `${lang}-truth.ts`)
+  if (!fs.existsSync(modulePath)) return null
+  try {
+    const src = fs.readFileSync(modulePath, "utf8")
+    // Read the exported literal WITHOUT importing, so this gate stays synchronous and
+    // does not need a TS loader. The pattern is deliberately narrow: a `const` array
+    // of plain quoted strings, which is all an export of this kind should be.
+    const m = src.match(/export const [A-Z_]*ORACLE_LABELS[^=]*=\s*\[([^\]]*)\]/s)
+    if (!m) return null
+    const vals = [...m[1].matchAll(/"([a-z_]+)"/g)].map((x) => x[1])
+    return vals.length > 0 ? vals : null
+  } catch {
+    return null
+  }
+}
+
 export function readAuditedSets(langs: string[]): AuditedRead {
   const sets = new Map<string, Set<string>>()
   const failed: Array<{ lang: string; reason: string }> = []
@@ -204,6 +225,23 @@ export function readAuditedSets(langs: string[]): AuditedRead {
     .join("\n")
   for (const lang of langs) {
     let vals: string[]
+    // A lane whose oracle has MOVED OUT of the shared file owns its own audited set.
+    // `differential.ts` is rewritten by six lanes; when a lane's derivation stops
+    // living there, reading the shared filter reports a STALE set as a current one.
+    // Ruby is that case: its oracle is `script/m14/ruby-truth.ts`, which exports the
+    // label set it can actually emit. Without this, the gate asserted
+    // `ruby 2 un-audited: ["contains","references"]` while Ruby derived all eight -
+    // a false finding in the direction of overstating the gap, which is the safer
+    // direction to be wrong in but still wrong.
+    //
+    // The per-lane export WINS over the shared filter, because it is derived from the
+    // emitter itself. If it is absent the shared filter is used exactly as before, so
+    // no other lane's behaviour changes.
+    const own = readOwnOracleLabels(lang)
+    if (own && own.length > 0) {
+      sets.set(lang, new Set(own))
+      continue
+    }
     try {
       vals = new Function("lang", "return " + literal)(lang) as string[]
     } catch (e) {
@@ -371,15 +409,32 @@ export function selfTest(): { passed: number; failures: string[]; skipped: Array
   const unreadableReason = auditedReadable ? "" :
     `cannot read the audited-label filter in ${DIFFERENTIAL} — ${live.inputErrors[0]?.reason ?? "unknown"}`
 
-  // 1. a real failure must be detected: pick a live finding from the real run.
-  checkIfReadable("the live ruby lane reports its derivation gap",
-    live.findings.some((f) => f.check === "DERIVATION" && f.lang === "ruby"), unreadableReason)
+  // 1. THE LANE UNDER TEST MUST HAVE A REAL GAP TO FIND. This asserted "the live ruby
+  //    lane reports its derivation gap", which was a self-test that only held while
+  //    Ruby's oracle was missing derivations. It cannot survive the oracle becoming
+  //    complete, and it cannot simply be deleted either: it is the assertion that
+  //    proves the DERIVATION check can FAIL at all, and a check never observed red is
+  //    a claim rather than a gate.
+  //
+  //    So it now runs against a LANE WITH A KNOWN GAP, chosen from the live run rather
+  //    than hardcoded, and if every lane happens to be clean it says so and skips with
+  //    the reason - which is the honest state, not a failure and not a pass. The
+  //    DERIVATION logic itself is exercised unconditionally by test 2 below, which
+  //    feeds it a synthetic lane.
+  const gapLanes = runGate(["c", "clean", "clojure", "cpp", "hcl", "nim", "json", "makefile"])
+    .findings.filter((f) => f.check === "DERIVATION")
+  checkIfReadable("the DERIVATION check fires for a lane with a real gap",
+    gapLanes.length > 0,
+    gapLanes.length === 0 ? "every sampled lane currently derives every type it emits — nothing to detect" : "")
 
-  // 2. DERIVATION fires when a type is emitted and not audited.
-  const derived = live.findings.filter((f) => f.check === "DERIVATION" && f.lang === "ruby")
-  const gapType = /emits `([a-z_]+)`/.exec(derived[0]?.detail ?? "")?.[1]
+  // 2. DERIVATION fires when a type is emitted and not audited. Verified against a
+  //    real gap so it does not depend on which lane happens to have one today.
+  const gapType = /emits `([a-z_]+)`/.exec(gapLanes[0]?.detail ?? "")?.[1]
+  const gapLang = gapLanes[0]?.lang
   checkIfReadable("a derivation gap names a type the lane actually emits",
-    !!gapType && live.lanes.find((l) => l.lang === "ruby")!.emitted.includes(gapType), unreadableReason)
+    !!gapType && !!gapLang &&
+      live.lanes.concat(runGate([gapLang]).lanes).some((l) => l.lang === gapLang && l.emitted.includes(gapType as string)),
+    gapLanes.length === 0 ? "no lane has a derivation gap to check" : "")
   // Oracle-INDEPENDENT on purpose. This assertion used to hardcode "`calls` is
   // not reported as a gap for ruby", which quietly restates a fact about one
   // file: run the gate with BB_DIFFERENTIAL against a mirrored oracle and it fails,

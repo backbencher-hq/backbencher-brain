@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64",
+  "tool": "bb_health",
+  "title": "bb_health: reporting honesty, the integrity battery, and the option surface",
+  "verifiedState": "verified",
+  "layers": [
+    "unit",
+    "integration"
+  ],
+  "checks": [
+    {
+      "name": "integrity: Hash Drift is reproducible across 5 identical calls",
+      "pass": true,
+      "detail": "drift counts 50,50,50,50,50 statuses error,error,error,error,error (pre-fix: ORDER BY RANDOM() gave 21,17,22,19,16 for a true 40 of 400, flipping warn<->error)"
+    },
+    {
+      "name": "the deep integrity check EXACTLY matches main freshness (same population, same method)",
+      "pass": true,
+      "detail": "integrity 50/250 vs freshness 50/250 — the pre-fix pair used different populations (integrity excluded language='unknown') and disagreed by design"
+    },
+    {
+      "name": "and their statuses agree, because both are measurements",
+      "pass": true,
+      "detail": "integrity=error trueRate=20.0%"
+    },
+    {
+      "name": "the deep check declares itself exact, not an estimate",
+      "pass": true,
+      "detail": "50 of 250 indexed files have changed on disk since indexing. EXACT: every indexed file was content-h"
+    },
+    {
+      "name": "the sampled mode (the indexer's hot path) declares itself an ESTIMATE",
+      "pass": true,
+      "detail": "43 of 200 sampled files have changed on disk since indexing (estimated 54 total). ESTIMATE"
+    },
+    {
+      "name": "and is still reproducible",
+      "pass": true,
+      "detail": "43 both times"
+    },
+    {
+      "name": "the sampled mode is still unbiased (within 2% of the true rate)",
+      "pass": true,
+      "detail": "sampled 21.5% vs true 20.0%"
+    },
+    {
+      "name": "Files Missing from Disk describes its own method honestly",
+      "pass": true,
+      "detail": "0 of 250 indexed files no longer exist on disk. EXACT: every indexed file was checked. Tools will fail when tr"
+    },
+    {
+      "name": "the integrity report exposes a DERIVED count",
+      "pass": true,
+      "detail": "summary.total=13 checks=13"
+    },
+    {
+      "name": "informational checks are counted separately from scored ones",
+      "pass": true,
+      "detail": "scored=12 informational=1 total=13"
+    },
+    {
+      "name": "overallHealth is a score over SCORED checks only",
+      "pass": true,
+      "detail": "overallHealth=100 ok=12 scored=12 (pre-fix the denominator was 13, including one that can only be ok)"
+    },
+    {
+      "name": "the always-ok check is marked informational, not scored",
+      "pass": true,
+      "detail": "kind=informational"
+    },
+    {
+      "name": "a real failure moves the score below 100",
+      "pass": true,
+      "detail": "overallHealth=92% (warn=0 error=1)"
+    },
+    {
+      "name": "the score cannot be floored by the informational check",
+      "pass": true,
+      "detail": "overallHealth=92 ok/scored=11/12"
+    },
+    {
+      "name": "no integrity remediation names a `bb2` command",
+      "pass": true,
+      "detail": "CLI commands are [tool, index, setup, show, doctor, stats, status, projects, search, health, onboard, mcp, version]; the two embedding remediations now name bb_index mode=post / bb index"
+    },
+    {
+      "name": "includeAnalysisRuns reports the TRUE run count, not a 100-row page",
+      "pass": true,
+      "detail": "reported=1374 table=1374 (pre-fix: 100, from a hardcoded LIMIT)"
+    },
+    {
+      "name": "the report declares the number is a census",
+      "pass": true,
+      "detail": "runTotalKnown=true"
+    },
+    {
+      "name": "findings remain a true census too",
+      "pass": true,
+      "detail": "findings=321"
+    },
+    {
+      "name": "the analysis line names its method",
+      "pass": true,
+      "detail": "analysis: 1374 runs / 321 findings (both are full-table counts, not page lengths)"
+    },
+    {
+      "name": "the description no longer advertises a non-existent `complete` option",
+      "pass": true,
+      "detail": "Unified index health: file/symbol/relationship/imports counts, embedding model + coverage, schema version, runtime, file freshness"
+    },
+    {
+      "name": "the description points at the real option",
+      "pass": true,
+      "detail": "freshness=\"complete\" (not a `complete` option)"
+    },
+    {
+      "name": "the schema has no `complete` property and never did",
+      "pass": true,
+      "detail": "properties: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, includeAnalysisRuns, paths, checkUnindexed"
+    },
+    {
+      "name": "passing `complete` is refused, and the error teaches",
+      "pass": true,
+      "detail": "bb_health: unknown or irrelevant options: complete — accepted options: verbose, history, limit, refresh, force, wait, freshness, s"
+    },
+    {
+      "name": "the real option works",
+      "pass": true,
+      "detail": "freshness: 6 fresh / 0 of 6 stale / 0 missing (6/6 checked, complete)"
+    },
+    {
+      "name": "force is declared destructive in its own schema description",
+      "pass": true,
+      "detail": "force a full in-place reindex before reporting — DESTRUCTIVE: the index is wiped before it is rebuil"
+    },
+    {
+      "name": "wait=false declares that the next call reports the outcome",
+      "pass": true,
+      "detail": "wait for refresh to finish (default true); wait=false detaches it and the NEXT call reports whether "
+    },
+    {
+      "name": "the integrity check count is no longer asserted in the description [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the count is derived and printed as `N checks`"
+    },
+    {
+      "name": "sampleSize 0 is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health sampleSize must be a whole number >= 1 — 0 would mean checking no files, which this tool reports as a clean re"
+    },
+    {
+      "name": "sampleSize negative is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health: sampleSize must be non-negative"
+    },
+    {
+      "name": "sampleSize fractional is refused with the rule named",
+      "pass": true,
+      "detail": "bb_health: sampleSize must be a whole number (got 2.5)"
+    },
+    {
+      "name": "sampleSize 1 is accepted and labelled a SAMPLE",
+      "pass": true,
+      "detail": "freshness: 1 fresh / 0 of 1 sampled stale (~0 of 8 estimated) / 0 missing (1/8 checked, sampled — SAMPLE, not a census)"
+    },
+    {
+      "name": "an absent status record prints 'unrecorded', not 0",
+      "pass": true,
+      "detail": "index: version=unrecorded indexedFiles=unrecorded/unrecorded status=unrecorded errors=unrecorded (no brain_index_status "
+    },
+    {
+      "name": "errors= is also unrecorded rather than a reassuring 0",
+      "pass": true,
+      "detail": "index: version=unrecorded indexedFiles=unrecorded/unrecorded status=unrecorded errors=unrecorded (no brain_index_status "
+    },
+    {
+      "name": "and the absence raises a warning naming what is unrecorded",
+      "pass": true,
+      "detail": "no brain_index_status row for this project — indexedFiles/status/errors/lastFullIndex are UNRECORDED, not zero. counts.f"
+    },
+    {
+      "name": "the report exposes recordPresent so a consumer can branch",
+      "pass": true,
+      "detail": "recordPresent=false indexedFiles=null"
+    },
+    {
+      "name": "counts.files is still measured from brain_file",
+      "pass": true,
+      "detail": "files=6"
+    },
+    {
+      "name": "a present status record still reports real values",
+      "pass": true,
+      "detail": "index: version=v1.0.0 indexedFiles=0/6 — INCOMPLETE, 6 file(s) found by the walk were never written status=complete erro"
+    },
+    {
+      "name": "and the warning is gone once the record is back",
+      "pass": true,
+      "detail": "warnings=[\"INCOMPLETE_INDEX\"]"
+    },
+    {
+      "name": "the coverage line names both operands, not a bare percentage",
+      "pass": true,
+      "detail": "embeddings: 30 rows / 30 entities / 100% of symbols"
+    },
+    {
+      "name": "it no longer claims to be a share of searchable code [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the old label implied 'this share of my code is semantically searchable'"
+    },
+    {
+      "name": "verbose names which kinds were embedded",
+      "pass": true,
+      "detail": "embedded kinds: function=30"
+    },
+    {
+      "name": "with every kind embedded, no unembedded-kinds line is invented",
+      "pass": true,
+      "detail": "absent (correct)"
+    },
+    {
+      "name": "verbose names which kinds are unattempted, and says so",
+      "pass": true,
+      "detail": "unembedded kinds: variable=1 — these symbols are NOT semantically searchable (never attempted, not partially covered)"
+    },
+    {
+      "name": "the unembedded census agrees with the symbol total",
+      "pass": true,
+      "detail": "embedded 30 + unembedded 1 = symbols 31"
+    },
+    {
+      "name": "the report carries both as data, not only as text",
+      "pass": true,
+      "detail": "embedded=1 unembedded=1"
+    },
+    {
+      "name": "the integrity check and the main report count the SAME thing",
+      "pass": true,
+      "detail": "integrity=30 report=30 (pre-fix: integrity used COUNT(*) and reported rows as symbols)"
+    },
+    {
+      "name": "the entity-type census sums to the entity count it is a census of",
+      "pass": true,
+      "detail": "30 vs 30"
+    },
+    {
+      "name": "the stale list is capped",
+      "pass": true,
+      "detail": "line length 407 chars for 40 stale files (pre-fix this was one unbounded line: 3,911 chars for 300 entries)"
+    },
+    {
+      "name": "the stale list states the TOTAL, not just the page",
+      "pass": true,
+      "detail": "stale files: 40 total, first 20: src/f0000.ts, src/f0001.ts, src/f0002.ts, src/f0003.ts, s"
+    },
+    {
+      "name": "the omission is pointed at, not silent",
+      "pass": true,
+      "detail": ", src/f0019.ts — raise `limit`/use freshness=\"complete\" and read freshness.staleFiles in the JSON for the rest"
+    },
+    {
+      "name": "the total matches the report's own stale count",
+      "pass": true,
+      "detail": "freshness: 0 fresh / 40 of 40 stale / 0 missing (40/40 checked, complete)"
+    },
+    {
+      "name": "the cap keeps every path reachable in the data",
+      "pass": true,
+      "detail": "staleFiles holds all 40 paths"
+    },
+    {
+      "name": "the runtime TYPE no longer declares a parser field [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "the type advertised a value the code could never produce"
+    },
+    {
+      "name": "the runtime VALUE no longer hardcodes a parser status [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "the unused existsSync import is gone [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "the runtime object still reports what it can actually know",
+      "pass": true,
+      "detail": "runtime + version + database"
+    },
+    {
+      "name": "no output path mentions a parser status [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "it was never printed in any mode, default or verbose"
+    },
+    {
+      "name": "the emitted report has no parser key",
+      "pass": true,
+      "detail": "runtime, version, database"
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 58,
+    "passed": 58,
+    "failed": 0
+  },
+  "decisions": {
+    "sample": "covered by verify-sample-coverage.ts; this file pins everything else",
+    "refreshSafety": "covered by verify-refresh-integrity.ts",
+    "stalenessMethods": "integrity's Hash Drift and main freshness now use one population and one deterministic stride, so they cannot disagree by construction",
+    "absentRecord": "a missing brain_index_status row prints as 'unrecorded', never as 0",
+    "census": "every count in the report is a COUNT(*), never a page length"
+  },
+  "limitations": [
+    "Real-index measurements were taken against this repo's own index; a re-measurement of the complete-scan wall time was blocked by concurrent machine load, so the controlled synthetic comparison is the perf evidence."
+  ],
+  "generatedAt": "2026-10-01T08:15:31.599Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-01T08:17:39.763Z",
+    "contentSha256": "150819d1b72c76cbbe082385b81f5d79a6b3245eb17315f64467fe93937b5a2a"
+  }
+}

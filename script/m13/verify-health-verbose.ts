@@ -39,7 +39,17 @@ harness.check("handler: passes args.verbose to the provider", handlers.includes(
 const provider = readFileSync(path.resolve("src/intelligence/health/health-provider.ts"), "utf8")
 harness.check("provider: UnifiedHealthOptions declares verbose", provider.includes("verbose?: boolean"), "not in options")
 harness.check("provider: report carries verbose and languages", provider.includes("verbose: options.verbose === true") && provider.includes("languages:"), "not in report")
-harness.check("formatter: prints verbose sections only when verbose=true", provider.includes("if (report.verbose)") && provider.includes("languages: ${") && provider.includes("stale files: ${"), "verbose sections missing")
+// M64: this asserted on the literal template strings `languages: ${` and
+// `stale files: ${`, so it broke on a refactor that capped the stale list into
+// a bounded renderer — a change that made the section BETTER, not worse. The
+// wiring it means to check (the verbose sections exist and are gated on
+// report.verbose) is asserted structurally, and the OUTPUT is asserted
+// behaviourally a few lines below, which is where a real regression would show.
+harness.check(
+  "formatter: prints verbose sections only when verbose=true",
+  provider.includes("if (report.verbose)") && /languages:/.test(provider) && /stale files/.test(provider) && /renderFileList\("stale files"/.test(provider),
+  "verbose sections missing or no longer gated on report.verbose",
+)
 
 // ── 2. Runtime: verbose actually changes output ────────────────────────────
 const root = mkdtempSync(path.join(tmpdir(), "bb-health-verbose-"))

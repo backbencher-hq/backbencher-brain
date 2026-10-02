@@ -303,17 +303,82 @@ async function cmdIndex(
   if (stats.summary) {
     const s = stats.summary
     console.log(`  breakdown: ${s.newlyParsed} newly parsed | ${s.unchanged} unchanged | ${s.skipped} skipped | ${s.symbolLoss} symbol-loss (parsed 0 symbols) | ${s.errors} errors | ${s.timeouts} timeouts${s.cancelled ? ` | ${s.cancelled} cancelled` : ""}`)
+    // The parse mode is part of the breakdown, because losing the worker pool is
+    // a degradation a user can act on and nothing else on this line reveals it.
+    // Measured by SIGKILLing workers mid-run: the fork test fails, the run falls
+    // back to in-process parsing and indexes every file correctly — but takes
+    // ~72s against a much faster pool-backed run, while every number above reads
+    // pristine (`workerCount: 0, retries: 0, errors: 0, timeouts: 0`). It is the
+    // same shape as the derived/consistency line: a real fact with no number.
+    // A persisted run that predates this field has no parse mode, and a run
+    // whose producer was removed has `undefined`. Neither is evidence that the
+    // pool ran. Routing the unknown case into the pool branch made the line
+    // assert "parsed with the worker pool (unknown)" — a claim the line had just
+    // admitted it could not support. Say what is actually known instead.
+    const parseMode = s.parseMode
+    if (parseMode === "in-process") {
+      console.log("  parsed in-process — the worker pool was unavailable, so this run was serial and is correspondingly slower")
+    } else if (parseMode === "worker-pool") {
+      console.log("  parsed with the worker pool")
+    } else {
+      console.log("  parsed: mode not recorded for this run (pre-dates the parseMode field)")
+    }
     // M40.A2: honest derived-data reporting — never let a run imply its
     // relationships/enrichment/gravity/taints/health are current when they
     // were deferred.
     const derived = s.derivedPass ?? "deferred"
+    // M40.A2's intent was "never let a run imply its relationships/enrichment/
+    // gravity/taints/health are current when they were deferred". It could not be
+    // kept, because `derivedPass` says WHICH pass ran and nothing said whether the
+    // index ended up CONSISTENT — so the note for `skipped-unchanged` asserted
+    // "untouched and consistent" on the strength of nothing.
+    //
+    // Measured, in the case a user actually meets: cancel a 60-file index
+    // mid-run, then `bb index --resume`. The cancel interrupts relationship
+    // resolution and leaves 16 relationships with `target_symbol_id IS NULL`.
+    // The resume parses nothing, so its pass is `skipped-unchanged`; the
+    // relationship COUNT recovers to the clean index's 180, so every count on
+    // screen reads healthy; and those 16 edges are still unattached. Only
+    // `bb index --post` resolves them.
+    //
+    // So the pass is reported as before, and CONSISTENCY is reported as a
+    // measurement — a count taken from the store after the run, with the
+    // remediation named when it is non-zero.
+    const unresolved = Number(s.unresolvedRelationships ?? -1)
     const derivedNote: Record<string, string> = {
       full: "derived data fully re-processed",
       bounded: "derived data re-processed for touched files (bounded pass)",
       deferred: "derived data deferred — run: bb index --post",
-      "skipped-unchanged": "no files changed — derived data untouched and consistent",
+      "skipped-unchanged": "no files parsed, so no derived pass ran",
+      // A derived phase threw. MEASURED with a fault injected into the resolution
+      // pass: the run used to print "full (derived data fully re-processed)" with
+      // a WARN in the log and exit 0, and `bb index --post` printed the same
+      // condition as a success. Same remediation as stale derived data.
+      partial: "at least one derived phase FAILED, so the derived data is incomplete",
     }
     console.log(`  derived: ${derived} (${derivedNote[derived] ?? derived})`)
+    if (derived === "partial") {
+      // `--post` already refuses to call such an index complete, and exits
+      // non-zero. The main path said nothing and exited 0, so one condition was
+      // reported as success on one path and as failure on the other.
+      console.error("  ✗ a derived phase failed — index marked partial. Run: bb index --post")
+      process.exitCode = 1
+    }
+    if (unresolved === 0) {
+      console.log("  consistency: 0 unresolved relationships — every stored relationship is attached to a symbol")
+    } else if (unresolved > 0) {
+      // Present as rows, absent as edges: traversal reads these as missing, so
+      // they UNDER-report, and the relationship count does not show it.
+      console.log(
+        `  consistency: ${unresolved} relationship(s) are not attached to a symbol — they are counted above but read as edges by no traversal. Run: bb index --post`,
+      )
+    } else {
+      // The count is absent (a run persisted before this measurement existed).
+      // Printing NOTHING here is a real gap, not a neutral one: "no line" and
+      // "checked, nothing found" look identical on a terminal, so a reader takes
+      // the absence as the all-clear. Name the check as not run.
+      console.log("  consistency: not measured for this run (pre-dates the unresolved-relationship count)")
+    }
     if (stats.m40Bounded) {
       const b = stats.m40Bounded
       const parts = [`${b.touchedSymbols} symbols touched`]

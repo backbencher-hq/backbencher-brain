@@ -21,9 +21,32 @@
  */
 import * as fs from "fs"
 import * as path from "path"
+import { mergeSymbolsIntoOverrideCompanion } from "../../src/ast/override-context"
+
+const { readdirSync, readFileSync, statSync } = fs
 
 const ROOT = process.env.BB_M14_ROOT ? path.resolve(process.env.BB_M14_ROOT) : path.resolve((import.meta as any).dirname ?? path.dirname(Bun?.main ?? process.argv[1] ?? "."), "..", "..")
 const FIXTURES_DIR = path.join(ROOT, "validation", "m14", "fixtures")
+
+
+// M60 Make wave: the ERROR-node census behind `expectNoParseErrors`.
+//
+// The analyzer's own `result.errors` cannot answer this question -- a tree-sitter
+// ERROR node is not a parse FAILURE, it is a successful parse of a damaged region,
+// and it is precisely the case recovery hides. So this asks the grammar directly,
+// through the harness's existing `getParser`.
+async function countParseErrorNodes(lang: string, content: string): Promise<{ line: number; missing: boolean }[]> {
+  const parser = await getParser(lang)
+  const root = parser.parse(content).rootNode
+  const found: { line: number; missing: boolean }[] = []
+  const walk = (n: any): void => {
+    if (n.type === "ERROR" || n.isMissing) found.push({ line: n.startPosition.row + 1, missing: !!n.isMissing })
+    for (const c of n.children) walk(c)
+  }
+  walk(root)
+  return found
+}
+
 
 const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string }> = {
   // M60 VB wave. `ext` is `vb`, which is what language-detection.ts routes, and
@@ -60,6 +83,12 @@ const LANGS: Record<string, { wasm: string; analyzerFile: string; className: str
   // coverage.
   julia: { wasm: "tree-sitter-julia.wasm", analyzerFile: "real-julia-analyzer", className: "RealJuliaAnalyzer", ext: "jl" },
   php: { wasm: "tree-sitter-php.wasm", analyzerFile: "real-php-analyzer", className: "RealPhpAnalyzer", ext: "php" },
+  // protobuf's `ext` is `proto`, which is what language-detection.ts routes, and
+  // its `wasm` is the GRAMMAR's name, the same relationship every other row here
+  // has. This row is also the F3 fixture-lane gate's completeness check: a
+  // `validation/m14/fixtures/<dir>/` with no row here is reported as an ORPHAN and
+  // exits 6, because an expectation file nothing executes is evidence of nothing.
+  protobuf: { wasm: "tree-sitter-protobuf.wasm", analyzerFile: "real-protobuf-analyzer", className: "RealProtobufAnalyzer", ext: "proto" },
   ruby: { wasm: "tree-sitter-ruby.wasm", analyzerFile: "real-ruby-analyzer", className: "RealRubyAnalyzer", ext: "rb" },
   // M14.6 perl wave: the lane had no fixture directory at all, so none of its
   // defects were pinned. `ext` carries the whole production surface: the
@@ -336,7 +365,7 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
         // compares exactly as before.
         if (mv !== undefined && mv !== null) return false
       } else if (mv !== v) return false
-    } else if (actual[k] !== v) {
+    } else if (actual[k] !== v && (actual.range?.[k] ?? actual[k]) !== v) {
       // relationship field aliases
       const aliases: Record<string, string[]> = {
         from: ["from", "source", "fromSymbol"],
@@ -351,8 +380,21 @@ function matchConstraints(actual: Entry, want: Entry): boolean {
   return true
 }
 
-function normRel(r: Entry): Entry {
-  return {
+/**
+ * Does a parse/lint error row satisfy an `expectErrors` / `forbidErrors`
+ * constraint?
+ *
+ * Analyzers place parse errors at `result.errors` (older contract) or in
+ * `metadata.errors` (rust/others) — search BOTH (unified 2026-09-05 by the rust
+ * RSD2 error-file-payload fixture). The per-field comparison is `range[k] ?? k`,
+ * so a constraint may name `startLine` / `startColumn` / `severity` directly.
+ */
+function errorsMatch(result: any, want: Entry): boolean {
+  const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+  return errList.some((e: any) => matchConstraints(e, want))
+}
+
+function normRel(r: Entry): Entry {  return {
     ...r,
     from: r.from ?? r.source ?? r.fromSymbol,
     target: r.target ?? r.to ?? r.toSymbol,
@@ -534,37 +576,132 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
         result = (overrideAnalyzer as any).transform(result, content)
       }
     } else {
-      // A sub-directory fixture gets its project's index; a flat one gets nothing,
-      // which is the pre-SOL-21 contract and the reason every existing expectation
-      // still holds unchanged.
-      // PY-7: `ProjectIndex.typeMembers` IS the companion shape — `Map<string, Set<string>>`
-      // of type name to the members IT declares — so the cross-file override index is not a
-      // second structure to build and maintain, it is this one, already computed, handed over
-      // under the name the `overrides` contract reads.
+      // M60 php round: the CROSS-FILE OVERRIDE companion, OPT-IN per fixture.
       //
-      // OPT-IN BY STRUCTURE, same as `projectIndex` above: only a sub-directory fixture — a
-      // fixture that IS a multi-file project — gets it. Every flat fixture, including the
-      // `external-override` fixture that PINS the dead-tier behaviour by asserting the 0.5
-      // guess, is untouched and still gets no context. That is deliberate and it is the only
-      // honest way to test both states at once: production populates nothing today, so the
-      // flat fixtures describe production, and a sub-directory fixture describes what the tier
-      // does when it has data.
+      // Without it this runner calls `analyze()` with no context, so a fixture can
+      // only exercise SAME-FILE inheritance — which meant php's cross-file override
+      // path (1,080 edges over the two pinned corpora, 11% of the lane's relationship
+      // volume) had NO pin at all: not a fixture, not a mutant, and the differential's
+      // published match would not see a wrong target either, because `normTarget`
+      // compares last segments and `TestCase.__construct` is satisfied by any other
+      // `__construct` override. A capability that large and that unpinnable is the exact
+      // shape the lane's own doctrine warns about.
+      //
+      // OPT-IN, and deliberately so: building a companion for every multi-source
+      // fixture directory automatically would change results for every lane that emits
+      // cross-file overrides (java, kotlin, python, ruby, csharp, dart, javascript),
+      // mid-flight, with no pin on the change. So an expectation file that does not
+      // declare `crossFileOverride` gets exactly the old behaviour, and one that does
+      // gets a companion built from the OTHER sources in its own directory.
+      //
+      // The companion is built with the project's own `mergeSymbolsIntoOverrideCompanion`
+      // from the ANALYZER's symbol output for each sibling file — the same shape
+      // `verify-analyzer.ts` uses — so the mechanism under test is the real one rather
+      // than a stand-in.
+      let analyzeContext: any = undefined
+      if ((exp as any).crossFileOverride) {
+        // `crossFileOverride` is either `true` (every other source in the directory) or
+        // an ARRAY of sibling source names to draw the companion from. The array form is
+        // preferred and is what php uses: "every sibling" would hand the fixture an
+        // index carrying methods from all its neighbours, which is noise a reader has to
+        // reason about and which can mint override edges nobody wrote. Naming the sources
+        // makes the fixture self-describing — you can read which file declares the base.
+        const want: string[] | true = (exp as any).crossFileOverride
+        const companion = new Map<string, Set<string>>()
+        const companionVisibility = new Map<string, Map<string, string>>()
+        for (const sib of readdirSync(dir)) {
+          if (sib === src || sib.endsWith(".json")) continue
+          if (!exts.some((e: string) => sib.endsWith("." + e))) continue
+          if (want !== true && !want.includes(sib.slice(0, sib.lastIndexOf(".")))) continue
+          const sibPath = path.join(dir, sib)
+          let sibSt: any
+          try { sibSt = statSync(sibPath) } catch { continue }
+          if (!sibSt.isFile()) continue
+          let sibRes: any
+          try { sibRes = await analyzer.analyze(parser.parse(readFileSync(sibPath, "utf8")).rootNode, readFileSync(sibPath, "utf8"), `fixtures/${runLangLang}/${sib}`) } catch { continue }
+          mergeSymbolsIntoOverrideCompanion(companion, sibRes.symbols ?? [])
+          // The VISIBILITY channel, parallel to the name set. A name set cannot decide an
+          // override, because PHP does not inherit a private method: `Sub::privateHelper`
+          // is a different method from `Base::privateHelper`. Analyzer symbols carry
+          // `visibility`, so the companion built from them can supply it — without this,
+          // `php/cross-file-override` cannot pin the private rule across a file boundary,
+          // and its forbid row fails (which is exactly what happened the first time).
+          for (const sym of sibRes.symbols ?? []) {
+            if (!sym?.ownerName || !sym?.name || String(sym.kind ?? "") !== "method") continue
+            let byName = companionVisibility.get(String(sym.ownerName))
+            if (!byName) { byName = new Map<string, string>(); companionVisibility.set(String(sym.ownerName), byName) }
+            const vis = String(sym.visibility ?? "public")
+            // UNANIMITY, matching `buildPhpOverrideCompanionWithVisibility`: `private` is
+            // recorded only when EVERY observation of that name agrees, and disagreement
+            // becomes `ambiguous`, which suppresses nothing. php keys edges on the leaf
+            // name, so a name-keyed index is ambiguous whenever two namespaces declare the
+            // same class name — and resolving that by suppression fabricates gaps rather
+            // than closing them.
+            const key = String(sym.name)
+            const prev = byName.get(key)
+            byName.set(key, prev === undefined ? vis : prev === vis ? vis : "ambiguous")
+          }
+        }
+        analyzeContext = { overrideCompanion: companion, overrideCompanionVisibility: companionVisibility }
+      }
+      // RESOLVED 2026-10-02 (branch consolidation): a UNION of two different ways a
+      // fixture gets an override companion.
+      //   remote -- builds the companion INLINE from sibling files, gated on the
+      //            expectation's `crossFileOverride`, and also builds
+      //            `overrideCompanionVisibility` (php needs it: a name set alone
+      //            cannot decide an override when the base method is private).
+      //   local  -- hands over the prebuilt sub-directory ProjectIndex (SOL-21),
+      //            whose `typeMembers` IS the companion shape.
+      // The inline companion wins when the fixture opted in, because it carries the
+      // visibility channel the project index does not have; otherwise the project
+      // index supplies `projectIndex` AND its `typeMembers` as the companion.
       const subIndex = sub ? await projectIndexFor(sub) : null
-      const context: any = subIndex
-        ? { projectIndex: subIndex, overrideCompanion: subIndex.typeMembers }
-        : undefined
-      result = await analyzer.analyze(
-        tree.rootNode,
-        content,
-        `fixtures/${runLangLang}/${src}`,
-        context,
-      )
+      if (subIndex) {
+        analyzeContext = {
+          ...(analyzeContext ?? {}),
+          projectIndex: subIndex,
+          overrideCompanion: analyzeContext?.overrideCompanion ?? subIndex.typeMembers,
+        }
+      }
+      result = await analyzer.analyze(tree.rootNode, content, `fixtures/${runLangLang}/${src}`, analyzeContext)
     }
     const fixtureFilePath = `fixtures/${runLangLang}/${src}`
     const symbols: Entry[] = result.symbols ?? []
     const rels: Entry[] = (result.relationships ?? []).map(normRel)
 
     const problems: string[] = []
+
+      // M60 Make wave. `expectNoParseErrors` is the negative assertion that the
+      // symbol/relationship assertions structurally CANNOT make, and its absence is
+      // how a broken fixture came to pass.
+      //
+      // Tree-sitter error recovery is good: given `>clean:` it emits `(ERROR
+      // (UNEXPECTED '>'))` and then still produces a `rule` with the right targets
+      // at the right line. Every other key in this schema is therefore satisfied —
+      // the symbol is there, the line is right — and the fixture goes GREEN while
+      // the grammar is visibly broken. That is exactly what happened to
+      // make/recipeprefix: it asserted `clean` at line 27, the analyzer recovered to
+      // give it line 27, and the harness never looked at the tree. The fixture was
+      // cited as pinning the very case the grammar got wrong.
+      //
+      // It is OPT-IN per fixture so that turning it on does not silently change any
+      // other lane's gate mid-flight: an expectation that does not ask for it is not
+      // checked, and one that does gets the ERROR-node census.
+      if ((exp as any).expectNoParseErrors) {
+        try {
+          const errNodes = await countParseErrorNodes(runLangLang, content)
+          if (errNodes.length) {
+            problems.push(
+              `expectNoParseErrors: the tree has ${errNodes.length} ERROR/MISSING node(s) — ` +
+              `${errNodes.slice(0, 6).map(e => `line ${e.line}${e.missing ? " (missing)" : ""}`).join(", ")}` +
+              `${errNodes.length > 6 ? ", ..." : ""}. Error RECOVERY still produced the expected ` +
+              `symbols, so every other assertion in this file passes on a broken grammar.`,
+            )
+          }
+        } catch (e: any) {
+          problems.push(`expectNoParseErrors could not be checked: ${String(e?.message ?? e)}`)
+        }
+      }
 
     // M60 fsharp wave: an unrecognised key in a CONSTRAINT row is a silently dead
     // assertion. See CONSTRAINT_KEY_ALLOWLIST's header — five of the fsharp lane's
@@ -923,6 +1060,16 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       // Each constraint field must match >=1 export (unspecified fields
       // wildcards). ER3 (erlang wave): `note` is documentation here too — see the
       // expectImports comment below for why the three matchers must agree.
+      //
+      // M60 (master review, 2026-09-29): this block and the `forbidExports` one
+      // below each carried TWO `const hit` declarations — the inline
+      // `Object.entries(want).every(...)` matcher and the general
+      // `matchConstraints` one — so the file did not parse and the fixture lane
+      // was unrunnable for EVERY language, not just this one. The merge left the
+      // narrower matcher behind. `matchConstraints` is the one kept: it is what
+      // the rest of the file uses, and it is the only one that understands
+      // `meta.`, `*EndsWith` and the relationship field aliases, so keeping the
+      // inline copy would have quietly unpinned those keys here.
       const hit = (result.exports ?? []).find((e: any) => matchConstraints(e, want))
       if (!hit) problems.push(`expected export not found: ${JSON.stringify(want)}; got: ${JSON.stringify((result.exports ?? []).map((e: any) => e.name))}`)
     }
@@ -1103,14 +1250,17 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
       if (actual.includes(want)) problems.push(`forbidden framework detected: "${want}"; got: ${JSON.stringify(actual)}`)
     }
     for (const want of exp.expectErrors ?? []) {
-      // analyzers place parse errors at result.errors (older contract) or in
-      // metadata.errors (rust/others) — search BOTH (unified 2026-09-05 by
-      // the rust RSD2 error-file-payload fixture).
-      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
-      const hit = errList.find((e: any) =>
-        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
-      )
-      if (!hit) problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+      // M60 php F3 (2026-09-30): these two went through `Object.entries(want).every(...)`
+      // rather than the shared `matchConstraints`, so they were the ONLY expectation
+      // keys where a `comment` on a row was read as a MATCH CONSTRAINT — and a
+      // documented row could therefore never match, which is the "a documentation
+      // field read as data" class the project keeps meeting in other instruments.
+      // One matcher now, with the `range` field fallback the error rows always had,
+      // so `startLine`/`startColumn` work here exactly as they did before.
+      if (!errorsMatch(result, want)) {
+        const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+        problems.push(`expected error not found: ${JSON.stringify(want)}; got: ${JSON.stringify(errList.slice(0, 5).map((e: any) => e.range))}`)
+      }
     }
 
     for (const want of exp.expectErrorCount ?? []) {
@@ -1144,12 +1294,12 @@ async function runLang(runLangLang: string, overrideAnalyzer?: any): Promise<{ p
     for (const want of exp.forbidErrors ?? []) {
       // TS T1 wave: absence assertions for parse/lint errors (a plain
       // module must produce zero hook warnings). Matches expectErrors
-      // field-for-field over range ?? top level.
-      const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
-      const hit = errList.find((e: any) =>
-        Object.entries(want).every(([k, v]) => (e.range?.[k] ?? e[k]) === v),
-      )
-      if (hit) problems.push(`forbidden error present: ${JSON.stringify(want)} (found ${JSON.stringify(hit.message ?? hit).slice(0, 120)})`)
+      // field-for-field over range ?? top level — and, since the php F3 round,
+      // through the SAME matcher, so `comment`/`note` are documentation here too.
+      if (errorsMatch(result, want)) {
+        const errList: any[] = [...(result.errors ?? []), ...(result.metadata?.errors ?? [])]
+        problems.push(`forbidden error present: ${JSON.stringify(want)} (found ${JSON.stringify(errList.find((e: any) => matchConstraints(e, want))?.message ?? "").slice(0, 120)})`)
+      }
     }
     for (const want of exp.expectSymbolCount ?? []) {
       // { name, equals } — pins DEDUPE: overload groups must yield exactly

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M12",
+  "language": "php",
+  "purpose": "which grammar constructs does NO corpus exercise? complete by construction, not by memory",
+  "corpora": [
+    "phpunit",
+    "phpmyadmin"
+  ],
+  "filesWalked": 4463,
+  "grammarNamedTypesSeen": 138,
+  "specClassifiedTypes": 159,
+  "neverSeenInAnyCorpus": [
+    "colon_block",
+    "disjunctive_normal_form_type",
+    "dynamic_variable_name",
+    "empty_statement",
+    "function_static_declaration",
+    "global_declaration",
+    "goto_statement",
+    "named_label_statement",
+    "namespace_use_group",
+    "operation",
+    "php_end_tag",
+    "relative_name",
+    "sentinel_error",
+    "shell_command_expression",
+    "static_variable_declaration",
+    "text_interpolation",
+    "use_as_clause",
+    "use_instead_of_clause",
+    "use_list",
+    "var_modifier"
+  ],
+  "claimedButNeverExercised": [],
+  "claimedButNeverExercisedCount": 0,
+  "thinlyExercised": [
+    {
+      "type": "heredoc",
+      "count": 2
+    },
+    {
+      "type": "heredoc_body",
+      "count": 2
+    }
+  ],
+  "perCorpusDistinctTypes": {
+    "phpunit": 136,
+    "phpmyadmin": 131
+  },
+  "note": "CLAIMED-BUT-NEVER-EXERCISED means: classified handled/verified, no corpus file exercises it, AND no design decision reasons about it — i.e. an assertion nobody has ever looked at. A type that is handled and corpus-unexercised but IS named by a decision has hand-probe evidence recorded in that decision, and is reported separately rather than conflated with the unexamined set. CLAIMED-BUT-NEVER-EXERCISED is the actionable set: a type the spec asserts is handled, on which no corpus file provides evidence. Grouped use was invisible to every agreement-based gate for exactly this reason, and it is a `handled` claim by any reasonable reading.",
+  "generatedAt": "2026-09-30T07:33:10.180Z"
+}

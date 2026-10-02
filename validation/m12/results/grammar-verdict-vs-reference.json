@@ -1,0 +1,144 @@
+{
+  "generatedAt": "2026-10-01T09:59:39.441Z",
+  "reference": "Python 3 expat — a conforming XML 1.0 implementation, not owned or shipped by this repository",
+  "method": "Each file is parsed by the wired grammar and by expat, and the two accept/reject verdicts are compared. Agreement is the evidence that a rejection is CORRECT; disagreement is a candidate grammar defect and is the thing this probe exists to find.",
+  "cases": [
+    {
+      "file": "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/XMLSchema.xsd",
+      "why": "the W3C's own XSD: a comment block, then the XML declaration",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "XML or text declaration not at start of entity: line 11, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/maven-plugins/archetypes/cxf-jaxws-javafirst/src/main/resources/archetype-resources/src/main/webapp/WEB-INF/web.xml",
+      "why": "archetype template: a `##` header, then the XML declaration",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "not well-formed (invalid token): line 1, column 1",
+      "agree": true
+    },
+    {
+      "file": "cxf/services/wsn/wsn-api/src/main/resources/org/apache/cxf/wsn/wsdl/2001/XMLSchema.dtd",
+      "why": "standalone W3C DTD, used as an external subset",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "syntax error: line 28, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/src/site/site.xml",
+      "why": "a missing space between two attributes (committed upstream defect)",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "not well-formed (invalid token): line 20, column 57",
+      "agree": true
+    },
+    {
+      "file": "cxf/systests/rs-security/src/test/java/org/apache/cxf/systest/http/resources/jaxws-server.xml",
+      "why": "an unterminated attribute value (committed upstream defect)",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "not well-formed (invalid token): line 59, column 16",
+      "agree": true
+    },
+    {
+      "file": "cxf/rt/databinding/jaxb/src/test/java/org/apache/cxf/jaxb/resources/emptyReq.xml",
+      "why": "0 bytes",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "no element found: line 1, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/services/ws-discovery/ws-discovery-api/src/test/java/org/apache/cxf/ws/discovery/msg1.xml",
+      "why": "four SOAP envelopes concatenated with no separator",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "junk after document element: line 1, column 1086",
+      "agree": true
+    },
+    {
+      "file": "cxf/rt/bindings/xml/src/test/resources/message-operation-empty-param.xml",
+      "why": "a JAXB binding fragment with no document element",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "no element found: line 20, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/rt/bindings/soap/src/test/resources/org/apache/cxf/binding/soap/test-no-endenv.xml",
+      "why": "a binding fragment with no document element",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "no element found: line 43, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/systests/jaxws/src/test/java/org/apache/cxf/systest/dispatch/resources/GreetMeDocLiteralRespMalformed.xml",
+      "why": "malformed by name: a deliberate negative test input",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "no element found: line 21, column 0",
+      "agree": true
+    },
+    {
+      "file": "cxf/rt/databinding/aegis/src/test/java/org/apache/cxf/aegis/type/encoded/example-messages.xml",
+      "why": "a document ABOUT documents: example payloads as text",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "mismatched tag: line 95, column 4",
+      "agree": true
+    },
+    {
+      "file": "libxml2/test/errors/759573-2.xml",
+      "why": "libxml2's own fuzzer-regression input",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "not well-formed (invalid token): line 8, column 4",
+      "agree": true
+    },
+    {
+      "file": "libxml2/test/c14n/1-1-without-comments/example-5.xml",
+      "why": "a DTD with entity and notation declarations",
+      "grammar": "accepts",
+      "reference": "accepts",
+      "referenceDetail": "",
+      "agree": true
+    },
+    {
+      "file": "libxml2/test/valid/id3.xml",
+      "why": "a DTD with element, attlist and entity declarations",
+      "grammar": "accepts",
+      "reference": "accepts",
+      "referenceDetail": "",
+      "agree": true
+    },
+    {
+      "file": "grails-core/grails-data-hibernate7/dbmigration-core/src/test/resources/liquibase/harness/diff/xml/Authors.hbm.xml",
+      "why": "a multi-line PUBLIC doctype",
+      "grammar": "accepts",
+      "reference": "accepts",
+      "referenceDetail": "",
+      "agree": true
+    },
+    {
+      "file": "grails-core/grails-gsp/grails-web-jsp/src/main/resources/org/grails/gsp/jsp/web-app_2_2.dtd",
+      "why": "a standalone JSP DTD",
+      "grammar": "rejects",
+      "reference": "rejects",
+      "referenceDetail": "syntax error: line 23, column 8",
+      "agree": true
+    }
+  ],
+  "agree": 16,
+  "disagree": 0,
+  "retractedHypotheses": [
+    {
+      "hypothesis": "A `Misc` (comment) may precede the XML declaration, so `prolog` must allow it — a third grammar defect, proposed because the W3C's own XMLSchema.xsd is rejected at its declaration.",
+      "verdict": "REJECTED — the grammar is correct and the file violates XML 1.0 §2.8",
+      "evidence": "expat rejects the same file with `XML or text declaration not at start of entity`, which is the specification's own rule: `prolog ::= XMLDecl? Misc* (doctypedecl Misc*)?` places the declaration FIRST. No repair was made; the finding is recorded rather than dropped, because a retracted finding is evidence and a silently-dropped one is not."
+    }
+  ]
+}

@@ -24,6 +24,22 @@ type ParseState = {
   /** Absolute start indices of `statement` nodes already dispatched, so the deep
    *  walk does not re-process one the root walk handled. */
   nestedStatements: Set<number>
+  /** CTE names declared by the TOP-LEVEL statement currently being processed.
+   *
+   *  The per-call set is rebuilt from `descendants(node, "cte")` for whatever
+   *  node happens to be processed, so a reference inside a LATER CTE cannot see
+   *  a name declared at the statement level and the alias leaks out as a table:
+   *  `WITH a AS (SELECT 1 AS x), b AS (SELECT x FROM a) SELECT * FROM b`
+   *  published `uses global->a` when the contract requires ZERO relationships. A
+   *  local binding published as a table is a false edge, and a false edge is what
+   *  sends a consumer looking for a table that does not exist.
+   *
+   *  Deliberately STATEMENT-scoped and nothing wider. A first attempt also walked
+   *  the node's ANCESTORS for `cte` nodes, which over-reached: it collected names
+   *  from the whole enclosing statement and so shadowed real tables outside the
+   *  with-clause's actual scope, breaking four fixtures. The scope belongs to the
+   *  statement, and only the statement. */
+  localCtes: Set<string>
   imports: ASTEngine.ImportInfo[]
   exports: ASTEngine.ExportInfo[]
   relationshipKeys: Set<string>
@@ -350,6 +366,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
   ): Omit<ASTEngine.ParseResult, "language" | "metadata"> & { metadata: Partial<ASTEngine.FileMetadata> } {
     const state: ParseState = {
       nestedStatements: new Set<number>(),
+      localCtes: new Set<string>(),
       symbols: [],
       relationships: [],
       imports: [],
@@ -990,6 +1007,13 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (child && (child.type === "statement" || child.type === "block" || child.type === "transaction")) stack.push(child)
         }
         continue
+      }
+      state.localCtes.clear()
+      if (current.type === "statement") {
+        for (const cte of this.descendants(current, "cte")) {
+          const nm = this.firstIdentifier(cte, state)
+          if (nm) state.localCtes.add(this.identifierName(nm, state))
+        }
       }
       this.processStatement(current, state, null)
     }
@@ -2004,7 +2028,7 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
     const parts = this.referenceParts(object, state)
     if (parts.length === 0) return
     const leaf = parts[parts.length - 1]
-    if (parts.length === 1 && localCtes.has(leaf)) return
+    if (parts.length === 1 && (localCtes.has(leaf) || state.localCtes.has(leaf))) return
     this.addRelationship(ASTEngine.RelationshipType.Uses, source, leaf, state, {
       tableReference: true,
       ...(parts.length > 1 ? { qualified: parts.join(".") } : {}),
