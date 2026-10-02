@@ -119,9 +119,22 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
           // localization files alone supply most of the getters
           // (`AppLocalizations.applicationFailedToStartMessage`).
           //
-          // Constructor first, because `constructor_signature` and
-          // `constant_constructor_signature` are handled by family below and DARTD3
-          // overrides the wrapper's own name.
+          // CONSTRUCTOR FIRST, matched as a FAMILY, because DARTD3 overrides the
+          // wrapper's own name. The corpus spells a constructor four ways —
+          // `constructor_signature`, `constant_constructor_signature` (every
+          // `const Foo({super.key})`, which is most of a Flutter widget class),
+          // `redirecting_factory_constructor_signature`, and a factory — and
+          // matching one spelling misses the rest. Measured: enumerating them cost
+          // 2,548 rows on 1,294 files, and the missing one was the CONST spelling,
+          // which a battery written from `class D { D({int? x}); }` cannot see
+          // because that exact source text parses as the PLAIN spelling.
+          //
+          // This check used to be written TWICE in this one branch. The duplicate is
+          // why a mutation that narrowed the first copy survived the battery: the
+          // second still caught it, so the gate could not see which rule was load
+          // bearing. A rule written twice is one rule too many — the same lesson the
+          // overrides oracle learned the hard way with `methodNames` and
+          // `overrideMembers` drifting apart.
           if (named(decl).some((c: any) => c.type.includes("constructor") || c.type.includes("factory"))) { pushName("constructor"); break }
           for (const w of named(decl)) {
             if (w.type === "function_signature" || w.type === "getter_signature" || w.type === "setter_signature") {
@@ -154,15 +167,6 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
               pushName(named(sf)[0]?.type === "identifier" ? named(sf)[0].text : undefined)
             }
           }
-          // A CONSTRUCTOR, matched as a FAMILY. The corpus spells it four ways —
-          // `constructor_signature`, `constant_constructor_signature` (every
-          // `const Foo({super.key})`, which is most of a Flutter widget class),
-          // `redirecting_factory_constructor_signature`, and a factory — and
-          // matching one spelling misses the rest. Measured: enumerating them cost
-          // 2,548 rows on 1,294 files, and the missing one was the CONST spelling,
-          // which a battery written from `class D { D({int? x}); }` cannot see
-          // because that exact source text parses as the plain spelling.
-          if (named(decl).some((c: any) => c.type.includes("constructor") || c.type.includes("factory"))) pushName("constructor")
           break
         }
         case "method_signature": {
@@ -207,7 +211,12 @@ export function deriveDartContainsTruth(root: any): DartContainsEdge[] {
           // }); }` happens to parse as the `declaration` spelling: the two spellings
           // are the same source text, and a battery built from one of them cannot
           // see the other.
-          if (inner.type === "constructor_signature") { pushName("constructor"); break }
+          // A NAMED constructor arrives as `method_signature > <ctor>_signature`, and
+          // the const spelling arrives here too — `const C.zero() : this(0);` is
+          // `method_signature > constant_constructor_signature`. So this is the family
+          // test as well, not the one spelling; narrowing it to `constructor_signature`
+          // passed the battery because no case here had a const named constructor.
+          if (inner.type.includes("constructor") || inner.type.includes("factory")) { pushName("constructor"); break }
           pushName(firstOfType(inner, "identifier")?.text)
           break
         }
