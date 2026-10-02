@@ -93,7 +93,7 @@ both are the family contract with cpp rather than an omission.
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
-| contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. **A macro in TYPE position names a type, not a member** (#985): `git_array_t(size_t) line_index;` publishes `line_index` alone; the macro's own name is a `macro_type_specifier`'s first identifier, not a declarator, and publishing it invented a member beside the real one. | 1.0 |
+| contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. **A macro in TYPE position names a type, not a member** (#985): `git_array_t(size_t) line_index;` publishes `line_index` alone; the macro's own name is a `macro_type_specifier`'s first identifier, not a declarator, and publishing it invented a member beside the real one. **An anonymous inline enum is owned by the MEMBER PATH** (#986), like an anonymous inline struct or union: `enum { A_ONE } first;` inside `U` gives `contains U.first -> A_ONE`, while the tagged spelling keeps its own tag. | 1.0 |
 | references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, **including a function's return type, whether spelled with a tag or with a typedef name**). Never both references+uses for the same pair. | 0.8 |
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
@@ -726,16 +726,18 @@ code** (#975 removed the last, `/^\d+[uUlL]*$/`, replaced by a character scan pr
 equivalent over 4,394 exhaustive + 400,000 fuzz cases). The only remaining mentions
 of regex syntax are in comments recording earlier replacements.
 
-**Gates** — fixtures **36/36** (was 35/35; `c/macro-type-member-985` is the new one, and
-it FAILS without the fix) · live mutants **42/42** caught, 5 retired · 0 property
-violations · M12 truth drift 92 facts, 85 still-produced, 7 produced-under-another-type,
-**0 not-produced** · imports audit 0 fabricated over 10,941 edges · differential **0
-unexplained** in the C lane on curl, libgit2 and redis.
+**Gates** — fixtures **37/37** (was 35/35; `c/macro-type-member-985` and
+`c/inline-enum-member-path-986` are the new ones, and both FAIL without their fix) · live
+mutants **43/43** caught, 5 retired · 0 property violations · M12 truth drift 92 facts,
+85 still-produced, 7 produced-under-another-type, **0 not-produced** · imports audit 0
+fabricated over 10,941 edges · differential **0 unexplained** in the C lane on curl,
+libgit2 and redis.
 
-The mutant count moved 41 → 42 for `c-lane/macro-type-member-name`, and the count of
-SURVIVORS moved 0 → 0 only after `c-lane/macro-generated-field-name`'s revert was widened
-to remove both guards — see the #985 section. A gate that reported 42/42 while one of
-them survived would have been the worse outcome.
+The mutant count moved 41 → 43, for `c-lane/macro-type-member-name` (#985) and
+`c-lane/inline-enum-member-path` (#986). The count of SURVIVORS moved 0 → 0 only after
+`c-lane/macro-generated-field-name`'s revert was widened to remove both guards — see the
+#985 section. A gate that reported 43/43 while one of them survived would have been the
+worse outcome.
 
 ### #983 MEASURED: 99.95% of those edges would be dangling, so sub-decision 1 is not a tradeoff
 
@@ -1498,7 +1500,62 @@ consequences of the pattern rather than of the individual rows.
 hierarchy). `instantiates` is the one C-specific type the truth asks for and the
 analyzer does not emit, and that is the second open question below.
 
-### #985's phantom class, and the `uses`-side limits stated rather than counted
+### #986: an anonymous inline enum is a member PATH, and it was collapsing onto the container
+
+The last shape `inlineAggregateOwnerName` did not cover. `typedef union { enum { A_ONE,
+A_TWO } first; int n; } U;` published
+
+    contains U -> first
+    contains U -> A_ONE        <- a member of `first`, published as a member of U
+    contains U -> A_TWO
+
+so a consumer reading `U` sees `A_ONE` beside `first` and `n` and cannot learn that `first`
+is a type of its own with two enumerators. **The two adjacent shapes were already correct,
+which is what makes this a defect and not a design choice:**
+
+| shape | published | status |
+| --- | --- | --- |
+| `enum E { B_ONE } first;` — a **tagged** inline enum | `contains E -> B_ONE` | correct, the tag names the type |
+| `struct { int x; } pt;` — an inline **struct** | `contains W.pt -> x` | correct, #950/#951 |
+| `enum { A_ONE } first;` — an **anonymous** inline enum | `contains U -> A_ONE` | **#986** |
+
+The mechanism is #961's rule firing on the same placeholder:
+
+```ts
+if (scope && scope !== "global" && enumName === "anonymous_enum") enumName = scope
+```
+
+`extractEnum` had no `inlineAggregateOwnerName` call, so an anonymous inline enum fell to
+that rule — and for this shape `scope` **is** the container's name (`U`), which is exactly
+the name the member path is trying to refine. #961's own case, a *function-local* enum, has
+no member path, so the fix is one call to `inlineAggregateOwnerName` placed **before** the
+scope rule and gated on it returning non-null. Two levels compose correctly
+(`Nested.mid.inner -> deep`).
+
+Measured over the four declared corpora (3,997 files,
+`script/m14/tmp/c983/inline-enum-owner.ts`): **17** members across **6** files, 17 → **0**
+after the fix. curl's `pl_unix_substate` carries **seven** inline enums in one union, so
+that one file accounts for 35 `contains` edges published under the wrong owner; also
+`pl_winNT_substate` (3) and `ftp_parselist_data` (1) in ftplistparser.c,
+`stub_gss_ctx_id_t_desc` in curl_gssapi.c, `OperationConfig` in tool_cfgable.h, and
+libgit2's `reftable_ref_record`, `reftable_log_record` and `refdb_reftable_stack_iterator`.
+
+**This is #958's defect class reached from a different direction.** There the owner was a
+placeholder that resolved to nothing, which looked broken. Here the owner is a REAL name,
+just the wrong one, so nothing looks broken, nothing crashes, and no property gate fires.
+
+**The `contains` COUNT is unchanged by #986** (17,343 before and after) — only the owner
+changed — which is why the census alone could not have found it and why the structural
+probe was needed. The `contains-vs-clang.ts` verdict is unchanged at 436/454 with 0 phantom.
+
+Pinned by `validation/m14/fixtures/c/inline-enum-member-path-986` (37th C fixture, fails
+without the fix) with a mutant, `c-lane/inline-enum-member-path`, whose controls each fail
+differently if the fix is over-applied: the tagged enum must keep its tag, the inline struct
+must keep #950/#958's path, the function-local enum must keep #961's scope (a fix that fired
+before the member path existed would publish `f.first`, which resolves to nothing), and a
+two-level path must not flatten.
+
+### The two `uses`-side limits, stated rather than counted
 
 The `contains` verdict on libgit2 is **18 missed / 0 phantom** after #985. The phantoms
 were all one class — a member named after a macro in TYPE position, published beside the

@@ -3707,6 +3707,34 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
       const declNode = this.getIdentifierFromDeclarator(node.parent.childForFieldName("declarator"))
       if (declNode && declNode.text.trim()) enumName = declNode.text.trim()
     }
+    // #986: an ANONYMOUS enum used as a MEMBER's type is the member PATH, exactly as
+    // an anonymous inline struct or union is -- `inlineAggregateOwnerName` already
+    // composes `<container>.<member>` for those (#950/#951), and the tagged enum
+    // spelling already keeps its own tag as the owner:
+    //
+    //   typedef union { enum { A_ONE, A_TWO } first;   int n; } U;
+    //   typedef union { enum E { B_ONE, B_TWO } first; int n; } V;
+    //   typedef union { struct { int x; } pt;           int n; } W;
+    //
+    //   before   contains U  -> A_ONE, A_TWO          <- collapsed onto the container
+    //            contains E  -> B_ONE, B_TWO          <- correct, the tag names it
+    //            contains W.pt -> x                   <- correct, #950/#958
+    //   after    contains U.first -> A_ONE, A_TWO
+    //
+    // Without this the members are published as members of the CONTAINER, so a
+    // consumer reading `U` sees `A_ONE` beside `first` and `n` and has no way to
+    // learn that `first` is a struct of its own with two enumerators.
+    //
+    // It must come BEFORE the #961 scope rule below, and it does, because that rule
+    // fires on the same `anonymous_enum` placeholder and would otherwise win: for
+    // this shape `scope` is the CONTAINER's name (`U`), which is precisely the name
+    // the member path is trying to refine. #961's own case -- a FUNCTION-local enum,
+    // which has no member path -- is untouched, because `inlineAggregateOwnerName`
+    // returns null when the specifier is not a field's type.
+    if (enumName === "anonymous_enum") {
+      const memberPath = this.inlineAggregateOwnerName(node)
+      if (memberPath) enumName = memberPath
+    }
     // #961: a FUNCTION-LOCAL enum is qualified by its enclosing function, exactly as the
     // struct path is. Without it an anonymous local enum publishes as the PLACEHOLDER
     // `anonymous_enum` whose members are owned by that placeholder -- the #958 defect
