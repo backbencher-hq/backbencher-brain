@@ -1230,6 +1230,34 @@ function resolvePoolWorkerFork(): { workerPath: string | null; workerArgs: strin
   return { workerPath: workerEntry, workerArgs: [] }
 }
 
+/**
+ * Why a worker pool could not be started, in terms a user can act on.
+ *
+ * `resolvePoolWorkerFork` returns `workerPath: null` when it cannot find a
+ * TypeScript loader, but its two call sites used to pass that straight into
+ * `fork()`. `fork(null)` throws a TypeError, and because the call sat inside a
+ * broad try/catch the throw was swallowed and reported as a generic
+ * "worker pool unavailable" — so a missing `tsx` looked identical to a genuine
+ * crash, and the run silently degraded to serial in-process parsing.
+ *
+ * This narrows the diagnosis so the CLI can name the actual cause and the fix.
+ */
+export function describePoolWorkerUnavailable(): string {
+  if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
+    const moduleDir = path.dirname(require("url").fileURLToPath(import.meta.url))
+    const projectRoot = path.resolve(moduleDir, "../..")
+    const localTsx = path.join(projectRoot, "node_modules", ".bin", "tsx")
+    if (!require("fs").existsSync(localTsx) && !findOnPath("tsx")) {
+      return (
+        "no TypeScript loader found: neither node_modules/.bin/tsx nor tsx on PATH. " +
+        "Run `npm install` (or `npm i -D tsx`) to restore parallel indexing, or set " +
+        "BB_POOL_WORKER=0 to accept serial in-process indexing."
+      )
+    }
+  }
+  return "the worker pool could not be forked; falling back to serial in-process indexing"
+}
+
 export async function processWithWorkerPool(
   projectId: ProjectID,
   projectPath: string,
@@ -4538,6 +4566,12 @@ export async function indexProjectParallel(
     try {
       const { fork } = await import("child_process")
       const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolvePoolWorkerFork()
+      // Guard before fork(): a null workerPath is a legitimate outcome (no tsx),
+      // not a crash. Passing it through made fork() throw a TypeError that the
+      // catch below reported as a generic pool failure, hiding the real cause.
+      if (!testWorkerPath) {
+        throw new Error(describePoolWorkerUnavailable())
+      }
       const testWorker = fork(testWorkerPath, testWorkerArgs, {
         env: { ...process.env, BB_POOL_WORKER: "1" },
         stdio: ["ignore", "pipe", "pipe", "ipc"],
@@ -4570,7 +4604,12 @@ export async function indexProjectParallel(
       _log.log("[brain] ✓ worker pool available — using parallel indexing with 45s timeouts")
       log.info("worker pool fork test passed — using parallel workers")
     } catch (e: any) {
-      _log.log(`[brain] ⚠ worker pool unavailable (${e?.message}), falling back to in-process indexing`)
+      _log.log(`[brain] ⚠ worker pool unavailable — falling back to serial in-process indexing`)
+      // Name the cause, not just the fact. Users reported "workers don't start"
+      // with nothing actionable; the underlying reason (usually a missing tsx)
+      // was previously swallowed into a generic message.
+      _log.log(`[brain]   reason: ${e?.message}`)
+      _log.log(`[brain]   this run is correct but serial, so it will be slower`)
       log.warn("worker pool fork unavailable, falling back to in-process", { error: e?.message })
       processFn = processInProcess
     }
