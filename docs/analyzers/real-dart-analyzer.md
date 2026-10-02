@@ -319,24 +319,38 @@ tree, from runs reporting `files=` (never `RESUMED from journal`):
 
 | lane | coverage | MISSING | unexplained |
 |---|---|---|---|
-| proxicall:dart | **100%** | 0 | **0** |
-| dart-http:dart | **100%** | 0 | 1 |
+| proxicall:dart | **29203 / 29203 (100%)** | **0** | **0** |
+| dart-http:dart | **2288 / 2288 (100%)** | **0** | **0** |
 
-The one remaining row is `CupertinoClientWithProfile._createProfile ->
-CupertinoClient._createProfile` in `cupertino_client.dart`. `CupertinoClient` is
-declared in `package:http`, and that corpus is a melos mono-repo with **no
-`.dart_tool` and no `pubspec.lock`** — 18 of its 32 direct dependencies have more than
-one version in the pub cache, so the lane indexes 0 dependency files rather than
-guessing which. The oracle therefore cannot see the base and declines; the analyzer
-resolves it from what the file itself shows. A difference in REACH, not a
-disagreement about a fact, and indexing it would mean picking a version at random.
+**No residual row.** Every analyzer edge either corpus measures is corroborated by
+independently derived truth, and the truth publishes nothing the analyzer does not.
+
+The last row to go was `CupertinoClientWithProfile._createProfile ->
+CupertinoClient._createProfile`, and it had been misfiled as a reach problem — the
+base is in the SAME file. The `isStatic` predicate reached to `previousNamedSibling`
+and read that node's children, so `static Future<...> _hasData` rendered the ordinary
+`_createProfile` after it static too, and the oracle's index held six of the class's
+eight methods. A gate that misidentifies its subject does not fail loudly: it stops
+counting, and the count is the only thing anyone reads.
+
+### Two member-predicate rules that must stay scoped to the member
+
+- **A static member is not overridable** — Dart resolves a static call against the
+  static type it was written on, and `@override` is not legal on one. But `static` is
+  a keyword on a member's OWN declaration, so the predicate must never look at a
+  sibling: doing so turns the first `static` in a class into a cascade that hides
+  every member after it.
+- **A base FIELD is a witness for an ACCESSOR override, and an instance field shadowing
+  a base field is a real override** — a field implicitly provides a getter. An instance
+  field after a static one was the mirror of the cascade above, and it fabricated in
+  the opposite direction.
 
 Every analyzer edge either corpus measures is corroborated by independently derived
 truth, and the truth publishes nothing the analyzer does not. No unexplained row and
 no missing row on either corpus.
 
 Fixtures **13/13**, `verify-dart-contains.ts` **37/37**, `verify-dart-overrides.ts`
-**12/12**, mutants 42/42, parse 0 errors on 1,294 `lib` files, 2.0 min for the full
+**14/14**, mutants 42/42, parse 0 errors on 1,294 `lib` files, 2.0 min for the full
 corpus.
 
 Both oracle batteries are DIFFERENTIAL — each case asserts the oracle AND the
