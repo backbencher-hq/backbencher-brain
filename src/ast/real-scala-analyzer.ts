@@ -274,18 +274,49 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // matching its owner's KIND, never a first-wins global that a companion
     // module can shadow.
     const typeIndexByKind = new Map<string, ASTEngine.UniversalSymbol>()
+    // M60/SDJ-12a: the same name+kind can be declared TWICE in one file, and the
+    // index kept only the first. Owner resolution then answered with a class that
+    // does not enclose the member at all. Measured on a 2,000-file scala3 draw:
+    // tests/disabled/existential/neg/names-defaults-neg.scala declares
+    // `class C(val s: String = "")` at line 85 AND `class C extends B` at line 113;
+    // every member of the second was resolved against the first, whose superTypes
+    // are empty, so no ancestor hop was possible and `C.foo -> B.foo` was
+    // reported MISSING.
+    //
+    // The members are DISAMBIGUATED BY POSITION, not by a new published name: the
+    // enclosing type is the one whose range contains the member's line. The
+    // published identity is untouched, so no oracle has to move with this — it is
+    // the same containment relation the storeable-span index uses to resolve a
+    // relationship source.
+    const typesByKindPos = new Map<string, ASTEngine.UniversalSymbol[]>()
     const kindKey = (name: string, kind: ASTEngine.SymbolKind) => `${kind}:${name}`
     const indexType = (s: ASTEngine.UniversalSymbol) => {
       if (!typeIndex.has(s.name)) typeIndex.set(s.name, s)
       const kk = kindKey(s.name, s.kind)
       if (!typeIndexByKind.has(kk)) typeIndexByKind.set(kk, s)
+      let arr = typesByKindPos.get(kk)
+      if (!arr) { arr = []; typesByKindPos.set(kk, arr) }
+      arr.push(s)
     }
     // Owner resolution: exact kind match first, then the legacy first-wins
     // entry (pre-ownerKind symbols and unknown kinds keep old behavior).
     const resolveOwner = (s: ASTEngine.UniversalSymbol): ASTEngine.UniversalSymbol | undefined => {
       if (s.ownerKind) {
-        const exact = typeIndexByKind.get(kindKey(s.ownerName ?? "", s.ownerKind))
-        if (exact) return exact
+        const kk = kindKey(s.ownerName ?? "", s.ownerKind)
+        const exact = typeIndexByKind.get(kk)
+        if (exact) {
+          // Only worth disambiguating when the name is genuinely declared more
+          // than once; the single-declaration case keeps the O(1) lookup.
+          const all = typesByKindPos.get(kk)
+          if (!all || all.length < 2) return exact
+          const line = s.range?.startLine ?? 0
+          for (const cand of all) {
+            const st = cand.range?.startLine ?? 0
+            const en = cand.range?.endLine ?? st
+            if (line >= st && line <= en) return cand
+          }
+          return exact
+        }
       }
       return typeIndex.get(s.ownerName ?? "")
     }
