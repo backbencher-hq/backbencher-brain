@@ -33,6 +33,35 @@ const SLOW_RUN_MS = 3 * 60 * 1000
 
 export const SUPPORT_EMAIL = "support@backbencher.cc"
 
+/**
+ * Encouragement that tracks how close the run is to finishing.
+ *
+ * The single up-front expectation ("grab a coffee") is right when it is printed
+ * and wrong for the following hour: it tells a user watching 4,000 of 8,000
+ * files that this takes a while, which is precisely when they most need to be
+ * told it is nearly done. Announced once per band, so it reads as progress
+ * rather than nagging — and so it never overwrites the live bar's own line.
+ *
+ * Bands are keyed on completion percentage, not file counts, so the wording
+ * tracks the run the user is actually watching.
+ */
+export function encouragementFor(pct: number, isBigProject: boolean): string | null {
+  if (pct >= 100) return null
+  if (pct >= 95) return "almost there — finishing up"
+  if (pct >= 80) return "in the final stretch"
+  if (pct >= 50) return "past the halfway mark"
+  if (pct >= 25) return "a quarter of the way in"
+  // Only the long-run projects get the "go away" line, and only at the start —
+  // telling a small project to grab a coffee would be absurd.
+  if (isBigProject && pct < 10) return null
+  return null
+}
+
+/** How many files a file count represents, for choosing the big-project tone. */
+export function isBigProject(totalFiles: number): boolean {
+  return totalFiles >= BIG_PROJECT_FILES
+}
+
 export interface IndexProgressStats {
   processedFiles: number
   totalFiles: number
@@ -105,6 +134,7 @@ export class IndexProgressRenderer {
   private lastNonTtyBucket = -1
   private lastLineLength = 0
   private announcedExpectation = false
+  private lastEncouragementBand = -1
 
   constructor(opts: IndexProgressOptions) {
     this.stream = opts.stream
@@ -138,6 +168,7 @@ export class IndexProgressRenderer {
       this.totalFiles = stats.totalFiles
       this.begin()
     }
+    this.maybeEncourage(stats)
     if (this.isTTY) {
       const now = Date.now()
       if (now - this.lastRenderAt < 80) return // smooth, cheap, ~12fps
@@ -146,6 +177,30 @@ export class IndexProgressRenderer {
       return
     }
     this.renderNonTtyLine(stats)
+  }
+
+  /**
+   * Print a progress milestone at most once per band. Written ABOVE the live bar
+   * so it does not fight the redraw for the same line.
+   */
+  private maybeEncourage(stats: IndexProgressStats): void {
+    const total = stats.totalFiles > 0 ? stats.totalFiles : this.totalFiles
+    if (total <= 0) return
+    const done = stats.processedFiles + (stats.skippedFiles ?? 0)
+    const pct = Math.min(100, Math.floor((done / total) * 100))
+    const line = encouragementFor(pct, isBigProject(total))
+    if (!line) return
+    // One announcement per band, identified by which band the run is in.
+    const band = pct >= 95 ? 95 : pct >= 80 ? 80 : pct >= 50 ? 50 : pct >= 25 ? 25 : 0
+    if (band === this.lastEncouragementBand) return
+    this.lastEncouragementBand = band
+    if (this.isTTY) {
+      // Clear the bar, print the note, and let the next update redraw it.
+      this.stream.write(`\r\x1b[2K  ${line}\n`)
+      this.lastLineLength = 0
+    } else {
+      this.stream.write(`[index] ${line}\n`)
+    }
   }
 
   private renderTtyLine(stats: IndexProgressStats): void {
