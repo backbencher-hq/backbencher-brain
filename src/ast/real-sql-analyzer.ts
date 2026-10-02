@@ -1904,7 +1904,14 @@ export class RealSqlAnalyzer implements ASTEngine.LanguageAnalyzer {
    */
   private processGrant(node: Node, state: ParseState, operation: "grant" | "revoke"): void {
     this.addPattern("Permissions (GRANT/REVOKE)", state)
-    const object = node.childForFieldName?.("object") ?? this.firstDescendant(node, "object_reference")
+    // The `object` FIELD was removed here rather than waived. The grammar audit
+    // validated every literal in this file against the real tree-sitter-sql wasm and
+    // reported `object` as a field no node carries, so `childForFieldName("object")`
+    // always returned undefined and the `??` fallback below carried the whole
+    // behaviour. The comment above already said the object "IS an `object_reference`",
+    // so the descendant search is what the code meant all along; the field read was a
+    // guess that cost nothing and returned nothing.
+    const object = this.firstDescendant(node, "object_reference")
     const target = object ? this.referenceLeaf(object, state) : undefined
     if (target) {
       this.addRelationship(ASTEngine.RelationshipType.References, "global", target, state, { operation, privilege: true })
