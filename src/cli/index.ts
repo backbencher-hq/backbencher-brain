@@ -335,7 +335,15 @@ async function cmdIndex(
     // assert "parsed with the worker pool (unknown)" — a claim the line had just
     // admitted it could not support. Say what is actually known instead.
     const parseMode = s.parseMode
-    if (parseMode === "in-process") {
+    // A run that parsed NOTHING did not use any parser, so claiming a parse mode
+    // is a claim about something that did not happen. `bb index` on an empty
+    // directory printed "parsed with the worker pool" — the fork probe had
+    // succeeded, so `parseMode` was set, but no file was ever handed to a
+    // worker. Same failure class as the phantom "unresolved relationships".
+    const parsedAnything = Number(s.newlyParsed ?? 0) > 0
+    if (!parsedAnything) {
+      console.log("  parsed nothing — no files needed parsing, so no parse mode was used")
+    } else if (parseMode === "in-process") {
       console.log("  parsed in-process — the worker pool was unavailable, so this run was serial and is correspondingly slower")
     } else if (parseMode === "worker-pool") {
       console.log("  parsed with the worker pool")

@@ -4591,6 +4591,7 @@ export async function indexProjectParallel(
         filesIndexed: stats.totalFiles,
         filesParsed: 0, // noop: nothing parsed this run
         symbolsIndexed: stats.symbolsExtracted,
+        relationshipsIndexed: stats.relationshipsFound,
         status: "complete",
         errors: [],
         codebaseFingerprintProjectPath: projectPath,
@@ -5048,6 +5049,7 @@ export async function indexProjectParallel(
       filesIndexed: stats.successFiles + stats.skippedFiles,
       filesParsed: stats.successFiles,
       symbolsIndexed: stats.symbolsExtracted,
+      relationshipsIndexed: stats.relationshipsFound,
       status: stats.errorFiles > 0 ? "partial" : "complete",
       errors: stats.structuredErrors,
       performanceStats: perfStats,

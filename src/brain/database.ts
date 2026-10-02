@@ -313,6 +313,11 @@ export namespace BrainDatabase {
       /** M23.P1: the indexer passes these; persisted as total_files/total_symbols. */
       filesIndexed?: number
       symbolsIndexed?: number
+      // Optional relationship total for `brain_index_status.total_relationships`.
+      // The column is NOT NULL DEFAULT 0; an absent value binds 0 on insert,
+      // while the UPDATE arm uses COALESCE so a run that did not measure it
+      // leaves the previously stored value alone.
+      relationshipsIndexed?: number
       /** M23.P1: files actually parsed this run; persisted as indexed_files. */
       filesParsed?: number
       lastIndexed?: number
@@ -371,6 +376,16 @@ export namespace BrainDatabase {
     const filesTotal = data.filesIndexed ?? data.files ?? 0
     const symbolsTotal = data.symbolsIndexed ?? data.symbols ?? 0
     const filesParsed = data.filesParsed ?? filesTotal
+    // `total_relationships` exists in the schema but was never written, so it
+    // sat at its DEFAULT 0 for every project, forever — a stored counter that
+    // was confidently wrong rather than absent. Callers that had no relationship
+    // figure pass nothing, and the column keeps its existing value rather than
+    // being reset to 0 by a run that simply did not measure it.
+    // `brain_index_status.total_relationships` is `NOT NULL DEFAULT 0`, so an absent
+    // measurement must bind 0 rather than null — but the UPDATE arm below uses
+    // COALESCE, so a run that did not measure relationships leaves whatever a
+    // previous run recorded intact instead of clobbering it back to 0.
+    const relationshipsTotal = data.relationshipsIndexed ?? 0
 
     // M23.P3: compute and persist codebase fingerprint + git identity.
     let fingerprint: string | null = null
@@ -386,14 +401,15 @@ export namespace BrainDatabase {
 
     raw
       .prepare(
-        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, indexing_errors, performance_stats, codebase_fingerprint, codebase_git, time_created, time_updated)
-         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
+        `INSERT INTO brain_index_status (project_id, indexing_version, status, last_full_index, total_files, indexed_files, total_symbols, total_relationships, indexing_errors, performance_stats, codebase_fingerprint, codebase_git, time_created, time_updated)
+         VALUES (?, 'v1.0.0', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s','now') * 1000, strftime('%s','now') * 1000)
          ON CONFLICT(project_id) DO UPDATE SET
            status = COALESCE(excluded.status, status),
            last_full_index = excluded.last_full_index,
            total_files = excluded.total_files,
            indexed_files = excluded.indexed_files,
            total_symbols = excluded.total_symbols,
+           total_relationships = COALESCE(excluded.total_relationships, total_relationships),
            indexing_errors = excluded.indexing_errors,
            performance_stats = COALESCE(excluded.performance_stats, performance_stats),
            codebase_fingerprint = COALESCE(excluded.codebase_fingerprint, codebase_fingerprint),
@@ -407,6 +423,7 @@ export namespace BrainDatabase {
         filesTotal,
         filesParsed,
         symbolsTotal,
+        relationshipsTotal,
         errorsJson,
         perfJson,
         fingerprint,
