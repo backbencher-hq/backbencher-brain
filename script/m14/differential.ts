@@ -30,6 +30,7 @@ import { execSync, spawnSync } from "child_process"
 // here in parallel.
 import { deriveTypeScriptContainsTruth } from "./oracles/typescript-contains"
 import { deriveVueContainsTruth } from "./oracles/vue-contains"
+import { deriveImportsExportsTruth, deriveExportsTruth } from "./oracles/typescript-imports-exports"
 import { PHP_BUILTINS } from "../../src/ast/real-php-analyzer"
 import { RUBY_BUILTINS, RAILS_MACRO_METHODS, isRubyStaticSuperclassName } from "../../src/ast/real-ruby-analyzer"
 import { PYTHON_BUILTINS } from "../../src/ast/real-python-analyzer"
@@ -22682,6 +22683,16 @@ async function main() {
         for (const e of deriveTypeScriptEdges(root)) {
           ;(truth as any[]).push(e)
         }
+        // `imports` and `exports` had NO truth anywhere in the instrument.
+        // `deriveTypeScriptEdges` emits calls/instantiates/uses/references, so
+        // these two labels were stored and compared against nothing: vue alone
+        // emitted 2,789 `imports` rows, every one of which could name a module
+        // that does not exist and the gate would still have read green. The
+        // module leaf is this file's basename without its extension, which is
+        // what these rows are sourced at.
+        for (const e of deriveImportsExportsTruth(root, path.basename(f, path.extname(f)))) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "javascript") {
         // M37.21 #611: wire the dedicated JS calls oracle into the plain
@@ -22691,6 +22702,25 @@ async function main() {
         // (vue-core:javascript 294 in the first gated run; per-file parity
         // was already proven on scripts/verify-commit.js).
         for (const e of deriveJavaScriptEdges(root)) {
+          ;(truth as any[]).push(e)
+        }
+        // `exports` was in this lane's audited set with nothing deriving it, so
+        // that half is wired here.
+        //
+        // `imports` is NOT, and the reason is a CONVENTION DIFFERENCE rather than
+        // a missing oracle. This lane publishes the LOCAL BINDING as the target —
+        // `import { parser as tsParser }` becomes `typescript-eslint:tsParser` —
+        // with the name the module actually declares recorded in
+        // `metadata.declaredName` for the resolver. That is deliberate and pinned
+        // by `javascript/import-edges` and `javascript/import-alias-binding`. The
+        // oracle derives the DECLARED name, because that is the name two files can
+        // join on: given `typescript-eslint:tsParser` nothing can know the export
+        // is called `parser`. So the two conventions meet on the target only when
+        // no import is aliased, and switching `imports` on here would report every
+        // aliased import as MISSING — a harness artefact dressed as a defect.
+        // Auditing it needs a target-side comparison that reads `declaredName`,
+        // which is a change to the matcher, not to this wiring.
+        for (const e of deriveExportsTruth(root, path.basename(f, path.extname(f)))) {
           ;(truth as any[]).push(e)
         }
       }
@@ -23535,7 +23565,7 @@ async function main() {
           // typescript joins the contains-audited set for the same reason java
           // and javascript did: an unaudited label cannot be caught going missing
           // even once, and its own oracle now exists.
-          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains"] : []),
+          ...(lang === "javascript" ? ["contains", "exports", "references"] : lang === "java" ? ["contains", "references"] : lang === "typescript" ? ["contains", "exports", "imports"] : []),
           // M14 (#288): html joins the uses-audited set. Its read surface is
           // the whole point of the lane — every resource a document fetches and
           // every reference it makes into its own address space is a `uses` edge

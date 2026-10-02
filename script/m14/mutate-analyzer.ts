@@ -7215,6 +7215,24 @@ export const MUTANTS: Mutant[] = [
     transform: r => ({ ...r, relationships: (r.relationships ?? []).map((x: any) => String(x.type ?? x.relationshipType) === "imports" ? { ...x, metadata: { ...(x.metadata ?? {}), evidenceClass: "usage_contextual" } } : x) }),
   },
   {
+    id: "typescript/drop-side-effect-imports",
+    language: "typescript",
+    defectClass: "relationship-loss",
+    description:
+      "The `imports` oracle found this rather than a fixture: side-effect-only imports " +
+      "(`import './style.css'`) have no import_clause, so they contributed no items and no " +
+      "edge. Measured on a 152-file element-plus draw, the oracle agreed with the analyzer on " +
+      "1,201 of 1,201 named rows and derived 12 rows the analyzer never emitted — element-plus's " +
+      "every component imports its stylesheet that way, so the style half of every component was " +
+      "absent from the graph.",
+    transform: r => ({
+      ...r,
+      relationships: (r.relationships ?? []).filter(
+        (x: any) => !(x.type === "imports" && x.metadata?.isSideEffectImport === true),
+      ),
+    }),
+  },
+  {
     id: "typescript/drop-import-edges",
     language: "typescript",
     defectClass: "relationship-loss",
