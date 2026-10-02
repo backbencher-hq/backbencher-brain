@@ -2870,6 +2870,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     classHierarchy: Map<string, string[]>,
   ): void {
+    // DEPTH FIX. `using_directive` and `extern_alias_directive` are always DIRECT children of
+    // `compilation_unit`, so "is p inside an import?" is answerable from a precomputed span table
+    // rather than by climbing to the root for every identifier. The climb was unconditional and ran
+    // to the top of the tree on files with no import at all -- the powershell corpus among others --
+    // and per-site instrumentation put `isImportName` among five predicates carrying ~96% of the
+    // ancestor-walk invocations in a deeply nested file.
+    //
+    // Span containment is equivalent to the ancestor walk: p is inside a using directive exactly
+    // when its extent falls within that directive's, and p is never itself a using directive.
+    // childCount rather than namedChildCount so an unnamed form cannot be missed.
+    const importSpans: Array<[number, number]> = []
+    {
+      const importStack: Node[] = [rootNode]
+      while (importStack.length > 0) {
+        const n = importStack.pop()!
+        if (n.type === "using_directive" || n.type === "extern_alias_directive") {
+          importSpans.push([n.startIndex, n.endIndex])
+          continue // nothing inside a using directive is itself one
+        }
+        for (let k = 0; k < n.childCount; k++) {
+          const kid = n.child(k)
+          if (kid) importStack.push(kid)
+        }
+      }
+    }
     const leafOf = (s: string): string => {
       // Last ::- or .-separated segment, skipping empties (R2 shrink-only:
       // no regex literals for what two splits express exactly).
@@ -3401,10 +3426,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Using directives and extern aliases are imports (handled by the
         // import logic) — their names never read as values.
         const isImportName = (() => {
-          let q: Node | null = p
-          while (q) {
-            if (q.type === "using_directive" || q.type === "extern_alias_directive") return true
-            q = q.parent
+          if (!p) return false
+          for (let i = 0; i < importSpans.length; i++) {
+            const sp = importSpans[i]
+            if (p.startIndex >= sp[0] && p.endIndex <= sp[1]) return true
           }
           return false
         })()

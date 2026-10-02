@@ -258,22 +258,28 @@ The rest: **`D32`** static `Class/.member` emitted `calls -> String/.toUpperCase
 
 ### Which classes are enforced, and which are still reported
 
-**Enforced** — these decide the gate's verdict. Measured across BOTH corpora, because
-promoting a class on the small corpus alone is how this file previously claimed two
-finished classes that were not:
+**Enforced** — these decide the gate's verdict, and **both gates PASS**: the
+633-file lane and metabase's 4,253. Every number below was measured on the committed
+tree on 2026-10-01.
 
 | class | small (633 files) | metabase (4,253 files) |
 |---|---|---|
 | `uses` | **100.00%** — 2,685/2,685, 0/0 | **100.00%** — 6,289/6,291, 0/0 |
-| `contains` | **100.00%** — 6,145 min / 7,762, 0 missed, 0 line-mismatch | **100.00%** — 53,097 min / 59,061, 0 missed, 0 line-mismatch |
-| `implements` | **100.00%** — 444/444, 0/0 | 99.66% — 583/583, **2 residual** |
+| `contains` | **100.00%** — 6,145 min / 7,763, 0 missed, 0 line-mismatch | **100.00%** — 53,097 min / 60,177, 0 missed, 0 line-mismatch |
+| `implements` | **100.00%** — 444/444, 0/0 | **100.00%** — 583/583, 0/0 |
 | `extends` | **100.00%** — 39/39, 0/0 | **100.00%** — 51/51, 0/0 |
 
 `contains` consistency (target-missing / line-wrong / duplicated) is 0/0/0 on both.
 
-**The metabase gate still FAILS**, on those 2 `implements` edges. That is the gate
-being correct: 633 files is 15% of the corpus, and a class that is clean on 15% of it
-is not finished.
+**Getting here took a corpus check.** Two of these were promoted to enforced on the
+633-file measurement while metabase — 15× larger — was available and failing, and the
+gate was right to fail on it throughout. The last two metabase residuals were both
+readers that treat a piece of **decoration** as part of a name: a libspec's
+`^{:clj-kondo/ignore […]}`, and a defining macro written `mu/defn`. Four separate
+readers in this codebase had the first defect. The second was the larger one — the
+analyzer was creating **no symbol at all** for `mu/defn` functions, so 1,116 functions
+that exist in the source were absent from the graph, and no residual count could see
+it: a missing symbol and a missing edge look identical in a diff.
 
 **Reported** — derived and printed with their residuals, but not yet deciding the
 verdict:
