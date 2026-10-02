@@ -17491,6 +17491,18 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   }
   const occMethods = new Map<string, Set<string>>()
   const occSigs = new Map<string, Map<string, Set<string>>>()
+  // M60/SDJ-16b: the ANALYZER numbers repeated anonymous-class names PER FILE
+  // (`anonymous_X`, `anonymous_X#2`, ...); the occurrence registry was keyed by name
+  // and registered at most ONE body per name, so numbered occurrences did not exist
+  // here and the analyzer's numbered edges had no truth row. `anonOccPublished`
+  // records the name each occurrence PUBLISHES under, because the BFS re-derives a
+  // bare name by stripping the occurrence suffix — right for a NAMED declaration,
+  // wrong for an anonymous one. NOTE this was attempted and measured NEUTRAL before
+  // SDJ-23; it works now only because signatures are finally readable, so the BFS
+  // can compare a numbered occurrence's method against its parent's instead of
+  // defaulting to compatible.
+  const anonOccCount = new Map<string, number>()
+  const anonOccPublished = new Map<string, string>()
   const occParents: { childOcc: string; childName: string; parentName: string }[] = []
   // Prototype-safe (M14.0.F13): keyed by SOURCE names (see `decls` above) — an inherited
   // function reads as a count here and turns the per-occurrence key into a string.
@@ -17528,6 +17540,30 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const p = container.namedChild(i)
       if (!p) continue
       let pt = p.childForFieldName?.("type")
+      // M60/SDJ-23: a Scala 3 `using` clause may OMIT the parameter name, and then
+      // the grammar emits no `parameter` node — the TYPE sits directly under
+      // `parameters` as a bare `type_identifier`, which has no `type` field. The
+      // branch below reads only `childForFieldName("type")`, so it found nothing,
+      // fell into `else return undefined`, and the method got NO SIGNATURE AT ALL.
+      //
+      // The consequence is not a missing edge but a silent over-claim, and it is
+      // where both remaining MISSING rows come from. With no signature, the
+      // occurrence BFS's `compat` takes its `cs && ps ? ... : true` branch and
+      // ASSUMES the pair is compatible:
+      //
+      //   Var.isBadRoot(elem: Capability)(using Context)          arity 2
+      //   CaptureSet.isBadRoot(rootLimit: Symbol | Null, elem: Capability)(using Context)
+      //                                                                        arity 3
+      //
+      // An overload paired as an override, reported as a gap the ANALYZER had. The
+      // analyzer is right and the oracle is wrong — and the reason the SDJ-15 fix
+      // (defaulting that branch to `false`) had to manufacture 428 phantom gaps is
+      // now explained: a large share of the lane's methods had no signature to
+      // compare, so refusing to pair removed all of them. This is the same defect
+      // SDJ-13 fixed on the analyzer side, in the same shape: read the bare type node.
+      if (!pt && !p.childForFieldName?.("name") && (p.type.endsWith("_type") || p.type.includes("type_identifier"))) {
+        pt = p
+      }
       // M49.K1 kotlin: this pinned wasm exposes NO named fields, so
       // childForFieldName("type") is null on every language — java/cpp get
       // their types positionally elsewhere, but kotlin `parameter` nodes
@@ -17878,30 +17914,30 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           }
         }
       }
-      // M49.S1 scala per-occurrence registration for the anonymous body —
-      // same provenance discipline as named declarations above.
-      if (lang === "scala" && !superName.includes(".")) {
-        const occKey = `${anonName}#0`
-        const ownMethods = new Set<string>()
-        const ownSigs = new Map<string, Set<string>>()
-        for (const m of membersOf(body)) {
-          if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
-          if (scalaMemberIsBarePrivate(m)) continue // #905: bare private is not inherited
-          const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
-          if (smn && smn.text !== "constructor" && smn.text !== anonName) {
-            ownMethods.add(smn.text)
-            const sig = extractSig(m)
-            if (sig) {
-              let ss = ownSigs.get(smn.text)
-              if (!ss) { ss = new Set(); ownSigs.set(smn.text, ss) }
-              ss.add(sig)
-            }
+    // M49.S1 scala per-occurrence registration for the anonymous body —
+    // same provenance discipline as named declarations above.
+    if (lang === "scala" && !superName.includes(".")) {
+      const occKey = `${anonName}#0`
+      const ownMethods = new Set<string>()
+      const ownSigs = new Map<string, Set<string>>()
+      for (const m of membersOf(body)) {
+        if (!/function_definition|function_declaration/.test(m?.type ?? "")) continue
+        if (scalaMemberIsBarePrivate(m)) continue // #905: bare private is not inherited
+        const smn = m.childForFieldName?.("name") ?? m.namedChildren.find((c: any) => c.type === "identifier")
+        if (smn && smn.text !== "constructor" && smn.text !== anonName) {
+          ownMethods.add(smn.text)
+          const sig = extractSig(m)
+          if (sig) {
+            let ss = ownSigs.get(smn.text)
+            if (!ss) { ss = new Set(); ownSigs.set(smn.text, ss) }
+            ss.add(sig)
           }
         }
-        occMethods.set(occKey, ownMethods)
-        if (ownSigs.size > 0) occSigs.set(occKey, ownSigs)
-        occParents.push({ childOcc: occKey, childName: anonName, parentName: superName })
       }
+      occMethods.set(occKey, ownMethods)
+      if (ownSigs.size > 0) occSigs.set(occKey, ownSigs)
+      occParents.push({ childOcc: occKey, childName: anonName, parentName: superName })
+    }
     }
     if (!decls[superName]) decls[superName] = { parents: [], methods: new Set(), sigs: new Map() }
     declParents.push({ child: anonName, parent: superName })
@@ -18088,6 +18124,8 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // name-based BFS would also have paired, never fabricates one.
   if (lang === "scala") {
     for (const [occKey, methods] of occMethods) {
+      // SDJ-16b: an ANONYMOUS occurrence publishes under its NUMBERED name, matching the
+      // analyzer; a NAMED declaration keeps the stripped form.
       const occName = occKey.slice(0, occKey.lastIndexOf("#"))
       const ownSigs = occSigs.get(occKey)
       for (const m of methods) {
