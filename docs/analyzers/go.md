@@ -445,6 +445,135 @@ defects), send/receive direction is invisible to the matcher, the 4 `uses` EXTRA
 shadowing is resolved by name, there is **no M60 line round for go**, and prometheus/grpc-go/etcd are
 measured but not gate-pinned.
 
+## Round 7 (part 2): the M60 line round, and the sources that resolve
+
+### M60 line round — three instruments, three different questions
+
+M60's root-cause question is not "is this line right" but **"does this row have a line at all"**.
+cpp #870 was a single `line_number: 0` in a whole 21-language sweep, caught only because that
+analyzer emitted no line on *any* row. Nothing of the kind existed for go.
+
+| instrument | question | result |
+|---|---|---|
+| `go-round7-line-census.ts` | PRESENCE, full extent, per (label, marker); zeros / negatives / past-EOF counted separately | **126,738 go-tools and 127,625 prometheus edges, every one carrying a line.** 0 missing, 0 zero, 0 negative, 0 past EOF — **M59.O3 holds** |
+| `go-round7-line-conventions.ts` | the CONVENTION: 14 cases, 21 pinned sites, each naming the alternative site it must not report | 14/14, with negative controls |
+| `go/line-conventions-2` | the four constructs `callsite-lines-825` never covered, with forbid rows | pinned |
+
+The conventions probe reads its expected line **out of the source** via a `// @line:` marker rather
+than hand-counting, so it cannot be wrong by an off-by-one — and `build()` now refuses to return a
+case that pinned nothing, because the first run reported 14/14 ok with **0 pinned sites on every case**
+(the marker regex was anchored at `^\s*//` while markers trail real code). A probe that cannot fail
+reported green.
+
+Negative controls: reporting the **receiver** line for a selector use fails exactly one case;
+shifting an import to the `import (` declaration line fails exactly one case.
+
+The four constructs newly pinned: `return_type` (the result type's line, two below `func produce() (`),
+`instantiates` (a generic *call* instantiates the function at the callee line; a composite literal
+instantiates the *type* at the literal's line — two targets in one body), `identifier_usage` (the
+identifier's own line, the first line of a wrapped expression), and `go_channel_operation` (the
+statement's line, send and receive as separate rows sharing a target, plus the file-scope `global`).
+
+### Every relationship's source must name something — the resolution census
+
+The differential matches `label + normTarget(target)` and reads **no source**, so an edge whose source
+is a pseudo-source is indistinguishable from a good one. Three defects this session were all exactly
+that, and none of them the differential could see. `go-round7-dangling-sources.ts` makes it measurable.
+
+| | before | after GOD11 + GOD12 |
+|---|---:|---:|
+| edges | 716,968 | 720,663 |
+| `global`-sourced | 6,723 (0.94%) | **2,184 (0.303%)** |
+
+**GOD11** — a package-scope `var named Store` attributed to `global`, and *losing* rows rather than
+only mis-sourcing them: `emitted` is keyed `source|target|relType`, so six declarations sharing a type
+collapsed into the first one's row. Now each attributes to the name it declares, one edge per name.
+Function-local is unchanged (LocalsAreNotSymbols); the **blank identifier is excluded** — my first cut
+produced 713 `references _ -> Code` rows, still unresolvable, merely renamed.
+
+**GOD12** — work inside a package-scope initializer (`var re = regexp.MustCompile(...)`,
+`var api = Client{Timeout: ...}`) attributed to `global`, across `calls`, `uses` and `instantiates`.
+One `resolveGoWorkSource` helper now answers for all three; the package-scope call emitter's `source`
+was hardcoded to `global` and its dedupe key was the bare leaf, so two initializers calling the same
+leaf collapsed. +3,695 edges recovered, which is the lost-row half of the class.
+
+Both fixes **regressed something on the way in and both were caught by existing pins**:
+GOD11's blank-identifier change, and GOD12's first cut which `break`ed instead of continuing the walk
+and so answered `global` for every function-local `var x = T{}` — breaking
+`go/relationship-and-payloads` and the new conventions case in the same run.
+
+**Two classes ruled rather than fixed**, and one instrument corrected:
+
+- **GO43** — 1,203 `contains` edges whose owner is an **untyped receiver** (`func (s) M()`). A receiver
+  is a parameter, so it names no node; every available answer trades a dangling source against a lost
+  membership, so it is declared with a count rather than chosen silently.
+- **GO44** — the census first reported 3,167 "dangling" sources, but the largest class was
+  `contains ModuleInstance -> Action` where the type is declared in a **sibling file of the same
+  package**. That is correct in a package-scoped language: the *instrument* was wrong, and it
+  manufactured 2,439 phantom defects on terraform alone. An instrument that invents a thousand
+  phantoms gets ignored — and then the real six thousand go unread.
+- **GO45** — the 2,184 that remain, broken down per label, with the 947 `references` explained as
+  blank-named declarations that genuinely have no name.
+
+## Round 8 (2026-09-29): the master review, and what the checklist found
+
+`reviews/go/master-review-v2.md` supersedes `master-review.md` — the first review, written when the
+lane measured five labels, and seven review rounds out of date. This round re-ran the whole checklist.
+**Four of its eight items were dirty or unguarded on arrival**, which is the reason to run one rather
+than declare victory.
+
+### The checklist
+
+| item | verdict |
+|---|---|
+| All relationship types covered | **8 of 8 emitted**, `overrides` ruled out (GO41) — enforced by `verify-go-lane-coverage.ts` |
+| All relationship types explained | yes, per label and per marker, in the review §3 |
+| 100% coverage output | yes on the gated sample (4 consecutive draws, 0 MISSING, 0 unexplained); the full-extent figures are in the review §4 |
+| No unknown symbols | **0 at full extent** — 1,931/1,931 files, 27,572 symbols, 0 throwOnParse / unknownKind / badName / memberWithoutOwner |
+| No regex, pure AST | **0**, now enforced by a character-level scan with string/template/comment state |
+| M60 line numbers | **478,436 edges, every one carrying a line**; 0 no-line / 0 zero / 0 negative / 0 past-EOF. M59.O3 holds |
+| Perf | **no measurable cost** — ratio 1.0066, ms-per-1k-nodes 51.455 → 50.106 |
+| Docs | this file + the review |
+
+**Not claimed, because not true:** the F5 100% is a **rotating** 200-file draw, not a full-extent read.
+1,203 `contains` edges name an owner the grammar cannot resolve (GO-GAP-3). And the lane's measurement
+had been **deleted four times** with a green gate every time.
+
+### What the checklist turned up
+
+**The regex ban was true and unenforced.** It is enforced now — after three wrong detection patterns,
+each caught by a negative control rather than by reading the code.
+
+**Lines had never been audited.** Round 6 proved a target is *written on* a line; nothing proved every
+row *has* one, and nothing could choose between two plausible sites. Both questions now have
+instruments, and the answer is clean — but it was clean by luck.
+
+**Two latent `ReferenceError`s** sat in the round-6 oracle: a typo (`goEmbeddedFieldLeaf` for
+`goEmbeddedLeaf`) and an undefined **regex** (`GO_PLAIN_IDENTIFIER`, in a lane that forbids one).
+Either throws the moment the branch runs, and the branch is reached only by an embedded field — so
+whether it fired was a property of which 200 files the rotating draw picked.
+
+**GOD13 and GOD15** closed 1,949 rows of defect the differential structurally cannot see, because it
+matches `label + normTarget(target)` and reads **no source**. In every case the **analyzer was right**
+and the oracle was loose.
+
+### Declared, not fixed
+
+- **GO-GAP-3 (1,203 edges)** — `func (T) NoName()` and `func (s) Untyped()` produce **identical trees**;
+  the grammar cannot tell a receiver written without a name from a receiver with no type. The only
+  discriminator would delete 1,251 *correct* sibling-file edges to fix 1,203 edges in non-compiling
+  files. A fix was written and **reverted** because its predicate never fired.
+- **GO45 (2,184 edges)** — ruled **correct**: the residue is the compile-time assertion idiom
+  `var _ Preempter = PreempterFunc(nil)`, where the declaration deliberately has no name. Attributing
+  to `_` was tried and is worse — `_` can never be resolved by anything.
+
+### Instrument bugs worth recording
+
+Every one was caught by a control, not by inspection: a probe reporting **14/14 ok with 0 pinned
+sites**; a duplicate detector reporting **5,703 phantoms** because its key omitted the file; a mutant
+that matched `import (` **inside its own fixture's comment** and survived; and the coverage gate
+finding four bugs in itself, including **three** successive wrong regex patterns.
+
 ## Evidence pointers
 
 - Fixtures: `validation/m14/fixtures/go/`

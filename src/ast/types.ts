@@ -42,6 +42,15 @@ export enum SymbolKind {
   // semantic fidelity (they're distinct language constructs, not classes).
   Mixin = "mixin",
   Extension = "extension",
+  /**
+   * Additive from the remote lane, which added `Instance` to `engine.SymbolKind` on
+   * 2026-10-31. The two enums are duplicated declarations of one concept and tsc
+   * compares them structurally, so a member present in one and absent from the other
+   * makes every `UniversalSymbol` unassignable across the boundary — which is how
+   * the merge surfaced it, in `real-typescript-analyzer` and `real-haskell-analyzer`,
+   * as errors in files that neither side had touched in this merge.
+   */
+  Instance = "instance",
 }
 
 // ============================================================================

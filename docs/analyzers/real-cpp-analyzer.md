@@ -56,6 +56,7 @@ BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
 
 Every class states the CONTRACT it breaks, and asserts on what the analyzer
 **publishes** — not on a tree shape, because a shape can be present and correctly
+handled. Eight gated classes, all at **0**:
 handled. Seven gated classes, all at **0**:
 
 | class | the contract | was | now |
@@ -67,6 +68,7 @@ handled. Seven gated classes, all at **0**:
 | **D5** | C++ has no nested function definition, so a `function_definition` inside a body is a local direct-initialization | 792 | **0** |
 | **D6** | the analyzer's own source uses a regex, while this doc claimed zero | 2 | **0** |
 | **D7** | a specifier's name arrives as a `qualified_identifier`, so the class publishes as `anonymous` | 48 | **0** |
+| **D8** | a trailing annotation macro decorates the declaration before it and declares nothing; the grammar recovers it as a second `function_definition` whose BODY is the real declaration's, so publishing it invents a member AND misattributes the body's reads to a macro. A test-macro `TEST(Suite, Name) { body }` heading is the opposite case and is **not** this defect | 20 | **0** |
 
 Issues: [#957](https://github.com/backbencher-hq/backbencher-brain/issues/957) (D1),
 [#958](https://github.com/backbencher-hq/backbencher-brain/issues/958) (D2),
@@ -173,6 +175,60 @@ worth more than the two cells. The remaining dead cells are correct, including `
 populated, rather than assumed). The matrix is a shared artifact and re-pointing its
 needles is another lane's call; measured key sets for this lane are recorded in
 `reviews/cpp/m60-payload-2026-09-29.md`.
+
+## D8 — a trailing annotation is not a declaration
+
+A thread-safety annotation written after a parameter list decorates the declaration in
+front of it and declares nothing:
+
+```cpp
+virtual int current_value(Widget& w) const GTEST_LOCK_EXCLUDED_(mutex_) {
+  ++reads_;
+  return w.value();
+}
+```
+
+The grammar ends the declaration at the `)` and recovers a **second**
+`function_definition` whose declarator is the annotation and whose **body is the real
+method's**. The analyzer published that as a member — measured as
+`GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom: "macro-heading"`, 20 sites in one
+bundled gmock file, 424 macro-named symbols over 13,753 files — and attributed the real
+body's reads to the macro.
+
+The suppression has **two halves**, and the second is the one that is not obvious from
+the symbol set: the stolen body is a separate `compound_statement` node and reaches the
+macro-declared-body branch on its own, so even with the phantom symbol gone, every read
+in the real method's body was still owned by a macro. Both are suppressed; the body's
+statements are then walked with the enclosing owner, which is worse than the real
+method but strictly better than a macro.
+
+**Four rules were written for the discriminator and three were wrong.** That is the
+useful part of this section, because each failure deleted real symbols:
+
+| rule | why it failed |
+|---|---|
+| the annotation's parameters are typeless | its argument is an *expression* — `internal::g_gmock_mutex` is spelled exactly like a parameter that has a type |
+| the body is empty | it is not; the node **carries** the real body |
+| the previous named sibling is a `declaration` | `prevNamedSibling` is `null` throughout this grammar, and by index a real `TEST` that follows a function declaration looks identical — **this deleted every gtest heading** |
+| skip comments while scanning backwards | the scan meets the comment's **text** before its `//`, so a comment ending in a letter read as a continuation — **this deleted 20 headings in one file** |
+
+What holds: the character before the macro, ignoring whitespace, is the end of a
+parameter list or a declarator suffix (`)` `&` `>` `*`), or the tail of a trailing
+keyword (`const`, `noexcept`, …) — and **no comment intervenes**. `TEST` is itself
+spelled in all caps, so no rule that asks only "is the name a macro" can separate the
+two families; only the position can.
+
+Gated by `cpp/m60-annotation-macro` and three mutants. The third mutant is a
+**control** — `cpp/d8-test-heading-deleted` — because a gate that only ever runs in the
+under-firing direction proves nothing about the direction that costs symbols.
+
+**The differential cannot see any of this.** `fmt:cpp` and `nlohmann-json:cpp` return
+byte-identical hashes before and after the fix (`e8c749775f13e5e9`, `423635986f0058f9`),
+because the affected files are not in the 60-file draws. That is the same both-sides
+blind spot as CP1: the oracle is written from the same reading of the same grammar and
+never asks whether a symbol's name is a declaration's name at all. The complement
+question is what found it — `script/cpp-review/macro-name-census.ts`, which asks of
+every published name whether it is a declaration's name *and* not a macro's.
 
 ## Symbol contract
 
@@ -289,6 +345,24 @@ self-agreeing `uses num_bits` survived a year of gates. The same is true of
 
 - The pinned grammar cannot parse some real C++. Two measured populations, kept
   apart because one is the analyzer's business and one is not:
+  - **R1 (reported, not gated): 23 of the corpus's class bodies have a grammar node
+    that ends before the source's own brace balance does.** This figure was
+    **715 until it was measured rather than trusted**, and the correction is the
+    useful part: the old check had two defects that both INFLATED it. It asked
+    body-less nodes too, and **891 of the corpus's 4,261 `class`/`struct`/`union`
+    nodes are FORWARD DECLARATIONS** — `class Message;` — which tree-sitter
+    correctly gives a `class_specifier` with no body, so the next unrelated `{ … }`
+    later in the file answered "your brace balance ends later than you do". Six
+    consecutive lines of gtest's own `// Forward declarations.` banner became six
+    "truncations" of 1,200+ rows each. And its source-side scanner counted braces
+    inside strings and comments. A truncation is a body that ENDS EARLY; it cannot
+    be a body that was never there. The worst REAL case is
+    `nlohmann-json/single_include/nlohmann/json.hpp`: `class basic_json` spans
+    source rows **128..6408** and its `class_specifier` covers **128..716**, so
+    **5,692 rows — 91% of the class — are walked outside the class node** (224,879
+    characters). Note the old artifact recorded that as `linesOutside: 224879`, a
+    CHARACTER delta in a field named for lines. The analyzer cannot invent a class
+    node the grammar did not produce, so this is
   - **R1 (reported, not gated): 715 of the corpus's classes have a grammar node
     that ends before the source's own brace balance does.** The worst case is
     `nlohmann-json/include/nlohmann/json.hpp`: `class basic_json` spans source
@@ -445,6 +519,8 @@ lookups on a 123-entry set. No O(n²) or per-symbol O(n) scans.
 
 ## Open, and why
 
+- **R1 (23 truncated class bodies)** is a grammar limitation, not an analyzer
+  defect. It was 715 until the check itself was measured — see the defect gate.
 - **R1 (715 truncated classes)** is a grammar limitation, not an analyzer defect.
   It is reported with its number on every register run. Closing it means a newer
   tree-sitter-cpp, not more analyzer code — and the analyzer-side amplification

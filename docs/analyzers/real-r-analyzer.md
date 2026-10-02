@@ -494,6 +494,30 @@ its import paths rewritten so the snapshot loads, and the commit printed in the 
 baseline that fails to load aborts the run, because a baseline that silently analyzes zero
 files reports "nothing was removed" — the most flattering possible false result.
 
+## The repo's own M60 gate covers this lane
+
+`script/m14/differential.ts` had no `LANGS.r`, so `bun script/m60/lane-surface-audit.ts
+--lang r` exited `2 — unknown language r`: the repository's own line-number and
+name-surface audit had **never looked at R**, and this lane had verified the same property
+with its own harness instead.
+
+R is registered now (`LANG_REPOS.r = "ggplot2"`, the largest R holding in `CORPUS_ROOT`).
+On the full 357-file corpus the repo's tool reports **0** for every row it measures:
+
+| row | value |
+|---|---|
+| files / edges / symbols | 357 · 10,093 · 3,965 |
+| relationships with no line | **0** |
+| relationships with line 0 | **0** |
+| relationships missing a seam key | **0** |
+| names not a name / not in source | **0** |
+| ghost targets | **0** |
+| parse errors | **0** |
+
+This is the same conclusion the R-positions oracle reaches by a stronger route — R's own
+lexer rather than a text search — and the agreement matters, because it is the first check
+of R by something this lane did not write.
+
 ## The red-team pass
 
 `reviews/r/adversarial-2026-09-28.md` is the full record. The short version: the

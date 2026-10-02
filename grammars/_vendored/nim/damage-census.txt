@@ -1,0 +1,90 @@
+sites=131 classes=30
+
+  26  other: source_file
+        nim/compiler/vtables.nim:119 | g.addDispatchers genIfDispatcher(g, g.methods[bucket].methods, r
+        nim/compiler/vtables.nim:156 | itemTable[obj.bindingId][mIndex] = g.methods[bucket].methods[idx
+        nim/nimsuggest/tests/t20265_1.nim:8 | y.#[!]#
+  24  other: dot_expression
+        nimble/tests/filepathrequires/nim-results/tests/test_results.nim:386 | doAssert vOk
+        nimble/tests/filepathrequires/nim-results/tests/test_results.nim:390 | )
+        nimble/tests/filepathrequires/nim-results/tests/test_results.nim:393 | vOk
+  13  other: statement_list
+        nim/nimsuggest/tests/tcase.nim:7 | case a
+        nim/nimsuggest/tests/tdot2.nim:13 | f.#[!]#
+        nim/nimsuggest/tests/tdot3.nim:6 | f.#[!]#
+   8  leadingDotChain (multi-line method chain)
+        nimble/tests/filepathrequires/nim-results/tests/test_results.nim:419 | .error() == 10
+        nimble/tests/filepathrequires/nim-results/tests/test_results.nim:572 | .isErr()
+        torrentinim/src/crawlers/leetx.nim:58 | .innerText
+   7  dollarInString (compile-time concat marker in a literal)
+        nim/lib/std/private/osappdirs.nim:28 | proc getDataDir*(): string {.rtl, extern: "nos$1"
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:40 | <h1>${$!username}'s timeline</h1>
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:46 | <input type="hidden" name="username" value="${$!username}">
+   7  other: generic_parameter_list
+        nim/tests/cpp/tcovariancerules.nim:303 | MyPtr[out T] {.importcpp: "'0 *"}  = object
+        nim/tests/cpp/tcovariancerules.nim:305 | MySeq[out T] {.importcpp: "ARR<'0>", nodecl}  = object
+        nim/tests/cpp/tcovariancerules.nim:308 | MyAction[in T] {.importcpp: "FN<'0>::type"}  = object
+   5  other: proc_declaration
+        nim/nimsuggest/tests/tdef1.nim:11 | proc hel#[!]#lo(): string =
+        nim/nimsuggest/tests/tv3_forward_definition.nim:1 | proc de#[!]#mo(): int
+        nim/nimsuggest/tests/tv3_forward_definition.nim:3 | proc de#[!]#mo(): int = 5
+   5  other: call
+        nim/tests/macros/mparsefile.nim:4 | let d = 4
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:15 | <link rel="stylesheet" type="text/css" href="style.css">
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:47 | <input type="submit" value="Tweet">
+   5  other: infix_expression
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:29 | <span class="small">Please type in your username...</span>
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:42 | <div id="newMessage">
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:44 | <form action="createMessage" method="post">
+   3  other: assignment
+        nim/nimsuggest/tests/tchk1.nim:12 | template foo() =
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:27 | <div id="login">
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/general.nim:31 | <input type="text" name="username">
+   3  other: type_declaration
+        nim/nimsuggest/tests/ttype_decl.nim:12 | OldOne {.deprecated.} = object
+        nim/tests/package_level_objects/tusefoo.nim:6 | mypackage.Foo = object
+        nim/tests/package_level_objects/tusefoo2.nim:8 | mypackage.Foo = object
+   3  other: tuple_construction
+        nim/tests/misc/m15316.nim:1 | proc foo = (if)
+        nim/tests/template/tdefaultparam.nim:20 | template test(body: untyped, alt: untyped = (;), maxTries = 3): 
+        nim/tests/template/tdefaultparam.nim:42 | template test(body: untyped, alt: typed = (;), maxTries = 3): un
+   3  other: of_branch
+        nim/tests/parser/t20922.nim:26 | of: '+':
+        nim/tests/parser/t20922.nim:34 | of: x: int
+        nim/tests/parser/tparsenewcaseobject.nim:77 | of Value:
+   2  other: ERROR
+        nim/tests/niminaction/Chapter7/Tweeter/src/views/user.nim:20 | <form action="follow" method="post">
+        nim/tests/parser/tparsenewcaseobject.nim:80 | case {.size: 1.}
+   2  other: variable_declaration
+        nim/tests/system/tfields.nim:87 | let f.foo = 38
+        nim/tests/system/tfields.nim:88 | let f.other = "string here"
+   1  inlineIfStatement (single-line `if cond: stmt`)
+        nim/compiler/semobjconstr.nim:552 | if hasError: result = errorNode(c, result)
+   1  nestedBracketGenerics (f[A, seq[B]])
+        nim/compiler/vtables.nim:122 | var itemTable = initTable[ItemId, seq[PSym]]()
+   1  bracketGenerics (single arg)
+        nim/compiler/vtables.nim:123 | var rootTypeSeq = newSeq[ItemId]()
+   1  other: let_section
+        nim/nimsuggest/tests/tdef_let.nim:7 | let int#[!]#Var = 10
+   1  other: if
+        nim/nimsuggest/tests/tdot1.nim:14 | if f.#[!]#:
+   1  other: type_section
+        nim/nimsuggest/tests/tv3_typeDefinition.nim:11 | Fo#[!]#o2* = ref object of RootObj
+   1  other: field_declaration_list
+        nim/tests/errmsgs/t10734.nim:18 | a:
+   1  other: iterator_declaration
+        nim/tests/lexer/titerwrongexport.nim:3 | iterator items[T]*(s: seq[T]): T = #[tt.Error
+   1  other: import_statement
+        nim/tests/lexer/tmissingnl.nim:7 | import strutils let s: seq[int] = @[0, 1, 2, 3, 4, 5, 6]
+   1  other: const_section
+        nim/tests/lexer/trawstr.nim:10 | yyy = "This not\" #ERROR
+   1  other: try
+        nim/tests/parser/tinvcolonlocation3.nim:7 | try:
+   1  other: elif_branch
+        nim/tests/parser/tinvifstmt.nim:9 | elif:
+   1  other: symbol_declaration_list
+        nim/tests/parser/tparsenewcaseobject.nim:75 | of AddOpr, SubOpr, MulOpr, DivOpr:
+   1  other: enum_declaration
+        nim/tests/parser/twhen_in_enum.nim:9 | when defined(macosx): NUM_OSX = 10 # only this differs for real
+   1  other: field_declaration
+        nim/tests/proc/tfunc_type.nim:8 | fn: func(a: int): int

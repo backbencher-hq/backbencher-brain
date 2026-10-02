@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M13",
+  "issue": "M64",
+  "code": "H64e",
+  "tool": "bb_health",
+  "title": "bb_health over the wire: the five additions reachable by an agent, and the schema that guides it",
+  "verifiedState": "verified",
+  "layers": [
+    "integration",
+    "wire"
+  ],
+  "checks": [
+    {
+      "name": "the MCP server starts and completes the handshake over stdio",
+      "pass": true,
+      "detail": "runtime v26.3.0"
+    },
+    {
+      "name": "bb_health is advertised",
+      "pass": true,
+      "detail": "tools: bb_search,bb_ask,bb_health,bb_patterns,bb_security,bb_visualize,bb_migrate,bb_analyze,bb_doc,bb_edit,bb_index,bb_graph,bb_impact,bb_cross_language,bb_annotate,bb_annotations"
+    },
+    {
+      "name": "the schema advertises `paths`",
+      "pass": true,
+      "detail": "an option the schema omits cannot be passed by an agent; declared options: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, includeAnalysisRuns, paths, checkUnindexed"
+    },
+    {
+      "name": "the schema advertises `checkUnindexed`",
+      "pass": true,
+      "detail": "an option the schema omits cannot be passed by an agent; declared options: verbose, history, limit, refresh, force, wait, freshness, sampleSize, integrity, includeAnalysisRuns, paths, checkUnindexed"
+    },
+    {
+      "name": "the paths description names the `fresh` state",
+      "pass": true,
+      "detail": "an agent cannot distinguish five states from a description that names 753 chars"
+    },
+    {
+      "name": "the paths description names the `stale` state",
+      "pass": true,
+      "detail": "an agent cannot distinguish five states from a description that names 753 chars"
+    },
+    {
+      "name": "the paths description names the `gone` state",
+      "pass": true,
+      "detail": "an agent cannot distinguish five states from a description that names 753 chars"
+    },
+    {
+      "name": "the paths description names the `not-indexed` state",
+      "pass": true,
+      "detail": "an agent cannot distinguish five states from a description that names 753 chars"
+    },
+    {
+      "name": "the paths description names the `absent` state",
+      "pass": true,
+      "detail": "an agent cannot distinguish five states from a description that names 753 chars"
+    },
+    {
+      "name": "and states that the rest of the report is NOT scoped [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "without this the agent merges a 3-file verdict with files=1654"
+    },
+    {
+      "name": "and says a refused path is not a clean one [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "checkUnindexed says absence is not completeness [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "otherwise an agent reads a missing key as 'everything is indexed'"
+    },
+    {
+      "name": "the scoped call is not an error",
+      "pass": true,
+      "detail": "SCOPED ANSWER for 5 path(s) you named — everything below this block is PROJECT-WIDE:\n  fresh        src/f1.ts — 1 symbol"
+    },
+    {
+      "name": "the agent sees the scoped block FIRST",
+      "pass": true,
+      "detail": "SCOPED ANSWER for 5 path(s) you named — everything below this block is PROJECT-WIDE:"
+    },
+    {
+      "name": "and is told everything after it is project-wide",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "fresh      -> src/f1.ts",
+      "pass": true,
+      "detail": "got fresh"
+    },
+    {
+      "name": "stale      -> src/f0.ts",
+      "pass": true,
+      "detail": "got stale"
+    },
+    {
+      "name": "gone       -> src/doomed.ts",
+      "pass": true,
+      "detail": "got gone"
+    },
+    {
+      "name": "not-indexed -> src/brand-new.ts, NEVER 'fresh'",
+      "pass": true,
+      "detail": "got not-indexed — over the wire, this is the fabrication the whole design exists to prevent"
+    },
+    {
+      "name": "absent     -> src/never-existed.ts, not 'not-indexed'",
+      "pass": true,
+      "detail": "got absent"
+    },
+    {
+      "name": "every requested path has a row — no silent omission",
+      "pass": true,
+      "detail": "asked 5, rows found 5"
+    },
+    {
+      "name": "the not-indexed row explains itself in the text",
+      "pass": true,
+      "detail": "a bare state word is a label; the agent needs the reason to act"
+    },
+    {
+      "name": "an empty list is REFUSED with isError and the rule named",
+      "pass": true,
+      "detail": "error: bb_health paths must name at least one file — an empty list would check nothing while looking like a co"
+    },
+    {
+      "name": "a duplicate is REFUSED with isError and the rule named",
+      "pass": true,
+      "detail": "error: bb_health paths contains duplicate entries: src/f1.ts — each file is checked once, and a duplicate woul"
+    },
+    {
+      "name": "a blank entry is REFUSED with isError and the rule named",
+      "pass": true,
+      "detail": "error: bb_health paths entries must be non-empty strings"
+    },
+    {
+      "name": "a bare string is REFUSED with isError and the rule named",
+      "pass": true,
+      "detail": "error: bb_health: paths must be array"
+    },
+    {
+      "name": "more than 50 is REFUSED with isError and the rule named",
+      "pass": true,
+      "detail": "error: bb_health paths accepts at most 50 files (got 51) — for a whole-project census use freshness=\"complete\""
+    },
+    {
+      "name": "a path escaping the project is REFUSED, not answered",
+      "pass": true,
+      "detail": "  REFUSED (not checked): ../outside.ts — path escapes project root: ../outside.ts; /etc/hosts — path escapes p"
+    },
+    {
+      "name": "and never appears as fresh [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "a refused path is not a clean one"
+    },
+    {
+      "name": "the refusal is an error the agent cannot miss",
+      "pass": true,
+      "detail": "isError=false"
+    },
+    {
+      "name": "the project report still reports project counts",
+      "pass": true,
+      "detail": "files=5 symbols=5 relationships=5 imports=0 syntaxErrors=0"
+    },
+    {
+      "name": "and `paths` does not change that count",
+      "pass": true,
+      "detail": "project=5 scoped=5 — a scoped answer that moved the project number is a mixed-scope report"
+    },
+    {
+      "name": "the default report makes no scoped claim [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": ""
+    },
+    {
+      "name": "and no completeness claim without checkUnindexed [negative]",
+      "pass": true,
+      "negative": true,
+      "detail": "an unrun walk must not read as 'everything is indexed'"
+    },
+    {
+      "name": "checkUnindexed answers with a measured line",
+      "pass": true,
+      "detail": "unindexed: 1 file(s) on disk that the indexer would index are NOT in the index (5 eligible on disk, 5 indexed)"
+    },
+    {
+      "name": "and it NAMES the file the indexer would index but does not have",
+      "pass": true,
+      "detail": "unindexed: 1 file(s) on disk that the indexer would index are NOT in the index (5 eligible on disk, 5 indexed) — e.g. src/brand-ne"
+    },
+    {
+      "name": "and states the population it measured over",
+      "pass": true,
+      "detail": "a count without its population cannot be over-read correctly"
+    },
+    {
+      "name": "both options compose without either being dropped",
+      "pass": true,
+      "detail": "scoped block present=true, project line present=true"
+    },
+    {
+      "name": "the tool RESULT carries a boolean `healthy` for the agent to branch on",
+      "pass": true,
+      "detail": "res.healthy=true — a client reads this field, not the prose"
+    },
+    {
+      "name": "and it is true for a clean index",
+      "pass": true,
+      "detail": "healthy=true"
+    },
+    {
+      "name": "the call reports its own cost",
+      "pass": true,
+      "detail": "this call: total=5ms (freshness=1ms aggregates=1ms)"
+    },
+    {
+      "name": "the freshness reasons reach the wire",
+      "pass": true,
+      "detail": "three conditions with three fixes, or one useless number"
+    }
+  ],
+  "negativeCases": 6,
+  "summary": {
+    "total": 42,
+    "passed": 42,
+    "failed": 0
+  },
+  "decisions": {
+    "why": "the eight existing gates call the provider directly, so they cannot see the registry schema, the validation function, or the handler argument map — where two real defects lived",
+    "surface": "the text block the agent READS, not the internal report shape",
+    "schema": "asserted as a first-class contract, because for an MCP client inputSchema is the only documentation channel there is",
+    "runtime": "bun-only, because src/mcp/server.ts self-starts behind import.meta.main"
+  },
+  "limitations": [
+    "This gate needs a spawned stdio server, so it is slower and heavier than the other eight. It is a wire gate by construction and cannot be made into a unit test without ceasing to test the wire.",
+    "It exercises the SOURCE tree (bun src/mcp/server.ts), not the compiled dist bundle. A stale dist would therefore not be caught here; the bundle is a separate build artifact and is verified by its own build step."
+  ],
+  "generatedAt": "2026-10-01T08:17:35.593Z",
+  "bbSeal": {
+    "alg": "sha256",
+    "sealedAt": "2026-10-01T08:17:39.792Z",
+    "contentSha256": "ab9afaad8a53e157d12f1026cdefac0d9e057b75231ae5fa7eaca55c84601165"
+  }
+}

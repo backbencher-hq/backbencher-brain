@@ -147,9 +147,46 @@ async function main(): Promise<void> {
 
   // The honest-state guard: a value that is not derived must be ABSENT, and the
   // pipeline must not turn an absent value into a 0 or an 85.
+  //
+  // The second half of that used to be written as
+  //
+  //     check("the pipeline does not synthesise a metadata block that was never mapped",
+  //       Object.keys(pipedMeta).length === 0, ...)
+  //
+  // and it was GREEN for three days while asserting NOTHING. `pool-worker` did not
+  // forward `metadata` at all when that check was written (5b3eb44d8; the forwarding
+  // arrived later in a3f29f72d, for an unrelated O(n^2)), so `parseFile(...).metadata`
+  // was `undefined`, `Object.keys({}).length` was `0`, and the check passed by having
+  // nothing to look at. It then started failing the moment metadata began flowing —
+  // not because a new lie appeared, but because a check that had never run started
+  // running. A green gate that measures nothing is worse than no gate, because it is
+  // cited as evidence.
+  //
+  // The invariant it was reaching for is expressible, and it is the stronger one:
+  // every key the pipeline publishes must be either a key the ANALYZER produced or
+  // one of the three structural keys `engine.ts` adds for every language. Anything
+  // else is a key the pipeline invented.
+  //
+  // Written this way it is not hypothetical. It catches the real contamination that
+  // the html (#288) and toml lanes introduced: `engine.ts` grew eight scored-metadata
+  // mappings as plain assignments, and justified them with "reads `undefined` for
+  // every other language, which is identical to the key being absent". It is not
+  // identical — `"k" in metadata` and `Object.keys()` both see an `undefined` key — so
+  // every language on earth was publishing `documentMetrics`, `elementCount`,
+  // `accessibilityScore`, `score` and four more. The eight are html's and toml's
+  // fields arriving in a Lua file's metadata.
   const pipedMeta = (innocent.metadata ?? {}) as any
+  const producedByAnalyzer = new Set(Object.keys(direct.metadata ?? {}))
+  // These three are `??`-defaulted in engine.ts for every language, so they are
+  // present by construction rather than by synthesis. Listed, not waved through:
+  // a fourth `??` default added later must fail here, which is the point.
+  const STRUCTURAL = new Set(["hasTypeInference", "hasFrameworkIntelligence", "analysisVersion"])
+  const synthesised = Object.keys(pipedMeta).filter((k) => !producedByAnalyzer.has(k) && !STRUCTURAL.has(k))
   check("the pipeline does not synthesise a metadata block that was never mapped",
-    Object.keys(pipedMeta).length === 0, `pipeline metadata keys: ${Object.keys(pipedMeta).join(",") || "none"}`)
+    synthesised.length === 0,
+    synthesised.length
+      ? `pipeline published ${synthesised.length} key(s) the analyzer never produced: ${synthesised.join(", ")}`
+      : `all ${Object.keys(pipedMeta).length} pipeline keys are the analyzer's own or structural`)
 
   // ── mutants ────────────────────────────────────────────────────────────────
   console.log("\nM: planted regressions (the gate must fail on each)")

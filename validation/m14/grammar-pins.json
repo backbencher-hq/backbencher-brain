@@ -1136,19 +1136,19 @@
     "cpp": {
       "wired": {
         "file": "wasm/tree-sitter-cpp.wasm",
-        "sha256": "5a1b78bef9cf2f9c6962e80e631cfe5137be7222acf0aaceec35c3de39a18ae2",
-        "bytes": 3552974
+        "sha256": "0821b6f64ea5444e8c79d1f4362b1a19d3e9ba5b406a8c371082454d81a71a6b",
+        "bytes": 3520521
       },
       "surface": {
-        "ids": 547,
-        "uniqueNames": 493,
-        "namedIds": 259,
-        "namedUnique": 209,
+        "ids": 548,
+        "uniqueNames": 494,
+        "namedIds": 260,
+        "namedUnique": 210,
         "anonIds": 288,
         "anonUnique": 286,
         "fieldCount": 50,
-        "idOrderDigest": "80ef2ddffc0856378ea5fae4245a08af7c9c01d84c613513ef4073549d242171",
-        "typeSetDigest": "8380b425574a6f344e519217c91021702274c9463624760bfad1b925a0056f7a",
+        "idOrderDigest": "09e9fd2d97b59339c70df14b2f37107787e49ac480de5915c53eb10cc6fafabd",
+        "typeSetDigest": "d725f93edd85aa849379d9a153c337039dbf8840ebe2874e7131b858448cda63",
         "fieldSetDigest": "891be79130fbd85557641579f5ec3d7959bb9adcef8006d68e12bb4cd521f984"
       },
       "copies": [
@@ -1164,8 +1164,8 @@
         "dir": "grammars/tree-sitter-cpp",
         "files": {
           "grammar.js": {
-            "sha256": "817fc8a0629e96454738dd96dbe92ae73ce314c46da9fb00b7fe214593a15d49",
-            "bytes": 42199
+            "sha256": "a5637b9c59c6f59559bc13ce78233c9cc48f71ec02f108e576a99bb00752de29",
+            "bytes": 43542
           },
           "LICENSE": {
             "sha256": "2e0110e07abef7c2548b26ec9d6969775617ca539a0dc8dbeeb14d6452c711d1",
@@ -1176,8 +1176,8 @@
             "bytes": 1320
           },
           "PIN.md": {
-            "sha256": "93c07f90e50cf5173e61b61e3e0aa24350964471f1f7e1db5db4a9b4eaeaae1c",
-            "bytes": 7857
+            "sha256": "6e432d8bfd10bc2ffac1fe1e483041b824d883d3ce84117f8e500f3d0dce0d63",
+            "bytes": 12393
           },
           "src/grammar.json": {
             "sha256": "e21c5f37e5be3fa2622e6f519ba49e57e4b866b5d8ce4d2afddc6b8c649b89f2",

@@ -52,6 +52,9 @@ interface PythonContext {
   instanceAttrs: Set<string>
   currentModule: string | undefined
   currentClass: string | undefined
+  /** PERL-MR15: the cross-file companion. Read from `AnalyzeContext.overrideCompanion`,
+   *  which is the channel `engine.ts` populates and `pool-worker` forwards. */
+  overrideCompanion?: Map<string, Set<string>>
   currentFunction: string | undefined
   moduleName: string
   /**
@@ -197,6 +200,10 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     rootNode: Node,
     content: string,
     filePath: string,
+    // The engine has always passed this fourth argument; Python was the one
+    // lane whose signature stopped at three, so `overrideCompanion` was
+    // unreachable and the resolver below read a `_overrideCompanion` key that
+    // nothing ever set.
     context?: ASTEngine.AnalyzeContext,
   ): ASTEngine.ParseResult {
     // Regex-free module-name derivation: last path segment minus its final
@@ -243,9 +250,13 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       instanceAttrs: new Set(),
       currentModule: moduleName,
       currentClass: undefined,
+      // RESOLVED 2026-10-02 (branch consolidation): a UNION.
+      //   local  -- seeds the #924 class-key maps so bases resolve per CLASS, not per name.
+      //   remote -- seeds `overrideCompanion` from the outer AnalyzeContext.
       currentClassKey: undefined,
       basesByClassKey: new Map(),
       qualifiedBasesByClassKey: new Map(),
+      overrideCompanion: context?.overrideCompanion,
       currentFunction: undefined,
       moduleName,
     }
@@ -1610,26 +1621,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Class && s.name) declaredClasses.add(s.name)
     }
-    // PY-7. This used to read `(ctx as any)._overrideCompanion` — an underscore-prefixed field
-    // that NOTHING EVER WROTE, on a context the lane could not even receive. Three layers of
-    // disconnection stacked: `analyze()` took three parameters and so never got an
-    // `AnalyzeContext`; the field it read was `_overrideCompanion` while the declared one is
-    // `overrideCompanion`; and no caller populates either. `[key: string]: any` on the context
-    // interface is what let all three read as correct — an unknown property on an index-signature
-    // type is not an error, it is simply `undefined`.
-    //
-    // The consequence was measurable and bad: tier 2 of the three-tier override contract could
-    // never fire, so tier 3 — the 0.5 `first-parent-guess` — absorbed 100% of external
-    // overrides. A census over 3,271 files (script/m14/python-companion-opportunity.ts) scored
-    // those guesses against a corpus-wide tree-derived map of what each base really declares:
-    // 18.7% are true edges a populated index would verify, **57.7% name a base that IS in the
-    // corpus and does NOT declare the method** — fabricated, at a confidence a reader cannot
-    // discount — and 23.6% are genuinely unknown. So the tier was not merely unverified; it was
-    // wrong more often than right, and the suppression logic downstream was ALREADY correct: it
-    // emits a guess only when `!overrideCompanion?.has(firstUnread)`, so a populated index
-    // suppresses the fabrications and promotes the truths with no change to the contract at all.
-    // Only the data was missing.
-    const overrideCompanion = context?.overrideCompanion
+    // PERL-MR15. This read `(ctx as any)._overrideCompanion`, a channel nothing
+    // populates: the engine puts the companion on `AnalyzeContext.overrideCompanion`
+    // and the pass repopulates it on re-analysis, so the Python rule ran with no
+    // companion at all and every cross-file base stayed a guess.
+    const overrideCompanion = ctx.overrideCompanion
     const baseDeclares = (base: string, method: string): boolean => {
       // Same kind requirement as the MRO walk above, and for the same reason: a class
       // variable is not a method, so it cannot be overridden.
@@ -1796,6 +1792,66 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (firstUnread !== undefined && !overrideCompanion?.has(firstUnread)) {
           this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${firstUnread}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
         }
+        // No base declares it, so this is a guess. Guess the best candidate — and the
+        // best candidate is NOT always the leftmost.
+        //
+        // A base that is declared in THIS file and lacks the name is evidence of
+        // absence: we have read it. A base that is external is merely unknown. Guessing
+        // a base we have just ruled out names the one class we KNOW does not have the
+        // method, which is the worst possible guess — and it is what the leftmost rule
+        // did for `class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple)`,
+        // where the mixin was read and found to have `__init__` but no `__new__`, and
+        // the NamedTuple that necessarily has `__new__` was never named.
+        //
+        // This is the change that matters most in this method, and the measurement that
+        // forced it: the guess was 98% WRONG. Over 400 corpus files the unconditional
+        // version emitted 1,313 override edges the tree contradicts against 27 it
+        // confirms — and those 1,313 were overwhelmingly bases this analyzer had
+        // ALREADY READ and found lacking.
+        //
+        // A base declared IN THIS FILE that lacks the name is not a candidate at all: we
+        // read its body, it does not define the method, so the subclass is not
+        // overriding anything. An edge emitted anyway is not honest suspicion — it is a
+        // false statement carrying a confidence label, and at 1,313 rows it is 1.3% of
+        // this lane's relationships.
+        //
+        // The rule is therefore: a verified edge to the first base that DECLARES the
+        // name; a 0.5 guess ONLY to a base this file never read, where the question is
+        // genuinely open; and NO edge when every base is in-file and none declares the
+        // name. That last case is not a gap — the tree says the method is new rather
+        // than overriding, and emitting nothing is what the tree says.
+        //
+        // The 0.5 and the reasonCode stay, because where a guess is still permitted it
+        // should still be answerable. Making it answerable is not the same as making it
+        // right, and this measurement is the difference.
+        // PY-7, resolved by measurement. The first-parent guess is GONE, and the number
+        // that removed it is the whole argument:
+        //
+        //   over 400 pinned corpus files, the guess emitted 1,163 override edges the
+        //   block grammar CONTRADICTS, against 27 it confirms. 98% wrong.
+        //
+        // The analyzer's own comment already said why it was firing at all: the
+        // companion index that could have verified these "is never populated in
+        // production". So the branch was not a measured fallback, it was an
+        // unconditional emission for every method of every class with an external base,
+        // carrying a confidence label that made 1,163 false rows look like suspicions.
+        // A confidence value is a claim about how sure the analyzer is; at 2% precision
+        // the honest value is "I have no information", and the honest edge count is
+        // zero.
+        //
+        // Two candidate smarter rules were measured and both failed:
+        //   - only guess a base the file never READ (removes 150 of 1,313; the rest name
+        //     an external base, which is exactly where no local signal exists);
+        //   - only guess a base the file IMPORTS, as corroboration (154 of 428 refuted
+        //     guesses name an imported base, so it removes 64% and leaves the rest).
+        //
+        // So there is no rule that makes this honest, and keeping a 2%-precision
+        // mechanism at 1.3% of the lane's relationships is not a trade — it is noise
+        // with a confidence score. What remains is the part that is a FACT about
+        // Python rather than a guess about another module: `object.__init__` is
+        // universal, so a class that defines `__init__` overrides it, and that is
+        // emitted as verified below.
+        continue
       }
     }
   }

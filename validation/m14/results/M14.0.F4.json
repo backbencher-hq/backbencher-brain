@@ -926,7 +926,7 @@
     },
     {
       "description": "the per-site collapse: edges deduped without the line component, so one callee call site survives per (source,target) — callsite-lines-825 loses its line-9/10 rows",
-      "detail": "0 -> 1",
+      "detail": "0 -> 2",
       "id": "mutation-clojure-site-collapsed",
       "status": "pass"
     },
@@ -1700,7 +1700,7 @@
     },
     {
       "description": "#919 regression: reverts the macro-declared-body recovery in BOTH spellings — the heading symbol disappears and every edge the recovered body owned goes back to `global`. The expression_statement spelling (`TEST_CASE(\"x\") {…}`) was the pre-fix state measured on the two cpp corpora as 3,003 bodies sourcing 27k edges at `global` while 5,680 body locals published as file-scope symbols; the function_definition spelling (`TEST(a, b) {…}`, CP2) sourced 93. Caught by cpp/macro-declared-body-919, which pins the two heading symbols, forbids the body locals as symbols AND as exports, and forbids `uses file_value from global` / `calls real_fn from global` — the exact pre-fix edges. This is the pre-fix output, not a synthetic corruption.",
-      "detail": "0 -> 1",
+      "detail": "0 -> 3",
       "id": "mutation-cpp-macro-declared-body-loss",
       "status": "pass"
     },
@@ -1828,6 +1828,54 @@
       "description": "re-emits calls edges for parenthesized closure callees ((self.0)(n)): the pre-fix else branch took functionNode.text verbatim and fabricated a (self.0) target",
       "detail": "0 -> 1",
       "id": "mutation-rust-parenthesized-closure-callee",
+      "status": "pass"
+    },
+    {
+      "description": "D8 regression, arm A: re-publish the trailing annotation. A thread-safety annotation written after a parameter list decorates the declaration in front of it and declares nothing; the grammar recovers it as a second function_definition whose declarator is the macro and whose body is the real method's. Publishing it invents a member of the class — measured as `GTEST_LOCK_EXCLUDED_(mutex_)` with `expandedFrom: \"macro-heading\"`, 20 sites in one bundled gmock file — and attributes the real body's reads to the macro. Reverted generically: a no-return-type, all-caps function_definition whose invocation continues a declaration publishes nothing.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d8-annotation-published-as-method",
+      "status": "pass"
+    },
+    {
+      "description": "D8 regression, arm B: the SECOND half of the same defect, which is the one that was not obvious. Even with the phantom symbol suppressed, the stolen BODY is still a separate `compound_statement` node and reaches the macro-declared-body branch on its own — so the body's reads were attributed to the annotation. Reverted generically: the macro-declared-body branch is skipped when the body belongs to a trailing annotation, and the statements are walked with the enclosing owner instead of a macro's.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d8-annotation-body-owner-stolen",
+      "status": "pass"
+    },
+    {
+      "description": "D8 regression, arm C — the CONTROL, and the one this lane needed most. A test-macro HEADING is the opposite of an annotation: `TEST(Suite, Name) { body }` genuinely defines the function it is named after, and `TEST` is spelled in all caps, so the macro-name test cannot separate the families. Two versions of the D8 rule deleted real headings (every heading following a function declaration, then 20 in one gmock file). This mutant deletes a heading to prove the fixture still fails when the rule over-corrects — a gate that only ever runs in the under-firing direction proves nothing about the direction that costs symbols.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d8-test-heading-deleted",
+      "status": "pass"
+    },
+    {
+      "description": "D9 regression, arm A: stop minting the `#define` DECLARATION. A `#define` declares a name whatever its body — the C lane's #901 ruling, which this lane now shares — so the branch publishes function-like macros as `Macro` and object-like ones as `Constant`, sourced from the `preproc_def` node. Dropping it re-opens the measured gap: 3,870 `calls` edges in 82 files that name a macro the SAME file defines and that no published symbol could resolve. Reverted generically: no `preproc_def`/`preproc_function_def` node publishes anything.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d9-macro-declaration-dropped",
+      "status": "pass"
+    },
+    {
+      "description": "D9 regression, arm B — the CONTROL, and the one this change most needed. D9 required REFINING two gated fixtures: `cpp/bare-macro-statements` and `cpp/macro-decorated-specifier` asserted that NO symbol of ANY kind may carry `FMT_END_NAMESPACE`/`EXPORT_API`, which is a coarser proxy than the invariant those files document in their own text (a phantom symbol of kind `variable` minted from specifier recovery). The pins are now kind-scoped, which is strictly more precise but is still a narrowing, and a narrowing that nothing tests is a gate that only half works. This mutant puts the ORIGINAL #915 fabrication back — a `variable` named after the macro — so the refined pin must still catch the defect it was written for. Without this, 'the fixture still passes' would prove only that the refinement was legal, not that it is still true.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d9-macro-fabrication-back",
+      "status": "pass"
+    },
+    {
+      "description": "D13 regression: re-own a friend DEFINITION's body to the enclosing class. CP2 correctly refuses to mint a member for a friend declaration, and the same blanket suppression meant a friend function DEFINED inside a class body — which has a body, and so has reads — left those reads with no owner at all, and the walk attributed them to the class. Measured on absl/random/uniform_int_distribution.h:87: `uses param_type -> b` for a read of a PARAMETER of `operator==`, where `param_type` also has member functions named `a()` and `b()` (lines 81-82), so the edge could not be told apart from reading those. It surfaced as the single UNEXPLAINED analyzer edge on abseil-cpp. Reverted generically: the friend body reads go back under the class. This is the second arm of the fixture on purpose — the first version of the FIX also failed it, because it re-attributed to the containing CLASS from a helper that returned the one scope a friend's body can never belong to, so the fixture's CONTROL (an out-of-line member definition, already owned correctly) is what keeps an over-broad re-owner from passing.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d13-friend-body-owned-by-class",
+      "status": "pass"
+    },
+    {
+      "description": "D14 regression: collapse a macro-heading symbol's range back to the HEADING node. The fix extends it through the recovered function_definition, because on the measured shape (nlohmann-json tests/src/unit-class_const_iterator.cpp:14-15, where TEST_CASE's opening brace is on its own line) the heading node ends at the invocation while every edge the body emits lands hundreds of lines below. Reverted, the three headings in the fixture publish as 23-23, 37-37 and 45-45 while still owning edges at lines 25/27/28, 39/40 and 47/49/51/53. Reverting the range is enough to fail the fixture: expectSymbolRanges pins all three extents, so this needs no edge assertion to be caught — which is the point, since the defect IS the range rather than the edge set. MEASURED corpus-wide at HEAD: 39,787 macro-heading edges outside their owner's range across 1,076 offending symbols, of 234,111 owner-checkable edges; 0 after the fix.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d14-macro-heading-range-collapsed-to-heading",
+      "status": "pass"
+    },
+    {
+      "description": "D15 regression: drop macro-decorated classes back out, restoring what the grammar's recovery does to them. `class GTEST_API_ UnitTestImpl { ... };` is recovered as a function_definition whose specifier names the MACRO and whose real name is a bare sibling, so the specifier has no body of its own and the forward-declaration rule declines it — the class is never published, the bare sibling reads as a function declarator (so the class's own name is published as a FUNCTION), and the members lose their owner (HEAD published `UnitTestImpl` as a function at 27-27 with `value` and `cached_` unowned). This transform removes the class, re-adds the class's own name as a function, and strips its members' owners. `Reporter` goes entirely, since HEAD published no struct spelling at all. MEASURED corpus-wide at HEAD: 93 macro-decorated class declarations, 5 published, 88 lost; after the fix all 93 publish. The fixture's D11 control (`class Widget f();`) is not touched by this transform, which is why it can pass here while the elaborated-return-type shape still holds.",
+      "detail": "0 -> 1",
+      "id": "mutation-cpp-d15-macro-decorated-class-declined",
       "status": "pass"
     },
     {
@@ -2012,13 +2060,13 @@
     },
     {
       "description": "M59.A7 (#825) regression: rust's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 65,390 edges on a 200-file draw of cargo+ripgrep). Caught by rust/callsite-lines-825, which pins the broken call chain at 62, the broken field access at 55/56, the wrapped supertrait bounds at 23/24, the wrapped impl trait reference at 40 and the Self-returning constructor at 49.",
-      "detail": "0 -> 1",
+      "detail": "0 -> 5",
       "id": "mutation-rust-callsite-lines-dropped",
       "status": "pass"
     },
     {
       "description": "M59.A7 (#825) regression: restores the CONSTRUCT-START line instead of the node that names the edge — the callee reports its receiver (`repo` on 61, not the leaf on 62), a wrapped field access reports the value line (54, not 55), wrapped supertrait bounds report the `trait` keyword (22, not 23/24), a wrapped impl header reports `impl` (39, not 40) and a member reports its container (29, not 30). Exactly the pre-fix positions rust/callsite-lines-825 forbids.",
-      "detail": "0 -> 1",
+      "detail": "0 -> 5",
       "id": "mutation-rust-callsite-construct-start-line",
       "status": "pass"
     },
@@ -2036,7 +2084,7 @@
     },
     {
       "description": "drops every zig_function_call edge: the pre-wave analyzer emitted ZERO calls on real Zig source (56 call sites in one 30KB std file produced nothing), so the fixture pins the callee-leaf call surface",
-      "detail": "0 -> 2",
+      "detail": "0 -> 3",
       "id": "mutation-zig-drop-calls",
       "status": "pass"
     },
@@ -2138,7 +2186,7 @@
     },
     {
       "description": "Z8 regression: mints the GO5-class `_` Variable symbol for `var _ = 5;` — bare-value-reads fixture forbids any `_` symbol",
-      "detail": "0 -> 1",
+      "detail": "0 -> 2",
       "id": "mutation-zig-blank-symbol",
       "status": "pass"
     },
@@ -3956,7 +4004,7 @@
     },
     {
       "description": "M59 (#825) regression: c's relationships go back to carrying NO line — the exact pre-fix state (measured 0 of 414 on the lane audit; 47,575 relationships across sqlite/jq/zig carry one at HEAD). Caught by c/callsite-lines-825, which pins the include paths at 12/13, both wrapped specifier tags at 16/32, the calls at 33/38/46 and the contains lines at 17/22/23/24.",
-      "detail": "0 -> 2",
+      "detail": "0 -> 3",
       "id": "mutation-c-callsite-lines-dropped",
       "status": "pass"
     },
@@ -4088,7 +4136,7 @@
     },
     {
       "description": "R1 #736 regression: reverts bare value reads — const/static/callback/member reads emit nothing (bare-value-reads pins reader->GLOBAL/LIMIT/identity, get_c->C, matcher->Red)",
-      "detail": "0 -> 1",
+      "detail": "0 -> 3",
       "id": "mutation-rust-drop-bare-uses",
       "status": "pass"
     },
@@ -4136,7 +4184,7 @@
     },
     {
       "description": "D3 #736 regression: reverts export privacy — pub(crate) items and private-module members re-enter the export list (construction-exports forbids internal/Hidden/std::io::Read/f)",
-      "detail": "0 -> 18",
+      "detail": "0 -> 23",
       "id": "mutation-rust-restore-restricted-exports",
       "status": "pass"
     },
@@ -4174,6 +4222,72 @@
       "description": "R14 regression (#798, ripgrep full extent): reverts the tuple-struct field-type branch — a struct whose fields sit in an `ordered_field_declaration_list` (no `field_declaration` child) references none of its field types again (tuple-struct-field-types pins Wrapped->Inner, Pair->Inner/Vec, Scoped->Inner; measured 13 real missing edges over 10 ripgrep files before the fix)",
       "detail": "0 -> 1",
       "id": "mutation-rust-drop-tuple-struct-field-types",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-MR: a macro invocation's NAME emits a `uses` edge beside its `calls` edge — one site, two labels, and the read is fabricated (R1 excludes callees)",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-reemit-macro-callee-uses",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-MR: a declaration position emits a `uses` edge — a trait method signature's own name (a self-edge) and a fn-pointer type's parameter name",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-reemit-declaration-position-reads",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-MR: a higher-ranked trait bound publishes no `extends` edge — serde's `trait DeserializeOwned: for<'de> Deserialize<'de>` names a supertrait and publishes none",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-drop-higher-ranked-bounds",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-MR: a function-local `const`/`static` publishes no symbol and no `contains` edge — the declaration guard over-applies the `let` rule",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-drop-function-local-consts",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-MR: a trait method signature's PARAMETER emits a `uses` edge when its name also resolves (a use-imported leaf of the same name)",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-reemit-signature-param-reads",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D24: reverts the route extractor to the FOUR verbs it used to know (get, post, put, delete). The framework guard separately listed six, so head/patch were recognised as actix and produced no route at all, and options/trace/`#[route(..)]` were absent from both sides — four of the seven routes in the fixture were silently dropped, with no error anywhere.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-route-verbs-revert-to-four",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D30: a BARE PascalCase callee was resolved to a same-named LOCAL type by the in-file filter, so a prelude `Ok(())` in a file that also declares `struct Ok;` published `instantiates -> Ok` — an edge created by a name collision rather than by any relationship, and the last remaining F5 disagreement on the full serde corpus. A construction resolves to a local type only when the receiver is SPELLED as one; `Self(..)` stays exempt because it is a keyword with one meaning.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-prelude-name-collision-instantiates",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D29: the use collector's fallback accepted ANY node and published its raw text as a module path, so a comment or a stray separator inside a use tree became an import: `use {a ,, b}` published module `,` and `use {/* c */ Foo}` published the comment itself — 14 such rows at full extent, all in parse-recovery or rustfmt-test files. This mutant restores that acceptance.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-comment-becomes-a-module-path",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D29 second half: `crate::foo` and `super::util` carry a `crate`/`super` NODE in the path field rather than an identifier. Narrowing the fallback so a comment cannot become a module sent that recursion to the refuse branch, the prefix came back empty, and `crate::foo::{bar, Baz as B}` published module `::foo`. The narrower rule CREATED this defect on the same run — which is why both halves are pinned rather than either taken on trust.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-path-root-prefix-dropped",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D27: every row of a MULTI-LINE top-level use group took the range of the whole declaration, so all of them pointed at the `use {` line — a line bearing none of the paths they name. 56 such records in ripgrep alone, found by the first line audit ever run over the imports channel, which until then had examined ZERO records because imports are not relationships. This mutant reproduces the fault EXACTLY: the three fixture rows sit at lines 22-24 while their `use {` is on line 20, so collapsing an indented row's line onto the nearest earlier `use` line is the pre-fix behaviour, not an approximation of it.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-import-range-reverts-to-declaration",
+      "status": "pass"
+    },
+    {
+      "description": "RUST-D25: a leading-`::` use path has NO `path` field in the grammar, so the namedChild(0) fallback used the NAME as its own prefix. `use ::libc::c_int;` published module `libc::libc::c_int`. This mutant restores that doubling; the fixture forbids the doubled module so the regression cannot return quietly.",
+      "detail": "0 -> 1",
+      "id": "mutation-rust-absolute-use-path-doubles-segment",
       "status": "pass"
     },
     {
@@ -4220,7 +4334,7 @@
     },
     {
       "description": "GO8 #736 regression: reverts generic composite unwrapping — `Box[int]{...}` emits no construction edge (generic-construction pins instantiates MakeBox->Box)",
-      "detail": "0 -> 1",
+      "detail": "0 -> 2",
       "id": "mutation-go-generic-composite-drop",
       "status": "pass"
     },
@@ -4270,6 +4384,12 @@
       "description": "#799 round regression: the import dependency goes back to the `references` label (the pre-round state, reconstructed from the edge's own isGoImportDep/isImport marker). An import names a MODULE, so on the references label every import path (`net/http`, `github.com/google/go-cmp/cmp`) joined the lane's references TARGET surface and put `/`, `.` and `-` — characters no Go declaration may contain — into the R10 separator vocabulary, where they could only be excused by a ruling that would also excuse a real spelling defect on the same label. Caught by go/relationship-and-payloads (expects `imports` -> fmt with meta.isImport) and go/callsite-lines-825 (expects the imports edge on the import_spec's line 22).",
       "detail": "0 -> 4",
       "id": "mutation-go-import-dep-labeled-reference",
+      "status": "pass"
+    },
+    {
+      "description": "GOD10 regression: the `imports` edges recovered from a grammar ERROR region go away. Reconstructed from the SOURCE, which is the faithful axis here: a recovered spec and a well-formed one carry the same path, marker and source in the output, so the pre-fix world cannot be told from the post-fix one by reading the result. The pre-fix rule was \"an import is published only when its import_spec sits under a well-formed import_declaration\", so the revert detects the shape the wrapper key missed and drops the import edges it would have lost. A well-formed file is untouched, so the only fixture that can fail is the one that exists to fail. Lines, not raw text: an indexOf(\"import (\") matched inside go/imports-recovered.go's OWN COMMENT — the fixture documents the shape, so the literal appears in a `//` line and a `)` appears in another — and the mutant survived its own fixture until made line-based and comment-aware. Caught by go/imports-recovered; go/imports-contract is the control proving the scan does not fire on the 11 well-formed shapes.",
+      "detail": "0 -> 1",
+      "id": "mutation-go-recovered-imports-dropped",
       "status": "pass"
     },
     {
