@@ -1555,6 +1555,48 @@ must keep #950/#958's path, the function-local enum must keep #961's scope (a fi
 before the member path existed would publish `f.first`, which resolves to nothing), and a
 two-level path must not flatten.
 
+### #987: the typedef/tag collision is ADJUDICATED as real, and the remaining choice is a loss either way
+
+`typedef enum { H1_TUNNEL_INIT, ... } h1_tunnel_state;` beside `struct h1_tunnel_state { ... };`
+is legal C — typedef names and tags live in separate namespaces — and the analyzer mints
+the anonymous enum's owner from the typedef ALIAS, so it publishes both member sets under
+one name:
+
+    contains h1_tunnel_state -> H1_TUNNEL_INIT ... H1_TUNNEL_FAILED   (the alias)
+    contains h1_tunnel_state -> dest, rcvbuf, request_data, ...      (the struct)
+
+The doc recorded this as an AMBIGUOUS OWNER and left it unadjudicated, on the grounds that
+"neither is a mechanical patch". **The part that was decidable is now decided**
+(`script/m14/tmp/c983/namespace-collision.ts`), and it needed neither the corpus nor a build
+configuration — six lines and clang's AST:
+
+    TypedefDecl ns_probe_name   underlying type: `enum ns_probe_name`
+    RecordDecl  ns_probe_name   tagUsed: struct, completeDefinition: true
+    payload: symbols named ns_probe_name: enum, struct
+    payload: contains ns_probe_name -> NS_ALPHA, NS_BETA, NS_GAMMA, field_one, field_two, field_three
+
+So the distinction is real C, not a parse artifact, and the payload's owner attribution is
+wrong about it. Corpus size, from the structural probe
+(`script/m14/tmp/c983/ambiguous-owner.ts`): **9 files, 253 `contains` edges** under an
+ambiguous owner — `cf-h1-proxy.c` (16), `curl_gssapi.c` (9), `ftplistparser.c` (35 + 10 + 10),
+`tool_cfgable.h` (150), libgit2's `reftable-record.h` (9 + 7) and `refdb_reftable.c` (7).
+
+**What is left is not a defect hunt, it is a choice between losses, and none of the options
+is free:**
+
+| option | what is preserved | what is lost |
+| --- | --- | --- |
+| (a) keep both under `V` — **current** | every member, nothing dropped | the OWNER of half of them is false; a consumer reading the struct gets enumerators it does not have |
+| (b) `V` is the struct; the alias's members go | the struct's fields stay resolvable | the enumerators become unreachable — a NAMED loss |
+| (c) `V` is the alias; the struct's members go | the enumerators stay resolvable | the fields become unreachable — a named loss |
+| (d) mint a qualifier for the alias (`V.alias`, `V.0`) | everything | a name written in **no source file**, which is the fabrication class #962 removed from `instantiates` and #963 removed from `exports` |
+
+(d) is ruled out by rulings this lane already made twice, and (a) is the status quo the
+oracle reported as a phantom. Between (b) and (c) there is no evidence to prefer one — the
+question is which loss a consumer can better absorb, and that is the owner's call, not an
+agent's. **Not taken**, and now for a stated reason rather than a shrug: the class is
+proven, the size is measured, and the only remaining input is a preference.
+
 ### The two `uses`-side limits, stated rather than counted
 
 The `contains` verdict on libgit2 is **18 missed / 0 phantom** after #985. The phantoms
