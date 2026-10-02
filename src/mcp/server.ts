@@ -27,6 +27,15 @@ async function ensureIndexed(context: ToolContext): Promise<string | null> {
 }
 
 export async function startMcpServer(projectPath: string): Promise<void> {
+  // `getProjectId` is imported at MODULE scope. It looks like a cycle —
+// cli/index.ts dynamically imports this module to start the server — and moving
+// the import inside this function was tried as a fix. It was reverted: measured,
+// the lazy version was no better, and it added a second way for the two entries
+// to diverge. The real defect was in cli/index.ts's entry guard
+// (`import.meta.main` is undefined under `node --import tsx`, so `runCli` was
+// never called from the source entry); that is fixed there, and the divergence
+// between `node bin/bb mcp` and the source entry is asserted by
+// test/cli-surface/packaging.ts.
   const context: ToolContext = { projectPath, projectId: getProjectId(projectPath) }
   const server = new Server(
     { name: "backbencher-brain", version: BACKBENCHER_BRAIN_VERSION },
