@@ -112,9 +112,32 @@ export class BrainSurgicalPatcher {
         const ext = path.extname(absolutePath)
         const cwd = path.dirname(absolutePath)
 
+        // M66: keep the file's OWN line ending. These formatters are invoked with
+        // their defaults, and the defaults are LF: prettier's `endOfLine` defaults
+        // to "lf", so `prettier --write` on a CRLF file rewrote EVERY line ending
+        // to LF. bb_edit's splice was already fixed to emit the file's line ending,
+        // but the formatter ran afterwards and undid it — so a CRLF file still
+        // came back LF-only, and (before the splice fix) mixed. A formatter is
+        // supposed to normalise style, not to rewrite a whole file's line endings
+        // behind the caller's back.
+        //
+        // The fix is per-formatter, and each is passed the detected ending:
+        //   prettier  --end-of-line auto  → prettier keeps the file's first line
+        //                                  ending rather than forcing "lf".
+        //   black/ruff already preserve the ending they read; nothing to pass.
+        //   gofmt / rustfmt / clang-format preserve endings natively.
+        let endOfLine = ""
+        try {
+          const head = fs.readFileSync(absolutePath).subarray(0, 4096).toString("utf8")
+          const crlf = (head.match(/\r\n/g) ?? []).length
+          const lf = (head.match(/(?<!\r)\n/g) ?? []).length
+          if (crlf > lf) endOfLine = " --end-of-line crlf"
+          else if (crlf > 0 && lf === 0) endOfLine = " --end-of-line crlf"
+        } catch { /* cannot read: leave the formatter default, it is best-effort */ }
+
         let cmd = ""
         if ([".ts", ".tsx", ".js", ".jsx", ".json", ".html", ".css", ".md"].includes(ext)) {
-          cmd = `npx prettier --write "${absolutePath}"`
+          cmd = `npx prettier --write${endOfLine} "${absolutePath}"`
         } else if (ext === ".rs") {
           cmd = `rustfmt "${absolutePath}"`
         } else if (ext === ".go") {

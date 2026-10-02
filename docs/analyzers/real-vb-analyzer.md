@@ -13,7 +13,7 @@
 The vendored grammar arrived parsing **38.67 %** of Microsoft's own
 `Microsoft.VisualBasic.Core` cleanly. It now parses **90.89 %** over four
 independent corpora (1185 files, 0 crash files). The repairs, each with a
-minimal repro under `fixtures/grammar-repro/cases/`:
+minimal repro under `grammars/_vendored/vbnet/repro-cases/`:
 
 1. `repeat` instead of `optional` on `attribute_list` in 14 member positions — consecutive attribute lists are the standard pattern and upstream allowed one. (49.33 % → 62.67 % on the authoritative corpus.)
 2. File-scoped `Namespace N` (VB 15+), as a second alternative **pinned to the file's last position** rather than an optional `End Namespace` — the optional form also "succeeds" for a file that *has* one, leaving it dangling and hoisting the classes after the early reduction to file scope.

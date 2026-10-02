@@ -20,6 +20,11 @@ positions. **There is no source-text regular expression in this file**, and
 - Corpus differential vs an independent oracle: **recall 1.000000, precision
   1.000000**, 0 missing, 0 spurious, and **2,418 / 2,418 line numbers agreeing**.
 - **0 files with ERROR/MISSING nodes** across the 99-file pinned corpus.
+- Grammar conformance: 1,814 symbols / 6,079 relationships / 4 imports over the
+  pinned 100-file corpus, 0 unknown node types, 0 unknown fields.
+- Corpus differential vs an independent oracle: **recall 1.000000, precision
+  1.000000**, 0 missing, 0 spurious, and **2,515 / 2,515 line numbers agreeing**.
+- **0 files with ERROR/MISSING nodes** across the 100-file pinned corpus.
 - Completeness: 44/44 named types classified, sections **A–H 8/8**. The corpus
   grammar residual is pinned to **zero** real ERROR/MISSING nodes.
 
@@ -132,6 +137,10 @@ be repeated rather than believed.
 `imports` 4 · `calls` 1.
 
 Every one of the 5,880 carries **`line_number`**, which is a product field: the
+`contains` 1,784 · `references` 2,114 · `exports` 1,381 · `uses` 795 ·
+`imports` 4 · `calls` 1.
+
+Every one of the 6,079 carries **`line_number`**, which is a product field: the
 indexer stores it and the address surfaces serve call-site positions from it. The
 lane shipped with **0 of 1,784** edges carrying one.
 
@@ -151,6 +160,7 @@ gaps; `reviews/make/master-review.md` §5 carries each count.
 | `bun run script/m12/make-corpus-measure.ts` | **passed** — 622 symbols / 2,480 relationships, throughput recorded |
 | `bun run script/m14/run-fixtures.ts --lang make` | **7/7 pass** |
 | `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **21/21 caught** |
+| `BB_MUTANT_ONLY="make/" bun run script/m14/mutate-analyzer.ts` | **24/24 caught** |
 | `bun run script/m14/completeness-inventory.ts --lang make` | **sections A–H 8/8** |
 | `bun run script/m14/differential.ts --lang make` | both corpora **100 %** covered, 0 missing, 0 unexplained |
 

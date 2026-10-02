@@ -94,7 +94,7 @@ schema version.
 | `file` | repository-relative path | file symbols, imports/exports, syntax state | Overview, public symbols, dependencies, risks |
 | `module` | directory/module name | files, imports/exports, internal relationships | Purpose, entry points, public surface, module graph |
 | `feature` | feature name or semantic target | related symbols/files, graph, patterns, tests | Entry points, flow, components, test coverage |
-| `api` | optional route/controller/API target | exported symbols, route-like symbols, contracts | Endpoints, inputs/outputs, errors, examples |
+| `api` | optional route/controller/API target | symbols with an `api_contract_path`, route-ish symbol types, and exported symbols of files the index marks as an HTTP framework | Endpoints, inputs/outputs, errors, examples |
 | `project` | optional project target | project stats, languages, entry points, health | Architecture, inventory, risks, documentation map |
 | `coverage` | optional path/module | public symbols, docstrings, citations, tests | Documented, undocumented, stale, unsupported |
 
@@ -102,11 +102,236 @@ schema version.
 included claim must still cite concrete symbols, files, or relationships.
 `api` does not infer undocumented HTTP behavior from a function name alone.
 
+**What `api` mode reads, measured.** It selects a symbol when the index records
+an `api_contract_path`, or gives it a route/endpoint/controller type, or it is a
+**callable** in a file whose `framework_type` is an HTTP framework. The first two
+were
+measured empty on all eight indexed corpora — `api_contract_path` was null in
+every one and no corpus held a single route-ish symbol type — so before the
+framework route existed the mode had **no input at all**: all four of its
+required sections rendered empty on 100% of cases on every corpus and every
+detail level, while the only content it produced, a list of imports, landed in
+the OPTIONAL `dependencies` section the declared set does not mention. The mode
+was advertised as one of seven working modes and had never once had a symbol to
+document.
+
+The `net_http` attribution is the index's own vocabulary, not a guess at what
+frameworks exist; a framework absent from the set contributes no endpoint, and
+the document says how many files the index attributed. It is present in **1 of
+the 8 measured corpora** (go_tools, 25 files), so this is a real input on a real
+repository rather than a general one, and the section says which counts it found.
+
+Broadening the selection that way introduced a defect a fixture could not see,
+and only go_tools exposed it: selecting *every* exported symbol of an
+HTTP-attributed file made the mode report `module blog()` and `struct Config()`
+as endpoints. Measured on go_tools, those 25 files hold 281 exported symbols, of
+which **121 are property accessors, 25 module declarations, 19 structs, 18
+variables and 3 interfaces** — 186 of 281 are not callable at all. So a symbol
+reaches Endpoints only on an authoritative route signal (a contract path, or a
+route/endpoint/controller type) or as a callable in an HTTP-attributed file, and
+every entry states what the index does and does not record: framework attribution
+is a property of the FILE, so it places a symbol on an HTTP surface without
+saying which request that symbol answers, and no method or path is recorded.
+
+`api` also cannot report two of its four sections, and now says so by name:
+
+- **Errors.** The index has no table, column or symbol type that records a
+  thrown, raised or returned error. That is a limit of what is indexed, not a
+  finding that the code cannot fail, and the section says which.
+- **Examples.** An example requires cited source, so it is emitted only where an
+  endpoint carries a docstring containing a call to itself or an indexed test
+  names one.
+
+**Every mode emits its declared section set, always** — including a section with
+no evidence, which is then absent from nothing and unexplained by nothing. That
+is what makes the completeness gate meaningful: `expected` is the mode's declared
+section count, and `covered` is how many of them are present. A required section
+is never dropped for `audience` or `detail`; those two inputs select OPTIONAL
+sections and the per-section evidence cap, so a reader can never be handed an
+incomplete document by asking for a smaller one.
+
+**A required section that renders empty must say why, in its own words.** Every
+required section declares, in the source, what would have filled it — a
+completed search, not "no data available" — and the generator writes that
+declaration as a note when the section comes out empty. A section that cannot
+explain itself is refused, not returned.
+
+This is structural, not per-mode, because the alternative was nine sections that
+were empty in 100% of cases on every corpus and every detail level with nothing
+saying why, and a reader cannot tell those apart from a measurement that found
+nothing. Two rules make the explanation real:
+
+- **A note names the section it explains.** Notes name a *concern* — tests, the
+  graph, freshness — and the section is resolved once, after assembly, against
+  the sections the result actually renders. Hardcoded ids named sections that
+  exist in only one mode: the test gap said `tests` while `feature` renders
+  `test-coverage`, and the unresolved-edge note said `flow` while `module`
+  renders `module-graph`. A note pointing at a section the reader cannot see is
+  not an explanation, and it left those sections looking unexplained while a
+  message appeared to cover them.
+- **A caveat is not an explanation.** "This file changed after indexing" and
+  "this file did not parse" are true and belong on the section whose facts they
+  qualify. Neither says why that section has no facts, and neither may stand in
+  for saying so: an `api` document with an empty Endpoints section once showed
+  only a freshness note and never said that no endpoint was indexed.
+- **An explanation must be AIMED, not defaulted.** A concern whose section does
+  not exist in the current mode lands on the document's lead, and it was then
+  accepted as that section's explanation. On the 5 382-file typescript index the
+  scope note — "5 282 file(s) were not examined" — was the *only* note the
+  Endpoints section carried, which is not a reason it has no endpoints. The same
+  note in `file` mode, which does render the section `scope` prefers, is aimed and
+  does explain it. So the rule is per resolution, not per concern: a defaulted
+  note never excuses a section, an aimed one may.
+
+`file` mode accepts a repository-relative path. An exact path, an absolute path,
+a directory prefix, and a bare file name (with or without its extension) all
+resolve. An absent path and an unresolved one are distinguishable, and the
+latter says which of the four forms it tried.
+
+**What `risks` is built from**, and why it is not "the analysis findings":
+three sources, all read from the index, all cited. Open
+`brain_analysis_finding` rows, files with recorded parser errors, and symbols at
+a measured complexity at or above a stated threshold. A required section that is
+always empty is a placeholder, not a measurement — and it WAS always empty,
+because no read path in this tool produces an analysis finding while the index
+held, on one measured corpus, 1 099 files with recorded parser errors and
+185 477 symbols carrying a measured complexity. When all three sources are
+empty, the section says exactly that, because the absence of evidence is not
+evidence of absence.
+
+**`limitations` and `unsupported` are measurements, not disclaimers.** Both were
+literal `facts: []` in the source, empty in 100% of cases on every corpus and
+every detail level, with a reassuring lead and nothing saying why. They are now
+built from the same branch that decides each gap, so a section and its note
+cannot disagree — there is no second measurement to drift, and no limit asserted
+without a citation.
+
+- `limitations` (in `symbol`) carries, per symbol: no docstring, no test
+  evidence, a source that moved or vanished under the index, a file with parser
+  errors, and unresolved edges. The distinction it exists to draw is between
+  "has no documentation" and "this tool cannot see its documentation": when the
+  language's comment marker is one the reader does not read, the fact says the
+  verdict is **unverified**, not absent. Reporting the second as the first is a
+  false negative about the code, produced by a limit of the reader.
+- `unsupported` (in `coverage`) carries what could not be measured about the
+  scope: files the index recorded parser errors for, and symbols in a language
+  whose comment marker the reader does not read and which the analyzer left
+  without a docstring. Both are cited, and both are read with the documented /
+  undocumented verdicts they qualify.
+
+**Docstrings are read from disk, and only where a comment is a comment.** A
+markdown symbol's name is a heading and `*` is the BOLD delimiter, so a
+comment scanner above a heading reads the previous English line as a JSDoc
+block; measured on this repository's own index, 79 of 3 598 markdown symbols
+received a fabricated docstring at `extracted` / `1.0`. Languages whose symbol
+names are prose are therefore excluded by asking
+`language-detection.ts` — the registry that admits a file to an analyzer — so
+the doc lane and the router cannot drift. The remaining limit is stated rather
+than papered over: the scanner knows `/**`, ` * ` and `//`, and not `#`, `;` or
+`--`, so a symbol in Ruby, Python, Perl, shell, Clojure, Lisp, SQL or Lua
+reports "not observed" instead of a guess. Teaching it those belongs to the
+analyzer lane, which knows each grammar. Where it matters for a verdict, the
+`unsupported` section now reports it per language and counts the symbols it
+affects.
+
+## Prose Rules
+
+Prose adds orientation. It never restates the facts, and a gate checks it:
+`no section prose is its facts joined by spaces`.
+
+**A section says what its evidence IS, not how much of it there is.** The prose
+used to be `N cited items from M sources.`, which tells a reader nothing they
+could not count, and the classification on every fact — read directly, inferred
+because the index did not resolve something, recorded as unknown — was never
+surfaced anywhere in the document. It is now, because it is what a reader
+deciding whether to trust a section needs:
+
+```
+API          2 claims, 2 read directly from the index, resting on 1 source (1 symbol).
+Dependencies 20 claims, 17 read directly from the index; 3 inferred because the
+             index did not resolve the target, resting on 20 sources (1 relationship).
+```
+
+**A section that is empty says why, in its own words.** The reason was already
+written, per section, and cited — it just lived in the footer, where a reader
+looking at that section does not look. So an empty section's prose IS its
+explanation:
+
+```
+Tests   No indexed test relationship for ServeHTTP, and no indexed test file names it.
+```
+
+against the previous `No indexed evidence was found for tests.`
+
+That leaves the same sentence in the `Unknowns` appendix, and that overlap is
+accepted rather than engineered away: the appendix is a complete inventory of
+every gap and the section is where a reader arrives looking for one. Removing a
+gap from the appendix because a section already mentions it would make the
+appendix quietly incomplete, which is the failure this document exists to avoid.
+
+**The sweep writes its explanations after assembly, so the prose is rebuilt
+afterwards.** The sweep judges the RENDERED section, which is why it cannot run
+before sections exist — and that ordering left the prose describing a section
+before the very sentence explaining it had been written. Only sections with no
+facts can have changed, so only those are rebuilt.
+
 ## Fact And Prose Rules
 
 - **Extracted** facts are directly present in indexed source or tables: names,
   signatures, line bounds, imports, exports, relationship types, and measured
   complexity.
+- **A signature reports the arguments the index holds, and claims none it does
+  not.** A signature was rendered `name()` whenever the `parameters` column was
+  empty, which asserts the symbol takes no arguments. Reading the declaration off
+  disk for every sampled callable with an empty column, across six languages:
+  **1 218 of 1 218 have a real parameter list**, excluding declarations whose
+  list is genuinely empty or C's explicit `(void)`. `Malloc(size_t size)` was
+  rendered `Malloc()`; `application(app)` in Ruby was rendered `application()`.
+  14 267 `function` and 2 702 `method` symbols across the eight corpora were
+  affected, and the fixture could not have caught it — it holds one callable with
+  a parameter list and none without.
+  An absent list now renders as an absent list: the parentheses are omitted, and
+  the caveat rides on the signature itself rather than only in `limitations`,
+  because that fact is rendered as this mode's API and as `feature` mode's Entry
+  points and a bare name invites exactly the wrong reading. The caveat is
+  **measured per project, not looked up in a list**: the generator asks the index
+  which symbol kinds it records parameter lists for, and a symbol of such a kind
+  without one is a gap the document names. A hand-written list of "kinds that
+  take arguments" is a guess, and it was wrong in both directions — it excluded
+  `property`, which does carry parameter lists for 343 symbols in the typescript
+  index, and it would have attached a caveat to every field in a project whose
+  index never records them. The measured rule gets `rake` right (209 `method`,
+  3 `function`, so no `property` caveat) and `typescript` right (11 071
+  `function`, 10 856 `method`, 343 `property`, 132 `constructor`), with nothing
+  to maintain as analyzers add symbol kinds.
+
+  **A signature also shows the types the index records.** The `parameters` column
+  holds a JSON list of `{name, type, isOptional}` for **82.8% of the 6 007 entries
+  measured across the eight corpora**, and the renderer read `name` and discarded
+  the rest — so `Join(s S)` was documented as `Join(s)`. A section named Inputs
+  and outputs was reporting the names of the inputs and nothing about their types,
+  from a row it had just read. Discarding evidence you have already loaded is the
+  same defect as asserting something the index does not support, pointed the other
+  way. Three rules, each from what the data holds: a recorded type is shown, an
+  absent one is omitted rather than guessed, and `isOptional` is stated in words
+  because `name?: type` is TypeScript syntax and would be wrong in a Go document
+  (17 entries, so the wording costs nothing and discards nothing).
+
+  **A statement is a sentence about source, not markdown.** Every character
+  markdown would act on is neutralised before rendering, while the citation
+  markers — appended after the statement, and the only links in the document — are
+  left alone. This was already a hazard: a Go return type of `*Server` reached the
+  page unescaped, and a statement quoting `map[string]*Server` would render the
+  middle as italics. Rendering the indexed parameter types multiplied the
+  exposure, since 1 105 of the measured types contain `*`.
+
+  Those kinds cannot be settled by reading source instead, and the attempt is
+  worth recording: scanning one line for a bracket pair after the name reported
+  **100% for every type** — `variable Is(require("./is"))`,
+  `enum_member Key(enum)`, `class Symbol(members/exports/parent)` — because a
+  one-line window cannot tell a declaration's argument list from a call or a cast
+  on the same line. A measurement that returns the same answer for everything is
+  a measurement of nothing.
 - **Inferred** facts are bounded conclusions supported by multiple evidence
   items, such as “this symbol is an entry point because it is exported and has
   incoming route-like references.” They include confidence and citations.
@@ -131,9 +356,17 @@ depend on current source. Missing source or unavailable tables produce
 valid and must explain whether no target was found or the evidence was
 unavailable.
 
-`bb_doc` never refreshes implicitly. Callers must explicitly refresh through
-`bb_health`/`bb_refresh`, then request documentation again. This keeps the
-operation read-only and makes the source snapshot deterministic.
+`bb_doc` is a read path and participates in the shared inline auto-refresh
+(M43.A1/A2), like `bb_search` and `bb_analyze`: when the files a document
+cites are stale, the handler reindexes exactly those files within budget and
+**regenerates** the document, so an answer is never built from the rows a
+refresh just replaced. The repair is declared in an `autoRefresh` line, and
+`refresh: false` (or `BB_NO_AUTO_REFRESH=1`) opts out and answers from existing
+data with the staleness block. A decline is always declared with its reason.
+
+The read-only guarantee is unchanged: `bb_doc` never writes source, never
+creates a file, and never calls `bb_edit`. The only write it can cause is a
+reindex of files that already exist, bounded and declared.
 
 ## Examples And Diagrams
 
@@ -157,15 +390,82 @@ interface QualityReport {
   completeness: { passed: boolean; covered: number; expected: number; unknown: number }
   freshness: { passed: boolean; snapshot: string; staleClaims: number }
   budget: { passed: boolean; estimatedTokens: number; maxTokens: number }
+  bounds: {
+    perSection: number
+    sections: Array<{
+      id: string
+      available: number
+      capped: number
+      droppedForBudget: number
+      emitted: number
+    }>
+  }
   warnings: string[]
 }
 ```
 
-The deterministic gate fails when a claim has no citation, a citation points to
-an invalid symbol/file span, an unsupported claim is presented as fact, the
-output exceeds `maxTokens`, or required mode sections are absent. Stale
-citations are warnings for inventory sections and failures for current-behavior
-claims. Unknowns are counted toward completeness and must be visible.
+`passed` is the conjunction of exactly four things, and nothing else:
+
+1. **factuality** — every claim carries a citation, AND the result is not empty.
+   A document with no evidence at all is a factuality failure: there is nothing
+   for it to be factual about. (`citations.every(...)` over an empty array is
+   vacuously true, which is how an empty result once reported `passed: true`.)
+2. **references** — no citation is broken and none points at a missing file.
+3. **budget** — the measured size of the WHOLE returned object is within
+   `maxTokens`. Over budget, the largest sections are trimmed and every drop is
+   declared as an `output-budget` unknown. A budget too small for the required
+   sections is reported as unmet, with the shortfall named; it is never met by
+   dropping a required section. The figure is measured with a same-width
+   placeholder in the field and that measurement is what is reported, so
+   `estimatedTokens * 4` is never smaller than the payload it describes — the
+   figure a caller budgets from must not be an under-count.
+
+   **What that figure measures: the returned object, not the wire bytes.** The
+   shared MCP handler adds a `freshness` envelope to every tool's result and
+   serialises with two-space indentation. Measured on rebar3, `project` mode,
+   `limit` 20: the engine's object is 16 904 characters and the reported figure
+   is 16 908; the handler's compact form is 17 000, and the wire form is 21 925 —
+   **1.30x the object**, and 1.47x on a larger document. So a caller budgeting
+   from `estimatedTokens` is budgeting for the object, and a client counting
+   tokens off the wire will spend about a third more. The transport is shared
+   with every other tool, so its shape is not this tool's decision; the gap is
+   pinned in `verify-doc-truth.ts` (T27) so a change there surfaces as a diff in
+   this gate rather than as a surprise in a client's budget.
+4. **completeness** — every declared section for the mode is present.
+
+Stale evidence is a **warning**, not a failure: the spec makes it a failure for
+current-behavior claims, and this result makes no such claim. Unknowns are
+counted in `completeness.unknown` and are always listed; they do not by
+themselves fail the gate, because declaring a gap is the tool working, not
+failing.
+
+**Two bounds shorten a document, and they compose.** The per-section evidence
+cap (`detail` × `limit`) and the output budget each remove facts, and every
+removed fact is accounted for:
+
+```
+available = notSelectedByCap + capped
+capped    = droppedByBudget + emitted
+```
+
+`bounds` publishes all five numbers per section, and `emitted` is read back off
+the finished section rather than carried forward, so the identity is a
+measurement. The generator refuses to return a result where it does not close.
+
+Two defects lived here, and both were invisible while the bound existed only as
+prose:
+
+- The cap was **announced and never applied**. The section was assembled from the
+  uncapped draft, so the sentence was the sole description of the cap and it was
+  false: measured on rebar3 at `brief`, it claimed "115 of 120 inventory items
+  were not selected" — a claim of keeping 5 — while the document kept more, and
+  the number a reader could count came from the budget's halving instead.
+- Both bounds were announced **from the same list**, so a 12-of-24 documentation
+  map reported "18 more dropped": 36 accounted for out of 24, on every section
+  of a real document.
+
+A count a reader can check and finds wrong is worse than no count, because it
+condemns the whole quality block.
 
 ## Website Reference Metadata
 
@@ -200,7 +500,8 @@ website ingestion. A website may render `DocResult` directly, cache it by
   empty. No fabricated mermaid/graph output is produced.
 - Examples are only emitted when source-backed evidence exists; otherwise
   `includeExamples=true` records an honest `not-observed` unknown.
-- No source writes, refreshes, network calls, or generated test files.
+- No source writes, network calls, or generated test files. The only write it
+  can cause is the bounded, declared reindex of files it already cites.
 - Errors are structured and identify the mode, target, and unavailable evidence.
 
 See `docs/BB_DOC_EXAMPLES.md` for representative Markdown and JSON output.
@@ -217,6 +518,95 @@ false, and that deleted sources yield `freshness=missing` plus a real
 `references.broken` count (no longer hardcoded to zero).
 `script/m20/verify-doc-examples-diagrams.ts` proves examples/diagrams are never
 fabricated (honest `not-observed` unknowns) and that removing a relationship
-from the index removes the corresponding fact (tamper-negative). These are
-fixture-level evidence; real-repository documentation coverage is owned by
-M20.X2.
+from the index removes the corresponding fact (tamper-negative).
+
+`script/m20/verify-doc-truth.ts` is the gate for the class the three above
+cannot see. They build a two-file temporary project and prove that citations
+RESOLVE and that bad input is REFUSED. None of them asks whether a statement is
+true of the source, or whether the result's own metadata is self-consistent — and
+a corpus review over eight indexed upstream repositories found 19 defects in
+exactly that blind spot. Every predicate in this gate is shared with a negative
+twin that proves it can convict, and the gate records a check with no detail as
+a harness error rather than as a pass. A failure detail names EVERY offender: a
+gate that sampled 6 of its 24 findings hid three quarters of the evidence it was
+written to surface.
+
+Three further lanes in that gate exist because an audit found the same defect
+class the `risks` fix belonged to, surviving in eight more sections:
+
+- **No required section is empty without a note naming that section** — checked
+  over 29 declared sections × 3 detail levels × 7 modes, 609 checks.
+- **Every note names a section the result actually renders**, from outside the
+  tool, because an assertion inside the code under test is not evidence about it.
+- **The published bounds are the applied bounds** — `emitted` equals the
+  section's real fact count, and `emitted + droppedByBudget === capped` for
+  every section. The generator throws rather than return a result whose bounds do
+  not close, and the identity caught a miscount on its first run.
+
+The last two guards are also driven directly by the gate with synthetic
+malformed results, so each is shown to reject what it exists to reject: a guard
+exercised only by the code it guards would pass if it were `return`.
+
+**One verifier per evidence file.** This gate and
+`script/m20/verify-doc-examples-diagrams.ts` both wrote
+`validation/m20/results/D3.json`, and the manifest assigns D3 to the
+examples/diagrams verifier. Two verifiers sharing one evidence file is
+last-writer-wins, so the file was evidence of whichever had run most recently —
+which is how a milestone ends up marked `verified` with numbers no verifier
+produced. This gate now records as `DOC-TRUTH` in its own file, and no manifest
+code was taken for it: D1 is the mode and option contract, D2 citation
+resolution and freshness, and D3 examples and diagrams, so none of the three
+covers statement truth and result self-consistency.
+
+**The gates are mutation-audited.** A gate never shown to fail on a broken tool
+is not evidence, so `script/m31/verify-gate-selftest.ts` plants a defect in the
+doc engine or the MCP handler, requires the gate to go red, and removes the
+checkout. One mutation per failure class, all five detected, every control
+passing:
+
+| entry | mutation reintroduced |
+|---|---|
+| `m20-doc-truth-cap` | the per-section cap measured but not applied |
+| `m20-doc-truth-signature` | `name()` for a symbol with no indexed parameter list |
+| `m20-doc-modes-contract` | the invalid-mode guard removed |
+| `m20-doc-citations-freshness` | every source reporting `fresh` |
+| `m20-doc-examples-honest` | the honest `not-observed` unknown removed |
+
+That work also fixed three defects in the audit itself, which are recorded
+because each one manufactured false confidence: it invoked every gate through a
+runtime that was not installed on the machine it ran on, so the whole audit
+could not execute; it counted a gate that CRASHED on startup as a gate that
+DETECTED the mutation; and the subset filter added for convenience could stamp a
+partial run into the file that records the full audit. A mechanism that reports
+success without checking is worse than no mechanism, because it is believed.
+
+The same predicates run against real repositories by
+`fixtures/bb_doc/verify-corpus.ts` (shared corpus, outside this repository):
+**500 checks pass, 0 fail, 0 skip, 80/80 negatives proved able to fail**, over
+`rake`, `rebar3`, `clojure`, `zig`, `lua`, `go_tools`, `typescript`, `perl5`,
+`openssl` and `cpython` — Ruby, Erlang, Clojure, Zig, Lua, Go, TypeScript, Perl, C
+and Python. A corpus that is absent or too small to be meaningful is recorded as
+`skipped` with the reason, never as `passed`.
+
+There were no skips to declare. The gate's one skip was removed rather than
+disclosed: it derives a directory prefix from the file holding the most symbols,
+and on perl5 that file is `proto.h`, which is top-level, so the prefix-resolution
+check was skipped while 4 069 of the corpus's 4 224 files sat nested and unused.
+Nothing about a prefix depends on how symbol-dense a file is, so the check now
+falls back to a nested file from the index and says so — *"perl5's densest file
+proto.h is top-level; the prefix check uses the nested file Porting/config.sh
+instead"* — and skips only when the corpus genuinely holds no nested file. A
+coverage loss dressed as an honest skip is the worst of both.
+
+The two C-family and Python corpora were added because two languages had no
+coverage at all, and they earned their place immediately — they produced the
+slowest measured corpus, and the timing bound this tool's own gate uses had to be
+re-derived from measurement rather than assumed.
+
+**The wall-clock bound is derived, not chosen.** Feature mode over the ten
+corpora runs in 467 ms (clojure) to 6 135 ms (cpython, 189 518 symbols) warm. The
+bound was 10 s, which left 1.67x headroom over the slowest — and the first cpython
+run failed on it while unrelated indexing saturated the machine, which is a
+measurement of the scheduler, not of the tool. It is now 20 s, which still catches
+a 3.3x regression, and every run prints its own headroom so the margin is never
+invisible. The tightest corpus is zig at 4 265 ms.

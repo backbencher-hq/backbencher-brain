@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "per_analyzer_complexity:groovy",
   "fixtureDir": "validation/m12/fixtures/groovy",
-  "corpusDir": "/tmp/bb-groovy-sample-dir",
+  "corpusDir": "$HOME/fixtures/xml/repos/grails-core",
   "runs": [
     {
       "name": "fixtures",
@@ -25,27 +25,21 @@
       "relationships": 79
     },
     {
-      "name": "corpus_subset",
+      "name": "corpus_full:groovy",
       "measurement": {
-        "name": "corpus_subset:groovy",
-        "wallTimeMs": 3635.802114,
-        "userCpuMs": 4995.601,
-        "systemCpuMs": 376.586,
-        "peakRssBytes": 284725248,
-        "rssDeltaBytes": 77873152,
-        "databaseBytes": null,
-        "files": 400,
-        "symbols": 2953,
-        "relationships": 14053,
-        "filesPerSecond": 110.01698867486823,
-        "symbolsPerSecond": 812.2004188922148,
-        "relationshipsPerSecond": 3865.171854619808
+        "wallTimeMs": 494600.0,
+        "peakRssBytes": 424673280,
+        "files": 7114,
+        "symbols": 64719,
+        "relationships": 318945,
+        "filesPerSecond": 14.38,
+        "symbolsPerSecond": 130.85,
+        "relationshipsPerSecond": 644.85
       },
-      "symbols": 2953,
-      "relationships": 14053
+      "note": "Measured over EVERY tracked .groovy file in the corpus (git ls-files '*.groovy', 7,114 files, 0 failures), single process, 20-file warm-up, $HOME/fixtures/xml/repos/grails-core. This REPLACES the 400-file 'corpus_subset' run, which is removed rather than kept: it reported 110 files/s against the full corpus's measured 14 files/s, so keeping both would have left a number 8x optimistic in the record. The gap is not the analyzer being slower on more data -- the first files parsed are the shallow modules, and grails-data-* / grails-web-* are both larger and deeper, so the subset was sampling the cheap end. Any budget read against 110 files/s is void."
     }
   ],
-  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/.",
+  "note": "Complexity envelope per analyzer: wall time, symbols/s, relationships/s, peak RSS. Budgets are declared per analyzer in docs/analyzers/. 'corpus_subset' was a 400-file sample and has been replaced by a full-corpus run; see runs[].note for why the two disagree.",
   "bbSeal": {
     "alg": "sha256",
     "sealedAt": "2026-09-14T23:42:47.876Z",

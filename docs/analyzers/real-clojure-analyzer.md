@@ -495,3 +495,56 @@ method. Telling them apart requires knowing that `RecordToTestStatics1` **is** a
 record — cross-file type knowledge a per-file derivation cannot have. Adding the
 shape unconditionally measured 99.62% → 66.67% with 520 fabrications, which is the
 measurement that settles it. Recorded as CLJ-D52 rather than guessed.
+Single-pass iterative stack walk (no recursion) with explicit exit frames; `Map`/null-prototype
+lookups for the core set, aliases, refers, shadow ranges and both dedupe sets. The core-suppression
+gate's cost is one null-prototype lookup per head, and the order-aware shadow table is a linear
+scan over one or two ranges per name in practice. Two whole-tree pre-passes exist (the
+comment/core shadow scan and the refer-segment bookkeeping), both O(n) and both single-stack.
+
+Measured on the corpora of the M60 deep round (see `reviews/clojure/deep-review-2026-09-28.md`
+for the full-extent differential): metabase 4,253 files → 84,414 symbols, 579,714 relationships,
+0 thrown exceptions, 0 timeouts, 1 file with ERROR nodes (3 literal NUL bytes in the source —
+a corpus data artifact, disclosed).
+
+## Differential ground truth and evidence
+
+- Truth side: `script/m14/differential.ts` → `deriveClojureEdges`, mirroring CLJ-D1…D29
+  rule for rule. It imports `CLOJURE_CORE_BUILTINS` and `isAnonArgShorthand` **by reference** so
+  the core surface cannot drift between the two sides.
+- **F5, four corpora at full extent** (not a 60-file draw), read with
+  `script/m14/tmp/clj-full-f5.ts` — which imports this repo's own `deriveClojureEdges` and
+  `normTarget` and re-implements the harness's comparison semantics, so the number is the
+  same claim `differential.ts` makes over every file instead of 60. (The cross-check has
+  already earned its place: it is what caught a harness defect — a `//` comment that had
+  deleted the `calls` label for 17 lanes — which read as a 19.8% coverage red for this lane
+  while the analyzer was correct. See `reviews/clojure/deep-review-2026-09-28.md`, CLJ-H1.)
+
+  | corpus | files | tree-truth | covered | MISSING | analyzer edges | unexplained |
+  |---|---|---|---|---|---|---|
+  | `clojure/clojure` | 143 | 6,875 | 6,875 (100%) | 0 | 3,279 | 0 |
+  | `clj-kondo` | 444 | 8,087 | 8,087 (100%) | 0 | 4,456 | 0 |
+  | `core.async` | 46 | 2,108 | 2,108 (100%) | 0 | 1,047 | 0 |
+  | `metabase/metabase` | 4,253 | 239,192 | 239,192 (100%) | 0 | 122,916 | 0 |
+
+- **F1 at scale**: 35 distinct node types over metabase's 4,253 files, every one classified
+  against the spec's handled/silent sets, **0 unclassified**, 0 placeholder names, 0 empty names.
+- **The core-suppression claim, measured rather than asserted**
+  (`script/m14/tmp/clj-gate-census.ts`): every emitted `calls` edge naming a real clojure.core
+  var is classified independently as FILE-DECLARED / REGION-BOUND / REFERRED / **RESIDUAL**.
+  Result on three corpora: **0 RESIDUAL** (`clojure` 2,941 + 6, `clj-kondo` 64 + 11,
+  `core.async` 27 + 2).
+- Ground truth: `validation/m12/ground-truth/clojure.json`; differential result
+  `validation/m12/results/clojure-differential.json`; corpus sample
+  `validation/m12/results/clojure-corpus-sample.txt`; complexity
+  `validation/m12/results/clojure-complexity.json`.
+- Fixtures: `validation/m14/fixtures/clojure/` (42); mutants: `script/m14/mutate-analyzer.ts`
+  (63 clojure mutants, all CAUGHT).
+
+## Regex inventory
+
+**None.** `validation/m12/results/regex-census.json` carries no entry for
+`real-clojure-analyzer.ts`, and `reviews/regex-policy.md` states **0** for the lane. The baseline
+was 2 (`/\.$/` constructor tests), both eliminated in the M12.04 grammar rewrite; the third and
+last, `/^%(\d+|&)?$/`, was removed in the M60 deep round with the equivalence proof above
+(CLJ-D20). Every remaining string surgery in the file is a char scan or a `Set` lookup, and the
+conversions carry their equivalence argument inline.

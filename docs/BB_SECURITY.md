@@ -47,12 +47,56 @@ State is derived from **endpoint resolution**, never from the raw row alone:
 Severity comes from the flow row. Confidence is calibrated by evidence quality:
 `confirmed` = 0.7, `unresolved`/`source_only` = 0.4, `mitigated` = 0.3.
 
+`brain_taint_flow.severity` is a bare `TEXT NOT NULL` column with **no CHECK
+constraint** (`src/brain/schema-ddl.ts:241`), so a writer can store a value
+outside the documented union. Severity is therefore **normalized at the engine
+boundary** to exactly `critical | high | medium | low | unknown`; anything else
+becomes `unknown` rather than being cast through. Two consequences that are
+now invariants instead of hopes:
+
+- `sum(summary.bySeverity) === summary.total`. Previously an unrecognized
+  severity appeared in `bySeverity` and in none of the five named buckets, so
+  the handler printed `0 critical / 0 high / 0 medium / 0 low` directly above a
+  list of findings.
+- A hotspot whose only finding has an unrecognized severity reports
+  `maxSeverity: "unknown"`, not `"low"`. The hotspot accumulator seeds with the
+  worst bucket so the fold is a true max.
+
+The indexer currently writes only `critical`, `high` and `unknown`
+(`src/ast/parallel-indexer.ts`), so in practice `medium` and `low` are empty
+and `unknown` is exactly the isolated-source rows.
+
 ## Deduplication
 
 The indexer emits multiple rows per real issue (one per `source_type` variant,
 plus intermediate-variable flows). Findings are deduplicated by flow-equivalence
-(`vulnerabilityType | sink | sinkType | file:line | state`). `summary.scannedFlows`
-vs `summary.deduplicatedFlows` shows the reduction.
+(`vulnerabilityType | sink | sinkType | file:line | state`).
+
+Row order from `brain_taint_flow` is not a SQLite contract, and dedup keeps the
+first row of each equivalence group as the finding's `id`, so the read is
+ordered by `t.id` and the finding sort breaks its final tie on `id`. The
+reported identity is a property of the data, not of the storage layout.
+
+## Truncation and the census
+
+Three numbers, and they are not interchangeable:
+
+| Field | Meaning |
+| --- | --- |
+| `summary.scannedFlows` | Rows read from `brain_taint_flow` (pre-dedup). |
+| `summary.deduplicatedFlows` | Findings after dedup, **before** the `maxResults` cap. |
+| `summary.total` | Findings actually returned. |
+| `summary.truncatedFindings` | `deduplicatedFlows - total`. `0` means the report is complete. |
+
+`bySeverity`, `byType`, `byState` and `hotspots` are computed over the
+**returned** findings, so they always describe exactly what is on screen and
+`sum(bySeverity) === total` holds. `provenance.truncated` is set when the cap
+bit, and `provenance.unknowns` names the dropped count.
+
+The legacy adapter (`src/security/cross-language-security.ts`) now carries
+`provenance`, `scannedFlows`, `deduplicatedFlows` and `truncatedFindings`
+through to the handler. It previously returned none of them, which is why a
+capped scan was indistinguishable from a complete one at the tool surface.
 
 ## Vulnerability-type normalization
 
@@ -62,13 +106,22 @@ raw alias.
 
 ## Modes
 
-`analyzeSecurity(projectId, { mode })` supports:
-- `findings` — the finding list.
-- `flow` — per-finding resolved path nodes.
-- `summary` — `bySeverity`, `byType`, `byState`, `crossLanguage`, scan/dedup counts.
-- `hotspots` — files/symbols with the most findings.
+**One executable mode: `findings`.** The strict engine
+(`src/intelligence/security/taint.ts`) returns the finding list together with
+`summary` and `hotspots` in a single report; there is no per-mode dispatch.
 
-Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
+`flow`, `summary` and `hotspots` are **planned, not executable**. They are
+declared in `src/mcp/tool-registry.ts` under `plannedModes` (not `modes`) and
+in `docs/tools/bb_security.md` as "roadmap, not executable".
+`SecurityOptions.mode` is accepted by the type and **ignored** by the engine —
+there is no code path that reads it. `docs/M10-CONTRACT-BASELINE.md:41`
+records this same drift. Treat the `mode` field as a documentation artifact,
+not a capability.
+
+Options honoured by `analyzeTaintFlows`: `minConfidence`, `includeMitigated`,
+`includeUnresolved`, `maxResults`. None are exposed on the `bb_security` MCP
+schema (which accepts only `history`, `recordRun`, `limit`); they are reachable
+from the typed API, not from the agent-facing tool.
 
 ## Limitations & safe interpretation
 
@@ -80,7 +133,28 @@ Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
 - **`recordRun` persists only real findings** (confirmed/mitigated).
   `source_only`/`unresolved` observations are reported live as "unvalidated
   sources" and are **excluded from persisted history** — history must never
-  contain `rule="unresolved"` or `severity="unknown"` rows.
+  contain `rule="unresolved"` or `severity="unknown"` rows. They are shown on
+  the `recordRun` response too (marked "not persisted"); previously that path
+  omitted them entirely, so `{"recordRun": true}` reported less than `{}`.
+- **`recordRun` persists the full analysed set, never a display slice.**
+  `completeAnalysisRun` auto-resolves any prior `open` finding that is absent
+  from the persisted set, so persisting a capped scan would resolve findings
+  that were never examined. The recording path therefore re-scans with
+  `maxResults: SECURITY_RECORD_RUN_CENSUS_CAP` (50 000), and when even that cap
+  bites, the response says so with the same `CAPPED at …` note `bb_patterns`
+  uses. `bb_security` had no such guard before this.
+- **Persisted findings carry evidence and confidence.** The legacy adapter
+  used to drop `confidence`, `evidence` and `limitations` from the strict
+  finding, so the `recordRun` mapper read them off a shape that never had them:
+  every persisted security finding was stored with `confidence = NULL` and
+  `evidence = '[]'` — no calibration and no evidence. Both are now carried, and
+  the fingerprint is `taint:<type>:<sinkType>:<file>:<line>` (the old
+  `file:line:label` key collided for two sinks on one line and changed identity
+  when a finding was merely re-graded).
+- **A finding with no resolvable file reports `<unresolved location>`**, not
+  `?`. The old `"?"` sentinel was passed to the freshness resolver, which
+  queried `relative_path IN ('?')` — a file that cannot exist — so those
+  findings were counted `missing` and inflated the staleness footer.
 - **Sink classification is token-based over symbol bodies.** A symbol whose
   body text contains a token like `execute` can match the universal SQL-sink
   regex even when no database/SQL is involved — reproducing Ruby `def execute`
@@ -94,22 +168,98 @@ Options: `minConfidence`, `includeMitigated`, `includeUnresolved`, `maxResults`.
 - This tool reports **project-code** findings. Hardening of the MCP server
   itself is a separate concern and is not mixed into these results.
 
+## Evidence sealing
+
+Every verifier in the bb_security suite writes its record through
+`writeSealed` (`script/lib/evidence.ts`), which is the repository's one declared
+write path; the one trusted read (`readEvidence`) refuses a record with no
+`bbSeal` envelope as `unsealed`.
+
+This lane was not covered by the M61.V1 sealed-write adoption, so until
+2026-09-30 all five security verifiers wrote with a bare
+`writeFileSync(JSON.stringify(...))` — producing precisely the legacy record the
+trusted reader is required to reject. Two consequences, both silent:
+
+- a **successful** run destroyed the committed seal;
+- a **failing** run destroyed the seal *and* left `verified: false` in its
+  place, which the old X5 leg did when its hardcoded corpus path was absent.
+
+The suite now also asserts the property structurally: a regression check reads
+each writer's source and fails if a bare `writeFileSync(JSON.stringify(...))`
+evidence write reappears.
+
+## What the tool does NOT detect
+
+Stated explicitly, because the previous tool description claimed otherwise:
+
+- **Hardcoded secrets — not implemented.** No writer emits any secret
+  vulnerability type. The `sensitive_data` taint *source* rule
+  (`src/ast/taint-analyzer.ts:88`) marks a symbol as a data source; it never
+  produces a finding. A `hardcoded_secret` rule exists in
+  `src/ast/patterns.ts` and is reported by `bb_patterns`, a different tool.
+- **Cross-language taint is not a language comparison.** `crossLanguage` is
+  `cross_language_boundaries > 0`, and the only writer of a non-zero value is
+  `resolveCrossSymbolTaints` (`src/ast/parallel-indexer.ts:3787`), which sets
+  the column to the constant `1` for *any* flow joined across a
+  `brain_relationship` edge. No code compares the source and sink languages.
+  Read the field as "this flow was stitched across symbols", not as "this flow
+  crosses languages". Every committed corpus run records `crossLanguage: 0`.
+- **Weak crypto is effectively unreachable as a finding.** `weak_crypto` is
+  emitted as a *sink* (`src/ast/taint-analyzer.ts:221`) and a finding requires a
+  co-located taint *source* in the same symbol (or a relationship join). A
+  standalone `md5(x)` becomes an isolated-sink row, is classified `unresolved`,
+  and is reported as an unvalidated observation rather than a finding.
+- **Detection is source/sink co-location, not data flow.** The indexer pairs
+  every taint source with every taint sink in a symbol body
+  (`src/ast/parallel-indexer.ts:2846-2872`). Two tokens in the same function
+  produce a `confirmed` flow whether or not one reaches the other. `confirmed`
+  means "both endpoints are indexed symbols", not "these values are connected".
+- **Taint detection covers all languages; AST-level sink/source detection does
+  not.** `TaintAnalyzer.enrichSymbols` runs on every parsed file
+  (`src/ast/pool-worker.ts:572-578`) for every language, so taint rows exist
+  outside TypeScript. The receiver-based, AST-shaped rules in
+  `real-typescript-analyzer.ts` exist for TypeScript only; every other language
+  is matched by the token regexes in `taint-analyzer.ts`.
+
 ## Verification
 
-`script/verify-security.ts` covers same-language SQLi, deduplication, resolved
-path nodes, confidence calibration, and — via deterministic row insertion —
-mitigated state, cross-language flags, `includeMitigated` filtering, hotspots,
-and alias normalization. `script/m20/verify-security-flow-boundary.ts` additionally
-proves that endpoint resolution takes precedence over a mitigation flag: partial
-flows remain `source_only`/`unresolved` observations and are excluded when
-`includeUnresolved=false`. `script/m20/verify-security-adversarial.ts` runs a
-deterministic policy matrix (exact state/severity/confidence per injected row),
-real concatenation-vs-clean behavior, a mutation proof, and a tautology audit
-that rejects any security verifier containing unconditional assertions
-(`check(..., true)`, `>= 0`, `|| true`). `script/m20/verify-security-history.ts`
-proves the history contract: live `source_only`/`unresolved` observations are
-surfaced as unvalidated sources but excluded from persisted history; persisted
-rows never carry `rule="unresolved"` or `severity="unknown"`; repeat runs keep
-finding counts stable; CLI and direct handler record the same set. These are
-fixture-level evidence; they do not prove complete real-repository taint recall
-(owned by M20.X2).
+## Verification
+
+All five verifiers run under one shared harness (`script/m15/security-harness.ts`).
+
+`script/m15/verify-security-regressions.ts` — one section per defect found in
+the 2026-09-30 review (severity accounting, truncation and the `recordRun`
+census, the fabricated file path, evidence-free history, the inverted
+observation text, determinism). Every assertion names the defect it would fail
+on. It also audits every security verifier for structurally unfalsifiable
+assertions and for the sealed-write law.
+
+`script/m15/verify-security-deep.ts` — X1 classification from a real indexer
+run, X2 the classification-construct census, X3 cross-file deterministic
+classification, X4 measured complexity on fixtures that actually contain taint
+flows, X5 an **optional** real-repository scan (absent corpus records `skipped`,
+never a failure), X6 the handler output contract plus registry/doc honesty, X7
+non-TypeScript language coverage, X8 entry-point parity and determinism.
+
+`script/verify-security.ts` — the engine end to end: dedup reduction, the
+calibration (0.7 / 0.4 / 0.3) on findings asserted to exist, a pinned four-state
+matrix whose counts must sum to total, hotspot content, and determinism.
+
+`script/m20/verify-security-flow-boundary.ts` — endpoint resolution takes
+precedence over the mitigation flag: a partial flow is never `confirmed` or
+`mitigated`, and a mutation flip on a *resolved* flow changes
+`confirmed` → `mitigated`.
+
+`script/m20/verify-security-adversarial.ts` — the full policy matrix, a real
+concatenation-vs-clean fixture, a mutation proof with its preconditions
+asserted, and the auto-pass audit over all eleven security verifiers.
+
+`script/m20/verify-security-history.ts` — the history contract: observations are
+surfaced live and marked not-persisted, persisted rows carry evidence,
+confidence and limitations, a repeat run resolves nothing, a severity re-grade
+is a repeat rather than a new finding, and the CLI door records the same set as
+the handler door.
+
+All are fixture-level. They do not prove real-repository taint recall (owned by
+M20.X2) and none of them has been executed on a machine without the corpus
+and the corpus-independent legs run hermetically by design.

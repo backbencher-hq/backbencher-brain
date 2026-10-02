@@ -40,6 +40,11 @@ interface HaskellContext {
   // so unqualified calls resolve even to LATER-defined functions (forward
   // references) and to class/instance methods.
   declaredFunctions: Set<string>
+  // class name -> the method names its body declares, collected by a pre-pass so
+  // an INSTANCE can be matched against its class regardless of declaration order
+  // (Haskell permits `instance` before `class` in a file, and a second pass over
+  // emitted symbols would miss every instance that appears first).
+  classMethods: Map<string, Set<string>>
   // Lexical local identity (see LocalScopes).
   localScopes: LocalScopes
   // Module name set by the header; module-level symbols get ownerName = module
@@ -63,8 +68,13 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       typeSignatures: {},
       functionSymbolIndex: {},
       declaredFunctions: new Set(),
+      classMethods: new Map(),
       localScopes: { callableScoped: new Map(), blockLocals: new Map(), frameLocals: new Map() },
-      currentModule: undefined,
+      // A file with no `module` header is module `Main` — the language rule.
+      // Defaulted HERE, before the walk, because the import edge is pushed during
+      // it and read `currentModule || ""`; defaulting in the post-loop was too
+      // late and still produced `imports -> Distribution.Simple` with no source.
+      currentModule: "Main",
       currentFunction: undefined,
       seenRels: new Set(),
     }
@@ -77,6 +87,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Where/let locals are NOT module-level callables — they are resolved
     // lexically (collectLocalScopes), so this prepass skips local blocks.
     this.collectDeclaredFunctions(rootNode, ctx.declaredFunctions)
+    this.collectClassMethods(rootNode, ctx.classMethods)
     this.collectLocalScopes(rootNode, ctx.localScopes)
 
     while (stack.length > 0) {
@@ -245,9 +256,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         pushedScope = this.processClass(node, ctx, scopeStack)
       } else if (node.type === "instance") {
         pushedScope = this.processInstance(node, ctx, scopeStack)
-      } else if (node.type === "data_type" || node.type === "newtype") {
-        pushedScope = this.processData(node, ctx, scopeStack)
-      } else if (node.type === "deriving_instance") {
+    } else if (node.type === "data_type" || node.type === "newtype") {
+      pushedScope = this.processData(node, ctx, scopeStack)
+    } else if (node.type === "type_synomym") {
+      pushedScope = this.processTypeSynonym(node, ctx, scopeStack)
+    } else if (node.type === "foreign_import") {
+      pushedScope = this.processForeignImport(node, ctx, scopeStack)
+    } else if (node.type === "deriving_instance") {
+
         // HSD12 (probe 2026-09-03, postgrest Routine.hs:65): standalone
         // `deriving instance Show Foo` parses as deriving_instance → name
         // (class) + type_patterns → name (target) and previously emitted
@@ -352,13 +368,64 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       })
     }
 
+    // A file with NO `module` header is module Main — that is the language rule,
+    // not a convenience. Without this the import path emitted
+    // `imports -> Distribution.Simple` with an EMPTY SOURCE for postgrest's
+    // Setup.hs, which is the same defect class the VB lane gates on ("no empty
+    // symbol names"): an edge whose owner cannot be resolved to anything in the
+    // index. Synthesising the module also gives its members an owner, so the
+    // post-loop below can emit `contains Main -> ...` against a module that
+    // actually exists rather than dangling.
+    if (!ctx.symbols.some((s) => s.kind === ASTEngine.SymbolKind.Module)) {
+      ctx.symbols.push({
+        name: "Main",
+        kind: ASTEngine.SymbolKind.Module,
+        range: this.nodeToRange(rootNode),
+        scope: "",
+        ownerName: "",
+        visibility: "public",
+        metadata: { haskellSpecific: true, isImplicitMain: true },
+      })
+      for (const s of ctx.symbols) {
+        if (s.kind !== ASTEngine.SymbolKind.Module && !s.ownerName && !s.scope) s.ownerName = "Main"
+      }
+    }
+
     // Post-loop: contains for owned symbols — module → members, type →
     // constructors, record → fields, class/instance → methods. Skip self-named
     // edges (data User = User {...} → the type and constructor share the name,
     // which would collapse into a self-loop in symbol-ID space).
+    // Names this module actually DECLARES at top level. A class, data/newtype,
+    // type synonym or interface owned by the module is a declaration; anything
+    // else an instance names is merely in scope.
+    const declaredHere = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.ownerName && s.ownerName !== ctx.currentModule) continue
+      if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Type ||
+          s.kind === ASTEngine.SymbolKind.TypeAlias || s.kind === ASTEngine.SymbolKind.Interface ||
+          s.kind === ASTEngine.SymbolKind.Enum) declaredHere.add(s.name)
+    }
     for (const s of ctx.symbols) {
       const _owner = s.ownerName || (s.scope && s.scope !== ctx.currentModule ? s.scope : undefined)
-      if (_owner && _owner !== s.name) {
+      // Containment is only a fact about this module when the OWNER is declared
+      // here. An instance body is defined against a class that is very often
+      // imported (`instance Applicative Reference`, `instance Described (List
+      // sep)`), and `contains` is emitted from ownership alone -- so without this
+      // the module appears to DECLARE `Applicative` and `pure`, or `Described`
+      // and `describe`. Re-parenting those methods to the class (above) is only
+      // half the fix; the predicate "is the owner declared HERE" is the other
+      // half, and it is what keeps the true local case:
+      //   class Shape ... ; instance Shape Circle where area = ...
+      // still yields `contains Shape -> area`, because Shape is declared here.
+      if (_owner && _owner !== ctx.currentModule && s.kind === ASTEngine.SymbolKind.Method && !declaredHere.has(_owner)) continue
+      // An `Instance` is named after the type it instantiates and is owned by the
+      // module that instantiates it, so emitting containment here asserts the
+      // module DECLARES that type:
+      //   instance (...) => Described (List sep) where
+      // would produce `contains Distribution.Described -> List` for a `List` that
+      // is in scope from elsewhere. The relationship that IS a fact about this
+      // module is the `implements` edge the instance pushes itself.
+      if (_owner && _owner !== s.name && s.kind !== ASTEngine.SymbolKind.Instance) {
         this.pushRel(ctx, _owner, s.name, ASTEngine.RelationshipType.Contains, 1.0, {}, s.range?.startLine)
       }
     }
@@ -450,6 +517,45 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   // ==========================================================================
   // Pre-pass: declared function/method names (forward-reference resolution).
   // ==========================================================================
+  // class -> its method names. This is what makes `overrides` derivable at all:
+  // an instance declares a method name, and the only way to know that name
+  // OVERRIDES rather than merely exists is to compare it against the class
+  // body's method set. A single walk cannot do that — the instance may be
+  // visited before the class, and in the payloads/cabal corpus it frequently is
+  // — so the class side is gathered first and the instance side is compared
+  // against it when the instance is reached.
+  private collectClassMethods(node: Node, out: Map<string, Set<string>>): void {
+    if (node.type === "class") {
+      const clsName = this.findNamedChildByType(node, ["name"])?.text ?? ""
+      if (clsName) {
+        let set = out.get(clsName)
+        if (!set) { set = new Set<string>(); out.set(clsName, set) }
+        // The methods are NOT direct children of `class` — they sit under
+        // class_declarations, and a class method is a SIGNATURE
+        // (`area :: a -> Double` → signature → variable), not a binding. A
+        // DefaultSignatures method does have a body, and that is a `function`.
+        // Reading only direct `function`/`bind` children found nothing at all,
+        // which is why the first attempt emitted zero overrides.
+        const decls = this.findNamedChildByType(node, ["class_declarations"])
+        const groups: Node[] = decls ? [decls] : []
+        for (const g of groups) {
+          for (const sig of this.collectNamedChildrenByType(g, ["signature"])) {
+            const v = this.findNamedChildByType(sig, ["variable"])
+            if (v?.text) set.add(v.text)
+          }
+          for (const fn of this.collectNamedChildrenByType(g, ["function", "bind"])) {
+            const first = fn.namedChildCount > 0 ? fn.namedChild(0) : null
+            if (first?.type === "variable" && first.text) set.add(first.text)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (c) this.collectClassMethods(c, out)
+    }
+  }
+
   private collectDeclaredFunctions(node: Node, out: Set<string>): void {
     // Type-position function nodes (signature internals, field "parameter"/
     // "result") are TYPES, not declarations — without this guard their type
@@ -668,6 +774,15 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       for (let i = 0; i < exportsList.namedChildCount; i++) {
         const expNode = exportsList.namedChild(i)
         if (expNode) {
+          // The export list INTERLEAVES Haddock comments with exports:
+          //   exports -> comment "-- * Result", export "Result",
+          //            comment "-- ** Specialized multi-row results", export "rowMaybe"
+          // Iterating every named child published the comments as exported
+          // names -- measured 39 `exports` edges across the corpus whose target
+          // was a `--` comment, e.g. `exports Hasql.Decoders -> "-- * Result"`.
+          // A comment is not a name, and no consumer can resolve it. Only an
+          // `export` node is an export; `haddock` and `comment` are not.
+          if (expNode.type !== "export") continue
           let exportName = expNode.text.trim()
           if (this.startsWithWord(exportName, "module ")) {
             exportName = exportName.slice("module ".length).trim()
@@ -677,6 +792,26 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           if (exportName && exportName !== ",") {
             ctx.exports.push({ name: exportName, isDefault: false, range: this.nodeToRange(expNode) })
+            // `exports` is a product relationship type and the export LIST was
+            // already being read and stored in ctx.exports — but only as a flat
+            // array of names, so the graph never learned what a module makes
+            // public. In Haskell that list is the module's entire API surface,
+            // and it is the one place a re-export (`module M`) or a narrowed
+            // export (`module M (foo)`) is stated at all, so an omission here
+            // loses information no other node carries.
+            //
+            // `T(A, B)` is normalised to `T` above, which is the type the module
+            // exports; the constructor list is a visibility detail of T, not a
+            // second exported name.
+            this.pushRel(
+              ctx,
+              moduleName,
+              exportName,
+              ASTEngine.RelationshipType.Exports,
+              1.0,
+              { evidenceClass: "structural" },
+              this.lineOf(expNode),
+            )
           }
         }
       }
@@ -759,13 +894,22 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
         range: this.nodeToRange(node),
         metadata: { isQualified, alias: mod.alias, isHiding: mod.isHiding },
       })
-      // DependsOn for imports — source is the MODULE (FP-family contract:
-      // references module -> dep), never the import itself.
+      // A module import is an IMPORT, and the product has an `imports`
+      // relationship type for exactly that — python and typescript already
+      // publish theirs there. This lane published 2,119 of its 2,126 `references`
+      // edges from this one line, so `references` was 99.7% a mislabel: measured
+      // over 208 files, 2,119 edges carried `isHaskellImport` and only 7 were
+      // genuine references (the FFI entity edges). A consumer querying
+      // `references` for haskell was reading a module graph and could not tell.
+      //
+      // Relabelled rather than duplicated. Publishing one fact under two labels
+      // counts it twice in the graph, and this lane's whole claim is that its
+      // counts mean something.
       this.pushRel(
         ctx,
         ctx.currentModule || "",
         mod.name,
-        ASTEngine.RelationshipType.References,
+        ASTEngine.RelationshipType.Imports,
         0.9,
         {
           isHaskellImport: true,
@@ -928,6 +1072,158 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     return true
   }
 
+  // A type synonym is a first-class declaration — `type Result = [Int64]` names
+  // a type that other code can annotate with, so omitting it left every use of
+  // the name with nothing to resolve to. The grammar's node is spelled
+  // `type_synomym` (the upstream typo is in the node NAME, not this comment), and
+  // its shape is `name` + right-hand side, so the name is the first `name` child.
+  private processTypeSynonym(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
+    ctx.patterns["Type Synonyms"] = true
+    const nameNode = this.findNamedChildByType(node, ["name"])
+    const name = nameNode?.text ?? ""
+    if (!name) return false
+    const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Type,
+      range: this.nodeToRange(node),
+      scope: currentScope?.name || "",
+      ownerName: currentScope?.name || ctx.currentModule,
+      visibility: "public",
+      metadata: { haskellSpecific: true, isTypeSynonym: true },
+    })
+    if (currentScope) {
+      this.pushRel(
+        ctx,
+        currentScope.name,
+        name,
+        ASTEngine.RelationshipType.Contains,
+        1.0,
+        { evidenceClass: "structural" },
+        this.lineOf(node),
+      )
+    }
+    // uses — the synonym's dependency on the types it is DEFINED in terms of.
+    // `type Params = Map.Map ByteString ByteString` is a real type-level edge:
+    // the alias does not exist without them, and nothing else in the graph
+    // carries it (the module `contains` edge says ownership, not composition).
+    //
+    // This is `uses` and not `references` deliberately. A `references` edge here
+    // would claim Params *refers to* ByteString the way a body refers to a
+    // function; this is a synonym standing in for a type, which is what `uses`
+    // is for in every other lane that emits it (kotlin, javascript, css, toml).
+    //
+    // Read from the RIGHT-HAND SIDE only: taking every `name` leaf in the node
+    // would include the LHS, producing a `Params uses Params` self-edge.
+    if (nameNode) {
+      for (const leaf of this.collectTypeNameLeafNodes(node, nameNode)) {
+        if (leaf.text.trim() === name) continue
+        // The line is the LEAF's, not the declaration's. A multi-line synonym
+        // (`type ConnectionError =` / `  ConnectionError1` / `  | Maybe ByteString`)
+        // cited its own first line for every `uses` edge, so
+        // `uses ConnectionError -> Maybe` pointed at the `type` keyword and the
+        // name was on neither the cited line nor — for a multi-line RHS — on any
+        // line the reader would land on. The edge belongs to the declaration, but
+        // the DESTINATION is where the type is written.
+        this.pushRel(
+          ctx,
+          name,
+          leaf.text.trim(),
+          ASTEngine.RelationshipType.Uses,
+          1.0,
+          { evidenceClass: "declared_type" },
+          this.lineOf(leaf),
+        )
+      }
+    }
+    return true
+  }
+
+  // Type-name leaves reachable in a subtree, skipping the subtree rooted at
+  // `skip`, returned as NODES so a caller can cite each one's own line.
+  // Haskell type expressions nest arbitrarily (`Map.Map ByteString ByteString`
+  // is apply → qualified(name) + name), so this walks rather than reading one
+  // level, and it takes `name` and `constructor` only: a `variable` in a type
+  // position is a type PARAMETER (`f a`), not a type, and publishing `a` as a
+  // use of some type named `a` is exactly the fabrication the declared-type
+  // contract forbids.
+  private collectTypeNameLeafNodes(node: Node, skip: Node | null, out: Node[] = []): Node[] {
+    for (let i = 0; i < node.namedChildCount; i++) {
+      const c = node.namedChild(i)
+      if (!c || c === skip) continue
+      if (c.type === "name" || c.type === "constructor") {
+        if (c.text.trim() && !out.some((o) => o.text === c.text)) out.push(c)
+        continue
+      }
+      this.collectTypeNameLeafNodes(c, null, out)
+    }
+    return out
+  }
+
+  // FFI declarations. `foreign import capi "libpq-fe.h PQresultStatus"`
+  // parses as foreign_import → calling_convention, entity (the C symbol),
+  // signature → variable (the HASKELL name) → function (its type). Nothing in
+  // the tree above the module carried the Haskell-side binding, so a file whose
+  // entire content is FFI published one symbol: the module. postgrest's
+  // `Hasql/LibPq14/Ffi.hs` is exactly that file — 6 declarations, 0 published.
+  // The Haskell name is `signature → variable`; the C entity is kept as metadata
+  // and as a `references` edge, because that string is how a reader finds the
+  // symbol in the C headers and nothing else in the graph points at it.
+  private processForeignImport(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
+    ctx.patterns["Foreign Imports"] = true
+    const sig = this.findNamedChildByType(node, ["signature"])
+    const varNode = sig ? this.findNamedChildByType(sig, ["variable"]) : null
+    const name = varNode?.text ?? ""
+    if (!name) return false
+    const entity = this.findNamedChildByType(node, ["entity"])?.text ?? ""
+    const convention = this.findNamedChildByType(node, ["calling_convention"])?.text ?? ""
+    const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    ctx.symbols.push({
+      name,
+      kind: ASTEngine.SymbolKind.Function,
+      range: this.nodeToRange(node),
+      scope: currentScope?.name || "",
+      ownerName: currentScope?.name || ctx.currentModule,
+      visibility: "public",
+      metadata: {
+        haskellSpecific: true,
+        isForeignImport: true,
+        ...(entity ? { foreignEntity: entity } : {}),
+        ...(convention ? { callingConvention: convention } : {}),
+      },
+    })
+    const owner = currentScope?.name || ctx.currentModule
+    if (owner) {
+      this.pushRel(
+        ctx,
+        owner,
+        name,
+        ASTEngine.RelationshipType.Contains,
+        1.0,
+        // The entity travels with the edge as well as the symbol: the cited line
+        // is the `foreign import` line, which spells the C name
+        // (`WaitForSingleObject`) while the Haskell binding adds an underscore
+        // (`waitForSingleObject_`). A consumer — or a gate — checking that the
+        // target name appears at the cited line has to be able to find the
+        // spelling that IS there.
+        { evidenceClass: "structural", isForeignImport: true, ...(entity ? { foreignEntity: entity } : {}) },
+        this.lineOf(node),
+      )
+      if (entity) {
+        this.pushRel(
+          ctx,
+          name,
+          entity,
+          ASTEngine.RelationshipType.References,
+          0.9,
+          { evidenceClass: "foreign_symbol", isForeignEntity: true },
+          this.lineOf(node),
+        )
+      }
+    }
+    return true
+  }
+
   private processData(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
     ctx.patterns["Algebraic Data Types"] = true
     // Pinned grammar: data_type/newtype → name (probe 2026-09-03). The
@@ -945,10 +1241,22 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name) return false
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    const typeRange = this.nodeToRange(node)
+    // A `data`/`newtype` declaration puts its keyword on its own line often
+    // enough that the node's start line is the bare word `data`:
+    //   data
+    //     RuleCommands
+    //       (scope :: Scope)
+    // Anchoring the symbol at its own `name` node puts every `contains` edge
+    // citing it on the line the name is written, which is the line a reader wants.
+    if (nameNode) {
+      typeRange.startLine = nameNode.startPosition.row + 1
+      typeRange.startColumn = nameNode.startPosition.column
+    }
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Type,
-      range: this.nodeToRange(node),
+      range: typeRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
@@ -958,12 +1266,26 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Data constructors → Constructor symbols owned by the type. The grammar
     // nests them: data_type → data_constructors → data_constructor → prefix/
     // record; newtype → newtype_constructor directly.
+    //
+    // GADTs nest DIFFERENTLY: `data Expr a where` puts its constructors under
+    // `gadt_constructors` → `gadt_constructor`, never under `data_constructors`.
+    // Searching only for the latter published the TYPE and dropped every GADT
+    // constructor, so on postgrest's `Hasql/Decoders/All.hs:116` the type
+    // `NullableOrNot` appeared with neither `NonNullable` nor `Nullable` — and
+    // because those constructors carry the types, the `nonNullable`/`nullable`
+    // FUNCTIONS were the only surviving symbols, which reads as if the GADT had
+    // no constructors at all. `extractConstructorName` already resolves them: its
+    // `["constructor", "name"]` fallback finds a gadt_constructor's own
+    // `constructor` child. They only had to be COLLECTED.
     const ctorNodes: Node[] = []
-    const ctorGroup = this.findNamedChildByType(node, ["data_constructors"])
-    if (ctorGroup) {
-      for (const c of this.collectNamedChildrenByType(ctorGroup, ["data_constructor"])) ctorNodes.push(c)
+    for (const group of ["data_constructors", "gadt_constructors"]) {
+      const g = this.findNamedChildByType(node, [group])
+      if (!g) continue
+      for (const c of this.collectNamedChildrenByType(g, ["data_constructor", "gadt_constructor"])) {
+        if (!ctorNodes.includes(c)) ctorNodes.push(c)
+      }
     }
-    for (const c of this.collectNamedChildrenByType(node, ["newtype_constructor", "data_constructor"])) {
+    for (const c of this.collectNamedChildrenByType(node, ["newtype_constructor", "data_constructor", "gadt_constructor"])) {
       if (!ctorNodes.includes(c)) ctorNodes.push(c)
     }
     for (const cNode of ctorNodes) {
@@ -1141,10 +1463,27 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // Anchor at the node carrying the class NAME, for the same reason `data` and
+    // `instance` are anchored there (§4e). A class declaration routinely puts the
+    // keyword alone and the name many lines down:
+    //   class
+    //     ( c SpecVersion
+    //     , c TestedWith
+    //     ...
+    //     FieldGrammar (c :: Type -> Constraint) (g :: Type -> Type) where
+    // The class node itself starts on the bare `class` keyword and its `name` child
+    // is ~9 lines later, so every `contains` edge for the class cited a line with
+    // no name on it. This was the last remaining criterion-5 row.
+    const classRange = this.nodeToRange(node)
+    if (nameNode) {
+      classRange.startLine = nameNode.startPosition.row + 1
+      classRange.startColumn = nameNode.startPosition.column
+    }
+
     ctx.symbols.push({
       name,
       kind: ASTEngine.SymbolKind.Interface,
-      range: this.nodeToRange(node),
+      range: classRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
@@ -1183,6 +1522,16 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processInstance(node: Node, ctx: HaskellContext, scopeStack: Scope[]): boolean {
     let className = ""
     let targetType = ""
+    // The node that CARRIES the target type's name. An instance declaration is
+    // routinely multi-line and its `instance` keyword sits on its own line:
+    //   instance IsGraph ipkg srcpkg =>
+    //     IsNode (GenericPlanPackage ipkg srcpkg) where
+    // so the instance node's start line is the `instance` keyword and never
+    // contains the symbol's own name. Anchoring the symbol's range at this node
+    // puts the name — and therefore every `contains` edge citing it — on the line
+    // a reader would land on. Measured over cabal: 32 edges in one file cited a
+    // bare `instance` keyword.
+    let targetNode: Node | null = null
 
     // Shape: [context?, name(class), type_patterns?, instance_declarations?]
     const classNode = this.findNamedChildByType(node, ["name"])
@@ -1195,6 +1544,7 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const direct = this.findNamedChildByType(tpNode, ["name", "constructor"])
       if (direct?.text) {
         targetType = direct.text
+        targetNode = direct
       } else {
         const list = this.findNamedChildByType(tpNode, ["list"])
         if (list) {
@@ -1207,7 +1557,14 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
             // M60 (#924, haskell E half): the TARGET TYPE's NAME, not the whole
             // application — (M1 i c f) names the type M1, and publishing M1 i c
             // put a payload where a name belongs. See haskellAppliedHeadName.
-            if (first) targetType = this.haskellAppliedHeadName(first) ?? first.text
+            if (first) {
+              targetType = this.haskellAppliedHeadName(first) ?? first.text
+              // anchor on the APPLIED HEAD, which is where the name is written:
+              // `(GenericPlanPackage ipkg srcpkg)` names it at the apply's first
+              // child, not at the enclosing `instance` keyword's line
+              const head = first.namedChildren.find((c: any) => c.type === "name" || c.type === "constructor")
+              targetNode = head ?? first
+            }
           }
         }
       }
@@ -1232,10 +1589,20 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (!name || name === " ") return false
 
     const currentScope = scopeStack.length > 0 ? scopeStack[scopeStack.length - 1] : undefined
+    const instRange = this.nodeToRange(node)
+    if (targetNode) {
+      // start where the NAME is, end where the declaration is
+      instRange.startLine = targetNode.startPosition.row + 1
+      instRange.startColumn = targetNode.startPosition.column
+    }
     ctx.symbols.push({
       name,
-      kind: ASTEngine.SymbolKind.Class,
-      range: this.nodeToRange(node),
+      // An INSTANCE, not a class. It is named after the type it instantiates,
+      // and `contains` is derived from symbol ownership, so publishing it as
+      // a Class asserted this module DECLARES that type. The scope pushed for
+      // the body below stays Class on purpose -- method resolution reads it.
+      kind: ASTEngine.SymbolKind.Instance,
+      range: instRange,
       scope: currentScope?.name || "",
       ownerName: currentScope?.name || ctx.currentModule,
       visibility: "public",
@@ -1254,7 +1621,54 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       )
     }
 
-    scopeStack.push({ node, name, kind: ASTEngine.SymbolKind.Class })
+    // overrides — the relationship Haskell actually has instead of class
+    // inheritance. `instance Shape Rec where area r = ...` OVERRIDES the
+    // `area` declared by `class Shape`: same name, same arity, and the
+    // instance's version is the one a `Shape Rec` value dispatches to. Without
+    // this the graph said only "Rec implements Shape", and the method-level
+    // dispatch — the whole point of a typeclass — was invisible, so a reader
+    // could not tell WHICH member an instance supplied.
+    //
+    // It was also the one product relationship type this lane had audited but
+    // never produced: `overrides` is in haskell's F5 label set, yet neither the
+    // analyzer nor the oracle emitted a single row, so the audit was comparing
+    // nothing to nothing and reading green.
+    //
+    // The class side comes from the pre-pass (declaration order is not
+    // guaranteed); the instance side is this node's own method names. An
+    // instance that defines a method the class does NOT declare is not an
+    // override, and is deliberately not published as one.
+    const classM = ctx.classMethods.get(className)
+    if (classM && classM.size > 0 && targetType) {
+      const decls = this.findNamedChildByType(node, ["instance_declarations"])
+      const bodies: Node[] = []
+      if (decls) {
+        for (const d of this.collectNamedChildrenByType(decls, ["function", "bind"])) bodies.push(d)
+      }
+      for (const d of this.collectNamedChildrenByType(node, ["function", "bind"])) {
+        if (!bodies.includes(d)) bodies.push(d)
+      }
+      for (const b of bodies) {
+        const mName = b.namedChildCount > 0 ? b.namedChild(0)?.text : undefined
+        if (!mName || !classM.has(mName)) continue
+        this.pushRel(
+          ctx,
+          `${targetType}.${mName}`,
+          `${className}.${mName}`,
+          ASTEngine.RelationshipType.Override,
+          1.0,
+          { isInstanceMethod: true, evidenceClass: "structural" },
+          this.lineOf(b),
+        )
+      }
+    }
+
+    // Methods of an instance belong to the CLASS it instantiates, not to the
+    // type being instantiated. `instance (...) => Described (List sep)` defines
+    // `describe`: `describe` is a member of `Described`, and `List` is only what
+    // is being described. Ownership by the target type made every instance body
+    // claim its subject type as a declaration here.
+    scopeStack.push({ node, name: className || name, kind: ASTEngine.SymbolKind.Class })
     return true
   }
 
@@ -1520,8 +1934,10 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
       const t = r.type
       const conf = r.confidence ?? 0
       if (t === "contains" || t === "exports") { md.evidenceClass = "structural"; continue }
+      if (t === "imports") { md.evidenceClass = md.isHaskellImport ? "import_based" : "structural"; continue }
       if (t === "references") { md.evidenceClass = md.isHaskellImport ? "import_based" : "reference_qualified"; continue }
       if (t === "extends" || t === "implements") { md.evidenceClass = "structural"; continue }
+      if (t === "overrides") { md.evidenceClass = md.isInstanceMethod ? "structural" : md.evidenceClass ?? "structural"; continue }
       if (t === "instantiates") { md.evidenceClass = md.isRecordConstruction || md.isConstructorApplication || md.isQualifiedConstructorApplication ? "usage_contextual" : "structural"; continue }
       md.evidenceClass = conf >= 0.85 ? "usage_contextual" : "inferred"
     }

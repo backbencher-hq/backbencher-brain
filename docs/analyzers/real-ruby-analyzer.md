@@ -206,6 +206,20 @@ does when it emits no edge at all.
 - **This grammar wraps the node you want.** `superclass`, `splat_parameter`, `destructured_parameter` and
   `exception_variable` all wrap the interesting child, and reading the field expecting a leaf returns
   nothing — silently, for the entire corpus.
+by nothing. Both are now derived (`reviews/ruby/patches/differential-ruby-oracle-mirrors-2.patch`) and
+audited, which is what made the two identity defects below findable at all: both are *containment* facts.
+
+**Full corpus, 8,528 `.rb` files, 8 audited labels** (`rb-corpus-census.ts` + the staged oracle mirrors):
+
+| reading | value |
+|---|---|
+| outside the audited set | **0%** (was 34%) |
+| MISSING | **3 (0.001%)** — `instantiates` 2, `calls` 1 |
+| UNEXPLAINED | **507 (0.178%)** — `contains` 451, `calls` 31, `uses` 18, `overrides` 5, `instantiates` 2 |
+
+The first number in this lane's history taken over the whole corpus rather than a stride. The 507 are
+dominated by `contains` on symbols created inside a dynamic or `class_eval` block — the SIG-B class, where
+the graph cannot say which class owns the member.
 
 ## Line numbers
 
@@ -324,6 +338,8 @@ Re-derived at the commit of `reviews/ruby/m60-deep-round.md`:
   so the binding is the ceiling, not the traversal. Budgets are pinned at p95 <= 40 ms, max <= 4 s and
   >= 150 files/s — set from the measurement with ~15% headroom rather than from an aspiration, because a
   budget pinned at the measurement fails on any slower machine and trains its reader to ignore it.
+  0**; mastodon **0 / 79**; rails **20 / 59**. **All** of the residual is oracle-side and is adjudicated in
+  the review §4.2.
 - Stride census, 400 files per corpus: **zero analyzer-side fabrications after this round**; every
   remaining unexplained edge is an `uses` association the read oracle has no truth derivation for, and
   every remaining missing edge is an `overrides` edge the read oracle fabricated through a nested-class
