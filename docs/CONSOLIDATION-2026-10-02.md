@@ -46,7 +46,6 @@ when no commit in `main` carries the same diff.
 | `archive/worktree-uncommitted-0929` | 1 | archive: every secondary worktree's uncommitted state, captured before anything can remove one |
 | `bbsearch-fix-source-text` | 2 | fix(bb_search): content-mode recall must not depend on the page size |
 | `csharp-oracle-round` | 3 | fix(csharp): CS-D8 extends the bare-`uses` span test to `parameter` (uncommitted work, preserved) |
-| `main` | 0 | — |
 | `recovery/stash-1-2026-09-26` | 1 | index on m48-recovery: 85b2c4a9 probe(m60): #924's node shapes — five snippets reproduce five mechanisms, no |
 | `safety/coagent-inflight-0929` | 1 | safety: the co-agent's in-flight work, captured before any reconciliation |
 | `safety/uncommitted-2026-10-02` | 1 | safety: the uncommitted working tree, captured before reconciliation |
