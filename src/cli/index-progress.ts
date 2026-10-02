@@ -99,7 +99,7 @@ export class IndexProgressRenderer {
   private readonly stream: NodeJS.WriteStream
   private readonly isTTY: boolean
   private readonly startedAt: number
-  private readonly totalFiles: number
+  private totalFiles: number
   private readonly nonTtyIntervalMs: number
   private lastRenderAt = 0
   private lastNonTtyBucket = -1
@@ -118,8 +118,9 @@ export class IndexProgressRenderer {
     return Date.now() - this.startedAt
   }
 
-  /** One-time framing line before the run proper begins. */
+  /** One-time framing line once the file count is known. */
   begin(): void {
+    if (this.announcedExpectation) return
     const expected = expectationFor(this.totalFiles)
     this.announcedExpectation = true
     this.stream.write(`\nIndexing ${countWithCommas(this.totalFiles)} files — ${expected}\n\n`)
@@ -130,6 +131,13 @@ export class IndexProgressRenderer {
    * internal and differs between TTY and non-TTY.
    */
   update(stats: IndexProgressStats): void {
+    // The project size is not known before the scan starts, so the expectation
+    // line is emitted on the first real sample rather than up front. Announcing
+    // it once (rather than per-update) keeps it a reassurance instead of noise.
+    if (!this.announcedExpectation && stats.totalFiles > 0) {
+      this.totalFiles = stats.totalFiles
+      this.begin()
+    }
     if (this.isTTY) {
       const now = Date.now()
       if (now - this.lastRenderAt < 80) return // smooth, cheap, ~12fps
