@@ -47,11 +47,16 @@ export async function getEmbeddingConfig(): Promise<EmbeddingConfig | null> {
   const config = await Config.get()
   const eff = resolveEmbeddingConfig(config)
   if (!eff.configured) return null
+  // The declared dimension is an ASSERTION the client enforces, never a
+  // parameter sent to the provider. `BB_EMBEDDING_DIMENSION` wins over the config
+  // file's `embedding_dimension` because an operator asserting a width in their
+  // shell is the more current statement of what they expect.
+  const asserted = readRuntimeOptions().assertedDimension
   const cfg: EmbeddingConfig = {
     baseURL: eff.baseURL,
     apiKey: eff.apiKey,
     model: eff.model,
-    dimension: typeof config.embedding_dimension === "number" ? config.embedding_dimension : undefined,
+    dimension: asserted ?? (typeof config.embedding_dimension === "number" ? config.embedding_dimension : undefined),
   }
   // A base URL that cannot be an http(s) endpoint can never succeed, so returning
   // it only buys a guaranteed failure per batch. Returning null here makes
@@ -123,10 +128,18 @@ export class EmbeddingApiError extends Error {
   kind: EmbeddingFailureKind
   /** One line the user can act on. Never contains a key. */
   advice: string
-  /** Which provider produced it: "primary" | "fallback". */
+  /** Which provider produced it: "primary" | "fallback" | "probe". */
   source: string
+  /** Endpoint and model that failed — so a report can name them. Never a key. */
+  endpoint: string
+  model: string
 
-  constructor(status: number, message: string, retryAfterSec?: number, opts: { kind?: EmbeddingFailureKind; source?: string } = {}) {
+  constructor(
+    status: number,
+    message: string,
+    retryAfterSec?: number,
+    opts: { kind?: EmbeddingFailureKind; source?: string; baseURL?: string; model?: string } = {},
+  ) {
     super(message)
     this.name = "EmbeddingApiError"
     this.status = status
@@ -134,6 +147,8 @@ export class EmbeddingApiError extends Error {
     this.kind = opts.kind ?? (status === 0 ? "network" : classifyStatus(status))
     this.advice = ADVICE[this.kind]
     this.source = opts.source ?? "primary"
+    this.endpoint = opts.baseURL ?? ""
+    this.model = opts.model ?? ""
   }
 }
 
@@ -162,8 +177,87 @@ export function latchedEmbeddingEndpoints(): string[] {
   return [...authLatch.keys()]
 }
 
+/**
+ * The failures this process has already been given by the provider, read out
+ * WITHOUT making a network call.
+ *
+ * This is what lets `bb doctor` answer "is the configured endpoint actually
+ * working, and if not, what do I do about it" from inside a long-lived process
+ * that has been indexing: a 401 or a 404 latches, and the latch already knows
+ * the status, the classification and the action. Reading it here is honest
+ * ("this is what the provider last told us") where a fresh probe would be a new
+ * observation the user did not ask for.
+ *
+ * No secret: the endpoint is the base URL, and `message` is the already
+ * redacted form the client builds.
+ */
+export function observedEmbeddingFailures(): Array<{
+  baseURL: string
+  model: string
+  status: number
+  kind: EmbeddingFailureKind
+  advice: string
+  message: string
+}> {
+  return [...authLatch.values()].map((error) => ({
+    baseURL: error.endpoint,
+    model: error.model,
+    status: error.status,
+    kind: error.kind,
+    advice: error.advice,
+    message: error.message,
+  }))
+}
+
 function latchKey(baseURL: string, model: string): string {
   return `${baseURL}|${model}`
+}
+
+/**
+ * Make exactly one embedding call and report what came back. Opt-in: the
+ * diagnostic surfaces call this, never the indexing path.
+ *
+ * Three properties make it worth having rather than "just look at the config":
+ *
+ *  - it goes through `attemptRequest`, the SAME code indexing uses, so the
+ *    classification is the one indexing would apply. A probe that guessed the
+ *    model or re-implemented the status mapping would measure a different thing
+ *    than the thing that is broken;
+ *  - it does NOT read or write the auth latch, so diagnosing a provider cannot
+ *    change what indexing does afterwards. A doctor that latched a 401 would
+ *    make its own diagnosis fatal;
+ *  - it sends one short string, so it costs one request and one vector.
+ */
+export async function probeEmbeddingEndpoint(
+  cfg: EmbeddingConfig,
+  optionsOverride?: Partial<EmbeddingRuntimeOptions>,
+): Promise<{
+  ok: boolean
+  elapsedMs: number
+  dimension?: number
+  status?: number
+  kind?: EmbeddingFailureKind
+  advice?: string
+  message?: string
+}> {
+  const started = Date.now()
+  const options: EmbeddingRuntimeOptions = { ...readRuntimeOptions(), ...optionsOverride }
+  try {
+    const result = await attemptRequest(["bb doctor embedding probe"], cfg, options, "probe")
+    return { ok: true, elapsedMs: Date.now() - started, dimension: result.vectors[0]?.length }
+  } catch (e: any) {
+    const err: EmbeddingApiError = e?.name === "EmbeddingApiError"
+      ? e
+      : new EmbeddingApiError(0, String(e?.message ?? e), undefined, { kind: "network", source: "probe", baseURL: cfg.baseURL, model: cfg.model })
+    return {
+      ok: false,
+      elapsedMs: Date.now() - started,
+      status: err.status,
+      kind: err.kind,
+      advice: err.advice,
+      message: err.message,
+    }
+  }
 }
 
 // ── the request ──────────────────────────────────────────────────────────────
@@ -204,6 +298,10 @@ function isRetryable(error: EmbeddingApiError, attempt: number, maxAttempts: num
 }
 
 async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: EmbeddingRuntimeOptions, source: string): Promise<AttemptResult> {
+  // Stamped onto every error raised below, so a diagnostic reading a failure out
+  // of this process can name WHICH endpoint and model it came from instead of
+  // printing a status with no subject. The base URL only — never the key.
+  const who = { source, baseURL: cfg.baseURL, model: cfg.model }
   const url = `${cfg.baseURL}/embeddings`
   const payload = JSON.stringify({
     model: cfg.model,
@@ -267,7 +365,7 @@ async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: Em
         // matches /embedding API 429/ on it. Redaction is added, not substituted.
         `embedding API ${status}: ${redactSecrets(body.slice(0, 200), cfg.apiKey)}`,
         retryAfterSec,
-        { source },
+        who,
       )
     }
 
@@ -275,10 +373,10 @@ async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: Em
     try {
       data = JSON.parse(body) as typeof data
     } catch {
-      throw new EmbeddingApiError(status, `embedding API ${status}: response is not JSON — ${redactSecrets(body.slice(0, 200), cfg.apiKey)}`, undefined, { kind: "protocol", source })
+      throw new EmbeddingApiError(status, `embedding API ${status}: response is not JSON — ${redactSecrets(body.slice(0, 200), cfg.apiKey)}`, undefined, { kind: "protocol", ...who })
     }
     if (!data || !Array.isArray(data.data)) {
-      throw new EmbeddingApiError(status, `embedding API ${status}: response has no data array`, undefined, { kind: "protocol", source })
+      throw new EmbeddingApiError(status, `embedding API ${status}: response has no data array`, undefined, { kind: "protocol", ...who })
     }
 
     // Servers are supposed to return results in request order and are allowed to
@@ -301,9 +399,9 @@ async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: Em
     clearTimeout(timer)
     if (e?.name === "EmbeddingApiError") throw e
     if (e?.name === "AbortError") {
-      throw new EmbeddingApiError(0, `embedding provider did not respond within ${options.timeoutMs}ms`, undefined, { kind: "timeout", source })
+      throw new EmbeddingApiError(0, `embedding provider did not respond within ${options.timeoutMs}ms`, undefined, { kind: "timeout", ...who })
     }
-    throw new EmbeddingApiError(0, `embedding request failed: ${redactSecrets(String(e?.message ?? e).slice(0, 200), cfg.apiKey)}`, undefined, { kind: "network", source })
+    throw new EmbeddingApiError(0, `embedding request failed: ${redactSecrets(String(e?.message ?? e).slice(0, 200), cfg.apiKey)}`, undefined, { kind: "network", ...who })
   }
 }
 
@@ -324,16 +422,17 @@ async function attemptRequest(texts: string[], cfg: EmbeddingConfig, options: Em
  * stored under this model label.
  */
 function validateVectors(embeddings: unknown[], expected: number, cfg: EmbeddingConfig, source: string): number[][] {
+  const who = { source, baseURL: cfg.baseURL, model: cfg.model }
   const out: number[][] = []
   let dimension: number | null = null
   for (let i = 0; i < embeddings.length; i++) {
     const vector = embeddings[i]
     if (!Array.isArray(vector) || vector.length === 0) {
-      throw new EmbeddingApiError(200, `embedding API returned a non-vector for input ${i} of ${expected}`, undefined, { kind: "protocol", source })
+      throw new EmbeddingApiError(200, `embedding API returned a non-vector for input ${i} of ${expected}`, undefined, { kind: "protocol", ...who })
     }
     for (const component of vector) {
       if (typeof component !== "number" || !Number.isFinite(component)) {
-        throw new EmbeddingApiError(200, `embedding API returned a non-finite component in vector ${i}`, undefined, { kind: "protocol", source })
+        throw new EmbeddingApiError(200, `embedding API returned a non-finite component in vector ${i}`, undefined, { kind: "protocol", ...who })
       }
     }
     if (dimension === null) dimension = vector.length
@@ -342,7 +441,7 @@ function validateVectors(embeddings: unknown[], expected: number, cfg: Embedding
         200,
         `embedding API returned mixed dimensions (${dimension} and ${vector.length}) in one batch — these vectors cannot be stored together`,
         undefined,
-        { kind: "protocol", source },
+        { kind: "protocol", ...who },
       )
     }
     out.push(vector as number[])
@@ -352,7 +451,7 @@ function validateVectors(embeddings: unknown[], expected: number, cfg: Embedding
       200,
       `embedding API returned ${dimension}-dimensional vectors but BB_EMBEDDING_DIMENSION declares ${cfg.dimension} — refusing to store vectors from a different space than the index already holds under "${cfg.model}". Reindex with the real dimension, or unset BB_EMBEDDING_DIMENSION.`,
       undefined,
-      { kind: "protocol", source },
+      { kind: "protocol", ...who },
     )
   }
   return out
@@ -385,7 +484,12 @@ export async function embedOpenAICompatible(
   if (!Array.isArray(texts) || texts.length === 0) return []
   const options = optionsOverride ?? readRuntimeOptions()
   if (options.disabled) {
-    throw new EmbeddingApiError(0, "embeddings are disabled (BB_EMBEDDING_DISABLED)", undefined, { kind: "protocol", source: "primary" })
+    throw new EmbeddingApiError(
+      0,
+      "embeddings are disabled (BB_EMBEDDING_DISABLED)",
+      undefined,
+      { kind: "protocol", source: "primary", baseURL: cfg.baseURL, model: cfg.model },
+    )
   }
 
   const latched = authLatch.get(latchKey(cfg.baseURL, cfg.model))
