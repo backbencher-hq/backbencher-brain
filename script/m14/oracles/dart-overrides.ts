@@ -252,10 +252,20 @@ function memberNamesOf(m: any): string[] {
     if (isStatic(m)) return out
     for (const c of named(m)) {
       if (NAME_WRAPPERS.has(c.type)) { const nm = field(c, "name"); if (nm) add(nm); continue }
-      // an ANNOTATED FIELD overrides an inherited accessor — see methodNames for why
-      // the annotation is load-bearing rather than decorative
+      // An INSTANCE FIELD is an overridable member. A field implicitly provides a
+      // getter and a setter, so a subclass declaring the same name overrides that
+      // accessor, and `final String walletId` over a base `walletId` is legal Dart the
+      // compiler accepts. `hasOverrideAnnotation` is NOT required, and requiring it is
+      // a mistake I made and then had to unpick: it stopped the oracle claiming
+      // `Shadow.walletId -> Wallet.walletId`, which is real.
+      //
+      // STATIC fields and static methods are excluded by the `isStatic` guard above,
+      // and that exclusion is the whole of what the annotation gate was ever for. A
+      // static call resolves against the static type it was written on, so nothing is
+      // overridden and `@override` is not even legal there. The rule is not "annotated
+      // means overriding"; it is "instance means overridable, static means not". Stated
+      // as the language states it, in one place.
       if (c.type === "initialized_identifier_list" || c.type === "static_final_declaration_list") {
-        if (!hasOverrideAnnotation(m)) continue
         for (const id of named(c)) {
           if (id.type === "initialized_identifier" || id.type === "static_final_declaration") {
             add(field(id, "name") ?? firstIdentifierText(id))
@@ -310,48 +320,6 @@ function firstIdentifierText(n: any): string | null {
 }
 
 
-/** The PLAIN field names a type declares.
- *
- *  A field is a valid override witness for an ACCESSOR and for nothing else, because
- *  in Dart a field implicitly provides a getter and a setter — so a subclass that
- *  declares `@override String get walletId` really is overriding the base's field —
- *  while field-over-field is not legal Dart at all.
- *
- *  This is the other half of the rule `memberNames` applies, and the two are not in
- *  conflict. Unannotated fields are excluded from the MEMBER set because a base's
- *  field must not satisfy "this base declares an overriding method" (PYTHON's
- *  class-variable defect), but they are exactly the right witness for a subclass
- *  ACCESSOR:
- *
- *    class Wallet extends Equatable { final String walletId; }     // field
- *    class _EmptyWallet implements Wallet {
- *      @override
- *      String get walletId => '';                                  // accessor
- *    }
- *
- *  The analyzer published that edge at 0.95 and this oracle published nothing,
- *  because the base's `walletId` was a field and the member set only held
- *  signatures. Two rules, one behaviour, and the honest form of both is "a field is
- *  a witness for an accessor" — so the walk accepts a field match only when the
- *  overriding member is annotated, which is the only way a field can be overriding
- *  anything. */
-function fieldNames(node: any, bodyType: string): string[] {
-  const out: string[] = []
-  const body = named(node).find((c: any) => c.type === bodyType)
-  if (!body) return out
-  for (const m of named(body)) {
-    if (m.type !== "declaration") continue
-    for (const c of named(m)) {
-      if (c.type !== "initialized_identifier_list" && c.type !== "static_final_declaration_list") continue
-      for (const id of named(c)) {
-        if (id.type !== "initialized_identifier" && id.type !== "static_final_declaration") continue
-        const nm = field(id, "name") ?? firstIdentifierText(id)
-        if (nm && IDENT.test(nm) && !out.includes(nm)) out.push(nm)
-      }
-    }
-  }
-  return out
-}
 
 function methodNames(node: any, bodyType: string): string[] {
   const out: string[] = []
@@ -485,7 +453,6 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
   const methodsOf = new Map<string, string[]>()
   const supertypesOf = new Map<string, string[]>()
   const overrideOf = new Map<string, Set<string>>()
-  const fieldsOf = new Map<string, string[]>()
   const collect = (node: any): void => {
     if (!node) return
     if (DECLS.has(node.type)) {
@@ -493,7 +460,6 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
       if (nm) {
         const bodyType = BODY_OF[node.type]
         methodsOf.set(nm, methodNames(node, bodyType))
-        fieldsOf.set(nm, fieldNames(node, bodyType))
         overrideOf.set(nm, overrideMembers(node, bodyType))
         supertypesOf.set(nm, directSupertypes(node))
       }
@@ -568,17 +534,7 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         // method. Gated on the annotation because that is the only evidence in the
         // file that this member is overriding something rather than coincidentally
         // sharing a name.
-        // No annotation required on THIS side. A subclass INSTANCE field provides a
-        // getter, so it overrides an inherited one, and `final String walletId` over
-        // a base `walletId` is legal Dart that the compiler accepts. Requiring
-        // `@override` here was my own over-correction: I had just written the
-        // annotation gate to stop the oracle claiming generated overrides, and then
-        // applied the same gate to a case where the field genuinely IS the override.
-        // The annotation is what distinguishes a MEMBER overriding from a name
-        // coinciding; a field in the subclass whose base has a field of that name is
-        // already an override by Dart's own rules.
-        const fieldWitness = (fieldsOf.get(sup) ?? []).includes(m)
-        if ((exposed.get(sup) ?? supMethods).has(m) || fieldWitness) {
+        if ((exposed.get(sup) ?? supMethods).has(m)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
             break
@@ -590,10 +546,27 @@ export function deriveDartOverridesTruth(root: any, companion?: Map<string, Set<
         // not declared here — the companion pass, and the end of the road if it
         // does not have the member either
         if (companion && companion.has(sup)) {
-          // rule 4 is ANNOTATION-GATED. Only a member that says `@override` is
-          // claimed against a base this file cannot see; an unannotated one is
-          // not provable from this file alone and claiming it fabricates an edge.
-          if (companion.get(sup)!.has(m) && (overrideOf.get(cls)?.has(m) ?? false)) {
+          // NOT annotation-gated, and the gate I put here was wrong.
+          //
+          // `@override` is OPTIONAL in Dart — `annotate_overrides` is a lint, not a
+          // language requirement — so requiring it discards real overrides. Measured:
+          // `class Request extends BaseRequest { void _checkFinalized() { ... } }` in
+          // dart-http carries no annotation anywhere near it, and the analyzer
+          // published `Request._checkFinalized -> BaseRequest._checkFinalized` at 0.95,
+          // which is correct. This oracle published nothing for it, and the row read as
+          // a disagreement about a fact both sides agreed on.
+          //
+          // I had gated this to stop the oracle claiming generated overrides — 81
+          // `X.props -> Equatable.props` rows. But freezed DOES emit `@override` on
+          // every generated `props`, so the annotation was never what stopped them: the
+          // absence of a companion was. The gate was solving a problem it did not have,
+          // and creating one it did.
+          //
+          // What the annotation IS for is the FALLBACK — the first-parent guess, where
+          // there is no evidence either way and the claim is published at 0.8. The
+          // analyzer gates that pass and correctly leaves it gated. A companion-verified
+          // match is not a guess, so it needs no annotation to be evidence.
+          if (companion.get(sup)!.has(m)) {
             add(`${cls}.${m}`, `${sup}.${m}`)
             resolved = true
             break
