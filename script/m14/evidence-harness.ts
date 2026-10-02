@@ -39,7 +39,13 @@ export const BANNED_TERMS = [
 export interface Check {
   id: string
   description: string
-  status: "pass" | "fail"
+  /** `retired` is for a finding that is DECIDED rather than outstanding: a mutant
+   *  that cannot be made fixtureable any more, retired with a written-down reason
+   *  and its transform kept so restoring it is a one-line change. It stays VISIBLE in
+   *  the artifact so nothing is hidden, and it is excluded from any failure count —
+   *  filing a decision as a defect is what makes a register lie. Additive: every
+   *  existing artifact uses only `pass`/`fail` and remains valid. */
+  status: "pass" | "fail" | "retired"
   detail?: string
 }
 export interface Limitation {
@@ -174,7 +180,7 @@ export function validateArtifact(a: any): Validation {
     }
   }
   for (const c of a?.checks ?? []) {
-    if (!c?.id || !c?.description || !["pass", "fail"].includes(c?.status)) {
+    if (!c?.id || !c?.description || !["pass", "fail", "retired"].includes(c?.status)) {
       errors.push(`malformed check entry: ${JSON.stringify(c)?.slice(0, 80)}`)
     }
   }
