@@ -24,6 +24,7 @@ import { existsSync, readFileSync, statSync, chmodSync } from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
+import { SemanticEngine } from "../brain/semantic/engine"
 import { fingerprintKey } from "./setup-wizard"
 import { describeEmbeddingConfig, type TierView } from "./setup-show"
 
@@ -113,7 +114,11 @@ export function runDoctorChecks(opts: {
   const state = describeEmbeddingConfig(cwd, env, dataDir)
 
   const findings: Finding[] = []
-  const localLabel = "local-word-vectors"
+  // Read the label from the engine rather than repeating the string. The local
+  // label is versioned (`local-word-vectors-v2`) because a tokenizer change
+  // makes old and new vectors occupy different spaces, and a hardcoded copy
+  // here would report every re-embedded project as a mismatched model.
+  const localLabel = SemanticEngine.LOCAL_MODEL_LABEL
 
   // 1. Config presence/completeness per tier.
   if (!state.configured) {

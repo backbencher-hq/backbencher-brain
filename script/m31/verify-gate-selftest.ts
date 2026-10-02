@@ -39,6 +39,21 @@ type GateSpec = {
   mutatePattern?: { marker: string; until: string }
   /** evidence-mutation gates corrupt an evidence file on the real tree, run the gate, restore */
   mutateEvidence?: { file: string; from: string; to: string }
+  /**
+   * A mutation applied in an ISOLATED checkout rather than on the real tree.
+   *
+   * The existing kinds plant and restore on the working tree, which is fine when
+   * one agent owns it and a hazard when several do: for a window of seconds the
+   * tree holds deliberately broken code, and a concurrent reader — a human, a
+   * verifier, a neighbour's commit — sees the mutation rather than the work.
+   *
+   * These gates govern `bb_doc`, whose mutations are in the doc engine and in
+   * the shared MCP handler, so they are exactly the ones that must never be
+   * planted on a tree other agents are committing to. The checkout is created
+   * from HEAD, given `node_modules` by symlink, mutated, exercised, and removed
+   * in a `finally`.
+   */
+  mutateIsolated?: { file: string; from: string; to: string; expect: string }
 }
 
 const GATES: GateSpec[] = [
@@ -180,6 +195,93 @@ const GATES: GateSpec[] = [
       writeFileSync(p, readFileSync(p, "utf8").replace("# `bb_search`", "# `bb_search` TAMPERED"))
     },
   },
+  // ── the four bb_doc gates ────────────────────────────────────────────────
+  // These four certify every claim `bb_doc` makes, and until now none of them
+  // was under mutation audit while fourteen other gates were. A gate never shown
+  // to fail on a broken tool is not evidence: it would pass if it were `return`.
+  // Each mutation below reintroduces a defect one of these gates exists to
+  // catch, and the gate must go red.
+  {
+    name: "m20-doc-truth-cap",
+    script: "script/m20/verify-doc-truth.ts",
+    surfaces: [{ from: "src/intelligence/documentation/doc-engine.ts", to: "src/intelligence/documentation/doc-engine.ts" }, { from: "script/m20/verify-doc-truth.ts", to: "script/m20/verify-doc-truth.ts" }],
+    mutate: () => {},
+    // Reintroduce the announced-but-unapplied evidence cap. T26 publishes the
+    // bounds and refuses to return a result whose arithmetic does not close, so
+    // this is the one mutation that must fail the identity itself.
+    mutateIsolated: {
+      file: "src/intelligence/documentation/doc-engine.ts",
+      from: "sections.push(assembleSection({ ...draft, facts: capped }, citations, unknowns))",
+      to: "sections.push(assembleSection(draft, citations))",
+      expect: "the per-section cap is applied again",
+    },
+  },
+  {
+    name: "m20-doc-truth-signature",
+    script: "script/m20/verify-doc-truth.ts",
+    surfaces: [{ from: "src/intelligence/documentation/doc-engine.ts", to: "src/intelligence/documentation/doc-engine.ts" }, { from: "script/m20/verify-doc-truth.ts", to: "script/m20/verify-doc-truth.ts" }],
+    mutate: () => {},
+    // Reintroduce `name()` for a symbol with no indexed parameter list — the
+    // fabricated signature. T30 plants a callable without a list and requires
+    // that it carry the caveat and never an empty bracket pair.
+    mutateIsolated: {
+      file: "src/intelligence/documentation/doc-engine.ts",
+      from: 'return parameters === null ? `${kind} ${name}` : `${kind} ${name}(${parameters})`',
+      to: 'return `${kind} ${name}()`',
+      expect: "a signature claims an empty argument list again",
+    },
+  },
+  {
+    name: "m20-doc-modes-contract",
+    script: "script/m20/verify-doc-modes.ts",
+    surfaces: [{ from: "src/mcp/tool-handlers.ts", to: "src/mcp/tool-handlers.ts" }, { from: "script/m20/verify-doc-modes.ts", to: "script/m20/verify-doc-modes.ts" }],
+    mutate: () => {},
+    // Drop the mode guard. `verify-doc-modes` asserts that an invalid mode is
+    // REFUSED, so accepting one has to fail it.
+    mutateIsolated: {
+      file: "src/mcp/tool-handlers.ts",
+      from: 'if (!["symbol", "file", "module", "feature", "api", "project", "coverage"].includes(mode)) return textResult("bb_doc requires mode',
+      to: 'if (false) return textResult("bb_doc requires mode',
+      expect: "an invalid mode is accepted again",
+    },
+  },
+  {
+    name: "m20-doc-citations-freshness",
+    script: "script/m20/verify-doc-citations.ts",
+    surfaces: [{ from: "src/intelligence/documentation/doc-engine.ts", to: "src/intelligence/documentation/doc-engine.ts" }, { from: "script/m20/verify-doc-citations.ts", to: "script/m20/verify-doc-citations.ts" }],
+    mutate: () => {},
+    // Make every source look fresh. `verify-doc-citations` asserts that a file
+    // edited after indexing yields freshness=stale and a failing freshness
+    // block, and that a deleted file yields missing plus a real broken count.
+    mutateIsolated: {
+      file: "src/intelligence/documentation/doc-engine.ts",
+      from: "  of(fileId: string | undefined): DocCitation[\"freshness\"] {",
+      to: "  of(fileId: string | undefined): DocCitation[\"freshness\"] { return \"fresh\";",
+      expect: "every source reports fresh",
+    },
+  },
+  {
+    name: "m20-doc-examples-honest",
+    script: "script/m20/verify-doc-examples-diagrams.ts",
+    surfaces: [{ from: "src/intelligence/documentation/doc-engine.ts", to: "src/intelligence/documentation/doc-engine.ts" }, { from: "script/m20/verify-doc-examples-diagrams.ts", to: "script/m20/verify-doc-examples-diagrams.ts" }],
+    mutate: () => {},
+    // Stop declaring the absent example and diagram entirely. The gate asserts
+    // the honest `not-observed` unknown IS emitted; going quiet is not honesty,
+    // it is the silence the gate exists to catch.
+    //
+    // The first version of this mutation only RENAMED the sentence, and the gate
+    // correctly still passed: it tests for reason `not-observed` and the word
+    // "example", and both survived the rewrite. The audit caught that my
+    // mutation did not test what I claimed it tested — which is the failure mode
+    // this whole mechanism exists to expose, pointed at the mutation instead of
+    // the gate.
+    mutateIsolated: {
+      file: "src/intelligence/documentation/doc-engine.ts",
+      from: "  if (request.includeExamples === true) {",
+      to: "  if (false as boolean) {",
+      expect: "the honest example unknown is no longer emitted at all",
+    },
+  },
   {
     name: "m31-governance",
     script: "script/m31/verify-governance.ts",
@@ -213,21 +315,72 @@ const covered = new Set(GATES.map((g) => path.basename(g.script)))
 const uncovered = verifiers.filter((v) => !covered.has(v) && !INFRA.has(v))
 check("every M31 verifier is covered by a mutation or declared infra", uncovered.length === 0, uncovered.join(","))
 
-function runGate(script: string, env: Record<string, string> = {}): { exit: number; output: string } {
+/**
+ * `bun` is this project's declared runner, but it is not installed everywhere
+ * this audit has to run, and a missing runner makes every gate look like a
+ * gate that cannot fail. So: bun when it is on PATH, the repository's own tsx
+ * otherwise, and the runner that was used reported with the result so an
+ * environmental problem is never mistaken for a detection.
+ */
+function gateRunner(cwd: string): { cmd: string; args: (script: string) => string[] } {
+  try {
+    execFileSync("bun", ["--version"], { cwd, stdio: "ignore" })
+    return { cmd: "bun", args: (script) => ["run", script] }
+  } catch {
+    return { cmd: process.execPath, args: (script) => [path.join(cwd, "node_modules", "tsx", "dist", "cli.mjs"), script] }
+  }
+}
+
+/**
+ * Record one mutation result, under one rule.
+ *
+ * `mutated.exit !== 0` is true both when the gate CAUGHT the defect and when the
+ * gate died on startup, on a bad import, or on a runtime it shells out to and
+ * cannot find — `verify-tool-docs-deep` spawns `bun` internally, so on a machine
+ * without `bun` its control and its mutation both exit non-zero and the naive
+ * test reports a detection that never happened. So a mutation counts only when
+ * the control passed; otherwise the entry says the gate could not run, which is
+ * the honest state and is now visible instead of absorbed.
+ */
+function recordMutation(name: string, control: { exit: number; output: string }, mutated: { exit: number; output: string }, expect: string): boolean {
+  const detected = mutated.exit !== 0 && control.exit === 0
+  check(`${name}: mutation FAILS the gate — ${expect}`, detected,
+    mutated.exit === 0
+      ? `the gate still passed with ${expect} reintroduced — the mutation was NOT detected`
+      : control.exit !== 0
+        ? `NOT COUNTED: the control did not pass either, so the gate could not run here and its non-zero exit is not evidence of detection. Control output: ${control.output.slice(-200)}`
+        : `detected: ${mutated.output.slice(-200)}`)
+  gateResults.push({ name, mutationFailed: detected, controlPassed: control.exit === 0 })
+  return detected
+}
+
+function runGate(script: string, env: Record<string, string> = {}, cwd: string = ROOT): { exit: number; output: string } {
+  const runner = gateRunner(cwd)
   try {
     // Self-test child runs NEVER stamp real evidence (explicit-stamping model):
     // strip BB_M31_EVIDENCE so a sandboxed gate cannot poison real results.
     const { BB_M31_EVIDENCE: _drop, ...parentEnv } = process.env
-    const out = execFileSync("bun", ["run", script], { cwd: ROOT, encoding: "utf8", stdio: "pipe", env: { ...parentEnv, ...env } })
+    const out = execFileSync(runner.cmd, runner.args(script), { cwd, encoding: "utf8", stdio: "pipe", env: { ...parentEnv, ...env } })
     return { exit: 0, output: out }
   } catch (e: unknown) {
     const err = e as { stdout?: Buffer | string; stderr?: Buffer | string; status?: number }
-    return { exit: err.status ?? 1, output: String(err.stdout ?? "") + String(err.stderr ?? "") }
+    return { exit: err.status ?? 1, output: `${runner.cmd}: ` + String(err.stdout ?? "") + String(err.stderr ?? "") }
   }
 }
 
+// `BB_SELFTEST_ONLY=<substring>` runs a subset. The full sweep is every gate
+// twice; a lane verifying its own entries should not have to pay for the other
+// fifteen, and an entry that can only be checked as part of a long run is one
+// nobody runs.
+const ONLY = process.env.BB_SELFTEST_ONLY
+const selected = ONLY ? GATES.filter((g) => g.name.includes(ONLY)) : GATES
+if (ONLY && selected.length === 0) {
+  console.error(`BB_SELFTEST_ONLY=${ONLY} matched no gate. Known: ${GATES.map((g) => g.name).join(", ")}`)
+  process.exit(2)
+}
+
 const gateResults: { name: string; mutationFailed: boolean; controlPassed: boolean }[] = []
-for (const gate of GATES) {
+for (const gate of selected) {
   check(`${gate.name}: gate script exists`, existsSync(path.join(ROOT, gate.script)), gate.script)
   if (!existsSync(path.join(ROOT, gate.script))) {
     gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: false })
@@ -247,9 +400,7 @@ for (const gate of GATES) {
       check(`${gate.name}: mutation markers found in source`, start !== -1 && end > start)
       if (start !== -1 && end > start) {
         writeFileSync(srcPath, backup.slice(0, start) + backup.slice(end))
-        const mutated = runGate(gate.script, { BB_M31_CORPUS_CHECK_ONLY: "1" })
-        check(`${gate.name}: mutation — reverted guard FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
-        gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+        recordMutation(gate.name, control, runGate(gate.script, { BB_M31_CORPUS_CHECK_ONLY: "1" }), "the reverted guard is reintroduced")
       } else {
         gateResults.push({ name: gate.name, mutationFailed: false, controlPassed: control.exit === 0 })
       }
@@ -257,6 +408,40 @@ for (const gate of GATES) {
       writeFileSync(srcPath, backup)
     }
     check(`${gate.name}: source restored byte-identical`, readFileSync(srcPath, "utf8") === backup)
+    continue
+  }
+
+  // Isolated mutation: the same two assertions, in a throwaway checkout, so the
+  // shared tree is never left holding a deliberate defect.
+  if (gate.mutateIsolated) {
+    const dir = mkdtempSync(path.join(tmpdir(), "bb-selftest-isolated-"))
+    try {
+      execFileSync("git", ["worktree", "add", "--detach", dir, "HEAD"], { cwd: ROOT, stdio: ["ignore", "ignore", "ignore"] })
+      for (const s of gate.surfaces) {
+        const to = path.join(dir, s.to)
+        mkdirSync(path.dirname(to), { recursive: true })
+        copyFileSync(path.join(ROOT, s.from), to)
+      }
+      // `node_modules` is not in the checkout and is far too large to copy.
+      try { execFileSync("ln", ["-sfn", path.join(ROOT, "node_modules"), path.join(dir, "node_modules")], { stdio: "ignore" }) } catch { /* copy fallback below */ }
+      if (!existsSync(path.join(dir, "node_modules"))) {
+        try { execFileSync("cp", ["-R", path.join(ROOT, "node_modules"), path.join(dir, "node_modules")], { stdio: "ignore" }) } catch { /* reported by the run below */ }
+      }
+      const control = runGate(gate.script, {}, dir)
+      check(`${gate.name}: control — clean checkout PASSES`, control.exit === 0, control.output.slice(-200))
+      const target = path.join(dir, gate.mutateIsolated.file)
+      const before = readFileSync(target, "utf8")
+      check(`${gate.name}: mutation anchor found`, before.includes(gate.mutateIsolated.from), `looking for ${JSON.stringify(gate.mutateIsolated.from.slice(0, 70))}`)
+      writeFileSync(target, before.replace(gate.mutateIsolated.from, gate.mutateIsolated.to))
+      const mutated = runGate(gate.script, {}, dir)
+      // Only a gate whose control passed can be said to have DETECTED anything.
+      // A gate that crashes on startup also exits non-zero, and counting that as
+      // a detection is how an audit ends up green because nothing ran.
+      recordMutation(gate.name, control, mutated, gate.mutateIsolated.expect)
+    } finally {
+      try { execFileSync("git", ["worktree", "remove", "--force", dir], { cwd: ROOT, stdio: "ignore" }) } catch { /* the checkout is disposable either way */ }
+      rmSync(dir, { recursive: true, force: true })
+    }
     continue
   }
 
@@ -270,9 +455,7 @@ for (const gate of GATES) {
       check(`${gate.name}: control — clean tree PASSES`, control.exit === 0, control.output.slice(-200))
       check(`${gate.name}: mutation anchor found in evidence`, backup.includes(gate.mutateEvidence.from))
       writeFileSync(evPath, backup.replace(gate.mutateEvidence.from, gate.mutateEvidence.to))
-      const mutated = runGate(gate.script)
-      check(`${gate.name}: mutation — corrupted evidence FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
-      gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+      recordMutation(gate.name, control, runGate(gate.script), "the evidence is corrupted")
     } finally {
       writeFileSync(evPath, backup)
     }
@@ -308,9 +491,7 @@ for (const gate of GATES) {
       const backup = readFileSync(realPath, "utf8")
       try {
         writeFileSync(realPath, readFileSync(path.join(sandbox, gate.surfaces[0].to), "utf8"))
-        const mutated = runGate(gate.script)
-        check(`${gate.name}: mutation — corrupted doc FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
-        gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+        recordMutation(gate.name, control, runGate(gate.script), "the documented file is corrupted")
       } finally {
         writeFileSync(realPath, backup)
       }
@@ -364,9 +545,7 @@ for (const gate of GATES) {
       check(`${gate.name}: control — unmutated sandbox PASSES`, control.exit === 0, control.output.slice(-200))
       // THEN plant the mutation and prove the gate flips to failing.
       gate.mutate(sandbox)
-      const mutated = runGate(gate.script, { BB_M31_ROOT: sandbox })
-      check(`${gate.name}: mutation — corrupted surface FAILS the gate`, mutated.exit !== 0, mutated.output.slice(-200))
-      gateResults.push({ name: gate.name, mutationFailed: mutated.exit !== 0, controlPassed: control.exit === 0 })
+      recordMutation(gate.name, control, runGate(gate.script, { BB_M31_ROOT: sandbox }), "the governed surface is corrupted")
     }
   } finally {
     rmSync(sandbox, { recursive: true, force: true })
@@ -376,11 +555,28 @@ for (const gate of GATES) {
 mkdirSync(path.dirname(RESULT), { recursive: true })
 let commit = "unknown"
 try { commit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT }).toString().trim() } catch {}
+
+// A subset run must NEVER be stampable. `BB_SELFTEST_ONLY` was added so a lane
+// could verify its own entries cheaply, and `BB_M31_EVIDENCE=1` together with it
+// would write a five-gate record into the file that is supposed to say all
+// fourteen were audited — with `status: "verified"` whenever the subset passed.
+// That is silent evidence corruption of exactly the kind this audit exists to
+// catch, so the combination is refused rather than warned about.
+if (ONLY && process.env.BB_M31_EVIDENCE === "1") {
+  console.error(`REFUSING to stamp: BB_SELFTEST_ONLY=${ONLY} selected ${selected.length} of ${GATES.length} gates, and this file records the FULL audit. Re-run without BB_SELFTEST_ONLY to stamp.`)
+  process.exit(2)
+}
+
+const usedRunner = gateRunner(ROOT).cmd === "bun" ? "bun" : "tsx"
 if (process.env.BB_M31_EVIDENCE === "1") writeFileSync(RESULT, JSON.stringify({
   status: failed === 0 ? "verified" : "blocked",
   currentCommit: commit,
   workingTreeRelevantChanges: [],
+  // The command a reader would re-run, and the runtime that actually executed
+  // it. A record that names only the first is not describing the run that
+  // produced it, and this audit exists to be trustworthy about its own evidence.
   verifierCommand: "bun run script/m31/verify-gate-selftest.ts",
+  runnerUsed: usedRunner,
   evidenceFile: "gate-selftest.json",
   generatedAt: new Date().toISOString(),
   passed,

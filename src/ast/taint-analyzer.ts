@@ -63,7 +63,11 @@ export class TaintAnalyzer {
 
     // 4. Universal Database/Storage Reads (Multi-Language)
     if (
-      /(?:db\.query|db\.find|findOne\(|findAll\(|select\(|\.Exec\b|\.QueryRow\b|\.Query\b|ExecuteReader|executeQuery)/i.test(
+      // `\.Query\s*\(`, `\.QueryRow\s*\(`, `\.Exec\s*\(` — see the sink rule's
+      // comment. Requiring the call is what stops `req.query` from being read as
+      // a database READ; the same property read was previously classified as both
+      // a `database_read` source and a `sql_injection` sink.
+      /(?:db\.query|db\.find|findOne\(|findAll\(|select\(|\.Exec\s*\(|\.QueryRow\s*\(|\.Query\s*\(|ExecuteReader|executeQuery)/i.test(
         snippet,
       )
     ) {
@@ -136,8 +140,21 @@ export class TaintAnalyzer {
     const sinks: { type: string; snippet: string; vulnerability_type: string }[] = []
 
     // 1. SQL Injection Sinks (Universal)
+    //
+    // The bare-receiver alternatives REQUIRE A CALL — `\.Query\s*\(` rather
+    // than `\.Query\b`. Without the paren, the `/i` flag made `\.Query\b` match
+    // the property access in `req.query`, which is the single most common
+    // web-framework request accessor there is. Measured with the fix-differential
+    // oracle (script/m15/security-oracle.ts): `req.query` alone was classified as
+    // BOTH a `database_read` SOURCE and a `database_write`/`sql_injection` SINK,
+    // so `export function render(el, req) { el.innerHTML = req.query }` — a file
+    // with no database call in it — produced a `sql_injection` finding.
+    //
+    // Requiring the call keeps every real database call (`.Query(`, `.Exec(`,
+    // `.QueryRow(`) and drops the property read. `db\.query` is listed
+    // separately above and is unaffected.
     if (
-      /(?:db\.query|db\.execute|\bexecute\b|executeQuery|mysql_query|execute_query|query_row|\.Exec\b|\.QueryRow\b|\.Query\b|ExecuteReader|ExecuteScalar|ExecuteNonQuery|sp_executesql|EXECUTE\s+IMMEDIATE)/i.test(
+      /(?:db\.query|db\.execute|\bexecute\b|executeQuery|mysql_query|execute_query|query_row|\.Exec\s*\(|\.QueryRow\s*\(|\.Query\s*\(|ExecuteReader|ExecuteScalar|ExecuteNonQuery|sp_executesql|EXECUTE\s+IMMEDIATE)/i.test(
         snippet,
       )
     ) {

@@ -1,6 +1,6 @@
 # `bb_analyze`
 
-Unified evidence-backed analysis over graph relationships, dependencies, statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree; graph nodes and report rows carry a stale flag when their file changed after indexing. Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class. Per-mode parameters: target applies to callers, callees, trace, complexity, impact, and test_impact; filePath scopes dependencies, test_mapping, test_gaps, and test_quality to a project-relative path prefix (others ignore it); stats is always project-wide.
+Unified evidence-backed analysis over graph relationships, dependencies, project statistics, complexity, impact, and test intelligence. Select exactly one mode. Every read mode carries a freshness block (fresh/stale/missing counts + remediation) resolved against the live working tree, and report rows carry a stale flag when their file changed after indexing. Every mode is BOUNDED and says so: `limit` is the most items returned (edges per direction for callers/callees/trace, files for dependencies, entries for the test modes, the same everywhere) and the answer reports what it returned against what exists, so a page is never read as the whole set. callers/callees/trace/impact share the graph engine's owner-cascade semantics — a relationship stored against a class member is attributed to the owner class — and every edge states which it was through `targetMatch`. Locations are project-relative. Per-mode parameters: target applies to callers, callees, trace, complexity, impact, and test_impact; filePath scopes dependencies, test_mapping, test_gaps, and test_quality to a project-relative path PREFIX and is REFUSED (not ignored) on every other mode; limit applies to callers, callees, trace, dependencies, test_mapping, test_gaps and test_quality and is refused elsewhere; stats is always project-wide.
 
 ## Contract
 
@@ -36,15 +36,15 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
     },
     "target": {
       "type": "string",
-      "description": "symbol or analysis target (`symbol`/`symbolName`/`query` are accepted as aliases)"
+      "description": "A symbol name for callers/callees/trace/impact/test_impact, or a project-relative FILE PATH for complexity (exact file, or a directory prefix; anything else is refused rather than treated as a path fragment). `symbol`/`symbolName`/`query` are accepted as aliases. A target is a VALUE, never a pattern: `%`, `_` and `\\` are escaped and match themselves."
     },
     "filePath": {
       "type": "string",
-      "description": "file scope for file-based analysis"
+      "description": "Project-relative path PREFIX scoping dependencies, test_mapping, test_gaps and test_quality. Refused on every other mode. Matched on a whole segment boundary, so `src/util` does not match `src/utilities`."
     },
     "limit": {
       "type": "number",
-      "description": "result limit"
+      "description": "Maximum items returned: edges per direction for callers/callees/trace, files for dependencies, entries for test_mapping/test_gaps/test_quality. Defaults: 25 edges per direction, 20 files, 50 entries. The answer reports what it returned and whether that is the whole set. Refused on the modes it does not apply to, and `limit: 0` is refused because an empty page is indistinguishable from a real answer."
     }
   },
   "required": [
@@ -55,9 +55,9 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
 
 ## Returns
 
-- Mode-specific typed analysis
-- Graph, dependency, complexity, impact, or test evidence
-- Explicit unavailable and truncation states
+- Mode-specific typed analysis: graph edges, file dependency edges, project counts, complexity metrics, impact, or test evidence
+- A declared bound on every answer — what was returned, what exists, and whether the set is the whole one
+- Explicit unavailable states: a metric or target that cannot be computed is `available: false` / `notFoundReason`, never a substituted number
 
 ## Examples
 
@@ -67,22 +67,39 @@ Unified evidence-backed analysis over graph relationships, dependencies, statist
 
 `{"mode":"test_quality"}`
 
+`{"mode":"dependencies","filePath":"src/core"}`
+
+`{"mode":"impact","target":"handleRequest","limit":50}`
+
 ## Errors
 
 - Missing required mode
-- Missing target for a target-based mode
-- Option irrelevant to the selected mode
+- Missing or blank target for a target-based mode
+- Option irrelevant to the selected mode (refused, never ignored)
+- `limit` on a mode it does not apply to, or `limit: 0`
+- A `complexity` target that names no indexed file and no directory prefix
 
 ## Limitations
 
 - Static relationships cannot establish runtime behavior
-- Test results describe indexed static evidence, not executed coverage
-- Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class
-- The callers/callees/trace modes bound each edge query by a declared per-symbol site limit (200) and report it in `summary.truncated` / `summary.truncationReason` with the root's true count in `summary.callersIfUncapped`; `summary.totalCallers` is the returned count, never a silent total (M59.A12, #888)
+- Test results describe indexed static evidence, not executed coverage; a project whose tests the indexer did not recognise is reported as having none, with the reason
+- Callers/callees/trace/impact modes share the graph engine's owner-cascade semantics: a relationship stored against a class member is attributed to the owner class. Every edge states which it was through `targetMatch` (`exact` or `owner-cascade`); absent means the engine could not tell, which is not the same as `exact`
+- A name resolves to ONE stored symbol. `rootCandidates` (bb_graph) and `rootCandidates` here say how many the name matched among — 1 means the name was unique, more means the answer is about one of several
+- mode `impact` refuses a target the graph cannot root at, with `notFoundReason: "not-traversable"` and the symbol type. Such a symbol IS in the index; `callers`/`callees` resolve the same name because they match any type
+- A depth-capped walk is TRUNCATION and says so: `summary.truncated` is true with `truncationReason` naming the depth cap, beside `maxDepth` and `maxDepthReached`
+- A walk also runs under a wall-clock budget (`summary.timeBudgetMs` / `timeBudgetExhausted`, default 2,000 ms). A node is not a unit of work: the per-node caller query is priced by the reproducible ORDER BY, which SQLite applies before the LIMIT, so `edgeLimit` cannot bound it. Measured on this repository's own src: 2,436 matching rows for one symbol cost 85.8 ms of the 87.8 ms, and the walk was unbounded until this budget existed
+- `dependencies` resolves an internal specifier against the importing file's own directory and LABELS each edge `resolved` / `suffix-match` / `unresolved`. It is not a guess from a basename: on this repository's own src only 74 of 906 `imports` relationships carry both endpoints and `brain_import.resolved_symbol_id` is empty, so specifier resolution is the primary path, not a fallback
+- A file's `dependents` and `dependencies` lists are capped per row; `dependentsTotal` / `dependenciesTotal` are the real sizes and the Truncated flags say the list was cut
+- Neither list carries `fileId` — a file id is `<40-hex project id>:<relative path>`, so it repeated the path printed beside it (56,540 of 121,340 bytes on a default page of this repository's src). The path is the locator, `resolution` says how it was reached, and the row above carries the id for the file the row is about
+- `metrics.couplingEdges` counts only the relationship types listed in `couplingRelationshipTypes`; `exports` and `contains` are index bookkeeping. `stats.relationships` is every row and is a different number
+- `metrics.maintainability` is unavailable when the formula's domain does not cover the scope (it is negative above roughly 3·10⁴ non-blank lines) rather than clamped to 0
+- Locations are project-relative. `nodes[].filePath` (absolute) is not emitted, so the same question returns the same bytes on any machine
+- A mapping entry carries at most 20 links (`linksTruncated` says when more exist); the ranking and every summary count use the complete set
+- `provenance` on a `dependencies` page is on the REPORT, not repeated per row
 
 ## Performance
 
-Mode-specific limits and graph traversal bounds prevent unbounded output.
+Every mode is paged and says so. `limit` bounds the answer — 25 edges per direction for callers/callees/trace (default), 20 files for dependencies, 50 entries for the test modes. On this repository's src (183 files, 8,565 symbols, 52,597 relationships) a default answer is 1.5-26 KB for eight of the eleven modes; `dependencies` is 75.9 KB (~21k tokens) because 20 of those files really do have 506 internal edges between them, so a caller who wants less should pass `limit`. The graph walk is additionally bounded by depth, per-node site limit, fan-out budget, and a wall-clock budget; whichever fires is named in `truncationReason`. All nine graph cases in fixtures/analyze/latency-gate.sh answer in under 2.4 s on that corpus, against a measured 613 s and several that never returned.
 
 ## Safety
 
@@ -90,7 +107,7 @@ Read-only. Analysis never creates tests or edits source.
 
 ## Evidence Semantics
 
-Findings derive from brain_* symbols, files, relationships, complexity, and test-file classifications.
+Findings derive from brain_* symbols, files, relationships, complexity, and test-file classifications. `provenance.evidenceClass` classifies what kind of claim the answer is; `unknowns` names every absence the answer rests on.
 
 ## Relationship to other tools
 

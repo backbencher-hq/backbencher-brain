@@ -183,6 +183,15 @@ canonicalizer is now imported wherever a name is compared, for that reason.
 Line numbers are NOT claimed for complexity (`metadata.complexity` /
 `cyclomaticComplexity` are counts, not positions) or for symbol declarations
 beyond their own declaration line.
+function/method name; any call or read in a **non-function** context (a
+top-level `const` initializer, a `comptime` block, a `test` body) emits with
+source `(global)` — the go family package-scope contract (ZIG.D.2).
+
+**Evidence tiers** (`#419-D`): `contains` → `structural`; `declared_type` →
+`reference_qualified`; an import → `import_based`; calls/uses →
+`usage_contextual`. Confidence: 1.0 for contains/declared-type/bare reads, 0.85
+for a call, 0.75 for a field read, 0.9 for a declared type — every heuristic
+edge carries a machine-readable `metadata.relationshipType` reason code.
 
 ## Complexity
 
@@ -208,6 +217,10 @@ file both carry the real number.
   emits 132 of them over 400 files. The premise was false and the `instantiates`
   branch is very much reachable. A doc that rules a class out is making the same
   claim as an analyzer that emits one, and it needs the same evidence.
+- No `instantiates`: composition is expressed through struct fields and opaque
+  vtables, and generics are monomorphized without a runtime dispatch to
+  attribute. The `instantiates` branch in `classifyEvidenceTier` is therefore
+  unreachable in this file and says so.
 - No `calls`/`uses` edge for a type used in a value position with no annotation
   (`Point{ … }`) — the family alternative is `instantiates`, ruled above, so the
   gap is declared and counted (ZIG.GAP.3) rather than left silent.
@@ -244,6 +257,17 @@ reproduces.
 | output-channel invariants | `zigw-invariants.ts 300` | **0 violations** over 1,110 symbols / 2,908 relationships / 319 functions: no duplicate edge at a line, no self-loop outside `calls`, every confidence in (0,1] and equal to the contract table, every relationship carrying a reason code and a line, every kind in the shared `SymbolKind`, no `ownerName` the file does not declare, no duplicate symbol, every function carrying an integer complexity ≥ 1, and **no DANGLING target** (an edge whose target is declared at file scope with no symbol published — the invariant that found Z46). Calibrated: `--calibrate` reports 2 classes |
 | parse-error census | `zigw-parse-errors.ts` | **93 / 3,839 (2.4%)** files carry ERROR nodes, 811 ERROR nodes, 0 MISSING — bucketed: 43 intentionally invalid (`compile_errors` plus a langref page), 45 inline asm, 2 keyword-named fields, 3 labeled blocks in expression position. No analyzer defect in any of them (Z42) |
 | ownership verifier | `zigw-ownership.ts 3000` | 136,720 symbols, AGREE 84,442, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,485 — of which **enclosure disambiguates 1,485, leaving 0 genuinely ambiguous**. The store already resolved ownership by extent (`enclosingStoreableIdByName`), so #963 was filed against a fixed defect and is **resolved** (Z49) | Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all. This instrument was itself broken until Z43: it read a quoted name raw where the published symbol name is canonicalized, so it reported **701 phantom owners** that `zigw-contains.ts` — which derives from the grammar and keys on the owner — read as zero |
+## Verification (re-run at HEAD, 2026-09-28)
+
+| gate | instrument | result |
+|---|---|---|
+| F1 grammar audit | `audit-analyzer-grammar.ts` | **PASS** — 43 refs, 0 unknown node types, 0 unknown fields |
+| F3 fixtures | `run-fixtures.ts --lang zig` | **6 / 6 pass** — `bare-value-reads`, `calls-uses-complexity`, `callsite-lines-825`, `declaration-vs-definition-612`, `kinds-and-owners` (Z11/Z12/Z19/R1), `declared-type-leaf` (Z13/Z16/Z18) |
+| F4 mutations | `BB_MUTANT_ONLY="zig/" mutate-analyzer.ts` | **46 / 46 CAUGHT** (23 from the previous waves, 18 added here — one per fixed class plus three payload reverts) |
+| F5 differential, 200-file draw | `differential.ts --repo zig --sample 200` | see `reviews/zig/master-review.md` for the measured row; the `references` class is compared against an independent oracle (Z14) |
+| oracle red-team (M14 §5.7) | `zigw-oracle-check.ts` | the same comparison against a pre-fix leaf convicts it — 702 unexplained / 660 missing per 400 files — so the audit is not a tautology |
+| ownership verifier | `zigw-ownership.ts` (3,000 files) | 130,192 symbols: AGREE 84,360, **PHANTOM_OWN 0, ORPHAN 0**, COLLISION 1,509 — all same-named containers, filed as #963. Needed because the differential's coverage match ignores the SOURCE, so it cannot see an ownership error at all |
+| A/B of the executable-body change | `zigw-dump.ts` (800 files) | 161 spurious symbols removed, 23 genuine `uses` edges gained, 27 fabricated `contains` edges removed |
 | zero-regex | `script/m49/verify-r2-regex.ts` + `reviews/regex-policy.md` | **0 regexes** in this analyzer (was 1; see Z18) |
 
 Claim level: **L5-SCOPED-VERIFIED** against `wasm/tree-sitter-zig.wasm` as
@@ -257,6 +281,7 @@ INTO `analyze(root, source, filePath)`, which has no parameter for it, so this i
 an API question rather than a detection one), Z42 (93 of 3,839 files carry ERROR nodes —
 43 of them intentionally, and the rest confined to three named syntaxes rather than
 distributed invisibly), ZIG.GAP.3 (constructions),
+repositories above. Limitations are non-empty and declared: ZIG.GAP.3 (constructions),
 ZIG.GAP.4 (three two-sided RHS forms), ZIG.GAP.5 (the labeled-TYPE form does not
 parse in this grammar), Z10 (if/while else-arm capture scope), the nested-shadowing
 and synthetic-shape rulings in `reviews/zig/master-review.md`, and grammar-version

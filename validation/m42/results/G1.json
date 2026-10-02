@@ -2,16 +2,20 @@
   "issue": "M42.G1",
   "code": "G1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 25,
-  "passed": 25,
-  "failed": 0,
+  "passed": 23,
+  "failed": 2,
   "negativeCases": 7,
-  "currentCommit": "74b29658530d35d0318e6e82607d4d39ee18cb31",
-  "workingTreeRelevantChanges": [],
+  "currentCommit": "c2a31c00882e73d41a25815a9f0a2ebc1aec85bd",
+  "workingTreeRelevantChanges": [
+    "package.json",
+    "src/lsp/cross_language_hover.ts",
+    "src/lsp/impact.ts"
+  ],
   "verifierCommand": "npx tsx script/m42/verify-governance.ts",
   "evidenceFile": "G1.json",
-  "generatedAt": "2026-09-20T01:40:37.268Z",
+  "generatedAt": "2026-09-30T20:20:29.766Z",
   "ledger": "validation/m42/results/manifest.json",
   "interactionBudgets": {
     "documentHighlightP95Ms": 25,
@@ -20,7 +24,7 @@
     "hubOpenP95Ms": 300
   },
   "m29Bar": {
-    "gateExit": 0
+    "gateExit": 1
   },
   "limitations": [
     "This gate validates governance metadata, mutation response, and the M29 bar; it does not verify the hover features themselves (H1–H6 own those).",
@@ -28,7 +32,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T01:40:37.271Z",
-    "contentSha256": "94a047e9d4de603446482342bd67ddb1006389ac4085addbc84da0974e39e368"
+    "sealedAt": "2026-09-30T20:20:29.770Z",
+    "contentSha256": "4e71508cc9c6130c2b824203c72547272da57215c2d90c5abb0ae312d1616ed2"
   }
 }

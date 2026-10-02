@@ -745,7 +745,8 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
           const nameNode = node.childForFieldName("name")
           const valueNode = node.childForFieldName("value")
           const name = nameNode && nameNode.type === "identifier" ? nameNode.text : undefined
-          const isFunctionValue = !!valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression")
+          // X10 (2026-09-28): `generator_function` belongs in this list. Measured: `const f = function() {}` published f:function and `const h = () => {}` published h:function, while `const g = function*() {}` published g:constant. One language rule — "a const bound to a function value is a Function" — answered two ways by shape, and the grammar's name for a generator expression is `generator_function`, which none of the three function-value checks in this file listed. Found by probing a form the construct census had DECLARED but never probed, which is the blind spot that gap was: the disposition existed, so the form looked covered.
+          const isFunctionValue = !!valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression" || valueNode.type === "generator_function")
           const isRequireBinding = !!valueNode && valueNode.type === "call_expression" &&
             valueNode.childForFieldName("function")?.text === "require"
 
@@ -877,7 +878,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
               }
 
               // Prototype method assignment: X.prototype.method = function () {}
-              const isFunctionRight = right.type === "function_expression" || right.type === "arrow_function"
+              const isFunctionRight = right.type === "function_expression" || right.type === "arrow_function" || right.type === "generator_function"
               if (isFunctionRight && obj && obj.type === "member_expression") {
                 const protoObj = obj.childForFieldName("object")
                 const protoProp = obj.childForFieldName("property")
@@ -1254,7 +1255,7 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (n.type === "variable_declarator") {
           const nameNode = n.childForFieldName("name")
           const valueNode = n.childForFieldName("value")
-          if (nameNode && valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression")) {
+          if (nameNode && valueNode && (valueNode.type === "arrow_function" || valueNode.type === "function_expression" || valueNode.type === "generator_function")) {
             return nameNode.text
           }
         }

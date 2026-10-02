@@ -881,11 +881,62 @@ async function main(): Promise<void> {
 
     const r: any = await parseFile(abs, repoRoot)
     if (r.errors?.length) parseErrors++
-    for (const e of r.relationships ?? []) {
-      const k = `${rel}|${e.type}\u001f${e.source}\u001f${e.target}`
-      if (!observed.has(k)) observed.set(k, { ...e, rel })
-      perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
-    }
+      for (const e of r.relationships ?? []) {
+        const k = `${rel}|${e.type}\u001f${e.source}\u001f${e.target}`
+        if (!observed.has(k)) observed.set(k, { ...e, rel })
+        perLabelObs.set(e.type, (perLabelObs.get(e.type) ?? 0) + 1)
+      }
+      // M60: the observed side never read `exports`, so this leg had never
+      // observed the label at all — and said so as 1,582 MISSING exports on the
+      // full kong corpus.
+      //
+      // The direct leg compares the same truth and reports 318/318, because
+      // `parseWithAnalyzer` returns an analyzer result whose `exports` IS read
+      // (line ~1081). The pipeline leg reads only `r.relationships`, and a Lua
+      // module's surface is an ARRAY on the result, not a relationship, so nothing
+      // ever entered `observed` under `exports` and every export truth edge was
+      // unmatched by construction.
+      //
+      // This stayed quiet for as long as it did because LUA-14 was open: the dual
+      // probe found `exports` present on the direct path and absent from the
+      // pipeline, correctly labelled them `pipelineDiscardedLabel`, and the
+      // accounting treated a known discard as an accounted-for loss. Fixing LUA-14
+      // — forwarding `exports` from the worker — removed the discard label, and the
+      // SAME 1,580 edges immediately reappeared as `missingFromAnalyzer`, i.e. as
+      // "the analyzer is missing them". The analyzer was not missing anything:
+      // `parseFile` returns every one of them, verified at
+      // `verify-lua-output-coverage` (kong exports 1587 emitted, 0 lost).
+      //
+      // So the leg was not measuring the pipeline's export surface at all, and once
+      // the pipeline actually carried exports the gap turned into a false alarm
+      // pointing at a non-existent bug — the mirror image of the failure this lane
+      // exists to prevent, which is excusing edges by inferring. Both directions of
+      // a wrong observed set are wrong; the fix is to read the field that exists.
+      //
+      // The row shape is `{name, isDefault, range:{startLine..}}` — there is no
+      // top-level `line` and none is needed here, because `key()` keys on
+      // label/from/target only. A returned table's members and a `return <ident>`
+      // both have no declaration site, which is the export invariant the fixture
+      // runner enforces; that is a separate check and is not duplicated here.
+      for (const ex of r.exports ?? []) {
+        const k = `${rel}|exports\u001fglobal\u001f${ex.name}`
+        if (!observed.has(k)) {
+          // The line is passed through, read from where an export row actually keeps
+          // it. An export row is `{name, isDefault, range:{startLine..}}` — there is
+          // no top-level `line` and no `line_number` — so a synthesised row without
+          // this field reads as `observedLine: null` and the M60 line check scores
+          // every export wrong. That is 1,582 false line failures, the same
+          // field-shape mistake as the missing count above, one layer down: the
+          // label is absent from `observed` entirely, then the line is absent from
+          // the row that fills it.
+          //
+          // `?? null` and never 0 or -1, per the M60 line rule: an absent line is a
+          // fact to record, not a number to invent.
+          const line = ex.range?.startLine ?? ex.line_number ?? ex.line ?? null
+          observed.set(k, { type: "exports", source: "global", target: ex.name, rel, line })
+        }
+        perLabelObs.set("exports", (perLabelObs.get("exports") ?? 0) + 1)
+      }
     for (const e of deriveLuaTruth(tree.rootNode, rel)) perLabelTruth.set(e.label, (perLabelTruth.get(e.label) ?? 0) + 1)
 
     // ── LUA-31: PROVE which labels the pipeline discards; never infer it ───────

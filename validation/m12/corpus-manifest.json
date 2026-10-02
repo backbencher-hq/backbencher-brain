@@ -642,20 +642,112 @@
       "corpusTarget": "phpunit",
       "status": "measured",
       "candidates": [
-        "phpunit@c8d6921f(clean)"
+        "phpunit@c8d6921f(clean)",
+        "phpmyadmin@4061095a(clean)"
       ],
       "measured": {
         "revision": "c8d6921fb601b6988854cd84a672f06c1e49f80e",
         "sample": "400 tracked *.php files (deterministic first-400 sorted slice of 3231 from phpunit@c8d6921f — sebastianbergmann/phpunit: the language-representative PHP testing framework)",
         "fixtures": 3,
-        "fixtureFacts": 49,
+        "fixtureFacts": 66,
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 3073,
         "corpusRelationships": 4276,
         "grammarErrorFiles": 0,
-        "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup. [corrected 2026-09-20 (#897): grammarErrorFiles now matches the measured artifact validation/m12/results/php-corpus-errors.json — enforced by script/m12/verify-corpus-claims.ts]",
-        "measuredAt": "2026-08-19T16:44:00.000Z"
+        "note": "PHP analyzer rewritten pure-AST for M12.29: 5 census regexes eliminated (63 -> 58); phantom Laravel Eloquent getAttribute/setAttribute and WordPress wp_add_* hook symbols removed; locals/parameters are never symbols (LocalsAreNotSymbols contract); calls emit leaf targets sourced from the enclosing function/method (was namespace); member/scoped/nullsafe calls and new instantiates handled; property promotion emits Property symbols; implicit cross-file overrides resolve via the AnalyzeContext companion. Differential 49/49 (1.000/1.000, 0 FP / 0 FN). Grammar upgraded from the pinned grammar to npm tree-sitter-php 0.24.2 via the corrected fresh-subprocess comparison (the in-process swap was invalid): 17 -> 2 grammar-error files (15 fixed, 0 regressed) — fixes PHP 8.4 property hooks, the pipe operator, new Class()->method() dereference in real production code, readonly anonymous classes, and a vendor fluent chain; the 2 remaining are an intentional parse-error test fixture and a partial-function-application ? placeholder test fixture. Shape-safe 33/33 analyzer dispatch refs (2 remaining are anonymous and/or operator tokens, confirmed live). Complexity: 3,073 symbols / 4,276 relationships on the 400-file tracked sample, single-pass iterative walk, no O(n^2) symbol/relationship lookup. [corrected 2026-09-20 (#897): grammarErrorFiles now matches the measured artifact validation/m12/results/php-corpus-errors.json — enforced by script/m12/verify-corpus-claims.ts] [updated 2026-09-28: fixtureFacts 49 -> 66 after the M12.PHP-IMPORTS ground-truth re-file (require_once references -> imports, plus the two use-clause imports facts). Two defects closed with measurements: the 0.5 first-parent-guess overrides edge was removed — script/m12/php-override-audit.ts decided 18 of the guesses against the real declaring file and 12 were FALSE (66.7% floor), and removing it took heuristic 198 -> 0 on phpunit and 171 -> 0 on phpmyadmin with coverage unchanged; and `imports` is now really emitted (the ontology always promised it), which is what the file-level reader keys on at src/lsp/graph_request.ts:256.] [updated 2026-09-29: both declared gaps adjudicated to RULED (PHPD31/PHPD32) so the lane declares ZERO gaps; `exports` ruled out for php (PHPD33) with reasons; the grammar was added to the pin table as sha-only; and the differential was run over the FULL corpus of both repos — 4,139 files, 95,231 truth edges, 100% covered, 0 missing / 0 unexplained / 0 heuristic.]",
+        "measuredAt": "2026-08-19T16:44:00.000Z",
+        "secondCorpus": {
+          "name": "phpmyadmin",
+          "revision": "4061095a59e1769128776ad24154cc7058de51aa",
+          "trackedPhpFiles": 1232,
+          "why": "M37.16 second corpus: include-heavy (it wires the app through require_once), so it exercises the include-path rule phpunit barely touches.",
+          "measuredAt": "2026-09-29T23:50:00.000Z",
+          "differential": {
+            "scope": "FULL CORPUS (not a sample)",
+            "files": 1232,
+            "treeTruth": 55402,
+            "covered": 55402,
+            "coveragePct": "100%",
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0
+          }
+        },
+        "fullCorpusDifferential": {
+          "measuredAt": "2026-09-29T23:50:00.000Z",
+          "note": "The differential was run over EVERY tracked .php file in both corpora, not the canonical 60-file sample. A sample can miss a whole edge class; the full sweep cannot. Both corpora are 100% covered with zero missing, zero unexplained and zero heuristic edges.",
+          "phpunit": {
+            "files": 2907,
+            "treeTruth": 39829,
+            "covered": 39829,
+            "coveragePct": "100%",
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0,
+            "sampleSetHash": "7feec2ffa6626bca"
+          },
+          "phpmyadmin": {
+            "files": 1232,
+            "treeTruth": 55402,
+            "covered": 55402,
+            "coveragePct": "100%",
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0,
+            "sampleSetHash": "ef6aa3cce6f906d4"
+          },
+          "combined": {
+            "files": 4139,
+            "treeTruth": 95231,
+            "covered": 95231,
+            "missing": 0,
+            "unexplained": 0,
+            "heuristic": 0
+          }
+        },
+        "lineNumberContract": {
+          "measuredAt": "2026-09-29T23:45:00.000Z",
+          "note": "M60 line contract audited on a 150-file strided sample: every relationship kind carries a line_number.",
+          "sample": 150,
+          "relationships": 5830,
+          "missingLineNumber": 0,
+          "pct": "0.00%",
+          "perKind": {
+            "calls": 1501,
+            "uses": 2162,
+            "contains": 904,
+            "imports": 664,
+            "instantiates": 325,
+            "references": 158,
+            "extends": 89,
+            "implements": 27
+          }
+        },
+        "parseCensus": {
+          "total": 3231,
+          "errorFiles": 2,
+          "crashFiles": 0,
+          "errorFilesAre": "both intentional test fixtures: tests/end-to-end/code-coverage/_files/parse-error/src/CannotBeParsed.php (deliberately unparseable) and tests/end-to-end/test-doubles/_files/TestDoubleAndPartialFunctionApplicationTest.php (partial-function-application `?` placeholder)",
+          "measuredAt": "2026-09-29T23:48:00.000Z"
+        },
+        "grammarPin": {
+          "wired": "wasm/tree-sitter-php.wasm",
+          "sha256": "d4df6a6ff08c87c3ec4f9cbb785fe09998a0cb570e03f57d7b19b3acfb146aa7",
+          "bytes": 1058041,
+          "provenanceKind": "unnamed-build-sha-only",
+          "note": "Registered 2026-09-29 in script/m14/verify-grammar-pins.ts. php was previously ABSENT from the pin table, so its bytes were governed by nothing. The npm tree-sitter-php 0.24.2 claim in the doc is NOT offline-re-derivable (not a package.json dep, tarball not vendored), so the pin is deliberately sha-only; no vendored source and no PIN.md, so the source<->wasm proof is not applicable and the grammar is not rebuildable offline."
+        },
+        "symbolContract": {
+          "measuredAt": "2026-09-29T23:55:00.000Z",
+          "note": "Symbol-side audit on the same 150-file strided sample used for the relationship line-number audit.",
+          "sample": 150,
+          "symbols": 1187,
+          "missingStartLine": 0,
+          "missingEndLine": 0,
+          "pct": "0.00%",
+          "complexityOnCallables": "666/666 (100% of methods carry complexity; sum 1,086). Complexity is a per-callable metric, so the 521 non-callable symbols (properties 227, namespace 140, class 131, constant 10, interface 9, trait 2, enum 1, enum_member 1) correctly carry none."
+        }
       }
     },
     {
@@ -928,8 +1020,8 @@
         "precision": 1,
         "recall": 1,
         "corpusSymbols": 3251,
-        "corpusRelationships": 6042,
-        "grammarErrorFiles": 1,
+        "corpusRelationships": 6423,
+        "grammarErrorFiles": 0,
         "grammarErrorNodes": 2,
         "strictAcceptanceFiles": 1,
         "trackedFiles": 2,
@@ -941,7 +1033,32 @@
         "symbolsPerSecond": 2626.8734060586075,
         "relationshipsPerSecond": 4882.057557491882,
         "measuredAt": "2026-08-20T16:44:43.000Z",
-        "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file."
+        "note": "GraphQL analyzer uses one iterative DFS with Set-backed relationship dedupe. The GitHub public schema parses with 0 errors and 0 crashes (3,242 symbols, 6,015 relationships). The kitchen-sink torture-test has two named grammar-level errors — a directive on a variable definition and an escaped triple-quote in a block string — that the vendored tree-sitter-graphql grammar does not model; they are recorded as grammar limitations by graphql-corpus-errors.ts, never hidden, and the analyzer still extracts all 9 valid symbols and 19 relationships from that file.",
+        "claimCorrection": "grammarErrorFiles was 1 and corpusRelationships was 6,042, and both were wrong. The m12 corpus-errors artifact measures errorFiles=0, and the lane review's doc-truth probe re-derives '0 error files, 0 crashes' from that same artifact, so the manifest was contradicting two records that agreed with each other. The m60 `corpus` cell was correctly reporting this as a failure — a claim with no artifact behind it. Corrected to the measured value rather than the artifact being edited to match the claim, which is the direction that hides evidence. The artifact is now regenerated at the manifest's own pinned revision 9c245018 and measures 3251 symbols and 6423 relationships through the production pipeline; the manifest now carries those figures, so H5 is satisfied by an artifact rather than by an unbacked number. The lane review's 6,418 came from the m12 corpus-complexity instrument and is 5 short of the pipeline's 6423 — two instruments counting the same corpus, and the manifest follows the one the gate compares it against."
+      }
+    },
+    {
+      "analyzer": "protobuf",
+      "corpusTarget": "protobuf_reference",
+      "status": "measured",
+      "candidates": [
+        "protobuf-reference@1eafbdec(clean)"
+      ],
+      "measured": {
+        "revision": "1eafbdec535cec3ef74a35e5900204895f1eb9b8",
+        "sample": "108 tracked *.proto files from protocolbuffers/protobuf — the language's OWN reference implementation, which is the strongest correctness corpus available because descriptor.proto is the file every protobuf tool reads",
+        "fixtures": 2,
+        "fixtureFacts": 105,
+        "precision": 1,
+        "recall": 1,
+        "corpusSymbols": 7744,
+        "corpusRelationships": 9073,
+        "grammarErrorFiles": 1,
+        "grammarErrorNodes": 9,
+        "errorNodesDetail": "13 pipeline error ENTRIES over 9 ERROR/MISSING NODES; recovery reports one span more than once, so both numbers are carried rather than one being picked",
+        "grammar": "tree-sitter-proto @ e9f6b43f, 8 patches, vendored at grammars/tree-sitter-proto, pinned in validation/m14/grammar-pins.json",
+        "ruled": "the proto2 MessageSet form `any { … }` — deprecated by the specification, 9 ERROR nodes in 1 file of 108. RULED rather than fixed: recorded as a namedGrammarLimits entry with its reason so it cannot be smoothed into a bare number.",
+        "note": "The candidate is a SYMLINK into fixtures/protobuf/repos/, so the corpus is staged once and the gate can still resolve it by name. Duplicating it would cost ~100 MB, and disk pressure is why fixtures/graphql was removed earlier."
       }
     },
     {
