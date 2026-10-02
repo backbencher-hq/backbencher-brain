@@ -21830,6 +21830,22 @@ async function main() {
         for (const t of truth as any[]) tc[String(t.label)] = (tc[String(t.label)] ?? 0) + 1
         for (const r of rels as any[]) ac[String(r.label)] = (ac[String(r.label)] ?? 0) + 1
       }
+      // M60/SDJ-17: TRUTH may not assert an unnameable edge either. SDJ-11 stopped the
+      // ANALYZER publishing `references` with an empty target, on the principle that an
+      // edge with an empty endpoint names nothing — it cannot be resolved, hovered or
+      // followed. The truth side had no equivalent guard, and on the full 4,008-file
+      // scala3 draw it emitted `instantiates (expr) -> ` for
+      // tests/debug/eval-encoding.scala, whose `new <>` has a head type the name reader
+      // cannot reduce to an identifier. The analyzer published nothing there (correctly),
+      // so the row was reported MISSING and read as a lost edge when it is an oracle
+      // artefact. Applying the same rule to both sides is what makes the comparison
+      // symmetric: a rule that only one side obeys turns into a false gap.
+      //
+      // Safe by construction, and worth saying why: the analyzer no longer publishes an
+      // empty target (SDJ-11), so dropping such a truth row cannot orphan a real match.
+      // It can only remove a phantom obligation.
+      truth = (truth as any[]).filter((t: any) => String(t.target ?? "").trim().length > 0)
+
       treeEdgesTotal += truth.length
       analyzerEdgesTotal += rels.length
 
