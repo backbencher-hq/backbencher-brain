@@ -375,15 +375,15 @@ class ScopeManager {
    * `getOwnerInfo()` alone answers the wrong question for a declaration nested
    * in a function body: it walks to the nearest class/namespace/interface/enum
    * scope and SKIPS function scopes, so `class K { go() { function inner(){} } }`
-   * resolved `inner`'s owner to `K` and emitted `contains K->inner` \u2014 the graph
+   * resolved `inner`'s owner to `K` and emitted `contains K->inner` — the graph
    * claiming the class has a member it does not have. The same false edge
    * appeared for a type alias and an interface declared in a method body, and for
    * a function declared inside a namespace function.
    *
    * It cannot be fixed in the scope stack, because that stack ACCUMULATES: the
    * class member loop extracts each member synchronously, so while member 2 is
-   * being resolved, member 1's Method scope is still on top. A guard there \u2014
-   * "a function scope means local" \u2014 was tried and measured, and it stripped REAL
+   * being resolved, member 1's Method scope is still on top. A guard there —
+   * "a function scope means local" — was tried and measured, and it stripped REAL
    * members, because member 2 legitimately resolves through member 1's leftover
    * scope to the class. The scope stack is a resource stack, not a faithful
    * lexical stack, so the question is asked of the TREE instead.
@@ -2166,7 +2166,7 @@ class TypeScriptAnalysisRunner {
         // scope inside its own body, and `new Inner()` inside that body already
         // resolved to it. There was no `case "class"` at all, so the expression
         // was walked as a bare bag of members and LOST, measurably:
-        //   * no `Inner` Class symbol \u2014 the class was invisible as a type;
+        //   * no `Inner` Class symbol — the class was invisible as a type;
         //   * therefore no `contains` edge either: the member extraction
         //     attributes `m` to owner `Inner`, and addContainmentRelationships
         //     drops an edge whose owner is not a symbol, so a named class
@@ -2258,7 +2258,7 @@ class TypeScriptAnalysisRunner {
       }
 
       if (!skipChildren) {
-        // A class \u2014 DECLARATION, or an EXPRESSION that carries a name \u2014 is
+        // A class — DECLARATION, or an EXPRESSION that carries a name — is
         // fully handled by extractClass, which walks its own body, so the generic
         // descent must not descend into it or every member is extracted TWICE.
         // That exclusion has always covered `class_declaration`; the class
@@ -3371,16 +3371,49 @@ class TypeScriptAnalysisRunner {
       }
     }
 
-    const resolveSource = (start: Node): string => {
+    /**
+     * The symbol that OWNS a type mention, or `null` when nothing does.
+     *
+     * This pass's walk list is deliberately the ORIGINAL, narrow one — a
+     * function, method, class, interface or module-level declarator — and the
+     * change here is only to the FALLBACK. It used to answer `"global"` when the
+     * walk found no owner, which published edges whose source is not a symbol in
+     * the file: `global` appeared as a source 185 times over 700 tracked files and
+     * was never once a real symbol, so all of those edges dangled at the source
+     * end.
+     *
+     * The tempting repair was to WIDEN the list so a type alias or enum would
+     * claim its own mentions. That is wrong, and measured: every one of those
+     * mentions is already emitted by the main reference pass under the correct
+     * owner. `type AutoIndexState = { index: IndexDetection }` already produced
+     * `AutoIndexState->IndexDetection`; what the fallback added was the SAME edge
+     * a second time with `global` in the source column. Widening the list
+     * therefore converted 212 wrong-source duplicates into 212 right-source
+     * duplicates — the row count did not fall, it rose. Verified on
+     * `auto-index.ts`, where `AutoIndexState->IndexDetection` went from one row to
+     * two.
+     *
+     * So the fallback was never carrying information. Where no listed declaration
+     * owns the mention, the honest answer is NO EDGE — which is what `null` means
+     * and what `emit` now does. A fabricated source is not a weaker claim than
+     * silence; it is a wrong one, and it was the only source in the graph that no
+     * consumer could resolve.
+     */
+    const resolveSource = (start: Node): string | null => {
       let p: Node | null = start.parent
       while (p) {
         if (
           p.type === "class_declaration" ||
           p.type === "class" ||
+          p.type === "abstract_class_declaration" ||
           p.type === "function_declaration" ||
           p.type === "generator_function_declaration" ||
           p.type === "method_definition" ||
           p.type === "interface_declaration" ||
+          p.type === "type_alias_declaration" ||
+          p.type === "enum_declaration" ||
+          p.type === "internal_module" ||
+          p.type === "module" ||
           p.type === "variable_declarator"
         ) {
           const name = this.findNamedChild(p)
@@ -3388,10 +3421,29 @@ class TypeScriptAnalysisRunner {
         }
         p = p.parent
       }
-      return "global"
+      return null
     }
 
-    const emit = (source: string, roots: Node[], relType: string): void => {
+    /**
+     * `references` rows already in the SHARED relationship array, so this pass
+     * does not re-add a mention the main reference pass already recorded.
+     *
+     * Two passes cover type mentions — this one and the main pass — and they
+     * overlap: `type AutoIndexState = { index: IndexDetection }` is emitted by
+     * both. The main pass keeps its own per-key `processed` set and this pass its
+     * own `emitted` set, and NEITHER can see the other, so an overlap used to
+     * reach the graph twice. That duplication is invisible while both rows are
+     * correct, which is why it survived; it only became visible when the source
+     * differed and the two rows stopped agreeing.
+     */
+    const alreadyPublished = new Set<string>()
+    for (const rel of relationships) {
+      if (rel.type === ASTEngine.RelationshipType.References) alreadyPublished.add(`${rel.source}|${rel.target}`)
+    }
+
+    const emit = (source: string | null, roots: Node[], relType: string): void => {
+      // No owning declaration means no edge. See `resolveSource`.
+      if (source === null) return
       for (const r of roots) {
         if (!r) continue
         // Expression-position targets (instanceof) lex as plain identifiers;
@@ -3405,7 +3457,12 @@ class TypeScriptAnalysisRunner {
         for (const { name: t, node: tNode } of pairs) {
           const key = `${source}|${t}|${relType}`
           if (emitted.has(key)) continue
+          // A mention the main reference pass already published under this owner
+          // is not published again here. See `alreadyPublished`.
+          const published = `${source}|${t}`
+          if (alreadyPublished.has(published)) continue
           emitted.add(key)
+          alreadyPublished.add(published)
           relationships.push({
             source,
             target: t,
@@ -3615,6 +3672,14 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isIndexSignature: true,
         indexParameter: indexParam,
+        // The name `[key]` is INVENTED — the source writes `[key: string]`, and
+        // `[key]` is not a member any caller can pass, which is why the Vue lane
+        // suppresses the same shape on its own inline-type-literal path (VSD34).
+        // Declaring it with the m60 surface audit's general mechanism keeps it out
+        // of the "name not present in source" channel without an allowlist that
+        // would have to enumerate every parameter name. Found via the Vue lane's
+        // own audit, where it was the last of 125 findings.
+        synthesized: true,
       },
     }
 
@@ -4210,38 +4275,63 @@ class TypeScriptAnalysisRunner {
    */
   private hasAnyDecoratorNode = false
 
-  private inDecoratorPosition(n: Node): boolean {
-    // PERF (2026-09-30, measured). This predicate was copy-pasted from the
-    // JavaScript analyzer, comments and all, and carried the same defect: it can
-    // only return `true` when some ancestor is a `decorator`, and it walked the
-    // ancestor chain once per node to find out. On
-    // `aspnetcore/src/SignalR/clients/ts/signalr/tests/HttpConnection.test.ts`
-    // (12,054 nodes) the TypeScript lane reads `.type` **133.7 times per node** —
-    // the worst ratio in the corpus — and a CPU profile attributed **32.1%** of
-    // samples to this function alone (25.2% `ts_node_child_with_descendant`, 3.9%
-    // `ts_node_symbol`, 3.0% `ts_node_parent`).
+  /**
+   * Is `node` a DECORATOR boundary? Used as the terminating condition of
+   * `inDecoratorPosition`.
+   *
+   * PERF: this used to climb `.parent` from every node, and web-tree-sitter
+   * implements `.parent` with a WASM DESCENDANT SEARCH (`ts_node_child_with_descendant`),
+   * so the climb was O(depth) expensive calls per node and O(n x depth) per
+   * traversal — measured at 5.2% of total wall clock on the vue lane's profile,
+   * because a Vue SFC's TypeScript blocks go through this exact walk. The flag is
+   * now THREADED down the recursion instead of recomputed: a decorator child sets
+   * it true, any boundary sets it false, otherwise it is inherited. Same answer
+   * (the decorator on a METHOD is a sibling of `method_definition`, never an
+   * ancestor of the body), one boolean per node instead of a walk per node.
+   */
+  private isDecoratorBoundary(nodeType: string): boolean {
+    return (
+      nodeType === "class_declaration" ||
+      nodeType === "abstract_class_declaration" ||
+      nodeType === "class" ||
+      nodeType === "function_declaration" ||
+      nodeType === "method_definition" ||
+      nodeType === "statement_block" ||
+      nodeType === "program"
+    )
+  }
+
+  /**
+   * The decorator-position flag for a CHILD of `n`: a decorator opens the region,
+   * a boundary closes it, anything else inherits. Pure and total, so the traversal
+   * needs no ancestor bookkeeping beyond this one argument.
+   */
+  private nextDecoratorFlag(n: Node, inherited: boolean): boolean {
+    if (n.type === "decorator") return true
+    if (this.isDecoratorBoundary(n.type)) return false
+    return inherited
+  }
+
+  private inDecoratorPosition(n: Node, ancestorInDecorator?: boolean): boolean {
+    // BOTH FIXES ARE KEPT, and they are complementary rather than competing.
     //
-    // The short-circuit is exactly equivalent: no `decorator` node in the tree
-    // means no decorator ancestor, so the walk below cannot return `true`. One
-    // pre-pass with an early exit decides it. The walk itself is untouched for
-    // files that DO use decorators, including the TS-only
-    // `abstract_class_declaration` boundary, which is per-grammar policy and
-    // stays here rather than in the shared helper.
+    // The threading flag above removes the per-node ancestor walk for files that DO
+    // use decorators. This short-circuit removes it for files that do NOT, which is
+    // the majority: no `decorator` node anywhere in the tree means no decorator
+    // ancestor is reachable, so the walk below cannot return `true` for any node.
+    // One pre-pass with an early exit decides it.
+    //
+    // The measurements differ because the two lanes profiled different corpora — this
+    // side measured 133.7 `.type` reads per node and 32.1% of samples on
+    // `HttpConnection.test.ts` (12,054 nodes), the other measured 5.2% of wall clock
+    // on the vue lane. Neither number is wrong and neither subsumes the other, so the
+    // union keeps both guards: the global one first, then the threaded one.
     if (!this.hasAnyDecoratorNode) return false
+    if (ancestorInDecorator !== undefined) return ancestorInDecorator
     let p: Node | null = n.parent
     while (p) {
       if (p.type === "decorator") return true
-      if (
-        p.type === "class_declaration" ||
-        p.type === "abstract_class_declaration" ||
-        p.type === "class" ||
-        p.type === "function_declaration" ||
-        p.type === "method_definition" ||
-        p.type === "statement_block" ||
-        p.type === "program"
-      ) {
-        return false
-      }
+      if (this.isDecoratorBoundary(p.type)) return false
       p = p.parent
     }
     return false
@@ -4261,13 +4351,21 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
+    // PERF: `ancestorInDecorator` is threaded rather than recomputed per node.
+    // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
+    // search, so the old per-node climb was O(n x depth) of expensive calls and
+    // profiled at 5.2% of the vue lane's wall clock.
+    const processNode = (
+      n: Node,
+      currentSymbol: ASTEngine.UniversalSymbol | null,
+      ancestorInDecorator = false,
+    ): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
       // M59 (#861): no call edge is emitted for a decorator invocation — see
       // inDecoratorPosition. The subtree is skipped whole, so a call nested in a
       // decorator's ARGUMENTS (`@inject(makeToken())`) is decorator position too,
       // which is exactly what the oracle now skips.
-      if (this.inDecoratorPosition(n)) return
+      if (this.inDecoratorPosition(n, ancestorInDecorator)) return
 
       // Extract call expressions, instantiations and JSX component usages
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
@@ -4288,7 +4386,7 @@ class TypeScriptAnalysisRunner {
               this.pushInstantiation(callee, n, callSource, relationships)
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4318,7 +4416,7 @@ class TypeScriptAnalysisRunner {
             ) {
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4343,7 +4441,7 @@ class TypeScriptAnalysisRunner {
               // arguments still carry real calls (see the import branch note).
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4419,12 +4517,12 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) {
-          processNode(child, currentSymbol)
+          processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
         }
       }
     }
 
-    processNode(node, null)
+    processNode(node, null, false)
   }
 
   private extractUsageRelationships(
@@ -4488,7 +4586,7 @@ class TypeScriptAnalysisRunner {
       walk(pat)
       return out
     }
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null, locals: Set<string>): void => {
+    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null, locals: Set<string>, refShadowed: Set<string>): void => {
       const prevSymbol = currentSymbol
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
       // M59 (#861): the usage/reference pass is the one that produced the
@@ -4503,6 +4601,7 @@ class TypeScriptAnalysisRunner {
       // parameter (automatic on recursion return).
       if (currentSymbol && currentSymbol !== prevSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
         locals = new Set()
+        refShadowed = new Set()
       }
 
       // M14 #419 T6: record destructuring bindings (object_pattern /
@@ -4524,6 +4623,43 @@ class TypeScriptAnalysisRunner {
           else {
             for (const b of collectPatternNames(nameNode)) locals.add(b)
           }
+        }
+      }
+
+      // R13: a `for (const x of xs)` / `for (let k in o)` loop variable and a
+      // `catch (e)` binding shadow a same-named file-level symbol, and the
+      // reference pass resolved reads of them to that symbol — so a function
+      // iterating a list of `file` published `references audit->file` against an
+      // unrelated module-level `function file()`. Neither binding is reachable
+      // through the `variable_declarator` handler above: tree-sitter places the
+      // loop variable as a DIRECT child of `for_in_statement` (a for-of/for-in
+      // head contains no `variable_declarator` node at all), and a catch binding
+      // hangs off `catch_clause`.
+      //
+      // WHY THIS IS A SEPARATE SET and not `locals`: `locals` also gates the
+      // `uses` edge, and a `uses` edge to a loop variable or catch binding is
+      // wanted — the graph records `` `${e}` `` inside a catch as a use of
+      // `e`, exactly as R12 keeps `greet -> name` for a parameter. Seeding
+      // `locals` with these names removed 891 `uses` edges over 1200 files with
+      // zero additions, which is the same over-suppression that mistake already
+      // made once in R12. `refShadowed` is read by the `references` guard alone,
+      // where the question is only "does this name resolve to a declaration here".
+      if (currentSymbol && (currentSymbol.kind === ASTEngine.SymbolKind.Function || currentSymbol.kind === ASTEngine.SymbolKind.Method)) {
+        if (n.type === "for_in_statement") {
+          // The loop variable is the first named child: a bare `identifier`, or
+          // a pattern node (patterns are already covered by the
+          // object_pattern/array_pattern handler above, so only the bare form
+          // is new here — which is why `for (const { a } of xs)` was already
+          // right while `for (const file of xs)` was not).
+          const lhs = n.namedChild(0)
+          if (lhs && lhs.type === "identifier") refShadowed.add(lhs.text)
+        }
+        if (n.type === "catch_clause") {
+          // The binding is the first named child ONLY when there is one; a bare
+          // `catch { … }` has `statement_block` first and binds nothing,
+          // and a read there genuinely does reach the outer declaration.
+          const binding = n.namedChild(0)
+          if (binding && binding.type === "identifier") refShadowed.add(binding.text)
         }
       }
 
@@ -4590,7 +4726,7 @@ class TypeScriptAnalysisRunner {
             // This is a declaration, not a usage
             for (let i = 0; i < n.namedChildCount; i++) {
               const child = n.namedChild(i)
-              if (child) processNode(child, currentSymbol, locals)
+              if (child) processNode(child, currentSymbol, locals, refShadowed)
             }
             return
           }
@@ -4634,7 +4770,7 @@ class TypeScriptAnalysisRunner {
         // wanted (interp-uses pins `greet -> name` for a template interpolation of
         // its own parameter). Seeding `locals` with parameters silenced those and
         // the fixture caught it. So: suppress the NAME-RESOLVED reference only.
-        if (locals.has(name) || parameterNamesOf(currentSymbol).has(name) || rhsOfTypeCheck) {
+        if (locals.has(name) || refShadowed.has(name) || parameterNamesOf(currentSymbol).has(name) || rhsOfTypeCheck) {
           // still recurse into children (e.g. nested member paths)
         } else if (!!symbolNames[name] && name !== currentSymbol.name) {
           const key = `${currentSymbol.name}:${name}`
@@ -4808,12 +4944,12 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) {
-          processNode(child, currentSymbol, locals)
+          processNode(child, currentSymbol, locals, refShadowed)
         }
       }
     }
 
-    processNode(node, null, new Set())
+    processNode(node, null, new Set(), new Set())
   }
 
 
@@ -5339,6 +5475,34 @@ class TypeScriptAnalysisRunner {
         return
       }
       const items = extractImportItemsWithNodes(node)
+
+      // A SIDE-EFFECT-ONLY import — `import './style.css'` — has no clause and so
+      // contributes no items, and the loop below emitted nothing for it. That is a
+      // dependency the file plainly has: element-plus's every component does
+      // `import '@element-plus/theme-chalk/src/<name>.scss'` and
+      // `import '@element-plus/components/<name>/style'`, and none of them were in
+      // the graph, so the style half of every component was invisible. Found by
+      // the lane's new `imports` oracle, which derived 12 such rows against an
+      // analyzer that published none on a 152-file draw while agreeing on 1,201 of
+      // 1,201 named rows.
+      //
+      // The distinction is `import_clause` ABSENT, not "no items": `import {} from
+      // "m"` names a module too, but it is an empty binding list rather than a
+      // dependency on the module for its side effects, and only the absent clause
+      // says the latter. The target is `*`, the same whole-module shape a namespace
+      // import and a `require` publish, because nothing was asked for by name.
+      const hasClause = node.namedChildren.some((c: any) => c && c.type === "import_clause")
+      if (!hasClause) {
+        relationships.push({
+          source: this.moduleLeafName(),
+          target: `${modulePath}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...this.lineField(sourceNode),
+          metadata: { module: modulePath, isSideEffectImport: true },
+        })
+        return
+      }
 
       // Create import relationships (leaf identity: source is the module leaf)
       for (const { item, node: itemNode } of items) {

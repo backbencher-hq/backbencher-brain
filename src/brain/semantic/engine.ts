@@ -5,7 +5,7 @@ import * as fs from "fs"
 import * as path from "path"
 import { Config } from "../../config/config"
 import { Provider } from "../../provider/provider"
-import { initLocalModel, embedLocal } from "./local-embed"
+import { initLocalModel, embedLocal, projectVocabulary } from "./local-embed"
 import { isEmbeddingConfigured, getEmbeddingConfig, embedOpenAICompatible } from "./openai-embed"
 
 
@@ -31,8 +31,22 @@ export namespace SemanticEngine {
   let _localAvailable: boolean | null = null
   // Canonical label for offline word-vector embeddings. Distinct from any API
   // model name so the vector search never compares across vector spaces.
+  //
+  // The version suffix is load-bearing, not decoration:
+  //   v2  tokenizes identifiers (camelCase, snake_case, scope) where v1
+  //       tokenized on whitespace alone;
+  //   v3  derives each word's vector from the word itself, so a project
+  //       vocabulary is a pure coverage increase and both sides of a
+  //       comparison can use different vocabularies.
+  // A v1/v2 vector and a v3 vector are points in different spaces even though
+  // all are 50-dimensional. Bumping the label lets the model-consistency guard
+  // refuse to compare them, which reports an honest
+  // `no-matching-model-embeddings` until a project is re-embedded. Reusing an
+  // old label would have produced confident garbage: real-looking cosines
+  // between two unrelated vector constructions, for every existing index, with
+  // no way to tell.
   let _lastModel: string | null = null
-  export const LOCAL_MODEL_LABEL = "local-word-vectors"
+  export const LOCAL_MODEL_LABEL = "local-word-vectors-v3"
 
   /** Model name that produced the most recent embedding (API model or local). */
   export function getLastEmbeddingModel(): string {
@@ -186,7 +200,7 @@ export namespace SemanticEngine {
     _embedCacheMisses = 0
   }
 
-  export async function embed(text: string): Promise<number[]> {
+  export async function embed(text: string, projectId?: string): Promise<number[]> {
     if (_checked && !_embeddingAvailable) return []
     // Layer 1: OpenAI-compatible embedding API (Google / NVIDIA NIM / any)
     const config = await loadConfig()
@@ -219,14 +233,17 @@ export namespace SemanticEngine {
     try {
       if (_localAvailable === null) _localAvailable = await initLocalModel()
       if (_localAvailable) {
-        const key = embedCacheKey(LOCAL_MODEL_LABEL, text)
+        // The cache key carries the project, because the LOCAL vector space
+        // depends on the project's vocabulary: one key shared across projects
+        // would hand project B a vector computed against project A's words.
+        const key = embedCacheKey(projectId ? `${LOCAL_MODEL_LABEL}|${projectId}` : LOCAL_MODEL_LABEL, text)
         const cachedLocal = embedCacheGet(key)
         if (cachedLocal) {
           _embeddingAvailable = true; _checked = true
           _lastModel = LOCAL_MODEL_LABEL
           return cachedLocal
         }
-        const localResult = await embedLocal([text])
+        const localResult = await embedLocal([text], await localVocabulary(projectId))
         if (localResult.length > 0 && localResult[0].length > 0) {
           _embeddingAvailable = true; _checked = true
           _lastModel = LOCAL_MODEL_LABEL
@@ -236,6 +253,29 @@ export namespace SemanticEngine {
       }
     } catch {}
     return []
+  }
+
+  /**
+   * The project's own vocabulary, or null when there is no project or its
+   * index cannot be read.
+   *
+   * This is what makes an identifier representable at all. The base vocabulary
+   * is 190 common programming words, so `CpuCounter` -> `cpu`, `counter` is all
+   * zeros and the dense path never runs for it — measured at 8 of 14 real
+   * symbol names on rake before this and 0 of 14 after. The project vocabulary
+   * is a SUPERSET of the base one and word vectors are position-independent,
+   * so adding it cannot change a vector the base vocabulary already produced;
+   * the index side gets the same treatment, so both sides agree on the space.
+   */
+  async function localVocabulary(projectId?: string): Promise<Record<string, number> | null> {
+    if (!projectId) return null
+    try {
+      const { BrainDatabase } = await import("../../brain/database")
+      const raw = await BrainDatabase.getRawInstance(projectId as any)
+      return projectVocabulary(raw, String(projectId))
+    } catch {
+      return null
+    }
   }
 
   // Q1 rate-limit resilience: NO process-wide latch. A failed API batch
@@ -252,7 +292,7 @@ export namespace SemanticEngine {
     return capped + Math.floor(Math.random() * API_BACKOFF_JITTER_MS)
   }
 
-  export async function embedMany(texts: string[]): Promise<number[][]> {
+  export async function embedMany(texts: string[], projectId?: string): Promise<number[][]> {
     if (_checked && !_embeddingAvailable) return []
     if (!texts || texts.length === 0) return []
 
@@ -287,7 +327,11 @@ export namespace SemanticEngine {
     try {
       if (_localAvailable === null) _localAvailable = await initLocalModel()
       if (_localAvailable) {
-        const localResult = await embedLocal(texts)
+        // Built ONCE for the batch, not per document: the vocabulary is a
+        // per-project constant, so re-deriving it per text would dominate the
+        // cost of embedding a whole file.
+        const vocabulary = await localVocabulary(projectId)
+        const localResult = await embedLocal(texts, vocabulary)
         if (localResult.length > 0) {
           _embeddingAvailable = true; _checked = true
           _lastModel = LOCAL_MODEL_LABEL

@@ -5,7 +5,7 @@
   "code": "S1",
   "tool": "bb_search",
   "title": "bb_search: mode negatives + freshness on all modes",
-  "verifiedState": "known-gap",
+  "verifiedState": "verified",
   "layers": [
     "unit",
     "integration"
@@ -140,10 +140,9 @@
       "detail": ""
     },
     {
-      "name": "public file mode rejects path escape [negative: escapes project root]",
-      "pass": false,
-      "negative": true,
-      "detail": "did not throw"
+      "name": "public file mode refuses a path escape with an error envelope",
+      "pass": true,
+      "detail": "isError=true text=bb_search mode=file: path escapes project root: /private/var/folders/4j/11tssyqj4kj0f8dfz06jsb700000gn/T/outside.ts"
     },
     {
       "name": "symbol search flags stale rows after modification",
@@ -166,11 +165,11 @@
       "detail": ""
     }
   ],
-  "negativeCases": 4,
+  "negativeCases": 3,
   "summary": {
     "total": 30,
-    "passed": 29,
-    "failed": 1
+    "passed": 30,
+    "failed": 0
   },
   "decisions": {
     "fileModeContract": "mode=file returns a typed file envelope (path, content, language, freshness), not filtered symbol rows",
@@ -181,10 +180,5 @@
     "This evidence does not establish analyzer completeness or semantic-answer quality.",
     "S2 (e2e) and S3 (real-repo corpus) are separate M13 issues."
   ],
-  "generatedAt": "2026-09-05T20:57:58.730Z",
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:48.296Z",
-    "contentSha256": "aac49d2e91aeb13f46c3860e3991dfd2f07c0b36087e179454017ab691b36d0d"
-  }
+  "generatedAt": "2026-09-29T07:43:16.905Z"
 }

@@ -402,8 +402,43 @@ export default grammar({
     // widening the single-dash class would make an INVALID form parse. A native
     // command's `--flag=value` really is one token, so this is the faithful shape
     // rather than a permissive one.
+    // G15 (M60 #278): the parameter classes had no `0-9`, so any parameter whose name
+    // contains a digit was cut at the digit and the remainder was REINTERPRETED. The
+    // two consequences are NOT the same severity, and an earlier note in this file
+    // conflated them; measured on the PRODUCT runtime, not natively:
+    //
+    //   Get-Thing -Verbose $x   ok    calls -> Get-Thing
+    //   Get-Thing -A $x         ok    calls -> Get-Thing
+    //   Get-Thing -R2R $x       ERROR, no MISSING
+    //                            calls -> 2R          <- FABRICATED, and the real
+    //                                                   callee Get-Thing is LOST
+    //   Get-Thing -PS7 $x       ERROR, MISSING [>]
+    //   Get-Thing -Base64 $x    ERROR, MISSING [>]
+    //                            calls -> Get-Thing  <- callee CORRECT
+    //
+    // CORRECTION: an earlier version of this comment claimed the `-PS7` case "carries
+    // no ERROR node anywhere", on the strength of a native run that reported 0e/0m. On
+    // the product runtime it is ERROR + MISSING, so the damage census counts it, and
+    // the analyzer's facts for it are CORRECT — the damage is a spurious
+    // `redirected_file_name` in the tree that nothing reads. Only `-R2R` is an
+    // analyzer-visible defect. The two are the same missing character and they are not
+    // the same bug, and the difference is exactly what a count would have hidden.
+    //
+    // A second-order finding worth more than the patch: `-PS7` reports 0 ERROR and 0
+    // MISSING NATIVELY and ERROR + MISSING on web-tree-sitter 0.25.9. The native
+    // pre-filter this lane relies on therefore CANNOT see part of what G15 repairs.
+    // That is a limit of the instrument, not of the patch, and it is the same runtime
+    // skew G10 was bitten by.
+    //
+    // Adding digits cannot collide with the redirection operators, the only other
+    // tokens beginning with a digit: `file_redirection_operator` is
+    // choice('>', '>>', '2>', '2>>', ...) and none starts with a dash, while both
+    // branches here require `-+` first. The only newly reachable text is a dash-led
+    // digit (`-2`), which is not a valid PowerShell parameter. `-a=1` stays an ERROR
+    // on purpose: G8 admitted `=` to the DOUBLE-dash branch only, because
+    // `-Name=value` is not valid PowerShell.
     command_parameter: ($) =>
-      token(choice(/--[a-zA-Z_?\-`=]+/, /-+[a-zA-Z_?\-`]+/, '--')),
+      token(choice(/--[a-zA-Z_0-9?\-`=]+/, /-+[a-zA-Z_0-9?\-`]+/, '--')),
 
     _verbatim_command_argument_chars: ($) =>
       repeat1(choice(/"[^"]*"/, /&[^&]*/, /[^\|\r\n]+/)),
@@ -510,6 +545,38 @@ export default grammar({
           seq($.pipeline, $._statement_terminator),
           $.empty_statement,
           alias($._bare_param_block, $.param_block),
+            // G14 (M60 #278): `using` FIRST, an ATTRIBUTE on the `param`, and the
+            // `param` NOT the first statement.
+            //
+            // G1 recorded this exact combination as unsupported and then asserted the
+            // corpus contained no instance. The ASSERTION is what failed. G1's census
+            // pattern was `using` followed by a BARE `param(`, which found 16 powershell
+            // and 17 ansible files of that shape and ZERO attributed ones -- so it
+            // concluded the combination did not occur. It occurs in 9 production files,
+            // with ONE OR MORE attributes between the `using` and the `param`, which the
+            // pattern never matched. Measured with controls:
+            //
+            //     using + bare param                ok    <- G1's measured shape
+            //     [CmdletBinding()] param(...)      ok    <- no using: program-level rule
+            //     using + [CmdletBinding()] param   2 ERROR  <- the class
+            //     using + [A][B] param              2 ERROR / 1 MISSING  <- the class
+            //
+            // The mechanism is visible in the tree. With no `using`, the `program`-level
+            // `param_block` owns the attribute and the whole thing is one node. With a
+            // `using` first the block must come in through the STATEMENT list, and the
+            // statement form is the bare alias, which has no attribute slot -- so the
+            // attribute is stranded as a `type_literal` carrying an ERROR while the
+            // `param_block` parses without it.
+            //
+            // The fix is the narrowest one available: let the STATEMENT form carry the
+            // attribute list itself. It is safe against the `[` ambiguity that made G1
+            // drop the attribute, because this route REQUIRES a `param` block
+            // immediately after the attributes. `[string]$x = 'a'` is a type annotation
+            // followed by an assignment, not followed by `param`, so it cannot reach this
+            // route at all. G1's rejected attempt instead put the whole `param_block`
+            // into the statement set, which made the leading `[` ambiguous with a type
+            // literal; REQUIRING the `param` is what makes the two readings disjoint.
+            seq($.attribute_list, alias($._bare_param_block, $.param_block)),
         ),
       ),
 
