@@ -22707,7 +22707,6 @@ async function main() {
         for (const e of deriveZigExports(root)) {
           ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
         }
-        }
       }
       if (lang === "csharp") {
         for (const e of deriveCSharpEdges(root, CSHARP_INTERFACES)) {
