@@ -5458,6 +5458,34 @@ class TypeScriptAnalysisRunner {
       }
       const items = extractImportItemsWithNodes(node)
 
+      // A SIDE-EFFECT-ONLY import — `import './style.css'` — has no clause and so
+      // contributes no items, and the loop below emitted nothing for it. That is a
+      // dependency the file plainly has: element-plus's every component does
+      // `import '@element-plus/theme-chalk/src/<name>.scss'` and
+      // `import '@element-plus/components/<name>/style'`, and none of them were in
+      // the graph, so the style half of every component was invisible. Found by
+      // the lane's new `imports` oracle, which derived 12 such rows against an
+      // analyzer that published none on a 152-file draw while agreeing on 1,201 of
+      // 1,201 named rows.
+      //
+      // The distinction is `import_clause` ABSENT, not "no items": `import {} from
+      // "m"` names a module too, but it is an empty binding list rather than a
+      // dependency on the module for its side effects, and only the absent clause
+      // says the latter. The target is `*`, the same whole-module shape a namespace
+      // import and a `require` publish, because nothing was asked for by name.
+      const hasClause = node.namedChildren.some((c: any) => c && c.type === "import_clause")
+      if (!hasClause) {
+        relationships.push({
+          source: this.moduleLeafName(),
+          target: `${modulePath}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...this.lineField(sourceNode),
+          metadata: { module: modulePath, isSideEffectImport: true },
+        })
+        return
+      }
+
       // Create import relationships (leaf identity: source is the module leaf)
       for (const { item, node: itemNode } of items) {
         const itemName = item.split(" as ")[0].replace("* as ", "")

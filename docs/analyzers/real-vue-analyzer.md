@@ -94,9 +94,19 @@ depth — and that figure is now honestly sized. Measured 2026-09-30:
   Recorded as VSD49/VSD50 in `script/m14/spec/vue-completeness.json`.
 - **Not audited**: the other **2,960** `references` rows, and `uses` in full
   (**2,225** rows, of which **1,849** are the Vue analyzer's own template reads).
-  `imports` (2,789) and `exports` (2) have no oracle in the instrument at all — `deriveTypeScriptEdges` emits only `calls` and
-  `instantiates` — so those labels are unaudited for want of truth, not for want of
-  scope. All of it is stored and compared against nothing, which the M60
+  The oracle for those two labels now EXISTS
+  (`oracles/typescript-imports-exports.ts`) and is wired and audited for the **typescript**
+  and **javascript** lanes — which is how it found that side-effect-only imports
+  (`import './style.css'`) were dropped entirely, 12 rows on a 152-file element-plus draw.
+  This lane's own `imports` rows are still unaudited, for a narrower reason: they are
+  SOURCED AT THE COMPONENT IDENTITY rather than the file stem, because the seam re-points
+  the delegated rows, so calling the oracle here means teaching it the identity resolution
+  first. The **javascript** lane's `imports` is out for a different reason: it publishes the
+  LOCAL BINDING as the target, with the declared name in `metadata.declaredName`, while the
+  oracle derives the DECLARED name — the one two files can join on. The two conventions meet
+  only when no import is aliased, so switching it on would report every aliased import as
+  MISSING, which is a harness artefact dressed as a defect. All of it is stored and compared
+  against nothing, which the M60
   rel-type-coverage gate CHECK 1 reports as un-audited debt for this lane. The gate's debt baseline file
   (`validation/m60/rel-type-coverage-baseline.json`) does not exist, so its
   regression output is uninterpretable on a machine where most corpora are
