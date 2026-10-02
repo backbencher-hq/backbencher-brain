@@ -2076,6 +2076,7 @@ recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
      * deliberately independent of any analyzer that reads it.
      */
     projectIndex?: import("./project-index").ProjectIndex
+    /**
      * Owner type name → (method name → its visibility), parallel to
      * `overrideCompanion`. ADDITIVE and optional: absent means "visibility unknown",
      * which is the pre-M60 behaviour and the reason an `overrides` edge used to be

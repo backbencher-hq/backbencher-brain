@@ -551,7 +551,7 @@ export class RealMakefileAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
           const value = dirs.join(":")
           if (!declared.has("VPATH")) {
-            declare("VPATH", ASTEngine.SymbolKind.Constant, node, {
+            declareSymbol("VPATH", ASTEngine.SymbolKind.Constant, node, {
               nodeType: "VPATH_assignment",
               isMakeVariable: true,
               isMakeSearchPath: true,

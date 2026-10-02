@@ -1748,14 +1748,14 @@ export async function processWithWorkerPool(
           attempts: 1,
         })
 
-        -- RESOLVED 2026-10-02 (branch consolidation): a UNION.
-        --   local  -- adds `projectIndexes` to the parse_batch payload, omitted
-        --            entirely when no project index was built so every other
-        --            language keeps a byte-identical message shape.
-        --   remote -- wraps the send in try/catch and treats a late channel
-        --            close as the worker death it is, requeueing the batch
-        --            instead of throwing out of the scheduler.
-        -- Both are kept: the hardened send, carrying the new payload field.
+        // RESOLVED 2026-10-02 (branch consolidation): a UNION.
+        //   local  -- adds `projectIndexes` to the parse_batch payload, omitted
+        //            entirely when no project index was built so every other
+        //            language keeps a byte-identical message shape.
+        //   remote -- wraps the send in try/catch and treats a late channel
+        //            close as the worker death it is, requeueing the batch
+        //            instead of throwing out of the scheduler.
+        // Both are kept: the hardened send, carrying the new payload field.
         try {
           worker.send({
             type: "parse_batch",
@@ -2153,7 +2153,7 @@ export async function storeResults(
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
      -- RESOLVED 2026-10-02 (branch consolidation): a UNION, and an ORDERED one.
-     -- The local side added `super_types`; the remote side added `source_text`.
+     -- The local side added super_types; the remote side added source_text.
      -- Both writers exist downstream (the merged .run() below binds 31 values,
      -- verified by parse: docstring, source_text, scope_kind, is_declaration,
      -- super_types, time_created, time_updated). The column list must therefore
