@@ -3498,10 +3498,25 @@ export async function storeResults(
              // `fiberize`). The analyzer's synthetic spelling goes to
              // metadata.syntheticSource rather than source_external, so
              // `source_external IS NOT NULL` keeps meaning "unresolved caller".
-             // NOTE (#865): that metadata key is written here but the enrichment
-             // pass currently REPLACES the whole metadata object, so it does not
-             // survive a full index — the durable attribution is the resolved
-             // source id itself, which is exactly what the tool needs.
+             // #865, re-measured 2026-10-31: the note here used to say the
+             // enrichment pass REPLACES the whole metadata object and these keys
+             // therefore did not survive a full index. That was wrong, and the
+             // merge is deliberate: `mergeMetadata` in brain-relationship-enrichment
+             // spreads the STORED metadata and deletes only `ENRICHMENT_OWNED_KEYS`
+             // (role, pattern, layerFlow, criticality, frequency, isTestCode,
+             // isGeneratedCode, isFrameworkContract, isDependencyInjection,
+             // inferredAt) before writing its own. Nothing else is dropped, so an
+             // analyzer key survives an index the way any other does.
+             //
+             // Measured, not argued: `script/m59/probe-865-metadata-survival.ts`
+             // indexes a two-file java fixture through the REAL pipeline and
+             // reports `evidenceClass: 6` — an analyzer-emitted key, not an
+             // enrichment key, on all 6 stored rows — alongside the enrichment
+             // keys in the same objects (`layerFlow`, `criticality`, `frequency`).
+             // The two sets coexist, which is the whole claim. `syntheticSource`
+             // and `attributedToEnclosing` are in neither set, so they take the
+             // same path; the resolved source id remains the durable attribution,
+             // and these two keys stay as the explanation of how it was reached.
              // Falls back to the historical NULL-id external edge when the line
              // is unknown or no storeable symbol encloses it.
              if (!sameFileIdOk(sourceId)) {
