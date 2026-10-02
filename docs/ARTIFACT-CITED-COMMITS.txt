@@ -1,0 +1,20 @@
+3dd564544501df80f88fb7c9ef25a74483d1ff3d  archive/stash-9b7d445-dart-discovery  WIP on main: 9b7d445 fix: include generated files in discovery (3578→3
+13c5cdbeec0ee3e70d6ded22e08eb2a8f9ed46b2  artifact-stamp/13c5cdbeec0e  fix(m14): a `contains` edge resolves both ends by the container its chil
+1c427187426fad36c8574c492b91a0a9700fd11b  artifact-stamp/1c427187426f  feat(bb_doc): say what the evidence is, and why a section is empty
+2d9c5fb96f604f7989bd4ee4f1ebdad58e8c4737  artifact-stamp/2d9c5fb96f60  fix(ask): bm25 and the snippet must see the symbol body
+55ac09bc8a29edecf6fccbef3c3b8471159d0cce  artifact-stamp/55ac09bc8a29  feat(ask): the symbol body is now in the searchable corpus
+8bcad3bb4cbe613d0cc454a46cfbfd2633c781a7  artifact-stamp/8bcad3bb4cbe  fix(ask): make "no score" and "no coverage" representable in the contrac
+99a2711c2a7e47e47e0788ffc197085220039fc2  artifact-stamp/99a2711c2a7e  feat(migrate): the index held the imports all along, and the Go dictiona
+a1c4085d4a5f3c737b4f8a46d635613c52248a8d  artifact-stamp/a1c4085d4a5f  fix(bb_edit): say WHICH escape was refused, not just that one was
+a9d0b43971b94c48febf8cb5ae439b3d3bad2a50  artifact-stamp/a9d0b43971b9  docs(ask): the page contradicted the tool, and the gate agreed with the 
+b44fa33a09659ddead56e6f211e1088a6b98d607  artifact-stamp/b44fa33a0965  chore: ignore the scratch artifacts that were sitting untracked at the r
+b9fe3a41d8be80e9febdf6564f750beb46afba4f  artifact-stamp/b9fe3a41d8be  fix(visualize): the code map's treemap was not a treemap
+c2a31c00882e73d41a25815a9f0a2ebc1aec85bd  artifact-stamp/c2a31c00882e  fix(bb_edit): four ways it silently damaged source, all measured
+c523d2ceface59fda83298416b4a59dc30f30d68  artifact-stamp/c523d2ceface  fix(impact): a capped count is not a measurement
+cd7a7ab7fff923bf7a1e818456a315f26d086e75  artifact-stamp/cd7a7ab7fff9  fix(cross-language): the response was unbounded, an absence over-claimed
+d1ad94bb83a1eba9ee067ae49575843bb983537e  artifact-stamp/d1ad94bb83a1  docs(bb_search): declare HOW content search matched, not just what it ma
+d84ea779bcdc984aa70bf1d057d127ee3518052f  artifact-stamp/d84ea779bcdc  fix(visualize): make the buttons work, and stop connectors implying chai
+d8e49bdc4f2b9de2efe19d20ab65e8c4eea9e0ad  artifact-stamp/d8e49bdc4f2b  chore(impact): re-stamp U5 against the re-anchored M1
+daea1878182e97e8bd05abeea58fd51a01df83c1  artifact-stamp/daea1878182e  fix(bb_edit): the MCP layer lied about rollback, and the fix raised a fa
+dded1e64723aa37a1f2190cba2e93f1cb4c76b8e  artifact-stamp/dded1e64723a  fix(graph): the exact/cascade split was describing the wrong symbol
+ebc7c41d22335c77672762c7a78aba11bb07ab0b  artifact-stamp/ebc7c41d2233  probe(m60): #924's node shapes — five snippets reproduce five mechanis
