@@ -17,7 +17,7 @@
     "planned": 6
   },
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h2-fixture",
+    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h2-fixture",
     "files": [
       "src/main/java/com/demo/App.java",
       "src/main/java/com/demo/Main2.java"
@@ -61,10 +61,10 @@
   "budgets": {
     "hoverP95Ms": 50
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "e1b996f66c62e22248d8393286438ce67975d9ae",
   "verifierCommand": "npx tsx script/m42/verify-rich-hover.ts",
   "evidenceFile": "H2.json",
-  "generatedAt": "2026-09-20T02:50:20.458Z",
+  "generatedAt": "2026-09-30T06:51:26.312Z",
   "limitations": [
     "Header usage count keeps the M24 semantics (raw relationship-row count); the usages section lists deduplicated L3 locations — when several rows point at one site the numbers differ, honestly.",
     "The analyzer stores no call-site byte ranges; usage links point at the referencing symbol's declaration (the same location the native references tree jumps to).",
@@ -73,7 +73,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:20.458Z",
-    "contentSha256": "976002aa573fc531f8584bdc8b37293200834fdf68515c19a93a1dc40541e2cf"
+    "sealedAt": "2026-09-30T06:51:26.313Z",
+    "contentSha256": "b7f0c1610ad8f4d4e48c4cf9a391fb229ed3a6103d90106bd2a1a61ffefba938"
   }
 }

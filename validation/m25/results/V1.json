@@ -2,19 +2,19 @@
   "issue": "M25.V1",
   "code": "V1",
   "milestone": "M25",
-  "status": "verified",
-  "checks": 27,
-  "passed": 27,
-  "failed": 0,
+  "status": "known-gap",
+  "checks": 26,
+  "passed": 25,
+  "failed": 1,
   "mutantsCaught": 6,
   "mutantsTotal": 6,
-  "negativeCases": 3,
-  "currentCommit": "0dbafd74ef4f3d63be8e44dd6caa58833732a7db",
+  "negativeCases": 2,
+  "currentCommit": "a12e8e3430ebf9a047436246231bdab69bde2c3c",
   "machine": {
-    "kernel": "Linux 7.1.1-76070101-generic",
-    "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+    "kernel": "Linux 7.1.5-76070105-generic",
+    "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
     "ramGb": 16.6,
-    "node": "v20.19.5",
+    "node": "v22.22.1",
     "runtime": "harness-core"
   },
   "budgets": {
@@ -29,10 +29,10 @@
   },
   "verifierCommand": "npx tsx script/m25/verify-harness-core.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-20T02:22:35.610Z",
+  "generatedAt": "2026-09-30T06:33:09.970Z",
   "os": "linux",
   "verdict": {
-    "realComponentFailures": 0
+    "realComponentFailures": 1
   },
   "limitations": [
     "The stdio leg measures the server + core stack; the fully in-editor numbers (extension host included) are E5's vscode-test run at a pinned editor version — same core, same gate, transport swapped.",
@@ -40,7 +40,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:22:35.610Z",
-    "contentSha256": "42592e4279045acc8bffb2061adac452091815b215be115cb2a6e9bca477f803"
+    "sealedAt": "2026-09-30T06:33:09.973Z",
+    "contentSha256": "6e8b6e372e1b30e5d988aa525cb43c36156e00a687604c3b76cdabbc770e2b5e"
   }
 }

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "milestone": "M14",
   "rule": "analyzer documentation completeness",
-  "generatedAt": "2026-09-30T02:03:51.962Z",
+  "generatedAt": "2026-10-01T10:35:48.840Z",
   "boundary": "A section counts only when it has CONTENT under its heading, not merely the heading: a renamed or empty section is a missing section. Measures the DOCUMENT, not the analyzer: a language can pass all eleven sections here and still have an analyzer defect, and a language can fail here with a correct analyzer. This gate is about a claim being checkable, and it is deliberately weaker than the gates that measure behaviour.",
   "requiredSections": [
     "## Language",
@@ -15,18 +15,18 @@
     "## Corpus validation"
   ],
   "counts": {
-    "analyzers": 46,
-    "present": 45,
+    "analyzers": 48,
+    "present": 47,
     "absent": 1,
     "sectionComplete": 17,
-    "sectionShort": 28,
-    "ontologyCellGaps": 8,
+    "sectionShort": 30,
+    "ontologyCellGaps": 10,
     "fullyComplete": 17
   },
   "baseline": {
-    "present": 45,
+    "present": 47,
     "sectionComplete": 17,
-    "ontologyCellGaps": 8,
+    "ontologyCellGaps": 10,
     "note": "measured 2026-09-28 at the gate's first run; a language that LOSES ground fails, a language already short does not"
   },
   "worklist": {
@@ -155,6 +155,20 @@
         ]
       },
       {
+        "lang": "julia",
+        "doc": "docs/analyzers/julia.md",
+        "missing": [
+          "## Language",
+          "## Symbol contract",
+          "## Relationship ontology",
+          "## Supported constructs",
+          "## Regex inventory",
+          "## Complexity envelope",
+          "## Differential ground truth",
+          "## Corpus validation"
+        ]
+      },
+      {
         "lang": "lua",
         "doc": "docs/analyzers/real-lua-analyzer.md",
         "missing": [
@@ -232,8 +246,6 @@
         "doc": "docs/analyzers/real-python-analyzer.md",
         "missing": [
           "## Regex inventory",
-          "## Complexity envelope",
-          "## Differential ground truth",
           "## Corpus validation"
         ]
       },
@@ -267,6 +279,17 @@
           "## Supported constructs",
           "## Regex inventory",
           "## Complexity envelope",
+          "## Differential ground truth",
+          "## Corpus validation"
+        ]
+      },
+      {
+        "lang": "solidity",
+        "doc": "docs/analyzers/real-solidity-analyzer.md",
+        "missing": [
+          "## Language",
+          "## Symbol contract",
+          "## Relationship ontology",
           "## Differential ground truth",
           "## Corpus validation"
         ]
@@ -337,6 +360,13 @@
         ]
       },
       {
+        "lang": "julia",
+        "doc": "docs/analyzers/julia.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
         "lang": "powershell",
         "doc": "docs/analyzers/real-powershell-analyzer.md",
         "gaps": [
@@ -353,6 +383,13 @@
       {
         "lang": "ruby",
         "doc": "docs/analyzers/real-ruby-analyzer.md",
+        "gaps": [
+          "(no relationship-ontology section)"
+        ]
+      },
+      {
+        "lang": "solidity",
+        "doc": "docs/analyzers/real-solidity-analyzer.md",
         "gaps": [
           "(no relationship-ontology section)"
         ]
@@ -576,6 +613,24 @@
       ]
     },
     {
+      "lang": "julia",
+      "present": true,
+      "doc": "docs/analyzers/julia.md",
+      "missingSections": [
+        "## Language",
+        "## Symbol contract",
+        "## Relationship ontology",
+        "## Supported constructs",
+        "## Regex inventory",
+        "## Complexity envelope",
+        "## Differential ground truth",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
+    },
+    {
       "lang": "kotlin",
       "present": true,
       "doc": "docs/analyzers/real-kotlin-analyzer.md",
@@ -702,8 +757,6 @@
       "doc": "docs/analyzers/real-python-analyzer.md",
       "missingSections": [
         "## Regex inventory",
-        "## Complexity envelope",
-        "## Differential ground truth",
         "## Corpus validation"
       ],
       "ontologyGaps": []
@@ -763,6 +816,21 @@
         "## Corpus validation"
       ],
       "ontologyGaps": []
+    },
+    {
+      "lang": "solidity",
+      "present": true,
+      "doc": "docs/analyzers/real-solidity-analyzer.md",
+      "missingSections": [
+        "## Language",
+        "## Symbol contract",
+        "## Relationship ontology",
+        "## Differential ground truth",
+        "## Corpus validation"
+      ],
+      "ontologyGaps": [
+        "(no relationship-ontology section)"
+      ]
     },
     {
       "lang": "sql",

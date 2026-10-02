@@ -2,16 +2,16 @@
   "issue": "M29.R2",
   "code": "R2",
   "milestone": "M29",
-  "status": "verified",
-  "checks": 261,
-  "passed": 261,
-  "failed": 0,
+  "status": "known-gap",
+  "checks": 107,
+  "passed": 92,
+  "failed": 15,
   "mutantsCaught": 5,
   "mutantsTotal": 5,
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "4683048c8a2c1d39ff6d2a9fbe9edce06b74a2b8",
   "verifierCommand": "npx tsx script/m29/verify-wave-execution.ts",
   "evidenceFile": "R2.json",
-  "generatedAt": "2026-09-20T02:45:26.280Z",
+  "generatedAt": "2026-09-30T06:46:28.636Z",
   "approval": {
     "record": "validation/m29/results/wave-1-approval.json",
     "approvedBy": "owner (ishaq2321)",
@@ -118,99 +118,14 @@
       "budgetsOk": true
     }
   ],
-  "s6Legs": [
-    {
-      "language": "java",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "python",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "typescript",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "javascript",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "kotlin",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "scala",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "groovy",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "zig",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "go",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "rust",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "c",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "cpp",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "vue",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    },
-    {
-      "language": "svelte",
-      "status": "verified",
-      "checks": 10,
-      "failed": 0
-    }
-  ],
+  "s6Legs": [],
   "limitations": [
     "S6 in-editor legs run in headless Neovim on Linux only (OS-scoped per contract §10); other OSes are declared absent, not assumed.",
     "S5/S6 legs exercise the six owner-approved languages; languages outside the approval record are not onboarded this wave (the binding forbids it)."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:45:26.280Z",
-    "contentSha256": "13da1c25622aa1d89a8347dcb0f900f9bd2571bc1dcb07d4f397037254c12727"
+    "sealedAt": "2026-09-30T06:46:28.637Z",
+    "contentSha256": "2d3154f6cc435d865ccac17e27f74ce560084339e0ea0c99a843b1157dde25e3"
   }
 }

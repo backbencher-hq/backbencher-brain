@@ -2,13 +2,16 @@
   "issue": "652",
   "code": "H4",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 31,
-  "passed": 31,
-  "failed": 0,
-  "failures": [],
+  "passed": 29,
+  "failed": 2,
+  "failures": [
+    "H4/R3: reverse dependencies are the callers (main from both files): [\"Greeter\",\"main\",\"main\",\"App\",\"Main2\"]",
+    "H4/R4: real bb/impact result renders its nodes (2 reverse deps): {\"rendered\":5,\"nodes\":5}"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 2,
     "mutantsCaught": 5,
     "mutantsTotal": 5
   },
@@ -17,16 +20,16 @@
   "budgets": {
     "impactWarmP95Ms": 300
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "e1b996f66c62e22248d8393286438ce67975d9ae",
   "verifierCommand": "npx tsx script/m42/verify-hover-actions.ts",
   "evidenceFile": "H4.json",
-  "generatedAt": "2026-09-20T02:50:27.099Z",
+  "generatedAt": "2026-09-30T06:51:58.287Z",
   "limitations": [
     "editor leg (link clicks, panel surfaces) is proven in E5 over the shared core; this gate proves the server-side contract + renderer laws headless"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:27.099Z",
-    "contentSha256": "f694f29c91e34cfde15803396769773ec300b587ee4987c7845f3cd20a5435a6"
+    "sealedAt": "2026-09-30T06:51:58.288Z",
+    "contentSha256": "bf06dbf895df2cc7551125f761781623bd644da45d443ca8e47175902baf21d6"
   }
 }
