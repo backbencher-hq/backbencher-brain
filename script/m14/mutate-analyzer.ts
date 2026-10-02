@@ -10775,13 +10775,17 @@ export const MUTANTS: Mutant[] = [
     description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — ruby external-override pin",
     transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
   },
-  {
-    id: "python/drop-external-override-guess",
-    language: "python",
-    defectClass: "relationship-loss",
-    description: "M37.10 regression: re-drops external-base overrides (AuditService.handle->ExternalBase.handle) — python external-override pin",
-    transform: r => ({ ...r, relationships: (r.relationships ?? []).filter((x: any) => !(x.type === "overrides" && x.source === "AuditService.handle" && x.target === "ExternalBase.handle")) }),
-  },
+  // RETIRED (2026-10-31): python/drop-external-override-guess. The mechanism it
+  // dropped — the external-base first-parent guess — no longer exists. PY-7
+  // removed it on measurement: over 400 pinned corpus files it emitted 1,163
+  // override edges the block grammar CONTRADICTS against 27 it confirms, so it
+  // was 98% wrong, and the two candidate replacements were measured and both
+  // failed. A mutant that removes code which is not there is a no-op that always
+  // SURVIVES, and it survived for a long time before anyone read why — which is
+  // the more expensive half of a stale test. The fixture that pinned the same
+  // behaviour (`python/external-override`) was stale for the same reason and is
+  // corrected: the external-base case now asserts the ABSENCE of an overrides
+  // edge, which is what the analyzer does and what the tree supports.
   {
     id: "javascript/drop-external-override-guess",
     language: "javascript",
