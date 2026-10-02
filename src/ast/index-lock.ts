@@ -73,11 +73,13 @@ export interface LockHolderInfo {
 }
 
 /**
- * Why a lockfile was reclaimed. Kept for the message a user sees, so the
- * refusal text can say what was actually done instead of asserting a general
- * policy that does not hold for every case.
+ * Why a lockfile was classified as reclaimable. Internal: `classify` returns it
+ * and the reclaim path acts on it, but nothing user-visible reports it yet, so
+ * it is not exported. Exposing a classification no caller can read is the same
+ * "number kept in prose that the code can drift from" problem as an unused
+ * assertion — it would look like diagnostics that do not exist.
  */
-export type StaleReason =
+type StaleReason =
   | "holder-dead" // same host, pid confirmed gone
   | "holder-zombie" // same host, pid is a reaped-pending zombie
   | "unreadable-payload" // no readable pid at all, and older than the grace window
