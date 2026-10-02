@@ -1022,6 +1022,54 @@ module.exports = grammar(Java, {
     // Command-chain arguments (comma-separated; whitespace-separated multi-arg
     // chains like `processBuilder "ls" "-la"` are a documented limitation —
     // whitespace-as-token conflicts with the extras handling).
+    // §8.1: the `as` coercion as a COMMAND-CHAIN argument.
+    //
+    // `_juxt_argument_list` is all atoms, so `assertEquals '1' as char,
+    // map.char('one')` was an ERROR at the second argument while every neighbouring form
+    // parsed — the single-argument form, the parenthesised form, and the form with the
+    // cast in the LAST argument. It was specifically a comma AFTER a cast that broke,
+    // which is the signature of a missing argument alternative rather than a bad
+    // precedence.
+    //
+    // Admitting all of `binary_expression` there fixes those lines and also
+    // `assertEquals a == b, c`, and costs 19 previously-clean files (review §8.1):
+    // `binary_expression` also covers `x.y(args)`, so `joinTable.key(v)` became ambiguous
+    // between a method call and a command callee `joinTable` with a `key(v)` argument,
+    // and two new declared conflicts were needed to generate at all.
+    //
+    // Two choices avoid that, and both are load-bearing:
+    //
+    // 1. The LEFT is the same ATOM list `_juxt_argument_list` admits, written out inline,
+    //    and not `$.expression`. With a general `$.expression` on the left,
+    //    `identifier • '->'` is unresolvable, because a lambda is an expression and
+    //    `foo bar -> baz` is a command call taking a lambda. An atom list contains no
+    //    lambda, so the `->` state is never reachable from this rule. The list is duplicated
+    //    rather than shared through a named rule on purpose: routing both sites through one
+    //    `_juxt_operand` nonterminal changes the LR construction and produces a
+    //    `_juxt_function_name identifier • '('` conflict instead. Both sites must stay
+    //    flat for the grammar to generate.
+    // 2. `binary_expression`'s own inline coercion is UNTOUCHED, so no existing parse is
+    //    re-derived and no existing tree shape changes. This is an additional alternative
+    //    at one call site, not a rewrite of the operator.
+    //
+    // `as` is the coercion the corpus needs: grails-core's GORM query-handler family and
+    // the Liquibase changelog DSL both write casts as command arguments.
+    _juxt_as_coercion: $ => prec.right(PREC.CAST, seq(
+      field('left', choice(
+        $._literal,
+        $.map_item,
+        $.identifier,
+        $.field_access,
+        $.method_invocation,
+        $.object_creation_expression,
+        $.closure,
+        $.spread_argument,
+      )),
+      // @ts-ignore
+      field('operator', 'as'),
+      field('type', $._type),
+    )),
+
     _juxt_argument_list: $ => commaSep1(choice(
       $._literal,
       $.map_item,
@@ -1037,6 +1085,8 @@ module.exports = grammar(Java, {
       // (`findAll { }`, `"/url" { mappings }`).
       $.closure,
       $.spread_argument,
+      // §8.1: and a coercion, so `foo 'x' as char, y` parses.
+      $._juxt_as_coercion,
     )),
 
     // #742: Groovy spread call argument — `foo(*list)`.

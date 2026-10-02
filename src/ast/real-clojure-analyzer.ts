@@ -146,6 +146,52 @@ const METHOD_IMPL_PARENT_FORMS = (function(){ const r: Record<string, boolean> =
  * defines nothing. Everything else in def position is treated as a definition
  * by the CLJ-D30 branch, which is the general rule rather than a hand list.
  */
+/**
+ * THE NAME A DEFINING FORM BINDS, past any metadata that precedes it.
+ *
+ * CLJ-D56. When a form carries LEADING metadata the grammar folds that metadata
+ * INTO the `list_lit`, so it becomes `namedChild(0)` and pushes the head to index 1:
+ *
+ *   list_lit  ^{:clj-kondo/ignore [:metabase/…]} (deftest ^:parallel complicated-test-1 …)
+ *     meta_lit   ^:clj-kondo/ignore […]          <- child 0
+ *     sym_lit    deftest                         <- child 1  the HEAD
+ *     sym_lit    ^:parallel complicated-test-1   <- child 2  the NAME, itself wrapped
+ *
+ * Every branch that read `namedChild(1)` therefore read the MACRO: `deftest` published
+ * a `contains -> deftest` edge with no line, created no symbol for
+ * `complicated-test-1`, and missed a sibling form outright. metabase has four such
+ * forms across sql_tools/macaw/references_test.clj and
+ * sql_tools/sqlglot/references_test.clj.
+ *
+ * The name may ALSO be wrapped in metadata (`^:parallel complicated-test-1`), so the
+ * reader unwraps rather than skips at the name position. Same two-position shape as
+ * the truth-side fix; both were wrong for the same reason.
+ */
+function defNameNodeOf(node: Node): Node | null {
+  let head = 0
+  while (head < node.namedChildCount && node.namedChild(head)?.type === "meta_lit") head++
+  let i = head + 1
+  while (i < node.namedChildCount) {
+    const c = node.namedChild(i)
+    if (!c) return null
+    if (c.type === "meta_lit") {
+      // The NAME wrapped in metadata: unwrap to the symbol inside it. The unwrap is
+      // inlined rather than calling `executionHead`, which is local to `analyze` and
+      // not visible at module scope.
+      let inner: Node | null = null
+      for (let k = 0; k < c.namedChildCount; k++) {
+        const cand = c.namedChild(k)
+        if (cand && cand.type === "sym_lit") { inner = cand; break }
+      }
+      if (inner) return inner
+      i++
+      continue
+    }
+    return c.type === "sym_lit" ? c : null
+  }
+  return null
+}
+
 function isDefLikeHead(head: string): boolean {
   if (head.length < 3) return false
   if (head.charCodeAt(0) !== 100 /* d */ || head.charCodeAt(1) !== 101 /* e */ || head.charCodeAt(2) !== 102 /* f */) return false
@@ -237,6 +283,26 @@ export const isAnonArgShorthand = (s: string): boolean => {
   return true
 }
 
+/**
+ * THE SPECIAL FORMS — a closed set, and a special form is NOT a call.
+ *
+ * CLJ-D41/CLJ-D44. Exported so the truth oracle and the analyzer cannot disagree
+ * about it: two lists is two answers, and the disagreement between them was 5 of
+ * the 105 residual edges in this wave.
+ *
+ * Macros are deliberately absent. `loop`, `letfn`, `case`, `..` and `tap>` are
+ * macros, core.clj defines every one of them, and CLJ-D43 says a call to a macro
+ * the file defines IS a call. Suppressing those was my error, not the analyzer's.
+ * `fn*` and `let` are here and were missing from the core list's reach: `fn*` is a
+ * compiler intrinsic with no public var, and `let` is shadowed in core.clj.
+ */
+export const CLOJURE_SPECIAL_FORMS: ReadonlySet<string> = new Set([
+  "def", "do", "fn", "fn*", "if", "if*", "let", "let*", "quote", "quote*", "var", "var*",
+  "recur", "recur*", "throw", "throw*", "try", "try*", "catch", "catch*", "finally",
+  "new", "new*", "set!", "monitor-enter", "monitor-exit", "case*", "letfn*", "loop*",
+  ".", "&",
+])
+
 export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
     const symbols: ASTEngine.UniversalSymbol[] = []
@@ -321,7 +387,23 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (node.type === "sym_lit") {
         const name = node.childForFieldName("name")
         const ns = node.childForFieldName("namespace")
-        if (name && ns) return `${ns.text}/${name.text}`
+        // CLJ-D54: A QUALIFIED SYMBOL'S PREFIX MAY CARRY METADATA, and the metadata is
+        // not the namespace. metabase/util/yaml.clj requires
+        // `^{:clj-kondo/ignore [:discouraged-namespace]} [clj-yaml.core :as yaml]`, so the
+        // symbol `yaml/YAMLCodec` has a metadata-decorated prefix and this returned
+        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec` as an `implements`
+        // TARGET - a type that is not a type, unresolvable by anything that reads the
+        // graph. The prefix's own `name` field is the bare symbol, so read that instead
+        // of the node text; it costs nothing when there is no metadata.
+        // CLJ-D54: a qualified symbol's PREFIX may carry metadata, and the metadata is
+        // not the namespace. Stripping it here is correct in principle and measured to
+        // change nothing in this corpus, so it stays as a guard rather than a claimed fix
+        // - the one metabase target that carried decoration is NOT produced by this path,
+        // which is recorded in the review instead of being patched blind.
+        const nsText = ns && (ns.text ?? "").startsWith("^{")
+          ? (ns.childForFieldName("name")?.text ?? ns.text)
+          : (ns?.text ?? "")
+        if (name && nsText) return `${nsText}/${name.text}`
         if (name) return name.text
         return node.text
       }
@@ -664,7 +746,29 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (spec.type === "vec_lit") {
         // [lib :as alias] | [lib :refer [a b]] | [lib] | (:import [pkg Cls1 Cls2])
-        const libNameNode = spec.namedChild(0)
+        //
+        // CLJ-D54, THE FOURTH READER, AND THE ONE THAT WAS ACTUALLY PRODUCING THE BAD
+        // TARGET. A spec may carry metadata — `^{:clj-kondo/ignore
+        // [:discouraged-namespace]} [clj-yaml.core :as yaml]` in metabase/util/yaml.clj —
+        // and the grammar merges that decoration INTO the vec, so `namedChild(0)` is the
+        // `meta_lit` and `libName` became the metadata itself. `namespaceAliases["yaml"]`
+        // was therefore the string `^{:clj-kondo/ignore [:discouraged-namespace]}`, and
+        // every later `yaml/…` resolved through it: `(extend-protocol yaml/YAMLCodec …)`
+        // at :50 published the `implements` target
+        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec`, which is not a type.
+        //
+        // Two attempts to fix this in `symName` changed NOTHING measurable, which is what
+        // proved the pollution did not come from there. The reader that builds the table
+        // was the one at fault, and it is the reader that has to skip decoration.
+        let libNameNode = spec.namedChild(0)
+        while (libNameNode && libNameNode.type === "meta_lit") {
+          let inner: Node | null = null
+          for (let k = 0; k < libNameNode.namedChildCount; k++) {
+            const cand = libNameNode.namedChild(k)
+            if (cand && cand.type === "sym_lit") { inner = cand; break }
+          }
+          libNameNode = inner
+        }
         const libName = symName(libNameNode)
         if (!libName) return
         let alias = ""
@@ -864,6 +968,27 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
     // the oracle while the analyzer (name-aware) suppressed them. The first
     // post-change F5 run read 26 MISSING / 11 UNEXPLAINED for exactly that.
     const shadowRanges: Array<{ name: string; start: number; end: number }> = []
+    // PERF (2026-09-30). `isShadowedAt` is called at EVERY call site, so the
+    // shadow table's shape is the analyzer's hot loop. It was a linear scan over
+    // EVERY range for EVERY site, which makes a file O(sites × ranges) — quadratic
+    // in the file, and invisible in a corpus total because the mean is dominated
+    // by the big files. The cost-by-size census caught it in the one view that
+    // shows super-linearity: `test_clojure/data_structures.clj` cost 23 ms/KB
+    // against a 5.6 ms/KB corpus norm, at only 60 KB — a TEST file, where every
+    // `deftest` adds a range and every assertion adds a site, which is precisely
+    // the worst case for that scan.
+    //
+    // The ranges were ALREADY keyed by name (CLJ-D18 made them `(name, span)`), so
+    // the fix is to index them and look up ONE key: O(1) plus the two or three
+    // ranges for that name, which is almost always zero. No semantic change — the
+    // same predicate, asked of less data. The array is kept because the range
+    // COUNT is part of what the census reports.
+    const shadowIndex = new Map<string, Array<{ start: number; end: number }>>()
+    const indexShadowRange = (name: string, start: number, end: number): void => {
+      const list = shadowIndex.get(name)
+      if (list) list.push({ start, end })
+      else shadowIndex.set(name, [{ start, end }])
+    }
     const DEF_NAME_HEADS: Record<string, boolean> = Object.create(null)
     // CLJ-D18: `defmethod` and `deftest` bind a var of the multimethod's / test's
     // name (the defmethod case is the lane's declared 3-symbol multi-site
@@ -965,7 +1090,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       // The gate is one null-prototype Set lookup, so the hot path is unchanged.
       if (candidate.type === "sym_lit" && CLOJURE_CORE_BUILTINS[symName(candidate)]) {
         const range = shadowRangeOf(candidate)
-        if (range) shadowRanges.push(range)
+        if (range) { shadowRanges.push(range); indexShadowRange(range.name, range.start, range.end) }
       }
       for (let i = 0; i < candidate.namedChildCount; i++) {
         const child = candidate.namedChild(i)
@@ -973,7 +1098,9 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
     const isShadowedAt = (name: string, pos: number): boolean => {
-      for (const r of shadowRanges) if (r.name === name && pos >= r.start && pos < r.end) return true
+      const list = shadowIndex.get(name)
+      if (list === undefined) return false
+      for (let i = 0; i < list.length; i++) { const r = list[i]!; if (pos >= r.start && pos < r.end) return true }
       return false
     }
     // ── The one suppression gate (CLJ-D17/CLJ-D18/D2) ───────────────────────────────
@@ -1161,7 +1288,49 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         const anonHead = node.namedChild(0)
         if (anonHead && anonHead.type === "sym_lit") {
           const hName = symName(anonHead)
-          if (hName && !isAnonArgShorthand(hName) && !isCoreCallSuppressed(hName, anonHead.startIndex)) {
+          // CLJ-D46: THE SHORTHAND MUST ROUTE INTEROP HEADS THE WAY THE LIST PATH
+          // DOES. It did not, and that was 20 of the residual edges.
+          //
+          // `(.getName o)` on its own is a MEMBER ACCESS and correctly emits
+          // `uses: getName` (see the `.`-prefix branch on a list). Written as
+          // `#(.getName %)`, the same expression took this path instead, and this
+          // path pushed `calls: lambda_1_18 -> .getName` — a call edge to a name
+          // that starts with a dot, is not a var in the file, and is not an export.
+          // A dangling relationship, which is the one thing the "all extracted,
+          // resolved and emitted" contract exists to prevent, and it was invisible
+          // to the differential because the truth ALSO files these under `uses`:
+          // the two agreed on the ontology and disagreed only on whether the
+          // shorthand was analysed at all.
+          //
+          // So this was never the "where does a Java method invocation belong"
+          // question it looked like. The analyzer's own convention is already
+          // settled and already implemented 600 lines below; the shorthand simply
+          // skipped it. Same shape as CLJ-D45 on the truth side, in the same wave.
+          const anonMember =
+            hName && hName.startsWith(".") && hName !== ".."
+              ? (hName.startsWith(".-") ? hName.slice(2) : hName.slice(1))
+              : null
+          const anonStatic = hName ? staticInteropMember(hName) : null
+          if (anonMember) {
+            const mLine = anonHead.startPosition.row + 1
+            pushRel(name, anonMember, ASTEngine.RelationshipType.Uses, 0.7,
+              { clojureSpecific: true, isFieldAccess: true, isAnonShorthand: true },
+              mLine, Math.max(0, node.namedChildCount - 1), anonHead.startIndex)
+            patterns["Java Interoperability"] = true
+          } else if (anonStatic !== null) {
+            const mLine = anonHead.startPosition.row + 1
+            const mArity = Math.max(0, node.namedChildCount - 1)
+            pushRel(name, anonStatic, ASTEngine.RelationshipType.Uses, 0.7,
+              { clojureSpecific: true, isFieldAccess: true, isAnonShorthand: true },
+              mLine, mArity, anonHead.startIndex)
+            const anonCls = staticInteropClass(hName)
+            if (anonCls) {
+              pushRel(name, resolveQualified(anonCls), ASTEngine.RelationshipType.Uses, 0.8,
+                { clojureSpecific: true, isClassReference: true, isAnonShorthand: true },
+                mLine, 0, anonHead.startIndex)
+            }
+            patterns["Java Interoperability"] = true
+          } else if (hName && !isAnonArgShorthand(hName) && !isCoreCallSuppressed(hName, anonHead.startIndex)) {
             const line = anonHead.startPosition.row + 1
             const arity = Math.max(0, node.namedChildCount - 1)
             const q = resolveCallee(anonHead, hName)   // CLJ-D28
@@ -1176,6 +1345,14 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (node.type === "list_lit") {
         const formName = formNameOf(node)
+        // CLJ-D55, THE ANALYZER HALF. A DEFINING MACRO MAY BE NAMESPACE-QUALIFIED, and
+        // metabase uses `mu/defn` and `mu/defn-` (Malli) for thousands of its functions.
+        // Every branch below compared the WHOLE head against `"defn"`, so `mu/defn` matched
+        // nothing: no symbol, no function boundary, and a constructor inside its body
+        // attributed to the namespace instead. The truth side got this in the same wave and
+        // the analyzer did not, which is why one residual survived a fix that closed the
+        // other — the two sides were at different versions of CLJ-D55.
+        const bareForm = formName.includes("/") ? formName.slice(formName.lastIndexOf("/") + 1) : formName
 
         // ── (fn [params] ...) anonymous function form ─────────────────────
         if (formName === "fn") {
@@ -1292,8 +1469,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         // ── defn / defn- / defmacro ──────────────────────────────────────
-        else if (formName === "defn" || formName === "defn-" || formName === "defmacro" || formName === "s/defn" || formName === "mu/defn") {
-          const isMacro = formName === "defmacro"
+        else if (bareForm === "defn" || bareForm === "defn-" || bareForm === "defmacro" || bareForm === "s/defn" || formName === "mu/defn") {
+          const isMacro = bareForm === "defmacro"
           // W24-mr3: `defn-` AND `^{:private true}` / `^:private` both bind private.
           const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1))
           const name = symName(node.namedChild(1)) || "unknown"
@@ -1315,7 +1492,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (no symbol, no activeFunction) and, with top-level attribution
         // arriving in the same wave, the deftest name is the honest caller.
         else if (formName === "deftest") {
-          const name = symName(node.namedChild(1)) || `test_${node.startPosition.row}`
+          // CLJ-D56: past any leading metadata, or this read the MACRO and invented a
+          // symbol called `deftest`.
+          const testNameNode = defNameNodeOf(node)
+          const name = (testNameNode ? symName(testNameNode) : "") || `test_${node.startPosition.row}`
           const testSym: ASTEngine.UniversalSymbol = {
             name, kind: ASTEngine.SymbolKind.Function,
             range: this.nodeToRange(node), scope: currentNamespace, ownerName: currentNamespace,
@@ -1634,9 +1814,10 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `defonce`/`declare`/`deftest`/`defmulti`/`defmethod`/`defprotocol`/
         // `defrecord`/`deftype`/`definterface`, and each is claimed by an EARLIER
         // branch, so this one only ever runs for a head nobody handled.
-        else if (isDefLikeHead(formName) && node.namedChild(1)?.type === "sym_lit") {
-          const nameNode = node.namedChild(1)!
-          const name = symName(nameNode)
+        else if (isDefLikeHead(formName)) {
+          // CLJ-D56, same reader: `namedChild(1)` is the HEAD when metadata leads.
+          const nameNode = defNameNodeOf(node)
+          const name = nameNode ? symName(nameNode) : ""
           if (name) {
             // `def-aset aset-int setInt int`: a name, a docstring, then
             // arbitrary arguments. An arglist is a VECTOR named the same as the
@@ -1904,7 +2085,7 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // side effects) attribute to the namespace — the load-time context
         // that actually invokes them — instead of being dropped. The edge
         // carries isTopLevel so consumers can tell the contexts apart.
-        else if (formName && !isCoreCallSuppressed(formName, headStartIndex(node))) {
+        else if (formName && !CLOJURE_SPECIAL_FORMS.has(formName) && !isCoreCallSuppressed(formName, headStartIndex(node))) {
           const src = activeFunction ? activeFunction.name : currentNamespace
           const topMeta: Record<string, any> = activeFunction ? {} : { isTopLevel: true }
           const headNode = executionHead(node)
@@ -1941,9 +2122,35 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           if (IMPURE_BUILTINS[formName] || formName.endsWith("!") || formName.startsWith(".") || formName.endsWith(".")) {
             activeFunction.metadata.isPure = false
           }
+          // CLJ-D42: `recur` IS NOT A CALL, AND A `calls` EDGE FROM A SYMBOL TO
+          // ITSELF IS NOT A CALL AT ALL.
+          //
+          // This used to push `calls: activeFunction -> activeFunction` with
+          // `isRecursion: true`, which manufactured 18 edges in clojure/core.clj
+          // alone - every one of them `lambda_83_6 -> lambda_83_6` on a line whose
+          // head is `(recur …)`. Three separate reasons make it wrong:
+          //
+          //   1. `recur` is a SPECIAL FORM. It transfers control to the enclosing
+          //      `fn`/`loop`; it names no var and invokes nothing. This is the same
+          //      ruling as CLJ-D41, and the analyzer already half-believed it -
+          //      `recur` is in the derived core list at :97, so the suppression gate
+          //      has the information to stay silent and this line overrode it.
+          //   2. THE TARGET IS NOT NAVIGABLE. `lambda_83_6` is a GENERATED name for
+          //      an anonymous function, an internal artifact of the walk rather
+          //      than anything a reader of the graph can reach. A relationship whose
+          //      target is an implementation detail is a claim the graph cannot
+          //      honour.
+          //   3. IT IS NOT A CALL. The fact being recorded - "this function
+          //      recurses" - is real, and `metadata.isRecursive` on the enclosing
+          //      symbol already records it, which is the right home for it. An
+          //      edge from a symbol to itself duplicated that fact in the one
+          //      relationship type every consumer reads as invocation, which is how
+          //      18 fabrications reached a differential gate that was measuring 0
+          //      defects at the time.
+          //
+          // Nothing reads `isRecursive` today. That is a separate finding - a dead
+          // capability claim - and it is left visible rather than papered over here.
           if (formName === "recur") {
-            const recurHead = executionHead(node)
-            pushRel(activeFunction.name, activeFunction.name, ASTEngine.RelationshipType.Calls, 1.0, { clojureSpecific: true, isRecursion: true }, recurHead ? recurHead.startPosition.row + 1 : undefined, callArityOf(node))
             activeFunction.metadata.isRecursive = true
           } else if (formName === activeFunction.name) {
             activeFunction.metadata.isRecursive = true

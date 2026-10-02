@@ -50,6 +50,35 @@ The distinct types the analyzer **actually emits** over the 2,498-file corpus
 
 | type | emitted | count | metadata.relationshipType |
 | --- | --- | --- | --- |
+| `calls` | ✅ | 199,929 | `c_function_call` |
+| `uses` | ✅ | 86,948 | `field_access` · `identifier_usage` (the pre-#960 split 53,995 / 20,334 predates the write-ruling and no longer sums to the total) |
+| `contains` | ✅ | 17,343 | — (container → member; #985 removed 53 macro-named phantoms) |
+| `references` | ✅ | 10,538 | `type_reference` |
+| `imports` | ✅ | 10,993 | `include_dependency` |
+| `exports` | ✅ | 957 | `module_export` (kernel + userspace markers, #963) |
+| `instantiates` | ✅ | 5 (#962) | `instantiates` → the allocated TYPE |
+| `extends` / `implements` / `overrides` | ❌ **N/A — see below** | 0 | — |
+
+**`instantiates` IS emitted (#962), and this section previously said it was not.**
+The allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
+`free`/`kfree`/`vfree`, set `metadata.usesMalloc` on the enclosing function, and
+raise the `Dynamic Memory Management` pattern — and a comment in the code
+recorded why the edge had been removed: "malloc allocates BYTES, not a named type
+— an `Instantiates` edge to the literal 'malloc' could never resolve to a type
+symbol and was pure noise (removed; allocation tracking lives in metadata +
+patterns)." That reasoning was right about the target and wrong about the
+consequence, exactly as #963's `exports` defect was: across all 25 M12 truths that
+pin an `instantiates` edge the target is always a TYPE (`Point`, `HashMap`,
+`List`, `User`, `MemoryStorage`, …), and C's `-> malloc` was the only non-type
+target in the family. #962 restored the relation and reads the target from the
+**cast** and from **`sizeof`**, which disagree in practice about which carries the
+type. Only a type declared in the same file qualifies (C-D2), so the corpus
+carries 5 such edges and the M12 truth row for `buffer_create` is recorded as
+`rel:Module.c:instantiates:buffer_create:Buffer` with `unmetUnder: C-D2`.
+
+**`exports` was ALSO dead for a target-shaped reason, and #963 fixed it the same
+way.** See #963 below — the pre-#963 edge pointed at a synthesised constant
+`KERNEL_EXPORT` written in no source file anywhere.
 | `calls` | ✅ | 200,105 | `c_function_call` |
 | `uses` | ✅ | 74,129 | `field_access` 53,995 · `identifier_usage` 20,334 |
 | `contains` | ✅ | 16,938 | — (container → member) |
@@ -82,11 +111,13 @@ both are the family contract with cpp rather than an omission.
 
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
+| contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. **A macro in TYPE position names a type, not a member** (#985): `git_array_t(size_t) line_index;` publishes `line_index` alone; the macro's own name is a `macro_type_specifier`'s first identifier, not a declarator, and publishing it invented a member beside the real one. **An anonymous inline enum is owned by the MEMBER PATH** (#986), like an anonymous inline struct or union: `enum { A_ONE } first;` inside `U` gives `contains U.first -> A_ONE`, while the tagged spelling keeps its own tag. | 1.0 |
 | contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. | 1.0 |
 | references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, **including a function's return type, whether spelled with a tag or with a typedef name**). Never both references+uses for the same pair. | 0.8 |
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
 | imports | ✅ | `#include <path>` / `#include "path"` → module name (pure-String `stripIncludeChars` unwrap of the `path` field / `string_literal` / `system_lib_string`). A macro-composed include argument is a `call_expression` and is refused — C-D2. | 1.0 |
+| exports | ✅ | a declaration introduced by an export marker. **Source = the declared NAME**; **target = the marker macro as written** (`EXPORT_SYMBOL`, `CURL_EXTERN`, `GIT_EXTERN`, `REDISMODULE_API`) — never the macro's argument, which in the prefixed forms is a return *type* (`GIT_EXTERN(int)`), and never the synthesised `KERNEL_EXPORT` the pre-#963 code emitted. All four surviving conventions: kernel call form, userspace prefix, paren form, and bare-token form. See #963 for the declared grammar limit (typedef return type). | 1.0 |
 | exports | ✅ | public (non-static) function/variable symbols; Linux `EXPORT_SYMBOL*` → `X exports KERNEL_EXPORT` | — |
 
 **Relationship source identity:** `getRelationshipSource()` returns the
@@ -568,6 +599,743 @@ it was unbounded and crashed).
   thirteenth was a **real missing edge**: `rel:Negative.c:references:pick_color:Color`,
   a function's typedef-spelled return type, which CGD34's parent-only gate had
   been suppressing for every such function. Fixed (#935); the probe now reports 80.
+- **CORRECTED #964: the differential WAS runnable; the recorded reason was wrong.**
+  Three claims in the earlier version of this bullet were false, and running the
+  lane is what proved it:
+  - `CORPUS_ROOT` does default to another user's home
+    (`$HOME/fixtures/repositories`), and it is overridable with
+    `BB_CORPUS_ROOT`.
+  - The C lane's **primary** corpus is `sqlite` (`LANG_REPOS.c = "sqlite"`), which
+    is indeed absent here — but C is **absent from `LANG_REPOS_SECOND` entirely**.
+    There is no `jq` second corpus registered for C; that claim was invented.
+  - **`--repo` works.** `--repo zig` bypasses the registration check, and `zig` is
+    C's own pinned M12 target (`validation/m12/corpus-manifest.json`,
+    `analyzer: "c"` → `corpusTarget: "zig"`, 400 tracked `*.c` files over wasm2c,
+    musl libc, glibc compat, mingw and freebsd libc). There was a runnable
+    configuration the whole time.
+
+  Running it immediately exposed a **real defect, in the ORACLE**. Six of 408
+  truth rows were MISSING: `calls (expr) -> MAP_*` in zig's wasi libc `mman.c`.
+  These were oracle **fabrications**, not analyzer misses — recovery splices a
+  directive's identifier into a real `call_expression` and makes the next line's
+  parenthesized expression its argument list:
+
+  ```
+  #ifdef MAP_HUGETLB
+          (flags & MAP_HUGETLB) != 0 ||      <- no call exists here at all
+
+  call_expression
+    identifier    "MAP_HUGETLB"              <- the #ifdef's tested macro
+    argument_list "(flags & MAP_HUGETLB)"    <- the NEXT line
+  ```
+
+  `#ifdef X` **tests** a macro, it does not invoke one — the analyzer's #956
+  ruling, extended by #908/#912. The oracle's USES derivation already guarded
+  this with `isDirectiveConditionText`; the CALLS branch did not, so the
+  differential was convicting a correct analyzer for six rows. A superset oracle
+  trades a fabrication for an unexplained edge, the trade this file already
+  refuses in `deriveSvelteComponentUsages`. #964 mirrors the gate.
+
+  **How to run it:**
+
+```
+BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
+  bun run script/m14/differential.ts --lang c --repo zig
+```
+
+The harness writes no artifact for a scoped `--lang c` run on purpose: `M14.0.F5`
+belongs to the canonical 60-file, 40-language sweep, and a scoped run would
+replace that claim with a smaller one. `--update-baseline` would pin the drawn
+file set (`zig:c` is currently unpinned), but that is a shared-harness decision.
+
+**#964 was wrong the first time, and measuring it is what showed that.** The
+first version suppressed directive-spliced callees with the file's existing
+`isDirectiveConditionText()`. Over the full corpus that predicate
+**over-suppresses**: it holds for any identifier whose ancestor chain reaches a
+`preproc_*` node without crossing a statement/declaration, which is equally true
+of **real** calls and **real** macro invocations inside `#ifdef` blocks. It ate
+15 true rows — `strcmp`, `S_ISREG`, `strerror_s`, `sasl_choose_krb5`,
+`curlx_get_winapi_error` — turning them into unexplained edges and trading one
+error class for its opposite. That predicate's own comment warns of exactly this:
+"the exclusion must not eat CONDITIONAL CODE". The test is now the **physical
+line**: a line whose first non-space character is `#`. Real code inside a
+conditional is never on a `#` line, so the test is exact and cannot over-reach.
+
+**`calls` is now exactly agreed, in both directions.** Per-file unique
+`(label, target)` sets, analyzer against `deriveCCalls`, over **2,600 files**
+(curl, libgit2, redis, zig):
+
+| | MISSING (oracle says, analyzer silent) | UNEXPLAINED (analyzer emits, oracle blind) |
+| --- | --- | --- |
+| `isDirectiveConditionText` (first attempt) | 36 | 15 |
+| physical-line test (shipped) | **0** | **0** |
+
+The 36 were the same splicing as the original 6: `calls -> defined`,
+`-> AF_INET6`, `-> CURL_DISABLE_PROXY`, `-> USE_SSL`, `-> RLIM_INFINITY`,
+`-> HAVE_BORINGSSL_LIKE` and friends — every one an `#ifdef`-tested macro that
+recovery fused to the next line's parenthesized expression.
+
+This also **retires the two-file exclusion** `call-edge-fidelity` carried: it
+could not account for `curl/lib/http.c` (5,115 lines) and `curl/lib/openldap.c`
+(1,387). The tree oracle has no such blind spot, and both files now agree.
+
+## C lane — measured status (authoritative)
+
+Every number here is regenerated by the instruments named beside it, so this
+block is the one place to read and the one place to update.
+
+**Census** — `2,498` files / 4,045,683 AST nodes / 0 crashes
+(`validation/m12/results/c-corpus-census.json`, `script/m14/tmp/c-audit/census.ts`):
+
+| relationship | edges | #985 |
+| --- | --- | --- |
+| `calls` | 199,929 | — |
+| `uses` | 86,948 | — |
+| `imports` | 10,993 | — |
+| `contains` | **17,343** | **−53** (was 17,396) |
+| `references` | 10,538 | — |
+| `exports` | 957 | — |
+| `instantiates` | 5 | — |
+
+The `contains` movement is the whole of #985's effect on this corpus, and only `contains`
+moves. Reproduce with the scope spelled out, because the count moves with it and a census
+whose denominator depends on whatever else is checked out is not evidence:
+
+```
+bun run script/m14/tmp/c-audit/census.ts \
+  --repos $HOME/ishaq/fixtures/repositories/{curl,libgit2,redis} \
+  --ext .c,.h --limit 900
+```
+
+`script/m14/tmp/c983/delta.ts` is the instrument for the change itself: it builds both
+analyzer versions from one source and measures one fixed 3,997-file set (all four
+corpora), so the −112 `contains` there and the −53 here are two scopes of one
+measurement, and the per-relationship identity of every other type is the stronger claim
+— `calls` 239,405, `uses` 93,759, `references` 10,985, `imports` 20,105, `exports` 957,
+`instantiates` 9, all byte-identical before and after.
+
+**Performance** — wall 88.5 s, CPU 115.3 s (ratio 1.30), **35.4 ms/file** wall,
+**46.1 ms/file** CPU, **21.7 ms per 1,000 nodes**
+(curl 22.1 · libgit2 33.3 · redis 55.4 ms/file wall; 36.7 · 43.3 · 62.1 CPU).
+#977 fixed the census CPU metric, which double-counted its own baseline and reported
+**negative** CPU; a perf instrument that can go negative cannot support a claim, so
+this was fixed before any timing was quoted. **These figures are NOT comparable to the
+46.96 ms/file previously recorded here** — that run was measured at `load1` 22–49 and
+this one at `load1` 2.85–6.11, and this file's own note above the complexity table says
+the box is shared and the wall figures carry that disclosure. The CPU column is the one
+to compare across runs.
+
+**Neither #985 nor #986 is a hot-path change, and that is measured rather than argued.**
+#985 is a constant spread into a list literal inside a loop that already iterates the
+same children; #986 is one `inlineAggregateOwnerName` call per anonymous enum, which is
+the pre-#986 branch's cheaper path. Re-measured across the two changes, CPU per file moved
+36.1 → 36.2 (curl), 41.1 → 41.1 (libgit2), 54.9 → 58.8 (redis) — the redis figure is the
+only one that moved and it is inside the run-to-run spread this file's own disclosure
+covers. The per-band and per-quartile breakdown in `c-corpus-census.json` is the
+measurement that would show a real hot-path change; the top-level average is not, and
+quoting it as though it were is how a perf number stops meaning anything.
+
+**Line numbers** — **442,710/442,710 = 100.000%** of edges name a line containing the
+target as a WHOLE TOKEN, over the four corpora (curl 71,543 · libgit2 188,694 · redis
+326,757 · zig 442,710), 0 substring-only (#974, `script/m14/tmp/c-audit/line-audit.ts`,
+`validation/m12/results/c-line-audit.json`). Whole-token rather than substring
+because `uses` is dominated by single-character targets, where `line.includes("n")`
+would pass a wholesale off-by-N offset. The total moved from 442,774 to 442,710 for
+the same reason `contains` did — a phantom member's line was on a line, so removing it
+removes a passing row. Per type: `calls` 285,234 · `uses` 97,090 · `contains` 25,551 ·
+`references` 20,672 · `imports` 13,201 · `exports` 957 · `instantiates` 5.
+
+**Unknown symbols** — **0** unknown kinds and **0** empty names across all
+2,498 files; F1 reports 67 refs, unknown=0, unknownFields=0.
+
+**P11 / no regex** — `src/ast/real-c-analyzer.ts` contains **no regex literals in
+code** (#975 removed the last, `/^\d+[uUlL]*$/`, replaced by a character scan proved
+equivalent over 4,394 exhaustive + 400,000 fuzz cases). The only remaining mentions
+of regex syntax are in comments recording earlier replacements.
+
+**Gates** — fixtures **37/37** (was 35/35; `c/macro-type-member-985` and
+`c/inline-enum-member-path-986` are the new ones, and both FAIL without their fix) · live
+mutants **43/43** caught, 5 retired · 0 property violations · M12 truth drift 92 facts,
+85 still-produced, 7 produced-under-another-type, **0 not-produced** · imports audit 0
+fabricated over 10,941 edges · differential **0 unexplained** in the C lane on curl,
+libgit2 and redis.
+
+**`validation/m12/results/c-differential.json` is regenerated, and its `passed: false` is
+the TRUTH being stale rather than the analyzer.** It was previously treated as not this
+lane's artifact — the handoff recorded it as "stale, 39/65 input hashes" and attributed
+it to the canonical 40-language sweep. It is per-analyzer, keyed on one language, and
+`bun run script/m12/verify-analyzer.ts c` regenerates it in seconds. Refreshing it moved
+every number the right way: true positives **79 → 85**, false negatives **13 → 7**,
+recall **0.859 → 0.924**, and the input set from 65 files to **26** — the generator now
+pins the inputs that reach the C lane rather than every analyzer in the tree, so 39 of the
+"stale" hashes were never this artifact's to hold. An artifact that pins 39 files it does
+not read reports itself stale every time an unrelated lane lands, which is what happened.
+
+All **7** remaining false negatives are rows where the truth is behind, and each says so in
+its own evidence text:
+
+| row | why the analyzer is right |
+| --- | --- |
+| `references:global:Module.h` and 5 siblings | the edge is emitted under the first-class `imports` kind (M60/#910); the truth spells it `references` |
+| `instantiates:buffer_create:Buffer` | `Buffer` is declared in `Module.h`, so from `Module.c` it is cross-file, and the truth's own note reads `RE-TARGETED UNDER C-D2 … the row is therefore RETARGETED` |
+
+The 17 false positives are the three classes this file already records: an `imports` edge
+the truth spells `references`, a `references` edge for a typedef declaration site the truth
+does not mention, and a value-less `#define` include guard the truth lists as NOISE and the
+analyzer mints deliberately (#901 — dropping it lost two real edges). `c-truth-drift.json`
+carries the per-row adjudication and is the instrument to read, because it compares row by
+row where this artifact compares by aggregate.
+
+The mutant count moved 41 → 43, for `c-lane/macro-type-member-name` (#985) and
+`c-lane/inline-enum-member-path` (#986). The count of SURVIVORS moved 0 → 0 only after
+`c-lane/macro-generated-field-name`'s revert was widened to remove both guards — see the
+#985 section. A gate that reported 43/43 while one of them survived would have been the
+worse outcome.
+
+### #983 MEASURED: 99.95% of those edges would be dangling, so sub-decision 1 is not a tradeoff
+
+#982's surviving lead turned out to be much larger than one row. Measured:
+
+    int G;
+    int add(int a, int b)
+    { int loc = a + b; if (loc > G) return loc; return b - a; }
+
+    rels: uses:add->G
+    syms: variable:G   function:add(params=2)
+
+`uses:add->G` is emitted for the file-scope global. There is NO use for `a`, no use
+for `b`, and no use for `loc` — the LOCAL either. Params are parsed and stored
+(`params=2`, matching docs line 39) and then never surfaced. So `uses` resolves
+against FILE SCOPE and nothing else: not parameters, not locals.
+
+**Size, measured on 40 curl/lib files, 713 functions:**
+
+    uses EMITTED (file-scope only):        2,844
+    distinct parameters referenced:         1,989
+    distinct locals referenced:             1,752
+    would add:                              3,741   (+131%)
+
+Extrapolated across the census this would roughly DOUBLE the C `uses` count, from
+86,948 to something near 200,000. It moves every relationship total, the census,
+the performance figures and the oracle comparison at once.
+
+**Two sub-decisions, and the second was framed as the interesting one.**
+
+1. *Should* params and locals be referenced?
+2. *What is the source name?* The oracle writes `(expr) -> s1`, i.e. it does not
+   track the owning function and falls back to a generic bucket. The analyzer's
+   existing convention is the FUNCTION NAME (`uses:add->G`), which is strictly more
+   informative.
+
+**Sub-decision 1 is now MEASURED rather than open, and the answer is no — not as
+taste, but because the target does not exist.** A relationship target must name
+something a consumer can resolve: that is the ruling that removed
+`exports -> KERNEL_EXPORT` (#963) and `instantiates -> malloc` (#962), and it is
+stated in this file at line 1410. So the question is not "should we add an edge" but
+"what would the edge point at". Measured over 300 corpus files / 1,472 functions
+(`script/m14/tmp/c983/local-read-resolvability.ts`):
+
+    distinct param/local names READ inside a body:  7,552  (3,468 params, 4,084 locals)
+      93.51%  no symbol of that name exists anywhere in the file
+       6.18%  the name also belongs to a `property` — a struct member of some
+              OTHER type, so naming it would be a MIS-ATTRIBUTION
+       0.23%  a `struct`, likewise unrelated
+       0.03%  a `property` and a `type`
+       0.05%  RESOLVABLE — 4 names, and all 4 are worse than useless:
+              3 shadow a same-named file-scope binding (exactly the
+              mis-attribution CGD15 exists to prevent) and 1 is a `variable`
+              symbol that should not have been published at all
+
+So the residue is not a feature waiting to be switched on. It is 99.95% the
+dangling-edge class this ontology already refuses, plus the shadowing class the
+family already gates. Publishing it would trade a missing edge — which the family
+ranks as the acceptable direction — for a false edge, which `real-java-analyzer.ts:2320`
+names as "the false-edge class the ruling ranks worse than a missing edge".
+
+**The 4 resolvable names, individually**, because they are what a decision on this
+would actually ship: `multi` (multi-event.c:152, a parameter shadowing the
+file-scope `static CURLM *multi` at :36), `j` (smooth-gtk-thread.c:75, same shape),
+`certinfo` (tool_writeout.c:168, a local shadowing a function of that name), and
+`retcode` (netrc.c:651, discussed below). Every one is a case where the edge would
+be FALSE, which is the strongest form of the answer.
+
+**Sub-decision 2 is therefore moot**, and it was the weaker half anyway: the
+comparison is site-agnostic on label+target (`differential.ts:21090`), so `from` is
+attribution only and the oracle's `(expr)` could never have matched the analyzer's
+function name or not. Nothing is gained by moving the payload toward the less precise
+form. The one thing the measurement settles FOR the future is that if a lane ever
+publishes a local or parameter symbol, `uses` must resolve against THAT symbol, and
+Clean's `qualifiedName` shape (`real-clean-analyzer.md:184-190`) is the family
+precedent for making such an edge resolvable.
+
+**Two probes were wrong first, in the same direction, and both inflated the
+resolvable set.** A FILE-WIDE set of body-bound names made `uses global ->
+writeOffset` (tool_writeout.c:428, a function name used as a value in a static
+table initializer) count as a read of a local of that name, because an unrelated
+function in the same file binds it — 21 spurious rows. And within that, walking the
+whole `declarator` rather than the `parameter_list` picks up the function's OWN name,
+which made `DEBUGASSERT(wovar->writefunc == writeTime)` (tool_writeout.c:53) inside
+`writeTime` look like a read of a parameter called `writeTime`. That is the same trap
+`real-c-analyzer.ts:2941` records. The bound set must be per function, because that
+is the scope CGD15 applies at.
+
+**A real defect fell out of the fourth case, and it is separate from the ruling.**
+`retcode` resolves because a file-scope `variable retcode` was published for a name
+declared only at netrc.c:586, inside `Curl_netrc_scan`. That function's body is
+truncated by parse recovery at L657, so L659's `retcode = netrc_scan_file(` sits
+outside every `function_definition` range and is read as file scope. Measured with a
+brace counter (the PHYSICAL nesting, immune to the parse damage that caused it), over
+400 files: **2** file-scope `variable` symbols published on a line at brace depth > 0,
+of which `netrc.c:659 retcode` is the real one — `tool_doswin.c:670` is a struct
+declaration's closing line, a false positive of the counter. Small, and the truncated-
+body class is already recorded (#916/#928 recovery), so it is noted rather than
+claimed as a new ruling.
+
+**Not taken.** A change that doubles a published relationship count is a ruling for
+the lane owner, not a patch for an agent. The measurement is recorded so the choice
+can be made deliberately — and so that if it is ever revisited, the reason not to is
+a number rather than a preference.
+
+### #982 CORRECTION: the inactive-code thesis was wrong in both directions
+
+The first version of this section claimed the oracle has no notion of inactive
+regions, that `wmemcmp.c` produced no analyzer uses because it is `#if 0`, and that
+this set a MISSING FLOOR. Measured, both halves are wrong.
+
+**The analyzer does not skip `#if 0`.** Same body, four different guards:
+
+    plain          rels=3   contains, references, uses
+    #if 0          rels=3   contains, references, uses
+    #if 1          rels=3   contains, references, uses
+    #ifdef NOPE    rels=3   contains, references, uses
+    #if 0 / #else  rels=6   contains, references, uses
+
+Identical edge counts either way. tree-sitter-c parses inside the guard and the
+analyzer walks it, so "#if 0 is why wmemcmp.c is empty" was never true.
+
+**And these rows were already adjudicated.** This section also re-derived, as a new
+finding, a K&R gap that this same file records at line 962: "A local collector fix
+for old-style `declaration_list` parameters is real and correct, but every K&R
+definition measured in these corpora sits inside `#if 0`, so it moved nothing
+(13/16 either way). It is recorded rather than shipped untested." Line 956 further
+classifies `s1`/`s2`/`n` as **oracle fabrications** — old-style parameters with no
+`function_definition` to attach them to — not analyzer misses.
+
+So the `#if 0` regions are inert for the ANALYZER's count and the reason the oracle
+rows persist is that a K&R definition yields no `function_definition` at all. The
+oracle having no `#if 0` filter is real, but it is not the cause of these rows and no
+MISSING floor was demonstrated.
+
+**What actually survives is one row.** `TlsDtorNode` in
+`zig/lib/libc/mingw/crt/tlssup.c` is LIVE (only an `#ifndef WIN32_LEAN_AND_MEAN`
+above it), and it exposes something larger than itself: the analyzer models **no
+function parameters at all**.
+
+    int add(int a, int b){ return a + b; }   rels: (none)   syms: function:add
+    int g; int h(void){ return g; }          rels: uses:h->g
+
+A global reference yields `uses`; a parameter reference yields NOTHING — no `uses`,
+and no parameter symbols, despite `docs` line 39 claiming `parameter_list` ->
+name/type pairs "stored on function symbols". They are stored and never surfaced.
+That is the undecided item, and it is a SCOPE decision rather than a patch, since
+every function in the corpus would gain edges.
+
+**The lesson, three times over.** `4e4d43d4` (#981 phantoms), `0c22b03b` (#981
+contains) and now this were each written from one observation without first reading
+what this file and the analyzer already concluded. Each was individually plausible and
+each was wrong. The check that catches all three is the same and cheap: read the
+section on the topic, and grep the code, BEFORE writing the mechanism.
+
+### #981: `contains` independent reach reaches curl — and immediately finds two real defects
+
+The clang contains oracle could not read curl or libgit2, so 852/852 was a
+redis-only result and two thirds of the corpus had no independent `contains`
+evidence. #981 fixed the reach (repeatable `--extra-include` / `--define`, fed by a
+real `cmake` configure) and the first honest curl measurement is **not clean**.
+(curl's reach was later measured to be a genuine corpus limit and left closed as
+one — see the oracle section. libgit2's 0 turned out to be two harness faults and is
+now 74 records / 454 members; see #985.)
+
+At 120 offered files, 22 judged:
+
+    MISSED members 30   PHANTOM members 16
+
+An unstable verdict is not a verdict, so before attributing anything I read the
+rows. Both directions turned out to be REAL and to share one root cause, in
+`curl/lib/cf-h1-proxy.c`:
+
+```c
+struct h1_tunnel_state {
+  ...
+  enum keeponval {              /* an enum DEFINED INLINE, as a field's type */
+    KEEPON_DONE,
+    KEEPON_CONNECT,
+    KEEPON_IGNORE
+  } keepon;
+  ...
+  BIT(chunked_encoding);        /* a MACRO-WRAPPED field */
+  BIT(close_connection);
+```
+
+The first is the `h1_tunnel_state` typedef/tag collision (an AMBIGUOUS OWNER, recorded
+below). The second, `BIT(...)`, was already ruled and is the documented limitation.
+
+**A THIRD defect class surfaced once the oracle could read libgit2 at all**, and it is
+neither of those: a macro in TYPE position was published as a member name beside the
+real one. That is #985, immediately below.
+
+### #985: a macro in TYPE position was published as a member name, BESIDE the real one
+
+The class #928's ruling could not see, and it was live on 60 `contains` edges.
+
+    #define git_array_t(type) struct { type *ptr; size_t size, asize; }
+    struct git_blame {
+      ...
+      git_array_t(size_t) line_index;      /* libgit2/src/libgit2/blame.h:78 */
+    };
+
+parses as
+
+    field_declaration
+      macro_type_specifier        <- the TYPE. Its first identifier is the MACRO's
+                                     OWN NAME (`git_array_t`).
+      field_identifier            <- the real member (`line_index`)
+
+**#928 already refused the adjacent shape, and its test cannot see this one.** For
+`BIT(closing);` the macro owns the name and the declaration carries NO declarator at
+all, so `fieldDeclarationHasDeclarator` (`real-c-analyzer.ts:654`) refuses the whole
+field and the honest result is silence. Here a declarator IS present — the macro is
+the type and a separate declarator names the member — so that refusal does not fire.
+The extractor's per-child loop then treats every child that is not a type node as a
+DECLARATOR, and `macro_type_specifier` was in neither the type list nor the skip list,
+so it was descended for its identifier and published beside the real one:
+
+    contains git_blame -> git_array_t   <- phantom; clang reports it PHANTOM
+    contains git_blame -> line_index    <- correct, and unaffected
+
+The published result was `contains git_blame -> git_array_t` NEXT TO
+`contains git_blame -> line_index`, and a `property` symbol for the macro that a
+reader can navigate to and that resolves to no declaration. This is the #928 defect
+verbatim: a member whose name is a name no C declaration in the file gives to any
+member.
+
+**It is NOT C-D2.** Whether the macro *expands* to a whole aggregate is unrecoverable,
+and no member is invented for one — but the real member is right there in the parse
+and was already published. Only the duplicate goes. That distinction is what separates
+this from the `contains` half of #981's ruling, which was correctly refused on C-D2
+grounds: there the member name itself was unrecoverable, here it was never missing.
+
+Measured over the four declared corpora (3,997 files,
+`script/m14/tmp/c983/macro-type-phantom.ts`): **60** phantom `contains` edges, **48**
+of them sitting beside the correct member, across **19** macro names —
+
+| macro | rows | where |
+| --- | --- | --- |
+| `git_array_t` | 13 | libgit2 `git_blame`, `git_tree`, `git_commit`, `git_patch`, `git_rebase`, `git_repository`, `git_filter_list`, `git_pathspec_match_list`, `config_file`, `diff_driver`, `mempack_db` |
+| `ql_elm` | 11 | jemalloc `mpsc_queue`, `emitter_col_s`, `witness_s`, `tsd_init_block_s` |
+| `ql_head` | 5 | jemalloc `emitter_row_s`, `tsd_init_head_s` |
+| `rb_node` | 5 | jemalloc `hpa`, `rb` |
+| `STACK_OF` | 1 | curl `openssl.c:4655` |
+| `HRESULT` / `ULONG` | 4 | libgit2 `deps/winhttp/urlmon.h` |
+| `GIT_ALIGN` | 1 | libgit2 `src/util/pool.c:19` |
+| C++-header debris | 16 | `noexcept`, `decltype`, `operator`, `_LIBCPP_CONSTEXPR*` — tree-sitter-c parsing libstdc++/libc++ as C |
+
+The detector is **structural**, not lexical, and that distinction is load-bearing: a
+first version tested whether the member name is a file-scope macro and reported **0**
+of a class clang sees as 6 phantoms, because libgit2's `git_array_t` is defined in
+`src/util/array.h` while the field is declared in `include/git2/blame.h` — within one
+file the name is not a macro at all. The test is whether the name came out of a
+`macro_type_specifier` / `macro_prefixed_type_specifier` node.
+
+**The fix names both node types**, because `macro_prefixed_type_specifier` is a
+different node for the same idea (libgit2's `GIT_ALIGN(char data[N], 8);`) and a
+fix that covered only the first would have left that one publishing
+`contains git_pool_page -> GIT_ALIGN`. It is a spread into the existing skip list, so
+both the struct and the union loop — which share the list — are covered by one
+constant, `MACRO_TYPE_NODES` at `real-c-analyzer.ts:625`.
+
+Measured `contains` delta attributable to this change alone, on one fixed 3,997-file
+set with both analyzer versions built from the same source
+(`script/m14/tmp/c983/delta.ts`): **20,794 → 20,682 (-112)**. Every other relationship
+type is byte-identical: `calls` 239,405, `uses` 93,759, `references` 10,985,
+`imports` 20,105, `exports` 957, `instantiates` 9. The delta exceeds the phantom count
+because the phantom also carried a `property` symbol, and a struct's published width is
+computed from its member list.
+
+Pinned by `validation/m14/fixtures/c/macro-type-member-985` (36th C fixture), which
+FAILS without the fix and whose controls are the rows a `continue` would have cost:
+the real members beside the phantoms (`payload`, `entries`, `index`, `counts`,
+`slot`), the object-like-macro type that was always correct (`MYINT plain`), and
+#928's own shape, which must stay silent.
+
+**#928's predicate became unobservable, and the mutant had to be widened to say so.**
+With this skip list in place, reverting `fieldDeclarationHasDeclarator` alone changes
+NOTHING: measured over the same 3,997 files, **0 symbols and 0 relationships differ**
+(`script/m14/tmp/c983/928-residual-corpus.ts`). The two guards overlap on `BIT(closing);`
+and each covers the other, so `c-lane/macro-generated-field-name` **survived its own
+fixture** and the gate reported it honestly rather than a false CAUGHT. Its revert now
+removes both guards.
+
+The predicate is not dead — instrumented over 1,499 files it is called **12,461** times
+and refuses **540** of them (`script/m14/tmp/c983/928-is-it-dead.ts`) — it has simply
+become unobservable on this corpus, because every field it refuses is one the skip list
+also refuses. Both guards are kept; the redundancy is recorded rather than resolved by
+deleting a rule that is still correct on shapes this corpus does not contain. A sixth
+retired mutant would have been the wrong trade: the class is still convicted, by
+`c-lane/macro-type-member-name` on the #985 half.
+
+### #981 ruling: a macro argument inside a field declaration is dropped entirely
+
+Before patching, the four adjacent shapes were measured so the ruling rests on
+what the analyzer already gets right:
+
+    struct S { int nsent; BIT(chunked_encoding); };   contains:S->nsent
+    struct S { int nsent; MYINT foo; };               contains:S->nsent  contains:S->foo
+    struct S { int nsent; union { int a; float b; } u; };  contains:S->nsent
+                                                            contains:S->u  contains:S.u->a
+    void f(void){ BIT(chunked_encoding); }            calls:f->BIT
+
+The second of those four is now load-bearing in a way it was not when written: `MYINT foo`
+was correct because an object-like macro parses as a plain `type_identifier`, never a
+macro node. `git_array_t(x) lines;` is the function-like spelling and it was NOT correct
+— that is #985, above.
+
+The tree-sitter shape for the first is
+`field_declaration > macro_type_specifier > type_descriptor > type_identifier`,
+so the field NAME sits inside a macro ARGUMENT. Consequences:
+
+* `MYINT foo` already works, because there the macro is the type and `foo` is a
+  sibling `field_identifier`. Only the "name nested in the macro argument" shape
+  loses the name.
+* An anonymous union field is handled correctly and mints `S.u`.
+* The fourth line is the wider finding: a macro invocation in a BODY emits
+  `calls:f->BIT` but no `uses` for its argument, so #908's "a real macro invocation
+  pairs `calls` + `uses`" is only half-implemented today.
+
+**This was already ruled, and the code says so.** Before writing this section I
+should have grepped first. `fieldDeclarationHasDeclarator` at
+`src/ast/real-c-analyzer.ts:654` already encodes the decision, with this exact
+example in its comment:
+
+    #define BIT(x) int x : 1
+    struct flags { int a; BIT(closing); BIT(keepalive); int b; };
+
+and already fixed a live corruption it caused — `curl/lib/cf-h2-proxy.c` emitted
+`cf_h2_proxy_ctx.BIT` five times and `tunnel_stream.BIT` three times, publishing the
+MACRO'S OWN NAME as the member, and computed the struct's `memorySize` from a field
+that does not exist. The existing ruling is silence, for the same reason given
+below: whether the macro's parameter lands in name position is a property of its
+REPLACEMENT list, which is C-D2's ruled-out territory.
+
+So the `contains` half below is not a new decision — it re-derives a settled one, and
+the 30 oracle misses were ALREADY a declared limitation before this section existed.
+Recorded as such rather than left looking like fresh work.
+
+**Ruling.** Two claims with different warrant, resolved differently:
+
+1. `uses:S->chunked_encoding` was the only genuinely NEW claim here, and it is now
+   **REJECTED on measurement** — see the #988 section. The claim was that a `uses` edge
+   is weaker than `contains` and so survives where ownership does not; measured over 600
+   files, **83.7%** of macro arguments name something with no symbol to point at (31.5% are
+   the enclosing function's own locals, 52.2% are declared nowhere), so the edges are the
+   dangling-edge class #983 is refused on, reached from the opposite direction. The
+   reasoning was sound about the relationship and silent about the target.
+2. `contains:S->chunked_encoding` is NOT provable. `contains` asserts the struct
+   OWNS the member, which is only true if `BIT` expands to a bitfield whose name is
+   its argument. That expansion is exactly what C-D2 forbids, and a macro that took
+   two arguments or renamed its parameter would make the edge false.
+
+So claim 2 does not ship and, as #988 later measured, neither does claim 1 — for a
+different reason, set out in its own section. The oracle's 30 misses become a DECLARED
+LIMIT in the same shape as #963's typedef-return marker loss: real, measured, named, and
+deliberately unclaimed rather than fabricated to close the gap. Expanding `BIT` in
+the payload would mean carrying macro definitions into every compile unit, which
+C-D2 exists to prevent.
+
+**Under-emission (the 30 misses).** `chunked_encoding`, `close_connection`,
+`maybe_folded`, `leading_unfold`, `udp_tunnel` and the rest are `BIT(...)` fields.
+`BIT` is a curl macro that expands to a bitfield declaration, so the field name sits
+inside a macro argument and the analyzer publishes no `contains` member for it.
+clang sees the expanded struct and does. Every macro-wrapped struct field is
+invisible to the payload.
+
+**Over-emission (the 16 phantoms) — and the first explanation of this was WRONG.**
+I initially recorded these as "an inline `enum {...} field;` inside a struct
+flattened onto the struct's owner". A minimal repro refuted that immediately: the
+analyzer gets `enum keeponval { ... } keepon;` right, publishing
+`contains keeponval -> KEEPON_DONE` with `owner=keeponval`. The real mechanism is
+name collision, in `curl/lib/cf-h1-proxy.c`:
+
+```c
+typedef enum {                    /* an ANONYMOUS enum with a typedef alias */
+  H1_TUNNEL_INIT,
+  H1_TUNNEL_CONNECT,
+  H1_TUNNEL_RECEIVE,
+  ...
+} h1_tunnel_state;                /* the alias is `h1_tunnel_state` */
+
+struct h1_tunnel_state {          /* a STRUCT with the SAME NAME */
+  ...
+};
+```
+
+C keeps typedef names and struct tags in **separate namespaces**, so both
+declarations are legal and both are called `h1_tunnel_state`. The analyzer mints the
+anonymous enum's owner name from the alias, so it publishes
+`contains h1_tunnel_state -> H1_TUNNEL_INIT` — an edge that is TRUE of the typedef
+alias and FALSE of the struct that shares the name. A consumer resolving
+`h1_tunnel_state` as a container gets a struct with six phantom members.
+
+So this is not over-emission and not flattening. It is an **ambiguous owner**: the
+`contains` target does not identify which of two same-named C declarations owns the
+member. It is the same root problem #961's qualification solved for colliding type
+NAMES (`lpRandomEntries.pick`), arriving through the typedef/tag namespaces instead
+of the function-local scope. Recorded here because the wrong explanation was
+committed first and a minimal repro is what caught it.
+
+So the oracle is SOUND on curl — it found two genuine defect classes that no other
+instrument could see, precisely because it is a different implementation reading
+one tree. Both are recorded here rather than fixed in this pass, because each needs
+its own fixture, mutant and ruling: the `BIT(...)` case is a macro-expansion
+SEMANTIC decision, and the phantom case is a NAME-RESOLUTION decision about which of
+two same-named C declarations owns a member. Neither is a mechanical patch.
+
+**libgit2 remains blocked**: `src/git2_util.h` is generated at BUILD time, so it
+needs `make`, not only `cmake`.
+
+### #965–#970: the C `uses`/`references` oracle, and what remains in it
+
+Six rounds, each one a case where the ORACLE was the stale side. Every fix was
+found by measuring the residual and classifying it, never by reading the
+analyzer and adjusting the oracle to agree.
+
+| round | change | UNEXPLAINED | MISSING |
+| --- | --- | --- | --- |
+| start | — | 3,937 | — |
+| #965 | oracle enforced the **withdrawn** SCD1 write-gate on field access | 230 | 15 |
+| #966 | oracle gated enum members on file scope — stale since **#961** | 142 | 15 |
+| #967 | oracle enforced the same withdrawn write-gate on the **identifier** path | **16** | 15 |
+| #969 | keywords admitted as declared names (`uses void`, `references struct`) | 16 | **13** |
+| #970 | **REJECTED on measurement** — see below | — | 1,048 |
+
+All figures are over 2,600 files (curl, libgit2, redis, zig), all four labels the
+C differential compares, per-file unique `(label, target)` in both directions.
+
+**#967 was the big one and was found by tracing, not guessing.** Every admission
+sub-condition was satisfied at the declaration (`curl/lib/easy.c:110`,
+`translation_unit > declaration > init_declarator`), so the name *was* in
+`declaredNames` — but the two assignment-LHS occurrences never reached the read
+branch, because the branch itself was gated `n.type === "identifier" &&
+!isAssignLhs(n)`. Since #960 a write to a declared name IS a `uses`, and in real
+C most file-scope variable reads ARE assignments, so that clause was suppressing
+the majority of the global-variable rows.
+
+**#970 is recorded because it was WRONG, and measuring caught it.** The hypothesis
+was #908's pairing (a real macro invocation yields both `calls` and `uses`).
+Mirroring it for every function-like macro took MISSING from 13 to **1,048**, so
+the analyzer does not pair generally. The real shape is much narrower:
+
+```
+redis/deps/lua/src/lua_bit.c:99   #define BIT_OP(func, opr) \
+                                    static int func(lua_State *L) { ... }
+redis/deps/lua/src/lua_bit.c:103  BIT_OP(bit_band, &=)      <- a macro
+                                                                     INVOCATION
+                                                                    that DEFINES a
+                                                                    function
+```
+
+The macro name is a *use* because the invocation is the heading of a generated
+function definition — not because macro invocations pair in general. Mirroring
+that narrowly needs the replacement list, and it is a boundary question about
+#908 rather than a mechanical gap. **Not done.**
+
+**The 16 remaining UNEXPLAINED are five distinct families**, all classified:
+
+| family | rows | example |
+| --- | --- | --- |
+| macro-invocation-as-definition heading | ~8 | `uses BIT_OP` (lua_bit.c:103) |
+| parenthesised declarator name in a heading | 1 | `uses global -> luaL_register` (lauxlib.c:229, `void (luaL_register)(...)`) |
+| gcc attribute token | 2 | `uses ctor -> constructor` (thread.c:92, `__attribute__((constructor))`) — **no symbol exists**, so this is a dangling edge |
+| `references` to types in positions the oracle does not derive | 4 | `references ULONGLONG` (version_win32.c:48,127) |
+| member name inside `offsetof(...)` | 1 | `uses ts` (ioctl.c:67) — a member named at TYPE level, arguably not a value read |
+
+Three of these look like **analyzer** defects rather than oracle gaps: a `uses`
+on a function heading's own name, a `uses` to a name with no symbol
+(`constructor`), and a value `uses` for a member named inside `offsetof`. They
+are unadjudicated.
+
+**The 13 remaining MISSING are oracle fabrications**, in three groups: reads of
+names declared inside `#if 0` (dead code — zig's mingw-w64 K&R runtime, where
+`s1`/`s2`/`n` are old-style parameters with no `function_definition` to attach
+them to), typedef aliases recovered as identifiers (`typedef struct md5_ctx
+my_md5_ctx;`), and external types the file does not declare (C-D2).
+
+**A K&R gap was found and deliberately left.** A local collector fix for
+old-style `declaration_list` parameters is real and correct, but every K&R
+definition measured in these corpora sits inside `#if 0`, so it moved nothing
+(13/16 either way). It is recorded rather than shipped untested.
+
+### Cross-lane reverts: a process finding, twice
+
+`script/m14/differential.ts` is shared and has now silently reverted c-lane work
+**twice**, both times by a commit in a different lane:
+
+- `4f5df8fd` — *"m14(csharp): fsharp is EXHAUSTIVELY clean"* — deleted all of
+  #966 (61 deletions).
+- `f4758f59` — *"fix(rust): two label gaps the coverage census found"* — deleted
+  `C_KEYWORDS`, all of #969.
+
+Both were caused by staging the whole file from a base that predated the c-lane
+commit. Neither commit shows the deletion in its subject. The `--commit-tree`
+helper (`script/m14/stage-shared.sh`) commits exact blobs without touching the
+shared index, which prevents an agent from *accidentally* clobbering others — but
+it does not stop an agent who has a stale working tree from staging the whole
+file. **This needs an owner decision, not another workaround**: either a per-lane
+fork of the differential oracles, or a pre-commit check that a staged hunk does
+not silently delete another lane's committed code.
+
+### What is still open, and it is NOT an analyzer defect. The differential
+compares four labels for C (`calls`, `uses`, `references`, `imports` —
+`differential.ts` allowlist), and `deriveCCalls` derives all four. Over the same
+2,600 files, `uses` alone leaves **3,937 analyzer edges unexplained**, heavily
+weighted to curl (`uses tv_sec`, `uses sockfd`, `uses ptr`, `uses settings_id`
+— ordinary field and value reads). `deriveCCalls` derives `uses` only for a
+narrow subset of identifier positions, so this is the oracle being **blind**, not
+the analyzer inventing edges — the distinction the harness itself draws at its
+`unexplained` counter ("the signal that says the truth is blind, not that the
+analyzer invented something"). The `zig:c` sample reports only 1 missing / 7
+unexplained because the cold pool draws from zig, where the gap is far smaller.
+**A complete C `uses` oracle is the next real piece of work**, and it is an
+oracle task, not an analyzer one.
+
+Measured on `zig:c`, 60 files (the cold pool rotates the sample, so counts move
+between runs — the direction does not):
+
+  | | truth | covered | MISSING | unexplained |
+  | --- | --- | --- | --- | --- |
+  | before #964 | 408 | 402 (98.5%) | 6 | 34 (7.8%) |
+  | after #964 | 387 | **387 (100%)** | **0** | 8 (2%) |
+
+  What remains: the **stale artifact**. `c-differential.json` still records **39
+  of its 65 input hashes as stale** — including `src/ast/real-c-analyzer.ts`
+  itself (recorded `091f9498bd`) and 30 other lanes' analyzers — so it describes
+  a tree that no longer exists, and **no script in the tree writes it by that
+  name**, so its producer is absent. Writing a fresh one under that name is an
+  owner decision, not this lane's. **The M12
+  differential is a FIXTURE differential, though** — `truthSource: manual_audit`
+  over `validation/m12/fixtures/c/*.{c,h}` — which is why the drift above is
+  measurable here at all, and that is the argument for keeping the fixture-based
+  probe as the lane's standing check on its own pinned truth.
+- **The truth is itself mis-pointed on `uses`, and that is a finding, not a
+  cleanup.** Of the 5 unproduced facts, 3 are field accesses whose struct is
+  declared in another file (`uses:buffer_create:capacity/length/data`) — **C-D2
+  forbids resolving those**, so the analyzer is right and the truth asks for
+  something the declared limit forbids. The same fixture's `point_distance` does
+  `a->x` on an equally cross-file `Point` and the truth pins **no** row for it, so
+  the truth is inconsistent with itself on identical constructs. The 2 remaining
+  rows (`uses:module_init:initialized`, `uses:module_shutdown:initialized`) are
+  assignment targets, i.e. the write-vs-read question below. **Fixing the analyzer
+  to satisfy these 5 rows would have broken correct code.**
 - **The artifact cannot be regenerated in this checkout.** The F5 harness reads
   `CORPUS_ROOT = $HOME/fixtures/repositories` (overridable with
   `BB_CORPUS_ROOT`), that path does not exist here, and the run aborts on the first
@@ -580,6 +1348,718 @@ it was unbounded and crashed).
   commit's analyzer and this one produce identical relationship sets on
   `Module.c`, `Module.h`, `Negative.c` and `module_config.h`, so none of the
   drift above is attributable to it.
+
+## Field-access `uses`: adjudicated against the parse
+
+`script/m14/tmp/c-audit/field-access-uses.ts` compares every field-access `uses`
+edge against the parse, per (field name, line), in both directions — the same
+instrument shape as `call-edge-fidelity.ts`, applied to the second-largest
+relationship class. Measured over 200 files per corpus:
+
+| corpus | files | parse accesses | payload field `uses` | over-emitted |
+|---|---|---|---|---|
+| `redis/src` | 200 | 42,344 | 4,602 | **0** |
+| `curl/lib` | 200 | 11,037 | 1,019 | **0** |
+| `libgit2/include` | 93 | 0 | 2 | **0** |
+
+**Zero over-emissions in the direction the probe can convict.** A `uses` edge to a
+field with no field access on that line is wrong under any reading, and there are
+none. `uses` is sound in that direction at corpus scale, which no fixture-scale
+oracle could have told us.
+
+### What the probe cannot convict, and why that is stated rather than counted
+
+The probe does **not** claim a defect count for the miss direction, and the number
+it prints for that bucket (14,802 on `redis/src`) is explicitly labelled as *not* a
+defect count. The payload resolves a field only by typing the base expression —
+reading the local's declared struct and walking the chain. The probe has no such
+resolution, and its test ("a field of that name exists somewhere in this file") is
+far weaker, so nearly every access through a pointer whose struct lives in another
+file lands in that bucket as a false accusation. C-D2 forbids the payload from
+resolving those. Measuring the miss direction honestly needs the payload's own
+owner attribution, which is the thing under test. The first draft of this probe
+called 14,637 of them defects; the number was meaningless and the probe now says
+so in its own output.
+
+### The write-target gap, measured and characterised
+
+One construct is provably and consistently omitted, verified in isolation across
+every form:
+
+| form | `uses` published |
+|---|---|
+| `return p->f` | yes |
+| `p->f++` | yes |
+| `if (p->f)` | yes |
+| `p->f + p->g` | yes |
+| `p->f[0]` | yes |
+| `(*p)->f` | yes |
+| **`p->f = v`** | **no** |
+
+Measured write targets with no edge: **4,125** (`redis/src`, 200 files), **826**
+(`curl/lib`, 200 files). This is a **contract disagreement, not a defect**: the
+M12 truth pins `uses:buffer_create:capacity` for `buf->capacity = clamp(...)`, a
+write, so truth says a write is a `uses` and the analyzer says it is not. There is
+no `writes` relationship type in the ontology, so the fact is currently
+representable nowhere. **This is an open decision, and it is the owner's call** —
+see the two open questions below. `c/field-access-offsetof-955` records the
+analyzer's current behaviour in a `forbidRelationships` row without settling it, so
+whichever way it is decided, the fixture changes rather than the code silently.
+
+### Macro-argument field names: correct, and now pinned
+
+`redis/src/cluster_legacy.h:268-284` is seventeen consecutive
+`static_assert(offsetof(clusterMsg, <field>) == N, ...)` lines. There is no `->` and
+no `.` — the field is a bare identifier in a macro argument, so the parse has no
+`field_expression` for it, and the payload publishes the correct edge anyway:
+
+```
+uses global -> sig  @268  {"relationshipType":"identifier_usage","nodeType":"field_identifier"}
+```
+
+The probe's first run reported all of these (74 across `redis/src`) as phantom
+over-emissions, and *"a field name at file scope is not a use of anything"* is a
+plausible-looking fix that would have deleted the only record that those fields are
+load-bearing. This is **#908's failure mode one relationship type over** — there
+macro-named *callees* were nearly suppressed, here macro-argument *field names*
+were — and the M12 truth cannot catch it, because the truth pins `uses` only for
+`a->x` and says nothing about a field named in a macro argument. Hence
+`c/field-access-offsetof-955` plus the `c/field-name-in-macro-argument` mutant:
+a correct behaviour with no fixture is a behaviour one refactor away from being
+removed as a bug.
+
+The same fixture also pins the limit in the other direction: `HEADER_SIG(h)`
+publishes `calls header_sig -> HEADER_SIG` and does **not** resolve the macro *body*
+to the field. Expanding `((h)->sig)` to reach `sig` is macro-body resolution, which
+this lane does not perform.
+
+## Relationship oracle status
+
+Correcting a claim made earlier in this lane's own history: `contains` is **not**
+unaudited. The M12 truth carries 16 hand-audited `contains` facts, and they are
+checked by `m12-truth-drift.ts`. What the relationship types lack is **corpus-scale**
+verification, not any oracle at all:
+
+| type | emitted | fixture oracle | corpus oracle |
+|---|---|---|---|
+| `calls` | yes | 4 facts | `call-edge-fidelity.ts` (measured) |
+| `uses` | yes | 17 facts | `field-access-uses.ts` (this wave) |
+| `contains` | yes | 16 facts | `contains-vs-clang.ts`, 852 members on redis (this wave) |
+| `imports` | yes | 6 facts | none |
+| `references` | yes | 8 facts | none |
+| `exports` | yes | via `c-completeness` + `exports-marker-conventions-963` | none (typedef-return-type shape is a declared grammar limit, pinned as `forbidRelationships`) |
+| `instantiates` | yes (#962) | 1 fact, `unmetUnder: C-D2` | n/a |
+
+### `contains` against clang, and two real defects it found
+
+`script/m14/tmp/c-audit/contains-vs-clang.ts` judges every `contains` edge against
+**clang 14** — a different parser with a different recovery strategy, so agreement is
+evidence rather than a tautology. This matters because the `calls` and `uses` probes
+judge the payload against **tree-sitter, the same parser the analyzer uses**: they are
+sound about emission and structurally blind about a member the grammar never produced.
+A payload and the grammar that produced it always agree, and that agreement is not
+evidence about the grammar.
+
+Measured on `redis/src` (150 files offered): **144 judged**, 6 not measurable with a
+named reason each. **144 records, 852 members, 94.95% agreement, 1 phantom, 43 missed.**
+
+The single largest gain in the oracle's reach came from a **flag, not a fix**: under
+strict `-std=c11` the POSIX declarations are hidden, so 53 of 150 sampled redis files
+died on one line — `server.h:2808: field has incomplete type 'struct timeval'` — and the
+oracle reported a 13% reach that was really a choice of `-std`. Under `-std=gnu11`,
+which is what redis's own build uses, those 53 files parse. **A measurement of "how much
+of this corpus can clang read" that is really a measurement of which `-std` was passed is
+not a measurement of the corpus.** Reach went 20 files → 144, members 322 → 852.
+
+**All 43 misses are the CGD20 class** — `listpack.c:1920 pick`, `module.c:4590
+KeyMetaConfAllVersions`, and `module.c:7568 typemethods.v2`–`v5`. The wider oracle found
+**no new defect class**, which is the useful result: a 2.6× wider instrument returned the
+same answer. The 1 phantom is `eventNotifier -> pipefd`, published by this lane's own
+#957 fix for the `#else` arm of a conditional the build did not take.
+
+**curl's reach is still 0, and the reason is structural rather than a missing flag.**
+curl's headers are generated by `configure`, and each `-D` that fixes one
+complaint exposes the next: without `SIZEOF_CURL_OFF_T` every file dies on
+`curl_setup.h:537: "too small curl_off_t"`, and *with* it curl defines its own
+`struct timeval` which then collides with glibc's at `curl_setup.h:850`. Reproducing
+that means reproducing configure's ~200 probes, after which the number would be a
+property of my flag set rather than of the corpus. That is a corpus fact and it stands.
+
+**libgit2's 0 is now CLOSED, and it was two HARNESS faults wearing a corpus fact's
+clothes** — the diagnostic each one produced named a file outside the corpus under
+test, which is the signature the file already records for the unbounded-scan fault
+above. #981 got libgit2 to 22 judged files; #985 finished the job at **74 records /
+454 members / 96.04%**, and the split between the two sides is the whole story of that
+number:
+
+| cause | what it looked like | why it was the harness |
+| --- | --- | --- |
+| `libgit2/include/git2/stdint.h` is an MSVC-ONLY shim (whole body inside `#ifdef _MSC_VER`) and it SHADOWS the C library's `<stdint.h>` | 119 of 120 files died on `/usr/include/inttypes.h:290:8: error: unknown type name 'intmax_t'` | naming the forced includes absolutely does **not** fix it — `#include_next` from clang's own `stdint.h` still finds the shim. A root that ships a C-standard-named header is now refused outright. |
+| the synthesised `git2_features.h` undefines every `#cmakedefine`, including `GIT_SHA1_BUILTIN` | 79 of 120 files died on `src/util/hash.h:30: field has incomplete type 'git_hash_sha1_ctx'` | "no optional backends" is not a real configuration: the SHA1 backend is not optional, it is the default. A real `cmake`-configured build's `gen_headers/git2_features.h` (which is what `--extra-include` supplies) resolves all 79. |
+
+The first row is the more interesting one, because the probe's forced-include mechanism
+(`-include stdint.h`, added so `uint8_t` would be available in a file compiled in
+isolation) is exactly what made the shim reachable: `-include` resolves through the
+`-I` path, so `-I include/git2` won over `/usr/include`. The bound that keeps a sibling
+corpus off the include path is what delivered a header that shadows the standard
+library. The 4 remaining unmeasurable files carry their reasons: two C++-in-C
+(`cli/opt_usage.h: unknown type name 'FILE'`), one win32 (`windows.h`, genuinely
+absent on this host), one hashmap_oid.h.
+
+**The 18 misses are one class and it is the C-D2 limit, already ruled.** All 18 are
+`ptr` / `size` / `asize` of a `git_array_t(...)` member — six members × three fields
+(`blame.h:74` and `:78`, `commit.h:22`, `config_file.c:34`, `diff_driver.c:41`,
+`filter.c:39`). clang sees the macro's *replacement list* and so sees the anonymous
+struct it expands to; the payload sees the macro and publishes the member it was given
+(`lines`, `line_index`, `parent_ids`). Whether the parameter lands in name position is a
+property of the replacement list, which is exactly the reasoning `c/macro-generated-field`
+(#928) and the `contains` half of #981's ruling already rest on. Silence, not invention.
+**The 6 phantoms are gone at 0**, and they were all #985's `git_array_t` — the fix is
+what moved that number, and the same probe run before the fix reported 6 phantom and
+after it reports 0.
+
+Reach is reported, never assumed, and every unmeasurable file carries a named reason —
+the probe was built after a first version returned a bare `null` and reported curl as
+"0 of 100 measurable, no diagnostic", which reads exactly like a clean result.
+
+**Two genuine defects, both invisible to every tree-sitter-based counter:**
+
+1. **#957 — a member inside a preprocessor conditional was never published.**
+   `struct eventNotifier { #ifdef HAVE_EVENT_FD int efd; #else int pipefd[2];
+   #endif }` (redis/src/eventnotifier.h:19-25) parses with the `preproc_ifdef` as a
+   DIRECT child of `field_declaration_list` and **no `field_declaration` at that
+   level**, so iterating named children found nothing. The struct was published with
+   a symbol and **zero** `contains` edges. The member extractor now descends into both
+   arms. A conditional member is a real member — the project compiles with one arm and
+   the struct is unusable without it — and since the preprocessor is textual (C-D2) the
+   payload publishes **both** arms, the honest superset.
+2. **#958 — a nested member of an anonymous aggregate got a placeholder owner.**
+   `struct R { union { const char *str; struct { const char *str; const char
+   *format; } verbatim_str; } val; }` (redis/src/call_reply.c:30-38) published
+   `CallReply.val.verbatim_str.str` under the owner path **`anonymous_union.verbatim_str`**,
+   because `inlineAggregateOwnerName` asked the *union* for its name and an anonymous
+   union has only the placeholder. The correct path composes from the member that
+   carries the outer aggregate: `R.val.verbatim_str`.
+
+**The probe needed five corrections before it could convict anything, and in every
+case the analyzer was right and the probe was not:**
+
+- It compared clang's **whole translation unit** against a per-file payload, so it
+  reported 7.40% agreement and 1,001 "missed" members in files that declare no type at
+  all (`adlist.c` defines no record; `list` lives in `adlist.h`).
+- It **flattened** nested anonymous aggregates into the parent, when the payload
+  publishes them owner-qualified — 39 phantom misses on `bio_job.fd_args -> type` and
+  its five siblings, every one of which the analyzer had published correctly.
+- It then looked for the naming `FieldDecl` **inside** the anonymous record, when clang
+  emits it as the **next sibling** — which turned those 39 into 37 *phantom* members.
+- Its include roots were a fixed list from `DIR/..`, so `deps/lua/src/lua.h` was
+  missing and 67 of 100 files were unparseable for a header that **exists**.
+- The root scan was **unbounded**, walking out of `redis/` into the sibling
+  `abseil-cpp` and putting an unrelated C++ tree on the include path.
+
+That is ten confident wrong numbers across this lane's instrumentation, and the
+containment check, the owner-path key, and the named-reason reporting are all
+consequences of the pattern rather than of the individual rows.
+
+`extends` / `implements` / `overrides` are absent by ruling (C-D1, no class
+hierarchy). `instantiates` is the one C-specific type the truth asks for and the
+analyzer does not emit, and that is the second open question below.
+
+### #986: an anonymous inline enum is a member PATH, and it was collapsing onto the container
+
+The last shape `inlineAggregateOwnerName` did not cover. `typedef union { enum { A_ONE,
+A_TWO } first; int n; } U;` published
+
+    contains U -> first
+    contains U -> A_ONE        <- a member of `first`, published as a member of U
+    contains U -> A_TWO
+
+so a consumer reading `U` sees `A_ONE` beside `first` and `n` and cannot learn that `first`
+is a type of its own with two enumerators. **The two adjacent shapes were already correct,
+which is what makes this a defect and not a design choice:**
+
+| shape | published | status |
+| --- | --- | --- |
+| `enum E { B_ONE } first;` — a **tagged** inline enum | `contains E -> B_ONE` | correct, the tag names the type |
+| `struct { int x; } pt;` — an inline **struct** | `contains W.pt -> x` | correct, #950/#951 |
+| `enum { A_ONE } first;` — an **anonymous** inline enum | `contains U -> A_ONE` | **#986** |
+
+The mechanism is #961's rule firing on the same placeholder:
+
+```ts
+if (scope && scope !== "global" && enumName === "anonymous_enum") enumName = scope
+```
+
+`extractEnum` had no `inlineAggregateOwnerName` call, so an anonymous inline enum fell to
+that rule — and for this shape `scope` **is** the container's name (`U`), which is exactly
+the name the member path is trying to refine. #961's own case, a *function-local* enum, has
+no member path, so the fix is one call to `inlineAggregateOwnerName` placed **before** the
+scope rule and gated on it returning non-null. Two levels compose correctly
+(`Nested.mid.inner -> deep`).
+
+Measured over the four declared corpora (3,997 files,
+`script/m14/tmp/c983/inline-enum-owner.ts`): **17** members across **6** files, 17 → **0**
+after the fix. curl's `pl_unix_substate` carries **seven** inline enums in one union, so
+that one file accounts for 35 `contains` edges published under the wrong owner; also
+`pl_winNT_substate` (3) and `ftp_parselist_data` (1) in ftplistparser.c,
+`stub_gss_ctx_id_t_desc` in curl_gssapi.c, `OperationConfig` in tool_cfgable.h, and
+libgit2's `reftable_ref_record`, `reftable_log_record` and `refdb_reftable_stack_iterator`.
+
+**This is #958's defect class reached from a different direction.** There the owner was a
+placeholder that resolved to nothing, which looked broken. Here the owner is a REAL name,
+just the wrong one, so nothing looks broken, nothing crashes, and no property gate fires.
+
+**The `contains` COUNT is unchanged by #986** (17,343 before and after) — only the owner
+changed — which is why the census alone could not have found it and why the structural
+probe was needed. The `contains-vs-clang.ts` verdict is unchanged at 436/454 with 0 phantom.
+
+Pinned by `validation/m14/fixtures/c/inline-enum-member-path-986` (37th C fixture, fails
+without the fix) with a mutant, `c-lane/inline-enum-member-path`, whose controls each fail
+differently if the fix is over-applied: the tagged enum must keep its tag, the inline struct
+must keep #950/#958's path, the function-local enum must keep #961's scope (a fix that fired
+before the member path existed would publish `f.first`, which resolves to nothing), and a
+two-level path must not flatten.
+
+### #987: the typedef/tag collision is ADJUDICATED as real, and the remaining choice is a loss either way
+
+`typedef enum { H1_TUNNEL_INIT, ... } h1_tunnel_state;` beside `struct h1_tunnel_state { ... };`
+is legal C — typedef names and tags live in separate namespaces — and the analyzer mints
+the anonymous enum's owner from the typedef ALIAS, so it publishes both member sets under
+one name:
+
+    contains h1_tunnel_state -> H1_TUNNEL_INIT ... H1_TUNNEL_FAILED   (the alias)
+    contains h1_tunnel_state -> dest, rcvbuf, request_data, ...      (the struct)
+
+The doc recorded this as an AMBIGUOUS OWNER and left it unadjudicated, on the grounds that
+"neither is a mechanical patch". **The part that was decidable is now decided**
+(`script/m14/tmp/c983/namespace-collision.ts`), and it needed neither the corpus nor a build
+configuration — six lines and clang's AST:
+
+    TypedefDecl ns_probe_name   underlying type: `enum ns_probe_name`
+    RecordDecl  ns_probe_name   tagUsed: struct, completeDefinition: true
+    payload: symbols named ns_probe_name: enum, struct
+    payload: contains ns_probe_name -> NS_ALPHA, NS_BETA, NS_GAMMA, field_one, field_two, field_three
+
+So the distinction is real C, not a parse artifact, and the payload's owner attribution is
+wrong about it. Corpus size, from the structural probe
+(`script/m14/tmp/c983/ambiguous-owner.ts`): **9 files, 253 `contains` edges** under an
+ambiguous owner — `cf-h1-proxy.c` (16), `curl_gssapi.c` (9), `ftplistparser.c` (35 + 10 + 10),
+`tool_cfgable.h` (150), libgit2's `reftable-record.h` (9 + 7) and `refdb_reftable.c` (7).
+
+**What is left is not a defect hunt, it is a choice between losses, and none of the options
+is free:**
+
+| option | what is preserved | what is lost |
+| --- | --- | --- |
+| (a) keep both under `V` — **current** | every member, nothing dropped | the OWNER of half of them is false; a consumer reading the struct gets enumerators it does not have |
+| (b) `V` is the struct; the alias's members go | the struct's fields stay resolvable | the enumerators become unreachable — a NAMED loss |
+| (c) `V` is the alias; the struct's members go | the enumerators stay resolvable | the fields become unreachable — a named loss |
+| (d) mint a qualifier for the alias (`V.alias`, `V.0`) | everything | a name written in **no source file**, which is the fabrication class #962 removed from `instantiates` and #963 removed from `exports` |
+
+(d) is ruled out by rulings this lane already made twice, and (a) is the status quo the
+oracle reported as a phantom. Between (b) and (c) there is no evidence to prefer one — the
+question is which loss a consumer can better absorb, and that is the owner's call, not an
+agent's. **Not taken**, and now for a stated reason rather than a shrug: the class is
+proven, the size is measured, and the only remaining input is a preference.
+
+### #988: the macro-argument `uses` claim, measured and REJECTED
+
+`e306ab09` argues the macro-argument `uses` is **provable** where `contains` is not: a
+`uses` edge only says the enclosing function read the name, and a macro argument is
+plainly a name that was written, so the claim should survive C-D2 even though ownership
+does not. The reasoning is sound. It had never been measured, because a general rule
+touches every macro call in every file.
+
+Measured over 600 corpus files (`script/m14/tmp/c983/macro-arg-uses.ts`) — 1,585 macro
+invocations carrying an argument list, **3,662** bare-identifier arguments:
+
+| | count | share |
+| --- | --- | --- |
+| the name IS a declared symbol in the file | 597 | **16.3%** |
+| the name is bound in a function body — a **local** | 1,153 | 31.5% |
+| the name is declared **nowhere** in the file | 1,912 | 52.2% |
+| already emitted as a `uses` today | **0** | — |
+
+**83.7% of macro arguments name something with no symbol to point at.** The corpus
+examples are not edge cases, they are the ordinary shape of a macro call:
+`CPOOL_UNLOCK(cpool)`, `altsvc_free(as)`, `tcplocalhost(cf)` — in every case the argument
+is the enclosing function's own local. So the proposed edges are the **same dangling-edge
+class #983 is refused on, reached from the opposite direction**: #983 asks about reading a
+local, #988 asks about passing one, and the answer to both is the same — the target does
+not exist.
+
+That is the whole adjudication, and it is worth being explicit about why it is a
+**rejection** rather than a **deferral**. The claim was that a `uses` is weaker than a
+`contains` and therefore survives where ownership does not. That is true about the
+*relationship*, and irrelevant to the *target*: the `contains` half was refused because
+ownership is not derivable, and the `uses` half is refused because the target is not
+resolvable. Two different reasons, and the second one the claim never addressed — a
+`uses` edge whose target names nothing is a dangling edge whatever the semantics of
+`uses` are. #962 removed `instantiates -> malloc` and #963 removed `exports ->
+KERNEL_EXPORT` for exactly this, and those were relations whose targets were otherwise
+meaningful.
+
+The 16.3% that DO resolve are the genuinely defensible subset, and the shape is already
+ruled and pinned: `offsetof(struct header, sig)` — a field named inside a macro argument,
+where the field is a real member and the use is real. That is `c/field-access-offsetof-955`
+(#955), which exists, is correct, and is **not** what this ruling touches. A narrower rule
+keyed on "the argument resolves to a field symbol" would be defensible; the general rule
+proposed is not, and the difference between the two is the 83.7%.
+
+**The narrow shape #970 identified is still C-D2 and is not revived here.** A macro
+invocation that is the heading of a *generated function definition*
+(`BIT_OP(bit_band, &=)`) — `lua_bit.c:103` — needs the replacement list to tell from an
+ordinary call, and that remains ruled out. #970's measurement stands too: mirroring #908
+for every function-like macro took MISSING from 13 to **1,048**, so the analyzer does not
+pair generally, and this ruling explains why that is the right answer rather than a gap.
+
+The measurement also settles a question the doc had open in three places, consistently:
+"a macro invocation in a BODY emits `calls:f->BIT` but no `uses` for its argument" is not
+an oversight and not half an implementation. It is the correct result, for the same reason
+`#928`'s silence is correct — not because the answer is C-D2, but because the answer would
+not resolve.
+
+### The two `uses`-side limits, stated rather than counted
+
+The `contains` verdict on libgit2 is **18 missed / 0 phantom** after #985. The phantoms
+were all one class — a member named after a macro in TYPE position, published beside the
+real one — and the 18 misses are the C-D2 macro-replacement-list limit, described above.
+Nothing else in that run is a defect, and the probe is explicit that the reach number
+(35 of 120 files judged) is a harness property, not a corpus property.
+
+The `uses` side has no equivalent independent oracle, and the two gaps below are stated
+rather than counted for that reason. The `field-access-uses.ts` oracle judges every `uses`
+edge whose **target is a FIELD symbol** (`field-access-uses.ts:44`), so it is structurally
+blind to a read whose target is not a field — in either direction. A class of `uses` rows
+could be systematically wrong and this instrument would report nothing.
+
+| construct | status | why |
+| --- | --- | --- |
+| a macro invocation in a BODY: `BIT(chunked_encoding);` emits `calls:f->BIT` but no `uses` for the argument | **REJECTED on measurement** | see the #988 section below. The claim (e306ab09) is that a use is weaker than containment and so survives where ownership does not; measured, 83.7% of the arguments name nothing the file declares, so the edges would be the same dangling class #983 is refused on. |
+| a type-position `uses`: `T *v;` emits `references` for `T` and no `uses` | emitted as `references`, deliberately | CGD12 re-routes a type-position identifier to `references` with one contract for type usage regardless of grammar accident. Verified across five shapes including plain `T *v`. The oracle wants `uses T` for `T *v`; the analyzer's answer is the more precise kind, and the comparison is site-agnostic on label+target, so the two cannot be compared on that row. |
+| `uses` against file scope only (#983) | ruled, not taken | see the #983 section above: 99.95% of the edges would be dangling |
+
+### #961: a function-local type is a compile-time type, and it is published
+
+**Ruled, not open.** CGD20 (real-c-analyzer.ts:1512) read
+`if (scopeManager.isInsideFunction()) break` as *"function-local struct definitions are
+execution artifacts (C-D1) — no scope, no symbol, no field registration."* That reading
+does not survive contact with C. **A struct definition emits no code.** The local
+*variable* is the execution artifact; the type is a compile-time fact whose *visibility*
+the block merely limits.
+
+Measured: **20 function-local named types carrying 65 members across 15 files, none
+published.** They are used, not decoration — `deps/jemalloc/test/unit/malloc_io.c:14`
+`struct test_s` (6 members, 4 references), `src/ebuckets.c:2230` `struct TestParams` (the
+benchmark's parameter table), `src/listpack.c:1920` `struct pick`,
+`src/module.c:4590` `KeyMetaConfAllVersions`, `src/module.c:7568` `typemethods.v2`–`v5`.
+
+**The decisive argument was in this lane's own output.** The payload already published
+`uses local_type_in_use -> index` and `-> order` — uses of members of a type CGD20
+declined to declare. Those edges were unresolvable: the only way to resolve `index` was
+the declaration that had been suppressed. A lane that will not publish a type is not
+consistent about declining uses **of** it.
+
+**The name is qualified by the enclosing function, because the bare name does not
+survive the corpus.** 3 of the 20 collide with a file-scope type — `transfer`
+(`curl/lib/vssh/libssh2.c:3465`), `entry` (`curl/tests/libtest/lib1915.c:35`),
+`clar_counter` (`libgit2/deps/clar/clar/counter.h:86`). So a local type publishes as
+`lpRandomEntries.pick`. Every step of that path is a real symbol, so a `contains` edge
+anchored on it resolves — which is what distinguishes it from the block-scope naming the
+contract forbids (`block_1920` names nothing).
+
+**CGD20's original concern was right, and the qualification fixes it at the cause.**
+CGD20 cited member leakage (`BackupSubCommandEnum`, `MB_enum`). That happened because an
+anonymous local enum published as the **placeholder** `anonymous_enum` with its members
+owned by that placeholder — two symbols with one name in a file, and file-scope
+EnumMembers. `c/macro-wrapped-heading-917` pinned the *symptom* (three forbids on
+`BufSize`, `PlainSize`, `anonymous_enum`). Qualifying the type fixes the leak: the members
+are now owned by `cmpp_stream` and `plain_stream`. Those forbids were replaced with
+positive rows asserting the correct shape, and `anonymous_enum` **stays forbidden** — the
+placeholder is still wrong, it simply is no longer needed.
+
+**Result: `contains` against clang is 852/852 = 100.00%, 0 missed.** The oracle had to
+be updated for the naming, and the update is itself the point: it keyed on clang's bare
+tag and so reported all 31 newly-published local members as missing — a miss the oracle
+invented by demanding the *less* precise name, which is the #958 defect mirrored. It now
+matches a payload owner against clang's path by **suffix**.
+
+`c/function-local-type-959` — written while this was open, deliberately asserting neither
+way — now pins the settled behaviour.
+
+### CGD20 as it stood (superseded by #961)
+
+Adjudicating the last two `contains` misses from `contains-vs-clang.ts` —
+`listpack.c:1920`'s `struct pick` — turned up a **class**, not an instance. CGD20
+(real-c-analyzer.ts:1512) reads:
+
+```
+// CGD20: function-local struct definitions are execution artifacts
+// (C-D1) — no scope, no symbol, no field registration.
+if (scopeManager.isInsideFunction()) break
+```
+
+Measured over the three declared corpora: **20 function-local named types carrying
+65 members, across 15 files, none published** — 7 in redis (41 members), 12 in curl
+(23), 1 in libgit2 (1). The instances that make the ruling matter are **used, not
+decoration**: `deps/jemalloc/test/unit/malloc_io.c:14` `struct test_s` (6 members, 4
+references), `src/ebuckets.c:2230` `struct TestParams` (the parameter table for the
+benchmark below it), `deps/jemalloc/src/ctl.c:990` `struct container_s`.
+
+"Execution artifact" does not survive contact with C. A struct definition emits no
+code. The **local variable** is the execution artifact; the struct is a compile-time
+type definition whose *type* is fully determined, and the block merely limits its
+*visibility*. Under the current rule a consumer cannot answer how large the type is or
+who reads its members.
+
+**The sharpest evidence is in this lane's own output.** The payload already publishes
+
+```
+uses local_type_in_use -> index
+uses local_type_in_use -> order
+```
+
+— uses of members of a type it declines to declare. Either the type is a real type and
+belongs in the graph, or those edges are dangling, and both cannot be right at once. A
+lane that declines to publish a type is not consistent about declining to publish uses
+**of** it. (A first pass counted two curl types as published; re-checked, that was a
+member name coinciding with the type name — 0 of 20 are published.)
+
+**Not fixed here, deliberately.** CGD20 is not a C-local slip. It is mirrored at three
+sites in the shared `script/m14/differential.ts` (struct, enum and typedef branches)
+and cited by name in the cpp lane's documentation, so un-mirroring it changes what the
+oracle expects in every lane that has a function-local type. That is a contract change
+with an owner, not a defect fix with a fixture.
+
+`c/function-local-type-959` records the measurement, the evidence rows and the controls,
+and deliberately puts `contains local_type_in_use -> index` in neither
+`expectRelationships` nor `forbidRelationships`: asserting it either way would encode a
+decision that has not been made. The controls pin what must not move — file-scope
+structs, typedef'd anonymous structs, function-local **variables** (C-D1 is right about
+those), and file-scope members read from inside a block that also declares a local type.
+
+### The three open questions, all now ruled
+
+**#960 — is a write to a field a `uses`? YES.** SCD1/CGD1 said no ("a WRITE, never a
+read") and the exclusion is withdrawn, on two grounds. The analyzer was **already
+inconsistent with itself**: `p->f++` published a `uses` while the semantically identical
+`p->f += 1` did not, because the grammar folds compound-assign into `assignment_expression`
+and `++` is an `update_expression`. And the pinned M12 truth demands the edge
+(`uses:buffer_create:capacity` for `buf->capacity = clamp(...)`). All **five** facts the
+truth reported as not produced were assignment targets; both branches fixed, the truth is
+now **0 not produced**. Corpus `uses` 74,129 → 86,982.
+
+The edge is not relabelled a read — the ontology has no `writes` kind, so before, the fact
+was an *absence*; now it is represented once.
+
+**#961 — is a function-local type an execution artifact? NO.** It emits no code; the local
+*variable* is the artifact. 20 types / 65 members were unpublished. Published, qualified by
+the enclosing function (`lpRandomEntries.pick`) because 3 of 20 collide with file-scope
+names. CGD20's real concern — member leakage — was fixed at the cause: the members are now
+owned by real symbols instead of the `anonymous_enum` placeholder. Result: `contains`
+against clang is **852/852 = 100.00%**.
+
+**#962 — does `instantiates` target `malloc`? NO, it targets the TYPE.** All 25 M12 truths
+that pin an `instantiates` edge target a **type** (`Point`, `User`, `List`,
+`MemoryStorage`); C's `-> malloc` was the only non-type target in the family and could never
+resolve. The type is read from the cast and from `sizeof`, which disagree about which
+carries it. An untyped `void *` allocation publishes nothing — there is no type to
+instantiate. The truth row is retargeted `-> Buffer` and recorded `unmetUnder: C-D2`
+(`Buffer` is in Module.H).
+
+**#963 — what does `exports` point at, and which markers count? At the NAME and
+the marker, and all of them.** The relation fired **zero times in 2,798 corpus
+files** while the M12 truth family expects a populated `exports`, for three
+independent defects — each one alone sufficient to make it wrong:
+
+1. **The marker list held only kernel macros.** `EXPORT_SYMBOL` and friends were
+   listed; three userspace codebases spell the same boundary as `CURL_EXTERN`
+   (curl, 163 markers), `GIT_EXTERN` (libgit2, 955) and `REDISMODULE_API`
+   (redis, 401). None was recognised, and none of the three kernel macros appears
+   in any of them.
+2. **Only the CALL spelling was handled.** `EXPORT_SYMBOL(my_fn, GPL);` is a
+   `call_expression` and reached an export branch. The userspace spelling is a
+   **prefix on an ordinary declaration** — `CURL_EXTERN int curl_strequal(...);`
+   — which reaches no export branch at all.
+3. **The target was fabricated.** The kernel edge pointed at a synthesised
+   constant **`KERNEL_EXPORT`**, a name written in no source file anywhere, and
+   `c-completeness` pinned it as if it were ground truth. This is the same
+   fabrication class #962 removed from `instantiates` (`-> malloc`): the target
+   must be something a consumer can resolve.
+
+**The ruling.** The source is the **declared name** and the target is the
+**marker macro as written**. Both halves are forced. The name cannot be the
+macro's argument, because in every prefixed form the argument *is the return
+type* — `GIT_EXTERN(int)` would publish `exports int -> GIT_EXTERN`, a **type as
+an exported name**, which is precisely the defect #962 corrected. Only in the
+kernel call form is the argument genuinely the name, so only there is it used.
+
+**All four conventions that survive the parse now emit**, pinned by
+`c/exports-marker-conventions-963`:
+
+| convention | example | corpus |
+| --- | --- | --- |
+| kernel call form | `EXPORT_SYMBOL(kernel_exported_symbol, GPL);` | 0 in these corpora — the kernel macros appear in none of them |
+| userspace prefix | `CURL_EXTERN int curl_strequal(const char*, const char*);` | curl 37 |
+| paren form (argument = return type) | `GIT_EXTERN(int) git_libgit2_version(int *out);` | libgit2 907 |
+| bare token (expands to nothing) | `REDISMODULE_API int RedisModule_Alloc(int);` | redis 14 |
+
+Corpus total **958**, up from 0. Audited corpus-wide: **947/957 (98.96%)** of
+the sources resolve to a symbol in the same payload.
+
+**The marker is read from `macro_prefixed_type_specifier`, not from
+`namedChild(0)`.** That node — added by the #743 grammar wave — is what carries
+a macro prefix, and its **first child is a `macro_specifier`** holding the macro
+name:
+
+```
+declaration
+  macro_prefixed_type_specifier
+    macro_specifier "CURL_EXTERN"
+    primitive_type    "int"
+  function_declarator "curl_strequal(...)"
+```
+
+Testing `namedChild(0).type === "identifier"` finds nothing and leaves the
+relation at zero even with the macros listed; that was the second dead end here.
+
+**Two traps, pinned under `forbidRelationships` so they cannot regress silently:**
+
+- **The self-reference.** When recovery splits a multi-line declaration, the
+  declarator walk reaches the marker itself and publishes
+  `exports CURL_EXTERN -> CURL_EXTERN`. An exported name can never *be* the
+  marker, so the walk rejects it. This cost exactly one phantom
+  (958 → 957).
+- **The recovered typedef.** In the broken declaration the walk's fallback node
+  is the return type, so a rule stopping at the wrong node publishes
+  `exports CURLcode -> CURL_EXTERN`.
+
+**DECLARED GRAMMAR LIMIT — a typedef return type.** With a typedef after the
+marker, `macro_prefixed_type_specifier` does not form and the declaration
+degrades to two tokens:
+
+```
+CURL_EXTERN CURLcode curl_mime_type(char *mime);
+declaration
+  type_identifier "CURL_EXTERN"   <- the marker, absorbed as a type
+  identifier      "CURLcode"      <- the return type, as a declarator
+;
+```
+
+Marker and name are **both** destroyed; the exported name survives nowhere in
+the tree. Recovering it would mean reading text rather than structure, so no
+edge is published and none is claimed. Pinned as a `forbidRelationships` entry so
+it stays visible. **This is a grammar reach limit, not an analyzer defect, and
+it is the one shape `exports` cannot cover.**
+
+**Gate.** `c/exports-name-is-the-macro-argument` reinstates all three defects at
+once; live mutants **39/39**, 5 retired, 0 property violations, F1 67 refs with
+0 unknown, fixtures **33/33**.
+
+### The two measurements that remain limited
+
+1. **Is a write to a field a `uses`?** The truth says yes, the analyzer says no,
+   4,951 measured instances in 400 files. Either the analyzer grows the rule or
+   the truth drops 3 rows. There is no `writes` type, so "neither" is also a
+   defensible answer that needs recording.
+2. **`instantiates`:** re-add the C allocation semantic the M12 truth defines
+   ("allocator calls — C-specific"), or amend the truth and record the ruling.
+   Right now the oracle wants a relationship the analyzer refuses, with no decision
+   on the record.
+
+## Call edges in preprocessor directive conditions (#956)
+
+A `call_expression` on a preprocessor **directive line** is directive text, not
+code. `#if !defined(A) && !defined(B)` never executes and `defined` is a
+preprocessor *operator*, not a callable name, so `calls global -> defined` is a
+fabricated edge.
+
+`call-edge-fidelity.ts` measured **61 over-emitted call sites** over 200 files per
+corpus, every one of them this shape — `curl_trc.c:554/575/590/598`,
+`protocol.c:92/120/147`, `http.c:690-692/735-739/822`, `openldap.c:936-937`,
+`cf-ip-happy.c:76/79`, `curl_sha512_256.c:303`, plus 7 in redis.
+
+The class survived because **the `uses` path has refused it since CGD40 and the
+`calls` path had neither guard**. The guard existed on the sibling branch and nobody
+asked why the two differed.
+
+### The guard, and the regression the first version caused
+
+The fix is `this.isHashLineMention(node)` — a call whose physical line starts with
+`#` is directive text whatever its ancestors say. Two things were wrong on the way
+there and both are recorded because each is a way this lane's own instruments lie:
+
+1. **The first guard used `isDirectiveConditionText(node) || isHashLineMention(node)`
+   and suppressed 15 REAL calls.** `curl_sasl.c:531-545`, `cfilters.c`, `strerr.c`;
+   agreement fell 99.97% → 99.89%. The reason is structural: a `preproc_ifdef` owns
+   both its condition **and** its guarded body, so walking up from a call inside the
+   body reaches the preproc node. Measured ancestor chain for
+   `curl_sasl.c:534 sasl_choose_gsasl(data, &sctx)` — real code on a line that does
+   not start with `#` — is `ERROR < preproc_ifdef`. The structural test answers "is
+   any ancestor a directive" when the question is "is **this token** directive text".
+   Caught only because the probe measures the under-emission direction; a
+   before/after `git stash` diff of the two numbers is what made it undeniable.
+2. **Folding the guard into `if (fnNode && !suppressCall)` made the #954 mutant
+   SURVIVE**, because the wrapper short-circuits the whole callee-type ladder that
+   #954's revert restores. One guard silently disarming another. It is now folded
+   into the *emit* condition instead, and #954 is **retired as superseded** — its
+   defect was a call from a directive line, which #956 now covers by the more
+   general rule. The #954 guard is still present and still load-bearing for a
+   directive-free non-name callee; its `fact` still runs on the clean analyzer.
+
+### Measured after
+
+| corpus | before | after |
+|---|---|---|
+| `redis/src` | 43,995 / 44,002 = 99.98% | **43,995 / 43,995 = 100.00%** |
+| `libgit2/src` | 23,747 / 23,748 = 100.00% | 23,747 / 23,748 = 100.00% |
+| `curl/lib` | 23,564 / 23,624 = 99.75% | **23,564 / 23,576 = 99.95%** |
+
+Pinned by `c/call-in-directive-condition-956` (authored from the **damaged** shape —
+a clean `#if defined(X)` emits no `call_expression` at all, so a tidy fixture would
+pass the fix without testing it) and the `c/call-in-directive-condition` mutant.
+
+### `calls` is now 100.00% on all three corpora — and the probe was wrong twice more to get there
+
+| corpus | judged call sites | agreement |
+|---|---|---|
+| `redis/src` | 43,995 | **100.00%** |
+| `libgit2/src` | 23,747 | **100.00%** |
+| `curl/lib` | 22,487 | **100.00%** |
+
+Two more probe defects had to be found to reach that, and **both pointed at correct
+analyzer behaviour**:
+
+1. **The probe's walk was not a complete census of the parse, and did not know it.**
+   It reported 6 over-emissions — `Curl_checkProxyheaders@691/738`, `STRCONST@692/739`,
+   `Curl_creds_has_user_or_pass@737`, `ssl_installed@937` — and the analyzer was right
+   about every one. `http.c:686-704` sits inside a `preproc_ifdef` whose `if_statement`
+   687-702 contains a `parenthesized_expression` 688-694 holding the calls, and the
+   walk never reached them. Diagnosing it took a dozen instruments because the symptom
+   was a *confident* number (`parse=0` for a call that plainly exists) rather than a
+   missing one. The fix is a **containment check**: an independent unrestricted census
+   of every `call_expression` in the tree, and any file where the walk cannot account
+   for it is EXCLUDED and produces no verdict. An instrument that cannot see a region
+   must not testify about it. The first version of that check was a ratio and was wrong
+   in both directions — it flagged two files that legitimately contain no calls, and
+   it would have passed a file missing a whole region as long as the region was small.
+2. **A call through a function-pointer array is not a named call.** The probe followed
+   a `subscript_expression` callee to its base identifier and reported 6 MISSING calls
+   (`recv[sockindex](...)` cfilters.c:1011/1042, `state_enter[state](...)` multi.c:193,
+   `parse[len-2](...)` protocol.c:623, `setopt_call[i](...)` setopt.c:1289/2532). The
+   family contract filters computed/dynamic calls and the analyzer is right: the callee
+   is chosen at runtime, so no static name exists, and recovering the array's base name
+   would be a fabrication of the same class as a parenthesized-callee cast.
+
+**Caveat, stated rather than hidden: 2 of 200 curl files are excluded** (`http.c`,
+`openldap.c`) because the probe's walk cannot account for their parse. That is a
+**known hole in the probe, not a clean bill for those files** — and closing it means
+fixing the walk, not widening the threshold.
+
+This is the **sixth and seventh** confident wrong number this instrument has produced.
+The pattern is consistent enough to name: every one was a node-type or
+traversal assumption, and in every case the analyzer was right and the probe was not.
+The containment check exists because of that, not because of the two rows it fixed.
 
 ## Corpus validation
 
@@ -609,6 +2089,10 @@ it was unbounded and crashed).
 
 | gate | result | how it was run |
 | --- | --- | --- |
+| M14.0.F3 fixtures | **32/32 pass** (18 pre-existing + 12 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
+| C-lane gate (properties + mutants + cost) | **14 properties, 38/38 live mutants caught, 5 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | M14.0.F3 fixtures | **27/27 pass** (18 pre-existing + 9 new) | `bun run script/m14/run-fixtures.ts --lang c` |
 | M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |

@@ -1330,7 +1330,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const b = baseTypes[i]
               parents.push(b)
               relationships.push({
-                source: fullName,
+                source: this.declarationPath(scopeStack, rawName),
                 target: b,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
@@ -1370,7 +1370,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const looksLikeInterface = !declaredKind && (isStruct || (i === 0 && leaf.charCodeAt(0) === 73 && leaf.charCodeAt(1) >= 65 && leaf.charCodeAt(1) <= 90 && leaf.length > 2))
               const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || looksLikeInterface || (i > 0 && !declaredKind)
               relationships.push({
-                source: fullName,
+                source: this.declarationPath(scopeStack, rawName),
                 target: b,
                 type: isImplements ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
@@ -2870,6 +2870,31 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     symbols: ASTEngine.UniversalSymbol[],
     classHierarchy: Map<string, string[]>,
   ): void {
+    // DEPTH FIX. `using_directive` and `extern_alias_directive` are always DIRECT children of
+    // `compilation_unit`, so "is p inside an import?" is answerable from a precomputed span table
+    // rather than by climbing to the root for every identifier. The climb was unconditional and ran
+    // to the top of the tree on files with no import at all -- the powershell corpus among others --
+    // and per-site instrumentation put `isImportName` among five predicates carrying ~96% of the
+    // ancestor-walk invocations in a deeply nested file.
+    //
+    // Span containment is equivalent to the ancestor walk: p is inside a using directive exactly
+    // when its extent falls within that directive's, and p is never itself a using directive.
+    // childCount rather than namedChildCount so an unnamed form cannot be missed.
+    const importSpans: Array<[number, number]> = []
+    {
+      const importStack: Node[] = [rootNode]
+      while (importStack.length > 0) {
+        const n = importStack.pop()!
+        if (n.type === "using_directive" || n.type === "extern_alias_directive") {
+          importSpans.push([n.startIndex, n.endIndex])
+          continue // nothing inside a using directive is itself one
+        }
+        for (let k = 0; k < n.childCount; k++) {
+          const kid = n.child(k)
+          if (kid) importStack.push(kid)
+        }
+      }
+    }
     const leafOf = (s: string): string => {
       // Last ::- or .-separated segment, skipping empties (R2 shrink-only:
       // no regex literals for what two splits express exactly).
@@ -3401,10 +3426,10 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
         // Using directives and extern aliases are imports (handled by the
         // import logic) — their names never read as values.
         const isImportName = (() => {
-          let q: Node | null = p
-          while (q) {
-            if (q.type === "using_directive" || q.type === "extern_alias_directive") return true
-            q = q.parent
+          if (!p) return false
+          for (let i = 0; i < importSpans.length; i++) {
+            const sp = importSpans[i]
+            if (p.startIndex >= sp[0] && p.endIndex <= sp[1]) return true
           }
           return false
         })()
@@ -3902,6 +3927,30 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const base = lt > 0 ? spelled.slice(0, lt) : spelled
     const q = base.indexOf("?")
     return (q > 0 ? base.slice(0, q) : base).trim()
+  }
+
+  /**
+   * A type's DECLARATION path: itself, qualified by enclosing TYPE declarations only.
+   *
+   * `buildFullName` qualifies with every enclosing scope including NAMESPACES, which is
+   * right for an FQN and wrong for a relationship source. This lane's hand-audited truth
+   * labels an extends/implements edge at the declared name — `BaseService`, `UserService`,
+   * `Shape`, `IRepository` — and for a NESTED type it keeps the enclosing type but still
+   * drops the namespace: `UserService.User -> BaseService.Entity`, not
+   * `Example.Service.UserService.User`. That is why the nested row matched before this fix
+   * and the seven top-level ones did not: `UserService.User` happens to equal the declared
+   * path while `Example.Base.BaseService` does not.
+   *
+   * So seven false negatives were a label, not a missing edge.
+   */
+  private declarationPath(scopeStack: Scope[], name: string): string {
+    const segs: string[] = []
+    for (let i = 0; i < scopeStack.length; i++) {
+      if (scopeStack[i].kind === ASTEngine.SymbolKind.Namespace) continue
+      segs.push(scopeStack[i].rawName)
+    }
+    segs.push(name)
+    return segs.join(".")
   }
 
   private buildFullName(scopeStack: { rawName: string }[], name: string): string {

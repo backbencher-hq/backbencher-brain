@@ -7,6 +7,7 @@ import { detectFrameworks, type FrameworkInfo } from "./framework-detectors"
 import { ASTEngine } from "./engine"
 import * as path from "path"
 import * as fs from "fs"
+import { treeContainsNodeType } from "./node-walk"
 
 // ============================================================================
 // BUILTIN FILTER - C#-family contract
@@ -1905,6 +1906,11 @@ class TypeScriptAnalysisRunner {
     const projectRoot = this.findProjectRoot(filePath)
     this.moduleResolver = new TypeScriptModuleResolver(projectRoot)
 
+    // PERF: one pre-pass so `inDecoratorPosition` can answer `false` without an
+    // ancestor walk per node. See that method for the measurement — this lane read
+    // `.type` 133.7 times per node before it, the worst ratio in the corpus.
+    this.hasAnyDecoratorNode = treeContainsNodeType(rootNode, "decorator")
+
     const symbols: ASTEngine.UniversalSymbol[] = []
     const relationships: ASTEngine.UniversalRelationship[] = []
     const imports: ASTEngine.ImportInfo[] = []
@@ -3666,6 +3672,14 @@ class TypeScriptAnalysisRunner {
       metadata: {
         isIndexSignature: true,
         indexParameter: indexParam,
+        // The name `[key]` is INVENTED — the source writes `[key: string]`, and
+        // `[key]` is not a member any caller can pass, which is why the Vue lane
+        // suppresses the same shape on its own inline-type-literal path (VSD34).
+        // Declaring it with the m60 surface audit's general mechanism keeps it out
+        // of the "name not present in source" channel without an allowlist that
+        // would have to enumerate every parameter name. Found via the Vue lane's
+        // own audit, where it was the last of 125 findings.
+        synthesized: true,
       },
     }
 
@@ -4255,21 +4269,69 @@ class TypeScriptAnalysisRunner {
    * body a decorator position (its decorators are siblings of
    * method_definition, never ancestors of the body).
    */
-  private inDecoratorPosition(n: Node): boolean {
+  /**
+   * Whether the file being analyzed contains any `decorator` node. Set once per
+   * `analyze`; see the short-circuit in `inDecoratorPosition` for the measurement.
+   */
+  private hasAnyDecoratorNode = false
+
+  /**
+   * Is `node` a DECORATOR boundary? Used as the terminating condition of
+   * `inDecoratorPosition`.
+   *
+   * PERF: this used to climb `.parent` from every node, and web-tree-sitter
+   * implements `.parent` with a WASM DESCENDANT SEARCH (`ts_node_child_with_descendant`),
+   * so the climb was O(depth) expensive calls per node and O(n x depth) per
+   * traversal — measured at 5.2% of total wall clock on the vue lane's profile,
+   * because a Vue SFC's TypeScript blocks go through this exact walk. The flag is
+   * now THREADED down the recursion instead of recomputed: a decorator child sets
+   * it true, any boundary sets it false, otherwise it is inherited. Same answer
+   * (the decorator on a METHOD is a sibling of `method_definition`, never an
+   * ancestor of the body), one boolean per node instead of a walk per node.
+   */
+  private isDecoratorBoundary(nodeType: string): boolean {
+    return (
+      nodeType === "class_declaration" ||
+      nodeType === "abstract_class_declaration" ||
+      nodeType === "class" ||
+      nodeType === "function_declaration" ||
+      nodeType === "method_definition" ||
+      nodeType === "statement_block" ||
+      nodeType === "program"
+    )
+  }
+
+  /**
+   * The decorator-position flag for a CHILD of `n`: a decorator opens the region,
+   * a boundary closes it, anything else inherits. Pure and total, so the traversal
+   * needs no ancestor bookkeeping beyond this one argument.
+   */
+  private nextDecoratorFlag(n: Node, inherited: boolean): boolean {
+    if (n.type === "decorator") return true
+    if (this.isDecoratorBoundary(n.type)) return false
+    return inherited
+  }
+
+  private inDecoratorPosition(n: Node, ancestorInDecorator?: boolean): boolean {
+    // BOTH FIXES ARE KEPT, and they are complementary rather than competing.
+    //
+    // The threading flag above removes the per-node ancestor walk for files that DO
+    // use decorators. This short-circuit removes it for files that do NOT, which is
+    // the majority: no `decorator` node anywhere in the tree means no decorator
+    // ancestor is reachable, so the walk below cannot return `true` for any node.
+    // One pre-pass with an early exit decides it.
+    //
+    // The measurements differ because the two lanes profiled different corpora — this
+    // side measured 133.7 `.type` reads per node and 32.1% of samples on
+    // `HttpConnection.test.ts` (12,054 nodes), the other measured 5.2% of wall clock
+    // on the vue lane. Neither number is wrong and neither subsumes the other, so the
+    // union keeps both guards: the global one first, then the threaded one.
+    if (!this.hasAnyDecoratorNode) return false
+    if (ancestorInDecorator !== undefined) return ancestorInDecorator
     let p: Node | null = n.parent
     while (p) {
       if (p.type === "decorator") return true
-      if (
-        p.type === "class_declaration" ||
-        p.type === "abstract_class_declaration" ||
-        p.type === "class" ||
-        p.type === "function_declaration" ||
-        p.type === "method_definition" ||
-        p.type === "statement_block" ||
-        p.type === "program"
-      ) {
-        return false
-      }
+      if (this.isDecoratorBoundary(p.type)) return false
       p = p.parent
     }
     return false
@@ -4289,13 +4351,21 @@ class TypeScriptAnalysisRunner {
     relationships: ASTEngine.UniversalRelationship[],
     symbols: ASTEngine.UniversalSymbol[],
   ): void {
-    const processNode = (n: Node, currentSymbol: ASTEngine.UniversalSymbol | null): void => {
+    // PERF: `ancestorInDecorator` is threaded rather than recomputed per node.
+    // See `inDecoratorPosition`: web-tree-sitter's `.parent` is a WASM descendant
+    // search, so the old per-node climb was O(n x depth) of expensive calls and
+    // profiled at 5.2% of the vue lane's wall clock.
+    const processNode = (
+      n: Node,
+      currentSymbol: ASTEngine.UniversalSymbol | null,
+      ancestorInDecorator = false,
+    ): void => {
       currentSymbol = this.resolveRelationshipSymbol(n, symbols, currentSymbol)
       // M59 (#861): no call edge is emitted for a decorator invocation — see
       // inDecoratorPosition. The subtree is skipped whole, so a call nested in a
       // decorator's ARGUMENTS (`@inject(makeToken())`) is decorator position too,
       // which is exactly what the oracle now skips.
-      if (this.inDecoratorPosition(n)) return
+      if (this.inDecoratorPosition(n, ancestorInDecorator)) return
 
       // Extract call expressions, instantiations and JSX component usages
       // TSD4 (JAD2-class): the top-level fallback is the file's module LEAF
@@ -4316,7 +4386,7 @@ class TypeScriptAnalysisRunner {
               this.pushInstantiation(callee, n, callSource, relationships)
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4346,7 +4416,7 @@ class TypeScriptAnalysisRunner {
             ) {
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4371,7 +4441,7 @@ class TypeScriptAnalysisRunner {
               // arguments still carry real calls (see the import branch note).
               for (let i = 0; i < n.namedChildCount; i++) {
                 const child = n.namedChild(i)
-                if (child) processNode(child, currentSymbol)
+                if (child) processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
               }
               return
             }
@@ -4447,12 +4517,12 @@ class TypeScriptAnalysisRunner {
       for (let i = 0; i < n.namedChildCount; i++) {
         const child = n.namedChild(i)
         if (child) {
-          processNode(child, currentSymbol)
+          processNode(child, currentSymbol, this.nextDecoratorFlag(n, ancestorInDecorator))
         }
       }
     }
 
-    processNode(node, null)
+    processNode(node, null, false)
   }
 
   private extractUsageRelationships(
@@ -5444,6 +5514,34 @@ class TypeScriptAnalysisRunner {
         return
       }
       const items = extractImportItemsWithNodes(node)
+
+      // A SIDE-EFFECT-ONLY import — `import './style.css'` — has no clause and so
+      // contributes no items, and the loop below emitted nothing for it. That is a
+      // dependency the file plainly has: element-plus's every component does
+      // `import '@element-plus/theme-chalk/src/<name>.scss'` and
+      // `import '@element-plus/components/<name>/style'`, and none of them were in
+      // the graph, so the style half of every component was invisible. Found by
+      // the lane's new `imports` oracle, which derived 12 such rows against an
+      // analyzer that published none on a 152-file draw while agreeing on 1,201 of
+      // 1,201 named rows.
+      //
+      // The distinction is `import_clause` ABSENT, not "no items": `import {} from
+      // "m"` names a module too, but it is an empty binding list rather than a
+      // dependency on the module for its side effects, and only the absent clause
+      // says the latter. The target is `*`, the same whole-module shape a namespace
+      // import and a `require` publish, because nothing was asked for by name.
+      const hasClause = node.namedChildren.some((c: any) => c && c.type === "import_clause")
+      if (!hasClause) {
+        relationships.push({
+          source: this.moduleLeafName(),
+          target: `${modulePath}:*`,
+          type: ASTEngine.RelationshipType.Imports,
+          confidence: 1.0,
+          ...this.lineField(sourceNode),
+          metadata: { module: modulePath, isSideEffectImport: true },
+        })
+        return
+      }
 
       // Create import relationships (leaf identity: source is the module leaf)
       for (const { item, node: itemNode } of items) {

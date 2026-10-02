@@ -50,7 +50,14 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import path from "node:path"
 
 const ROOT = path.resolve((import.meta as any).dirname ?? path.dirname(process.argv[1] ?? "."), "..", "..")
-const CORPUS_ROOT = process.env.BB_CORPUS_ROOT ?? "$HOME/fixtures/repositories"
+// Derived, not hardcoded. This defaulted to a path inside ANOTHER machine's home
+// directory, so on any checkout but that one the gate reported SKIP forever - a
+// disclosed skip, so it was not lying, but a gate that can only run when an
+// environment variable happens to be set is not a gate. The corpus sits beside the
+// repository, which is true of every checkout that has one, so derive it and keep
+// the variable as the override.
+const CORPUS_ROOT =
+  process.env.BB_CORPUS_ROOT ?? path.resolve(import.meta.dir, "../../../fixtures/repositories")
 export const CORE_DIR = path.join(CORPUS_ROOT, "clojure/src/clj/clojure")
 
 // ── The DECLARED extras ────────────────────────────────────────────────────

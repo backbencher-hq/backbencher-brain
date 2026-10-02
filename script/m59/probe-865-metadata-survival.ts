@@ -81,6 +81,25 @@ async function main() {
   console.log(`data dir : ${data}`)
   console.log(`rows     : ${rows.length} total, ${withMeta.length} with any metadata, ${inferredAt} carry inferredAt (enriched)`)
   for (const [k, n] of counts) console.log(`  ${k}: ${n}`)
+  // The VERDICT, so this is a gate and not a dump. The #865 claim was that the
+  // enrichment pass replaces metadata wholesale and every analyzer key comes out
+  // 0. `evidenceClass` is an ANALYZER key the enrichment does not own, so if that
+  // claim were true it would be 0 on every row — and it is on all of them. The
+  // zeros elsewhere are the fixture, not a failure: this two-file java fixture
+  // emits no `syntheticSource` / `attributedToEnclosing` row (that is the
+  // enclosing-lexical-owner path, a different fixture), so those keys cannot
+  // demonstrate anything here. What this run demonstrates is the MECHANISM they
+  // travel on: a key the enrichment does not own survives it.
+  const analyzerKeySurvived = (counts.get("evidenceClass") ?? 0) === withMeta.length && withMeta.length > 0
+  console.log(
+    `verdict  : ${analyzerKeySurvived ? "PASS" : "FAIL"} — an analyzer-owned key survived enrichment on ` +
+      `${counts.get("evidenceClass") ?? 0}/${withMeta.length} rows`,
+  )
+  console.log(
+    `            (the 0s above are keys this fixture does not emit, not keys that were dropped;` +
+      ` see the note in parallel-indexer.ts for why the ZEROS cannot falsify #865)`,
+  )
+  if (!analyzerKeySurvived) process.exitCode = 1
   console.log(`\nsample metadata values (first 6 rows with metadata):`)
   for (const r of withMeta.slice(0, 6)) console.log(`  ${r.relationship_type} ${r.source_name} -> ${r.target_name}: ${(r.metadata ?? "").slice(0, 160)}`)
 }

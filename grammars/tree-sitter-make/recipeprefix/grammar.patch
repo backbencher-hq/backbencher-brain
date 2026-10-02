@@ -1,0 +1,128 @@
+--- grammars/tree-sitter-make/grammar.js	2026-09-30 02:23:17.729591152 -0400
++++ grammars/tree-sitter-make/recipeprefix/grammar.with-recipeprefix.js	2026-09-30 02:24:08.251821115 -0400
+@@ -87,6 +87,14 @@
+   conflicts: $ => [
+     [$.concatenation, $._paren_text],
+     [$.variable_reference, $._paren_text],
++    // P3: allowing the declared recipe prefix to lead a RULE shifts the lex
++    // states, which exposes a `concatenation` / `_line_text` ambiguity in the value
++    // that follows. It is the SAME shape as the `_paren_text` conflict above --
++    // a concatenation that could equally be plain line text -- so it is declared
++    // rather than resolved with a static precedence, for the reason the two
++    // existing entries give: a static precedence would discard one reading for
++    // EVERY input rather than only for the inputs where it is wrong.
++    [$.concatenation, $._line_text],
+   ],
+ 
+   extras: $ => [
+@@ -95,6 +103,28 @@
+     $.comment,
+   ],
+ 
++  // P3 (M60 Make wave): `.RECIPEPREFIX`. Upstream hardcoded the recipe prefix to a
++  // tab and left `// TODO external parser for .RECIPEPREFIX` where the value
++  // belonged, so a Makefile that sets `.RECIPEPREFIX = >` had every one of its
++  // recipe lines parsed as an ERROR node -- a build file the analyzer reads as
++  // doing nothing. The order MUST match the enum in src/scanner.c.
++  //
++  //   RECIPE_PREFIX        consumes the prefix character, and only when it is the
++  //                        one the file currently in force
++  //   RECIPEPREFIX_VALUE   the VALUE of a `RECIPEPREFIX_assignment`, consumed only
++  //                        when that value is a single literal character, which is
++  //                        the only shape that names a usable prefix. Aliased to the
++  //                        existing `text` node, so the assignment's node and fields
++  //                        are byte-for-byte what they were. The scanner DECLINES
++  //                        every other value -- a variable reference, an empty
++  //                        value, more than one character -- and the internal
++  //                        `_assignment_text` token then handles it exactly as it
++  //                        always did, so nothing but the literal case changes.
++  externals: $ => [
++    $._recipeprefix,
++    $._recipeprefix_value,
++  ],
++
+   rules: {
+     // 3.1
+     makefile: $ => repeat($._thing),
+@@ -127,6 +157,18 @@
+     // started, which is the only place the form is unambiguous.
+     _ordinary_rule: $ => prec.right(choice(
+       seq(
++        // The declared recipe prefix may also LEAD A RULE, which is the ordinary
++        // makefile shape once `.RECIPEPREFIX` is set:
++        //
++        //     >build: deps
++        //     >	echo hi
++        //
++        // make treats that leading character as whitespace, so the line is a
++        // normal rule. Without this the rule line itself is an ERROR and the
++        // whole rule is swallowed into the previous recipe -- which is how the
++        // first version of this fixture failed, with `clean:` ending up inside
++        // `build`'s recipe as a `recipe_line`.
++        optional(choice($._recipeprefix_tab, $._recipeprefix)),
+         $._targets,
+         choice(':', '&:', '::'),
+         optional(WS),
+@@ -147,6 +189,7 @@
+ 
+     // 4.12.1
+     _static_pattern_rule: $ => prec.right(seq(
++      optional(choice($._recipeprefix_tab, $._recipeprefix)),
+       $._targets,
+       ':',
+       optional(WS),
+@@ -220,7 +263,23 @@
+     ),
+ 
+     _prefixed_recipe_line: $ => seq(
+-      $._recipeprefix,
++      // The tab stays an INTERNAL token and the external one is the alternative.
++      //
++      // Moving the tab out of the internal set -- the obvious way to do this --
++      // is what the first three builds did, and the corpus A/B rejected all three
++      // with 36 error nodes across three real Makefiles. The reason is not the
++      // scanner's logic: it is that a comment line between two recipe lines
++      // (a space-indented or column-zero comment, which is ordinary makefile
++      // style) ends the `repeat` that continues a recipe, and the tab line after
++      // it then has nowhere to go. With the tab internal, the lex state that
++      // resumes a recipe still contains it and the file parses exactly as it did.
++      // A four-line repro is in reviews/make/master-review.md.
++      //
++      // The external token therefore only ever fires for a prefix the file
++      // actually asked for, and the scanner DECLINES when the tracked prefix is
++      // the default tab, so the two can never both match and there is no
++      // ambiguity to resolve.
++      choice($._recipeprefix_tab, $._recipeprefix),
+       optional($.recipe_line),
+       NL,
+     ),
+@@ -254,7 +313,14 @@
+       field('name', '.RECIPEPREFIX'),
+       optional(WS),
+       field('operator', choice(...DEFINE_OPS)),
+-      field('value', alias($._assignment_text, $.text)),
++      // The external arm is tried FIRST and handles the single-literal-character
++      // value; the internal arm is the unchanged original, and is what parses
++      // every value the scanner declines. Both alias to `text`, so the emitted
++      // node and its `value` field are identical either way.
++      field('value', choice(
++        alias($._recipeprefix_value, $.text),
++        alias($._assignment_text, $.text),
++      )),
+       NL,
+     ),
+ 
+@@ -598,8 +664,11 @@
+     ),
+     // }}}
+     // Tokens {{{
+-    // TODO external parser for .RECIPEPREFIX
+-    _recipeprefix: _ => '\t',
++    // P3: the DEFAULT recipe prefix, kept as an internal token so that every
++    // makefile which does not use `.RECIPEPREFIX` lexes through exactly the token
++    // set it always did. The external `_recipeprefix` covers the rest, and declines
++    // whenever the tracked prefix is this one.
++    _recipeprefix_tab: _ => '\t',
+ 
+     // TODO prefixed line in define is recipe
+     _rawline: _ => token(/.*[\r\n]+/), // any line

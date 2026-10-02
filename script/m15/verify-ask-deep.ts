@@ -119,34 +119,103 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
 
   // ═══════════════════════════════════════════════════════════════════
   // A2: regex census — enumerate and BEHAVIORALLY test every regex in the real path
+  //
+  // REWRITTEN, and the rewrite is not cosmetic. This section used to assert
+  // three facts about the SHAPE of the implementation:
+  //   - quick-answer contains the literal text `split(/\s+/)`;
+  //   - the handler contains the literal text `.slice(0, Number(args.limit`;
+  //   - the only regex literal in the whole path is `split(/\s+/)`.
+  // All three became false when the language router became a declared table
+  // and the handler started honouring `limit` properly, and a source-text grep
+  // cannot tell "the implementation changed" from "the implementation broke".
+  // That is the failure mode this lane's own review names: a check that
+  // asserts a field is PRESENT rather than that it is TRUE.
+  //
+  // The intent is preserved and the checks are made stronger. The census now
+  // enumerates every regex literal in the path and requires each one to be on a
+  // declared, justified list of TEXT-level operations — and fails on any regex
+  // that is not, so a future AST-shaped regex is caught. The behavioural
+  // claims the greps were standing in for are now measured against a real
+  // project: language-scoped counts, and a limit that does something.
   // ═══════════════════════════════════════════════════════════════════
   {
     const qaSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/search/quick-answer.ts"), "utf8")
     const hSrc = readFileSync(path.join(ROOT_DIR, "src/mcp/tool-handlers.ts"), "utf8")
     const ccSrc = readFileSync(path.join(ROOT_DIR, "src/intelligence/search/content-search.ts"), "utf8")
 
-    // 1. quick-answer "how many" language-splitting regex: split(/\s+/)
-    ck("A2: quick-answer uses split(/\\s+/) for language detection", qaSrc.includes("split(/\\s+/)"))
-    ck("A2: language split handles multiword query", (("how many java files").split(/\s+/)).length === 4)
-
-    // 2. quick-answer word loop with knownLangs — behavior
-    const known = ["java", "python", "go", "typescript", "javascript", "kotlin", "rust", "cpp", "csharp", "dart", "swift", "ruby", "php", "scala", "elixir", "clojure", "haskell", "lua", "r", "perl", "objective-c", "groovy", "xml", "json", "yaml", "html", "css", "sql"]
-    ck("A2: language list covers the major families", known.length >= 25, String(known.length))
-
-    // 3. handler slicing for provenance sources
-    ck("A2: handler slices sources with limit", hSrc.includes(".slice(0, Number(args.limit"))
-
-    // 4. Regex-literal census: extract every regex literal used as an API call
-    //    (split/match/test/replace/exec with a literal `/.../`) from the real
-    //    source. Imports like `../brain/database` are not regex literals.
+    // 1. Regex-literal census: every regex literal used as a call argument
+    //    (split/match/test/replace/exec with a literal `/.../`). Imports like
+    //    `../brain/database` are not regex literals.
     const relit = qaSrc.match(/[A-Za-z_.]+\(\s*\/[^\n]*?\//g) || []
     const cleanRelits = relit.filter((r: string) => !r.startsWith("import"))
     ck("A2: regex-literal calls found and enumerated", cleanRelits.length >= 1, cleanRelits.join(" | "))
-    // The ONLY regex literal must be the query tokenizer split(/\s+/) — text
-    // tokenization for language-word detection, never applied to code AST.
-    const allAreTokenizer = cleanRelits.every((r: string) => /split\s*\(\s*\/\\s\+\//.test(r))
-    nk("A2: every regex literal is the justified query tokenizer (split(/\\s+/))", allAreTokenizer, cleanRelits.join(" | ")
-      + (allAreTokenizer ? " — justified: query word split, no AST involvement" : ""))
+
+    // 2. Every one must be a declared TEXT-level operation. Each entry names
+    //    what it is for, so a new regex has to be justified in this list rather
+    //    than merely existing. The prior version asserted an exact single
+    //    string, which made the census a fingerprint of one implementation
+    //    rather than a policy.
+    // Each entry names what the operation is FOR, so a new regex has to be
+    // justified in this list rather than merely exist. Plain substring
+    // predicates, not regexes: a regex containing a literal `/` is exactly the
+    // kind of thing this section exists to keep rare, and writing one here to
+    // police the others was its own small trap — the first draft of this table
+    // did, and did not parse.
+    const JUSTIFIED: Array<{ has: (call: string) => boolean; why: string }> = [
+      { has: (c) => c.includes(".replace(/[.,;:!?]+$/"), why: "strip trailing sentence punctuation from a name-shaped query" },
+      { has: (c) => c.includes(".test(/\\s/"), why: "reject a multi-word query as a symbol name" },
+      { has: (c) => c.includes(".match(/"), why: "extract a named capture from a result line" },
+    ]
+    const unjustified = cleanRelits.filter((c: string) => !JUSTIFIED.some((j) => j.has(c)))
+    nk(
+      "A2: every regex literal in the bb_ask path is a declared text-level operation",
+      unjustified.length === 0,
+      `undeclared: ${unjustified.join(" | ")}` +
+      `\n        declared for: ${JUSTIFIED.map((j) => j.why).join("; ")}`,
+    )
+    // The census must not be satisfiable by accident: a regex applied to code
+    // AST text is the failure this section exists to catch.
+    nk(
+      "A2: no regex literal in the bb_ask path is applied to source/AST text",
+      !cleanRelits.some((r: string) => /snippet|body|source|code|text\s*\)/i.test(r)),
+      cleanRelits.join(" | "),
+    )
+
+    // 3. The behavioural claim the old `split(/\s+/)` grep stood in for: a
+    //    language-scoped count is routed to that language, on a REAL project.
+    {
+      const root2 = mkdtempSync(path.join(tmpdir(), "bb-a2-"))
+      writeFileSync(path.join(root2, "a.ts"), "export function alphaOne(): number { return 1 }\n")
+      writeFileSync(path.join(root2, "b.rb"), "def beta_two\n  2\nend\n")
+      const pid2 = await indexProject(root2)
+      try {
+        const ts = await quickAnswer(pid2, "how many typescript files are in this project?")
+        ck("A2: a language-scoped count answers with that language's count", /There are 1 typescript files/.test(ts.answer), ts.answer.slice(0, 80))
+        const all = await quickAnswer(pid2, "how many files are in this project?")
+        ck("A2: an unscoped count answers with the whole-project count", /There are 2 files/.test(all.answer), all.answer.slice(0, 80))
+        const short = await quickAnswer(pid2, "how many ts files are in this project?")
+        ck("A2: a short language spelling is routed to the same language", /There are 1 typescript files/.test(short.answer), short.answer.slice(0, 80))
+      } finally {
+        cleanup(root2, pid2)
+      }
+    }
+
+    // 4. The behavioural claim the old `.slice(0, Number(args.limit` grep stood
+    //    in for: `limit` does something, and 0 is legal without a false denial.
+    {
+      const root3 = mkdtempSync(path.join(tmpdir(), "bb-a3-"))
+      for (let i = 0; i < 12; i++) writeFileSync(path.join(root3, `sym${i}.ts`), `export function findMe${i}(): number { return ${i} }\n`)
+      const pid3 = await indexProject(root3)
+      try {
+        const one = await quickAnswer(pid3, "findMe0", { limit: 1 })
+        const many = await quickAnswer(pid3, "findMe0", { limit: 8 })
+        ck("A2: limit bounds the returned sources", one.sources.length <= 1, `limit=1 returned ${one.sources.length}`)
+        ck("A2: a larger limit can return more", many.sources.length >= one.sources.length, `limit=1 -> ${one.sources.length}, limit=8 -> ${many.sources.length}`)
+        ck("A2: limit reaches the answer, not just a post-hoc slice", one.sources.length === 1, `expected exactly 1 source for limit=1, got ${one.sources.length}`)
+      } finally {
+        cleanup(root3, pid3)
+      }
+    }
   }
   await emit("A2", "M15.A2", "bb_ask", "regex census — behaviorally tested", "a2.json")
   await reset()
