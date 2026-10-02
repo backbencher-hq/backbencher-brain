@@ -2236,6 +2236,19 @@ export async function storeResults(
  
    const deleteFileSymbols = rawDb.prepare(`DELETE FROM brain_symbol WHERE file_id = ?`)
    const deleteFileImports = rawDb.prepare(`DELETE FROM brain_import WHERE file_id = ?`)
+   // Co-agent 2 measured this: nothing in src/ ever deleted from
+   // brain_semantic_embedding, so a renamed or moved symbol kept a live vector
+   // forever (3 embedding rows for 2 live symbols after a rename). The table
+   // grows without bound across reindexes and `coverage` counts those orphans,
+   // so a health check reports coverage it does not have.
+   //
+   // Must run BEFORE deleteFileSymbols: it selects the file's symbol ids while
+   // they still exist. Ordered after the relationship deletes so nothing is
+   // removed out from under a constraint.
+   const deleteFileEmbeddings = rawDb.prepare(`
+     DELETE FROM brain_semantic_embedding
+     WHERE entity_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
+   `)
    const deleteFileRelationships = rawDb.prepare(`
      DELETE FROM brain_relationship 
      WHERE source_symbol_id IN (SELECT id FROM brain_symbol WHERE file_id = ?)
@@ -2420,6 +2433,7 @@ export async function storeResults(
      insertTaintSource,
      deleteFileSymbols,
      deleteFileImports,
+     deleteFileEmbeddings,
      deleteFileRelationships,
      deleteFileRelationshipsByTarget,
      deleteFileTaints,
@@ -2490,6 +2504,9 @@ export async function storeResults(
          stmt.deleteFileRelationships.run(fileId)
          stmt.deleteFileRelationshipsByTarget.run(fileId)
          stmt.deleteFileTaints.run(fileId, fileId)
+         // Must precede deleteFileSymbols — it resolves the file's symbol ids
+         // through brain_symbol, so running it after would delete nothing.
+         stmt.deleteFileEmbeddings.run(fileId)
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
