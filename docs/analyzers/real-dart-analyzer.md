@@ -319,15 +319,32 @@ tree, from runs reporting `files=` (never `RESUMED from journal`):
 
 | lane | coverage | MISSING | unexplained |
 |---|---|---|---|
-| proxicall:dart | **5532 / 5532 (100%)** | 0 | **0** |
-| dart-http:dart | **1732 / 1732 (100%)** | 0 | **0** |
+| proxicall:dart | **100%** | 0 | **0** |
+| dart-http:dart | **100%** | 0 | 1 |
+
+The one remaining row is `CupertinoClientWithProfile._createProfile ->
+CupertinoClient._createProfile` in `cupertino_client.dart`. `CupertinoClient` is
+declared in `package:http`, and that corpus is a melos mono-repo with **no
+`.dart_tool` and no `pubspec.lock`** — 18 of its 32 direct dependencies have more than
+one version in the pub cache, so the lane indexes 0 dependency files rather than
+guessing which. The oracle therefore cannot see the base and declines; the analyzer
+resolves it from what the file itself shows. A difference in REACH, not a
+disagreement about a fact, and indexing it would mean picking a version at random.
 
 Every analyzer edge either corpus measures is corroborated by independently derived
 truth, and the truth publishes nothing the analyzer does not. No unexplained row and
 no missing row on either corpus.
 
-Fixtures **13/13**, `script/m14/verify-dart-overrides.ts` **12/12**, mutants 42/42,
-parse 0 errors on 1,294 `lib` files, 2.0 min for the full corpus.
+Fixtures **13/13**, `verify-dart-contains.ts` **37/37**, `verify-dart-overrides.ts`
+**12/12**, mutants 42/42, parse 0 errors on 1,294 `lib` files, 2.0 min for the full
+corpus.
+
+Both oracle batteries are DIFFERENTIAL — each case asserts the oracle AND the
+analyzer against the same expected rows. `verify-dart-contains.ts` used to derive
+the oracle and compare it to nothing, which cannot catch a rule the oracle gets wrong
+and the analyzer gets right; a corpus run cannot either, because the harness shows an
+UNEXPLAINED row and the reader must already know the answer to say which side is
+wrong.
 
 ### The dependency index, and what it bought
 
