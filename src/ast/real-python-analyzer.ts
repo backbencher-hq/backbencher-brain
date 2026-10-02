@@ -52,6 +52,9 @@ interface PythonContext {
   instanceAttrs: Set<string>
   currentModule: string | undefined
   currentClass: string | undefined
+  /** PERL-MR15: the cross-file companion. Read from `AnalyzeContext.overrideCompanion`,
+   *  which is the channel `engine.ts` populates and `pool-worker` forwards. */
+  overrideCompanion?: Map<string, Set<string>>
   currentFunction: string | undefined
   moduleName: string
 }
@@ -116,7 +119,16 @@ const PY_FRAMEWORK_PATTERN: Record<string, string> = Object.fromEntries(
 const PY_FRAMEWORK_ORDER: string[] = Object.values(PY_FRAMEWORK_MARKERS).map((m) => m.framework)
 
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    // The engine has always passed this fourth argument; Python was the one
+    // lane whose signature stopped at three, so `overrideCompanion` was
+    // unreachable and the resolver below read a `_overrideCompanion` key that
+    // nothing ever set.
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     // Regex-free module-name derivation: last path segment minus its final
     // extension (pure char scan — the extension is after the LAST dot).
     const base = filePath.split("/").pop() || "module"
@@ -138,6 +150,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       instanceAttrs: new Set(),
       currentModule: moduleName,
       currentClass: undefined,
+      overrideCompanion: context?.overrideCompanion,
       currentFunction: undefined,
       moduleName,
     }
@@ -1276,7 +1289,11 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Class && s.name) declaredClasses.add(s.name)
     }
-    const overrideCompanion = (ctx as any)._overrideCompanion as Map<string, Set<string>> | undefined
+    // PERL-MR15. This read `(ctx as any)._overrideCompanion`, a channel nothing
+    // populates: the engine puts the companion on `AnalyzeContext.overrideCompanion`
+    // and the pass repopulates it on re-analysis, so the Python rule ran with no
+    // companion at all and every cross-file base stayed a guess.
+    const overrideCompanion = ctx.overrideCompanion
     const baseDeclares = (base: string, method: string): boolean => {
       const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
       if (inFile) return true
