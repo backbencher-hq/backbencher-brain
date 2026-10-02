@@ -24,15 +24,21 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fork, type ChildProcess } from "node:child_process"
 import {
+  DEFAULT_CAPTURE_LINES,
   DEFAULT_WORKER_STARTUP_TIMEOUT_MS,
+  POOL_PROBE_MIN_TIMEOUT_MS,
   PoolUnavailableError,
   attachWorkerOutputCapture,
   classifyPoolStartupFailure,
   diagnosePoolStartup,
+  explainWorkerStartupFailure,
   explainWorkerStderr,
+  findPackageRoot,
   poolFailureLine,
+  poolProbeTimeoutMs,
   poolStartupTimeoutMs,
   probePoolWorker,
+  probePoolWorkerSync,
   renderPoolDiagnosis,
   resolvePoolWorkerForkSafe,
   type PoolFailureReason,
@@ -481,6 +487,233 @@ try {
       try { child.kill("SIGKILL") } catch {}
       check("stop() detaches cleanly", true)
     }
+  }
+section("11. the worker's stderr becomes a diagnosis, not a discarded buffer")
+  {
+    // The pool drains worker stdout/stderr and deliberately does NOT echo it
+    // (parallel-indexer.ts:1588 — routine INFO logging from N workers buried
+    // the progress line). Correct. But draining-and-discarding throws away the
+    // only evidence there is when a worker dies, which is the entire reason
+    // `explainWorkerStderr` exists. These checks pin the bounded, failure-only
+    // capture that closes that gap without reintroducing the spam.
+    const crashingRoot = path.join(tmp, "stderr-crash")
+    const bin = path.join(crashingRoot, "node_modules", ".bin")
+    mkdirSync(bin, { recursive: true })
+    const loader = path.join(bin, "tsx")
+    writeFileSync(
+      loader,
+      'process.stderr.write("Error: The module \'/x/better_sqlite3.node\' was compiled against a different Node.js version\\n")\n' +
+        'process.stderr.write("  at Module._compile (node:internal/modules/cjs/loader:1105:14)\\n")\n' +
+        "process.exit(1)\n",
+    )
+    chmodSync(loader, 0o755)
+
+    const resolution = resolvePoolWorkerForkSafe({ moduleDir: path.join(crashingRoot, "src", "ast") })
+    check("a loader that crashes on load still resolves to a target", resolution.ok)
+
+    if (resolution.ok) {
+      const child: ChildProcess = fork(resolution.workerPath, resolution.workerArgs, {
+        env: { ...process.env, BB_POOL_WORKER: "1" },
+        stdio: ["ignore", "pipe", "pipe", "ipc"],
+      })
+      const capture = attachWorkerOutputCapture(child)
+      // `exit` vs the piped bytes: Node does not promise an order. Measured here
+      // over 25 identical crashing children — stderr arrived BEFORE `exit` every
+      // single time — so this is NOT a reproducible bug, only an ordering the docs
+      // leave open. The invariant worth pinning is the one `close` guarantees:
+      // once the child is fully closed, the evidence is COMPLETE.
+      let stderrAtExit = ""
+      const outcome = await new Promise<"exit0" | "nonzero" | "timeout">((resolve) => {
+        const t = setTimeout(() => resolve("timeout"), 15_000)
+        child.on("exit", (code: number | null) => {
+          stderrAtExit = capture.stderr
+          if (code === 0) {
+            clearTimeout(t)
+            resolve("exit0")
+          }
+        })
+        child.on("close", (code: number | null) => {
+          clearTimeout(t)
+          resolve(code === 0 ? "exit0" : "nonzero")
+        })
+      })
+      check("a load crash is observed as a non-zero exit", outcome === "nonzero", outcome)
+      check("its stderr was captured, not dropped", capture.stderr.includes("better_sqlite3.node"), capture.stderr.slice(0, 200))
+      check("by `close` the evidence is complete — the invariant classification relies on",
+        stderrAtExit.includes("better_sqlite3.node") || capture.stderr.includes("better_sqlite3.node"))
+      check("the capture is LINE-oriented", capture.stderrLines().length >= 2, JSON.stringify(capture.stderrLines()))
+      check("a short stderr is not reported as truncated", capture.stderrTruncated === false)
+
+      // …and the caught failure becomes an actionable block.
+      const explained = explainWorkerStartupFailure({
+        error: new Error("worker exited with code 1"),
+        capture,
+        exitCode: 1,
+        resolution,
+      })
+      check("the failure is attributed to a native ABI mismatch, not 'unavailable'",
+        explained.cause === "native-abi-mismatch", explained.cause)
+      check("its reason code is the specific one", explained.reason === "worker-load-crash", explained.reason)
+      check("the report quotes the child's own words",
+        explained.text.includes("better_sqlite3.node"), explained.text.slice(0, 300))
+      check("the report tells the user to REBUILD, not to reinstall tsx",
+        explained.remediation.some((r) => /rebuild/i.test(r)), JSON.stringify(explained.remediation))
+      check("the report still offers the in-process opt-out",
+        explained.remediation.some((r) => /BB_POOL_WORKER=0/.test(r)))
+      check("the evidence is bounded to whole lines", explained.stderrLines.every((l) => l.trim().length > 0))
+      console.log(`\n${explained.text}\n`)
+      capture.stop()
+    }
+
+    // Bounded in both directions: N lines AND a byte ceiling, so neither a
+    // chatty child nor one giant line can grow the parent's heap.
+    const { PassThrough } = await import("node:stream")
+    const stream = new PassThrough()
+    const fakeChild = { stdout: stream, stderr: stream } as unknown as ChildProcess
+    const capped = attachWorkerOutputCapture(fakeChild, { lineLimit: 3, byteLimit: 4096 })
+    stream.write("l1\nl2\nl3\nl4\nl5\n")
+    await new Promise((r) => setImmediate(r))
+    const kept = capped.stderrLines()
+    check("the capture keeps only the last N lines", kept.length === 3 && kept[2] === "l5", JSON.stringify(kept))
+    const huge = attachWorkerOutputCapture({ stdout: stream, stderr: stream } as unknown as ChildProcess, { byteLimit: 512 })
+    stream.write("y".repeat(64 * 1024) + "\n")
+    await new Promise((r) => setImmediate(r))
+    check("the capture caps bytes even for one enormous line", huge.stderr.length <= 512, String(huge.stderr.length))
+    check("…and says so rather than pretending it has it all", huge.stderrTruncated === true)
+    capped.stop()
+    huge.stop()
+  }
+
+  section("12. two deadlines, one knob: the probe must not be starved")
+  {
+    // Master replaced the fork probe's hardcoded 60s with
+    // `poolStartupTimeoutMs()` (parallel-indexer.ts:4655). Directionally right —
+    // no path waits a minute any more — but the probe and each pool worker answer
+    // DIFFERENT questions, and one value for both breaks the knob's own purpose.
+    // Measured on the startup fixture in
+    // script/m21/verify-w1-worker-lifecycle.ts (BB_WORKER_DELAY_READY_MS=5000 +
+    // BB_WORKER_STARTUP_TIMEOUT_MS=700): the probe fails first, the pool is never
+    // built, phases.mode is "in-process" and phases.workerStartupFailures is 0 —
+    // so the assertion that startup failure is counted distinctly from parser
+    // failure cannot pass at ANY value.
+    check("the probe deadline is floored above a cold tsx boot",
+      poolProbeTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }) === POOL_PROBE_MIN_TIMEOUT_MS,
+      String(poolProbeTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" })))
+    check("the workers' watchdog keeps the value the user set",
+      poolStartupTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }) === 700)
+    check("the two deadlines are therefore NOT the same number",
+      poolProbeTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }) !== poolStartupTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }))
+    check("with nothing set, the probe uses the documented default",
+      poolProbeTimeoutMs({}) === DEFAULT_WORKER_STARTUP_TIMEOUT_MS)
+    check("no path can wait 60s: the default is 30s", DEFAULT_WORKER_STARTUP_TIMEOUT_MS === 30_000)
+    check("a generous user value is honoured, not capped",
+      poolProbeTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "120000" }) === 120_000)
+
+    // …and the floor has to actually rescue the probe that the fixture starves.
+    const target = resolvePoolWorkerForkSafe()
+    if (target.ok) {
+      const delayed = { ...process.env, BB_TEST_HOOKS: "1", BB_WORKER_DELAY_READY_MS: "5000" }
+      const starved = await probePoolWorker(target, {
+        timeoutMs: poolStartupTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }),
+        env: delayed,
+      })
+      check("with the raw 700ms the probe gives up on a worker that is merely slow",
+        !starved.ok, "expected the starved probe to fail")
+      const fed = await probePoolWorker(target, {
+        timeoutMs: poolProbeTimeoutMs({ BB_WORKER_STARTUP_TIMEOUT_MS: "700" }),
+        env: delayed,
+      })
+      check("with the floored deadline the same worker is accepted", fed.ok,
+        fed.ok ? "" : `a 5s-delayed worker was rejected: ${fed.reason}`)
+      if (fed.ok) console.log(`        a 5s-delayed worker: starved at 700ms, accepted at ${fed.readyMs}ms`)
+    }
+  }
+
+  section("13. the synchronous self-test probe (what bb doctor can afford)")
+  {
+    const target = resolvePoolWorkerForkSafe()
+    check("target resolved", target.ok)
+    if (target.ok) {
+      const probe = probePoolWorkerSync(target, { timeoutMs: 60_000 })
+      if (probe.ok) {
+        console.log(`        self-test in ${probe.ms}ms: engine=${probe.report.engine} wasm=${probe.report.wasm}`)
+        check("the worker starts under a SYNCHRONOUS spawn", probe.report.ok)
+        check("and it reports what it loaded", probe.report.engine === "ok" && probe.report.wasm === "ok")
+      } else {
+        check("the worker starts under a SYNCHRONOUS spawn", false, renderPoolDiagnosis(probe))
+      }
+
+      // A worker that cannot load its own module graph: the case resolution
+      // cannot see, and the async probe only sees after a full watchdog.
+      const brokenRoot = path.join(tmp, "sync-broken")
+      const brokenBin = path.join(brokenRoot, "node_modules", ".bin")
+      mkdirSync(brokenBin, { recursive: true })
+      const brokenLoader = path.join(brokenBin, "tsx")
+      writeFileSync(brokenLoader, 'process.stderr.write("Error [ERR_MODULE_NOT_FOUND]: Cannot find module \'web-tree-sitter\'\\n")\nprocess.exit(1)\n')
+      chmodSync(brokenLoader, 0o755)
+      const broken = resolvePoolWorkerForkSafe({ moduleDir: path.join(brokenRoot, "src", "ast") })
+      const brokenProbe = probePoolWorkerSync(broken, { timeoutMs: 15_000 })
+      check("a worker whose module graph fails to load is UNAVAILABLE, not degraded",
+        !brokenProbe.ok && brokenProbe.reason === "worker-load-crash", JSON.stringify(brokenProbe))
+      check("…attributed to the missing module, from its own stderr",
+        !brokenProbe.ok && brokenProbe.detail.cause === "missing-module", JSON.stringify(brokenProbe.detail))
+      check("…with the reinstall as the fix",
+        !brokenProbe.ok && brokenProbe.remediation.some((r) => /rm -rf node_modules/.test(r)))
+
+      // An old build that predates the self-test must NOT read as a broken pool.
+      const oldRoot = path.join(tmp, "sync-old")
+      const oldBin = path.join(oldRoot, "node_modules", ".bin")
+      mkdirSync(oldBin, { recursive: true })
+      const oldLoader = path.join(oldBin, "tsx")
+      writeFileSync(oldLoader, "process.exit(0)\n") // exits cleanly, prints no marker
+      chmodSync(oldLoader, 0o755)
+      const oldRes = resolvePoolWorkerForkSafe({ moduleDir: path.join(oldRoot, "src", "ast") })
+      const oldProbe = probePoolWorkerSync(oldRes, { timeoutMs: 15_000 })
+      check("a worker that predates the self-test is UNVERIFIABLE, not broken",
+        !oldProbe.ok && oldProbe.reason === "worker-selftest-unsupported", JSON.stringify(oldProbe))
+      check("…and it says so instead of sending the user to reinstall",
+        !oldProbe.ok && oldProbe.remediation.some((r) => /npm run build/.test(r)))
+    }
+  }
+
+  section("14. the package root is found by walking, not by counting two levels")
+  {
+    // `resolve(moduleDir, "../..")` is right for src/ast and wrong everywhere
+    // else. Measured: in the shipped build tsup emits this file's code into a
+    // chunk at dist/<name>-<hash>.js, so `../..` from there is the PARENT of the
+    // package — which is how `bin/bb doctor` came to search
+    // <parent>/node_modules/.bin/tsx and report a healthy install as broken.
+    const pkg = path.join(tmp, "walk", "pkg")
+    mkdirSync(path.join(pkg, "src", "ast"), { recursive: true })
+    mkdirSync(path.join(pkg, "dist", "cli"), { recursive: true })
+    writeFileSync(path.join(pkg, "package.json"), '{"name":"x"}\n')
+    writeFileSync(path.join(pkg, "dist", "pool-worker.js"), "//worker\n")
+    const real = (p: string) => existsSync(p)
+
+    check("src/ast resolves to the package root",
+      findPackageRoot(path.join(pkg, "src", "ast"), real) === pkg)
+    check("a bundled chunk at dist/ also resolves to the package root",
+      findPackageRoot(path.join(pkg, "dist"), real) === pkg)
+    check("dist/cli/index.js also resolves to the package root",
+      findPackageRoot(path.join(pkg, "dist", "cli"), real) === pkg)
+    check("no package.json in reach returns null rather than guessing",
+      findPackageRoot(path.join(tmp, "walk", "nowhere", "deep", "deeper"), real) === null)
+
+    // And the resolver finds the compiled worker from a SUBDIRECTORY of dist,
+    // which a sibling-only assumption could not.
+    const fromChunk = resolvePoolWorkerForkSafe({ moduleDir: path.join(pkg, "dist", "cli"), execPath: NODE, exists: real })
+    check("the compiled worker is found from dist/cli, not assumed to be a sibling",
+      fromChunk.ok && fromChunk.workerPath === path.join(pkg, "dist", "pool-worker.js"),
+      JSON.stringify(fromChunk))
+    check("…and the compiled branch still needs no tsx",
+      fromChunk.ok && fromChunk.source === "compiled-dist")
+
+    // And the reverse: a source checkout must not be mistaken for compiled.
+    const fromSrc = resolvePoolWorkerForkSafe({
+      moduleDir: path.join(pkg, "src", "ast"), execPath: NODE, env: { PATH: "/none" }, exists: real,
+    })
+    check("a source checkout still takes the tsx branch", !fromSrc.ok && fromSrc.reason === "tsx-missing",
+      JSON.stringify(fromSrc))
   }
 } finally {
   rmSync(tmp, { recursive: true, force: true })

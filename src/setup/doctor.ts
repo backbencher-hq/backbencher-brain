@@ -24,12 +24,76 @@ import { existsSync, readFileSync, statSync, chmodSync } from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
+import { diagnosePoolStartupSync, findPackageRoot, type PoolDoctorReport as PoolStartupReport } from "../ast/pool-diagnostics"
 import { SemanticEngine } from "../brain/semantic/engine"
 import { fingerprintKey } from "./setup-wizard"
 import { describeEmbeddingConfig, type TierView } from "./setup-show"
 
-// Repository root — resolve once, cheap and stable for createRequire.
-const ROOT_PKG = path.resolve(import.meta.dirname ?? ".", "../..")
+// Repository root — found by walking up to the nearest package.json.
+//
+// NOT `path.resolve(import.meta.dirname, "../..")`, which is what this used to
+// be. That is correct only for the unbundled source layout (`src/setup` is two
+// levels under the root); in the SHIPPED build tsup puts this file in a chunk at
+// `dist/doctor-<hash>.js`, so `import.meta.dirname` is `<pkg>/dist` and `../..`
+// is the PARENT of the package. Measured: `bin/bb doctor` from a compiled build
+// searched `<parent>/node_modules/.bin/tsx` and `<parent>/src/ast` — one level
+// above the checkout. It cost two things before it was found:
+//
+//   - `createRequire(path.join(ROOT_PKG, "package.json"))` pointed outside the
+//     package, so better-sqlite3 failed to resolve and `readStoredModels`
+//     returned `[]` from its `catch` — doctor's model-consistency check has been
+//     dead in every published install, silently, because the catch swallows it;
+//   - the pool section looked for the worker in the wrong tree entirely.
+const ROOT_PKG = findPackageRoot(import.meta.dirname ?? ".") ?? path.resolve(import.meta.dirname ?? ".", "../..")
+
+/**
+ * The directory the pool resolver must measure itself from.
+ *
+ * `resolvePoolWorkerForkSafe()` derives every path from the directory of the
+ * module it is asked about, because that is the only thing that is correct in
+ * both builds: `src/ast` under tsx, `dist` for the compiled bundle. Called from
+ * `src/setup/`, its own default would happen to land in the right place (both
+ * are two levels below the package root) — but that is a coincidence of
+ * directory depth, and `doctor` is the wrong place to depend on it.
+ *
+ * So the choice is explicit, and it is the choice that matters: a COMPILED
+ * `dist/` is used when it exists, because that is what `bb` runs when installed,
+ * and the source tree is the fallback for a checkout. Getting this backwards
+ * would report a healthy install as missing its worker.
+ */
+function poolModuleDir(): string {
+  const dist = path.join(ROOT_PKG, "dist")
+  return existsSync(path.join(dist, "pool-worker.js")) ? dist : path.join(ROOT_PKG, "src", "ast")
+}
+
+/**
+ * One pool probe per process, per target.
+ *
+ * A worker boot is 0.6-3.4s of real work, and `runDoctorChecks` is called once
+ * per CLI invocation but MANY times per test process (script/m32/verify-doctor.ts
+ * calls it ~10 times). Paying for a boot per call would add tens of seconds to
+ * gates that have nothing to do with the pool, for an answer that cannot change:
+ * within one process, the same fork target and the same files give the same
+ * verdict.
+ *
+ * Keyed on the target directory and BB_POOL_WORKER, so a test that wants a
+ * different answer asks a different question. `resetPoolDoctorCache()` exists for
+ * a caller that genuinely mutated the checkout mid-process.
+ */
+let poolCache: { key: string; report: PoolStartupReport } | null = null
+
+function runPoolDoctor(moduleDir: string, probe: boolean | undefined): PoolStartupReport {
+  const key = `${moduleDir}|${process.env.BB_POOL_WORKER ?? ""}|${probe === false ? "noprobe" : "probe"}`
+  if (poolCache && poolCache.key === key) return poolCache.report
+  const report = diagnosePoolStartupSync({ moduleDir, probe })
+  poolCache = { key, report }
+  return report
+}
+
+/** Drop the memoised pool probe. For a caller that changed the checkout in-process. */
+export function resetPoolDoctorCache(): void {
+  poolCache = null
+}
 
 export type Severity = "fail" | "warn" | "info"
 
@@ -47,6 +111,35 @@ export type DoctorReport = {
   winner: "env" | "global" | "project" | "none"
   /** models found in the project's stored embeddings, with row counts */
   storedModels: { model: string; count: number }[]
+  pool: PoolDoctorSummary
+}
+
+/**
+ * The one-line answer to "are my pool workers starting?".
+ *
+ * `findings` alone answers it only for a reader who knows which findings are
+ * about the pool; a status field answers it without that. `reasonCode` is the
+ * machine-readable form (`tsx-missing`, `worker-load-crash`, …) and
+ * `remediation` carries the commands, so a caller can render this however it
+ * likes — a future CLI could print the status alone and keep the detail behind a
+ * flag.
+ */
+export type PoolStatus = "ok" | "degraded" | "unavailable" | "disabled" | "unchecked"
+
+export type PoolDoctorSummary = {
+  status: PoolStatus
+  summary: string
+  reasonCode?: string
+  cause?: string
+  remediation?: string[]
+  /**
+   * The runtime facts that decide the verdict: the executable and its version,
+   * whether the COMPILED worker or tsx is in play, the module directory the
+   * paths came from, and how long the worker took to start. `tsx-missing` and
+   * `worker-entry-missing` present identically to a user and have different
+   * fixes; this line is what tells them apart.
+   */
+  facts: string[]
 }
 
 function readJsonSafe(p: string): any | null {
@@ -107,6 +200,26 @@ export function runDoctorChecks(opts: {
   dataDir?: string
   projectId?: string
   storedModels?: StoredModels
+  /**
+   * Start a real pool worker to verify it (default true).
+   *
+   * `false` makes the pool section resolution-only: still names the fork target,
+   * the runtime, and any reason the target cannot be used — but does not pay for
+   * a worker boot. Used by the test gates that must stay fast, and available to
+   * any caller that already knows the pool is fine.
+   */
+  poolProbe?: boolean
+  /**
+   * Override the directory the pool is resolved from — `src/ast` in a source
+   * checkout, `dist` in the compiled build.
+   *
+   * A test seam, like `env` and `dataDir` above it. It exists because the
+   * interesting state (an install whose fork target cannot be used) cannot be
+   * produced any other way: `bin/bb` cannot run at all without `dist`, so the
+   * "no tsx" path is unreachable through the real binary. Left unset, the
+   * install is detected.
+   */
+  poolModuleDir?: string
 }): DoctorReport {
   const cwd = opts.cwd ?? process.cwd()
   const env = opts.env ?? process.env
@@ -197,8 +310,114 @@ export function runDoctorChecks(opts: {
     })
   }
 
+  // 4. POOL WORKERS. The other question users arrive with, in the same shape:
+  //    "it says my index is fine and it is crawling — are the workers running?"
+  //
+  //    This is a probe, not a guess. `diagnosePoolStartupSync` resolves the fork
+  //    target and then STARTS a worker and asks what it loaded, which is the only
+  //    way to tell "no tsx" (the common one: `npm ci --omit=dev`) from "tsx ran
+  //    and the engine would not load" — identical from the outside, opposite
+  //    fixes.
+  //
+  //    SYNC on purpose: `runDoctorChecks` is sync and src/cli/index.ts calls it
+  //    without `await`, so an async probe here would hand the CLI a Promise and
+  //    break `report.healthy`. The sync probe costs one worker boot (measured
+  //    0.6-3.4s here) and is bounded; `opts.poolProbe: false` skips it.
+  //
+  //    `process.env`, NOT `opts.env`. `opts.env` exists so callers can fake the
+  //    EMBEDDING config tiers without touching the real environment (that is how
+  //    script/m32/verify-doctor.ts drives it with `env: {}`), and it says nothing
+  //    about the pool: the pool will be forked with the real environment at index
+  //    time, so a doctor that resolved against a fake one would report a state the
+  //    user will never hit — and with `env: {}` the spawned worker would inherit no
+  //    PATH at all.
+  //
+  //    Only `PoolFinding` fields are appended, so this section cannot leak key
+  //    material or a whole environment into a report. The one env value it does
+  //    print is `BB_POOL_WORKER`, because that setting IS the whole explanation
+  //    when the pool is switched off.
+  const poolReport = runPoolDoctor(opts.poolModuleDir ?? poolModuleDir(), opts.poolProbe)
+  // Only warn/fail pool findings join the list. The `info` ones (which target is
+  // in play, that a worker was verified) are facts about a pool that is WORKING,
+  // and appending them would make `findings.length === 0` unreachable — which
+  // would quietly delete the report's "no problems found" line for every install
+  // with healthy embeddings. They are rendered under the pool status instead.
+  findings.push(...poolReport.findings.filter((f) => f.severity !== "info"))
+
   const healthy = !findings.some((f) => f.severity === "fail")
-  return { findings, healthy, winner: state.winner, storedModels }
+  return { findings, healthy, winner: state.winner, storedModels, pool: summarizePool(poolReport) }
+}
+
+/**
+ * Compress the pool probe into the sentence a user is actually asking for.
+ *
+ * Kept beside the findings rather than inline in them so the STATUS is derived
+ * once, from the probe, instead of re-inferred from rendered text by whatever
+ * reads the report next.
+ */
+function summarizePool(report: PoolStartupReport): PoolDoctorSummary {
+  const res = report.resolution
+  const probe = report.probe
+  const facts: string[] = [
+    `runtime: ${process.execPath} (${process.version})`,
+    res.ok
+      ? `worker: ${res.source === "compiled-dist" ? "compiled dist/pool-worker.js" : `tsx + ${path.basename(res.workerArgs[0] ?? "?")}`}`
+      : `worker: not resolvable (${res.reason})`,
+  ]
+  if (res.ok) facts.push(`root: ${res.projectRoot}`)
+
+  if (!res.ok) {
+    return {
+      status: report.status === "disabled" ? "disabled" : "unavailable",
+      summary:
+        report.status === "disabled"
+          ? "Pool workers are switched off (BB_POOL_WORKER) — indexing runs in-process, so it is slower."
+          : `Pool workers cannot start (${res.reason}): ${res.message}`,
+      reasonCode: res.reason,
+      remediation: res.remediation,
+      facts,
+    }
+  }
+  if (!probe) {
+    return {
+      status: "unchecked",
+      summary: `Pool fork target resolved (${res.source}) but was not started.`,
+      facts,
+    }
+  }
+  if (!probe.ok) {
+    // An unverifiable worker is not a broken one — say which it is.
+    const unverifiable = probe.reason === "worker-selftest-unsupported"
+    return {
+      status: unverifiable ? "unchecked" : "unavailable",
+      summary: unverifiable
+        ? `Pool workers could not be verified (${probe.reason}) — the installed worker predates the self-test.`
+        : `Pool workers do not start (${probe.reason}): ${probe.message}`,
+      reasonCode: probe.reason,
+      remediation: probe.remediation,
+      facts,
+    }
+  }
+  const r = probe.report
+  facts.push(`self-test: ${probe.ms}ms (pid ${r.pid}, node ${r.node})`)
+  if (r.engine === "ok" && r.wasm === "ok") {
+    return {
+      status: "ok",
+      summary: `Pool workers start normally (${res.source}); engine and grammars loaded in ${probe.ms}ms.`,
+      facts,
+    }
+  }
+  const broken: string[] = []
+  if (r.engine !== "ok") broken.push("the AST engine did not load, so files are parsed by regex (fewer symbols)")
+  if (r.wasm !== "ok") broken.push("the tree-sitter grammars did not load, so there is no grammar-based parsing")
+  return {
+    status: "degraded",
+    summary: `Pool workers start but are DEGRADED: ${broken.join("; ")}.`,
+    reasonCode: r.engine !== "ok" ? "pool-engine-unavailable" : "pool-wasm-unavailable",
+    cause: r.diagnostics.join(" | ") || undefined,
+    remediation: ["npm rebuild --build-from-source && rm -rf node_modules && npm install --include=dev"],
+    facts,
+  }
 }
 
 // Human-readable report. Keys appear only as fingerprints (inherited from the
@@ -210,9 +429,35 @@ export function renderDoctorReport(r: DoctorReport): string {
   if (r.findings.length === 0) {
     lines.push("✓ No problems found — config and index look consistent.")
   }
-  const icon: Record<Severity, string> = { fail: "✗", warn: "!", info: "·" }
+  // The pool answer comes FIRST and on its own line, before the finding list. A
+  // user who typed "workers don't start" is not reading a report to find out
+  // whether they are reading a report — they want that sentence, and they want
+  // it now. Everything after it is the evidence.
+  if (r.pool) {
+    const poolIcon: Record<PoolStatus, string> = {
+      ok: "✓",
+      degraded: "!",
+      unavailable: "✗",
+      disabled: "·",
+      unchecked: "?",
+    }
+    lines.push(`${poolIcon[r.pool.status]} pool workers: ${r.pool.summary}`)
+    if (r.pool.reasonCode) lines.push(`  reason: ${r.pool.reasonCode}`)
+    if (r.pool.cause) lines.push(`  cause: ${r.pool.cause}`)
+    for (const fact of r.pool.facts ?? []) lines.push(`  ${fact}`)
+    // The FULL fix list. The `Fix:` line beside a finding is only ever the FIRST
+    // remediation, and the first one is not always the right one — rebuilding a
+    // native module beats reinstalling when the ABI is wrong.
+    ;(r.pool.remediation ?? []).forEach((fix, i) => {
+      const [first, ...rest] = fix.split("\n")
+      lines.push(`  fix ${i + 1}: ${first.trim()}`)
+      for (const cont of rest) if (cont.trim()) lines.push(`         ${cont.trim()}`)
+    })
+    lines.push("")
+  }
+  const iconFor: Record<Severity, string> = { fail: "✗", warn: "!", info: "·" }
   for (const f of r.findings) {
-    lines.push(`${icon[f.severity]} ${f.message}`)
+    lines.push(`${iconFor[f.severity]} ${f.message}`)
     if (f.fix) lines.push(`  Fix: ${f.fix}`)
   }
   return lines.join("\n") + "\n"
