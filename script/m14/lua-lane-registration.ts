@@ -105,3 +105,80 @@ export const LUA_LANE_ENTRY = {
     ],
   },
 } as const
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PART 2 — the fixture runner needs TWO edits, not one
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Registering `lua` in run-fixtures.ts's LANGS map is necessary but NOT
+// sufficient. The sixth fixture fails the moment it executes, and both of its
+// causes are in the shared runner rather than in the lane. Recorded here for the
+// same reason as part 1: run-fixtures.ts was under uncommitted co-agent edit
+// (98 insertions / 40 deletions at the last check), and this repo has now needed
+// four separate repair commits for merges that damaged shared gate files.
+//
+// WHAT RUNS TODAY, WITHOUT ANY OF THIS
+// ------------------------------------
+// `script/m60/verify-lua-fixtures.ts` imports the shared `runLang` and supplies
+// the LANGS entry locally, so the six fixtures execute now: 5 of 6 pass.
+//
+// WHAT THE SIXTH FIXTURE PROVED
+// -----------------------------
+// `lua/export-shapes` failed on its first ever run, for two independent reasons,
+// and both are real:
+//
+//   1. FIXED, in the fixture. All eight `expectExports` entries carried a `line`,
+//      and `matchConstraints` compares `want`'s keys literally against the row.
+//      An export row is `{name, isDefault, range:{startLine..}}` with NO top-level
+//      `line`, so every one of the eight was unmatchable — strictly worse than
+//      asserting nothing, because it would have failed for a shape reason while
+//      looking like a real disagreement. The runner's designed channel for export
+//      positions is `expectExportRanges`, which reads `range.startLine`; the eight
+//      line assertions moved there. THE VALUES WERE CORRECT ALL ALONG: 36, 43, 49,
+//      50, 52, 58, 59, 60 are the exact lines of the name-bearing nodes. A fixture
+//      that had never run is a fixture nobody ever type-checked against the runner.
+//
+//   2. STILL OPEN, in the runner. `export invariant violated: export(s)
+//      ["fromDoBlock","fromLoop","alpha","beta","gamma","nested"] do not resolve
+//      to a top-level symbol`.
+//
+//      The invariant is right for most languages and WRONG for Lua's dominant
+//      module shape. `return { alpha = 1 }` is the module: its exports are
+//      PROPERTIES OF AN OBJECT LITERAL, and a property in a table constructor is
+//      not a declaration, so there is correctly no symbol named `alpha`. The same
+//      holds for a return from inside a `do` block or a loop body, which is two
+//      levels below `chunk` in the pinned grammar — those have no declaration site
+//      at all.
+//
+//      The fix is NOT to give those six names symbols. That would fabricate six
+//      declarations out of table fields, which is the same fabrication refused for
+//      loop variables (LUA-26) and for nameless re-exports (LUA-35): a symbol whose
+//      only content is that the analyzer needed one. The fix is to exempt the
+//      language, which the runner already does for the identical JS case
+//      (`isJsModuleBinding`).
+//
+// THE PATCH, ready to paste next to `isJsModuleBinding` (~line 1152)
+// ---------------------------------------------------------------
+//
+//     // M60: a language whose MODULE IS AN OBJECT LITERAL has exports that are
+//     // properties, not declarations, so they resolve to no symbol and must not be
+//     // required to. Lua's dominant shape is `return { … }`; the same is true of a
+//     // return from a `do` block or a loop body, which the pinned grammar builds
+//     // below `chunk` and which therefore has no declaration site at all. Fabricating
+//     // symbols for them is the refusal of LUA-26/LUA-35, restated.
+//     const moduleIsAnObject = new Set(["lua"])
+//     …
+//
+//     const unresolvable = [...new Set(exportNames)].filter(
+//       (n) => !topLevelNames.has(n) && !isJsModuleBinding(n) && !moduleIsAnObject.has(lang),
+//     )
+//
+// PROOF IT IS THE RIGHT FIX, and not a gate made permissive
+// ---------------------------------------------------------
+// The exemption is keyed on the LANGUAGE, not on the six names, so it cannot excuse
+// a name that a future Lua regression invents: an export that does not come from a
+// returned table would still be reported, because the exemption is unconditional
+// only for the module-is-an-object property, which is a property of the language and
+// not of any individual edge. And it is bounded — a Lua lane whose `return` handling
+// stopped publishing members at all would fail `export-shapes` on the eight name
+// assertions plus the eight line assertions, not on this.

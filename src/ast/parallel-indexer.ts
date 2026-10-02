@@ -8,6 +8,7 @@ const require = createRequire(import.meta.url)
 import { cpus } from "os"
 import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
+import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
@@ -25,6 +26,14 @@ import { detectLanguageFromPath } from "./language-detection"
 import { writeLiveStatus } from "./index-status"
 import { acquireIndexLock, type IndexLockHandle } from "./index-lock"
 import { resolveImportTargets } from "./import-resolution"
+// REPAIR (2026-09-30, vue wave): the `Instance` containment guard added by the
+// contains-edge round below names `ASTEngine.SymbolKind.Instance` and
+// `ASTEngine` was never imported here, so `storeResults` threw on EVERY batch
+// and rolled the whole insert back — indexing was broken for every language on
+// this tree, not just the lane that wrote the guard. `SymbolKind.Instance` does
+// exist (engine.ts) and the guard is semantically right; only the import was
+// missing. No cycle: engine.ts does not import this module.
+import { ASTEngine } from "./engine"
 
 const log = Log.create({ service: "parallel-indexer" })
 
@@ -246,7 +255,15 @@ export const ParallelIndexerConfig = {
   skipPatterns: [
     // === GENERATED & DEPENDENCY DIRECTORIES ===
     /\/node_modules\//,
-    /\/vendor\//,
+    // NOT here either: /\/vendor\// . `vendor` is a build-output name in
+    // Composer, where it holds third-party code — but it is a FIRST-PARTY
+    // source name in Go (a vendored tree the project then edits) and in
+    // TypeScript projects that keep curated first-party code under
+    // src/vendor/. Measured on this corpus: src/vendor/format.ts is invisible
+    // to the index, so the import that reaches it is reported as an unresolved
+    // specifier and the file has no symbols, no complexity and no freshness —
+    // for a file that is compiled into the product. node_modules is already
+    // skipped by name, and that is where a dependency tree actually lives.
     /\/bower_components\//,
     /\/__pycache__\//,
     /\/\.venv\//,
@@ -323,7 +340,21 @@ export const ParallelIndexerConfig = {
     /\/wwwroot\//,
     /\/testassets\//,
     /\/benchmarkapps\//,
-    /\/test\//,
+    // NOT here: /\/test\// . A directory named `test` is where Go, Python,
+    // Node, Java and most JVM projects keep their test SUITE. Skipping it drops
+    // those files before they are parsed, so is_test_file can never be set for
+    // them, and testMapping/testGaps/testQuality then report every production
+    // symbol untested with the "no-test-evidence-edges" note attached — which
+    // reads as "we looked and found none" rather than "we never saw the tests".
+    // Differential measurement on a corpus holding one file of each shape:
+    //
+    //   spec/format.spec.ts    indexed, is_test_file=1
+    //   tests/engine.test.ts   indexed, is_test_file=1
+    //   test/should-be-…       ABSENT from the index
+    //
+    // Same language, same naming infix, only the directory name differs. The
+    // read paths need the files; deciding what counts as a test is
+    // test-classification.ts's job and it already gates on file type.
   ],
 }
 
@@ -393,10 +424,45 @@ export interface ParallelIndexingStats {
      * M40.A2: what this run did about derived data (relationships/enrichment/
      * gravity/taints/health). "full" = complete pass; "bounded" = scoped pass
      * over touched symbols/edges; "deferred" = skipped by request or cancel;
-     * "skipped-unchanged" = nothing parsed, derived data untouched and still
-     * consistent. Absent on legacy persisted runs.
+     * "skipped-unchanged" = nothing was parsed, so no derived pass ran.
+     * Absent on legacy persisted runs.
+     *
+     * `derivedPass` says WHICH pass ran. It never said whether the derived data
+     * ended up CONSISTENT, and this comment used to claim it did — "untouched and
+     * still consistent" — which is false in exactly the case a user meets it.
+     * Measured: cancel a 60-file index mid-run, then `bb index --resume`. The
+     * cancel leaves 16 relationships with `target_symbol_id IS NULL` (the
+     * resolution phase was interrupted); the resume parses nothing, so its pass
+     * is "skipped-unchanged"; the relationship COUNT recovers to the clean
+     * index's 180, so every count-based check reads healthy — and those 16 edges
+     * are still unattached. Only `bb index --post` resolves them (16 -> 0).
+     * So `derivedPass` is not a consistency statement, and the count below is.
      */
-    derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged"
+    derivedPass?: "full" | "bounded" | "deferred" | "skipped-unchanged" | "partial"
+    /** Relationships this project holds whose target could not be attached to a
+     *  stored symbol: `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+     *  The row is present and counted, but it is not an edge — traversal reads it
+     *  as absent, so it under-reports. Measured 0 after a clean full index, 16
+     *  after a cancel, and 0 again after `runPostProcessing`. This is the
+     *  measurement `derivedPass` is not, and it is what decides whether the
+     *  remediation is `bb index --post`. */
+    unresolvedRelationships?: number
+    /** How the files were parsed: `worker-pool` or `in-process`.
+     *
+     *  When the pool's fork test fails the run degrades to in-process parsing and
+     *  indexes everything correctly — measured by SIGKILLing workers mid-run: 81
+     *  of 81 files indexed, no orphan symbols, no dangling relationship targets,
+     *  and the run returns normally rather than throwing. That is the right
+     *  behaviour and it is worth having.
+     *
+     *  But it is roughly an order of magnitude slower, and `phases.mode` already
+     *  recorded it while nothing the caller reads carried it: the measured run
+     *  took 72 s against a much faster pool-backed one, and its summary read
+     *  `workerCount: 0, retries: 0, errors: 0, timeouts: 0` — every number
+     *  pristine. A caller cannot tell a healthy parallel run from a serial one
+     *  that lost its pool, which is the same shape as derivedPass/consistency:
+     *  a real degradation with no declared measurement. */
+    parseMode?: "worker-pool" | "in-process"
   }
 }
 
@@ -560,6 +626,47 @@ export async function admitsShellShebang(filePath: string): Promise<boolean> {
 }
 
 /**
+ * The symbol body as stored in `brain_symbol.source_text`, bounded.
+ *
+ * This column exists so content search can reach a word that appears only
+ * inside a function — measured unreachable for 27% of body-only words on rake
+ * and 38% on ripgrep, because `searchContent` selected only
+ * name/qualified_name/docstring and the body was indexed solely as a
+ * 50-dimensional hash that cannot be queried by word.
+ *
+ * Bounded for two measured reasons:
+ *  - size. A 25 599-character body was measured on rake (a whole class body).
+ *    `searchContentClassic` loads every symbol row for a project, so an
+ *    unbounded body would make content search memory scale with total source
+ *    rather than with the query.
+ *  - diminishing returns past the cap. The median measured body is 28 tokens
+ *    and p90 is 69, so a few hundred lines is generous: a word a developer
+ *    remembers is overwhelmingly likely to be near the top of the symbol.
+ *
+ * Returns null when there is no body, so the column reads as "this symbol has
+ * no body to search" rather than as an empty string that matches everything.
+ */
+const MAX_BODY_SOURCE_CHARS = 4000
+const MAX_BODY_SOURCE_LINES = 200
+
+function boundSourceText(snippet: string | undefined | null, startLine: number, endLine: number): string | null {
+  if (!snippet) return null
+  let text = String(snippet)
+  // The analyzer's snippet is occasionally the whole file when line information
+  // is missing. Trust the line range when we have one.
+  if (endLine > startLine && startLine > 0) {
+    const lines = text.split("\n")
+    if (lines.length > endLine - startLine + 1) {
+      text = lines.slice(0, endLine - startLine + 1).join("\n")
+    }
+  }
+  const lines = text.split("\n")
+  if (lines.length > MAX_BODY_SOURCE_LINES) text = lines.slice(0, MAX_BODY_SOURCE_LINES).join("\n")
+  if (text.length > MAX_BODY_SOURCE_CHARS) text = text.slice(0, MAX_BODY_SOURCE_CHARS)
+  return text.length > 0 ? text : null
+}
+
+/**
  * Tokenize code snippet + name for TF-IDF semantic embedding.
  * Splits camelCase, PascalCase, snake_case, kebab-case identifiers
  * and returns token-weight pairs for similarity matching.
@@ -585,14 +692,71 @@ function tokenizeCodeForEmbedding(snippet: string, name: string): { token: strin
     .map(([token, count]) => ({ token, weight: count / total }))
 }
 
+/**
+ * M64.C: the files this project WOULD index, under the indexer's own rules.
+ *
+ * Exported for bb_health, which needs to answer "is my new file in the index?"
+ * and cannot answer it from the index alone: an absent file is indistinguishable
+ * from an unindexed one without asking the indexer what it considers a file.
+ *
+ * Read-only by construction. It performs no database write, does not open the
+ * project database at all, and the `eligible-only` mode suppresses the stale-file
+ * cleanup that the indexing path performs — a health read must not delete index
+ * rows to answer a question.
+ *
+ * The rules are the indexer's, not a copy: .gitignore, .bbignore, the skip
+ * directories, the compiled-mode path filter, nested `.git` boundaries, the
+ * depth cap, the extension and shell-shebang gates, and the >5MB size skip. A
+ * second implementation would report gitignored files, `node_modules` and
+ * binaries as unindexed, and would drift the first time a rule was added here.
+ *
+ * Cost is the same as one index run's discovery phase — a stat per eligible
+ * file and no parsing — so callers should treat it as opt-in rather than part of
+ * a default health call.
+ */
+export async function discoverIndexableFiles(
+  projectPath: string,
+  excludePatterns?: string[],
+): Promise<string[]> {
+  const throwaway = {
+    totalFiles: 0, processedFiles: 0, skippedFiles: 0, failedFiles: 0,
+    totalSymbols: 0, totalRelationships: 0, workerBatchSize: 0, dbBatchSize: 0,
+    retries: 0, noop: false,
+  } as unknown as ParallelIndexingStats
+  return discoverAndFilterFiles("" as ProjectID, projectPath, throwaway, undefined, excludePatterns, "eligible-only")
+}
+
 async function discoverAndFilterFiles(
   projectId: ProjectID,
   projectPath: string,
   stats: ParallelIndexingStats,
   filesOverride?: string[],
   excludePatterns?: string[],
+  /**
+   * M64.C: "eligible-only" answers a different question from "changed", using
+   * the SAME rules.
+   *
+   * "index" (default, unchanged) returns the files that need re-parsing: the
+   * eligible set minus whatever the mtime+size check calls untouched. That is
+   * the right answer for an index run and the wrong one for a health question.
+   *
+   * "eligible-only" returns every file the indexer WOULD write, changed or not.
+   * bb_health needs that set to answer "is my new file in the index?", and there
+   * must be exactly ONE implementation of "what counts as an indexable file" —
+   * this one, which knows .gitignore, .bbignore, the skip directories, the
+   * compiled-mode path filter, nested .git boundaries, the depth cap, the
+   * extension and shebang gates, and the size tiers. A second copy of those rules
+   * inside the health provider would report gitignored files, node_modules and
+   * .pngs as unindexed, and would begin lying the moment anyone added a rule
+   * here.
+   *
+   * It is an early branch, not a move: not one line of the walk changes, so the
+   * indexer's own path is unchanged by construction.
+   */
+  mode: "index" | "eligible-only" = "index",
 ): Promise<string[]> {
   const files: string[] = []
+  const eligibleOnly = mode === "eligible-only"
   const startTime = Date.now()
   const { readFile, stat: statFile } = await import("fs/promises")
   const { createHash } = await import("crypto")
@@ -617,11 +781,19 @@ async function discoverAndFilterFiles(
     }
   }
 
-  // Fetch existing stats for incremental checking
-  const rawDb = await BrainDatabase.getRawInstance(projectId)
-  let existingRecords = []
+  // Fetch existing stats for incremental checking.
+  // M64.C: an eligible-only run never consults them, so it does not open the
+  // project database at all — a health read must not create or migrate one.
+  const rawDb = eligibleOnly ? null : await BrainDatabase.getRawInstance(projectId)
+  let existingRecords: { path: string; last_modified: number; size_bytes: number }[] = []
 
-  if (filesOverride && filesOverride.length > 0) {
+  if (eligibleOnly) {
+    // M64.C: nothing below needs the index, and `rawDb` is deliberately null
+    // here. The guard has to be a branch rather than a `rawDb &&` on each use:
+    // the first version assigned null and then dereferenced it two lines later,
+    // so the whole walk threw and bb_health reported UNKNOWN_SCAN_FAILED on
+    // every call.
+  } else if (filesOverride && filesOverride.length > 0) {
     // Only fetch stats for the specific files being overridden
     const placeholders = filesOverride.map(() => "?").join(",")
     existingRecords = rawDb
@@ -672,7 +844,14 @@ async function discoverAndFilterFiles(
         // Send to fallback extraction which handles large files gracefully
       }
 
-      // Incremental check: skip unchanged files
+      // Incremental check: skip unchanged files.
+      // M64.C: in eligible-only mode the caller wants the whole eligible set —
+      // "would the indexer write this file?" — and not "does it need
+      // re-parsing?", so the mtime+size shortcut must not narrow the answer.
+      if (eligibleOnly) {
+        files.push(fullPath)
+        return
+      }
       const existing = existingStats.get(fullPath)
       const mtimeMs = Math.floor(fileStat.mtimeMs)
 
@@ -805,8 +984,11 @@ async function discoverAndFilterFiles(
   }
 
   // Cleanup stale files (files in DB but no longer on disk)
-  // Only do this for a full run (when there are no filesOverride)
-  if (!filesOverride || filesOverride.length === 0) {
+  // Only do this for a full run (when there are no filesOverride).
+  // M64.C: NEVER on an eligible-only run. That caller is asking what is on disk,
+  // and deleting index rows to "answer" a health question would make the
+  // question destructive — a read-only tool that mutated the index.
+  if (!eligibleOnly && (!filesOverride || filesOverride.length === 0)) {
     const staleFiles = existingRecords.filter((record) => !foundFiles.has(record.path))
     if (staleFiles.length > 0) {
       log.debug("cleaning up stale files from database", { staleCount: staleFiles.length })
@@ -1119,6 +1301,35 @@ export async function processWithWorkerPool(
 
     const workers = new Set<ChildProcess>()
     const idleWorkers: ChildProcess[] = []
+    /**
+     * Workers that have exited. Membership is what makes "is this worker still
+     * usable?" answerable, which the pool previously never asked.
+     *
+     * THE RACE THIS EXISTS TO CLOSE. A worker can exit before its `exit` event
+     * is delivered AND before a queued message from it is delivered. The two
+     * orderings are not guaranteed relative to each other, so:
+     *
+     *   1. the process exits        -> `exit` handler runs, `idleWorkers`
+     *                                  does not contain the worker yet, so its
+     *                                  splice is a no-op
+     *   2. a queued `engine_fail`   -> the handler runs LATER and does
+     *      message is delivered        `idleWorkers.push(worker)` unconditionally
+     *
+     * The dead worker is now in the idle pool. `scheduleNext` shifts it and calls
+     * `worker.send(...)` on a closed IPC channel, which raises EPIPE. On a
+     * ChildProcess that surfaces as an 'error' event, and nothing is listening,
+     * so Node terminates the whole index process and the in-flight batch is lost.
+     *
+     * Measured on this repository: the index reached 1,361 of 7,354 files and
+     * died; on `--resume` it reached 1,777, then 1,839, then 2,108. The trigger
+     * was always a large JSON file, and always after the pool had been running
+     * long enough for an engine-failure/exit race.
+     *
+     * Two independent guards, because either alone leaves a window: membership
+     * here stops a dead worker entering the pool, and the `send` try/catch below
+     * stops a dead worker that is already in it from taking the process down.
+     */
+    const deadWorkers = new Set<ChildProcess>()
 
     function handleWorkerTimeout(worker: ChildProcess, batchId: number) {
       try {
@@ -1288,8 +1499,17 @@ export async function processWithWorkerPool(
           } else if (msg.type === "engine_fail") {
             process.stderr.write(`[brain] worker ${msg.workerId} engine load FAILED: ${msg.error}\n`)
             clearStartupTimer(worker)
-            // Still add to idle — regex fallback can handle files without engine
-            idleWorkers.push(worker)
+            // Only pool this worker if it is still alive. This branch is exactly
+            // where a dead worker used to enter the pool: the message can be
+            // delivered after the `exit` event that already ran the splice
+            // below, and there the splice found nothing to remove. See
+            // deadWorkers for the full ordering.
+            if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+              log.warn("engine_fail arrived from a worker that had already exited; not pooling it", { workerId: msg.workerId })
+            } else {
+              // Still add to idle — regex fallback can handle files without engine
+              idleWorkers.push(worker)
+            }
             scheduleNext()
           } else if (msg.type === "file_start") {
             const batch = pendingBatches.get(msg.batchId)
@@ -1330,7 +1550,10 @@ export async function processWithWorkerPool(
               clearTimeout(batch.timeout)
               pendingBatches.delete(msg.batchId)
             }
-            idleWorkers.push(worker)
+            // Same guard as engine_fail, same race: a worker that finished a
+            // batch and died before the message was delivered must not be
+            // pooled.
+            if (!deadWorkers.has(worker) && worker.exitCode === null && !worker.killed) idleWorkers.push(worker)
             scheduleNext()
           }
         } catch (err) {
@@ -1341,6 +1564,10 @@ export async function processWithWorkerPool(
       worker.on("exit", (code, signal) => {
         try {
           clearStartupTimer(worker)
+          // Record the exit FIRST. Every path that puts a worker back into the
+          // idle pool checks this, so a message delivered after the exit is
+          // ignored rather than resurrecting a corpse.
+          deadWorkers.add(worker)
           workers.delete(worker)
           const idx = idleWorkers.indexOf(worker)
           if (idx !== -1) idleWorkers.splice(idx, 1)
@@ -1379,7 +1606,19 @@ export async function processWithWorkerPool(
         }
       })
 
-      worker.send({ type: "warmup", workerId })
+      // Same class of hazard as the dispatch path: this send can also hit a
+      // channel that closed during startup. It is wrapped for the same reason —
+      // an unhandled 'error' event here kills the process rather than the worker.
+      try {
+        worker.send({ type: "warmup", workerId })
+      } catch (err: any) {
+        log.warn("warmup send failed; treating the worker as dead", { workerId, error: String(err?.message ?? err) })
+        deadWorkers.add(worker)
+        startupFailures++
+        if (telemetry) telemetry.workerStartupFailures = startupFailures
+        try { worker.kill("SIGKILL") } catch {}
+        if (fileQueue.length > 0) scheduleNext()
+      }
     }
 
     function scheduleNext() {
@@ -1430,6 +1669,17 @@ export async function processWithWorkerPool(
           break
         }
         const worker = idleWorkers.shift()!
+        // A worker can die between being pooled and being dispatched. The splice
+        // in the `exit` handler cannot help here: the worker is already out of
+        // `idleWorkers`, so there is nothing left to remove and the send below
+        // would raise EPIPE on a closed IPC channel — which, on a ChildProcess
+        // with no 'error' listener, terminates the process.
+        if (deadWorkers.has(worker) || worker.exitCode !== null || worker.killed) {
+          log.warn("skipping a dead worker during dispatch", { batchId: ++batchCounter })
+          deadWorkers.delete(worker)
+          scheduleNext()
+          return
+        }
         const batchFiles = fileQueue.splice(0, batchSize)
         const batchId = ++batchCounter
 
@@ -1440,7 +1690,32 @@ export async function processWithWorkerPool(
           attempts: 1,
         })
 
-        worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        try {
+          worker.send({ type: "parse_batch", batchId, files: batchFiles, projectPath })
+        } catch (err: any) {
+          // The send can still fail after the liveness checks — the channel can
+          // close between them. Treat it as the worker death it is: drop the
+          // batch, requeue its files, and carry on. Previously this threw out of
+          // the scheduler and killed the whole index.
+          log.warn("send to worker failed; treating the worker as dead", { batchId, error: String(err?.message ?? err) })
+          deadWorkers.add(worker)
+          const batch = pendingBatches.get(batchId)
+          pendingBatches.delete(batchId)
+          if (batch) clearTimeout(batch.timeout)
+          for (const f of batchFiles) {
+            const retries = (fileRetries.get(f) || 0) + 1
+            if (retries > MAX_FILE_RETRIES) {
+              results.push({ filePath: f, success: false, error: "Max retries exceeded (send failed)" })
+              processed++
+            } else {
+              fileRetries.set(f, retries)
+              fileQueue.unshift(f)
+            }
+          }
+          try { worker.kill("SIGKILL") } catch {}
+          if (workers.size < numWorkers && fileQueue.length > 0) createWorker(Date.now())
+          scheduleNext()
+        }
       }
     }
 
@@ -1625,7 +1900,13 @@ async function drainBackgroundEmbeddings() {
           const embeddings: any = await Instance.provide({
             directory: job.projectPath,
             fn: () => withTimeout(
-              SemanticEngine.embedMany(docs),
+              // The project id matters for the LOCAL model: it selects the
+              // project's vocabulary, so the identifiers inside a snippet
+              // contribute the same words a query naming that symbol will.
+              // Word vectors are position-independent, so both sides sharing a
+              // vocabulary is a pure coverage increase rather than a change of
+              // vector space — see local-embed.ts `wordVector`.
+              SemanticEngine.embedMany(docs, job.projectId),
               EMBED_CALL_TIMEOUT_MS,
               `embedding provider call exceeded ${EMBED_CALL_TIMEOUT_MS}ms bound`,
             ),
@@ -1800,8 +2081,8 @@ export async function storeResults(
  
    const insertSymbol = rawDb.prepare(`
      INSERT OR REPLACE INTO brain_symbol
-     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, scope_kind, is_declaration, time_created, time_updated)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     (id, project_id, file_id, name, qualified_name, symbol_type, line_start, line_end, byte_start, byte_end, visibility, parameters, return_type, qualified_calls, complexity, api_contract_path, gravity_score, layer, owner_symbol_id, annotations, is_async, is_static, is_abstract, generic_parameters, docstring, source_text, scope_kind, is_declaration, time_created, time_updated)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
    `)
  
    const insertImport = rawDb.prepare(`
@@ -2025,7 +2306,40 @@ export async function storeResults(
        for (const result of batch) {
          if (!result.success) continue
  
-         let relativePath = path.relative(projectPath, result.filePath)
+         // M68: the relative path is computed from REAL paths on BOTH sides.
+         //
+         // `projectPath` and `result.filePath` reach this line spelled two
+         // different ways, and have done all along. `result.filePath` is the
+         // caller's own string — `results.push({ filePath: file, ... })` at the
+         // top of this loop, straight out of the `files` list — while
+         // `projectPath` is whatever the CALLER passed to indexProjectParallel.
+         // bb_edit is the one caller that realpath'd its project root, so for it
+         // the pair was `/private/var/folders/X` against `/var/folders/X`: the
+         // same directory, two spellings, and `path.relative` between them
+         // returned `../../../../var/folders/X/src/a.ts` instead of `src/a.ts`.
+         //
+         // The consequence was the worst kind of silent. `fileId` below is built
+         // from this value, so it matched no existing row, every DELETE ran
+         // against zero rows, and the INSERT created a SECOND brain_file row for
+         // a file that was already indexed. The file then appeared twice, its
+         // symbols appeared twice, and the second bb_edit on that file failed
+         // permanently with "symbol is ambiguous". MEASURED: bb_edit was usable
+         // exactly ONCE per file on macOS.
+         //
+         // No bb_edit gate saw it, because every one of them edits each symbol
+         // exactly once. A gate that only ever performs the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // Both sides are realpath'd HERE rather than at the call sites, because
+         // this is the one place the two are combined and seven callers reach it.
+         // The file side falls back to its own spelling when realpath throws,
+         // which is the create-a-new-file case where the leaf does not exist yet;
+         // for that the nearest existing ancestor's spelling is what matters and
+         // it is already consistent with the project root.
+         const realFilePath = (() => {
+           try { return realpathSync(result.filePath) } catch { return result.filePath }
+         })()
+         let relativePath = path.relative(realpathSync(projectPath), realFilePath)
          const fileId = `${projectId}:${relativePath}`
          // #756: per-file buffer for auto-generated contains edges (see the
          // symbol loop below) — flushed after the file's symbol rows exist.
@@ -2050,7 +2364,43 @@ export async function storeResults(
          stmt.deleteFileSymbols.run(fileId)
          stmt.deleteFileImports.run(fileId)
  
-         relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         // M68: `relativePath` is NOT recomputed here. The line this replaces was
+         //
+         //   relativePath = result.filePath.replace(projectPath, "").replace(/^\//, "")
+         //
+         // which is a STRING replace standing in for a path operation, and it
+         // OVERWROTE the correct `path.relative(projectPath, result.filePath)`
+         // computed 25 lines above. It is only right when `result.filePath`
+         // literally contains `projectPath` as a prefix — which is false on
+         // macOS, where /var and /tmp are symlinks into /private. There
+         // projectPath is the unresolved spelling and result.filePath is a
+         // realpath, so the replace matches nothing and `relativePath` becomes
+         // the absolute path with its leading "/" stripped.
+         //
+         // The two spellings then disagree inside the SAME row: `fileId` on line
+         // 2191 came from the correct relative path, `relative_path` came from the
+         // broken one. So reindexing an already-indexed file computed a fileId
+         // that matched no existing row, every DELETE above hit zero rows, and the
+         // INSERT created a SECOND brain_file row for the same file — filed under
+         // the absolute path.
+         //
+         // MEASURED, through bb_edit, which is how this was found. Editing ONE
+         // symbol in a fresh project left:
+         //   brain_file    src/a.ts                  (the original)
+         //                 var/folders/.../src/a.ts  (the duplicate)
+         //   brain_symbol  alpha  x2
+         // and the consequence is that THE SYMBOL COULD NEVER BE EDITED AGAIN —
+         // the second edit failed with "symbol alpha is ambiguous; provide
+         // filePath and lineStart", permanently, because the duplicate never goes
+         // away. bb_edit was usable exactly once per file, on macOS.
+         //
+         // Not one bb_edit gate caught it, because every one of them edits each
+         // symbol exactly once. A gate that only ever does the happy path once
+         // cannot see a defect that makes the SECOND attempt fail.
+         //
+         // `path.relative` is the operation that was always meant here, and it is
+         // already what the fileId above uses. If the two ever need to differ,
+         // that deserves a loud failure rather than a second spelling.
          const pathLower = relativePath.toLowerCase()
  
          let fileLayer = "core"
@@ -2638,6 +2988,13 @@ export async function storeResults(
                // docstring-based evidence matching in bb_doc (feature/api
                // lexical SQL) and degrading symbol-mode doc facts.
                symbol.docstring || null,
+               // The symbol's own source text, bounded. Content search selects
+               // name/qualified_name/docstring, so without this a word that
+               // appears ONLY inside a function was unreachable by every
+               // retrieval path — 27% of body-only words on rake, 38% on
+               // ripgrep. The body was in the database only as a
+               // 50-dimensional hash, which cannot be queried by word.
+               boundSourceText(symbol.snippet, symbolStartLine, symbolEndLine),
                // #837: the DDL column (scope_kind) and the typed schema
                // existed for years while this INSERT silently omitted them —
                // every scope value every analyzer emitted died at the store
@@ -2665,7 +3022,12 @@ export async function storeResults(
              // the edge for forward-declared containers (declared after their
              // members in the analyzer output). Both endpoints now resolve by
              // construction: owner via storeableName, child via the insert above.
-             if (ownerSymbolId) {
+             // An `Instance` symbol is named after the type it instantiates, so
+            // containing it would assert the module DECLARES that type. The
+            // relationship is already carried by `implements`; the containment is
+            // not a fact about this module. Haskell publishes these; the KIND,
+            // not the language, decides.
+            if (ownerSymbolId && symbol.kind !== ASTEngine.SymbolKind.Instance) {
                // Dedup: skip if the engine already generated a contains for this (owner, child) pair
                const ownerLeaf = ownerSymbolId.replace(/^.*:([^:]+):\d+$/, "$1")
                const alreadyHasContains = containsPairs.has(`${ownerLeaf} ${symbol.name}`)
@@ -3136,10 +3498,25 @@ export async function storeResults(
              // `fiberize`). The analyzer's synthetic spelling goes to
              // metadata.syntheticSource rather than source_external, so
              // `source_external IS NOT NULL` keeps meaning "unresolved caller".
-             // NOTE (#865): that metadata key is written here but the enrichment
-             // pass currently REPLACES the whole metadata object, so it does not
-             // survive a full index — the durable attribution is the resolved
-             // source id itself, which is exactly what the tool needs.
+             // #865, re-measured 2026-10-31: the note here used to say the
+             // enrichment pass REPLACES the whole metadata object and these keys
+             // therefore did not survive a full index. That was wrong, and the
+             // merge is deliberate: `mergeMetadata` in brain-relationship-enrichment
+             // spreads the STORED metadata and deletes only `ENRICHMENT_OWNED_KEYS`
+             // (role, pattern, layerFlow, criticality, frequency, isTestCode,
+             // isGeneratedCode, isFrameworkContract, isDependencyInjection,
+             // inferredAt) before writing its own. Nothing else is dropped, so an
+             // analyzer key survives an index the way any other does.
+             //
+             // Measured, not argued: `script/m59/probe-865-metadata-survival.ts`
+             // indexes a two-file java fixture through the REAL pipeline and
+             // reports `evidenceClass: 6` — an analyzer-emitted key, not an
+             // enrichment key, on all 6 stored rows — alongside the enrichment
+             // keys in the same objects (`layerFlow`, `criticality`, `frequency`).
+             // The two sets coexist, which is the whole claim. `syntheticSource`
+             // and `attributedToEnclosing` are in neither set, so they take the
+             // same path; the resolved source id remains the durable attribution,
+             // and these two keys stay as the explanation of how it was reached.
              // Falls back to the historical NULL-id external edge when the line
              // is unknown or no storeable symbol encloses it.
              if (!sameFileIdOk(sourceId)) {
@@ -3311,14 +3688,40 @@ export async function storeResults(
              AND brain_relationship.project_id = '${projectId}'
          `)
  
-         // Strategy 3: Qualified name partial match for dotted names
+         // Strategy 3: Qualified name partial match for dotted names.
+         //
+         // MIN(sym.id), not `LIMIT 1`. Strategies 1 and 2 above both take MIN(id)
+         // and say why: "Deterministic winner for duplicate names so parallel
+         // indexing order can't change resolution results". Strategy 3 was the
+         // one that did not, and `LIMIT 1` with no ORDER BY lets SQLite return
+         // any matching row — so when a bare name matched several symbols the
+         // winner was arbitrary.
+         //
+         // Measured on zod/src (324 real TypeScript files, 9,950 symbols),
+         // indexing the SAME code into two separate roots:
+         //
+         //   43,347 relationships in each — identical COUNTS
+         //   38,297 identical identity AND identical resolved target
+         //        5,050 same identity, DIFFERENT resolved target
+         //            calls 4,315 of 25,672 | references 550 | instantiates 107
+         //        0 identities present in one index and not the other
+         //
+         // so no edge was found or lost — the same edges were found, and 12% of
+         // them were attached to a different symbol depending on which run you
+         // had. `bb_graph` and `bb_analyze callers/callees` therefore answered
+         // differently for two people with identical code, and no cache key, diff
+         // or audit trail was possible. The unattached count moved too: 14,359 vs
+         // 14,450.
+         //
+         // `contains`, `overrides` and `implements` were stable, because they
+         // resolve structurally (strategy 4 / explicit ids) rather than by name.
+         // `calls`, the type real code produces most of, was the least stable.
          rawDb.run(`
            UPDATE brain_relationship
            SET target_symbol_id = (
-               SELECT sym.id FROM brain_symbol sym
+               SELECT MIN(sym.id) FROM brain_symbol sym
                WHERE sym.name = SUBSTR(brain_relationship.target_external, INSTR(brain_relationship.target_external, '.') + 1)
                  AND sym.project_id = '${projectId}'
-               LIMIT 1
            )
            WHERE brain_relationship.target_symbol_id IS NULL
              AND brain_relationship.target_external IS NOT NULL
@@ -3517,6 +3920,128 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
       }
     }
 
+    // ── The authoritative name-resolution pass (review I13) ──
+    //
+    // Strategies 1, 2 and 4 above only fill `target_symbol_id IS NULL`, and that is
+    // the whole problem. `storeResults` already resolved most edges at INSERT time,
+    // and it could not do it correctly: the relationship loop there sits INSIDE
+    // `for (const result of batch)`, so a file's edges are matched against only the
+    // symbols stored SO FAR — its own, plus earlier files in the same batch. Which
+    // of two same-named symbols an edge binds to therefore depended on the order
+    // batches happened to be stored, and because every strategy above requires IS
+    // NULL, a wrong attachment made at insert time was never revisited. This
+    // function is the first point at which the symbol table is complete, so it is
+    // the only place a correction can be correct.
+    //
+    // MEASURED on zod/src (324 real TypeScript files, 9,950 symbols, 43,347
+    // relationships), indexing ONE root twice with a fresh store each time so every
+    // id is identical by construction:
+    //
+    //   brain_file / brain_symbol / brain_import   0 differing rows
+    //   resolution agreement   6-12% of edges disagree, varying with scheduling
+    //   unattached             14,090 vs 14,139 — a different NUMBER resolve each run
+    //
+    //   run1 v4/classic/compat.ts:getErrorMap:51
+    //   run2 v3/errors.ts:getErrorMap:11
+    //
+    // Two files exporting a same-named function is everyday, and which one an edge
+    // binds to was a function of store order. The counts never move, so every
+    // count-based check passed while the graph underneath differed: bb_graph and
+    // bb_analyze callers/callees answered differently for two people with identical
+    // code, and a bug that reproduced locally but not in CI had no explanation.
+    //
+    // `contains` and `overrides` were EXACTLY stable, and that is the diagnosis
+    // rather than a coincidence: they resolve structurally — by explicit id, and by
+    // the edge's own line_number inside its own file — so they never consult a name
+    // that could have several candidates.
+    //
+    // The population is read off the data rather than guessed. Measured over one
+    // clean index of that corpus, the attached target's `name` EQUALS
+    // `target_external` for 100% of calls, exports, uses, extends, instantiates,
+    // implements and contains, 69% of references, and 0% of overrides and imports
+    // (those resolve structurally and by the `module:item` form). So the guard below
+    // — a bare name, i.e. no `.` and no `:`, which is what strategies 1-4 and this
+    // pass between them own — is exactly the name-resolved population, and it leaves
+    // dotted `module:item` and structural edges to the strategies above.
+    //
+    // `contains` is excluded because its target is pinned to the edge's own line
+    // rather than to a name, so recomputing it by name would discard the pin.
+    //
+    // SET-BASED, and that is the whole trick. The obvious formulation is a
+    // correlated subquery per row; measured, it takes 167 s for these 43,347
+    // relationships, of which 164 s is the apply step alone rescanning the pick
+    // table once per relationship. A window function over a join resolves every
+    // relationship in one pass: 5.3 s total (109 ms source table, 2.6 s pick,
+    // 2.6 s apply). The ranking is `resolveTargetStmt`'s, deliberately — a
+    // definition ahead of a declaration (#612), then same-file, then
+    // same-language — with `s.id` making the choice total.
+    //
+    // IDEMPOTENCE is the property that makes this a fix rather than another
+    // opinion, and it is checked: the pass is a fixed point, so running it twice
+    // assigns identical targets (attachment count 32,082 and a content fingerprint
+    // of all 43,347 assignments unchanged). An earlier attempt placed this in
+    // `storeResults`, where it resolved against a partial table and could not work;
+    // an earlier SQL spelling correlated the UPDATE target from a subquery's ORDER
+    // BY, which does not resolve and threw SQLITE_ERROR inside a catch that hid it.
+    // Both are why the location and the set-based shape are load-bearing.
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+    // The source file and language the ranking depends on, materialised once
+    // because they cannot be correlated out of a subquery's ORDER BY here.
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_src AS
+      SELECT r.id AS rel_id, src.file_id AS src_file, COALESCE(sf.language, '') AS src_lang
+      FROM brain_relationship r
+      LEFT JOIN brain_symbol src ON src.id = r.source_symbol_id
+      LEFT JOIN brain_file sf ON sf.id = src.file_id
+      WHERE r.project_id = '${projectId}'
+    `)
+    rawDb.run(`
+      CREATE TEMP TABLE _i13_pick AS
+      SELECT rel_id, target_symbol_id FROM (
+        SELECT t.rel_id AS rel_id, s.id AS target_symbol_id,
+               ROW_NUMBER() OVER (PARTITION BY t.rel_id
+                 ORDER BY COALESCE(s.is_declaration, 0) ASC,
+                          (s.file_id = t.src_file) DESC,
+                          (COALESCE(f.language, '') = t.src_lang) DESC,
+                          s.id ASC) AS rn
+        FROM _i13_src t
+        JOIN brain_relationship r ON r.id = t.rel_id
+        JOIN brain_symbol s ON s.project_id = '${projectId}' AND s.name = r.target_external
+        LEFT JOIN brain_file f ON f.id = s.file_id
+        WHERE r.project_id = '${projectId}'
+          AND r.target_external IS NOT NULL
+          AND r.relationship_type <> 'contains'
+          AND instr(r.target_external, '.') = 0
+          AND instr(r.target_external, ':') = 0
+      ) WHERE rn = 1
+    `)
+    // Without this the apply step degrades to a scan per row — the 164 s above.
+    rawDb.run(`CREATE UNIQUE INDEX temp._i13_pick_rel ON _i13_pick(rel_id)`)
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET target_symbol_id = p.target_symbol_id
+      FROM _i13_pick p
+      WHERE brain_relationship.id = p.rel_id
+    `)
+    // The target these rows now hold is not necessarily the one insert-time picked,
+    // so the cross-FILE flag is recomputed for the same population. Before the
+    // cross-language pass below on purpose: that pass is upgrade-only, so it has to
+    // see the final target to fill its bridge.
+    rawDb.run(`
+      UPDATE brain_relationship
+      SET is_cross_file = CASE WHEN t.file_id <> s.file_id THEN 1 ELSE 0 END
+      FROM brain_symbol t, brain_symbol s
+      WHERE t.id = brain_relationship.target_symbol_id
+        AND s.id = brain_relationship.source_symbol_id
+        AND brain_relationship.project_id = '${projectId}'
+        AND brain_relationship.relationship_type <> 'contains'
+        AND instr(brain_relationship.target_external, '.') = 0
+        AND instr(brain_relationship.target_external, ':') = 0
+    `)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_src`)
+    rawDb.run(`DROP TABLE IF EXISTS temp._i13_pick`)
+
     // Cross-language normalization (polyglot fixture finding, M26 addendum):
     // this pass is the one that resolves forward references in the default
     // worker-pool flow (batches are stored with skipResolution=true, so a TS
@@ -3559,7 +4084,11 @@ async function resolveRelationships(projectId: ProjectID): Promise<void> {
     rawDb.run(`DROP TABLE IF EXISTS _res_qname`)
     rawDb.run(`DROP TABLE IF EXISTS _res_name`)
   } catch (err) {
+    // Rethrow. This catch used to swallow, and swallowing here is what made a
+    // FAILED resolution indistinguishable from a successful one at every
+    // structured surface — see the note at the throw.
     log.warn("relationship resolution failed", { error: err })
+    throw err
   }
 }
 
@@ -3640,6 +4169,36 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
 // ============================================================================
 // MAIN ENTRY POINT
 // ============================================================================
+
+/**
+ * How many stored relationships are NOT attached to a stored symbol:
+ * `target_symbol_id IS NULL AND target_external IS NOT NULL`.
+ *
+ * The row is present and counted, but it is not an edge — every traversal reads
+ * it as absent, so it under-reports, and the relationship count does not show it.
+ *
+ * This is the measurement `summary.derivedPass` is not. `derivedPass` says which
+ * pass ran; nothing said whether the index ended up CONSISTENT, and the noop
+ * path's own note claimed "untouched and still consistent" on the strength of
+ * nothing. Measured, in the case a user meets it: cancel a 60-file index
+ * mid-run (leaving 16 unresolved relationships), then `bb index --resume`, which
+ * parses nothing so its pass is `skipped-unchanged` — and leaves all 16.
+ * `bb index --post` resolves them.
+ *
+ * Best-effort: a failure to measure is logged and leaves the field absent, which
+ * callers render as "not measured" rather than as a clean bill.
+ */
+async function measureUnresolvedRelationships(projectId: ProjectID): Promise<number | undefined> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return Number(
+      (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL").get(projectId) as any)?.c ?? 0,
+    )
+  } catch (e: any) {
+    log.warn("could not measure unresolved relationships", { error: e?.message })
+    return undefined
+  }
+}
 
 export async function indexProjectParallel(
   projectId: ProjectID,
@@ -3764,6 +4323,13 @@ export async function indexProjectParallel(
         timeouts: 0,
         cancelled: 0,
         derivedPass: "skipped-unchanged",
+        // Measured here too, because this is the path `--resume` takes and it is
+        // the one that can carry a previous run's unfinished work. Measured 16 on
+        // a cancel-then-resume, and 0 after `bb index --post`.
+        unresolvedRelationships: await measureUnresolvedRelationships(projectId),
+        // Nothing was parsed, so there was no parse mode to choose. Declared
+        // rather than left undefined so "no parse ran" is a value and not a gap.
+        parseMode: "worker-pool",
       }
 
       // M40.A2: an incremental noop run can still observe DELETIONS —
@@ -3883,6 +4449,11 @@ export async function indexProjectParallel(
     }
     phases.workerStartupMs = Date.now() - workerStartupStart
     phases.mode = processFn === processInProcess ? "in-process" : "worker-pool"
+    // Carried onto the summary as well, because the summary is what callers and
+    // the CLI read and `phases` is what nobody reads. On the main path the
+    // summary is built later from `phases.mode`; this covers a path that already
+    // has one.
+    if (stats.summary) stats.summary.parseMode = phases.mode
 
     const parseStart = Date.now()
     const poolTelemetry = { dbFlushMs: 0, retries: 0, workerCount: 0, workerStartupFailures: 0, poisonFiles: 0 }
@@ -3942,6 +4513,57 @@ export async function indexProjectParallel(
       }
     }, poolTelemetry, signal)
     if (signal?.aborted) stats.cancelled = true
+
+    // PERL-MR15. Populate the cross-file override companion from the symbols this
+    // run already holds, then re-analyze the files whose `overrides` edges depend
+    // on a base declared in ANOTHER file.
+    //
+    // It has to run HERE, between the parse and the store: `FileResult.symbols`
+    // is the project's method-name space and it is only in memory inside this
+    // function. Running it later would mean a second parse of every file to
+    // rebuild an index this run already computed.
+    //
+    // 75.6% of perl's `overrides` edges are false -- measured over 5,774 corpus
+    // files, the base is in the project and does not declare the method. The
+    // differential cannot see that class of defect, so nothing else in the run
+    // will ever correct it.
+    //
+    // Failures are swallowed on purpose: a re-analysis that throws leaves the
+    // first run's result in place, which is the pre-MR15 behaviour. A companion
+    // that cannot be built must never turn a completed index into a failed one.
+    {
+      const { populateOverrideCompanion } = await import("./override-companion-pass")
+      const poolWorker = (await import("./pool-worker")) as any
+      const reparse = poolWorker.parseFile
+      if (reparse) {
+        // Both lanes that CONSUME the companion. Perl has read it since MR14;
+        // python's resolver existed and read a channel nothing populated, so it
+        // ran with no companion and every cross-file base stayed a first-parent
+        // guess. The pass is already language-parameterised end to end (it scopes
+        // its symbols and its affected files by `r.language === language`), so
+        // running it twice is not a second design — it is the same pass under the
+        // other lane's name. Sequential on purpose: each builds its companion from
+        // the same `results` and re-parses its own subset, and interleaving two
+        // re-parse waves over one results array is a race nobody needs.
+        for (const companionLang of ["perl", "python"] as const) {
+          const passStats = await populateOverrideCompanion({
+            projectPath,
+            results,
+            language: companionLang,
+            reparse: (f, p, ctx) => reparse(f, p, ctx),
+          })
+          if (passStats.owners > 0) {
+            log.info(
+              `override companion (${companionLang}): ${passStats.owners} owners, ` +
+                `${passStats.refiles} file(s) re-analyzed, ${passStats.reapplied} reapplied, ` +
+                `${passStats.confirmed} confirmed, ${passStats.stillGuess} still a guess, ` +
+                `${passStats.failed} failed`,
+            )
+          }
+        }
+      }
+    }
+
     phases.parseMs = Date.now() - parseStart
     phases.dbFlushMs = poolTelemetry.dbFlushMs
     phases.retries = poolTelemetry.retries
@@ -4027,6 +4649,12 @@ export async function indexProjectParallel(
       timeouts: stats.timeoutFiles,
       cancelled: cancelledCount,
       derivedPass: "deferred", // set to full/bounded below when a pass actually runs
+      // The fork test has already resolved by the time this literal is built, so
+      // `phases.mode` is known here. An earlier version tried to assign it after
+      // the fact and silently did nothing, because on this path `stats.summary`
+      // does not exist yet — which is exactly how a measurement goes missing
+      // without an error.
+      parseMode: phases.mode,
     }
 
     // Post-processing fallback: re-process files that may have been lost
@@ -4221,7 +4849,8 @@ export async function indexProjectParallel(
 
       // M21.I2: a failed post-processing phase must not silently leave the
       // project status as "complete". Persist a visible partial status.
-      if (post.phases.some((p) => p.outcome === "failed")) {
+      const failedPhases = post.phases.filter((p) => p.outcome === "failed")
+      if (failedPhases.length > 0) {
         try {
           await BrainDatabase.updateIndexStatus(projectId, { status: "partial" })
           _log.log("  ⚠ index marked partial: a post-processing phase failed")
@@ -4230,7 +4859,13 @@ export async function indexProjectParallel(
         }
       }
       phases.totalWallMs = Date.now() - stats.startTime
-      if (stats.summary) stats.summary.derivedPass = "full"
+      // `derivedPass` is what the CLI turns into "derived: <pass> (<note>)", and it
+      // was set to "full" unconditionally — so a run whose resolution had thrown
+      // printed "derived: full (derived data fully re-processed)" while the log
+      // carried a WARN. It could not be derived from the phase outcomes before,
+      // because `resolveRelationships` swallowed its own errors and the phase was
+      // recorded "ok"; with that fixed the measurement is available and this is it.
+      if (stats.summary) stats.summary.derivedPass = failedPhases.length > 0 ? "partial" : "full"
     } else if (options.isIncremental && !options.skipPostProcessing && !stats.cancelled) {
       // M40.A2: bounded incremental post-pass — derived data stays consistent
       // at write-cost proportional to what THIS run touched, never O(project).
@@ -4266,6 +4901,12 @@ export async function indexProjectParallel(
         : stats.cancelled
           ? "post-processing deferred: run cancelled (resume to continue)"
           : "post-processing deferred (full-index-only path)")
+    }
+
+    // Measured after every derived path has run, so the number describes the index
+    // as handed back rather than the pass that produced it.
+    if (stats.summary) {
+      stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {
@@ -5064,8 +5705,48 @@ export async function reindexFilesParallel(
   // client dies with "Header must provide a Content-Length property" —
   // found live by M25.E5). stdio callers MUST pass a stderr logger.
   options?: { logger?: { log: (...args: any[]) => void; write: (s: string) => void } },
-): Promise<{ indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
-  const result: { indexed: number; deleted: number; errors: number; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0 }
+): Promise<{ indexed: number; deleted: number; errors: number; /** Files the caller named that the indexer declined — unsupported or binary
+   *  types, and files whose parse produced nothing. It used to be indistinguishable
+   *  from a file that was indexed: a binary file answered `indexed: 0, deleted: 0,
+   *  errors: 0`, which to a caller is indistinguishable from "already current". */
+  skipped: number; skippedReason?: string; /** WHICH files failed and WHY. The delegated
+   *  `indexProjectParallel` has always collected `{ file, error }` per failure and
+   *  returned it; reindexFilesParallel counted them and dropped them. A write tool
+   *  reporting "3 errors" tells its caller nothing it can act on — not which file,
+   *  not whether to retry, and not whether the failure is transient. Bounded, so a
+   *  large failure cannot become a large payload. */
+  errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } }> {
+  // M68: normalise the project root ONCE, here, so every `path.relative` in this
+  // function and in storeResults agrees with what the INITIAL index wrote.
+  //
+  // The defect this fixes was found through bb_edit and is the worst in this file.
+  // A caller may spell the project root either way — `/var/folders/X` or
+  // `/private/var/folders/X` are the same directory on macOS — and the initial
+  // index and the incremental reindex were being handed DIFFERENT spellings by
+  // different callers. `storeResults` then computed
+  //
+  //   fileId        = `${projectId}:${path.relative(projectPath, filePath)}`   (correct)
+  //   relative_path = filePath.replace(projectPath, "").replace(/^\//, "")     (broken)
+  //
+  // so a reindex of an already-indexed file produced a fileId matching no
+  // existing row: every DELETE hit zero rows and the INSERT created a SECOND
+  // brain_file row filed under the absolute path. The file then appeared twice,
+  // its symbols appeared twice, and the second bb_edit on that file failed for
+  // good with "symbol is ambiguous". MEASURED: editing one symbol left
+  //
+  //   brain_file    src/a.ts                  (original)
+  //                var/folders/.../src/a.ts  (duplicate)
+  //   brain_symbol  alpha  x2
+  //
+  // and no bb_edit gate saw it, because every one of them edits each symbol once.
+  //
+  // `realpathSync` is the operation that collapses the two spellings to one. It
+  // is applied HERE rather than at each call site because seven callers pass this
+  // path and one of them passing it differently is all it takes — bb_edit was the
+  // only one that realpath'd it, and it was enough to break the whole incremental
+  // path for that project.
+  const realProjectPath = realpathSync(projectPath)
+  const result: { indexed: number; deleted: number; errors: number; skipped: number; skippedReason?: string; errorDetail: Array<{ file: string; error: string }>; derived?: { pass: string; phases: PostProcessingPhaseTiming[]; repairedInEdges: number; touchedSymbols: number } } = { indexed: 0, deleted: 0, errors: 0, skipped: 0, errorDetail: [] }
 
   // M43.P1 (#656): deletion writes AND the delegated parse+post run are ONE
   // lock scope — a concurrent indexer must never interleave between our
@@ -5093,7 +5774,7 @@ export async function reindexFilesParallel(
 
       const tx = rawDb.transaction(() => {
         for (const change of deleted) {
-          const relativePath = path.relative(projectPath, change.path)
+          const relativePath = path.relative(realProjectPath, change.path)
           const fileId = `${projectId}:${relativePath}`
           deleteRelationships.run(fileId)
           deleteTaints.run(fileId, fileId)
@@ -5113,7 +5794,7 @@ export async function reindexFilesParallel(
   const toIndex = changes
     .filter((c) => c?.type !== "deleted")
     .filter((c) => hasValidExtension(c.path))
-    .filter((c) => !shouldSkip("/" + path.relative(projectPath, c.path)))
+    .filter((c) => !shouldSkip("/" + path.relative(realProjectPath, c.path)))
     .map((c) => c.path)
 
   if (toIndex.length > 0) {
@@ -5124,9 +5805,9 @@ export async function reindexFilesParallel(
       // then the incremental run inside applies the bounded post-pass — so
       // bb_edit / LSP / MCP file-mode leave derived data consistent, not just
       // re-parsed. Snapshot cost folds into this call (pre-parse window).
-      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(projectPath, f)}`)
+      const touchedFileIds = toIndex.map((f) => `${projectId}:${path.relative(realProjectPath, f)}`)
       const snapshot = await snapshotInEdges(projectId, touchedFileIds)
-      const indexResult = await indexProjectParallel(projectId, projectPath, {
+      const indexResult = await indexProjectParallel(projectId, realProjectPath, {
         files: toIndex,
         isIncremental: true,
         skipDiscovery: true,
@@ -5135,6 +5816,20 @@ export async function reindexFilesParallel(
       })
       result.indexed = indexResult.successFiles
       result.errors += indexResult.errorFiles
+      // `skippedFiles` was being computed by the delegated run and thrown away.
+      // It is the difference between "this file is not indexable" and "this file
+      // is already current", and the report could not tell them apart.
+      result.skipped += indexResult.skippedFiles ?? 0
+      // The per-file failures the delegated run already collected. Bounded at 20
+      // with the true total still in `errors`, so a caller learns which file to
+      // look at without a pathological failure becoming a huge answer.
+      for (const e of indexResult.errors ?? []) {
+        if (result.errorDetail.length >= 20) break
+        result.errorDetail.push({ file: String(e.file ?? "?"), error: String(e.error ?? "unknown") })
+      }
+      if ((indexResult.skippedFiles ?? 0) > 0 && result.indexed === 0) {
+        result.skippedReason = `${indexResult.skippedFiles} of the requested file(s) hold nothing the indexer extracts (binary or unsupported type)`
+      }
       // Bounded-pass telemetry (surfaced to tool callers; never silent).
       result.derived = {
         pass: indexResult.summary?.derivedPass ?? "deferred",
@@ -5142,10 +5837,10 @@ export async function reindexFilesParallel(
         repairedInEdges: indexResult.m40Bounded?.repairedInEdges ?? 0,
         touchedSymbols: indexResult.m40Bounded?.touchedSymbols ?? 0,
       }
-      if (result.derived.pass === "deferred") {
-        // Empty-file-set or all-skipped runs defer honestly rather than lie.
-        result.errors += 0
-      }
+      // `deferred` means the heavy phases were not run for this call. It is
+      // published in `derived.pass` and there is nothing to count, so the
+      // `result.errors += 0` that used to stand here was a statement about
+      // intent dressed as a statement about the count.
     } catch (error) {
       log.error("failed to reindex files", { error })
       result.errors++

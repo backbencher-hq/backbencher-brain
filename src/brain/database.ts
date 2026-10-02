@@ -7,7 +7,7 @@ import type { CoreDatabase } from "#db"
 import path from "path"
 import { mkdirSync, existsSync } from "fs"
 import * as BrainSchema from "./brain.sql"
-import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn } from "./schema-ddl"
+import { ensureSchema, migrateSchemaColumns, ensureAnnotationTable, ensureHealthIndexes, cleanupOrphanedFkRows, ensurePlannerStats, ensureEmbeddingBlobColumn, ensureSymbolDeclarationColumn, ensureFileMetadataColumn, ensureSymbolSourceTextColumn, ensureQueryShapeIndexes } from "./schema-ddl"
 import { bbProjectsDir } from "../util/bb-data-dir"
 
 export type { CoreDatabase, CoreStatement } from "#db"
@@ -107,6 +107,19 @@ async function buildDrizzle(raw: CoreDatabase): Promise<any> {
       // and verifier opens is a PRE-EXISTING one.
       ensureSymbolDeclarationColumn(raw)
       ensureFileMetadataColumn(raw)
+      // The symbol body, so content search can reach a word that appears only
+      // inside a function. Without it a project indexed before this column
+      // existed has NO searchable body, and the indexer's own INSERT fails with
+      // "no column named source_text" — measured on the first run of this
+      // change, which is why the migration is wired on the same open path as
+      // every other additive column rather than only on fresh databases.
+      ensureSymbolSourceTextColumn(raw)
+      // Indexes a READ-heavy tool needs, on an already-created database. Wiring this
+      // only into the DDL is how an index nobody has gets written: the database every
+      // editor opens is a pre-existing one. MEASURED on cargo without it,
+      // bb_visualize sorted all 40,595 symbols on every call (570.6 ms, min of 6);
+      // 2.8 ms with it, and the temp B-tree sort disappears from the plan.
+      ensureQueryShapeIndexes(raw)
     }
   }
 

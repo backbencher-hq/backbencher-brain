@@ -65,8 +65,53 @@ function ideTier(edge: { relationshipType: string; confidence: number; metadata?
   return "inferred"
 }
 
-function edgeKey(e: { direction: string; to?: string; from?: string; tier?: string; relationshipType: string; confidence: number }): string {
-  return [e.direction, e.to ?? e.from ?? "", e.relationshipType, String(e.confidence), e.tier ?? ideTier(e)].join("|")
+/**
+ * The endpoint's IDENTITY, from either rendering.
+ *
+ * The agent door renders both endpoints as described nodes
+ * (`{ id, name, symbolType, file, line, isExternal }`) and the IDE door returns
+ * the engine's raw id strings, so a key built by stringifying `e.to` produced
+ * the literal "[object Object]" on one side and a symbol id on the other — equal
+ * edge COUNTS, unequal multisets. This gate is about whether the two doors see
+ * the same TRUTH, and the two renderings of one truth differ in shape by design.
+ *
+ * `id` is compared rather than `name`: a symbol id is the store's own identity
+ * and unique, where a name is not — lodash holds eight symbols named `build`.
+ */
+type EdgeEndpoint = string | { id?: string; name?: string } | null | undefined
+
+/**
+ * The endpoint's IDENTITY, from either rendering and either id FORM.
+ *
+ * The agent door renders both endpoints as described nodes and the IDE door
+ * returns the engine's raw id strings, so a key built by stringifying `e.to`
+ * produced the literal "[object Object]" on one side and a symbol id on the other
+ * — equal edge COUNTS, unequal multisets. This gate is about whether the two doors
+ * see the same TRUTH, and the two renderings of one truth differ in shape by
+ * design.
+ *
+ * It normalises the SHAPE down to the identity, and now the id FORM as well: the
+ * agent door strips the constant `<projectHash>:` prefix from every endpoint id
+ * because it is repeated on both ends of every edge (measured 28.6% of every
+ * edge's bytes), while the IDE door returns the engine's full key. Both sides are
+ * reduced to the part after that prefix, so the comparison is like-for-like. The
+ * prefix is only stripped when the leading segment is exactly 40 hex characters,
+ * so an `ext:` id — which has no project hash — is left alone.
+ *
+ * `id` is compared rather than `name`: a symbol id is the store's own identity
+ * and unique, where a name is not — lodash holds eight symbols named `build`.
+ */
+function endpointId(endpoint: EdgeEndpoint): string {
+  if (endpoint == null) return ""
+  const raw = typeof endpoint === "string" ? endpoint : (endpoint.id ?? endpoint.name ?? "")
+  if (typeof raw !== "string" || raw.length <= 41) return raw
+  const at = raw.indexOf(":")
+  if (at !== 40) return raw
+  return /^[0-9a-f]{40}$/.test(raw.slice(0, at)) ? raw.slice(at + 1) : raw
+}
+
+function edgeKey(e: { direction: string; to?: EdgeEndpoint; from?: EdgeEndpoint; tier?: string; relationshipType: string; confidence: number }): string {
+  return [e.direction, endpointId(e.to ?? e.from), e.relationshipType, String(e.confidence), e.tier ?? ideTier(e)].join("|")
 }
 
 async function main(): Promise<void> {

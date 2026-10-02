@@ -79,6 +79,24 @@ carries 5 such edges and the M12 truth row for `buffer_create` is recorded as
 **`exports` was ALSO dead for a target-shaped reason, and #963 fixed it the same
 way.** See #963 below — the pre-#963 edge pointed at a synthesised constant
 `KERNEL_EXPORT` written in no source file anywhere.
+| `calls` | ✅ | 200,105 | `c_function_call` |
+| `uses` | ✅ | 74,129 | `field_access` 53,995 · `identifier_usage` 20,334 |
+| `contains` | ✅ | 16,938 | — (container → member) |
+| `references` | ✅ | 10,471 | `type_reference` |
+| `imports` | ✅ | 10,993 | `include_dependency` |
+| `exports` | ✅ | 0 on this corpus | `linux_kernel_export` (Linux `EXPORT_SYMBOL*`) |
+| `instantiates` | ❌ **N/A — see below** | 0 | — |
+| `extends` / `implements` / `overrides` | ❌ **N/A — see below** | 0 | — |
+
+**`instantiates` is not emitted, and this page previously said it was.** The
+allocator branches count `malloc`/`calloc`/`realloc`/`kmalloc`/`vmalloc` and
+`free`/`kfree`/`vfree`, set `metadata.usesMalloc` on the enclosing function, and
+raise the `Dynamic Memory Management` pattern — and a comment in the code records
+why the edge is gone: "malloc allocates BYTES, not a named type — an
+`Instantiates` edge to the literal 'malloc' could never resolve to a type symbol
+and was pure noise (removed; allocation tracking lives in metadata + patterns)."
+The row above is the truth; the earlier ontology table contradicted the code it
+documented.
 
 **`extends` / `implements` / `overrides` are N/A by ruling, not by omission** — C
 has no class heritage. Recorded as spec decision `C-D1`.
@@ -94,11 +112,13 @@ both are the family contract with cpp rather than an omission.
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. **A macro in TYPE position names a type, not a member** (#985): `git_array_t(size_t) line_index;` publishes `line_index` alone; the macro's own name is a `macro_type_specifier`'s first identifier, not a declarator, and publishing it invented a member beside the real one. **An anonymous inline enum is owned by the MEMBER PATH** (#986), like an anonymous inline struct or union: `enum { A_ONE } first;` inside `U` gives `contains U.first -> A_ONE`, while the tagged spelling keeps its own tag. | 1.0 |
+| contains | ✅ | REAL container ownership only: struct→field, union→field, enum→member (post-loop over `ownerName`). Never `global contains X` — top-level symbols carry the synthetic `global` scope but emit no contains (dangling edge, Java-family ontology). **A container is never its own member**: `contains X -> X` is gate property P12, added this wave after a shadowed local made every enum member self-owning. | 1.0 |
 | references | ✅ | type usage — in-file declared type identifiers (`type_identifier`, `struct_specifier`/`union_specifier`/`enum_specifier` references, **including a function's return type, whether spelled with a tag or with a typedef name**). Never both references+uses for the same pair. | 0.8 |
 | uses | ✅ | field access (`a->x` → `uses x`, with `accessedFrom`); value identifier usage (global var, enum member, local function reference). **One name occurrence, one edge** — the field's own `field_identifier` leaf is the SAME AST node read twice by the walk and is not an independent observation (this wave: the two branches keyed the shared dedup set `::uses::` against `::use::`, so every field read published two edges with two different confidences; measured 2,369 provable occurrences over 80 redis files). | 0.9 (field access) · 1.0 (value) |
 | calls | ✅ | `call_expression` → callee name (incl. field-expression function pointers); source = enclosing function name via `getRelationshipSource()`. Per-SITE, not per-set: `f calls g` on three lines is three true edges. | 1.0 |
 | imports | ✅ | `#include <path>` / `#include "path"` → module name (pure-String `stripIncludeChars` unwrap of the `path` field / `string_literal` / `system_lib_string`). A macro-composed include argument is a `call_expression` and is refused — C-D2. | 1.0 |
 | exports | ✅ | a declaration introduced by an export marker. **Source = the declared NAME**; **target = the marker macro as written** (`EXPORT_SYMBOL`, `CURL_EXTERN`, `GIT_EXTERN`, `REDISMODULE_API`) — never the macro's argument, which in the prefixed forms is a return *type* (`GIT_EXTERN(int)`), and never the synthesised `KERNEL_EXPORT` the pre-#963 code emitted. All four surviving conventions: kernel call form, userspace prefix, paren form, and bare-token form. See #963 for the declared grammar limit (typedef return type). | 1.0 |
+| exports | ✅ | public (non-static) function/variable symbols; Linux `EXPORT_SYMBOL*` → `X exports KERNEL_EXPORT` | — |
 
 **Relationship source identity:** `getRelationshipSource()` returns the
 enclosing FUNCTION name — never the block scope (`core_init.block_211` would be a
@@ -1316,6 +1336,14 @@ between runs — the direction does not):
   rows (`uses:module_init:initialized`, `uses:module_shutdown:initialized`) are
   assignment targets, i.e. the write-vs-read question below. **Fixing the analyzer
   to satisfy these 5 rows would have broken correct code.**
+- **The artifact cannot be regenerated in this checkout.** The F5 harness reads
+  `CORPUS_ROOT = $HOME/fixtures/repositories` (overridable with
+  `BB_CORPUS_ROOT`), that path does not exist here, and the run aborts on the first
+  pinned repo. No script in the tree writes `c-differential.json` by that name, so
+  the artifact's producer is not present either. **The M12 differential is a
+  FIXTURE differential, though**, which is why the drift is measurable here at all
+  — and that is the argument for keeping the fixture-based probe as the lane's
+  standing check on its own pinned truth.
 - **This wave's change is byte-identical on the M12 fixtures**: the previous
   commit's analyzer and this one produce identical relationship sets on
   `Module.c`, `Module.h`, `Negative.c` and `module_config.h`, so none of the
@@ -2065,6 +2093,10 @@ The containment check exists because of that, not because of the two rows it fix
 | M14.0.F1 grammar conformance | **PASS**, 65 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
 | M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
 | C-lane gate (properties + mutants + cost) | **14 properties, 38/38 live mutants caught, 5 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
+| M14.0.F3 fixtures | **27/27 pass** (18 pre-existing + 9 new) | `bun run script/m14/run-fixtures.ts --lang c` |
+| M14.0.F1 grammar conformance | **PASS**, 61 refs, unknown 0, unknownFields 0 | `bun run script/m14/audit-analyzer-grammar.ts c` |
+| M14.0.F4 mutation (shared registry) | **34 C mutants, 0 C survivors** | `bun run script/m14/mutate-analyzer.ts` (unscoped; the 12 global survivors are `sql` and `erlang`, not this lane) |
+| C-lane gate (properties + mutants + cost) | **14 properties, 34/34 live mutants caught, 3 retired with stated reasons, measured-cost pass** | `bun run script/m14/tmp/c-audit/verify-c-lane.ts --corpus <dir>` |
 | grammar pin (`c` in `validation/m14/grammar-pins.json`) | **PASS** — source↔wasm zero both ways, 135 declared names, 128 wasm-named all declared; patch proven live | `bun run script/m14/verify-grammar-pins.ts` (whole-file run is red on the **cpp** lane's in-flight `PIN.md`, not on `c`) |
 | layout vs clang (independent reference) | **100.0% (39/39)** of redis types and **100.0% (20/20)** of libgit2 types the analyzer claims to model; 89.8% / 58.0% overall; **no actionable misses on either corpus** | `bun run script/m14/tmp/c-audit/layout-vs-clang.ts --dir <corpus dir>` |
 | regex census | 2 entries removed; `ABSENT-IN-WORKTREE` for both | `bun run script/m12/verify-regex-census.ts` (the gate as a whole is red on other lanes' in-flight work — `sql`, `clojure`, `cpp`, `elixir`, `erlang`, `fsharp`, `go`, `zig`, and a pre-existing stale `makefile` row) |

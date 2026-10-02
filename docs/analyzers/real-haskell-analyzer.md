@@ -52,8 +52,11 @@
 | extends | ✅ | class superclasses: `class Semigroup s => Mergeable s` → `extends Mergeable -> Semigroup` (from `context` → `apply` → first `name` child; parens-wrapped multi-superclasses handled) | 1.0 |
 | calls | ✅ | `apply` heads with function sources (source = the containing function/method via `currentFunction`). Local calls emit LEAF targets only when the callee is a module-level declared function (pre-pass collects all `function`/`bind`/`signature` names → forward references resolve, e.g. `submitOrder -> describe` declared later). Self-recursion and mutual recursion ARE emitted (`countDown -> countDown`, `mutualA -> mutualB`). Qualified calls emit FULL targets (`M.lookup`, `Data.Map.size` — the Erlang `gen_server:cast` precedent). Exclusions: Prelude/imported functions (`map`, `foldl'`, `fromMaybe`), type variables, pattern vars, record-field selectors, operator/infix syntax, where/let-local functions (their bodies are scoped noise) | 1.0 |
 | instantiates | ✅ | constructor application in BODY position → `instantiates fn -> Constructor` (Erlang `record_expr` analog). Pattern-position constructor applications (function heads, `patterns` nodes) never emit. `record_update_expr`-analog record updates (`book { bids = ... }`) are not constructions | 0.9 |
-| references | ✅ | module dependencies only: `import` → `references module -> dep` (the FP-family module-dep contract). Source is the MODULE (fixed — was self-source `references Data.List -> Data.List`) | 0.9 |
-| uses | ❌ | record field access (`name u`, `bids book` — field selectors) is a field read — no edge (fields already have `contains` ownership) | — |
+| imports | ✅ | `import` → `imports module -> importedModule` (**M60-HK**: was `references`; 2,119 of 2,126 `references` edges were module imports) |
+| exports | ✅ | the `header → exports` list → `exports module -> name`; only `export` nodes count, because the list interleaves Haddock comments (**M60-HK**) |
+| overrides | ✅ | `instance C T where m ...` → `overrides T.m -> C.m`, matched against a class→methods pre-pass (**M60-HK**) |
+| uses | ✅ | a type synonym → the `name`/`constructor` leaves of its right-hand side; a `variable` there is a type PARAMETER and is excluded (**M60-HK**) |
+| references | ✅ | FFI entity edges only — an `imports` edge now carries the module dependency (**M60-HK**; 7 edges corpus-wide) |
 
 ## Noise-elimination contract (what produces NO edges)
 
@@ -119,21 +122,37 @@ Measured by `script/m12/measure-analyzer.ts` (results in
 
 ## Corpus validation
 
+> **RESOLVED 2026-09-29 (M60-HK wave).** The two corpora this lane was registered
+> against — `cabal` and `hledger` — are **absent from this machine**, and the lane
+> could not run its differential at all. The primary corpus is now **`postgrest`**,
+> the only checkout on this box with any Haskell (207 tracked `.hs` files), and the
+> second corpus is **declared absent** rather than retargeted. The lane runs
+> single-corpus and measures again.
+>
+> This is a **disclosed substitute, not a replacement**: `postgrest` is smaller than
+> the 637 `cabal` files originally measured and its `.hs` surface is a vendored
+> database library, so it exercises less dialect. Restoring `cabal` or `hledger`
+> remains the better outcome and is the M12/M60 owner's call.
+>
+> Current measurement, 60-file sample: **2,120 truth edges, 2,120 covered (100 %),
+> 0 MISSING, 1 unexplained (0.1 %)**. The `cabal`/shellcheck/hledger coverage figures
+> further down predate their disappearance and cannot currently be reproduced.
+
 `validation/m12/results/haskell-differential.json` (via
 `script/m12/verify-analyzer.ts haskell`):
 
 - Fixtures: `Service.hs` (positive) + `Negative.hs` (negative)
 - **75/75 facts, precision 1.000, recall 1.000, 0 FP, 0 FN, 0 unknown**
+  (two files — see the warning above)
 - Corpus error scan (`script/m12/haskell-corpus-errors.ts`): all 637 .hs files
   ≥ 1KB — **7 grammar-error files (1.1%), 0 crashes, 0 timeouts**. All 7
   classified honestly as grammar limitations: 3 template files with
   `{{placeholder}}` syntax (not real Haskell), 2 TemplateHaskell quasiquote
   files (`[d| ... |]` brackets unparseable without TH), 1 CRLF multi-line
   string continuation file, 1 GADTs pattern file.
-- Shape-safety (`script/m12/haskell-node-types-compare.ts`): 34/35 analyzer
-  node-type refs live against the pinned grammar's actual emitted types (193
-  distinct types from 2,151 corpus files); the 1 remaining (`MISSING`) is the
-  defensive tree-sitter error-path check that only fires on syntax errors.
+  *Re-measured 2026-09-29 over the 208 `.hs` files on this box: **0 files with a
+  parse error, 0 ERROR/MISSING nodes** — a strictly better profile, on a
+  different and smaller file set.*
 
 ## Supported / unsupported constructs
 
@@ -189,8 +208,14 @@ Gate hardening: fixture extended with pins + forbids for every fixed class
 `comment` keys on expectation entries are documentation, not match
 constraints (harness bug found when new forbids silently never fired).
 
-Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
-0 missing, 0 unexplained** (samples 200). Grammar pin: tree-sitter-haskell
+> **UNREPRODUCIBLE (2026-09-29).** `cabal` and `hledger` — the two corpora this
+> lane is registered against — are absent from this machine, so this row cannot
+> currently be regenerated. The figures are what was measured when the corpora
+> were present; nothing here can confirm or refute them today. See the
+> reproducibility warning under `## Corpus validation` above.
+>
+> Corpus: cabal + shellcheck + hledger + postgrest all at **100% coverage,
+> 0 missing, 0 unexplained** (samples 200). Grammar pin: tree-sitter-haskell
 v0.23.1 stays (latest release; M12.25 behavioral identity on full corpus;
 upstream main has an unreleased full rewrite — re-run F1 + wasm-compare when
 it ships).

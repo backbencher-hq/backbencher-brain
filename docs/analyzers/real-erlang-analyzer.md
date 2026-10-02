@@ -142,11 +142,13 @@ emitted by 8 analyzers — and emitted by no Erlang symbol at all until ER-D39.
 The same pass over the relationship enum found two more (`exports`, `imports`).
 Reading the analyzer for what looks missing finds none of those three; comparing
 it against the enum finds all three.
+## Symbol contract
 
 | field | supported | how it is derived |
 |---|---|---|
 | `name` | yes | `-module` -> module · `-record` -> record · `-define` -> macro (`var` child of `macro_lhs`) · `-type`/`-opaque`/`-nominal` -> type · `-callback` -> method · clause head -> function, **including a `?MODULE()` head** (ER-D25/D28) |
 | `kind` | yes | `module`, `struct` (a record), `property` (a record field), `macro` (a FUNCTION-LIKE `-define`), `constant` (an OBJECT-LIKE `-define`, which really is a compile-time value), `type`, `method` (a callback), `function` (ER-D39) |
+| `kind` | yes | `module`, `struct` (a record), `property` (a record field), `constant` (a macro), `type`, `method` (a callback), `function` |
 | `ownerName` | yes | the module for functions/methods/types/records/macros; **the record** for its fields |
 | `range` | yes | the declaration node; a function's range spans every clause of that (name, arity) |
 | `parameters` | yes | one per clause-head element. A head is a PATTERN, so each carries `name` (only for a plain variable) and always `pattern`, plus `type` when a `-spec` supplies it (ER-D21) |
@@ -156,6 +158,10 @@ it against the enum finds all three.
 | `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
 | `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
 | `isCallback` / `isOpaque` / `isNominal` / `isMacro` / `isFunctionLike` | yes (metadata) | the declaration forms that are easy to lose; `isFunctionLike` is what splits `macro` from `constant` (ER-D39) |
+| `visibility` | **N/A** | Erlang has no visibility keyword. `-export`/`-export_type` are the export lists, recorded on `ExportInfo` |
+| `isStatic` / `isAsync` / `isAbstract` / `decorators` / `genericParameters` | **N/A** | Erlang has no modifiers, decorators or generics. Erlang macros are not generic |
+| `isNif` / `isOnLoad` | yes (metadata) | `-nifs`/`-on_load` ANNOTATE the declared function; they never mint a second symbol (ER-D22) |
+| `isCallback` / `isOpaque` / `isNominal` / `isMacro` | yes (metadata) | the three declaration forms that are easy to lose |
 
 **Function identity is (name, arity).** `pick/0` and `pick/1` are two functions;
 the second clause of either is the same function. A module that both declares
@@ -175,6 +181,8 @@ and defines a callback yields ONE symbol whose kind and line are the
 | `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A (ER-D34; see `symbol_kind_audit` in `script/m14/spec/erlang-completeness.json`) |
 | `exports` | `-export([f/a])` and `-export_type([t/0])`, one edge per `fa` in the attribute (ER-D40) | the module's public surface, which is a DIFFERENT statement from `contains` ("is a member"). Named at the `fa`'s own line; `-export([?MODULE/0])` resolves `?MODULE` to the module name |
 | `imports` | `-import(Mod, [f/a])` (ER-D41) | the dependency the module pass reads (`brain_import` rows, `dependencies.ts:27-28`), alongside the `references` mention of the same atom |
+| `extends` / `overrides` | **never** | **Erlang has no inheritance.** Ruled N/A |
+| `exports` (as a relationship) | **never** | the language export list is `ExportInfo`; no analyzer in the family emits an exports *relationship* for it |
 
 `confidence` is 1.0 for structural edges and 0.9 for name-resolved ones. **No
 edge is a heuristic guess** — the corpus dual lens reports a heuristic class of
@@ -403,6 +411,42 @@ reported the cause unattributed after six ablations failed to find it. The cause
 one line: `prePassForms(rootNode)` called in the loop CONDITION and again in the loop
 BODY, making the pre-pass O(forms^2) on every file. Six ablations missed it because
 every one ablated SEMANTICS rather than counting INVOCATIONS.
+**RED on cost, and the row carries its load context.** Measured with the
+interleaved-minimum design (`bun run script/m14/tmp/erlang-scaling-robust.ts
+--reps 5`): the two analyzers alternate inside one loop on the same trees, so
+host interference can only add time and the minimum of each is the
+interference-free estimate. This matters because the naive measurement on this
+host — five other agent processes, 12 of 15 GB resident — produced a number that
+was wrong in the WRONG DIRECTION (it reported the rewrite as faster; the
+interference did not scale the two analyzers equally, so the ratio inverted).
+Those naive rows are discarded, not reported.
+
+Per-node cost by file-size quartile, against the pre-ER3 analyzer restored from
+git:
+
+| node-count quartile | files | node range | ER3 us/node | pre-ER3 us/node | ratio |
+|---|---|---|---|---|---|
+| Q1 | 30 | 17 - 338 | 1.0 | 0.0 | - |
+| Q2 | 30 | 382 - 1,375 | 2.2 | 0.6 | 3.8x |
+| Q3 | 30 | 1,388 - 3,766 | 3.3 | 0.9 | 3.7x |
+| Q4 | 30 | 3,793 - 49,028 | **5.5** | **0.8** | **6.7x** |
+
+**The pre-ER3 analyzer's per-node cost is flat in file size; this one's rises.**
+There is a super-linear term, and six feature ablations (type-reference walks,
+the pattern ancestor climb, the parameter payload, the `contains` pass, edge
+emission, the per-node `isMissing` read, the scope `Set` lookups, the exit
+markers) each moved the total by less than the run-to-run noise — so the cause is
+**unattributed**, and named as such in `reviews/erlang/m49-er3-grammar-truth.md`
+§9 rather than guessed at. The pre-ER3 flatness is the clue: it walked the same
+trees with the same loop and cost 0.8 us/node on a 49,028-node file, so the term
+is in the per-node work this rewrite added, not in the walk.
+
+Output volume: 253 relationships and 45 symbols per file (vs 117 and 40 before),
+i.e. 2.08x the relationships for 3.7-6.7x the per-node cost. The parts that are
+attributed: the main walk is a single DFS, the pre-pass reads the top level
+rather than re-walking the tree, each type declaration's reference walk covers
+only its own subtree, and the pattern test climbs to the nearest boundary. No
+nested loop over symbols.
 
 ## Corpus validation
 

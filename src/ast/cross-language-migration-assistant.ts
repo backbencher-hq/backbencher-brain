@@ -1,5 +1,3 @@
-// @ts-nocheck — large static polyglot mapping dataset
-import { CrossLanguageIntelligence } from "./cross-language-intelligence"
 import * as Log from "../tool/brain-log"
 
 const log = Log.create({ service: "cross-language-migration" })
@@ -14,6 +12,12 @@ export namespace CrossLanguageMigrationAssistant {
     notes?: string
     status: "supported" | "uncertain"
     unsupportedReason?: MigrationUnsupportedReason
+    /**
+     * Where this claim comes from. `indexed-import` is an observed import in
+     * the index; `name-heuristic` is a guess from the symbol's name. Only the
+     * first kind is evidence, and only the first kind moves effort or risk.
+     */
+    provenance?: "indexed-import" | "name-heuristic"
   }
 
   export interface MigrationRisk {
@@ -26,23 +30,133 @@ export namespace CrossLanguageMigrationAssistant {
     relationshipType: string
     sourceSymbolId: string | null
     targetSymbolId: string | null
+    /** The name the indexer recorded for an endpoint that is not an indexed symbol. */
+    sourceExternal: string | null
+    targetExternal: string | null
     sourceFile: string
     targetFile: string
-    strength: number
+    /**
+     * The line the relationship occurs on, 1-based, as stored by the indexer.
+     * Null when the indexer recorded none — 490 of 5228 cobra rows — and that
+     * absence is reported rather than filled with a zero.
+     */
+    line: number | null
+    /**
+     * The indexer's own 0–1 confidence for this relationship. This REPLACES the
+     * constant 0.8 the bridge used to fabricate: measured 6 distinct values on
+     * cobra and 4 on flask. It is a confidence, not a coupling strength, and the
+     * field is named for what the index actually stores.
+     */
+    confidence: number | null
+    /** True when the indexer marked this edge as crossing a language boundary. */
+    isCrossLanguage: boolean
+    /** How the boundary is bridged, as recorded ("name-resolution", …). */
+    bridgeMechanism: string | null
+    isCrossFile: boolean
+    /**
+     * False when either endpoint is not an indexed symbol. Such an edge cannot be
+     * located, so it is not charged as migration work; the count is reported
+     * instead of silently inflating the total.
+     */
+    endpointsResolved: boolean
+    /**
+     * False for a structural edge (`contains`, `exports`) that records nesting
+     * or declaration rather than an integration point. Shown as evidence, not
+     * charged as work — see {@link isStructuralRelationship}.
+     */
+    isIntegrationPoint: boolean
+    /**
+     * True when the edge's files look like test code. A migrating engineer needs
+     * this split: measured, 55.3% of a cobra plan's evidence is test callers, and
+     * a flat per-edge cost makes that dominate the headline number.
+     */
+    isTestEvidence: boolean
   }
 
   export interface MigrationPlan {
     componentName: string
+    /** The exact indexed symbol this plan is about; disambiguates a shared name. */
+    symbolId: string
+    /** The file that symbol is defined in, taken from the plan's own symbol. */
+    sourceFile: string
+    /**
+     * Where the component starts, as the index stored it; null when the index has
+     * no line for it. Never invented, and never parsed back out of `symbolId` —
+     * the id is an opaque key, not a tuple.
+     */
+    sourceLine: number | null
     sourceLanguage: string
     targetLanguage: string
+    /** Libraries backed by an indexed import. The only kind that is evidence. */
     dependencies: LibraryEquivalence[]
+    /** Name-based guesses. Explicitly NOT evidence; excluded from effort/risk. */
+    inferredDependencies: LibraryEquivalence[]
+    dependencyProvenance: {
+      indexedImports: number
+      nameHeuristics: number
+      /**
+       * Whether the index can supply library evidence for this component at all.
+       * The index does not record per-file imports, so this is `unavailable` in
+       * practice; it is stated rather than reported as "no dependencies".
+       */
+      importEvidence: "available" | "unavailable"
+      /**
+       * What the file's imports actually were, as the index holds them.
+       *
+       * `unmapped` is the field that matters most, and it was STRUCTURALLY zero
+       * before round 9: the methodology's missing-mapping charge exists for a
+       * third-party library with no registered mapping, and `dependencies` was
+       * always empty, so nothing could ever be unmapped and `missingMappingHours`
+       * was always 0.
+       */
+      imports: {
+        declared: number
+        /** Specifiers the INDEX holds for this file. */
+        fromIndex: number
+        /** Specifiers a CALLER supplied for this component. */
+        suppliedByCaller: number
+        standardLibrary: number
+        thirdParty: number
+        localCrate: number
+        /** Specifiers this tool cannot classify for its language. Not zero. */
+        unclassified: number
+        mapped: number
+        /** Third-party libraries with NO registered mapping. Charged, and named. */
+        unmapped: number
+        unmappedLibraries: string[]
+        /**
+         * Standard-library imports with no row. Visible, NOT charged, and NOT
+         * libraries: `fmt` is not a library a human must research.
+         */
+        stdlibWithoutRow: number
+        stdlibWithoutRowLibraries: string[]
+        classification: "available" | "unavailable"
+      }
+      note: string
+    }
     relationshipEvidence: MigrationRelationshipEvidence[]
+    evidenceBreakdown: {
+      total: number
+      /** Resolved, non-test edges: the integration points a port must satisfy. */
+      production: number
+      /** Resolved edges whose files are test code. */
+      test: number
+      /** Edges with an endpoint that is not an indexed symbol; not charged. */
+      unresolvable: number
+      /** Containment/export edges: shown as evidence, not charged as work. */
+      structural: number
+      /** Edges the indexer marked as crossing a language boundary. */
+      crossLanguage: number
+      /** Of the resolved edges, how many carry a line. */
+      withLine: number
+      /** Of the resolved edges, how many carry a stored confidence. */
+      withConfidence: number
+    }
     effortEstimateHours: number
     complexityScore: number // 1-10
     riskAssessment: MigrationRisk
     strategySteps: string[]
   }
-
   // A hardcoded knowledge base of polyglot equivalents for migration
   const BASE_POLYGLOT_LIBRARY_DICTIONARY: Record<
     string,
@@ -687,20 +801,127 @@ export namespace CrossLanguageMigrationAssistant {
     },
   }
 
+  // The indexer emits a fixed set of language labels (see
+  // `DetectedLanguage` in src/ast/language-detection.ts). Measured against that
+  // set, this map previously recognized 30 of 46 labels: a real `objective-c`,
+  // `tsx` or `nim` symbol was planned as if in a language this file holds no
+  // dictionary rows for, and a user asking for target `C++` was told the target
+  // was unsupported even though `cpp` is a dictionary key.
+  //
+  // Both spellings are registered for every hyphenated name because
+  // `normalizeMigrationLanguage` folds `-` and spaces to `_` BEFORE the lookup.
+  // The pre-fold form is kept too so the map is readable as a contract rather
+  // than as a set of keys that only happen to be reachable.
   const MIGRATION_LANGUAGE_ALIASES: Readonly<Record<string, string>> = {
-    ts: "typescript", typescript: "typescript", js: "javascript", javascript: "javascript",
-    py: "python", python: "python", rb: "ruby", ruby: "ruby", cs: "csharp", csharp: "csharp",
-    c_sharp: "csharp", objc: "objectivec", "objective-c": "objectivec", objectivec: "objectivec",
-    fs: "fsharp", fsharp: "fsharp", ps: "powershell", powershell: "powershell",
+    ts: "typescript", typescript: "typescript", tsx: "typescript", "typescriptreact": "typescript",
+    js: "javascript", javascript: "javascript", jsx: "javascript", mjs: "javascript", cjs: "javascript",
+    py: "python", python: "python", pyw: "python", pyi: "python",
+    rb: "ruby", ruby: "ruby", erlang: "erlang", elixir: "elixir", ex: "elixir", exs: "elixir",
+    cs: "csharp", csharp: "csharp", c_sharp: "csharp", "c#": "csharp",
+    objc: "objectivec", "objective-c": "objectivec", objectivec: "objectivec",
+    "objective_c": "objectivec", "objective_cpp": "objectivec", "objective-c++": "objectivec",
+    fs: "fsharp", fsharp: "fsharp", "f#": "fsharp", fsi: "fsharp", fsx: "fsharp",
+    ps: "powershell", powershell: "powershell", ps1: "powershell",
+    c: "c", h: "c", cpp: "cpp", cc: "cpp", cxx: "cpp", "c++": "cpp", hpp: "cpp", hxx: "cpp",
+    rs: "rust", rust: "rust", go: "go", golang: "go", zig: "zig", nim: "nim",
+    java: "java", kt: "kotlin", kotlin: "kotlin", kts: "kotlin",
+    scala: "scala", sc: "scala", groovy: "groovy", gradle: "groovy",
+    swift: "swift", dart: "dart", php: "php", lua: "lua", pl: "perl", perl: "perl",
+    hs: "haskell", haskell: "haskell", clj: "clojure", clojure: "clojure", cljs: "clojure",
+    sh: "bash", bash: "bash", zsh: "bash", shell: "bash", shellcheck: "bash",
+    // Markup, config, query and schema languages. They carry no importable
+    // library surface, so they are recognized (a plan must not claim the
+    // component is in an unknown language) but they resolve to no mappings and
+    // are refused below, with the refusal naming them as non-migratable.
+    html: "html", xml: "xml", css: "css", scss: "css", sass: "css", less: "css",
+    vue: "vue", svelte: "svelte", json: "json", jsonc: "json",
+    yaml: "yaml", yml: "yaml", toml: "toml", hcl: "hcl", tf: "hcl", tfvars: "hcl",
+    markdown: "markdown", md: "markdown", sql: "sql", proto: "protobuf", protobuf: "protobuf",
+    "protocol_buffer": "protobuf", "protocol-buffer": "protobuf", "protocol buffer": "protobuf",
+    make: "make", mk: "make", makefile: "make", clean: "clean",
+    // `vb` and `vbnet` are recognized so the refusal is precise, but this file
+    // holds no VB rows; see the non-migratable set below.
+    vb: "vb", vbnet: "vb",
   }
+
   const SUPPORTED_MIGRATION_LANGUAGES = new Set([
     ...Object.keys(BASE_POLYGLOT_LIBRARY_DICTIONARY),
     ...Object.keys(DIRECT_POLYGLOT_LIBRARY_DICTIONARY),
   ].map((language) => language.toLowerCase()))
+
+  // Languages the indexer emits that are real files with real symbols but hold
+  // no importable library surface. A migration plan for one of these is
+  // nonsense — you do not port a YAML document to Go — so they are refused with
+  // a stated reason instead of being planned as an unknown language.
+  const NON_MIGRATABLE_LANGUAGES: Readonly<Record<string, string>> = {
+    html: "an HTML document, not migratable program logic",
+    xml: "an XML document, not migratable program logic",
+    css: "a stylesheet, not migratable program logic",
+    json: "a JSON document, not migratable program logic",
+    yaml: "a YAML document, not migratable program logic",
+    toml: "a TOML document, not migratable program logic",
+    hcl: "an HCL configuration, not migratable program logic",
+    markdown: "a Markdown document, not migratable program logic",
+    make: "a makefile, not migratable program logic",
+    sql: "a SQL script, not migratable program logic",
+    protobuf: "an IDL schema, not migratable program logic",
+    clean: "a Clean function, not migratable program logic",
+    vb: "Visual Basic, which holds no library-equivalence rows in this tool",
+    nim: "Nim, which holds no library-equivalence rows in this tool",
+    proto: "an IDL schema, not migratable program logic",
+  }
+
   function normalizeMigrationLanguage(language: string): string | null {
-    const normalized = String(language ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_")
-    const canonical = MIGRATION_LANGUAGE_ALIASES[normalized] ?? normalized.replace(/_/g, "")
+    // Fold to a single `_`-separated form, then look up the folded form, the
+    // raw form, and the form with separators stripped. All three are needed:
+    // `objective-c` and `objective_c` are the same language, and a label like
+    // `c++` never normalizes to a dictionary key by folding alone.
+    const raw = String(language ?? "").trim().toLowerCase()
+    if (!raw) return null
+    const folded = raw.replace(/[\s-]+/g, "_")
+    for (const candidate of [folded, raw, folded.replace(/_/g, "")]) {
+      const canonical = MIGRATION_LANGUAGE_ALIASES[candidate]
+      if (canonical) return canonical
+    }
+    const canonical = MIGRATION_LANGUAGE_ALIASES[folded] ?? folded.replace(/_/g, "")
     return SUPPORTED_MIGRATION_LANGUAGES.has(canonical) ? canonical : null
+  }
+
+  /**
+   * Resolve a symbol's own language label to a dictionary key, and say plainly
+   * when it has none. The previous form fell back to the RAW label, which is how
+   * a plan came to claim `src: "yaml"` with a dependency list and an effort
+   * estimate — a language this file holds no rows for at all.
+   */
+  export interface SourceLanguageResolution {
+    /** Dictionary key, or null when this tool holds no data for the language. */
+    language: string | null
+    /** The label exactly as the index stored it, for error messages. */
+    label: string
+    /** Set when `language` is null; safe to show a user. */
+    reason: string | null
+  }
+
+  export function resolveSourceLanguage(label: string): SourceLanguageResolution {
+    const raw = String(label ?? "").trim()
+    const canonical = normalizeMigrationLanguage(raw)
+    // The non-migratable check runs on the CANONICAL name, not the raw label:
+    // the alias map resolves `yaml`/`SQL`/`CSS` to themselves, so checking the
+    // raw label first let every one of them through as a plannable language.
+    if (canonical) {
+      const nonMigratable = NON_MIGRATABLE_LANGUAGES[canonical]
+      if (nonMigratable) return { language: null, label: raw, reason: `source language "${raw}" is ${nonMigratable}` }
+      return { language: canonical, label: raw, reason: null }
+    }
+    const folded = raw.toLowerCase().replace(/[\s-]+/g, "_")
+    const nonMigratable = NON_MIGRATABLE_LANGUAGES[folded] ?? NON_MIGRATABLE_LANGUAGES[folded.replace(/_/g, "")]
+    return {
+      language: null,
+      label: raw,
+      reason: nonMigratable
+        ? `source language "${raw}" is ${nonMigratable}`
+        : `no library-equivalence data is registered for source language "${raw}"`,
+    }
   }
 
   const POLYGLOT_LIBRARY_DICTIONARY = Object.fromEntries(
@@ -719,108 +940,672 @@ export namespace CrossLanguageMigrationAssistant {
     ),
   ) as Record<string, Record<string, Record<string, { target: string; notes?: string }>>>
 
+  export type MigrationRefusalReason =
+    | "missing-symbol"
+    | "unsupported-target"
+    | "same-language"
+    | "unsupported-source"
+    | "ambiguous-symbol"
+
+  export interface MigrationRefusal {
+    reason: MigrationRefusalReason
+    /** A sentence safe to show a user. No fabrication, no internal jargon. */
+    detail: string
+    /** Every symbol the requested name matched, for the ambiguity case. */
+    candidates?: Array<{ id: string; name: string; language: string; file: string }>
+  }
+
+  export type MigrationOutcome =
+    | { ok: true; plan: MigrationPlan }
+    | { ok: false; refusal: MigrationRefusal }
+
+  // ── the planner's input ────────────────────────────────────────────────────
+  // A narrow view of the index, produced by
+  // `loadMigrationContext` (src/intelligence/migration/migration-source.ts).
+  // Deliberately not the whole project: the previous input was every symbol and
+  // every relationship in the repository, loaded and reconstructed per call.
+  export interface MigrationSourceRelationship {
+    id: string
+    sourceSymbolId: string | null
+    targetSymbolId: string | null
+    sourceExternal?: string | null
+    targetExternal?: string | null
+    type: string
+    confidence?: number | null
+    line?: number | null
+    isCrossLanguage?: boolean
+    bridgeMechanism?: string | null
+    isCrossFile?: boolean
+    /** Convenience for the legacy adapter: endpoint file paths. */
+    sourceFile?: string
+    targetFile?: string
+  }
+
+  export interface MigrationSource {
+    /** Symbols whose name matches a requested name (case-insensitive). */
+    symbols: Array<{ id: string; name: string; type?: string; language: string; file: string }>
+    relationships: MigrationSourceRelationship[]
+    nameById?: Map<string, string>
+    fileById?: Map<string, string>
+  }
+
+  /**
+   * Adapt the generic cross-language analysis shape into a `MigrationSource`.
+   *
+   * Kept so callers holding a `PolyglotProjectAnalysis` — the fixtures in
+   * script/m20/verify-migration-mappings.ts among them — keep working. The
+   * engine itself no longer goes through this path; it uses the bounded loader.
+   */
+  export function migrationSourceFromAnalysis(analysis: any): MigrationSource {
+    const nameById = new Map<string, string>()
+    const fileById = new Map<string, string>()
+    const symbols = (analysis?.crossLanguageSymbols ?? []).map((s: any) => {
+      nameById.set(s.id, s.name)
+      fileById.set(s.id, s.definitions?.[0]?.filePath ?? "unknown")
+      return {
+        id: s.id,
+        name: s.name,
+        type: s.type,
+        language: String(s.languages?.[0] ?? "unknown"),
+        file: s.definitions?.[0]?.filePath ?? "unknown",
+        metadata: s.metadata,
+      }
+    })
+    const relationships: MigrationSourceRelationship[] = (analysis?.crossLanguageRelationships ?? []).map((r: any) => ({
+      id: r.id,
+      sourceSymbolId: r.source?.symbolId ?? null,
+      targetSymbolId: r.target?.symbolId ?? null,
+      type: String(r.type),
+      confidence: Number.isFinite(r.strength) ? r.strength : null,
+      line: null,
+      isCrossLanguage: false,
+      bridgeMechanism: null,
+      isCrossFile: (r.source?.filePath ?? "") !== (r.target?.filePath ?? ""),
+      sourceFile: r.source?.filePath,
+      targetFile: r.target?.filePath,
+    }))
+    return { symbols: symbols as any, relationships, nameById, fileById }
+  }
+
+  /**
+   * Canonicalize a module specifier to the name the dictionary is keyed by.
+   *
+   * THE SHAPE OF THE PROBLEM. A dictionary key is a name in the SOURCE
+   * ecosystem's own vocabulary: `net/http` for Go, `flutter/material` for Dart,
+   * `socket.io` for npm, `asgiref` for Python. An import specifier is whatever
+   * the source file happens to write. Collapsing one to the other without
+   * knowing the language gets it wrong in both directions, and the dictionary
+   * audit measured all three failures:
+   *
+   *   "net/http"           -> "net"            (Go subpath is the package)
+   *   "package:flutter/material.dart" -> "flutter"  (Dart subpath is the widget set)
+   *   "socket.io"          -> rejected         (a real npm package with a dot)
+   *   "@nestjs/core"       -> "core"           (the scope is the framework)
+   *   "node:fs"            -> rejected         (a builtin, not a dependency)
+   *   "@types/node"        -> rejected         (a type stub, not a runtime dep)
+   *
+   * So this is language-aware. The rules that differ:
+   *
+   *  - Go, Dart, Rust, Java, C#, PHP, Ruby, Perl: a dotted or slashed path IS
+   *    the package name. `net/http`, `package:flutter/material.dart`, `com.squareup…`
+   *  - Python, R, Elixir, Haskell, Scala, Clojure: the FIRST dotted segment is
+   *    the module. `asgiref`, `ggplot2`.
+   *  - JavaScript/TypeScript: npm scope rules — `@scope/name` collapses to the
+   *    scope (the dictionary is keyed by framework), everything else keeps its
+   *    first path segment but KEEPS dots, so `socket.io` survives.
+   *
+   * `language` is the SOURCE language, normalized. It is optional so that a
+   * caller with no language gets the JavaScript/npm rules, which are the
+   * strictest about scope and the most common case in the corpus.
+   */
+  export interface CanonicalPackage {
+    name: string | null
+    /** Why it is not a library, when it is not one. */
+    excluded?: "node-builtin" | "type-only" | "relative" | "malformed" | "absolute"
+    /**
+     * For a Go module path, which rule produced `name`. `fallback` means the host is
+     * unknown and the repository was guessed as the last segment — a name that MAY be
+     * a package rather than a library, so a row keyed by the real repository would not
+     * be reached. Declared rather than hidden, because this is the only remaining way
+     * a canonical Go name can be wrong.
+     */
+    hostRule?: "declared" | "fallback"
+  }
+
+  /**
+   * Go hosts whose repository is NOT the last path segment.
+   *
+   * A module path is `<host>/<repo>[/<subpackage...>][/vN]` only for a few hosts.
+   * Everywhere else the repository sits at a fixed position, and taking the last
+   * segment yields a package name: `k8s.io/api/core/v1` is the `api` module's `core/v1`
+   * package, and `gonum.org/v1/gonum/stat` is the `gonum` module's `stat` package.
+   *
+   * Each entry states the layout it encodes, so the table can be audited rather than
+   * trusted. An entry is added when a measured import shows the last-segment rule is
+   * wrong for that host — which is also why hosts where the last segment IS the
+   * repository (`sigs.k8s.io/yaml`, `mvdan.cc/sh/v3`, `cloud.google.com/go/storage`,
+   * `go.yaml.in/yaml/v3`, `honnef.co/go/tools`) are deliberately absent.
+   */
+  const GO_MODULE_HOSTS: ReadonlyArray<{
+    host: string
+    /** Index into the version-stripped segments that names the repository. */
+    repoAt: (rest: string[]) => number
+    layout: string
+  }> = [
+    { host: "github.com", repoAt: (r) => 1, layout: "github.com/<org>/<repo>[/<subpkg>...]" },
+    { host: "gitlab.com", repoAt: (r) => 1, layout: "gitlab.com/<org>/<repo>[/<subpkg>...]" },
+    { host: "bitbucket.org", repoAt: (r) => 1, layout: "bitbucket.org/<org>/<repo>[/<subpkg>...]" },
+    { host: "codeberg.org", repoAt: (r) => 1, layout: "codeberg.org/<owner>/<repo>[/<subpkg>...]" },
+    { host: "gitea.com", repoAt: (r) => 1, layout: "gitea.com/<owner>/<repo>[/<subpkg>...]" },
+    { host: "sourceforge.net", repoAt: (r) => 1, layout: "sourceforge.net/<project>/<repo>[/<subpkg>...]" },
+    // `golang.org/x/<repo>` is a vanity import of a GitHub repository; any other
+    // `golang.org/<name>` path is the module itself.
+    { host: "golang.org", repoAt: (r) => (r[0] === "x" ? 1 : 0), layout: "golang.org/x/<repo> | golang.org/<repo>" },
+    { host: "k8s.io", repoAt: () => 0, layout: "k8s.io/<module>[/<pkg>...]" },
+    { host: "google.golang.org", repoAt: () => 0, layout: "google.golang.org/<repo>[/<pkg>...]" },
+    { host: "cloud.google.com", repoAt: (r) => (r[0] === "go" ? 1 : 0), layout: "cloud.google.com/go/<repo> | cloud.google.com/<repo>" },
+    { host: "go.uber.org", repoAt: () => 0, layout: "go.uber.org/<repo>[/<pkg>...]" },
+    { host: "go.opentelemetry.io", repoAt: () => 0, layout: "go.opentelemetry.io/<repo>[/<pkg>...]" },
+    { host: "gonum.org", repoAt: () => 0, layout: "gonum.org/vN/<repo>[/<pkg>...]" },
+    { host: "nhooyr.io", repoAt: () => 0, layout: "nhooyr.io/<repo>[/<pkg>...]" },
+    // `gopkg.in/<user>/<repo>` and `gopkg.in/<repo>` are both in use. The last segment
+    // is the repository in the two-segment form, which is the common one.
+    { host: "gopkg.in", repoAt: (r) => Math.max(0, r.length - 1), layout: "gopkg.in/<repo>[.vN] | gopkg.in/<user>/<repo>" },
+  ]
+
+  /** Languages where a dotted/slashed path is itself the package name. */
+  const PATH_NAMED_LANGUAGES: ReadonlySet<string> = new Set([
+    "go", "rust", "java", "csharp", "php", "ruby", "perl", "swift", "kotlin", "cpp", "c",
+    // Clojure namespaces are dotted paths, not modules: `(require '[core.async])`
+    // names `core.async` in full. Taking the first segment turned it into `core`,
+    // which is not a namespace and matches no row.
+    "clojure",
+  ])
+  /** Languages where the first dotted segment is the module. */
+  const DOTTED_MODULE_LANGUAGES: ReadonlySet<string> = new Set([
+    "python", "r", "elixir", "haskell", "scala", "erlang", "julia", "lua",
+  ])
+
+  export function canonicalPackageName(specifier: string, language?: string | null): CanonicalPackage {
+    let raw = String(specifier ?? "").trim().replace(/^["']|["']$/g, "")
+    if (!raw) return { name: null, excluded: "malformed" }
+    if (raw.startsWith("node:")) return { name: null, excluded: "node-builtin" }
+    if (raw.startsWith(".") || raw.startsWith("./") || raw.startsWith("../")) return { name: null, excluded: "relative" }
+    if (raw.startsWith("/")) return { name: null, excluded: "absolute" }
+
+    // `package:flutter/material.dart` is Dart's canonical spelling.
+    if (raw.startsWith("package:")) raw = raw.slice("package:".length)
+
+    const lang = normalizeMigrationLanguage(language ?? "") ?? "javascript"
+
+    if (lang === "dart") {
+      // `package:<package>/<library>.dart` — the PACKAGE is the first segment, so
+      // `package:bloc/bloc.dart` is the `bloc` package. The subpath names a
+      // LIBRARY inside it, not a package, which is why the `flutter/material`
+      // dictionary row can never be selected by an import: both it and the
+      // `flutter` row canonicalize to `flutter`. Choosing between them needs
+      // library-level granularity the lookup does not have.
+      const first = raw.split("/")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    if (PATH_NAMED_LANGUAGES.has(lang)) {
+      const withoutExt = raw
+      if (lang === "go") {
+        // THE GO MODULE PATH IS NOT THE PACKAGE NAME, AND THE DICTIONARY IS KEYED
+        // BY THE PACKAGE NAME.
+        //
+        // The comment this replaces said "Go stdlib and module paths keep every
+        // segment", so `github.com/spf13/pflag` canonicalized to itself. The Go
+        // dictionary's 42 rows are keyed `gin`, `gorm`, `testify`, `wire`, `ent`,
+        // `gonum`, `net/http`, `goroutines` — bare names. So NO real Go import could
+        // ever match a row, and every go -> python / go -> javascript / go -> rust
+        // mapping was unreachable in production. Measured on cobra: `mapped: 0` for
+        // every plan, with `github.com/spf13/pflag` reported as unmapped while the
+        // tool had 8 registered go -> python rows it could never have reached.
+        //
+        // Go's own convention: the first segment is the HOST when it contains a dot
+        // (`github.com`, `golang.org`, `gopkg.in`); what follows is the module path,
+        // whose repository is its last segment before any major-version suffix.
+        // `net/http` has no host, so it is a standard-library path and keeps every
+        // segment — and the dictionary HAS a `net/http` row, so it must keep it.
+        const segments = withoutExt.split("/").filter(Boolean)
+        if (segments.length === 0) return { name: null, excluded: "malformed" }
+        // No slash at all, so there is no module path to reduce. A single dotted
+        // segment is not a Go import — Go imports are paths — but it IS a valid
+        // dictionary key that a caller can supply (`pool.query`, `asp.net`), and
+        // reducing it against the host rules dropped it as malformed. Passed
+        // through unchanged, which is what round 1 did.
+        if (segments.length === 1) return { name: withoutExt }
+        const hasHost = segments[0].includes(".")
+        if (!hasHost) {
+          // Standard library path: `net/http`, `encoding/json`. Unchanged, because a
+          // dictionary row keyed `net/http` must stay reachable.
+          return { name: withoutExt }
+        }
+        // WHICH SEGMENT IS THE REPOSITORY, from Go's own host conventions.
+        //
+        // Taking the LAST segment is wrong for an in-repo subpath:
+        // `github.com/stretchr/testify/assert` is the `testify` package's `assert`
+        // subpackage, and the dictionary row is keyed `testify`. Last-segment gave
+        // `assert`, so a real, extremely common import could never reach its row.
+        //
+        // So the HOST decides, and each host's rule is DECLARED with its evidence
+        // rather than guessed. The first version of this table listed three hosts,
+        // and probing 27 module paths taken from real `go.mod` files found four
+        // wrong answers — including one that made a registered dictionary row
+        // unreachable, which is the exact defect this branch exists to remove:
+        //
+        //   k8s.io/api/core/v1                  -> core        (should be api)
+        //   google.golang.org/protobuf/types/...-> anypb       (should be protobuf)
+        //   gonum.org/v1/gonum/stat             -> stat        (should be gonum)
+        //   gopkg.in/src-d/go-git.v4            -> src-d       (should be go-git.v4)
+        //
+        // `gonum` is a dictionary row. A Go project importing `gonum.org/v1/gonum/stat`
+        // could not reach it, so round 9's fix was incomplete in the same shape as the
+        // bug it fixed.
+        //
+        // Every host below is one whose repository is NOT the last segment, which is
+        // the only reason it needs an entry. `sigs.k8s.io/yaml`, `mvdan.cc/sh/v3`,
+        // `honnef.co/go/tools` and `go.yaml.in/yaml/v3` all reduce correctly through
+        // the last-segment fallback, so they are not listed — a host is added here
+        // when measurement shows the fallback is wrong for it, not preemptively.
+        const host = segments[0].toLowerCase()
+        const rest = segments.slice(1)
+        // A major-version segment sits in different places per host, so the version
+        // is removed BEFORE the index is resolved rather than tested afterwards.
+        //
+        // The earlier guard `repo && !/^v\d+$/.test(repo)` was UNREACHABLE: every rule
+        // that set `repoIndex` pointed at a host layout where a bare `vN` cannot be
+        // the repository (`github.com/<org>/vN` is not a thing; `gonum.org` had no
+        // entry, so it used the fallback). It read like protection and did nothing,
+        // so it is deleted rather than kept as decoration.
+        const withoutMajor = rest.filter((segment) => !/^v\d+$/.test(segment))
+        const rule = GO_MODULE_HOSTS.find((entry) => entry.host === host)
+        if (rule) {
+          const index = rule.repoAt(withoutMajor)
+          const repo = index >= 0 && index < withoutMajor.length ? withoutMajor[index] : undefined
+          if (repo) return { name: repo, hostRule: "declared" }
+        }
+        // UNKNOWN HOST: the repository cannot be known from the path alone, so take
+        // the last segment (minus a major-version suffix) and SAY the rule was a
+        // fallback. Reporting it matters because this branch is the remaining source
+        // of wrong names, and a silent fallback is how the four errors above survived
+        // in the first place.
+        const trimmed = withoutMajor.slice()
+        const fallback = trimmed[trimmed.length - 1]
+        if (!fallback) return { name: null, excluded: "malformed" }
+        return { name: fallback, hostRule: "fallback" }
+      }
+      // A Java/Kotlin/C# fully-qualified name is not an import at all; it is a
+      // type reference, and nothing in the dictionary is keyed by one.
+      if (/^(?:java|javax|com|org|net|io)\./.test(withoutExt)) {
+        const first = withoutExt.split(/[./]/)[0]
+        return first ? { name: first } : { name: null, excluded: "malformed" }
+      }
+      return withoutExt ? { name: withoutExt } : { name: null, excluded: "malformed" }
+    }
+
+    if (DOTTED_MODULE_LANGUAGES.has(lang)) {
+      const first = raw.split(".")[0]
+      return first ? { name: first } : { name: null, excluded: "malformed" }
+    }
+
+    // JavaScript / TypeScript and the default.
+    if (raw.startsWith("@types/")) return { name: null, excluded: "type-only" }
+    const segments = raw.split("/")
+    if (raw.startsWith("@")) {
+      if (segments.length < 2 || !segments[0] || !segments[1]) return { name: null, excluded: "malformed" }
+      const scope = segments[0].slice(1)
+      if (scope === "types" || scope.startsWith("types-")) return { name: null, excluded: "type-only" }
+      return { name: scope }
+    }
+    // Keep dots: `socket.io`, `lodash.merge` and `underscore.string` are real
+    // package names. Only strip a path, which is how a subpath import names a
+    // package that is already known by its first segment.
+    const name = segments[0]
+    if (!name) return { name: null, excluded: "malformed" }
+    return { name }
+  }
+
+  /**
+   * The package named by a `node_modules/...` path, canonicalized the same way.
+   * Previously this returned the whole scoped path, so a package seen here and
+   * through an import produced two different names.
+   */
+  export function packageFromNodeModulesPath(filePath: string, language?: string | null): CanonicalPackage {
+    const match = String(filePath ?? "").match(/node_modules\/((?:@[^/]+\/)?[^/]+)/)
+    if (!match) return { name: null, excluded: "malformed" }
+    return canonicalPackageName(match[1], language ?? "javascript")
+  }
+
+  /** Test-shaped evidence, so the effort split is visible instead of implied. */
+  const TEST_PATH = /(?:^|\/)(?:tests?|spec|specs|__tests__|testing)\/|(?:_test|_spec|\.test|\.spec|Test|Tests|Spec)\.[A-Za-z0-9]+$|_(?:test|tests|spec)\.[A-Za-z0-9]+$/
+
+  export function isTestPath(filePath: string): boolean {
+    const p = String(filePath ?? "")
+    if (!p || p === "unknown") return false
+    return TEST_PATH.test(p)
+  }
+
+  /**
+   * Is this relationship an integration point a port must satisfy, or a
+   * structural edge that records nesting?
+   *
+   * Measured on cobra: 2401 `calls`, 831 `uses`, 805 `references`, 284
+   * `instantiates`, 200 `imports` — and 792 `contains` plus 8 `exports`. That
+   * last pair is ~15% of all edges and none of it is work a migrating engineer
+   * does: `contains` is emitted by the indexer as an auto-generated ownership
+   * edge ("owner contains member") whose `line_number` is the MEMBER'S
+   * DECLARATION LINE, not a call site (see the M59/#821 comment at the emit
+   * site in parallel-indexer.ts). Billing 2 hours to "update the place that
+   * contains this function" is billing for nothing.
+   *
+   * `exports` is likewise declarative: it records that a symbol is exported.
+   *
+   * Everything else — `calls`, `uses`, `references`, `imports`, `instantiates`,
+   * `extends`, `implements`, `overrides`, and any type this list has not seen —
+   * is an integration point. An UNKNOWN type is charged, not waved through:
+   * guessing that a new kind is structural would understate the work.
+   */
+  const STRUCTURAL_RELATIONSHIP_TYPES: ReadonlySet<string> = new Set(["contains", "exports"])
+
+  export function isStructuralRelationship(relationshipType: string): boolean {
+    return STRUCTURAL_RELATIONSHIP_TYPES.has(String(relationshipType ?? "").trim().toLowerCase())
+  }
+
   /**
    * Analyzes a component (symbol) in the AST and generates a deep migration plan
    * to a target language, mapping dependencies and calculating risk/effort.
+   *
+   * Use this rather than {@link generateMigrationPlan} when the caller needs to
+   * tell the user WHY nothing was produced. `generateMigrationPlan` collapses
+   * every refusal to `null`, which is why the batch path used to re-derive the
+   * reason from a second, independent lookup.
    */
-  export async function generateMigrationPlan(
+  export async function planMigration(
     symbolName: string,
     targetLanguage: string,
-    analysis: CrossLanguageIntelligence.PolyglotProjectAnalysis,
-  ): Promise<MigrationPlan | null> {
-    log.info(`🚀 Initializing Migration Assistant for '${symbolName}' to '${targetLanguage}'...`)
+    source: MigrationSource,
+  ): Promise<MigrationOutcome> {
+    log.debug(`planMigration: '${symbolName}' -> '${targetLanguage}'`)
 
-    // 1. Find the component in the AST
-    const symbol = analysis.crossLanguageSymbols.find((s) => s.name.toLowerCase() === symbolName.toLowerCase())
-    if (!symbol) {
-      log.warn(`⚠️ Symbol '${symbolName}' not found in cross-language intelligence.`)
-      return null
+    // 1. Resolve the component. A name that matches several symbols is NOT
+    // silently collapsed to the first one: measured on a two-file fixture, the
+    // previous `find` returned a confident plan for whichever symbol happened to
+    // be first and never mentioned the other.
+    const wanted = String(symbolName ?? "").trim().toLowerCase()
+    const matches = source.symbols.filter((s) => String(s.name).toLowerCase() === wanted)
+    if (matches.length === 0) {
+      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol named "${symbolName}"` } }
     }
+    if (matches.length > 1) {
+      // Two shapes of collision, only one of which is a real ambiguity.
+      //
+      // SAME FILE, different case: Go and many other languages treat `Execute`
+      // and `execute` as one component in one file. Measured on cobra: five such
+      // pairs, all in one file. Refusing there is noise — the caller asked for
+      // one component in one file and there is only one component in one file.
+      // An exact-case match resolves it unambiguously.
+      const files = new Set(matches.map((s) => s.file))
+      const exact = matches.filter((s) => s.name === String(symbolName ?? "").trim())
+      if (files.size === 1 && exact.length === 1) {
+        log.debug(`planMigration: resolved case-variant name '${symbolName}' to '${exact[0].name}' in ${[...files][0]}`)
+        return buildPlan(exact[0], targetLanguage, source)
+      }
+      const candidates = matches.map((s) => ({ id: s.id, name: s.name, language: s.language, file: s.file }))
+      return {
+        ok: false,
+        refusal: {
+          reason: "ambiguous-symbol",
+          detail:
+            files.size === 1
+              ? `"${symbolName}" matches ${matches.length} indexed symbols in one file (${candidates.map((c) => c.name).join(", ")}); none matches the requested spelling exactly, so this is a genuine collision — re-run against the exact spelling`
+              : `"${symbolName}" matches ${matches.length} indexed symbols (${candidates.map((c) => c.file).join(", ")}); pass symbolIds with the id you mean, or restrict the request to one file with paths, or rename to disambiguate`,
+          candidates,
+        },
+      }
+    }
+    return buildPlan(matches[0], targetLanguage, source)
+  }
 
-    const sourceLanguage = normalizeMigrationLanguage(symbol.languages[0] || "") || String(symbol.languages[0] || "unknown").trim().toLowerCase()
+  /**
+   * Plan a component by its INDEXED SYMBOL ID, which is the only unambiguous
+   * identity a symbol has.
+   *
+   * This exists because two of the tool's own behaviours were previously
+   * impossible to act on:
+   *
+   *   - The ambiguity refusal said "re-run against one file's symbol id", and
+   *     there was no way to do that — the advice named a capability that did not
+   *     exist.
+   *   - A `paths` cohort could not plan two components that share a name in
+   *     different files, because planning was name-keyed: resolving the cohort to
+   *     names collapsed them to one, and the caller was never told. Measured on a
+   *     one-file cobra cohort, 100 distinct names resolved to 209 symbols, and
+   *     the cohort could only ever plan 100 of them.
+   *
+   * A symbol id is unique in a project, so no resolution rule is needed here and
+   * none is applied: a match is found or it is not.
+   */
+  export async function planMigrationById(
+    symbolId: string,
+    targetLanguage: string,
+    source: MigrationSource,
+  ): Promise<MigrationOutcome> {
+    const wanted = String(symbolId ?? "").trim()
+    log.debug(`planMigrationById: '${wanted}' -> '${targetLanguage}'`)
+    if (!wanted) return { ok: false, refusal: { reason: "missing-symbol", detail: "no symbol id was given" } }
+    const match = source.symbols.find((s) => String(s.id) === wanted)
+    if (!match) {
+      return { ok: false, refusal: { reason: "missing-symbol", detail: `no indexed symbol with id "${wanted}" is part of this request` } }
+    }
+    return buildPlan(match, targetLanguage, source)
+  }
+
+  /**
+   * Build the plan for an already-resolved symbol. Split out of
+   * {@link planMigration} so that a case-variant name resolved inside one file
+   * takes exactly the same path as an exact match — a resolution rule that only
+   * worked on the happy path would be a second implementation of the planner.
+   */
+  function buildPlan(
+    symbol: { id: string; name: string; type?: string; language: string; file: string; line?: number | null; metadata?: any },
+    targetLanguage: string,
+    source: MigrationSource,
+  ): MigrationOutcome {
+    const resolvedSource = resolveSourceLanguage(symbol.language)
+    if (!resolvedSource.language) {
+      return { ok: false, refusal: { reason: "unsupported-source", detail: resolvedSource.reason ?? "unsupported source language" } }
+    }
+    const sourceLanguage = resolvedSource.language
+
     const normalizedTargetLanguage = normalizeMigrationLanguage(targetLanguage)
     if (!normalizedTargetLanguage) {
-      log.warn(`⚠️ Unsupported target language '${targetLanguage}'.`)
-      return null
+      return { ok: false, refusal: { reason: "unsupported-target", detail: `no migration data is registered for target language "${String(targetLanguage ?? "").trim()}"` } }
     }
     if (sourceLanguage === normalizedTargetLanguage) {
-      log.warn(`⚠️ Source and target languages are the same (${sourceLanguage}). No migration needed.`)
-      return null
+      return { ok: false, refusal: { reason: "same-language", detail: `source and target are both ${sourceLanguage}` } }
     }
+    // A KNOWN target with no dictionary rows for this PAIR is not a refusal.
+    //
+    // This used to return `unsupported-target`, and it conflated two different
+    // things: "this tool holds no library-equivalence data for typescript → rust"
+    // and "there is no such migration". Only the first is true. The dictionary
+    // carries kotlin → rust, swift → rust and zig → rust but no typescript → rust,
+    // so an entirely ordinary Node-to-Rust port was refused outright — and with it
+    // the dependency order, the effort model, the scope accounting and the waves,
+    // all of which are language-agnostic and all of which the tool can compute
+    // without a single library row.
+    //
+    // The gate `script/verify-visualize-migrate.ts` had been RED since round 1 for
+    // exactly this reason: round 1 correctly stopped fabricating mappings, the
+    // refusal it replaced had been the only thing making that assertion pass, and
+    // the assertion it was hiding went unfollowed-up.
+    //
+    // An unrecognized target language is still refused above, and no mapping is
+    // ever invented: the plan says mappings are unavailable for the pair, which is
+    // the same UNKNOWN-not-empty discipline `dependencyProvenance` already uses
+    // for import evidence.
 
-    // 2. Analyze Component Dependencies & Relationships
-    // Relationship evidence is symbol-scoped, not file-scoped. A file can
-    // contain several components; counting every relationship touching that
-    // file silently charges one migration for its unrelated neighbors.
-    const symbolIds = new Set([
-      symbol.id,
-      ...(symbol.definitions ?? []).map((definition) => definition.symbolId).filter(Boolean),
-    ])
-    const relatedRels = analysis.crossLanguageRelationships.filter(
-      (relationship) => symbolIds.has(relationship.source.symbolId ?? "") || symbolIds.has(relationship.target.symbolId ?? ""),
-    )
+    // 2. Relationship evidence, scoped to this symbol's ids. Every field is one
+    //    the indexer actually stored; nothing is synthesised. The previous path
+    //    wrote `strength: 0.8` for every edge while the row's real
+    //    `confidence`, `line_number`, `is_cross_language` and `bridge_mechanism`
+    //    went unread.
+    const nameById = source.nameById ?? new Map<string, string>()
+    const fileById = source.fileById ?? new Map<string, string>()
     const relationshipEvidence = [...new Map(
-      relatedRels.map((relationship) => {
-        const id = String(relationship.id || [
-          relationship.source.symbolId ?? "",
-          relationship.target.symbolId ?? "",
-          relationship.type,
-          relationship.source.filePath,
-          relationship.target.filePath,
-        ].join("|"))
-        return [id, {
-          id,
-          relationshipType: String(relationship.type),
-          sourceSymbolId: relationship.source.symbolId ?? null,
-          targetSymbolId: relationship.target.symbolId ?? null,
-          sourceFile: relationship.source.filePath,
-          targetFile: relationship.target.filePath,
-          strength: Number.isFinite(relationship.strength) ? relationship.strength : 0,
-        }]
-      }),
+      source.relationships
+        .filter((r) => r.sourceSymbolId === symbol.id || r.targetSymbolId === symbol.id)
+        .map((r) => {
+          const sourceFile = r.sourceFile ?? (r.sourceSymbolId ? fileById.get(r.sourceSymbolId) : undefined) ?? "unknown"
+          const targetFile = r.targetFile ?? (r.targetSymbolId ? fileById.get(r.targetSymbolId) : undefined) ?? "unknown"
+          const id = String(r.id || [r.sourceSymbolId ?? "", r.targetSymbolId ?? "", r.type, sourceFile, targetFile].join("|"))
+          const endpointsResolved = Boolean(r.sourceSymbolId) && Boolean(r.targetSymbolId)
+          const entry: MigrationRelationshipEvidence = {
+            id,
+            relationshipType: String(r.type),
+            sourceSymbolId: r.sourceSymbolId ?? null,
+            targetSymbolId: r.targetSymbolId ?? null,
+            sourceExternal: r.sourceExternal ?? null,
+            targetExternal: r.targetExternal ?? null,
+            sourceFile,
+            targetFile,
+            line: typeof r.line === "number" ? r.line : null,
+            confidence: typeof r.confidence === "number" ? r.confidence : null,
+            isCrossLanguage: r.isCrossLanguage === true,
+            bridgeMechanism: r.bridgeMechanism ?? null,
+            isCrossFile: r.isCrossFile ?? (sourceFile !== targetFile),
+            endpointsResolved,
+            isIntegrationPoint: !isStructuralRelationship(r.type),
+            isTestEvidence: isTestPath(sourceFile) || isTestPath(targetFile),
+          }
+          return [id, entry] as const
+        }),
     ).values()].sort((a, b) => a.id.localeCompare(b.id))
 
-    // Extract dependencies based on metadata or infer from relationships
-    // For God-Mode we will mock some inferred libraries if none are present in AST metadata,
-    // to demonstrate the dictionary mapping capability.
-    const inferredSourceLibs = extractSourceDependencies(symbol, relatedRels)
+    // 3. Split dependencies by PROVENANCE before mapping them.
+    const { evidenced, inferred, evidenceAvailable, importEvidence } = extractSourceDependencies(symbol as any, relationshipEvidence, normalizedTargetLanguage)
 
-    // 3. Find Equivalent Libraries
-    const dependencies: LibraryEquivalence[] = inferredSourceLibs.map((lib) => {
-      const mapping = lookupEquivalence(sourceLanguage, normalizedTargetLanguage, lib)
-      if (mapping) {
-        return { source: lib, target: mapping.target, confidence: 0.9, status: "supported", notes: mapping.notes }
-      }
-      return { source: lib, target: null, confidence: 0, status: "uncertain", unsupportedReason: "unknown-library", notes: "No evidence-backed equivalence is registered; custom research is required." }
-    })
+    const dependencies: LibraryEquivalence[] = evidenced.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "indexed-import"))
+    const inferredDependencies: LibraryEquivalence[] = inferred.map((lib) => toEquivalence(lib, sourceLanguage, normalizedTargetLanguage, "name-heuristic"))
 
-    // 4. Estimate Effort and Risk
-    // Effort: Base hours + per relationship + per missing mapping
-    let effortEstimateHours = 4 // Base setup
-    effortEstimateHours += relationshipEvidence.length * 2 // 2 hours per unique indexed relationship
+    // 4. Effort and risk, from measured quantities only.
+    //
+    //    An edge whose endpoint is not an indexed symbol cannot be located, so it
+    //    is not charged: you cannot schedule work against an edge with no
+    //    endpoint. Measured 9 such edges in a single cobra plan, previously
+    //    billed at 2 hours each. Test-shaped edges ARE charged — a port does have
+    //    to update its callers — but the split is reported, because 55.3% of a
+    //    cobra plan's evidence is test code and an undifferentiated number is
+    //    not interpretable.
+    // Charged = resolvable AND an integration point. Two separate reasons an edge
+    // is not billed: an endpoint that is not an indexed symbol (it cannot be
+    // located), and a structural edge (it records nesting, not a call to update).
+    const structural = relationshipEvidence.filter((e) => !e.isIntegrationPoint)
+    const integration = relationshipEvidence.filter((e) => e.isIntegrationPoint)
+    const charged = integration.filter((e) => e.endpointsResolved)
+    const breakdown = {
+      total: relationshipEvidence.length,
+      production: charged.filter((e) => !e.isTestEvidence).length,
+      test: charged.filter((e) => e.isTestEvidence).length,
+      // Within the INTEGRATION points only. This used to be
+      // `total - integration.length`, which is the structural count — so
+      // `unresolvable` and `structural` always reported the same number and the
+      // breakdown double-counted. The corpus suite caught it; the visible symptom
+      // was "2 structural, 2 unresolvable" on a plan with one of each.
+      unresolvable: integration.length - charged.length,
+      structural: structural.length,
+      crossLanguage: relationshipEvidence.filter((e) => e.isCrossLanguage).length,
+      withLine: charged.filter((e) => e.line != null).length,
+      withConfidence: charged.filter((e) => e.confidence != null).length,
+    }
 
-    const missingMappings = dependencies.filter((d) => d.confidence < 0.5).length
-    effortEstimateHours += missingMappings * 6 // 6 hours per unknown dependency
+    // The MEASURED unmapped count, not only the uncertain guesses.
+    //
+    // `dependencies` carries only libraries with a registered mapping plus any
+    // uncertain guess, so an unmapped library — a real third-party import with no
+    // row — was absent from `dependencies` and therefore from this figure. The
+    // batch methodology charges for exactly that case, so the per-plan view was
+    // UNDER a component the total included, and their difference came out negative:
+    // the same "the two views disagree" defect round 3 fixed for shared edges,
+    // reintroduced through a different door.
+    // The library NAMES, because the charge is per library and `imports.unmapped`
+    // counts SPECIFIERS: a file that imports `gin` and `gin/render` declares two
+    // specifiers for one library, and charging for both would bill the research
+    // twice.
+    // The MEASURED third-party count, not a `max()` against the uncertain-dependency
+    // count. `Math.max` was wrong in a way that only showed up once the index's
+    // imports became readable: `dependencies` holds every canonicalized specifier,
+    // including standard library with no row, so the uncertain count re-introduced
+    // `fmt` as a "third-party library needing research" and charged 6h for it. The
+    // measurement is authoritative; the dependencies count is only the fallback for
+    // a caller that supplies no measurement at all.
+    const measuredUnmapped = importEvidence.unmappedLibraries.length
+    const missingMappings =
+      typeof importEvidence.unmappedLibraries === "object"
+        ? measuredUnmapped
+        : dependencies.filter((d) => d.confidence < 0.5).length
+    let effortEstimateHours = 4
+    effortEstimateHours += charged.length * 2
+    effortEstimateHours += missingMappings * 6
 
-    // Risk Assessment
     const riskFactors: string[] = []
     let riskLevel: MigrationRisk["level"] = "Low"
     let complexityScore = 2
 
-    if (relationshipEvidence.length > 5) {
-      riskFactors.push(`High coupling: Component has ${relationshipEvidence.length} unique indexed relationships.`)
+    if (charged.length > 5) {
+      riskFactors.push(`High coupling: ${charged.length} resolvable integration points (${breakdown.production} production, ${breakdown.test} test).`)
       complexityScore += 3
       riskLevel = "High"
     }
-
     if (missingMappings > 0) {
-      riskFactors.push(`Missing library equivalents: ${missingMappings} dependencies have no known 1:1 mapping.`)
+      riskFactors.push(`${missingMappings} third-party librar${missingMappings === 1 ? "y has" : "ies have"} no registered equivalence to ${normalizedTargetLanguage}${measuredUnmapped > 0 ? ` (${importEvidence.unmappedLibraries.join(", ") || "unclassified"})` : ""}; each needs its own research.`)
       complexityScore += 2
-      riskLevel = riskLevel === "Low" ? "Medium" : riskLevel
+      if (riskLevel === "Low") riskLevel = "Medium"
+    }
+    if (breakdown.crossLanguage > 0) {
+      const mechanisms = [...new Set(relationshipEvidence.filter((e) => e.isCrossLanguage).map((e) => e.bridgeMechanism).filter(Boolean))]
+      riskFactors.push(`${breakdown.crossLanguage} integration point${breakdown.crossLanguage === 1 ? "" : "s"} cross a language boundary${mechanisms.length ? ` (bridged by ${mechanisms.join(", ")})` : ""}; each must keep working after the port.`)
+      complexityScore += 1
+      if (riskLevel === "Low") riskLevel = "Medium"
+    }
+    if (breakdown.structural > 0) {
+      // Not a risk of the CODE and not a limit of the index: an accounting
+      // statement, so a reader comparing two plans knows they are comparable.
+      riskFactors.push(`${breakdown.structural} structural relationship${breakdown.structural === 1 ? "" : "s"} (containment or export) recorded but not charged; only integration points are billed.`)
+    }
+    if (breakdown.unresolvable > 0) {
+      // Not a risk of the CODE — a limit of what the index can see. Stated as
+      // such, and it does not move the band.
+      riskFactors.push(
+        breakdown.unresolvable === 1
+          ? "1 indexed relationship has an endpoint that is not an indexed symbol, so the port cannot be scoped from it."
+          : `${breakdown.unresolvable} indexed relationships have an endpoint that is not an indexed symbol, so the port cannot be scoped from them.`,
+      )
     }
 
-    if (symbol.type === CrossLanguageIntelligence.CrossLanguageSymbolType.DATABASE_ENTITY) {
-      riskFactors.push(`Data migration required: Moving database entities involves schema and state migration.`)
+    // The index does not record per-file imports, so a component's LIBRARY
+    // dependencies are unknown rather than empty. That is a different thing from
+    // a component with no libraries, and it belongs in the risk field, not only
+    // in a note nobody reads.
+    if (!evidenceAvailable) {
+      riskFactors.push("Library dependencies are UNKNOWN, not empty: the index does not record the imports this component performs. Resolve them before estimating.")
+    }
+
+    // Data-shaped detection now works on data the index actually holds: the
+    // raw `symbol_type` plus the component's own name. The previous guard
+    // required the `CrossLanguageSymbolType.DATABASE_ENTITY` enum value, which
+    // the bridge never wrote — measured 0 of 2988 flask symbols, so the Critical
+    // band was unreachable.
+    const symbolType = String(symbol.type ?? "").toLowerCase()
+    const isDataCarrier =
+      symbolType === "database_entity" ||
+      (/(?:class|struct|interface|type|table|enum)/.test(symbolType) &&
+        /(?:^|[_\-.])(?:table|schema|migration|migrate|entity|model|dao|repository|repo)(?:$|[_\-.])/i.test(symbol.name))
+    if (isDataCarrier) {
+      riskFactors.push(`Data-shaped component (${symbolType} "${symbol.name}"): schema and stored-state migration are likely in scope.`)
       complexityScore += 4
       riskLevel = "Critical"
     }
@@ -829,88 +1614,531 @@ export namespace CrossLanguageMigrationAssistant {
       riskFactors.push("Standard component migration with well-understood bounds.")
     }
 
-    // 5. Generate Strategy Steps
+    // 5. Strategy steps, in the NORMALIZED language names. The previous text
+    //    interpolated the raw request argument, so a request for `C++` scaffolded
+    //    "a new C++ module" in a plan whose targetLanguage read `cpp`.
     const strategySteps = [
-      `Step 1: Scaffold new ${targetLanguage} module/package for ${symbol.name}.`,
-      `Step 2: Install target equivalent dependencies: ${
-        dependencies
-          .filter((d) => d.confidence > 0.5)
-          .map((d) => d.target)
-          .join(", ") || "N/A"
-      }.`,
-      `Step 3: Port the core domain logic from ${sourceLanguage} to ${targetLanguage}.`,
-      `Step 4: Update ${relationshipEvidence.length} cross-language integration points to point to the new implementation.`,
-      `Step 5: Write unit tests using target language framework to match original coverage.`,
+      `Step 1: Scaffold new ${normalizedTargetLanguage} module/package for ${symbol.name}.`,
+      dependencies.some((d) => d.confidence > 0.5)
+        ? `Step 2: Install target equivalent dependencies: ${dependencies.filter((d) => d.confidence > 0.5).map((d) => d.target).join(", ")}.`
+        : evidenceAvailable
+          ? "Step 2: No indexed import maps to a registered target equivalent — resolve the library substitutions before scaffolding."
+          : "Step 2: The index carries no import evidence for this component — read its imports and resolve library substitutions before scaffolding.",
+      `Step 3: Port the core domain logic from ${sourceLanguage} to ${normalizedTargetLanguage}.`,
+      breakdown.production > 0
+        ? `Step 4: Update ${breakdown.production} production call site${breakdown.production === 1 ? "" : "s"} to the new implementation.`
+        : "Step 4: No production call sites are indexed for this component.",
+      breakdown.test > 0 ? `Step 5: Update ${breakdown.test} test call site${breakdown.test === 1 ? "" : "s"} and confirm coverage.` : "Step 5: No test call sites are indexed for this component.",
       `Step 6: Deprecate and remove the original ${sourceLanguage} implementation.`,
     ]
 
-    log.info(`✅ Migration Plan generated for '${symbolName}'!`)
+    const hasRoute = hasMigrationRoute(sourceLanguage, normalizedTargetLanguage)
+    if (!hasRoute) {
+      // Said in the risk factors, not only in a note, because a risk factor is the
+      // one field a reader cannot miss — and "this port has no library mapping data"
+      // is a genuine risk in a plan, not a footnote.
+      riskFactors.push(
+        `no library-equivalence data is registered for ${sourceLanguage} → ${normalizedTargetLanguage}, so this plan carries NO library mappings: every library will need its target-language equivalent chosen by a human`,
+      )
+    }
+
+    log.debug(`buildPlan: produced plan for '${symbol.name}' -> ${normalizedTargetLanguage}`)
 
     return {
-      componentName: symbol.name,
-      sourceLanguage,
-      targetLanguage: normalizedTargetLanguage,
-      dependencies,
-      relationshipEvidence,
-      effortEstimateHours,
-      complexityScore: Math.min(10, complexityScore),
-      riskAssessment: {
-        level: riskLevel,
-        factors: riskFactors,
+      ok: true,
+      plan: {
+        componentName: symbol.name,
+        symbolId: symbol.id,
+        sourceFile: symbol.file,
+        /**
+         * Where the component starts, as the index stored it. Null when the index
+         * has no line for it, which is stated rather than invented — and it is
+         * what tells two same-named components in ONE FILE apart.
+         */
+        sourceLine: symbol.line ?? null,
+        sourceLanguage,
+        targetLanguage: normalizedTargetLanguage,
+        dependencies,
+        inferredDependencies,
+        dependencyProvenance: {
+          indexedImports: evidenced.length,
+          nameHeuristics: inferred.length,
+          importEvidence: evidenceAvailable ? "available" : "unavailable",
+          imports: importEvidence,
+          // Both reasons, or neither: the pair may have no mapping data AND the
+          // index may hold no import evidence. Reporting one while implying the
+          // other is covered is how "empty" comes to mean "none".
+          note: [
+            evidenceAvailable
+              ? importEvidence.unmapped > 0
+                ? `\`dependencies\` comes from the ${importEvidence.declared} external import(s) ${symbol.file ?? "this file"} declares: ${importEvidence.standardLibrary} standard library, ${importEvidence.thirdParty} third-party, ${importEvidence.localCrate} local crate${importEvidence.unclassified ? `, ${importEvidence.unclassified} not classifiable for ${sourceLanguage}` : ""}. ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping; ${importEvidence.unmapped} ${importEvidence.unmapped === 1 ? "does" : "do"} NOT (${importEvidence.unmappedLibraries.join(", ") || "none named"}), and each needs its target-language equivalent chosen by a human.${importEvidence.stdlibWithoutRow > 0 ? ` ${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} also ${importEvidence.stdlibWithoutRow === 1 ? "has" : "have"} no row (${importEvidence.stdlibWithoutRowLibraries.join(", ")}); those are not libraries to research and are not charged.` : ""}${importEvidence.unclassifiedWithoutRow > 0 ? ` ${importEvidence.unclassifiedWithoutRow} further name${importEvidence.unclassifiedWithoutRow === 1 ? "" : "s"} cannot be classified for ${sourceLanguage} at all (${importEvidence.unclassifiedWithoutRowLibraries.join(", ")}); they have no row and are NOT charged, because a name this tool cannot place may be a real dependency or may be standard library, and charging it would assert the second.` : ""}`
+                : importEvidence.thirdParty === 0
+                  ? `\`dependencies\` holds no LIBRARY: all ${importEvidence.declared} import(s) ${symbol.file ?? "this file"} declares are standard library or local crate${importEvidence.stdlibWithoutRow > 0 ? ` (${importEvidence.stdlibWithoutRow} standard-library name${importEvidence.stdlibWithoutRow === 1 ? "" : "s"} such as ${importEvidence.stdlibWithoutRowLibraries.join(", ")} have no registered row, and a standard-library name is not a library to research)` : ""}${importEvidence.unclassifiedWithoutRow > 0 ? ` and ${importEvidence.unclassifiedWithoutRow} more (${importEvidence.unclassifiedWithoutRowLibraries.join(", ")}) could not be classified for ${sourceLanguage}, so they are neither charged nor claimed to be standard library` : ""}. A MEASURED zero, not missing evidence.`
+                  : `\`dependencies\` comes from indexed imports: ${importEvidence.mapped} third-party librar${importEvidence.mapped === 1 ? "y has" : "ies have"} a registered mapping.`
+              : "The index holds no external import rows for this file, so its library dependencies are UNKNOWN rather than empty. A file indexed before per-file import recording began looks exactly like this.",
+            hasRoute
+              ? `Library mappings for ${sourceLanguage} → ${normalizedTargetLanguage} come from the registered dictionary.`
+              : `This tool registers no library-equivalence data for ${sourceLanguage} → ${normalizedTargetLanguage}, so no mapping can be offered for any library. That is MISSING DATA, not an absence of libraries.`,
+            "`inferredDependencies` holds name-based guesses that are NOT evidence and do not affect effort or risk.",
+          ].join(" "),
+        },
+        relationshipEvidence,
+        evidenceBreakdown: breakdown,
+        effortEstimateHours,
+        complexityScore: Math.min(10, complexityScore),
+        riskAssessment: { level: riskLevel, factors: riskFactors },
+        strategySteps,
       },
-      strategySteps,
     }
   }
 
+  /**
+   * Null-returning wrapper kept for callers that only need "did it work".
+   * Accepts either a `MigrationSource` or a `PolyglotProjectAnalysis`.
+   * Prefer {@link planMigration} when the reason matters.
+   */
+  export async function generateMigrationPlan(
+    symbolName: string,
+    targetLanguage: string,
+    input: MigrationSource | any,
+  ): Promise<MigrationPlan | null> {
+    const source: MigrationSource = Array.isArray((input as any)?.symbols) ? (input as MigrationSource) : migrationSourceFromAnalysis(input)
+    const outcome = await planMigration(symbolName, targetLanguage, source)
+    return outcome.ok ? outcome.plan : null
+  }
   // --- INTERNAL UTILS ---
 
+  /**
+   * Separate the component's libraries by where the claim comes from.
+   *
+   * `evidenced` — packages the index actually shows this component using:
+   * a node_modules relationship endpoint. These are claims about the code.
+   *
+   * `inferred` — name-substring guesses. Real signal about which ecosystem a
+   * component probably lives in, but NOT evidence about this code, so they never
+   * appear in `dependencies`.
+   *
+   * `evidenceAvailable` — whether any evidenced package was found AT ALL. The
+   * index does not record per-file imports, so this is normally false, and the
+   * difference between "this component has no libraries" and "we cannot see this
+   * component's libraries" has to survive into the plan.
+   */
+  /**
+   * Classify an import specifier as standard library, third party, or the local
+   * crate — and UNKNOWN when the language has no declared rule.
+   *
+   * This is not cosmetic. Go's `command.go` declares `bytes, context, errors,
+   * fmt, github.com/spf13/pflag, io`: six of those seven are the standard library
+   * and are not ported at all. Treating them as dependencies would put six
+   * fictitious libraries in the plan and charge six missing-mapping penalties for
+   * them — the fabrication round 1 removed, one level down.
+   *
+   * The rules are each language's OWN convention, not a guess:
+   *
+   *   go          a first path segment containing a dot is a domain, and that is
+   *               what makes it a module: `github.com/spf13/pflag` is a module,
+   *               `bytes` is the standard library.
+   *   rust        `std`, `core`, `alloc` are the standard library; `crate`,
+   *               `self` and `super` are the local crate.
+   *   js/ts       `node:` and the bare runtime builtins are the runtime.
+   *
+   * For a language with no rule here the answer is `null` — UNKNOWN, and the plan
+   * says so. Guessing would put Python's `os` and `json` in the dependency list,
+   * which is the defect above; Python needs its own stdlib list and does not have
+   * one here, so it gets UNKNOWN rather than a fabrication.
+   */
+  export type ImportClass = "standard-library" | "third-party" | "local-crate"
+
+  const JS_BUILTINS = new Set([
+    "assert", "buffer", "child_process", "cluster", "console", "constants", "crypto", "dgram", "dns",
+    "domain", "events", "fs", "http", "http2", "https", "module", "net", "os", "path", "perf_hooks",
+    "process", "punycode", "querystring", "readline", "repl", "stream", "string_decoder", "sys", "timers",
+    "tls", "trace_events", "tty", "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
+  ])
+  const RUST_STDLIB = new Set(["std", "core", "alloc"])
+  const RUST_LOCAL = new Set(["crate", "self", "super"])
+
+  export function classifyImport(specifier: string, language: string | undefined): ImportClass | null {
+    const raw = String(specifier ?? "").trim().replace(/^['"]|['"]$/g, "")
+    if (!raw) return null
+    const lang = normalizeMigrationLanguage(String(language ?? "").toLowerCase())
+    if (lang === "go") {
+      const first = raw.split("/")[0]
+      return first.includes(".") ? "third-party" : "standard-library"
+    }
+    if (lang === "rust") {
+      const first = raw.split("::")[0].trim()
+      if (RUST_LOCAL.has(first)) return "local-crate"
+      if (RUST_STDLIB.has(first)) return "standard-library"
+      return "third-party"
+    }
+    if (lang === "javascript" || lang === "typescript") {
+      if (raw.startsWith("node:")) return "standard-library"
+      return JS_BUILTINS.has(raw.replace(/^node:/, "").split("/")[0]) ? "standard-library" : "third-party"
+    }
+    return null
+  }
+
   function extractSourceDependencies(
-    symbol: CrossLanguageIntelligence.CrossLanguageSymbol,
-    relationships: CrossLanguageIntelligence.CrossLanguageRelationship[],
-  ): string[] {
-    const libs = new Set<string>()
+    symbol: { id: string; name: string; type?: string; language?: string; file?: string; line?: number | null; imports?: string[]; metadata?: any },
+    relationships: MigrationRelationshipEvidence[],
+    targetLanguage: string,
+  ): {
+    evidenced: string[]
+    inferred: string[]
+    evidenceAvailable: boolean
+    importEvidence: {
+      /** The specifiers considered, from the index and from the caller. */
+      declared: number
+      /** Specifiers the INDEX holds for this file. */
+      fromIndex: number
+      /** Specifiers a CALLER supplied for this component. */
+      suppliedByCaller: number
+      standardLibrary: number
+      thirdParty: number
+      localCrate: number
+      /** Specifiers this tool cannot classify for its language. Not zero. */
+      unclassified: number
+      /**
+       * Those specifiers, by name. Not charged: an unclassifiable import is not a
+       * proven third-party library, and `requests` cannot be told from `os` without a
+       * rule this analyzer set does not carry.
+       */
+      unclassifiedLibraries: string[]
+      /**
+       * Unclassifiable imports with no row. NOT counted as standard library: the
+       * reason they are uncharged is that their class is unknown, and reporting them
+       * as stdlib asserts the very thing that could not be established.
+       */
+      unclassifiedWithoutRow: number
+      unclassifiedWithoutRowLibraries: string[]
+      /** Third-party imports with a registered mapping for the pair. */
+      mapped: number
+      /** Third-party imports with NO registered mapping: real libraries, unported. */
+      unmapped: number
+      unmappedLibraries: string[]
+      /** Standard-library imports with no row: visible, not charged, not libraries. */
+      stdlibWithoutRow: number
+      stdlibWithoutRowLibraries: string[]
+      /**
+       * Canonical names derived from the last-segment FALLBACK because the module
+       * host has no declared rule. The repository may not be the last segment, so
+       * these names may name a PACKAGE instead of a library, and a row keyed by the
+       * real repository would not be reached. Counted so the gap is measurable.
+       */
+      fallbackHostNames: number
+      fallbackHostLibraries: string[]
+      classification: "available" | "unavailable"
+    }
+  } {
+    const evidenced = new Set<string>()
+    const inferred = new Set<string>()
+    const unmappedLibraries = new Set<string>()
+    const stdlibWithoutRowLibraries = new Set<string>()
+    const fallbackHostLibraries = new Set<string>()
+    const unclassifiedLibraries = new Set<string>()
+    const unclassifiedWithoutRowLibraries = new Set<string>()
 
-    // 1. Extract genuine metadata imports from AST if present
-    if (symbol.metadata && (symbol.metadata as any).imports) {
-      const imports = (symbol.metadata as any).imports as string[]
-      imports.forEach((i) => libs.add(i.split("/")[0]))
+    // 1. THE IMPORTS THE INDEX ACTUALLY HOLDS.
+    //
+    //    Round 2 concluded the index recorded no per-file imports and reported
+    //    `importEvidence: "unavailable"` on every plan. `brain_import` has been
+    //    written by `parallel-indexer` all along — `doc-engine`,
+    //    `analysis/dependencies` and `health` already read it — so the migration
+    //    lane was the only one claiming it did not exist. Measured across 40
+    //    indexed projects / 82,879 symbols / 13,351 import rows: Go 96.2% of files
+    //    carry imports (91,826 rows), Python 95.8%, Clojure 88.8%, JavaScript 89.6%,
+    //    Rust 78.2%; TypeScript 0% over 22 files, which is a real separate gap.
+    //
+    //    These are the FILE's imports, not the symbol's: Go, Python and Clojure
+    //    declare at file scope, so attributing them to one symbol would be a
+    //    fabrication of a different kind. The plan names the file they came from.
+    // BOTH channels, and they are different things:
+    //
+    //   `symbol.imports`         what the INDEX holds for this file (brain_import)
+    //   `symbol.metadata.imports` what a CALLER supplied explicitly
+    //
+    // Reading only the first was a regression: the caller-supplied channel is how
+    // every round-2 and round-4 claim feeds a known specifier in, and dropping it
+    // broke 13 of them at once. An index row is evidence about the FILE; a
+    // caller's specifier is evidence about the COMPONENT, and the component's own
+    // claim is at least as good as its file's. Both are counted, and the note says
+    // which contributed.
+    const indexed: string[] = Array.isArray(symbol?.imports) ? symbol.imports : []
+    const supplied: string[] = Array.isArray((symbol as any)?.metadata?.imports) ? (symbol as any).metadata.imports : []
+    const declared: string[] = [...new Set([...indexed.map((x) => String(x).trim()).filter(Boolean), ...supplied.map((x) => String(x).trim()).filter(Boolean)])]
+    const suppliedOnly = declared.filter((specifier) => !indexed.some((row) => String(row).trim() === specifier))
+    const importCounts = { standardLibrary: 0, thirdParty: 0, localCrate: 0, unclassified: 0, mapped: 0, unmapped: 0, stdlibWithoutRow: 0, unclassifiedWithoutRow: 0, fallbackHostNames: 0 }
+    const sourceLang = normalizeMigrationLanguage(String(symbol?.language ?? ""))
+    const targetLang = normalizeMigrationLanguage(String(targetLanguage ?? ""))
+    for (const entry of declared) {
+      const specifier = String(entry ?? "").trim()
+      if (!specifier) continue
+      const klass = classifyImport(specifier, symbol?.language)
+      if (klass === "standard-library") importCounts.standardLibrary++
+      else if (klass === "local-crate") importCounts.localCrate++
+      else if (klass === "third-party") importCounts.thirdParty++
+      else importCounts.unclassified++
+      // ONLY a proven third-party import is a library needing research.
+      //
+      // This used to be `klass === "third-party" || klass === null`, so for a language
+      // with no classification rule — Python — every import counted. Measured on a
+      // 7-import Python file: `os, sys, json, re, typing, pathlib` were charged 6h
+      // each and reported as "6 third-party libraries have no registered equivalence"
+      // — five standard-library modules described as third-party libraries, 72h of
+      // fictitious research on a file whose only real dependency (`requests`) already
+      // had a registered row.
+      //
+      // `null` means UNKNOWN, and unknown is not third-party. An unclassified import
+      // is still LISTED in `dependencies` — the observation is real, and hiding it
+      // would be a fabrication of absence — and still named in
+      // `unclassifiedLibraries`, but it is not charged and not called a library.
+      //
+      // The asymmetry is deliberate. Over-reporting an unclassifiable import as needing
+      // research is the direction that HIDES a real dependency behind a discount a
+      // reader will apply; under-reporting is the direction that INVENTS one. This
+      // takes the first and states it, which is the only way the reader can apply the
+      // discount knowingly.
+      const isLibrary = klass === "third-party"
+      // An UNKNOWN class is named, so "these N imports could not be classified"
+      // is answerable with WHICH ones rather than only how many.
+      if (klass === null) unclassifiedLibraries.add(specifier)
+      // A LOCAL CRATE is this project's own code — a relative import is a graph
+      // edge, not a library — and it is the only class that is skipped outright.
+      //
+      // A STANDARD-LIBRARY import is NOT skipped, and getting that wrong was its
+      // own defect: `net/http` is a go -> python dictionary row
+      // (`requests / httpx`) precisely BECAUSE porting a Go service means choosing
+      // a Python HTTP client. Suppressing the lookup on "standard library" threw
+      // away 13 round-4 claims and a real mapping. The classification is for
+      // REPORTING — a reader needs to know 9 of 10 imports are stdlib — not for
+      // suppression.
+      if (klass === "local-crate") continue
+      const { name, excluded, hostRule } = canonicalPackageName(specifier, symbol?.language)
+      // A name produced by the last-segment FALLBACK is a guess about which segment
+      // names the repository, and the guess can be wrong (`k8s.io/api/core/v1` is the
+      // `api` module, not `core`). It is counted and named, because a canonical name
+      // this tool cannot vouch for must not look identical to one it derived from a
+      // declared host rule.
+      if (hostRule === "fallback") {
+        importCounts.fallbackHostNames++
+        fallbackHostLibraries.add(name ?? specifier)
+      }
+      if (!name) {
+        if (excluded) log.debug(`canonicalPackageName: excluded import "${specifier}" (${excluded})`)
+        importCounts.unmapped++
+        continue
+      }
+      // A language either side of the pair that this tool does not know makes a
+      // lookup impossible — that is not the same as "no mapping exists", and it is
+      // counted separately so the two are not confused.
+      // Added to `evidenced` WHETHER OR NOT a row exists.
+      //
+      // I briefly made this conditional on a mapping being found, and that removed
+      // every unresolved library from `dependencies` entirely — so a caller could
+      // no longer see WHICH libraries are unresolved, only how many. Round 4 exists
+      // to prove exactly that visibility: an unmapped import must be listed and
+      // marked uncertain, never supported and never silently absent.
+      //
+      // `toEquivalence` already distinguishes the two: with a row it is `supported`,
+      // without one it is `uncertain` at confidence 0. So the entry is added either
+      // way, and the missing-mapping charge comes from the measured count.
+      const mapping = sourceLang && targetLang ? lookupEquivalence(sourceLang, targetLang, name) : null
+      evidenced.add(name)
+      if (mapping) {
+        importCounts.mapped++
+      } else if (isLibrary) {
+        // A third-party library with no registered mapping: a real research task,
+        // named and charged once per library.
+        importCounts.unmapped++
+        unmappedLibraries.add(name)
+      } else if (klass === "standard-library") {
+        // A STANDARD-LIBRARY import with no row — `fmt`, `bytes`, `errors`. It is
+        // still listed in `dependencies` (visibility) and still visible here, but it
+        // is NOT a "third-party library needing research", and charging 6h per
+        // standard-library call turned a 5-import Go file into 30h of fictitious
+        // research. Counting it was my own error, caught by a claim asserting a
+        // measured zero.
+        importCounts.stdlibWithoutRow++
+        stdlibWithoutRowLibraries.add(name)
+      } else {
+        // UNCLASSIFIABLE — no rule for this language — and with no row. Kept SEPARATE
+        // from the block above, because "standard library with no row" and "we cannot
+        // tell whether it is standard library" are different claims and this output
+        // previously made the second one in the first one's voice: a Python plan named
+        // `os` and `json` under `stdlibWithoutRowLibraries`, asserting they are stdlib
+        // when the very reason they were not charged is that this analyzer set cannot
+        // say.
+        importCounts.unclassifiedWithoutRow++
+        unclassifiedWithoutRowLibraries.add(name)
+      }
     }
 
-    // 2. Extract from external dependencies in relationship targets
-    relationships.forEach((rel) => {
-      if (rel.target.filePath.includes("node_modules") && rel.target.filePath.includes("node_modules")) {
-        const parts = rel.target.filePath.split("node_modules/")
-        if (parts[1]) libs.add(parts[1].split("/")[0])
-      }
-    })
-
-    // 3. Fallback Heuristics for demonstration where AST is sparse
-    const typeStr = (symbol.type || "").toLowerCase()
-    const nameStr = symbol.name.toLowerCase()
-
-    if (symbol.languages[0]?.toLowerCase() === "typescript") {
-      if (typeStr.includes("api") || nameStr.includes("controller") || nameStr.includes("router")) {
-        libs.add("express")
-      }
-      if (typeStr.includes("entity") || typeStr.includes("model") || nameStr.includes("repo")) {
-        libs.add("drizzle-orm")
-      }
-      if (nameStr.includes("client") || nameStr.includes("fetch")) {
-        libs.add("axios")
-      }
-    } else if (symbol.languages[0]?.toLowerCase() === "python") {
-      if (typeStr.includes("api") || nameStr.includes("api") || nameStr.includes("route")) {
-        libs.add("fastapi")
-      }
-      if (typeStr.includes("entity") || nameStr.includes("model")) {
-        libs.add("sqlalchemy")
+    // 2. Third-party packages at a relationship endpoint, canonicalized through
+    //    the SAME function as (1). Round 1 used two different rules on the two
+    //    sources, so one package produced two different library names.
+    for (const relationship of relationships) {
+      for (const side of [relationship.sourceFile, relationship.targetFile]) {
+        const { name } = packageFromNodeModulesPath(side, symbol?.language)
+        if (name) evidenced.add(name)
       }
     }
 
-    // Add jest/pytest universally as a dependency to map
-    libs.add(symbol.languages[0]?.toLowerCase() === "python" ? "pytest" : "jest")
+    // 3. Name heuristics, kept but labelled as guesses. The unconditional
+    //    test-framework entry is gone: it is what told a Go service to adopt
+    //    `jest`, at confidence 0, for +6h and a forced Medium risk band.
+    const sourceLanguage = normalizeMigrationLanguage(symbol?.language ?? "")
+    const typeStr = String(symbol?.type ?? "").toLowerCase()
+    const nameStr = String(symbol?.name ?? "").toLowerCase()
 
-    return Array.from(libs)
+    if (sourceLanguage === "typescript" || sourceLanguage === "javascript") {
+      if (typeStr.includes("api") || nameStr.includes("controller") || nameStr.includes("router")) inferred.add("express")
+      if (typeStr.includes("entity") || typeStr.includes("model") || nameStr.includes("repo")) inferred.add("drizzle-orm")
+      if (nameStr.includes("client") || nameStr.includes("fetch")) inferred.add("axios")
+    } else if (sourceLanguage === "python") {
+      if (typeStr.includes("api") || nameStr.includes("api") || nameStr.includes("route")) inferred.add("fastapi")
+      if (typeStr.includes("entity") || typeStr.includes("model")) inferred.add("sqlalchemy")
+    }
+
+    return {
+      evidenced: [...evidenced],
+      inferred: [...inferred].filter((name) => !evidenced.has(name)),
+      // "Available" now means the index WAS READ and its rows classified — not that
+      // a mapping happened to be found. Those are different facts and conflating
+      // them is how a file with ten standard-library imports came to report
+      // "unavailable".
+      evidenceAvailable: declared.length > 0,
+      importEvidence: {
+        declared: declared.length,
+        fromIndex: indexed.length,
+        suppliedByCaller: suppliedOnly.length,
+        standardLibrary: importCounts.standardLibrary,
+        thirdParty: importCounts.thirdParty,
+        localCrate: importCounts.localCrate,
+        unclassified: importCounts.unclassified,
+        /**
+         * Imports whose class could not be determined because no rule is declared for
+         * the language. Named, LISTED in `dependencies`, and deliberately NOT charged:
+         * a Python `os` is not a third-party library needing 6h of research, and a
+         * rule that cannot tell `os` from `requests` must not guess in the direction
+         * that invents work.
+         */
+        unclassifiedLibraries: [...unclassifiedLibraries].sort(),
+        mapped: importCounts.mapped,
+        unmapped: importCounts.unmapped,
+        unmappedLibraries: [...unmappedLibraries].sort(),
+        stdlibWithoutRow: importCounts.stdlibWithoutRow,
+        stdlibWithoutRowLibraries: [...stdlibWithoutRowLibraries].sort(),
+        unclassifiedWithoutRow: importCounts.unclassifiedWithoutRow,
+        unclassifiedWithoutRowLibraries: [...unclassifiedWithoutRowLibraries].sort(),
+        fallbackHostNames: importCounts.fallbackHostNames,
+        fallbackHostLibraries: [...fallbackHostLibraries].sort(),
+        // No rule declared for this language, so the split cannot be trusted.
+        classification: importCounts.unclassified > 0 && importCounts.thirdParty + importCounts.standardLibrary + importCounts.localCrate === 0
+          ? "unavailable"
+          : "available",
+      },
+    }
+  }
+
+  function toEquivalence(
+    lib: string,
+    sourceLang: string,
+    targetLang: string,
+    provenance: "indexed-import" | "name-heuristic",
+  ): LibraryEquivalence {
+    const mapping = lookupEquivalence(sourceLang, targetLang, lib)
+    if (provenance === "name-heuristic") {
+      // A guess that HAPPENS to match a dictionary row must still be a guess.
+      // Returning the row's `supported` status and its authoritative prose
+      // ("GORM is the most popular Go ORM.") is how a name match became a
+      // confident-looking mapping with no observation behind it. The row's
+      // target is kept — it is the answer the caller wants — but the claim is
+      // uncertain and the note says where it came from.
+      return {
+        source: lib,
+        target: mapping?.target ?? null,
+        confidence: 0,
+        status: "uncertain",
+        provenance,
+        unsupportedReason: mapping ? "ambiguous-mapping" : "unknown-library",
+        notes: mapping
+          ? `Name-based guess, not an observed import. If this component really uses ${lib}, the registered ${targetLang} equivalent is ${mapping.target}${mapping.notes ? ` (${mapping.notes})` : ""} — unverified.`
+          : "Name-based guess, not an observed import; no equivalence is claimed and this does not contribute to effort or risk.",
+      }
+    }
+    if (mapping) {
+      return { source: lib, target: mapping.target, confidence: 0.9, status: "supported", provenance, notes: mapping.notes }
+    }
+    // Reached only for an evidenced package with no registered row: the
+    // name-heuristic case returned above. This branch used to re-test
+    // `provenance === "name-heuristic"` in a ternary whose false arm was
+    // unreachable; removing `@ts-nocheck` from this file surfaced it, which is
+    // the checker's first dividend and the reason the pragma is gone.
+    return {
+      source: lib,
+      target: null,
+      confidence: 0,
+      status: "uncertain",
+      provenance,
+      unsupportedReason: "unknown-library",
+      notes: "No evidence-backed equivalence is registered; custom research is required.",
+    }
+  }
+
+  /**
+   * Every (source, target, library) row in the dictionary, flattened.
+   *
+   * Exposed so the knowledge base can be AUDITED rather than trusted. Until this
+   * existed nothing had ever read the dictionary except the lookup, and the
+   * audit immediately found rows that could not fire: `net/http` canonicalized
+   * to `net`, `package:flutter/material.dart` to `flutter`, `socket.io` to
+   * nothing at all. A dictionary nobody reads is how a dead row survives.
+   *
+   * This reports the dictionary as MERGED, which is the form the lookup actually
+   * uses, so a merge that drops a row is visible here.
+   */
+  export interface MigrationDictionaryRow {
+    sourceLanguage: string
+    targetLanguage: string
+    library: string
+    /** The target the mapping names, as written in the dictionary. */
+    target: string
+    notes?: string
+  }
+
+  export function migrationDictionaryRows(): MigrationDictionaryRow[] {
+    const out: MigrationDictionaryRow[] = []
+    for (const [sourceLanguage, targetMap] of Object.entries(POLYGLOT_LIBRARY_DICTIONARY)) {
+      for (const [targetLanguage, libraryMap] of Object.entries(targetMap ?? {})) {
+        for (const [library, entry] of Object.entries(libraryMap ?? {})) {
+          out.push({
+            sourceLanguage,
+            targetLanguage,
+            library,
+            target: (entry as { target: string }).target,
+            notes: (entry as { notes?: string }).notes,
+          })
+        }
+      }
+    }
+    return out.sort((a, b) =>
+      `${a.sourceLanguage}|${a.targetLanguage}|${a.library}`.localeCompare(`${b.sourceLanguage}|${b.targetLanguage}|${b.library}`),
+    )
+  }
+
+  /**
+   * Does this file hold ANY equivalence row for the source→target pair?
+   *
+   * `normalizeMigrationLanguage` accepts any of the 30 dictionary languages as a
+   * target, whether or not that language is a reachable target from the source.
+   * A typescript→zig request therefore produced a "plan" in which every mapping
+   * was null — technically honest, practically useless, and it charged the +6h
+   * unsupported-mapping allowance for a pair the tool has no data about at all.
+   */
+  export function hasMigrationRoute(sourceLanguage: string, targetLanguage: string): boolean {
+    const targets = POLYGLOT_LIBRARY_DICTIONARY[String(sourceLanguage ?? "").toLowerCase()]
+    return !!targets && Object.prototype.hasOwnProperty.call(targets, String(targetLanguage ?? "").toLowerCase())
   }
 
   function lookupEquivalence(

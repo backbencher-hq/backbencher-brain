@@ -56,6 +56,16 @@ CREATE TABLE IF NOT EXISTS brain_schema_version (version INTEGER PRIMARY KEY, ap
         return_type TEXT,
         parameters TEXT,
         docstring TEXT,
+        -- The symbol's own source text, bounded. This is what makes a word
+        -- that appears ONLY inside a function reachable by a text query.
+        -- Measured on real corpora before it existed: content search selected
+        -- name/qualified_name/docstring and there was no body column at all, so
+        -- a body-only word was unreachable by BOTH retrieval paths — 27% of
+        -- body-only words on rake, 38% on ripgrep. The body WAS indexed, but
+        -- only as a 50-dimensional hash, which cannot be queried by word.
+        -- Bounded because a symbol can be very large (a 25 599-character body
+        -- was measured on rake) and this table is scanned by content search.
+        source_text TEXT,
         visibility TEXT,
         is_async INTEGER,
         is_static INTEGER,
@@ -270,6 +280,27 @@ CREATE INDEX IF NOT EXISTS brain_sym_proj_file_idx ON brain_symbol(project_id, f
       CREATE INDEX IF NOT EXISTS brain_sym_proj_type_idx ON brain_symbol(project_id, symbol_type);
 CREATE INDEX IF NOT EXISTS brain_sym_proj_name_type_idx ON brain_symbol(project_id, name, symbol_type);
 
+-- MEASURED (bb_visualize on cargo: 2,071 files, 40,595 symbols, 164,767
+-- relationships): bb_visualize's project scope orders symbols by gravity_score to
+-- pick the project's busiest core, and SQLite had no index that could supply that
+-- order, so it materialised and sorted ALL 40,595 rows into a temp B-tree on every
+-- single call. Interleaved A/B, min of 6: 570.6 ms without this index, 2.8 ms with
+-- it -- 139x -- and the plan changes from
+--     SCAN f | SEARCH s ... | USE TEMP B-TREE FOR ORDER BY
+-- to
+--     SEARCH s USING INDEX brain_symbol_gravity_idx (project_id=?)
+-- which is a noise-free fact: the sort is gone, not merely faster.
+--
+-- line_start is the tie-breaker so the order is total and a render is reproducible.
+--
+-- Deliberately NOT added, having measured both:
+--   * brain_relationship(project_id, source_symbol_id, target_symbol_id) -- 4.4 s to
+--     build on cargo, and it made the joined edge fetch 38x SLOWER (18.8 ms ->
+--     714.4 ms), because the existing brain_rel_proj_source_idx already answers that
+--     query better. An index that costs four seconds of every index run to lose a
+--     benchmark is not an optimisation.
+CREATE INDEX IF NOT EXISTS brain_symbol_gravity_idx ON brain_symbol(project_id, gravity_score DESC, line_start);
+
 CREATE INDEX IF NOT EXISTS brain_rel_proj_target_idx ON brain_relationship(project_id, target_symbol_id);
 CREATE INDEX IF NOT EXISTS brain_rel_proj_source_idx ON brain_relationship(project_id, source_symbol_id);
 CREATE INDEX IF NOT EXISTS brain_rel_proj_type_idx ON brain_relationship(project_id, relationship_type);
@@ -351,12 +382,57 @@ export const ANNOTATION_DDL = `
     );
     CREATE INDEX IF NOT EXISTS brain_annotation_project_symbol_idx ON brain_annotation(project_id, symbol_name);
     CREATE INDEX IF NOT EXISTS brain_annotation_project_idx ON brain_annotation(project_id);
+    -- Location identity in the schema, not in an encoded id string. COALESCE
+    -- is load-bearing: symbol_path is nullable and SQLite counts NULLs as
+    -- distinct in a UNIQUE index, so a path-less note must not escape the
+    -- constraint. See src/brain/annotation-store.ts for the measured defect
+    -- this replaces.
+    CREATE UNIQUE INDEX IF NOT EXISTS brain_annotation_location_idx
+      ON brain_annotation(project_id, symbol_name, author_class, COALESCE(symbol_path, ''));
+  `
+
+/**
+ * The honesty boundary for `author_class`, enforced by the DATABASE rather than
+ * by convention. `author_class` was `TEXT NOT NULL`, which refuses NULL but
+ * accepts any string — a row could claim 'human'. The write door hardcodes
+ * 'agent', so a bb_annotate call cannot spoof it, but every reader trusts this
+ * column verbatim (annotation_ui labels each note with it), so the column itself
+ * is where the claim has to be made true.
+ *
+ * A trigger, not a CHECK: SQLite has no `ALTER TABLE ADD CONSTRAINT`, and
+ * rebuilding the table on a shared, long-lived index is a destructive migration
+ * this schema deliberately avoids (every migration here is additive + idempotent,
+ * see ensureAnnotationTable). A BEFORE trigger is additive, survives reopening,
+ * and refuses the write loudly instead of letting a mislabelled note be rendered
+ * to a human as a human's own note.
+ */
+export const ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL = `
+    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard
+    BEFORE INSERT ON brain_annotation
+    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
+    BEGIN
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+    END;
+    CREATE TRIGGER IF NOT EXISTS brain_annotation_author_class_guard_update
+    BEFORE UPDATE OF author_class ON brain_annotation
+    WHEN NEW.author_class IS NULL OR NEW.author_class NOT IN ('agent', 'human')
+    BEGIN
+      SELECT RAISE(ABORT, 'brain_annotation.author_class must be ''agent'' or ''human'' (got: ' || COALESCE(NEW.author_class, 'NULL') || ')');
+    END;
   `
 
 /** Idempotent, additive-only annotation migration. Safe to call repeatedly. */
 export function ensureAnnotationTable(raw: any): void {
   try {
     raw.exec(ANNOTATION_DDL)
+  } catch {}
+  // The author-class guard is part of the same additive, idempotent migration:
+  // a pre-existing DB gains it on the next open, exactly like the table and the
+  // location index. Failures stay swallowed (a read-only or busy open must not
+  // fail because a trigger could not be created) — the same contract as every
+  // other migration here.
+  try {
+    raw.exec(ANNOTATION_AUTHOR_CLASS_TRIGGER_DDL)
   } catch {}
 }
 
@@ -393,12 +469,76 @@ export function ensureEmbeddingBlobColumn(raw: any): void {
  * and 0 identically, so an un-migrated DB keeps the previous resolution order
  * until a re-index writes the real value.
  */
+/** Add the indexes a READ-heavy tool needs to an ALREADY-CREATED database.
+ *
+ *  DDL above only runs for a fresh database, and the database every editor and
+ *  verifier opens is a pre-existing one — the wiring mistake the M22.W2 comment in
+ *  database.ts warns about. So a new index that only exists in the DDL is an index
+ *  nobody has.
+ *
+ *  brain_symbol_gravity_idx is the measured case. MEASURED on cargo (2,071 files,
+ *  40,595 symbols): with it absent, bb_visualize's project scope materialised and
+ *  sorted ALL 40,595 symbols into a temp B-tree on every call, because no index
+ *  supplied the gravity ordering. Interleaved A/B, min of 6: 570.6 ms without,
+ *  2.8 ms with, and the plan loses "USE TEMP B-TREE FOR ORDER BY" entirely.
+ *
+ *  It costs one `CREATE INDEX IF NOT EXISTS` probe per open, which is a catalog
+ *  lookup when the index exists and an O(n log n) build when it does not — the same
+ *  trade every additive migration here already makes. */
+export function ensureQueryShapeIndexes(raw: any): void {
+  try {
+    const names = (raw.prepare("PRAGMA index_list(brain_symbol)").all() as Array<{ name: string }>).map((i) => i.name)
+    if (names.length === 0) return // table absent; fresh DB handled by the DDL
+    if (names.includes("brain_symbol_gravity_idx")) return
+    raw.exec(
+      "CREATE INDEX IF NOT EXISTS brain_symbol_gravity_idx ON brain_symbol(project_id, gravity_score DESC, line_start)",
+    )
+  } catch {}
+}
+
 export function ensureSymbolDeclarationColumn(raw: any): void {
   try {
     const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
     if (cols.length === 0) return // table absent (fresh DB handled by DDL)
     if (cols.includes("is_declaration")) return
     raw.exec("ALTER TABLE brain_symbol ADD COLUMN is_declaration INTEGER")
+  } catch {}
+}
+
+/**
+ * `brain_symbol.source_text` — the symbol's own body, bounded.
+ *
+ * Added because a word that appears ONLY inside a function was unreachable by
+ * every retrieval path. `searchContent` selects name/qualified_name/docstring,
+ * and there was no body column at all, so on real corpora:
+ *
+ *     rake       121 body-only words   88 found   33 UNREACHABLE (27%)
+ *     ripgrep    118 body-only words   73 found   45 UNREACHABLE (38%)
+ *
+ * The body was indexed, but only as a 50-dimensional hash, which cannot be
+ * queried by a specific word. The text was in the database and absent from
+ * retrieval at the same time.
+ *
+ * Legacy rows are NULL and stay NULL until a re-index writes the body. That is
+ * deliberate: content search treats a NULL body as "this row has no body to
+ * search", which is true of an un-migrated database, and the tool reports
+ * `bodyCoverage` rather than implying the corpus is complete.
+ *
+ * This MUST run on the pre-existing-database open path, not only on fresh
+ * schema creation. Wiring it into the fresh-DB branch alone is the documented
+ * way migrations go missing in this codebase (see the M22.W2 comment in
+ * database.ts), and the first run of this change failed exactly that way:
+ * the indexer's own INSERT hit "table brain_symbol has no column named
+ * source_text" on a database that already had its tables.
+ *
+ * Idempotent, and a no-op on a fresh DB where the DDL already created it.
+ */
+export function ensureSymbolSourceTextColumn(raw: any): void {
+  try {
+    const cols = (raw.prepare("PRAGMA table_info(brain_symbol)").all() as Array<{ name: string }>).map((c) => c.name)
+    if (cols.length === 0) return
+    if (cols.includes("source_text")) return
+    raw.exec("ALTER TABLE brain_symbol ADD COLUMN source_text TEXT")
   } catch {}
 }
 
@@ -588,6 +728,9 @@ export function ensureSchema(raw: any): void {
   // #612: additive symbol column (idempotent; the DDL above carries it for
   // fresh DBs, this covers DBs created by an older DDL).
   ensureSymbolDeclarationColumn(raw)
+  // The symbol body, so content search can reach a word that appears only
+  // inside a function. Idempotent; the DDL above carries it for fresh DBs.
+  ensureSymbolSourceTextColumn(raw)
   try {
     raw.prepare("INSERT OR IGNORE INTO brain_schema_version (version, applied_at, migration_name) VALUES (?, strftime('%s','now') * 1000, ?)").run(SCHEMA_VERSION, SCHEMA_MIGRATION_NAME)
   } catch {}

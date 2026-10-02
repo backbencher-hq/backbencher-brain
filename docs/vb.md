@@ -121,6 +121,11 @@ All seven missing rows are dropped constructions:
 Six of the seven are the one grammar defect, which is now confined to 2,823
 `New*` identifiers in the grammar. The seventh — `SoundManager`, in a file with no
 `Sub New*` at all — is genuinely unexplained and is recorded as such rather than
+Six of the seven are the one grammar defect, which costs **14 declarations in 7
+files** — not the 2,823 `New*` identifiers a raw pattern count suggests, which
+are identifiers and mostly harmless. The seventh — `SoundManager`, in a file with
+no `Sub New*` at all — is genuinely unexplained and is recorded as such rather
+than
 folded into the class it resembles.
 
 ### The `New*` grammar defect, and why a lane cannot fix it
@@ -158,6 +163,22 @@ pattern is contagious in exactly the code this corpus is made of: Windows Forms
 names handlers `<Form>_<Event>` and names buttons `New<Thing>`, so a form or a
 button called `New…` loses the body of **every** handler it has — silently, with
 the file's symbol count still plausible.
+the constructor form. The constructor branch is `prec(100, …)` and its `Sub New`
+is a **compound token of its own** — `_sub_new: token(prec(100, seq(ci("Sub"),
+/\s+/, ci("New"))))` — so the lexer consumes the two-word prefix `Sub New` and
+leaves the rest as the identifier. The parser commits to the constructor branch,
+and the member's body ends up outside the declaration node — which is why the
+*calls* go missing rather than the method.
+
+**127 distinct `New*` identifiers and 2,823 occurrences** exist in the corpus, but
+that is the count of *identifiers*, and it overstates the damage by two orders of
+magnitude. Only declarations shaped `Sub New<more chars>` trigger the bug, and
+there are **14** of them, in **7** files, losing **7 of 39,045** F5 truth edges
+(**0.018 %**). The shape is still worth knowing, because it is contagious in
+exactly the code this corpus is made of: Windows Forms names handlers
+`<Form>_<Event>`, so a form called `NewForm` has handlers `NewForm_Load`,
+`NewForm_Closing` — each one silently losing its body, with the file's symbol
+count still plausible.
 
 ### A proven negative result, not four failed guesses
 
@@ -195,6 +216,9 @@ priority.
 - `\b` on the `ci()` helper is the textbook fix and is **illegal** — a tree-sitter
   token may not hold a zero-width assertion (`Unexpected rule
   ExpandRegex(Assertion)`), and the generator then rejects the whole grammar.
+  *There is a trap here for whoever tests this:* an **unused** rule containing
+  `\b` is accepted silently, because the generator never processes it. Only a rule
+  it actually walks is validated. "The generator took my `\b`" is not evidence.
 - **Keyword extraction** — the mechanism that exists precisely for this, where the
   lexer matches the `word` token and promotes it on an *exact* text match — does
   not rescue these tokens, because `ci()` returns an inline `new RegExp(...)` and
@@ -207,6 +231,38 @@ priority.
 RegExps with named token rules the extractor can index, across **287 call sites**,
 and re-pinning the digest. That is a grammar project for whoever owns
 `grammar.js`, not a change a lane should make to a digest-verified artefact.
+**The token that actually does the damage** is more specific than the above, and
+was missing from the first account:
+
+```js
+_sub_new: ($) => token(prec(100, seq(ci("Sub"), /\s+/, ci("New")))),
+```
+
+That is a **compound** token matching the two-word prefix `Sub New` at
+**precedence 100**, so the lexer does not merely prefer the keyword — it consumes
+`Sub New` as one token and leaves `Form_Load` as the identifier. `ci("New")` is a
+second, independent cause at seven further sites; that is measured rather than
+assumed, because setting `_sub_new`'s precedence to `-1` does **not** fix the
+parse, which can only be true if something else is still splitting the identifier.
+
+**The blast radius, measured over both corpora (2,363 files):** **14** such
+declarations, in **7** files, dropping **7** of **39,045** F5 truth edges
+(**0.018 %**). Every other `Sub New` in the box is a real constructor — 1,961
+`Sub New(` against 1,975 `Sub New*` in total.
+
+**Why the extraction route is rejected on measurement, not on effort.** Extraction
+needs plain-string keywords and compares text case-sensitively, so it would drop
+the case-insensitivity `ci()` exists to provide. Measured over both corpora there
+are about **1,853 non-PascalCase keyword sites** (`if` 844, `new` 513, `class`
+193, `end` 107, and so on) against roughly 172,000 PascalCase ones. VB.NET
+keywords are case-insensitive by specification, so taking that route would trade a
+0.018 % recall hole for a language-conformance regression, while rewriting **282**
+call sites in a digest-pinned vendored grammar and re-pinning the wasm.
+
+**The decision, stated plainly:** the defect stays, disclosed, and scoped. It is
+not "someone else's problem" — it is a 7-edge hole with a measured cause, a
+measured cost of fixing it, and 7 named files in the review, so a grammar owner
+can decide against real numbers instead of a guess.
 
 Every experiment was reverted; `grammars/` and the wasm are byte-identical to HEAD
 and the pin gate is green.
@@ -620,6 +676,188 @@ whole session, and a `100 %` on one file set was reported as a corpus result.
 bun run script/m14/verify-vb-lane.ts
 ```
 
+```
+
+## Three structural gates, and why a count cannot see a missing thing
+
+Every gate in this lane was built after a defect was found, and each of the last
+several defects had the same shape: **something that should have been published
+was not, while every count stayed healthy.** A metric that counts what exists
+cannot report a class that does not exist. So the lane now has three structural
+gates that ask about *coverage* rather than output.
+
+| gate | asks | would have caught |
+|---|---|---|
+| `vb-node-type-census.ts` | is every node type the grammar produces **classified**? | `array_creation_expression` in neither set; `implements_member_clause` filed as silent |
+| `vb-node-type-yield.ts` | does every declaration node type **publish something**? | constructors, operators, interface members — all classified, all visited, all silent |
+| `verify-field-reads.ts` | is every **repeated** field read by a walk, not a singular accessor? | the modifier read |
+
+### The yield audit is the one that finds whole missing kinds
+
+A node type can be classified, have a dedicated visitor, and still publish
+nothing. Three of this lane's largest defects were exactly that:
+
+- **constructors** — classified, visited, and the empty-name guard returned before
+  the naming contract, so 12,549 symbols contained zero of them;
+- **operators** — classified, visited by a dedicated `visitOperator`, and produced
+  nothing twice over: the same guard, plus an `isKeyword` test that returned true
+  for the operator's own symbol;
+- **interface members** — three node types in neither set, so nothing dispatched
+  them and every interface was an empty shell.
+
+It works by walking the corpus twice over the same trees — once counting
+declaration *nodes* by type, once running the analyzer and counting the symbols it
+publishes by their own recorded `grammarNode` — and reporting any type that
+appears as a node and yields no symbol.
+
+Two results are worth having on the record:
+
+**The yield is exactly 1:1.** Over the covering sample, every type's symbol count
+equals its node count — method 665→665, constructor 19→19, interface method
+42→42, property 50→50. The single exception is `field_declaration`, which yields
+*more* symbols than nodes, and that is the declarator rule working: `Dim X, Y,
+width As Integer` is one field node and three members.
+
+**It costs 7 files, not 2,660.** A first version drew the first 600 files and
+reported two types as "not exercised by this sample" — the audit admitting it knew
+nothing about the very types the interface fix was about. So the sample is now a
+**greedy set cover**: a cheap parse-only pass finds which files contain which
+declaration types, and the analyzer runs only on the files needed to exercise all
+nineteen. Total type coverage, 1/380th of the cost, and a rare construct can no
+longer hide behind an unlucky draw.
+
+### Every gate here has been made to fail on purpose
+
+A gate that has only ever passed is not evidence. The first attempt at
+self-testing the yield audit **did not work**: the fault I injected was
+`if (opName === "__never__") return`, a condition that is never true, so the gate
+correctly reported green on an analyzer I believed I had broken. Re-injected
+honestly — `visitOperator` returning immediately — the gate reports
+`operator_declaration 14 nodes, 0 symbols — DEAD VISITOR` and exits 2.
+
+That is worth writing down, because it is the same failure mode as the surviving
+mutant: a test that cannot fail is worse than no test, and the only way to know is
+to try to break it on purpose and check that it noticed.
+
+The census has the same property and records it too — its first run found zero
+files and printed "all 0 node types in the corpus are classified", a vacuous pass
+at exit 0. It now refuses to conclude on an empty corpus.
+
+## The rotation was not rotating, and every "100 %" was one file set
+
+This is the most important thing found in this lane, and it was found by a
+measurement that should not have been possible.
+
+I ran a frozen A/B and an unfrozen run minutes apart. They reported the same
+`sampleSetHash` while their truth counts differed — 911/911 and then 930/34. The
+same hash is a hash of the drawn file paths, so two different file sets cannot
+share one. Something was wrong with the sampling, and it turned out to be this:
+
+```ts
+h = Math.imul(h ^ (h + i), 2246822519)
+const j = Math.abs(h) % (i + 1)
+```
+
+The seed hash is fine. The **shuffle** is not: `h ^ (h + i)` perturbs only the low
+bits of `h` and then spreads them upward, so two completely different seeds
+converge. Measured over 1,880 items, the permutations for two seeds differed in
+**nine positions out of 1,880**, and the first sixty were **identical every time**.
+
+The cold-pool rotation is documented — in this file and in the harness — as "each
+lane prefers files never sampled before, deterministically seeded per rotation
+counter … every wave sees fresh files". That holds only while never-sampled files
+remain. Once the pool saturates, which it did after the full-corpus sweeps, every
+"wave" drew **the same 60 files**, and a rotation that draws the same files every
+wave is not a rotation. A whole-kind defect could have sat in the other 1,871
+files indefinitely and no amount of re-running would ever have found it.
+
+Fixed by driving the shuffle with mulberry32 — a real PRNG with proper avalanche —
+seeded from the same FNV state. The draw now varies:
+
+| rotation | truth edges | covered | missing | unexplained |
+|---:|---:|---:|---:|---:|
+| 7 | 671 | 670 (99.9 %) | 1 | 0 |
+| 21 | 658 | **658 (100 %)** | 0 | 0 |
+| 99 | 646 | **646 (100 %)** | 0 | 0 |
+
+**So what this changes about the record.** Every "100 % on a 60-file draw" quoted
+earlier in this file was measured on *one* file set, drawn over and over, and I
+reported it as though rotation were providing fresh coverage. It was not. The
+honest reading of those numbers was "100 % on 60 files, and I had not looked at
+any others" — which is a much smaller claim, and the difference is the whole point
+of a differential.
+
+Two consequences worth keeping:
+
+- The **full-corpus** sweeps were the only measurements that were ever honest about
+  coverage, which is why they found the interface members, the operators and the
+  modifier read that the draws never could.
+- `BB_F5_FREEZE_POOL` used to mean "replay the current rotation", which is not a
+  freeze at all: the rotation counter is shared state, so any other lane's
+  unscoped sweep moved the wave between two of my runs. It now takes the rotation
+  **number** — `BB_F5_FREEZE_POOL=7` is reproducible whatever anyone else does.
+
+## The modifier read — the largest defect this lane has had
+
+`modifierNames` read `childForFieldName("modifiers")`. That returns **one** node,
+and this grammar emits the field **repeatedly**, once per modifier:
+`Public Overrides Sub Go()` is `modifiers: (member_modifier) modifiers:
+(member_modifier)`. So the read returned `public` and silently dropped
+`overrides` — and the same for every modifier written after the first.
+
+VB writes `Public` first by convention, so **the one modifier that was ever read
+was the one least worth reading.** Everything modifier-dependent was wrong:
+
+| written | read | consequence |
+|---|---|---|
+| `Public Shared Sub A()` | `public` | `isStatic: false` on every shared member |
+| `Public Overrides Sub/Property` | `public` | **zero** `overrides` edges across 435 files |
+| `Public Const F As Integer` | `public` | published as a `Variable`, not a `Constant` |
+| `MustOverride`, `ReadOnly`, `NotInheritable` | — | all missed |
+
+**It was found because the documentation claimed `overrides` was published and it
+was not.** That is the only kind of false claim that reliably gets checked, and
+it is worth being explicit that the claim was ours.
+
+Fixed by reading every `member_modifier` node rather than a field that appears N
+times. The consequences, corpus-wide over 435 files:
+
+- `isStatic` now true for every `Shared` member;
+- `Const` fields are `Constant`, not `Variable`;
+- **480 `overrides` edges**, from zero.
+
+And the edge shape was fixed at the same time. It was `overrides Go -> Go` — a
+**self-edge**, the same un-navigable shape the member-level `implements` edge had.
+The base type was available all along: the owning type's `Inherits` clause had
+already been read to publish `extends`. So the edge is now
+`overrides Description -> Item.Description`, and it is read on **properties and
+events** as well as methods — `Public Overrides Property` is how P3D's entire `Item`
+hierarchy is written, and it published nothing.
+
+The harness noticed the other half of this. `overrides` is in the default audited
+label set, so the moment the analyzer began emitting it, **42 of its edges came
+back UNEXPLAINED (5.1 % of audited output)** because the oracle had no opinion.
+That is the #910 lesson in its purest form: a label the analyzer publishes and the
+oracle cannot derive is a manufactured red, and a label neither derives is a
+manufactured green. The oracle now derives `overrides` from the modifier and the
+owning type's `Inherits`, reading the base structurally rather than by scraping
+text.
+
+Two mutants pin it: one reverts the modifier read, one unqualifies the override
+target. Eight VB mutants, all caught.
+
+## Is this lane done? A command, not an opinion
+
+`script/m14/verify-vb-lane.ts` is the checklist this page is audited against. It
+exists because "the analyzer is finished" kept getting answered by assertion, and
+because several claims in this file were true when written and stopped being true
+without anybody noticing — the sampler went on drawing the same 60 files for a
+whole session, and a `100 %` on one file set was reported as a corpus result.
+
+```sh
+bun run script/m14/verify-vb-lane.ts
+```
+
 **Current state: 13 of 14 criteria met.** Proven mechanically, not asserted:
 
 | | criterion | evidence |
@@ -730,7 +968,7 @@ has not finished:
 export PATH="$HOME/.local/bin:$HOME/fixtures/bin:$PATH"
 
 # grammar: rebuild, run the 27 repro cases, run the corpus differential
-$HOME/fixtures/grammar-repro/grammar-gate.sh
+grammars/_vendored/vbnet/grammar-gate.sh
 
 # the pin, and the proof that the pin gate can fail
 bun run script/m14/verify-grammar-pins.ts
@@ -747,7 +985,7 @@ BB_F5_FREEZE_POOL=1 bun run script/m14/differential.ts --lang vb --repo DISMTool
 BB_F5_SHOW_SAMPLES=1 BB_F5_FREEZE_POOL=1 bun run script/m14/differential.ts --lang vb --repo P3D-Legacy --sample 60
 
 # the analyzer, through the product's own entry
-./node_modules/.bin/tsx $HOME/fixtures/probes/vb-analyzer-e2e.ts
+./node_modules/.bin/tsx script/m14/tmp/vb-analyzer-e2e.ts
 ```
 
 ## Why the grammar is a local rebuild and not a pin of a release
