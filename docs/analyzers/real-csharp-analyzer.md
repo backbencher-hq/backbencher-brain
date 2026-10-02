@@ -102,6 +102,124 @@ gate on the parsed *and* the runtime layer, with the assembled pattern printed.
 
 Gate: `bun script/m14/verify-csharp-no-regex.ts --list <paths>`.
 
+## aspnetcore, exhaustively — and the last known coverage defect, finally located
+
+`--sample 100000` over the whole corpus: **10,667 files** (the sample pool implies ~4,002, so every
+earlier estimate of this corpus was wrong), 631,892 truth edges, 631,888 covered — **100%**,
+**MISSING=4**, unexplained 67.
+
+| label | unexplained |
+| --- | --- |
+| references | 45 |
+| uses | 15 |
+| contains | 3 |
+| instantiates | 2 |
+| extends | 2 |
+
+**All four MISSING rows are `instantiates → string`, and they are a real analyzer gap.** The shape is
+a **target-typed `new()` inside a collection expression assigned to a property**:
+
+    typeInfo.ValidateAsync(new CollectionSiblingRoot { Items = [new() { Name = null }, …] })
+                                                            ^^^^^^ element type inferred as `string`
+
+`new string(...)` reconciles fine in isolation — the minimal case passes on both sides — so the gap is
+not about `string`. It is that the implicit-`new` type resolution here runs through a **property
+declarator inside a collection expression**, and the analyzer does not resolve that path while the
+oracle does. It is the analyzer-side counterpart of the collection-expression problem fixed on the
+oracle side as CS-D12, which is consistent rather than coincidental: that round established the
+collection expression is a shape the two sides walked differently.
+
+**Four attempts to reproduce it minimally all reconcile**, which is worth recording because it says
+the shape above is *not* sufficient to trigger it:
+
+| minimal case | analyzer | oracle |
+| --- | --- | --- |
+| `new Root { Items = [new() { … }] }`, `Item[]` property | `Item`, `Root` | `Item`, `Root` |
+| `new Root { Items = [new()] }`, `string[]` property | `Root`, `string` | `Root`, `string` |
+| `Item[] xs = [new()]` (local) | `Item` | `Item` |
+| `private Item[] _xs = [new()]` (field) | `Item` | `Item` |
+
+The resolution path itself handles the shape: `csharpTargetTypedNewSite` does return
+`{kind:"assignment", memberName}` for an initialiser assignment, and `csharpResolveTargetTypedNew`
+falls through to `memberTypes.get(memberName)` for every kind except `declaration`. So the site
+resolver is not the gap, and the remaining difference is something in the real file that none of these
+four captures.
+
+**Not fixed, and honestly so.** Four edges in 631,892 is 0.0006%. It is named, located to a file,
+characterised as a target-typed `new()` in an object initialiser, and shown *not* to be reproduced by
+four plausible minimal shapes. Closing it needs the actual file and a bisect, not another guess from
+the census row — and the census row is one line long while the file is 400 lines.
+
+## Where this lane stands — 2026-09-29, end of round
+
+### Gates, all green
+
+| gate | result |
+| --- | --- |
+| F1 grammar coverage | `PASS` refs=106 unknown=0 unknownFields=0 |
+| F3 fixtures | **18 / 18** |
+| F4 mutants | **58 / 58 caught** |
+| F5 differential | 4 corpora at **100%**, `MISSING=0` (see the census table) |
+| `verify-csharp-line-numbers` | **PASS** — 18,091 relationships, 0 out of bounds |
+| `verify-csharp-symbols` | **PASS** — 2,692 symbols, 0 defects over 5 properties |
+| `verify-csharp-no-regex` | **PASS** — 0 literals, **0 runtime `RegExp` constructions** |
+| `verify-csharp-overrides-symmetry` | **PASS** |
+| `verify-csharp-oracle-regressions` | **PASS** |
+| `verify-oracle-coverage` | **PASS** |
+| harness typecheck | csharp **0 errors** (gate red on four *other* lanes) |
+
+### Eight defects, seven of them in the truth
+
+**In every case the analyzer was right and the oracle was silent, incomplete or wrong.** F3 asserts
+what the analyzer emits, so a perfect analyzer passes every fixture while the oracle judging it lies —
+no fixture can find an oracle defect, and all seven were invisible to F3 by construction.
+
+### Line numbers: done, re-verified after every change this round
+
+200 roslyn files, **18,091 relationships, 0 out of bounds, 0 non-integer.** The 61 null lines are all
+`owner → constructor` and are *correct*: `constructor` and `Finalize` are synthesized names the file
+never writes, so no line exists for them. The gate asserts the boundary — a null line is legal only
+for a synthesized name, and a null line on a written name is a defect — and pins the exact case in
+`csharp/callsite-lines-825`.
+
+### Regex: proven, not asserted
+
+Three layers: the source is **parsed** (so `/a\/b/` and `a / b / c` cannot be confused), `RegExp` is
+replaced with a recording subclass before the analyzer loads and runs, and the shipped file is hashed
+against the working copy. The runtime layer is the one that matters — a pattern assembled from an
+array or a variable still has to *construct* a RegExp, and the count is **0**. Proved by replay: a
+pattern joined from array parts, invisible to grep and to the source scan, produced 20 constructions.
+
+### Relationship labels: compared set widened 4 → 7
+
+The oracle derives eight; the compared set had four, so half the labels were computed and checked by
+nothing. All three added labels measured 100% under the harness's own matcher before being added.
+`overrides` remains excluded on **both** sides under C923, gated by a symmetry check that fails on
+either half desyncing — because that pair is what silently desynced once already.
+
+### Performance: flat per file, super-linear per depth
+
+Per-file cost is flat (29–39 ms from 50 to 400 files). Per **nesting depth** it is not: cost rises
+**363×** for 32× depth at constant symbol count, and the mechanism is long ancestor walks. One of the
+five offending predicates is fixed (2.06× at depth 128, output unchanged); four remain, named, with
+measured headroom. The depth sweep is a reusable instrument, not a one-off — it is the only thing in
+the lane that varies an axis other than file count, and that is why nothing else caught this.
+
+### Open, named rather than closed
+
+1. **aspnetcore `MISSING=4`** — 0.0006% of 631,892 edges. Located to a file; four minimal
+   reproductions all reconcile, so the shape is not yet pinned.
+2. **Four more depth predicates** — `isCSharpNamePosition`, `isCSharpPreprocText`,
+   `findContainingCSharpFunction`, one inline type-constraint check. A memoisation of the third was
+   attempted, proved wrong on 2,854 of 48,645 nodes, and reverted.
+3. **powershell not re-verified exhaustively** after CS-D13.
+4. **Target resolution** — 95.6% floor. A census, not a gate, because this repo has no external
+   surface to resolve a framework member against and a gate that cries wolf on `ThrowIfCancellationRequested`
+   gets bypassed. **A BCL + attribute + keyword list is the single artifact that would make it real.**
+5. **Section A of completeness** fails in five lanes on `ERROR`/`MISSING` — a shared-schema gap; csharp's
+   own inventory is 241 types with **0 gaps**.
+6. **main is diverged**, and needs a human merge decision.
+
 ## Field-level gates (2026-09-29)
 
 Every other gate in this lane asks whether a relationship or a symbol EXISTS with the
@@ -178,7 +296,7 @@ passes every fixture while the oracle judging it lies.
 
 ## Complexity envelope
 
-> **RESTORED, with better evidence than the original claim had.** An earlier version of this section
+> **SCOPED, not simply restored — see the depth section below.** An earlier version of this section
 > said "no O(n²) or per-symbol O(n) scans" and cited a M12 table. This round WITHDREW that as
 > unsupported, because three identical runs reported per-symbol drift of 49%, 91% and 54%. The
 > withdrawal was right to be cautious and WRONG in its conclusion — the metric was confounded, and
@@ -208,7 +326,7 @@ came from `ASTEngine.parseFile`, which bundles a fixed-size wasm heap that JS GC
 the analyzer's own passes. The separation mattered: had it shown the drift in parse, the analyzer's
 claim would have survived untouched and the engine's heap would be the story. Both are flat.
 
-**So the claim stands, and the structural argument behind it still does:**
+**So on the FILE axis the claim stands, and the structural argument behind it does:**
 
 - single-pass iterative traversal (explicit stack, no recursion depth risk)
 - `symbolMap` for O(1) owner/name lookup — owner resolution is a Map lookup, not a scan
@@ -217,11 +335,134 @@ claim would have survived untouched and the engine's heap would be the story. Bo
 - relationship emission is therefore O(edges), not O(symbols × names); the bare-identifier pass, the
   only place that sees every name in a file, is one Map lookup per reference
 
-**What this does not establish.** Flat per-file cost over 50→400 files bounds growth in FILE COUNT.
-It says nothing about depth: a cost linear in files can still be quadratic in nesting depth, and a
-400-file sample of real code simply does not contain a 4,000-deep nest. A depth sweep is a separate
-measurement and has not been made. Nor does it cover the 1 MiB file cap, above which the engine
-truncates and the analyzer sees a prefix.
+…and **on the DEPTH axis it does not hold**, which the sweep below measures directly.
+
+## Nesting depth — a REAL super-linear term, found by synthesising the axis
+
+The depth sweep above was the gap this section used to admit to, and running it changed the answer.
+
+`--sample` cannot see depth at all: a file's nesting does not change when the sample grows, so no
+number of real files will ever expose cost that grows with depth. And real corpora cannot supply
+the axis either — roslyn's deepest nesting is in the low tens, so any quadratic with a small
+constant stays inside the noise forever. The only way to see the shape is to **synthesise files of
+known depth and hold symbol count constant**, so per-symbol cost is comparable and depth is the only
+variable (`cs-deep-68`).
+
+| depth | symbols | min ms | µs/symbol | × vs shallowest |
+| --- | --- | --- | --- | --- |
+| 4 | 3 | 0.73 | 734 | 1.00× |
+| 8 | 3 | 1.89 | 1,889 | 2.58× |
+| 16 | 3 | 3.98 | 3,981 | 5.43× |
+| 32 | 3 | 13.64 | 13,637 | 18.59× |
+| 64 | 3 | 38.66 | 38,657 | 52.69× |
+| 128 | 3 | 266.37 | 266,369 | **363.08×** |
+
+**Symbol count is constant at 3 across a 32× increase in depth.** Per-symbol cost rises 363×. Deep
+CLASS nesting over the same range is fine (1.00× → 8.22× for 32× depth, and symbols grow with depth
+there, so per-symbol is flatter still). The defect is specific to nested **blocks** — the shape that
+exercises the bare-identifier and shadowing paths rather than the scope stack.
+
+Separated from the parser, because the two have opposite consequences:
+
+| depth | parse ms | analyze ms | analyze/parse |
+| --- | --- | --- | --- |
+| 8 | 1.06 | 8.95 | 8.4× |
+| 32 | 3.16 | 29.62 | 9.4× |
+| 64 | 3.75 | **102.60** | **27.4×** |
+
+Parse stays flat; **the analyzer does not**. The 32→64 step is 3.46× for 2× depth, which is
+super-linear.
+
+**The mechanism is LONG WALKS, and getting that wrong took two attempts worth recording.**
+
+The first write-up of this section claimed a "call-count explosion, not a long walk", on the
+evidence that thirteen per-node climb loops showed equal invocation and iteration counts. **That
+evidence was an instrumentation artifact**: both counters were incremented on the same line inside
+the loop body, so they were equal by construction and the "no walk is long" inference was worthless.
+Re-instrumented correctly — invocations counted *before* the loop, iterations *inside* it:
+
+| depth | nodes | loop invocations | loop iterations | iterations per invocation |
+| --- | --- | --- | --- | --- |
+| 16 | 108 | 123 | 965 | 7.8 |
+| 64 | 348 | 363 | 9,605 | **26.5** |
+
+The opposite of what was claimed. Invocations grow slowly (123 → 363, roughly with node count), and
+each one walks **deeper** as depth grows — 7.8 ancestors at depth 16, 26.5 at depth 64. Total
+iterations therefore go 965 → 9,605, which is **O(nodes × depth) = O(depth²)** and matches the 363×
+per-symbol cost measured on the depth axis.
+
+No single site dominates the invocations: `isImportName`, `isCSharpQualifiedNamePart` and three
+others sit at 19–20% each, and the rest under 2%. So this is not one bad predicate but a family of
+ancestor-ascending predicates — `isImportName` alone walks the whole chain to the root for every
+identifier it is asked about, on a file with no `using` directive at all.
+
+**What this points at, stated as a direction rather than a fix.** Every one of these predicates
+answers "is there an ancestor of kind X?", which is a pure function of the ancestor chain and is
+identical for a whole subtree. Recomputing it per node recomputes the same answer O(depth) times.
+The direction is to answer it once per subtree — carry the answer down during the walk, or memoise
+per node — and the win would be largest for the predicates that climb to the root unconditionally
+rather than stopping early.
+
+### One of the five is fixed: `isImportName`
+
+`isImportName` asked "is any ancestor a `using_directive`?" by walking to the top of the tree —
+unconditionally, for every identifier that reached it, and on files with **no import anywhere**. The
+powershell corpus is exactly such a file, so the walk ran to the root every time and found nothing.
+
+`using_directive` and `extern_alias_directive` are always direct children of `compilation_unit`, so
+the question is answerable from a span table computed once per file: *p* is inside a using directive
+exactly when its extent falls within that directive's. That is equivalence to the ancestor walk, not
+an approximation of it.
+
+| depth | before | after | |
+| --- | --- | --- | --- |
+| 64 | 38.66 ms (52.69×) | **25.39 ms (32.14×)** | 1.52× faster |
+| 128 | 266.37 ms (363.08×) | **129.40 ms (163.78×)** | 2.06× faster |
+
+Output unchanged: F3 18/18, F4 58/58, oracle regressions PASS, no-regex PASS.
+
+**Still super-linear, and not claimed otherwise.** 164× for 32× depth is between linear and quadratic,
+and four more predicates measured 19–20% of invocations each. This is the first of five, not the fix
+for the class. The remaining headroom is real and now *measured* rather than guessed, which is the
+useful change: the depth sweep is a gate-shaped instrument that turns "cost grows with depth" into a
+number with a named cause.
+
+### A second attempt at `findContainingCSharpFunction` — reverted, and why that is the right call
+
+The next candidate by invocation share (~19%) is `findContainingCSharpFunction`, which answers "what
+is my nearest enclosing method/constructor/destructor?" by walking to the root, once per identifier.
+Memoising it with path compression is the textbook fix: on a miss, walk up remembering the path until
+a cached node is reached, then write the answer for every node on the path.
+
+**It was implemented, proved wrong, and reverted.** A checker compared the memoised result against
+the raw walk for every node in 60 real roslyn files: **2,854 disagreements out of 48,645 nodes.**
+
+The bug is instructive and specific. The raw walk examines `node.parent` upward. The compressed
+version called the raw walk on `node.parent` — which examines `node.parent.parent` upward, silently
+**skipping the node's own parent**. A node directly inside a method therefore got `null` where the
+walk said `constructor`.
+
+What makes this worth recording rather than just fixing quietly: `findContainingCSharpFunction`
+supplies the **owner** for relationships derived from expressions. A cache that returns the wrong
+owner does not crash, does not fail a fixture, and does not change a coverage number — it silently
+relabels every edge inside the affected subtree, which is precisely the defect class this round spent
+eight fixes removing. A near-miss here would have been invisible to every gate in the lane.
+
+The correct version caches only nodes **strictly below** the resolver and never the resolver itself,
+and it must be verified node-for-node against the walk before it lands — the same standard applied to
+`blocked_by=[…]` and to the retraction of the "call-count explosion" claim. Not landed here.
+
+**Still not fixed, and the rest of the line is still not named.** What is established: the axis (depth), the
+shape (O(nodes × depth)), the family (ancestor-ascending predicates, none dominant), and that the
+first localisation attempt was wrong because of where its counters were placed.
+
+**So the linearity claim, restored an hour ago on the strength of flat per-file cost, is too strong
+as written and is now scoped correctly: the analyzer is flat per file, and super-linear per unit of
+nesting depth.** That is a real defect and it is open. It does not affect any corpus measurement —
+roslyn's real depth never approaches where it bites — which is precisely why it survived every gate
+in this lane and why no amount of corpus work would have found it.
+
+
 
 Declared budget: fixtures < 2 s; 400-file corpus < 60 s. Observed at 400 files: ~30–39 ms/file
 analyze plus ~3.5 ms/file parse, i.e. ~14–17 s for the corpus, inside budget with room.

@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (41/44 languages pass)",
+      "description": "per-literal shrink-only register with reasons (40/44 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,12 +24,17 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "committedAt": "2026-09-29T01:27:42-04:00",
+  "commit": "66b9327df03097d8751798523b29b23013a327a9",
+  "committedAt": "2026-10-02T03:44:19+02:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
         "countRegressions": [
+          {
+            "from": 0,
+            "lang": "cpp",
+            "to": 2
+          },
           {
             "from": 0,
             "lang": "html",
@@ -37,8 +42,8 @@
           },
           {
             "from": 0,
-            "lang": "zig",
-            "to": 1
+            "lang": "rust",
+            "to": 2
           }
         ],
         "ok": false,
@@ -142,6 +147,20 @@
         ],
         "unregistered": [
           {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 153,
+            "literal": "class_body"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "cpp",
+            "line": 3759,
+            "literal": "class_body"
+          },
+          {
             "context": "real-html-analyzer.ts:comparison",
             "kind": "type",
             "lang": "html",
@@ -177,18 +196,25 @@
             "literal": "image"
           },
           {
+            "context": "real-rust-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "rust",
+            "line": 1915,
+            "literal": "bare_function_type"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "kind": "type",
+            "lang": "rust",
+            "line": 1915,
+            "literal": "parenthesized_type"
+          },
+          {
             "context": "real-sql-analyzer.ts:field-call:childForFieldName",
             "kind": "field",
             "lang": "sql",
             "line": 1907,
             "literal": "object"
-          },
-          {
-            "context": "real-zig-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "zig",
-            "line": 623,
-            "literal": "field_identifier"
           }
         ]
       },
@@ -404,7 +430,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 332,
         "referencedFieldLiterals": 14,
-        "referencedTypeLiterals": 61,
+        "referencedTypeLiterals": 67,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -459,12 +485,23 @@
         "fieldless": false,
         "oracleFieldCount": 50,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 495,
+        "oracleNodeTypeCount": 496,
         "referencedFieldLiterals": 11,
-        "referencedTypeLiterals": 83,
-        "status": "pass",
+        "referencedTypeLiterals": 88,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 153,
+            "literal": "class_body"
+          },
+          {
+            "context": "real-cpp-analyzer.ts:comparison",
+            "line": 3759,
+            "literal": "class_body"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-cpp.wasm"
@@ -575,7 +612,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 512,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 62,
+        "referencedTypeLiterals": 65,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1004,10 +1041,21 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 329,
         "referencedFieldLiterals": 15,
-        "referencedTypeLiterals": 80,
-        "status": "pass",
+        "referencedTypeLiterals": 86,
+        "status": "fail",
         "unknownFields": [],
-        "unknownNodeTypes": [],
+        "unknownNodeTypes": [
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1915,
+            "literal": "bare_function_type"
+          },
+          {
+            "context": "real-rust-analyzer.ts:comparison",
+            "line": 1915,
+            "literal": "parenthesized_type"
+          }
+        ],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-rust.wasm"
@@ -1251,7 +1299,7 @@
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5393,
+            "line": 5422,
             "literal": "default_export_expression"
           }
         ],
@@ -1353,16 +1401,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 46,
-        "status": "fail",
+        "referencedTypeLiterals": 50,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-zig-analyzer.ts:comparison",
-            "line": 623,
-            "literal": "field_identifier"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-zig.wasm"
@@ -1373,10 +1415,10 @@
       }
     },
     "summary": {
-      "fail": 3,
+      "fail": 4,
       "languagesAudited": 44,
-      "pass": 41,
-      "totalUnknownReferences": 10
+      "pass": 40,
+      "totalUnknownReferences": 13
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1404,9 +1446,9 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T05:36:53.645Z",
-  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "runtime": "node v24.3.0",
+  "regeneratedAt": "2026-10-02T02:03:36.422Z",
+  "regeneratedAtCommit": "66b9327df03097d8751798523b29b23013a327a9",
+  "runtime": "node v26.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"
 }

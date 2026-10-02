@@ -93,7 +93,18 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
       if (c && (c.type === "identifier" || c.type === "field_identifier" || c.type === "type_identifier")) {
-        return String(c.text)
+        // Z56: REVERTED to the RAW text, and deliberately so. Canonicalizing here
+        // undid Z53: that fix tells a DISCARD (`const _ = 1;`, node text exactly
+        // `_`) from a REAL quoted member name (`@"_"`, an enum member deliberately
+        // spelled that way in zig's x86 backend) by comparing the RAW spelling.
+        // Strip the quotes first and both arrive as `_`, so the blank-identifier
+        // test fires and the real member is dropped again — which is exactly what
+        // happened: `contains Label -> _` came straight back at full corpus.
+        //
+        // So the two rules are ORDERED, not competing: read raw, decide blank-or-name
+        // on the raw spelling, and canonicalize only when building the NAME. Doing it
+        // the other way round loses information the decision needs.
+        return String(c.text ?? "")
       }
     }
     return null
@@ -116,6 +127,7 @@ export function deriveZigContainment(root: any): { label: string; from: string; 
     // written as a rule.
     const isBlankIdentifier = String(rawMember ?? "").trim() === "_"
     if (!owner || !member || isBlankIdentifier) return
+    // and the NAME itself is canonical, which is what every published edge carries
     // `~~` cannot occur inside a zig identifier, so the composite key is
     // unambiguous. A literal NUL would do the same job and did — but it made this
     // file BINARY to git, and an oracle nobody can read as text is an oracle
@@ -394,7 +406,7 @@ export function deriveZigInstantiation(root: any): { label: string; from: string
       if (cur.type === "function_declaration" || cur.type === "test_declaration") {
         for (let i = 0; i < cur.namedChildCount; i++) {
           const c = cur.namedChild(i)
-          if (c && c.type === "identifier") return String(c.text)
+          if (c && c.type === "identifier") return stripZigQuoting(String(c.text ?? ""))
         }
       }
       cur = cur.parent
@@ -405,9 +417,17 @@ export function deriveZigInstantiation(root: any): { label: string; from: string
   const sites = (n: any): void => {
     if (n.type === "call_expression") {
       const callee = n.namedChildCount > 0 ? n.namedChild(0) : null
-      if (callee && callee.type === "identifier" && typeFns.has(String(callee.text))) {
-        const k = `g|${enclosing(n)}|${callee.text}|${lineOf(callee)}`
-        if (!seen.has(k)) { seen.add(k); out.push({ label: "instantiates", from: enclosing(n), target: String(callee.text), line: lineOf(callee), class: "generic type application" }) }
+      // Z55, second push site: canonicalized HERE, at the point the row is built,
+      // rather than at each place a name is read. Patching the construction site
+      // alone fixed 0 of the 2 full-corpus misses, because a generic application
+      // reaches the same edge by a different route — and the lesson of Z41/Z43/Z51
+      // is that a rule applied at one SITE is not a rule. `typeFns` holds canonical
+      // names, the callee's text does not, and comparing them raw is what let
+      // `@"switch"` and `switch` both appear.
+      const calleeName = callee && callee.type === "identifier" ? stripZigQuoting(String(callee.text ?? "")) : null
+      if (calleeName && typeFns.has(calleeName)) {
+        const k = `g|${enclosing(n)}|${calleeName}|${lineOf(callee)}`
+        if (!seen.has(k)) { seen.add(k); out.push({ label: "instantiates", from: enclosing(n), target: calleeName!, line: lineOf(callee), class: "generic type application" }) }
       }
     }
     if (n.type === "struct_initializer" || n.type === "struct_literal") {
@@ -422,7 +442,23 @@ export function deriveZigInstantiation(root: any): { label: string; from: string
       const headOk = !!first && (first.type === "identifier" || first.type === "field_expression" || first.type === "type_identifier" || first.type === "call_expression")
       if (first && headOk) {
         const raw = String(first.text ?? "")
-        const nm = raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw
+        // Z55: CANONICALIZED, and this is the SIXTH site of the quoting rule. A
+        // construction of a QUOTED type — `switch(.{})` where the type is spelled
+        // `@"switch"`, because `switch` is a keyword — has an identifier node whose
+        // text carries the `@"..."` syntax, and the analyzer publishes `switch`.
+        // Raw here, the truth derived `@"switch"` and produced BOTH a phantom (the
+        // analyzer's row has no truth counterpart) and a miss (the truth's row has no
+        // analyzer counterpart) for the SAME edge:
+        //
+        //   zig/lib/std/zig/llvm/Builder.zig:5361            instantiates switch -> Switch
+        //   zls/src/features/workspace_symbols.zig:51         instantiates workspace/symbol -> SortContext
+        //
+        // Four rows of noise from one missing canonicalizer, at full corpus, in a
+        // 200-file draw of which neither file appears. Z41, Z43, Z51 (twice) and now
+        // this: six sites, and the rule has now been written down as a rule rather
+        // than rediscovered as a defect each time a new copy of "turn a node into a
+        // name" was written.
+        const nm = stripZigQuoting(raw.includes(".") ? raw.slice(raw.lastIndexOf(".") + 1) : raw)
         // a call_expression head is a generic APPLICATION head, not a plain
         // type name — `ArrayList` is the nominal type, and whether it is
         // instantiable in-file is ZIG.D.1's question, not this rule's
@@ -478,7 +514,7 @@ export function deriveZigExports(root: any): { label: string; from: string; targ
   const firstIdent = (n: any): string | null => {
     for (let i = 0; i < n.namedChildCount; i++) {
       const c = n.namedChild(i)
-      if (c && c.type === "identifier") return String(c.text)
+      if (c && c.type === "identifier") return stripZigQuoting(String(c.text ?? ""))
     }
     return null
   }
@@ -538,12 +574,72 @@ export function deriveZigExports(root: any): { label: string; from: string; targ
  * red-team in `zigw-oracle-check.ts` is what proves they do.
  */
 export function deriveZigReferenceEdges(root: any): { label: string; from: string; target: string; line?: number }[] {
+  // Z57: the names this file DECLARES, derived from the TREE (not from the
+  // analyzer's symbols — the oracle keeps its independence from what it judges).
+  // Built once per call, before the walk.
+  // FILE SCOPE ONLY, and the first version was not: it collected every
+  // declaration including function-LOCALS, so one `var u8 = …` inside any function
+  // made every genuine BUILTIN `u8` reference in the file pass the filter, and the
+  // MISSING count went 0 -> 1. A local does not shadow a builtin type — only a
+  // file-scope declaration can, because only that is visible to a type annotation
+  // written elsewhere in the file. (Seventh time in this lane that a "declared
+  // names" set needed a scope rule attached to it.)
+  const declared = new Set<string>()
+  const declaredQuoted = new Set<string>()
+  {
+    const BARRIERS = new Set([
+      "function_declaration", "test_declaration", "block", "if_statement", "if_expression",
+      "for_statement", "for_expression", "while_statement", "while_expression",
+      "switch_statement", "switch_expression", "catch_expression", "defer_statement",
+      "expression_statement", "comptime_statement", "errdefer_statement",
+    ])
+    const st: any[] = [root]
+    while (st.length > 0) {
+      const n = st.pop()!
+      if (n.type === "variable_declaration" || n.type === "function_declaration" || n.type === "container_field") {
+        const c0 = n.namedChildCount > 0 ? n.namedChild(0) : null
+        if (c0 && c0.type === "identifier") {
+          let q = n.parent
+          let fileScope = true
+          let hops = 0
+          while (q && hops++ < 40) { if (BARRIERS.has(q.type)) { fileScope = false; break } q = q.parent }
+          const raw = String(c0.text ?? "")
+          if (/^@"/.test(raw)) declaredQuoted.add(stripZigQuoting(raw))
+          if (fileScope) declared.add(stripZigQuoting(raw))
+        }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
+    }
+  }
   const edges: { label: string; from: string; target: string; line?: number }[] = []
   const seen = new Set<string>()
   const push = (target: string, from: string) => {
     const t = String(target ?? "")
     if (!t) return
-    if (ZIG_DECLARED_TYPE_BUILTINS.has(t)) return
+    // Z57: the builtin exclusion must be name-based ONLY when the name is not also
+    // DECLARED in this file. `zig/test/behavior/basic.zig` does
+    //
+    //     const @"u8" = u16;
+    //     const c: @"u8" = 300;
+    //
+    // — a user-declared local type alias whose name happens to be a builtin. The
+    // analyzer correctly publishes `references (declared-type) -> u8` for line 635,
+    // and this filter dropped the truth's row because `u8` is in the builtin set.
+    // One unexplained edge in 3,839 files, and the last of them.
+    //
+    // This is the same shape as #963 — a NAME-keyed rule that cannot see that a name
+    // is locally declared — and the same family as the quoting sites: the rule was
+    // written for the common case and never asked what the uncommon one means. A
+    // builtin name the file declares itself is not a builtin reference.
+    // ...and a QUOTED spelling is a user declaration by construction: you quote a
+    // name precisely when the plain spelling would mean something else, which is why
+    // the analyzer publishes `references -> u8` for `const c: @"u8"` inside a
+    // FUNCTION BODY (`zig/test/behavior/basic.zig`, a file that exists to test alias
+    // shadowing) where the alias `const @"u8" = u16;` is function-LOCAL and so is
+    // invisible to a file-scope rule. Between the two tests the rule is complete and
+    // neither over-publishes: a plain builtin name is skipped unless the file
+    // declares it at file scope, and a quoted one is always a user type.
+    if (ZIG_DECLARED_TYPE_BUILTINS.has(t) && !declared.has(t) && !declaredQuoted.has(t)) return
     // the analyzer's digit-head refusal (`123abc`-style heads are not types)
     const c0 = t.charCodeAt(0)
     if (c0 >= 48 && c0 <= 57) return
@@ -592,7 +688,7 @@ export function deriveZigReferenceEdges(root: any): { label: string; from: strin
   //   - otherwise the last `identifier` at or under the type node.
   const leaf = (t: any, depth = 0): string | null => {
     if (!t || depth > 6) return null
-    if (t.type === "identifier") return String(t.text ?? "")
+    if (t.type === "identifier") return stripZigQuoting(String(t.text ?? ""))
     if (t.type === "error_union_type") {
       const ok = fieldOf(t, "ok")
       return ok ? leaf(ok, depth + 1) : null
@@ -628,7 +724,7 @@ export function deriveZigReferenceEdges(root: any): { label: string; from: strin
     }
     while (stack.length > 0) {
       const n = stack.pop()!
-      if (n.type === "identifier") return String(n.text ?? "")
+      if (n.type === "identifier") return stripZigQuoting(String(n.text ?? ""))
       for (let i = n.namedChildCount - 1; i >= 0; i--) {
         const c = n.namedChild(i)
         if (c) stack.push(c)
