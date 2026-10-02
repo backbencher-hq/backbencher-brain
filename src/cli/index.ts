@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
 import { indexProjectParallel } from "../ast/parallel-indexer"
+import { IndexProgressRenderer, SUPPORT_EMAIL } from "./index-progress"
 import { acquireIndexLock, IndexLockHeldError, type IndexLockHandle } from "../ast/index-lock"
 import { BrainTools } from "../ast/tools"
 import { BACKBENCHER_BRAIN_VERSION } from "../version"
@@ -51,20 +52,10 @@ function requireDir(p: string): string {
   return abs
 }
 
-// M22.V1: remaining-time estimate from a live progress sample. Honest rule:
-// no ETA is produced before there is at least one second of elapsed time and a
-// non-zero processed rate; otherwise it returns "…". elapsedSeconds is the
-// wall-clock ms elapsed since the run started (see parallel-indexer enrichment).
-function formatETA(s: { processedFiles: number; totalFiles: number; elapsedSeconds?: number }): string {
-  const elapsedS =
-    s.elapsedSeconds !== undefined && s.elapsedSeconds > 0 ? s.elapsedSeconds / 1000 : 0
-  if (elapsedS < 1 || s.processedFiles <= 0 || s.totalFiles <= 0) return "…"
-  const perFileS = elapsedS / s.processedFiles
-  const remaining = Math.max(0, (s.totalFiles - s.processedFiles) * perFileS)
-  if (remaining < 60) return `${Math.round(remaining)}s`
-  if (remaining < 3600) return `${Math.floor(remaining / 60)}m${Math.round(remaining % 60)}s`
-  return `${Math.floor(remaining / 3600)}h${Math.floor((remaining % 3600) / 60)}m`
-}
+// Remaining-time estimation moved to index-progress.ts (`estimateRemainingMs` +
+// `formatDuration`). The old local `formatETA` is gone: it took a stats shape the
+// progress callback no longer supplies, and keeping two ETA formatters invited
+// the two to disagree on screen.
 
 async function cmdIndex(
   dir: string | undefined,
@@ -239,21 +230,28 @@ async function cmdIndex(
   // M22.V1: render a live single-line progress update on stderr (never stdout,
   // so stdout stays clean for any consuming process). Clears the line on the
   // terminal without disturbing the final summary on stdout.
-  let lastProgressT = 0
+  // Live progress. Rendering lives in index-progress.ts so the terminal and
+  // log-file cases can be handled properly: a bare `\r` redraw is correct only
+  // on a real TTY, and produced an unreadable smear in pipes and CI logs.
+  const progress = new IndexProgressRenderer({
+    stream: process.stderr,
+    isTTY: Boolean(process.stderr.isTTY),
+    startedAt: t,
+    totalFiles: 0,
+  })
   indexOpts.onProgress = (s: any) => {
-      const now = Date.now()
-      if (now - lastProgressT < 80) return
-      lastProgressT = now
-      const total = s.totalFiles > 0 ? s.totalFiles : s.processedFiles
-      const pct =
-        s.totalFiles > 0 ? Math.floor((s.processedFiles / s.totalFiles) * 100) : 0
-      const fps = typeof s.filesPerSecond === "number" ? s.filesPerSecond.toFixed(1) : "?"
-      const file = s.currentFile ?? ""
-      const pw = process.stderr.isTTY ? `\r` : `\r[progress] `
-      process.stderr.write(
-        `${pw}${s.processedFiles}/${total} files (${pct}%) ${fps}/s ETA ${formatETA(s)} ${file ? `— ${file}` : ""}`,
-      )
-    }
+    progress.update({
+      processedFiles: Number(s.processedFiles ?? 0),
+      totalFiles: Number(s.totalFiles ?? 0),
+      skippedFiles: Number(s.skippedFiles ?? 0),
+      errorFiles: Number(s.errorFiles ?? 0),
+      currentFile: s.currentFile ?? "",
+      filesPerSecond: typeof s.filesPerSecond === "number" ? s.filesPerSecond : undefined,
+      symbols: typeof s.symbols === "number" ? s.symbols : undefined,
+      relationships: typeof s.relationships === "number" ? s.relationships : undefined,
+      embeddings: typeof s.embeddings === "number" ? s.embeddings : undefined,
+    })
+  }
   // M21.R3: cooperative cancellation — Ctrl+C stops the run gracefully instead
   // of killing the process mid-write. The abort signal makes the indexer stop
   // dispatching new batches and drain in-flight work; the live status file gets
@@ -287,18 +285,39 @@ async function cmdIndex(
   }
   process.removeAllListeners("SIGINT")
   process.removeAllListeners("SIGTERM")
-  if (process.stderr.isTTY) process.stderr.write("\r\x1b[K")
-  else process.stderr.write("\n")
+  progress.clear()
   const secs = ((Date.now() - t) / 1000).toFixed(1)
   const db = await BrainDatabase.getRawInstance(pid)
   const files = (db.prepare("SELECT COUNT(*) c FROM brain_file").get() as any).c
   const symbols = (db.prepare("SELECT COUNT(*) c FROM brain_symbol").get() as any).c
   const rels = (db.prepare("SELECT COUNT(*) c FROM brain_relationship").get() as any).c
   const emb = (db.prepare("SELECT COUNT(*) c FROM brain_semantic_embedding").get() as any).c
-  console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  // A run that indexed nothing new is a success, but "✓ indexed 0 files" reads
+  // like a failure to anyone who ran `bb index` expecting work to happen. Say
+  // what actually happened instead: the project is already current.
+  const parsedNothing = Number(stats.summary?.newlyParsed ?? 0) === 0 && !stats.cancelled
+  if (parsedNothing) {
+    const unchanged = Number(stats.summary?.unchanged ?? 0)
+    const skipped = Number(stats.summary?.skipped ?? 0)
+    console.log(
+      `✓ nothing to index — already up to date (${unchanged} unchanged, ${skipped} skipped, ${secs}s)`,
+    )
+  } else {
+    console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
+  }
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  // Close the loop the way the product promises: say how long it took, and when
+  // that is long enough that the user should suspect a hang, tell them who to
+  // tell. Skipped entirely for a cancelled run — a cancelled index did not
+  // "finish", so it must not receive completion messaging.
+  progress.finish({
+    ok: !stats.cancelled,
+    totalFiles: Number(stats.totalFiles ?? 0),
+    errorCount: Number(stats.errorFiles ?? 0),
+    cancelled: Boolean(stats.cancelled),
+  })
   if (stats.cancelled) {
-    console.log("⏸ index cancelled — progress saved. Resume with: bb index --resume")
+    console.log(`⏸ index cancelled after ${secs}s — progress saved. Resume with: bb index --resume`)
   }
   if (stats.summary) {
     const s = stats.summary
