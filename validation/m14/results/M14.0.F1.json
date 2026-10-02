@@ -13,7 +13,7 @@
       "status": "pass"
     },
     {
-      "description": "per-literal shrink-only register with reasons (41/44 languages pass)",
+      "description": "per-literal shrink-only register with reasons (44/44 languages pass)",
       "id": "dead-literal-gate",
       "status": "pass"
     },
@@ -24,173 +24,16 @@
     }
   ],
   "claimLevel": "L2",
-  "commit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
-  "committedAt": "2026-09-29T01:27:42-04:00",
+  "commit": "13303ed32a7fa5400bb93cc427251c961afc095c",
+  "committedAt": "2026-10-01T21:31:34-04:00",
   "data": {
     "deadLiteralRegister": {
       "adjudication": {
-        "countRegressions": [
-          {
-            "from": 0,
-            "lang": "html",
-            "to": 5
-          },
-          {
-            "from": 0,
-            "lang": "zig",
-            "to": 1
-          }
-        ],
-        "ok": false,
+        "countRegressions": [],
+        "ok": true,
         "recordIsV1": false,
-        "shrunk": [
-          {
-            "kind": "field",
-            "lang": "lua",
-            "literal": "name_list"
-          },
-          {
-            "kind": "field",
-            "lang": "lua",
-            "literal": "name_list"
-          },
-          {
-            "kind": "field",
-            "lang": "lua",
-            "literal": "function"
-          },
-          {
-            "kind": "field",
-            "lang": "lua",
-            "literal": "expression_list"
-          },
-          {
-            "kind": "field",
-            "lang": "lua",
-            "literal": "key"
-          },
-          {
-            "kind": "type",
-            "lang": "makefile",
-            "literal": "endif_directive"
-          },
-          {
-            "kind": "field",
-            "lang": "perl",
-            "literal": "parameters"
-          },
-          {
-            "kind": "field",
-            "lang": "r",
-            "literal": "default_value"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "grant"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "revoke"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "revoke_statement"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "create_table_column_parameter"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "column_def"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "primary_key_constraint"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "unique_constraint"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "references_constraint"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "foreign_key_constraint"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "type"
-          },
-          {
-            "kind": "type",
-            "lang": "sql",
-            "literal": "word"
-          }
-        ],
-        "unregistered": [
-          {
-            "context": "real-html-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "html",
-            "line": 1038,
-            "literal": "hidden"
-          },
-          {
-            "context": "real-html-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "html",
-            "line": 1038,
-            "literal": "submit"
-          },
-          {
-            "context": "real-html-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "html",
-            "line": 1038,
-            "literal": "button"
-          },
-          {
-            "context": "real-html-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "html",
-            "line": 1038,
-            "literal": "reset"
-          },
-          {
-            "context": "real-html-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "html",
-            "line": 1038,
-            "literal": "image"
-          },
-          {
-            "context": "real-sql-analyzer.ts:field-call:childForFieldName",
-            "kind": "field",
-            "lang": "sql",
-            "line": 1907,
-            "literal": "object"
-          },
-          {
-            "context": "real-zig-analyzer.ts:comparison",
-            "kind": "type",
-            "lang": "zig",
-            "line": 623,
-            "literal": "field_identifier"
-          }
-        ]
+        "shrunk": [],
+        "unregistered": []
       },
       "counts": {
         "bash": 0,
@@ -214,167 +57,32 @@
         "javascript": 0,
         "json": 0,
         "kotlin": 0,
-        "lua": 5,
-        "makefile": 1,
+        "lua": 0,
+        "makefile": 0,
         "markdown": 0,
         "objective-c": 0,
-        "perl": 1,
+        "perl": 0,
         "php": 0,
         "powershell": 0,
         "python": 0,
-        "r": 1,
+        "r": 0,
         "ruby": 0,
         "rust": 0,
         "scala": 0,
-        "sql": 13,
+        "scss": 0,
+        "sql": 0,
         "svelte": 0,
         "swift": 0,
+        "toml": 0,
         "typescript": 0,
+        "vb": 0,
         "vue": 0,
         "xml": 0,
         "yaml": 0,
         "zig": 0
       },
       "literals": {
-        "css": [],
-        "erlang": [],
-        "lua": [
-          {
-            "kind": "field",
-            "literal": "name_list",
-            "owner": "lua lane",
-            "reason": "real-lua-analyzer.ts:158. REGISTERED RESIDUAL #863 (2026-09-16): with the field oracle made real, this literal cannot resolve in the pinned tree-sitter-lua grammar. Count unchanged from the v1 baseline of 2026-08-23 (5)."
-          },
-          {
-            "kind": "field",
-            "literal": "name_list",
-            "owner": "lua lane",
-            "reason": "real-lua-analyzer.ts:183. Second site of the same #863 residual (the record is per literal, so both sites are named here; the gate and the audit's site list are the authority on how many)."
-          },
-          {
-            "kind": "field",
-            "literal": "function",
-            "owner": "lua lane",
-            "reason": "real-lua-analyzer.ts:208. REGISTERED RESIDUAL #863: the pinned lua grammar exposes no `function` field. Count unchanged from the v1 baseline of 2026-08-23 (5)."
-          },
-          {
-            "kind": "field",
-            "literal": "expression_list",
-            "owner": "lua lane",
-            "reason": "real-lua-analyzer.ts:297. REGISTERED RESIDUAL #863. Count unchanged from the v1 baseline of 2026-08-23 (5)."
-          },
-          {
-            "kind": "field",
-            "literal": "key",
-            "owner": "lua lane",
-            "reason": "real-lua-analyzer.ts:393. REGISTERED RESIDUAL #863. Count unchanged from the v1 baseline of 2026-08-23 (5)."
-          }
-        ],
-        "makefile": [
-          {
-            "kind": "type",
-            "literal": "endif_directive",
-            "owner": "makefile lane",
-            "reason": "real-makefile-analyzer.ts:276, inside the BOUNDARY_TYPES const array. The pinned tree-sitter-make wasm does not enumerate it, so the entry is inert. Count unchanged from the v1 baseline of 2026-08-23 (1). Repayment: read the grammar's real conditional-directive nodes, then fix or delete."
-          }
-        ],
-        "markdown": [],
-        "perl": [
-          {
-            "kind": "field",
-            "literal": "parameters",
-            "owner": "perl lane",
-            "reason": "real-perl-analyzer.ts:487. REGISTERED RESIDUAL #863 (2026-09-16), with no fallback at the site. Count unchanged from the v1 baseline of 2026-08-23 (1)."
-          }
-        ],
-        "r": [
-          {
-            "kind": "field",
-            "literal": "default_value",
-            "owner": "r lane",
-            "reason": "real-r-analyzer.ts:558. REGISTERED RESIDUAL #863 (2026-09-16). Count unchanged from the v1 baseline of 2026-08-23 (1)."
-          }
-        ],
-        "sql": [
-          {
-            "kind": "type",
-            "literal": "table",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:58. Not enumerated by the pinned tree-sitter-sql wasm. Count unchanged from the v1 baseline of 2026-08-23 (13) — the whole cluster below is one unmeasured grammar-vocabulary pass, not 13 independent defects."
-          },
-          {
-            "kind": "type",
-            "literal": "grant",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:199. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "revoke",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:199. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "grant_statement",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:199. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "revoke_statement",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:199. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "create_table_column_parameter",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:229. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "column_def",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:229. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "primary_key_constraint",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:246. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "unique_constraint",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:247. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "references_constraint",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:252. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "foreign_key_constraint",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:252. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "type",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:599. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          },
-          {
-            "kind": "type",
-            "literal": "word",
-            "owner": "sql lane",
-            "reason": "real-sql-analyzer.ts:612. Not enumerated by the pinned wasm. Count unchanged from the v1 baseline of 2026-08-23 (13)."
-          }
-        ]
+        "sql": []
       }
     },
     "languages": {
@@ -419,11 +127,11 @@
       "clean": {
         "analyzer": "src/ast/real-clean-analyzer.ts",
         "fieldless": false,
-        "oracleFieldCount": 28,
+        "oracleFieldCount": 29,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 278,
-        "referencedFieldLiterals": 13,
-        "referencedTypeLiterals": 74,
+        "oracleNodeTypeCount": 288,
+        "referencedFieldLiterals": 14,
+        "referencedTypeLiterals": 77,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -432,7 +140,7 @@
           "tree-sitter-clean.wasm"
         ],
         "wasmFieldCounts": [
-          28
+          29
         ]
       },
       "clojure": {
@@ -518,7 +226,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 517,
         "referencedFieldLiterals": 1,
-        "referencedTypeLiterals": 90,
+        "referencedTypeLiterals": 91,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -690,36 +398,36 @@
         "oracleNodeTypeCount": 285,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 18,
-        "status": "fail",
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-html-analyzer.ts:comparison",
-            "line": 1038,
+            "justification": "M14 grammar audit (real-html-analyzer.ts:1038, the `<input type=...>` label counter): an HTML input-type ATTRIBUTE VALUE, not a parse-tree node reference. `type` is a lowercased attribute string from `attrs[\"type\"]`, so the comparison is live and correct and the grammar declares no node by this name. Waived, not fixed — there is nothing to fix, and the swift `String` entry is the same shape.",
+            "line": 1046,
             "literal": "hidden"
           },
           {
-            "context": "real-html-analyzer.ts:comparison",
-            "line": 1038,
+            "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+            "line": 1046,
             "literal": "submit"
           },
           {
-            "context": "real-html-analyzer.ts:comparison",
-            "line": 1038,
+            "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+            "line": 1046,
             "literal": "button"
           },
           {
-            "context": "real-html-analyzer.ts:comparison",
-            "line": 1038,
+            "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+            "line": 1046,
             "literal": "reset"
           },
           {
-            "context": "real-html-analyzer.ts:comparison",
-            "line": 1038,
+            "justification": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+            "line": 1046,
             "literal": "image"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-html.wasm",
           "tree-sitter-javascript.wasm"
@@ -869,9 +577,9 @@
         "fieldless": false,
         "oracleFieldCount": 48,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 554,
+        "oracleNodeTypeCount": 560,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 60,
+        "referencedTypeLiterals": 61,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -946,8 +654,8 @@
         "oracleFieldCount": 32,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 266,
-        "referencedFieldLiterals": 5,
-        "referencedTypeLiterals": 62,
+        "referencedFieldLiterals": 6,
+        "referencedTypeLiterals": 63,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1023,7 +731,7 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 435,
         "referencedFieldLiterals": 9,
-        "referencedTypeLiterals": 85,
+        "referencedTypeLiterals": 87,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
@@ -1040,7 +748,7 @@
         "fieldless": false,
         "oracleFieldCount": 7,
         "oracleGrammars": 1,
-        "oracleNodeTypeCount": 187,
+        "oracleNodeTypeCount": 188,
         "referencedFieldLiterals": 0,
         "referencedTypeLiterals": 24,
         "status": "pass",
@@ -1060,34 +768,23 @@
         "oracleFieldCount": 53,
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 727,
-        "referencedFieldLiterals": 6,
+        "referencedFieldLiterals": 5,
         "referencedTypeLiterals": 43,
-        "status": "fail",
-        "unknownFields": [
+        "status": "pass",
+        "unknownFields": [],
+        "unknownNodeTypes": [],
+        "waivedFindings": [
           {
-            "context": "real-sql-analyzer.ts:field-call:childForFieldName",
-            "line": 1907,
-            "literal": "object"
-          }
-        ],
-        "unknownNodeTypes": [
-          {
-            "context": "real-sql-analyzer.ts:comparison",
+            "justification": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
             "line": 406,
             "literal": "table"
           },
           {
-            "context": "real-sql-analyzer.ts:comparison",
-            "line": 1928,
-            "literal": "table"
-          },
-          {
-            "context": "real-sql-analyzer.ts:comparison",
+            "justification": "M14 grammar audit (real-sql-analyzer.ts:199, the PostGIS/aggregate function-name table): a SQL FUNCTION NAME in an identifier table, not a parse-tree node reference. `grant_statement` is the grammar's real node type and is read on its own branch; this literal is the function-name table's membership test. Same shape as the swift and typescript entries already in this allowlist.",
             "line": 1147,
             "literal": "grant_statement"
           }
         ],
-        "waivedFindings": [],
         "wasm": [
           "tree-sitter-sql.wasm"
         ],
@@ -1244,14 +941,14 @@
         "oracleGrammars": 3,
         "oracleNodeTypeCount": 386,
         "referencedFieldLiterals": 24,
-        "referencedTypeLiterals": 98,
+        "referencedTypeLiterals": 102,
         "status": "pass",
         "unknownFields": [],
         "unknownNodeTypes": [],
         "waivedFindings": [
           {
             "justification": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code.",
-            "line": 5393,
+            "line": 5527,
             "literal": "default_export_expression"
           }
         ],
@@ -1353,16 +1050,10 @@
         "oracleGrammars": 1,
         "oracleNodeTypeCount": 275,
         "referencedFieldLiterals": 3,
-        "referencedTypeLiterals": 46,
-        "status": "fail",
+        "referencedTypeLiterals": 50,
+        "status": "pass",
         "unknownFields": [],
-        "unknownNodeTypes": [
-          {
-            "context": "real-zig-analyzer.ts:comparison",
-            "line": 623,
-            "literal": "field_identifier"
-          }
-        ],
+        "unknownNodeTypes": [],
         "waivedFindings": [],
         "wasm": [
           "tree-sitter-zig.wasm"
@@ -1373,10 +1064,10 @@
       }
     },
     "summary": {
-      "fail": 3,
+      "fail": 0,
       "languagesAudited": 44,
-      "pass": 41,
-      "totalUnknownReferences": 10
+      "pass": 44,
+      "totalUnknownReferences": 0
     }
   },
   "governance": "docs/M14-HONESTY-CONTRACT.md",
@@ -1404,8 +1095,8 @@
       "description": "REGISTERED RESIDUAL (2026-09-16, #863): with the oracle real, lua (5 sites), perl (1 site, no fallback) and r (1 site) report field literals their pinned grammar cannot resolve. Their baseline counts hold those findings; the JVM and web families are strictly clean (0 unknown field literals each)"
     }
   ],
-  "regeneratedAt": "2026-09-29T05:36:53.645Z",
-  "regeneratedAtCommit": "c3a85b2eb044a8aa85e41a4899d5e21ab179826c",
+  "regeneratedAt": "2026-10-02T01:38:49.095Z",
+  "regeneratedAtCommit": "13303ed32a7fa5400bb93cc427251c961afc095c",
   "runtime": "node v24.3.0",
   "schemaVersion": 2,
   "title": "Grammar-conformance auditor"

@@ -23,5 +23,16 @@
   },
   "typescript": {
     "default_export_expression": "M14 TS wave (real-typescript-analyzer.ts:5008, extractExportRelations): this is an ExportInfo `type` TAG THE ANALYZER WRITES ITSELF — the anonymous-default branch of extractExports sets it — not a parse-tree node reference. It is NOT a typescript grammar node type: the pinned grammar emits `export_statement` for every `export default` form, confirmed by parsing `export default f`, `export default function g(){}` and `export default 42`. The comparison suppresses the `module -> default` edge for an anonymous default export, whose target no index could ever join. Same shape as the swift String/Int entries above: a literal in a comparison against an analyzer-owned payload, making no grammar conformance claim. The name reads like a node type, which is why this tolerance is written down rather than left to look like dead code."
+  },
+  "html": {
+    "hidden": "M14 grammar audit (real-html-analyzer.ts:1038, the `<input type=...>` label counter): an HTML input-type ATTRIBUTE VALUE, not a parse-tree node reference. `type` is a lowercased attribute string from `attrs[\"type\"]`, so the comparison is live and correct and the grammar declares no node by this name. Waived, not fixed — there is nothing to fix, and the swift `String` entry is the same shape.",
+    "submit": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+    "button": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+    "reset": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type.",
+    "image": "Same site and same justification as `hidden`: an `<input type=...>` attribute value, live and correct, not a node type."
+  },
+  "sql": {
+    "table": "M14 grammar audit (real-sql-analyzer.ts:58, the SQL_KEYWORDS set): a SQL KEYWORD in a keyword table, not a parse-tree node reference. `table` is the reserved word the guard exists to recognise, and the audit's `X.type === \"lit\"` / set-literal heuristic reports set members the way it reports node types. Waived, not fixed — deleting the keyword would change behaviour, and the swift `String` entry is the same shape (a type-name table, waived with a justification).",
+    "grant_statement": "M14 grammar audit (real-sql-analyzer.ts:199, the PostGIS/aggregate function-name table): a SQL FUNCTION NAME in an identifier table, not a parse-tree node reference. `grant_statement` is the grammar's real node type and is read on its own branch; this literal is the function-name table's membership test. Same shape as the swift and typescript entries already in this allowlist."
   }
 }
