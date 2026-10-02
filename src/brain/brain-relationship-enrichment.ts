@@ -357,31 +357,45 @@ export async function enrichRelationships(
     role: RelationshipEnrichment["role"]
   }
 
-  /** The enrichment-owned subset of a metadata object, `inferredAt` excluded. */
-  const ownedSubset = (meta: Record<string, unknown> | null | undefined): Record<string, unknown> => {
-    const out: Record<string, unknown> = {}
-    if (!meta) return out
-    for (const k of Object.keys(meta)) {
-      if (k === "inferredAt" || !ENRICHMENT_OWNED_KEYS.has(k)) continue
-      out[k] = meta[k]
+  /**
+   * Order-insensitive deep equality over a metadata object, ignoring `inferredAt`.
+   *
+   * It compares EVERY key, not just the enrichment-owned ones. That distinction
+   * is load-bearing, and getting it wrong silently disarms a standing gate:
+   * comparing only the enrichment-owned subset made the no-op filter blind to a
+   * merge that DROPS a non-enrichment key, so the #865 wholesale-write mutant
+   * (`{ ...existing }` → `{}`) became behaviourally identical to the real pass
+   * — the filter decided there was nothing to do and skipped the very write the
+   * mutant exists to make. script/m59/verify-865-metadata-survival.ts item 4
+   * went 12/12 → 11/12 because of it. Comparing the whole object restores the
+   * mutation's conviction (the dropped analyzer keys make the objects differ,
+   * so the row IS written and the keys ARE destroyed) while keeping the no-op
+   * behaviour that matters: a row that already holds exactly what this pass
+   * would write is still skipped.
+   *
+   * `inferredAt` is excluded on both sides because the pass always stamps it
+   * with the current time — including it would make every row "changed".
+   */
+  const sameMetadata = (a: Record<string, unknown>, b: Record<string, unknown>): boolean => {
+    const strip = (m: Record<string, unknown>) => {
+      const out: Record<string, unknown> = {}
+      for (const k of Object.keys(m)) if (k !== "inferredAt") out[k] = m[k]
+      return out
     }
-    return out
-  }
-
-  /** Order-insensitive equality over the enrichment-owned keys only. */
-  const sameEnrichment = (a: Record<string, unknown>, b: Record<string, unknown>): boolean => {
-    const ak = Object.keys(a).sort()
-    const bk = Object.keys(b).sort()
+    const ak = Object.keys(strip(a)).sort()
+    const bk = Object.keys(strip(b)).sort()
     if (ak.length !== bk.length) return false
     for (let i = 0; i < ak.length; i++) {
       if (ak[i] !== bk[i]) return false
-      if (a[ak[i]] !== b[bk[i]]) return false
+      // Metadata values are JSON by construction, so a structural compare is
+      // enough and `===` would wrongly split `1` from `1.0` on nested values.
+      if (JSON.stringify(strip(a)[ak[i]]) !== JSON.stringify(strip(b)[bk[i]])) return false
     }
     return true
   }
 
   /** Returns the merged metadata AND the pre-existing object it merged from, so
-   *  the caller can compare the enrichment-owned subset without re-parsing. */
+   *  the caller can decide whether the write is a true no-op. */
   const mergeMetadata = (row: any, computed: ComputedEnrichment): { meta: any; existing: Record<string, unknown> } => {
     let existing: Record<string, unknown> = {}
     if (typeof row.metadata === "string" && row.metadata.length > 0) {
@@ -484,21 +498,24 @@ export async function enrichRelationships(
           role,
         })
 
-        // No-op filter. If every enrichment-owned key already holds the value
-        // this pass just computed, the row is ALREADY correct and rewriting it
-        // would only bump `inferredAt` — a write per row for zero information.
-        // Two consequences, both of them the point:
+        // No-op filter. If the stored metadata already IS what this pass would
+        // write — every key, not just the enrichment-owned ones — the write is
+        // pure overhead: a row touch per row for zero information, and a bumped
+        // `inferredAt` that makes an untouched row look freshly enriched. Two
+        // consequences, both of them the point:
         //   - a second `bb index --post` over an unchanged graph rewrites
         //     nothing instead of every one of N rows;
         //   - the rows `repairInEdges` copies forward (parallel-indexer.ts) are
         //     left alone WHEN THEY ARE STILL CORRECT, so the bounded pass does
         //     not inflate its own write set — and are rewritten WHEN THEY ARE
         //     NOT, which is the actual freshness fix.
+        // Comparing the WHOLE object (see `sameMetadata`) is what keeps a
+        // merge that would drop an analyzer key from being mistaken for a no-op.
         // `continue`, NOT `return`: this is the transaction CALLBACK body, so a
         // `return` here exits the whole page — the first already-correct row
         // silently abandoned every row after it, which is what a real defect
         // looked like (`unchanged: N` for rows whose metadata was still NULL).
-        if (sameEnrichment(ownedSubset(existing), ownedSubset(meta))) continue
+        if (sameMetadata(existing, meta)) continue
 
         updateStmt.run(JSON.stringify(meta), row.id, projectId)
         written++
