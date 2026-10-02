@@ -3,12 +3,18 @@
 ## Language
 
 - Analyzer file: `src/ast/real-vue-analyzer.ts`
-- Parser: `tree-sitter-vue` (SFC pass over the `.vue` file) + the real
-  JavaScript analyzer (`RealJavaScriptAnalyzer`) for `<script>` content —
-  **always JS**, whether or not `lang="ts"` is set (family-consistent scoping;
-  the TS analyzer has no method_definition scope resolution and emitted
-  Options-API calls as `module`, so Vue scripts deliberately use the JS
-  analyzer for uniform behavior, verified in M12.12)
+- Parser: `tree-sitter-vue` (SFC pass over the `.vue` file) + a per-block
+  dispatch for `<script>` content. **Three-way** (M60/#903): `lang="ts"` →
+  `RealTypeScriptAnalyzer`, `lang="tsx"` → the TypeScript analyzer over the JSX
+  grammar, otherwise → `RealJavaScriptAnalyzer`. The dispatch is
+  `real-vue-analyzer.ts`'s `isTs`, reading the block's own `lang` off the
+  engine's `sfcScriptLangs`. **This row said "always JS" until 2026-09-30 and
+  was false from #903 onward** — a `lang="ts"` block is analyzed as TypeScript,
+  which is why a TS SFC yields `returnType`/`genericParameters`/decorator
+  metadata and reports `hasTypeInference: true`. The reason the JS analyzer is
+  still used for the *default* block is narrower and still true: it resolves
+  `method_definition` scopes inside the Options-API default-export object, where
+  the TS analyzer emitted call sources as `module` (M12.12).
   <!-- provenance: find-grammar-provenance -->
   Provenance of the shipped bytes: a **REDISTRIBUTOR BUILD**, not a build of this lane's own
   npm package. `wasm/tree-sitter-vue.wasm` is
@@ -51,14 +57,84 @@
 | --- | --- | --- | --- |
 | calls | ✅ | script calls via JS analyzer leaf identities (member expressions reduce to leaf: `this.title.slice()` → `slice`, `more.json()` → `json`); source = enclosing function/method leaf; `$emit` is a legit `$`-prefixed target (pool-worker `$` denylist removed in M12.12 — it was killing Vue/jQuery targets cross-language); console/Object builtins filtered | 0.9 |
 | instantiates | ✅ | template pass: every non-builtin element tag (PascalCase `<Card />` or kebab-case `<router-link />`/`<router-view />`) → leaf tag name; builtin HTML tags (div/button/span/section/…) and Vue builtins (component/transition/keep-alive/…) filtered — `<Card/>`, `<Button/>`, router-link, router-view in fixtures | 0.95 |
-| extends | — | Vue has no class heritage in SFCs (inheritance is composition) | — |
+| extends | ✅ | **Options-API inheritance**, which this row previously denied outright and which is Vue's own class heritage: `extends: Base` and `extends: [A, B]` → `extends` from the component, and `mixins: [M]` likewise with `metadata.isMixin: true` so specialization and sharing stay distinguishable (F1). The inline-object form `extends: { methods: {…} }` is a *merge*, so it yields no base class and its members become the component's members. `extends` was already in this lane's audited relation set, so the oracle derives it (`deriveVueHeritageTruth`) and the rows are verified | 0.9 |
 | imports | ✅ | script `import` directives → `${modulePath}:${item}` (`vue:ref`, `./Card.vue:Card`); `defineProps`/`defineEmits` are compiler macros — no imports, no calls, no symbols | 1.0 |
 | exports | ✅ | via JS analyzer (`export default`) | 1.0 |
-| overrides | — | n/a for SFCs | — |
-| contains | ✅ | Options-API members owned by the component (from `ownerName`); setup-scope top-levels have no owner (module scope) | 1.0 |
-| uses | — | not emitted for `this.x` property access (family contract) | — |
-| references | — | covered by imports/calls leaf identities | — |
+| overrides | — | genuinely not emitted, and now **derived as an absence** rather than asserted: the F1 oracle derives every `extends` base the analyzer emits and vue-element-admin reads `MISSING=0 / unexplained=0` with 9 `extends` rows and 0 `overrides` rows on both sides. An override needs a base whose members the analyzer can see; the only such bases here are same-file mixin literals, which carry no method list the analyzer treats as a hierarchy | — |
+| contains | ✅ | Options-API members owned by the component (from `ownerName`); every shape a `provide(key, …)` publishes — shorthand property, `key: value` pair, shorthand method, and an object wrapped in one call layer (`reactive({ … })`) — is owned too, synthesized with `metadata.synthesized` when the member has no symbol of its own; setup-scope top-levels have no owner (module scope) | 1.0 |
+| uses | ✅ | script-side identifier reads from the JS/TS delegate (**2,225 rows** on the 400-file element-plus draw below, UNAUDITED — see the honesty note), PLUS template-expression reads: `{{ count }}`, `:label`, `@click`, `v-model`, `v-if` emit `uses` from the component to its member (V2). Template tokens are a hand-written stack machine: chain roots only (`item.id` reads `item`, not `id`), string/template contents skipped, v-for loop vars and slot props shadow same-named members (V4), and an **object-literal key is not a read** (F10) | 0.95 template / delegate |
+| references | ✅ | **audited only for the component-contract family** — see the honesty note below. Measured 2026-09-30 on a 400-file element-plus draw through `ASTEngine.parseFile`: **3,275 rows, of which 315 are contract-marked and audited and 2,960 are not** — 1,774 unmarked delegate local reads, 656 `declared_type`, 317 `type_argument`, 181 `cast_target`, 25 `type_alias`, 6 `instanceof_check`, 1 `satisfies_target`. The audited family is F12/F13/F14 `defineProps`/`defineEmits` naming a declaration and F2 `provide`/`inject` naming a key | 0.8–1.0 |
 | depends | — | not emitted (covered by imports) | — |
+
+## What is and is not verified
+
+The lane reads **100% / MISSING=0 / unexplained=0** on both corpora at 200-file
+depth — and that figure is now honestly sized. Measured 2026-09-30:
+
+- **Audited** (an oracle derives them independently from the same parse input):
+  `calls`, `extends`, `instantiates`, `overrides`, and — since 2026-09-30 — the
+  **component-contract `references` rows** (F12/F2), via a metadata-aware
+  allowlist (`VUE_CONTRACT_ROW`) that admits ONLY rows carrying a contract
+  marker.
+- **Also audited, partially**: `contains`, via the lane-owned TypeScript oracle
+  applied to the embedded script blocks. 216 of the label's 363 rows on a
+  400-file element-plus draw — the DELEGATED half — matched 99/99, so it is in the
+  audited set. The half the Vue analyzer owns (component → its own contract
+  members) is **not** wired, and the blocker is narrower than it was. The oracle
+  (`oracles/vue-contains.ts`) now agrees with the analyzer on **306 of 306**
+  component-owned rows of a 250-file draw across both corpora, with 0 oracle rows
+  the analyzer misses — up from 141/163, which F18 closed by teaching both sides
+  every shape a `provide(key, …)` publishes (shorthand property, shorthand method,
+  and a `reactive()`-wrapped object). It still is not wired because the
+  differential samples vue-element-admin's demo components, where the analyzer
+  publishes **310** component-owned rows the oracle derives none of. The obvious
+  repair — "a `<script setup>` program owns its top-level bindings" — fixes those
+  and breaks element-plus (864 truth rows, 319 MISSING), so the analyzer's rule is
+  strictly narrower and has to be read off the analyzer before it can be mirrored.
+  Recorded as VSD49/VSD50 in `script/m14/spec/vue-completeness.json`.
+- **Not audited**: the other **2,960** `references` rows, and `uses` in full
+  (**2,225** rows, of which **1,849** are the Vue analyzer's own template reads).
+  The oracle for those two labels now EXISTS
+  (`oracles/typescript-imports-exports.ts`) and is wired and audited for the **typescript**
+  and **javascript** lanes — which is how it found that side-effect-only imports
+  (`import './style.css'`) were dropped entirely, 12 rows on a 152-file element-plus draw.
+  This lane's own `imports` rows are still unaudited, for a narrower reason: they are
+  SOURCED AT THE COMPONENT IDENTITY rather than the file stem, because the seam re-points
+  the delegated rows, so calling the oracle here means teaching it the identity resolution
+  first. The **javascript** lane's `imports` is out for a different reason: it publishes the
+  LOCAL BINDING as the target, with the declared name in `metadata.declaredName`, while the
+  oracle derives the DECLARED name — the one two files can join on. The two conventions meet
+  only when no import is aliased, so switching it on would report every aliased import as
+  MISSING, which is a harness artefact dressed as a defect. All of it is stored and compared
+  against nothing, which the M60
+  rel-type-coverage gate CHECK 1 reports as un-audited debt for this lane. The gate's debt baseline file
+  (`validation/m60/rel-type-coverage-baseline.json`) does not exist, so its
+  regression output is uninterpretable on a machine where most corpora are
+  absent; writing one now would record absent corpora as verified debt.
+
+Two measurement notes, because they changed what the numbers mean:
+
+- The 200-file canonical draw reported this lane clean while the full 829-file
+  element-plus draw reported 5 MISSING and 1 unexplained. Three defects (F13, F14,
+  and the `withDefaults` interaction) were **invisible at 200 files**. The full
+  draw is the stronger evidence and is what the 2026-09-30 deep review measured.
+- The m60 surface draw counts relationships through the production entry point and
+  walks the corpus in raw `readdir` order, not sorted order — so a probe that
+  sorts file names first gets a different, much more `docs/`-heavy sample and
+  numbers an order of magnitude apart — on the same nominal "400 files", a sorted
+  element-plus draw reported `references` 254 against the audit's 3,275. **Every
+  label count in this document is the element-plus-only 400-file draw**
+  (`calls` 5,847 · `references` 3,275 · `imports` 2,789 · `uses` 2,225 ·
+  `instantiates` 871 · `contains` 363 · `exports` 2), measured through the
+  production `ASTEngine.parseFile`, so the audited and unaudited splits quoted
+  below are all on the same population. The m60 surface audit's own L1 line covers
+  both corpora and therefore prints slightly different totals — both are correct,
+  and mixing them is the mistake this note exists to prevent.
+
+So "100%" means *100% of the relation types the oracle derives, on the corpus it
+derives them from* — not the whole `ParseResult`. The single highest-value
+outstanding item in this lane is deriving the remaining `references` producers
+(nine shapes, enumerated above) in the JavaScript oracle.
 
 ## Supported constructs
 
@@ -97,11 +173,47 @@
 
 ## Regex inventory
 
-From `validation/m12/results/regex-census.json`: the Vue analyzer has **0
-regex usages**. The legacy analyzer (source-text `indexOf("export ")`
-scanning + attribute/directive noise) was rewritten to pure AST; the engine's
-vue script pre-parse uses byte-offset `raw_text` slicing, not the polyglot
-regex path.
+**0 usages.** The census is the authority (`validation/m12/results/regex-census.json`)
+and this file now agrees with it: the six literals the census used to register here
+were **deleted**, not re-registered, on 2026-09-30.
+
+| removed pattern | replaced by |
+|---|---|
+| a case-insensitive test for the substring `line`, classifying a metadata **key name** so `decoratorLine`/`decoratorLines`/`line` get the script-block offset | `key.toLowerCase().includes("line")` |
+| a character class stripping every quote from a `name:` value | the file's existing `unquote` helper |
+| an identifier character class, used in **two** places | one shared hand-written tokenizer (`collectIdentifierNames`) |
+| the `v-for` collection pattern and its tail-less sibling | `parseVForDirective` |
+
+Three of those were not unavoidable. The identifier class was the interesting one:
+the lane already had a hand-written stack machine tokenizing the *same* input class
+one method away, so it ran **two tokenizers for one job and they disagreed on
+method** — a disagreement the census itself recorded as a reason to review the
+patterns. Deleting the class deleted the duplication with it.
+
+The `v-for` pair was the hard one, and `parseVForDirective` reproduces three
+behaviours a naive parser gets wrong: the alias head is the **shortest** run
+without a `)` (lazy, not greedy), the `)` belongs to the **keyword match** rather
+than the head, and `.` does not match a newline, so a collection spanning lines
+fails the pattern and the caller falls back to the whole directive — while its
+tail-less sibling still matches, which is why shadowing survives that case.
+
+**Zero is a claim, so it is gated.** `script/m60/verify-vue-no-regex.ts` counts the
+literals *and* re-derives the equivalence between the removed `v-for` patterns and
+the shipped parser over 788 generated shapes on every run. That gate exists because
+the first hand-written parser was **wrong**: it consumed the separator greedily
+instead of backtracking, so `v-for="item in  "` reported no collection where the
+regex reported one — differing on 170 of 799 shapes while **all 47 fixtures still
+passed**. Equivalence was then confirmed end-to-end: byte-for-byte identical output
+over all 1,139 corpus files (25,028 relationships, 7,078 symbols).
+
+The legacy analyzer (source-text `indexOf("export ")` scanning) was rewritten to
+pure AST and the engine's SFC pre-parse uses byte-offset `raw_text` slicing — both
+still true.
+
+One thing is deliberately still regex-shaped in the *tests* rather than the
+analyzer: `oracles/vue-contains.ts` and the zero-regex gate quote the removed
+patterns on purpose, because a gate that re-derives an equivalence has to have
+both sides.
 
 ## Complexity envelope
 

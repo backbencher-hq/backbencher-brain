@@ -2,36 +2,50 @@
   "language": "vue",
   "grammar": "tree-sitter-vue.wasm",
   "sfc_structure": {
-    "component": "root — the SFC file; emits a Class symbol (isVueComponent/isSfc)",
-    "template_element": "template block — component usages -> instantiates; v-if/v-for/v-show -> template decision points",
-    "script_element": "script block — delegated to the JS/TS sub-analyzer (engine-provided sfcScriptTrees)",
-    "style_element": "style block — skipped (no AST extraction)"
+    "component": "root \u2014 the SFC file; emits a Class symbol (isVueComponent/isSfc)",
+    "template_element": "template block \u2014 component usages -> instantiates; v-if/v-for/v-show -> template decision points",
+    "script_element": "script block \u2014 delegated to the JS/TS sub-analyzer, THREE-WAY by lang (M60/#903: ts / tsx / js), via the engine-provided sfcScriptTrees",
+    "style_element": "style block \u2014 skipped; CSS belongs to the dedicated css analyzer (D1, RULED)"
   },
   "template": {
-    "element": "instantiates (non-builtin tag, isComponentUsage) — leaf tag name as written",
+    "element": "instantiates (non-builtin tag, isComponentUsage) \u2014 leaf tag name as written",
     "self_closing_tag": "instantiates (non-builtin tag)",
-    "directive_attribute": "v-if/v-else-if/v-for/v-show are template decision points (complexity)",
-    "interpolation": "{{ expr }} — template expression (gap V2: no Uses to script members)",
+    "directive_attribute": "v-if/v-else-if/v-for/v-show are template decision points (complexity); the binding VALUE is tokenized by a stack machine: chain roots only, string contents skipped, v-for/slot bindings shadow members (V4), object-literal keys are not reads (F10)",
+    "interpolation": "{{ expr }} \u2014 template expression: a chain-ROOT member read, or a contract/use edge to a member (V2 CLOSED; F10: an object-literal KEY is not a read)",
     "directive_name": "the directive identifier (v-if, v-model, @click, :label)",
     "quoted_attribute_value": "the expression text for :prop/@event/v-model bindings"
   },
   "script": {
-    "defineProps": "Property symbols from object form ({ size: Number }) OR generic type-literal form (<{ id: string }>) — generic form is gap V1",
-    "defineEmits": "Event symbols from array form (['change']) OR generic call-signature form (<{ (e: 'save'): void }>) — generic form is gap V1",
+    "defineProps": "Property symbols from the object/array (inline) forms and from a same-file binding; a NAMED or IMPORTED type or binding emits a `references` edge to the declaring name with metadata.isPropContract (F12) \u2014 the shape a real component library writes, and the one the original V1 gap did not cover",
+    "defineEmits": "Event symbols from the array/object (inline) forms; a NAMED type or a binding emits a `references` edge with metadata.isEmitContract (F12)",
     "vue_options_component": "options-object component symbol (name: option) + props/emits/data/methods via extractOptionsApi"
   },
   "expressions_requiring_uses_or_calls": [
-    "interpolation {{ count }} — template member use (gap V2)",
-    "directive value expressions :label=@click=v-model — template member use (gap V2)",
-    "script expressions — delegated to JS/TS analyzer (calls/uses/references)"
+    "interpolation {{ count }} \u2014 chain-root member read; a ternary VALUE survives the key-position rule and a computed key's CONTENT is a real read (F10, pinned both ways)",
+    "directive value expressions :label=@event=v-model \u2014 same tokenizer, same rules",
+    "defineProps/defineEmits naming a declaration \u2014 `references` edge (F12)",
+    "provide(key, \u2026) / inject(key) \u2014 `references` edge (F2)",
+    "script expressions \u2014 delegated to the JS/TS analyzer (calls/uses/references). The `references` half of that delegation is NOT in the differential's audited set \u2014 declared debt, not a claim"
   ],
   "statements_affecting_complexity": [
     "script blocks: JS/TS contract (if/for/while/ternary/short-circuit)",
-    "template directives: v-if / v-else-if / v-for / v-show"
+    "template directives: v-if / v-else-if / v-for / v-show",
+    "NOT counted: v-else, v-bind, v-on, v-model, v-text, v-html, v-pre, v-once, v-cloak, v-memo \u2014 measured, fixture-pinned"
   ],
   "_notes": [
-    "Vue SFC = template + script + style; the script is parsed by the JS/TS sub-analyzer, so script-side edges (imports/calls/uses/references/contains/exports/extends/overrides) follow those analyzers.",
-    "Component usages in template are instantiates (usage_contextual); builtin HTML + Vue tags filtered.",
-    "The component symbol (moduleName or name: option) is the SFC's Class; props/emits are Property/Event symbols owned by it."
-  ]
+    "Vue SFC = template + script + style; the script is parsed by the JS/TS sub-analyzer, so script-side edges follow those analyzers. The dispatch is THREE-WAY by lang since M60/#903 \u2014 an earlier 'always JS' claim in the docs was false from that commit onward.",
+    "Component usages in template are instantiates (usage_contextual); builtin HTML + Vue tags filtered. A NAMESPACED builtin (`<svg:circle />`) is a known false positive (F9).",
+    "The component is ONE Class symbol named by the declared `name:` option (F8). Every component-owned edge sources that one name.",
+    "100% differential coverage is a claim about the AUDITED LABELS only: calls, extends, instantiates, overrides, and the contract-marked `references` rows. `contains`, `uses` and the other ~2,750 `references` rows are unaudited and the rel-type-coverage gate reports them."
+  ],
+  "declarations": {
+    "component": "ONE Class symbol per SFC, named by the DECLARED `name:` option and falling back to the file stem; the stem is kept in metadata.moduleName (F8 \u2014 the previous shape published two Class symbols with disjoint edge sets, neither reachable as a target)",
+    "props": "Property, ownerName = the component. Sources: Options `props:` inline object/array, `defineProps` inline forms, a same-file binding, and an `extends`/`mixins` inline object (F1). The Options hoist to a NAMED declaration is an edge, not symbols (F12)",
+    "emits": "Event, ownerName = the component. Same sources as props",
+    "data keys": "Property with metadata.isDataKey, one per key, last-wins on a duplicate (#745). A BRACKET-LED computed key is skipped (F6)",
+    "methods / computed / watchers": "Method / Property / Method, ownerName = the component, with the delegate's parameters, returnType, complexity and qualified_calls copied (VSD18)",
+    "lifecycle hooks": "Method, ownerName = the component; `setup()` is NOT in the set (F5, open)",
+    "heritage": "extends/mixins -> `extends` edges with metadata.isMixin distinguishing class inheritance from an options merge (F1)",
+    "provide / inject": "`references` to the key with metadata.isProvideContract / isInjectContract; a provided inline object's keys are the component's own members, ANNOTATED onto the delegate's symbols rather than re-pushed, because the store's symbol key excludes owner (F2, VSD25)"
+  }
 }

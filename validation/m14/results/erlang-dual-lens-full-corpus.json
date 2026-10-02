@@ -1,0 +1,38 @@
+{
+  "gate": "M14 erlang dual lens (analyzer vs independent tree-derived oracle)",
+  "measuredAt": "2026-10-01",
+  "corpora": {
+    "otp": "de741b7",
+    "rebar3": "3c1b417",
+    "cowboy": "c965d1a"
+  },
+  "extensions": [
+    ".erl",
+    ".hrl"
+  ],
+  "verdict": "PASS",
+  "filesRead": 4617,
+  "examinedByBothLenses": 4617,
+  "yieldedNoTree": 0,
+  "grammarErrors": 139,
+  "grammarDamagedWholeFile": 23,
+  "symbols": 209247,
+  "analyzerRelationships": 1098778,
+  "oracleRelationships": 1098778,
+  "unexplained": 0,
+  "missing": 0,
+  "lineMismatch": 0,
+  "symbolMismatch": 0,
+  "ruledEmptyMacroModuleRemotes": 3324,
+  "relationshipTypesAudited": [
+    "calls",
+    "contains",
+    "implements",
+    "imports",
+    "instantiates",
+    "references",
+    "uses",
+    "exports"
+  ],
+  "notes": "ER-D39/40/41 added the macro kind and the exports/imports labels after the ontology audit; the oracle derives all three independently, so the counts above are a second opinion and not a copy."
+}

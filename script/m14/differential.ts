@@ -51,7 +51,6 @@ import { deriveClojureContainsTruth, deriveClojureUsesTruth, deriveClojureStatic
 // probe. So zig published `contains`, `imports` and `exports` that no comparison
 // saw, while the lane printed a percentage. Same finished-but-unconnected shape as
 // typescript's 846 lines and clojure's three.
-import { deriveZigContainment, deriveZigImports, deriveZigExports, deriveZigInstantiation } from "./zig-truth"
 // M60: erlang `contains` — see script/m14/oracles/erlang-contains.ts for the rule.
 import { deriveErlangContainsTruth } from "./oracles/erlang-contains"
 // M60: rust `contains` — see script/m14/oracles/rust-contains.ts for the rule.
@@ -88,7 +87,7 @@ import {
 } from "../../src/ast/real-c-analyzer"
 // #919: the cpp macro-declared-body SHAPE RULE is imported from the analyzer for
 // the same reason — one rule, two sides (see the cpp oracle's mirror).
-import { CPP_BUILTIN_TYPE_KEYWORDS, macroDeclaredBody, qualifiedDeclaratorLeaf, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
+import { attributeDisplacedEnumName, extendsTargetName, isCppSpelledName, macroDeclaredBody, qualifiedDeclaratorLeaf, recoveredDeclaredName, specifierDeclaredName, templateWrappedDeclaratorName } from "../../src/ast/real-cpp-analyzer"
 
 function loadAvg1(): number {
   try { return parseFloat(fs.readFileSync("/proc/loadavg", "utf8").split(" ")[0] ?? "0") } catch { return 0 }
@@ -719,6 +718,25 @@ const extOf = (name: string): string => name.slice(name.lastIndexOf(".") + 1).to
 // it is not the same kind of thing. It imports NOTHING from the analyzer.
 import { deriveMarkdownEdges } from "./markdown-oracle"
 
+// ── ZIG: this lane's truths live in a LANE-OWNED module (script/m14/zig-truth.ts) ──
+// `contains`, `imports`, `instantiates`, `exports`, the `references` oracle, and
+// — since wave 5 — the two EDGE truths (`calls`, field-path and bare `uses`) with
+// the SOURCE attached. The last of those was committed HERE in wave 2 and the
+// 2026-09-29 merge DELETED it, along with zig's compared-label set, so the lane
+// reported coverage of a class it was no longer auditing and nothing turned red:
+// a deleted gate and a passing gate are indistinguishable from outside. All of
+// them come from one lane-owned file so this does not happen twice — it has
+// survived three merges of this file untouched. `zigw-f5-wiring.ts` checks it.
+import {
+  deriveZigBareUsesWithSource,
+  deriveZigContainment,
+  deriveZigEdgesWithSource,
+  deriveZigExports,
+  deriveZigImports,
+  deriveZigInstantiation,
+  deriveZigReferenceEdges,
+} from "./zig-truth"
+
 export const LANGS: Record<string, { wasm: string; analyzerFile: string; className: string; ext: string; routeByContent?: readonly string[] }> = {
   // M14 #277: bash joins the differential lane. It had a `bash-differential.json`
   // reading precision 1.000, which was a measurement of the analyzer against a
@@ -772,8 +790,10 @@ export const LANGS: Record<string, { wasm: string; analyzerFile: string; classNa
   // question was most worth asking, because two grammar defects had been fixed
   // upstream of it and both changed the tree the oracle reads.
   css: { wasm: "tree-sitter-css.wasm", analyzerFile: "real-css-analyzer", className: "RealCssAnalyzer", ext: "css" },
-  scss: { wasm: "tree-sitter-scss.wasm", analyzerFile: "real-scss-analyzer", className: "RealScssAnalyzer", ext: "scss" },
-
+  // (This entry was written twice, byte-identical, by a merge. The first copy is removed:
+  // `tsc` reported TS1117 for it, and the duplicate-key detector that should have caught
+  // it silently reported none — see script/m14/tmp/cs-deep-42 for why that detector's own
+  // brace walk terminated before reading a single entry.)
   // scss is its own lane with its own wasm, analyzer and oracle. It is NOT folded into
   // the css entry: `deriveScssEdges` is a genuinely separate derivation (it resolves
   // ownership by DESCENDING and recording the enclosing statement, where the analyzer
@@ -5863,10 +5883,33 @@ export function deriveCppEdges(root: any): { label: string; from: string; target
               // expression: all source text, never a name).
               if (t === "identifier" || t === "field_identifier" || t === "type_identifier" ||
                   t === "operator_name" || t === "destructor_name" || t === "namespace_identifier") {
-                // #924 mirror: a builtin TYPE keyword is not a function name —
-                // the grammar classifies `unsigned(x)` as an `identifier`
-                // callee, and the analyzer refuses it, so truth must too.
-                if (t === "identifier" && CPP_BUILTIN_TYPE_KEYWORDS.has(cur.text)) return ""
+// #924 mirror: a builtin TYPE keyword is not a function name —
+              // the grammar classifies `unsigned(x)` as an `identifier`
+              // callee, and the analyzer refuses it, so truth must too.
+              //
+              // D1 SUPERSEDES THIS, and the narrow set was the defect rather
+              // than the fix — exactly as the analyzer's own D1 comment records
+              // ("the enumeration was the defect, not the fix"). #924 enumerated
+              // ONE class of impossible callee (17 builtin TYPE keywords). The
+              // full-corpus register then found the class is far larger: 5,496
+              // `calls` edges to keywords over 1,502 files, led by `static_cast`
+              // (4,812) and `reinterpret_cast` (472), and including `if` (25),
+              // `for` (4) and `switch` (6) as CALL TARGETS. The C++ lane's ruling
+              // is one set, three gates, one impossibility, and the analyzer
+              // exports `isCppSpelledName` for precisely this consumer:
+              //
+              //   "Exported because the F5 oracle must answer the SAME question
+              //    with the SAME set — #916's lesson (leaving truth behind
+              //    converts a recovery into a fabrication)."
+              //
+              // This oracle was left behind: it mirrored the PRE-D1 set, so every
+              // keyword the analyzer now correctly refuses was reported as a
+              // MISSING true edge. Measured on the 60-file nlohmann-json draw:
+              // MISSING rows were `static_cast`, `reinterpret_cast`, `typeid`,
+              // `noexcept`, `static_assert`, `defined`, `__has_include`, `if` and
+              // `for` — the analyzer right, truth wrong, on the lane's
+              // most-argued ruling. That is the #916 failure verbatim.
+              if (t === "identifier" && !isCppSpelledName(cur.text)) return ""
                 return cur.text
               }
               return ""
@@ -6141,6 +6184,21 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
     // `template_value_parameter` names here; they never occur in the pinned
     // grammar, so their absence changes nothing.
     "structured_binding_declarator",
+    // A DESTRUCTOR's name is declared, never read. `~json_sax()` puts the class
+    // name inside a `destructor_name` node, and with this entry missing the guard
+    // below returned false and the class name read as a bare value use.
+    //
+    // This set is the analyzer's `DECL_PARENT_TYPES` and the two were identical
+    // until this line; keeping them identical is the entire point, because a
+    // shared set is what stops one side drifting alone. The analyzer's output
+    // was already right (its destructor branch reads the name to BUILD the
+    // symbol and never emitted a `uses` for it), so this side was the only one
+    // producing the false read — measured as 27 `uses` truth rows on nlohmann's
+    // ABI test header for names that are all constructor/destructor
+    // declarations: `json_sax`, `lexer`, `binary_reader`, `iter_impl`,
+    // `nonesuch`, `file_input_adapter`, `input_stream_adapter`,
+    // `json_sax_dom_parser`. The analyzer published ZERO `uses` for all of them.
+    "destructor_name",
   ])
   const isDeclaringPos = (n: any): boolean => {
     const p = n.parent
@@ -6403,6 +6461,21 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
             }
           }
           if (ok) {
+            // D1 mirror, SECOND position. The callee-leaf gate in
+            // `deriveCppEdges` was the first; this is the bare-read path, and it
+            // needed the same ruling for the same reason. The analyzer applies
+            // `isCppSpelledName` at three extraction points — call target, `uses`
+            // target, and declared symbol name — because "one set, three gates,
+            // one impossibility" is the whole contract: C++ has no identifier
+            // spelled `void`, so such a name resolves to nothing for a consumer
+            // at ANY extraction point.
+            //
+            // Measured on nlohmann-json's full 523-file corpus, this was the last
+            // keyword leak in truth: `uses -> void` and `uses -> noexcept`, both
+            // of which the analyzer has never published.
+            if (!isCppSpelledName(n.text)) ok = false
+          }
+          if (ok) {
             const k = "uses|" + n.text
             if (!seen.has(k)) { seen.add(k); edges.push({ label: "uses", from: "(expr)", target: n.text }) }
           }
@@ -6444,6 +6517,151 @@ export function deriveCppBareUses(root: any): { label: string; from: string; tar
     for (let i = n.namedChildCount - 1; i >= 0; i--) {
       const c = n.namedChild(i)
       if (c) stack.push({ n: c, ctx: cur, exit: false })
+    }
+  }
+  return edges
+}
+
+/**
+ * #978: `instantiates` truth for C — the last label the differential compares for this
+ * lane with no oracle behind it, so every analyzer edge of the kind was unexplained BY
+ * CONSTRUCTION rather than by defect.
+ *
+ * The rule (#962): `instantiates` targets the TYPE an allocation produces. Two
+ * carriers, because they disagree in practice about which one carries it:
+ *
+ *   1. an enclosing cast whose VALUE is the allocation -- `(struct Buf *)malloc(n)`
+ *   2. `sizeof(<type>)` DIRECTLY in the allocation's argument list
+ *
+ * "DIRECTLY" is load-bearing and was the whole bug in the first two attempts, which
+ * recursed into the argument list and over-derived by 11 rows. Measured:
+ *
+ *   zig/lib/libc/musl/src/regex/glob.c:22
+ *     struct match *new = malloc(sizeof(struct match) + len + 2);
+ *
+ * The `sizeof` is inside a binary_expression, so it is NOT a direct child of
+ * `arguments`, so the analyzer publishes nothing — correctly per #962's pinned rule
+ * even though the type is plainly named. A recursive oracle sees the type and
+ * manufactures a truth row the analyzer does not produce. Since a superset oracle
+ * trades a fabrication for an unexplained edge — the trade this file refuses
+ * everywhere else — the derivation here is deliberately SHALLOW and matches the
+ * analyzer's stated rule rather than its intent.
+ *
+ * Independent by construction: it collects its own declared types from the tree and
+ * does not read the analyzer's `allocatedTypeName`, `declaredTypes`, or its symbol
+ * payload.
+ */
+export function deriveCInstantiates(root: any, sourceText?: string): { label: string; from: string; target: string }[] {
+  const edges: { label: string; from: string; target: string }[] = []
+  const seen = new Set<string>()
+
+  // Declared types, this file's own collection: a tag with a name, or a typedef alias.
+  const declaredTypes = new Set<string>()
+  const t0: any[] = [root]
+  while (t0.length > 0) {
+    const n = t0.pop()!
+    if (n.type === "type_definition") {
+      // A typedef alias declares its name whatever the aliased type is. The name is
+      // NOT always in a `name` FIELD: for `typedef struct __mingwthr_key
+      // __mingwthr_key_t;` (zig/lib/libc/mingw/crt/tlsthrd.c:29) the grammar puts the
+      // ALIAS in the declarator, not in `name`, so reading the field alone collected
+      // nothing and left the file's one real `instantiates` edge unexplained. Both
+      // positions are read, and the declarator's leftmost identifier is taken so a
+      // pointer or array alias (`typedef int *IntPtr;`) still yields the alias name.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      if (nm) declaredTypes.add(nm)
+      let d: any = n.childForFieldName("declarator")
+      for (let depth = 0; d && depth < 6; depth++) {
+        if (d.type === "identifier" || d.type === "type_identifier") {
+          const alias = d.text?.trim()
+          if (alias) declaredTypes.add(alias)
+          break
+        }
+        d = d.childForFieldName("declarator") || d.namedChild(0)
+      }
+    } else if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier") {
+      // A tag qualifies only if it has a BODY. A forward declaration
+      // (`static _pthread_v *__pthread_self_lite(void);`, measured at
+      // zig/lib/libc/mingw/winpthreads/thread.c:45) declares nothing a consumer can
+      // resolve to a member list, so the analyzer declines it and so must this -- the
+      // analyzer's `declared()` consults its struct/union/enum maps, which only hold
+      // definitions. Without the body check this derived 1 truth row the analyzer does
+      // not produce, i.e. a fabrication.
+      const nm = n.childForFieldName("name")?.text?.trim()
+      const kids: any[] = []
+      for (let i = 0; i < n.namedChildCount; i++) kids.push(n.namedChild(i))
+      const hasBody = kids.some((k) => k.type === "field_declaration_list" || k.type === "enumerator_list")
+      if (nm && hasBody) declaredTypes.add(nm)
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) t0.push(c)
+    }
+  }
+
+  // A type NAME, whatever node carries it. One level per node type, as the rule reads:
+  // `type_descriptor` unwraps to its `type` field, and a descriptor's own text carries
+  // the keyword and any pointer, so matching the descriptor text would never hit.
+  const typeNameOf = (n: any, depth = 0): string | null => {
+    if (!n || depth > 3) return null
+    if (n.type === "type_identifier") return n.text?.trim() ?? null
+    if (n.type === "struct_specifier" || n.type === "union_specifier" || n.type === "enum_specifier")
+      return n.childForFieldName("name")?.text?.trim() ?? null
+    if (n.type === "type_descriptor") return typeNameOf(n.childForFieldName("type"), depth + 1)
+    if (n.type === "sizeof_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    if (n.type === "parenthesized_expression") return typeNameOf(n.namedChild(0), depth + 1)
+    return null
+  }
+  const declared = (name: string | null): string | null =>
+    name && declaredTypes.has(name) ? name : null
+  const emit = (name: string): void => {
+    if (seen.has(name)) return
+    seen.add(name)
+    edges.push({ label: "instantiates", from: "(expr)", target: name })
+  }
+
+  const ALLOCATORS = new Set([
+    "malloc", "calloc", "realloc", "kmalloc", "kcalloc", "krealloc", "vmalloc", "vmap",
+  ])
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "call_expression") {
+      const fn = n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "field_expression")
+      const leaf = fn?.type === "field_expression" ? fn.namedChildren.find((c: any) => c.type === "field_identifier")?.text : fn?.text
+      if (leaf && ALLOCATORS.has(leaf)) {
+        // Carrier 1: an enclosing cast whose VALUE is this call.
+        let p: any = n.parent
+        for (let depth = 0; p && depth < 4; depth++, p = p.parent) {
+          if (p.type !== "cast_expression") continue
+          const value = p.childForFieldName("value")
+          // SPAN comparison, not object identity. web-tree-sitter hands out FRESH
+          // node objects on every property access, so `value.id === call.id` can never
+          // be true and the cast carrier was silently DEAD -- every analyzer row that
+          // carries its type through a cast read as unexplained. This is the KAD2/TSD2
+          // hygiene rule the rest of this file already states, and I copied the
+          // analyzer's `id` comparison into an oracle where it cannot work.
+          if (value && value.startIndex === n.startIndex && value.endIndex === n.endIndex) {
+            const hit = declared(typeNameOf(p.childForFieldName("type")))
+            if (hit) emit(hit)
+          }
+          break
+        }
+        // Carrier 2: `sizeof(TYPE)` among the DIRECT children of the argument list.
+        const args = n.childForFieldName("arguments")
+        if (args) {
+          for (let i = 0; i < args.namedChildCount; i++) {
+            const a = args.namedChild(i)
+            if (a?.type !== "sizeof_expression") continue
+            const hit = declared(typeNameOf(a))
+            if (hit) emit(hit)
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
     }
   }
   return edges
@@ -6788,6 +7006,17 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
   // container (any statement/declaration/declarator/specifier/enumerator
   // node). `#if (SQLITE_MAX_MMAP_SIZE>0)` → expression chain only → text;
   // `int eAccess = F_OK;` inside #ifndef → init_declarator on path → code.
+  // #964: TRUE iff `n` sits on a physical preprocessor DIRECTIVE line -- a line
+  // whose first non-space character is `#`. Exact, and it does not touch real code
+  // inside a conditional (see the note at the calls branch). `sourceText` is the
+  // whole file, so this is a byte lookup, not a tree walk.
+  const isDirectiveLineName = (n: any): boolean => {
+    if (!sourceText || typeof n?.startIndex !== "number") return false
+    const lineStart = sourceText.lastIndexOf("\n", n.startIndex - 1) + 1
+    const lineEnd = sourceText.indexOf("\n", n.startIndex)
+    const line = sourceText.slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
+    return line.trimStart().startsWith("#")
+  }
   const isDirectiveConditionText = (n: any): boolean => {
     // CGD13: the NAME identifier of a macro definition IS a declaration
     // (`#define FUNC_PERFECT_MATCH 6` — the analyzer's extractMacro emits a
@@ -7079,9 +7308,32 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol. Rule: the exemption applies ONLY when the enumerator is
           // a DIRECT child of its enumerator_list (no preproc wrapper
           // between) — exactly the shapes extractEnum can see.
-          const isFileScopeEnumerator = n.parent?.type === "enumerator"
+          // #966: an ENUMERATOR declares a member regardless of whether its enum is
+          // file-scope or function-local. #961 ruled function-local TYPES are
+          // published, and the analyzer publishes their MEMBERS too -- owned by the
+          // type, not by the function:
+          //
+          //   curl/src/tool_paramhlp.c:418  enum e_action { allow, deny, set }
+          //     declared INSIDE a function (that enum_specifier is fnLocal=true)
+          //   analyzer: name="allow" kind=enum_member owner=e_action scope=e_action
+          //
+          // Members are unqualified precisely because they belong to the TYPE and the
+          // type carries the scope; #961's qualification disambiguates colliding type
+          // NAMES (lpRandomEntries.pick), it does not re-qualify members that cannot
+          // collide inside their own enum.
+          //
+          // It has to be its own admission disjunct, not a relaxation of
+          // isFileScopeEnumerator: that predicate only feeds varDeclSuppressed, while
+          // the arm that actually gates admission is the generic `!isFunctionLocal(n)`
+          // clause -- which a function-local enumerator always fails. Relaxing it was
+          // measured first and changed nothing (230 -> 230).
+          //
+          // A local VARIABLE of the same name still shadows, via fnLocals at the read
+          // site. Measured cost of the stale gate: 97 unexplained `uses` edges.
+          const isEnumeratorMember = n.parent?.type === "enumerator"
             && n.parent?.parent?.type === "enumerator_list"
             && n.parent?.parent?.parent?.type === "enum_specifier"
+          const isFileScopeEnumerator = isEnumeratorMember
             && !isFunctionLocal(n)
           const varDeclSuppressed = !fnNameDecl && !isFileScopeEnumerator && isSuppressedErrorDecl(n)
           // #907 round 2: a glued definition the ANALYZER emits at file scope is
@@ -7090,7 +7342,7 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           // symbol is file-scope whatever the damaged tree's ancestors say. The
           // generic arm below keeps its gates untouched for everything else.
           const isGlueDefName = isGlueDefinitionName(n, sourceText ?? "")
-          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
+          if (isGlueDefName || (isDeclaringIdentifier(n) && !isDirectiveConditionText(n) && !isBareFdGlueName(n) && (isMacroName || isFnDefName(n) || isEnumeratorMember || (!isFunctionLocal(n) && !varDeclSuppressed)))) {
             declaredNames.add(n.text)
             // CGD41: a function-like macro's definition site (its NAME's parent
             // is the preproc_function_def) is what makes the name unmaskable-as-
@@ -7165,16 +7417,56 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
         const leaf = fn.namedChildren.find((c: any) => c.type === "field_identifier")
         name = leaf?.text
       } else name = fn?.text
-      if (name && !seen.has(name)) {
+      // #964 (C oracle mirror of the analyzer's #956 gate): a callee identifier
+      // on a PHYSICAL DIRECTIVE LINE is not a call. Recovery splices these into real
+      // `call_expression` nodes -- zig's wasi libc mman.c:
+      //
+      //   #ifdef MAP_HUGETLB
+      //           (flags & MAP_HUGETLB) != 0 ||
+      //
+      // parses as
+      //
+      //   call_expression
+      //     identifier      "MAP_HUGETLB"        <- the #ifdef's tested macro
+      //     argument_list   "(flags & MAP_HUGETLB)"  <- the NEXT line
+      //
+      // because the directive's identifier is spliced into code and the following
+      // parenthesized expression becomes its argument list. The source contains no
+      // call; `#ifdef X` TESTS a macro, it does not invoke one -- which is the
+      // analyzer's #956 ruling, and #908/#912 beyond it.
+      //
+      // The oracle's USES derivation already guarded this with
+      // isDirectiveConditionText; the CALLS branch did not, so it published six
+      // fabricated `calls -> MAP_*` rows and the differential reported them as six
+      // MISSING -- convicting a correct analyzer. A superset oracle would have
+      // traded a fabrication for an unexplained edge, the same trade this file
+      // refuses for svelte (see deriveSvelteComponentUsages).
+      if (name && !seen.has(name) && !isDirectiveLineName(fn)) {
         seen.add(name)
         edges.push({ label: "calls", from: "(expr)", target: name })
       }
     } else if (n.type === "field_expression") {
-      // CGD-FIELD mirror: member reads are `uses` on the field leaf; an
-      // assignment-LHS field is a WRITE (analyzer SCD1 gate).
+      // CGD-FIELD mirror: a member ACCESS is `uses` on the field leaf.
+      //
+      // #965: the assignment-LHS exclusion below was the WITHDRAWN SCD1/CGD1 rule,
+      // and the oracle still enforced it. #960 reversed that ruling -- a write to a
+      // field IS a `uses` -- on the grounds that the analyzer was already
+      // inconsistent with itself: `p->f++` published a `uses` while the semantically
+      // identical `p->f += 1` did not, purely because the grammar folds
+      // compound-assign into `assignment_expression` while `++` is an
+      // `update_expression`, so no reading existed under which the two differed.
+      //
+      // Measured cost of the stale gate, curl/docs/examples/hiperfifo.c alone:
+      //   timeout.tv_sec  = timeout_ms / 1000;   <- dropped by the oracle
+      //   timeout.tv_usec = (...) * 1000;         <- dropped by the oracle
+      //   conn->global    = g;                   <- dropped by the oracle
+      // Three real `uses` the analyzer emits and the oracle could not account for.
+      //
+      // `isCallee` STAYS: a field callee (`conn->close(...)`) is a `calls` edge, not
+      // a `uses`, on both sides.
       const parent = n.parent
       const isCallee = !!parent && parent.type === "call_expression"
-      if (!isCallee && !isAssignLhs(n)) {
+      if (!isCallee) {
         const leaf = n.namedChildren.find((c: any) => c.type === "field_identifier")
         if (leaf && !seen.has("use:" + leaf.text)) {
           seen.add("use:" + leaf.text)
@@ -7213,7 +7505,28 @@ export function deriveCCalls(root: any, sourceText?: string): { label: string; f
           edges.push({ label: "imports", from: "(expr)", target: raw })
         }
       }
-    } else if (n.type === "identifier" && !isAssignLhs(n)) {
+    } else if (n.type === "identifier") {
+      // #967: the `&& !isAssignLhs(n)` clause here was the SAME withdrawn SCD1/CGD1
+      // write-gate #965 removed from the FIELD branch, left in place on the
+      // IDENTIFIER branch. Since #960 a write to a declared name IS a `uses`, and in
+      // real C most file-scope variable reads ARE assignments, so this clause was
+      // suppressing the MAJORITY of the global-variable `uses` rows:
+      //
+      //   curl/lib/easy.c:137  Curl_cmalloc = (curl_malloc_callback)malloc;
+      //   curl/lib/easy.c:271  Curl_cmalloc = m;
+      //   curl/lib/easy.c:272  Curl_cfree   = f;
+      //
+      // The clause is provably about writes, not reads: `p->f++` was always
+      // published as a `uses` while the identical `p->f += 1` was not, purely because
+      // the grammar folds compound-assign into `assignment_expression` while `++` is
+      // an `update_expression`. No reading existed under which the two legitimately
+      // differed, which is why #960 withdrew the rule.
+      //
+      // Nothing else is lost with it: DECLARING a name stays excluded by
+      // isDeclaringIdentifier below, and a function-local VARIABLE still binds
+      // nothing (C-D1) via fnLocals at this site -- neither gate lived here.
+      //
+      // Measured over 2,600 files: UNEXPLAINED 142 -> 16.
       // CGD-IDENT mirror: a bare identifier READ of a file-scope variable,
       // enum member, or macro constant. Truth requires the name to be
       // DECLARED somewhere in this file (mirrors isResolvableUseTarget:
@@ -8018,7 +8331,17 @@ export function deriveCSharpBareUses(
           const bl = (n.namedChildren ?? []).find((c: any) => c.type === "base_list")
           const bs: string[] = []
           for (const b of bl?.namedChildren ?? []) {
+            if (!b) continue
             if (!b || b.type === "argument_list") continue
+            // This loop ALREADY unwrapped a record's primary-constructor base before D10b existed, via
+            // `tn` — the same CSD9 shape the `typeBaseLeaves` pre-pass uses. A D10b patch was applied
+            // here on the assumption that it had not, spliced in a `baseTypes.push` against a variable
+            // this function does not have, and orphaned the tail of the original. `bun build` accepted
+            // it — an undefined global is valid JavaScript — and it would have thrown at runtime the
+            // first time a record with a primary-constructor base appeared. Caught by the harness
+            // typecheck an hour later (TS2304 on `baseTypes` and `tn`), which is the entire argument for
+            // having built that check: `bun build` parses, tsc resolves, and only one of the two was
+            // ever running on this file.
             const tn = b.type === "primary_constructor_base_type"
               ? (b.namedChildren ?? []).find((c: any) => c.type === "identifier" || c.type === "generic_name")
               : b
@@ -8029,7 +8352,7 @@ export function deriveCSharpBareUses(
             const lt = text.indexOf("<")
             if (lt > 0) text = text.slice(0, lt)
             bs.push(leafOf(text.trim()))
-          }
+}
           if (bs.length > 0) bases.set(nm, bs)
         }
       }
@@ -8134,12 +8457,43 @@ export function deriveCSharpBareUses(
         }
         return false
       }
-      if (t === "variable_declaration" || t === "parameter" || t === "property_declaration" ||
+      // CS-D12. `property_declaration` was in the blanket-true list below, which is right for the
+      // property's TYPE and wrong for everything else hanging off it. A property's initializer and
+      // its attribute lists are VALUE contexts:
+      //
+      //   public static int[] Choice { get; } = [ new(OLD, LSP) ];
+      //                                ^^^^^^^ a type      ^^^^^^^^^^^^^^^^^^^^^ reads
+      //
+      // so both were gated as type positions and dropped. This is the same root cause as the
+      // attribute case, which is why a narrower fix for one symptom did not move the other: two
+      // independent corpus residuals (fsharp 8 edges, powershell) share this one cause.
+      //
+      // The test is the same range check `variable_declarator` uses a few lines above: true only for
+      // the declared type's own extent. That makes the property's INITIALIZER, its ATTRIBUTES and
+      // its ACCESSORS value contexts, which is what all three are, and leaves the type unchanged.
+      if (t === "property_declaration") {
+        const tf = cur.childForFieldName?.("type")
+        return !!tf && n.startIndex >= tf.startIndex && n.endIndex <= tf.endIndex
+      }
+      if (t === "variable_declaration" || t === "parameter" ||
           t === "indexer_declaration" || t === "event_declaration" || t === "event_field_declaration" ||
           t === "base_list" || t === "type_parameter_list" || t === "type_parameter_constraints_clause" ||
           t === "tuple_type" || t === "nullable_type" || t === "array_type" || t === "pointer_type" || t === "ref_type") {
         return true
       }
+      // CS-D14. C# has no `int[N]` TYPE -- an array's size is only ever an expression, in `new int[N]`
+      // or `stackalloc`. But the pinned grammar gives the creation's element type a node NAMED
+      // `array_type`, and that node sits in the blanket-true list above, so the size inside the rank
+      // specifier was classified as a type position and the read was dropped:
+      //
+      //     _buffer = new byte[DefaultBufferSize];
+      //                                 ^^^^^^^^^^^^^^^ a READ of a declared const
+      //
+      // Ascending to `array_rank_specifier` and stopping there is exact: a rank specifier holds only
+      // expressions, so nothing under it is a type position whatever its grandparent is. The node
+      // NAME is misleading and the POSITION is not, which is the distinction four defects in this
+      // one function have been about.
+      if (t === "array_rank_specifier") return false
       // `generic_name` and `qualified_name` are DELIBERATELY not in the list above, and their
       // absence was the last of the 17+1 rows this truth got wrong:
       //   `var f = Document.GetRequiredLanguageService<ISyntaxFactsService>();`
@@ -8273,7 +8627,28 @@ export function deriveCSharpBareUses(
     // reads of themselves, and the first fix appeared to do nothing at all because it was in the
     // dead branch too. An unchanged count after a fix is information: it means the fix was never
     // executed, which is worth more than the fix was.
-    if (p.type === "variable_declarator") return declaratorRole(n) === "member"
+    // CS-D11. `declaratorRole` answers "is this identifier in MEMBER SCOPE" -- it climbs and
+    // returns "member" on reaching a class/struct/interface/record/enum. That is the right question
+    // for deciding whether a declarator publishes itself, and it is what the 742-row fix above
+    // needed. It is NOT the question `isEntityName` is asking, which is "is this identifier the
+    // declarator's own NAME".
+    //
+    // Using it as a proxy conflates the declarator's name with its INITIALIZER, so for
+    //     internal int maxDepth = maxDepthAllowable;
+    //     ^^^^^^^^ declarator's name      ^^^^^^^^^^^^^^^^^^^ a READ of a declared const
+    // the initializer was classified as the declaration publishing itself and dropped. Every const
+    // or field read from a class-level field initializer was lost, on the `uses` label, in all four
+    // C# corpora -- invisible to F3 and F4, since no fixture places a read in a field initializer.
+    //
+    // The sibling branch below already answers the name question correctly with
+    // `same(firstIdent(p), n)`; this branch now asks the same thing. `declaratorRole` keeps doing
+    // its own job, because a MEMBER declarator's own name still must not read itself.
+    //
+    // The added rows cannot be phantoms: `resolvable(name)` gates the push, and it consults the
+    // members map built from the analyzer's own symbols, so every row this adds resolves to a real
+    // declaration. That is what makes it safe -- the D10b failure mode (a target that declares
+    // nothing) is structurally unreachable from here.
+    if (p.type === "variable_declarator") return declaratorRole(n) === "member" && same(firstIdent(p), n)
     const entities = /_(declaration|declarations)$/
     if (!entities.test(p.type) && p.type !== "constructor_initializer") return false
     if (p.type === "variable_declaration") return false
@@ -8371,7 +8746,22 @@ export function deriveCSharpBareUses(
       }
       return false
     }
-    if (p.type === "attribute_argument" || p.type === "assignment_expression" && false) {
+    // CS-D13. A NAMED attribute argument has a designator — `[Parameter(ParameterSetName = MySet)]`
+    // names the parameter and `MySet` is its value. A POSITIONAL one has none:
+    // `[DllImport(LocalizationDllName)]` is a bare value that READS the const it names, and treating
+    // its first identifier as a designator deleted the read.
+    //
+    // The grammar distinguishes them exactly: a named `attribute_argument` carries a `name` FIELD, a
+    // positional one has `name == null` and a single identifier child. Asking the node is exact;
+    // sniffing for an `=` in its text would also fire on a string literal containing one.
+    //
+    // 24 of powershell's 27 unexplained edges over the WHOLE corpus, exhaustively counted: DllImport,
+    // LibraryImport, Alias, FormatMessage, EventRegister, EvtQuery — every target a real declared
+    // const. The analyzer was right in every case; the truth was silent.
+    if (p.type === "attribute_argument") {
+      return p.childForFieldName?.("name") != null && same(firstIdent(p), n)
+    }
+    if (p.type === "assignment_expression" && false) {
       return same(firstIdent(p), n)
     }
     if (p.type === "with_initializer" || p.type === "subpattern") return same(firstIdent(p), n)
@@ -8873,7 +9263,48 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
         }
       }
       if (nm && baseList) {
-        const baseTypes: string[] = []; for (const b of baseList.namedChildren) if (b) baseTypes.push(leafOf(b.text))
+        // CS-D10 (2026-09-29): the base list was built from EVERY named child of `base_list`,
+        // and `base_list` also carries the CONSTRUCTOR ARGUMENT LIST. For
+        //
+        //     public sealed class LambdaParameterParsingTests(ITestOutputHelper output)
+        //         : ParsingTests(output)
+        //
+        // the children are `[identifier "ParsingTests", argument_list "(output)"]`, so the raw
+        // text of the second child was pushed as a base TYPE named `(output)` — and F5 reported 2
+        // MISSING rows for a class that implements nothing of the sort. The sibling row
+        // `implements CSharp13_CSharp14_Preview -> Preview)` is the same defect on a record, whose
+        // base list carries the primary-constructor argument list.
+        //
+        // An `argument_list` is an argument list wherever it appears, so it is excluded by NODE
+        // TYPE rather than by pattern: matching on the text is the rule that produced the
+        // paren-named "type" in the first place.
+        const baseTypes: string[] = []
+        for (const b of baseList.namedChildren) {
+          if (!b) continue
+          // D10b: excluding the `argument_list` SIBLING is not sufficient. A record's primary-
+          // constructor base is a SINGLE `primary_constructor_base_type` child whose own text
+          // carries the arguments, so a sibling-only rule never sees them:
+          //
+          //     internal sealed record Dachshund(string Name) : Beast(Name);
+          //     base_list > primary_constructor_base_type "Beast(Name)"
+          //         > identifier "Beast"       <- the base
+          //         > argument_list "(Name)"   <- the base CONSTRUCTOR's arguments
+          //
+          // Taking that child's raw text published a base TYPE named `Beast(Name)` — not a type
+          // at all — which F5 reported as `extends Dachshund -> Beast(Name)`. The base is the
+          // `type` field where the grammar supplies one, else the first named child. The
+          // `typeBaseLeaves` pre-pass already unwrapped this (CSD9); the edge-emitting loop and
+          // the bare-uses resolution loop had not, and a class is only as consistent as its last
+          // writer — which is the whole reason this is written down rather than patched quietly.
+          if (b.type === "primary_constructor_base_type") {
+            const t = b.childForFieldName?.("type") ?? (b.namedChildren ?? []).find((c: any) =>
+              c.type === "identifier" || c.type === "generic_name" || c.type === "qualified_name" || c.type === "nullable_type")
+            if (t) baseTypes.push(leafOf(t.text))
+            continue
+          }
+          if (b.type === "argument_list") continue
+          baseTypes.push(leafOf(b.text))
+        }
         const isInterfaceDecl = n.type === "interface_declaration"
         for (let i = 0; i < baseTypes.length; i++) {
           const target = baseTypes[i]
@@ -8893,13 +9324,58 @@ export function deriveCSharpEdges(root: any, corpusInterfaces?: Set<string>): { 
           // (first=extends, later-unknown=implements).
           const dot = target.lastIndexOf(".")
           const leaf = dot > 0 ? target.slice(dot + 1) : target
-          const knownIface =
-            declKinds.get(target) === "interface" || corpusInterfaces?.has(target) ||
-            declKinds.get(leaf) === "interface" || corpusInterfaces?.has(leaf)
-          const knownClass =
-            declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
-            declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
-          const declaredKind = knownIface ? "interface" : knownClass ? "class" : undefined
+            // CS-D9 (2026-09-29, found by the bare-`uses` round's F5 MISSING rows): the
+            // precedence was INVERTED relative to the analyzer this claims to mirror. The
+            // analyzer resolves, in this order:
+            //
+            //     typeKinds.get(b) || crossFileKinds?.get(b) || typeKinds.get(leaf) || crossFileKinds?.get(leaf)
+            //
+            // — the IN-FILE declaration map first, the cross-file companion second, so a file
+            // that declares a name is never overruled by the corpus. The oracle tested the
+            // corpus set first, and that set is a regex over `interface NAME` across every
+            // sampled file, so a name that is an interface ANYWHERE outranks what THIS file says.
+            //
+            // Measured on roslyn .../PerfTests/CSPerfTest.cs, where all three sites are CLASS
+            // inheritance and `interface c1` is declared in two OTHER corpus files
+            // (SyntaxNormalizerTests.cs, SymbolErrorTests.cs):
+            //
+            //     62    public class c1 : c0                    // c1 is a CLASS here
+            //     460   public class c2<T> : c1                 // extends c1
+            //     903   public class c4 : c2<string>            // extends c2
+            //     1096      public class c5 : c3<string, c1>   // extends c3
+            //
+            // So when either file was sampled, `c1` entered the set, the oracle labelled all
+            // three class-inheritance edges `implements`, and F5 reported 3 MISSING — the oracle
+            // contradicting the analyzer on edges the analyzer had RIGHT. A derived label that is
+            // wrong in the direction of `the analyzer missed something` is the most expensive
+            // kind of oracle bug, because it manufactures a defect to explain.
+            //
+            // This is CS-D4's family (a name-keyed kind companion) in a form D4's fix did not
+            // cover: D4 excluded AMBIGUOUS names from the companion, but the precedence that
+            // lets the companion OVERRULE a local declaration is a separate rule and was never
+            // checked. With the order corrected an ambiguous corpus name can no longer flip a
+            // local edge; it only decides edges where the file itself is silent, which is the
+            // only place corpus knowledge is needed at all.
+            const inFileIface = declKinds.get(target) === "interface" || declKinds.get(leaf) === "interface"
+            const inFileClass =
+              declKinds.get(target) === "class" || declKinds.get(target) === "struct" ||
+              declKinds.get(leaf) === "class" || declKinds.get(leaf) === "struct"
+            // An in-file CLASS wins even against a corpus INTERFACE: that is the analyzer's
+            // order, and the only reading under which a file can describe its own types.
+            const declaredKind = inFileIface ? "interface" : inFileClass ? "class" : undefined
+            // The FIRST version of this fix corrected `declaredKind` but left `knownIface`
+            // ORing the corpus set in unconditionally — so the label still came out `implements`
+            // and the probe caught it (cs-deep-47). A local CLASS declaration must VETO the
+            // corpus set, which is what "in-file first, companion second" means: the companion
+            // is consulted only when the file is silent about the name. Verified with the
+            // comparator F5 itself uses (label + target, not source) because the two sides name
+            // the source differently — the analyzer qualifies it (`ns1.c1`), the oracle does not
+            // (`c1`) — and that difference is invisible to the gate and must not be mistaken for
+            // the label bug.
+            const knownIface =
+              !inFileClass &&
+              (declaredKind === "interface" ||
+                corpusInterfaces?.has(target) === true || corpusInterfaces?.has(leaf) === true)
           // CSD12 mirror: struct bases are ALWAYS interfaces; an unknown
           // external index-0 I-prefixed PascalCase name is conventionally an
           // interface (matches the analyzer's looksLikeInterface exactly).
@@ -12647,6 +13123,786 @@ function goSignatureText(name: string, node: any): string {
 // — the struct itself declared in a sibling file, as gopls does — still names
 // a type whose method set this file can enumerate. The analyzer mirrors this
 // (GO20).
+const GO_PREDECLARED_TYPES = new Set([
+  "bool", "byte", "complex64", "complex128", "error", "float32", "float64",
+  "int", "int8", "int16", "int32", "int64", "rune", "string",
+  "uint", "uint8", "uint16", "uint32", "uint64", "uintptr",
+  "any", "comparable", "true", "false", "iota", "nil",
+])
+
+
+const collectGoTypeNames = (typeNode: any, out: string[], seen: Set<any>): void => {
+  if (!typeNode || seen.has(typeNode)) return
+  seen.add(typeNode)
+  const t = typeNode.type
+  if (t === "type_identifier" || t === "qualified_type") {
+    const raw = String(typeNode.text ?? "")
+    const dot = raw.lastIndexOf(".")
+    const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+    if (leaf && !GO_PREDECLARED_TYPES.has(leaf) && out.indexOf(leaf) === -1) out.push(leaf)
+    return
+  }
+  // A type literal written inline (`struct{ A Foo }`, `interface{ ~int | string }`,
+  // `func(a Foo) Bar`) names types in its own fields; those are still type
+  // references, so the walk continues. `seen` bounds a cyclic recovered tree.
+  for (let i = 0; i < typeNode.namedChildCount; i++) {
+    const c = typeNode.namedChild(i)
+    if (c) collectGoTypeNames(c, out, seen)
+  }
+}
+
+
+const goResultListOwner = (decl: any): boolean => {
+  const list = decl?.parent
+  if (!list || list.type !== "parameter_list") return false
+  const owner = list.parent
+  if (!owner) return false
+  // GO37: `function_type` is NOT here. A parameter_declaration inside a function
+  // type is part of a TYPE EXPRESSION — `Fn func(a A) (A, error)` describes that
+  // type, it does not declare a result of anything this file declares. A
+  // parameter_declaration in a function_declaration's `result` FIELD does. So
+  // labelling the former `return_type` would claim a struct returns a type.
+  if (
+    owner.type !== "function_declaration" && owner.type !== "method_declaration" &&
+    owner.type !== "method_spec" && owner.type !== "func_literal"
+  ) return false
+  const res = owner.childForFieldName?.("result")
+  return !!res && res.id === list.id
+}
+
+
+const goDeclaredTypeSource = (start: any): string => {
+  let n: any = start
+  let insideTypeDecl = false
+  for (let guard = 0; guard < 64 && n; guard++, n = n.parent) {
+    // `type_alias` counts (GO36): `type Alias = struct{ Q Inner }` declares
+    // `Alias`, and the pre-fix resolver read `type_spec` only, so an alias's
+    // field types fell through to `global` — a pseudo-source with no way to
+    // navigate back to the declaration that wanted the type. Measured on
+    // go-tools: 16 MISSING + 16 UNEXPLAINED `references` rows over 1,931 files
+    // (0.07%), which is why a 60-file draw and 13 fixtures never saw it.
+    if (!insideTypeDecl && (n.type === "type_spec" || n.type === "type_alias")) {
+      const nm = n.childForFieldName?.("name")
+      if (nm) return String(nm.text)
+      insideTypeDecl = true
+    }
+    if (n.type === "function_declaration" || n.type === "method_declaration") {
+      const nm = n.childForFieldName?.("name")
+      if (nm) return String(nm.text)
+    }
+  }
+  return "global"
+}
+
+
+const goInErrorRegion = (n: any): boolean => {
+  for (let p = n.parent; p; p = p.parent) {
+    if (p.type === "ERROR" || p.isMissing) return true
+  }
+  return false
+}
+
+
+const goEnclosingFunction = (node: any): string => {
+  // GOD12/GOD15: the SOURCE convention, and it has to be stated in ONE place
+  // because the F5 matcher reads no source at all (`differential.ts` matches
+  // `label + normTarget(target)`), so a disagreement here is invisible to the
+  // gate and only the source-aware probe sees it. It saw 1,947 rows on go-tools
+  // and 1,724 on prometheus — every one of them the ANALYZER being right: after
+  // GOD12 the analyzer attributes work inside a package-scope initialiser to the
+  // NAME that initialiser declares, and this helper still answered `global`, so
+  // `global -> sectioned` and `funcMap -> sectioned` were the same edge with two
+  // sources and only one of them resolvable.
+  //
+  // The convention: the enclosing function's name; else, failing that, the
+  // declared name of a PACKAGE-SCOPE var/const (blank excluded, because `_` can
+  // never be resolved by anything); else `global`. A function-local var does not
+  // bind — LocalsAreNotSymbols — so the walk continues past one, which is what
+  // keeps `func f() { var x = T{} }` attributed to `f`.
+  for (let n = node.parent, guard = 0; n && guard < 128; guard++, n = n.parent) {
+    if (n.type === "function_declaration" || n.type === "method_declaration") {
+      return String(n.childForFieldName?.("name")?.text ?? "global")
+    }
+    if (n.type === "var_spec" || n.type === "const_spec") {
+      // Local? keep walking for the enclosing function.
+      let local = false
+      for (let q: any = n.parent; q; q = q.parent) {
+        if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") { local = true; break }
+      }
+      if (!local) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+        }
+      }
+    }
+  }
+  return "global"
+}
+
+
+/** Strip one pair of surrounding double quotes. First/last char, no regex. */
+function unquote(text: string): string {
+  const t = String(text ?? "")
+  if (t.length >= 2 && t[0] === '"' && t[t.length - 1] === '"') return t.slice(1, -1)
+  return t
+}
+
+/** The package name a path implies: the last `/`-separated segment. */
+function baseName(p: string): string {
+  const i = p.lastIndexOf("/")
+  return i === -1 ? p : p.slice(i + 1)
+}
+
+export type ImportsTruth = {
+  label: "imports"
+  from: string
+  target: string
+  packageName: string
+  line: number
+  /** Which import shape produced the row — a diagnostic, not a match key. */
+  shape: "single" | "grouped" | "aliased" | "dot" | "blank" | "grouped_aliased"
+}
+
+export function deriveGoImports(root: any, filePath: string): ImportsTruth[] {
+  const out: ImportsTruth[] = []
+  const seen = new Set<string>()
+
+  // SOURCE: the package clause's own name, else the file path.
+  let pkg = ""
+  {
+    const stack: any[] = [root]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.type === "package_clause") {
+        const nameNode = n.childForFieldName?.("name")
+        if (nameNode) { pkg = String(nameNode.text ?? ""); break }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+    }
+  }
+  const source = pkg || filePath
+
+  const walk = (n: any, grouped: boolean): void => {
+    if (n.type === "import_declaration") {
+      // `import ( ... )` is parenthesised; a bare `import "x"` is not. The test
+      // is the PARENTHESIS, not the presence of a spec child — an unparenthesised
+      // import still has an import_spec child, so testing for one classified
+      // every import in the corpus as `grouped` (the first full-extent read
+      // reported 6,456 `grouped` in etcd and no `single` anywhere, which is how
+      // the bug was caught).
+      let isGrouped = grouped
+      for (let i = 0; i < n.childCount; i++) {
+        const c = n.child(i)
+        if (c && c.type === "(") { isGrouped = true; break }
+        if (c && c.type === "import_spec_list") { isGrouped = true; break }
+      }
+      for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, isGrouped) }
+      return
+    }
+    if (n.type === "import_spec") {
+      const p = n.childForFieldName?.("path")
+      if (p) {
+        const raw = unquote(String(p.text ?? ""))
+        const nameNode = n.childForFieldName?.("name")
+        const alias = nameNode ? String(nameNode.text ?? "") : ""
+        const shape: ImportsTruth["shape"] =
+          alias === "." ? "dot"
+          : alias === "_" ? "blank"
+          : alias ? (grouped ? "grouped_aliased" : "aliased")
+          : (grouped ? "grouped" : "single")
+        const line = (p.startPosition?.row ?? 0) + 1
+        // One edge per DISTINCT path per file: the analyzer pushes one per spec,
+        // and the harness dedupes the analyzer side by label|target, so a truth
+        // that counted duplicates would report a phantom surplus.
+        const key = `${raw}|${line}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          out.push({ label: "imports", from: source, target: raw, packageName: baseName(raw), line, shape })
+        }
+      }
+      return
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) walk(c, grouped) }
+  }
+  walk(root, false)
+  return out
+}
+
+export function deriveGoDeclaredTypeRefs(root: any): { label: string; from: string; target: string; rt: string }[] {
+  const out: { label: string; from: string; target: string; rt: string }[] = []
+  const emitted = new Set<string>()
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    const isDecl =
+      n.type === "field_declaration" ||
+      n.type === "parameter_declaration" ||
+      n.type === "variadic_parameter_declaration" ||
+      n.type === "var_spec" ||
+      n.type === "const_spec"
+    if (isDecl) {
+      const rt = goResultListOwner(n) ? "return_type" : "declared_type"
+      const from = goDeclaredTypeSource(n)
+      // R1: the `type` FIELD. A declaration with no `type` field (`var x = 1`,
+      // `var a = Foo{}`) declares no type — reading the field is what makes
+      // that a rule rather than a descent that happens to stop in the right
+      // place.
+      const typeNode = n.childForFieldName?.("type")
+      if (typeNode) {
+        const names: string[] = []
+        collectGoTypeNames(typeNode, names, new Set())
+        for (const target of names) {
+          const key = `${from}|${target}|${rt}`
+          if (emitted.has(key)) continue
+          emitted.add(key)
+          out.push({ label: "references", from, target, rt })
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+// C# second-opinion oracle (csharp #264 wave). Re-derives the SAME relationship
+// set the analyzer emits, independently, so disagreements surface as
+// missing/unexplained rather than being copied. Mirrors the analyzer's
+// deterministic C# base-list rule (CSD1): a type's base_list children are
+// ordered — the FIRST entry is the base class (extends), every remaining
+// entry is an interface (implements). Instantiates comes from
+// object_creation_expression; calls come from invocation_expression leaf
+// targets (the analyzer's leaf-target M12 contract, like go/rust).
+
+// Mirror of RealCSharpAnalyzer.cleanTypeName: strip generics (`<...>`) and
+// nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
+// so the oracle's implicit-new target matches the analyzer's instantiates
+// target byte-for-byte before normTarget reduction.
+
+export function deriveGoContains(root: any): { label: string; from: string; target: string }[] {
+  const out: { label: string; from: string; target: string }[] = []
+  const emitted = new Set<string>()
+  const add = (owner: string, member: string) => {
+    if (!owner || !member) return
+    if (owner === member) return // C4 / GO33
+    const key = `${owner}|${member}`
+    if (emitted.has(key)) return // C5
+    emitted.add(key)
+    out.push({ label: "contains", from: owner, target: member })
+  }
+  const stack: any[] = [root]
+  while (stack.length > 0) {
+    const n = stack.pop()!
+    if (n.type === "type_spec" || n.type === "type_alias") {
+      const owner = n.childForFieldName?.("name")?.text
+      if (owner) {
+        const o = String(owner)
+        const structN = (n.namedChildren ?? []).find((c: any) => c.type === "struct_type")
+        if (structN) {
+          const list = (structN.namedChildren ?? []).find((c: any) => c.type === "field_declaration_list")
+          for (let i = 0; list && i < list.namedChildCount; i++) {
+            const fd = list.namedChild(i)
+            if (!fd || fd.type !== "field_declaration") continue
+            const names = (fd.namedChildren ?? []).filter(
+              (c: any) => c.type === "field_identifier" || c.type === "identifier",
+            )
+            if (names.length > 0) {
+              for (const nm of names) {
+                const t = String(nm.text ?? "")
+                if (t && t !== "_") add(o, t) // C1
+              }
+              continue
+            }
+            const tn = fd.childForFieldName?.("type")
+            // `goEmbeddedFieldLeaf` was a typo for `goEmbeddedLeaf` and was defined
+            // NOWHERE — a latent ReferenceError committed in 8b0e2113. It survived a
+            // 100% run because the branch is reached only by an EMBEDDED field and
+            // the F5 draw rotates, so whether it fires is a property of which 200
+            // files were drawn.
+            const leaf = tn ? goEmbeddedLeaf(tn) : undefined
+            if (leaf) add(o, leaf)
+          }
+        }
+        const ifaceN = (n.namedChildren ?? []).find((c: any) => c.type === "interface_type")
+        if (ifaceN) {
+          for (let i = 0; i < ifaceN.namedChildCount; i++) {
+            const m = ifaceN.namedChild(i)
+            if (!m) continue
+            if (m.type === "method_spec") {
+              const nm = m.childForFieldName?.("name")?.text
+              if (nm) add(o, String(nm))
+              continue
+            }
+            if (m.type === "constraint_elem") { // C2
+              const inner = m.namedChildCount > 0 ? m.namedChild(0) : undefined
+              if (!inner) continue
+              if (inner.type !== "type_identifier" && inner.type !== "qualified_type") continue
+              const raw = String(inner.text ?? "")
+              const dot = raw.lastIndexOf(".")
+              const leaf = dot !== -1 ? raw.slice(dot + 1) : raw
+              // `GO_PLAIN_IDENTIFIER` was a second undefined identifier here, and it
+              // was a REGEX — which the go lane does not permit in any case. The
+              // character scan this file already ships is the correct test.
+              if (leaf && isGoIdentifier(leaf)) add(o, leaf)
+            }
+          }
+        }
+      }
+    }
+    if (n.type === "method_declaration") { // C3
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) {
+        for (let i = 0; i < n.namedChildCount; i++) {
+          const c = n.namedChild(i)
+          if (c && c.type === "parameter_list") {
+            const recv = c.namedChildCount > 0 ? c.namedChild(0) : undefined
+            const tn = recv?.childForFieldName?.("type")
+            let t = tn ? String(tn.text ?? "") : ""
+            if (t.startsWith("*")) t = t.slice(1)
+            const lt = t.indexOf("[")
+            if (lt > 0) t = t.slice(0, lt)
+            if (t) add(t, String(nm))
+            break
+          }
+        }
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) stack.push(c)
+    }
+  }
+  return out
+}
+
+// GO39 (round 6): the `uses` second-opinion oracle — the lane's READ surface,
+// and the last label with no oracle.
+//
+// `uses` was the biggest remaining hole: 79,584 edges across the three new
+// corpora, 85% of them one rule. It has THREE sub-surfaces, measured separately
+// so a red row is attributable, and the derivation is written from Go's scoping
+// semantics and the grammar's FIELDS — not from the analyzer's predicates, which
+// keep a flow-ordered lexical scope stack and apply ten exclusion tests. An
+// oracle built from those predicates would be the analyzer's own logic run
+// twice, which is the C5 collusion pattern and proves nothing.
+//
+//   go_selector_use      a field ACCESS, `s.cfg` -> the field leaf `cfg`.
+//                        Excluded: a selector that is a call's callee (the
+//                        calls edge owns it), a WRITE position, and a channel
+//                        send/receive operand (the channel edge owns it, so a
+//                        member channel gets one row and not two).
+//   identifier_usage     a bare VALUE read of a package-scope var/const/func.
+//                        A type name in value position is a CONVERSION and a
+//                        method name in value position is a method VALUE; Go
+//                        requires a receiver for the second and the first is a
+//                        construction, so neither is in the resolvable set.
+//                        Shadowing is an ORDERED scope: a binding takes effect
+//                        from its position onward, which is a fact about the
+//                        source rather than a rule choice.
+//   go_channel_operation  a send/receive on a channel, named by the channel's
+//                        declared leaf, with a direction. Only a declared
+//                        PACKAGE-SCOPE channel or a member selector qualifies —
+//                        a local or a parameter is an execution artifact
+//                        (LocalsAreNotSymbols).
+//
+// A shared `inErrorRegion` rule: a subtree the grammar could not parse is its
+// record of an incomplete read, not source to read a value out of. The lane
+// already applies that to construction and call edges (GO15/GO17); `uses` had
+// no such guard, which is worth stating because the go-799 #914 review found
+// real call edges recovered out of an ERROR region on the ANALYZER side.
+//
+// MEASURED at full extent on all five corpora before the pairing (this is the
+// number that decides whether the label can join the compared set at all):
+// `go_selector_use` and `identifier_usage` at 0 MISSING / 0 UNEXPLAINED, with
+// two independently shaped derivations agreeing exactly.
+
+export function deriveGoUses(root: any): { label: string; from: string; target: string; rt: string; direction?: string }[] {
+  // ---- the resolvable set: PACKAGE-SCOPE VALUES only. A function-LOCAL `var`
+  // cannot make a name resolvable, and a type or method name is not a value.
+  const resolvable = new Set<string>()
+  // PACKAGE-scope var/const names — the channel-op resolvability contract. It is
+  // deliberately NOT the channel-typed subset: a send/receive operand in
+  // compilable Go is always a channel, so the BINDING decides, and a named
+  // channel type (`type Buffer chan int; var b Buffer`) or an inferred one
+  // (`var jobs = make(chan int)`) is still a package var. Requiring a literal
+  // channel_type reported 29 UNEXPLAINED rows on go-tools, every sample one of
+  // those two shapes. Measured across 5 corpora / 6,825 files the corrected rule
+  // gives 154,656 truth rows with 0 MISSING and 4 EXTRA.
+  const packageVars = new Set<string>()
+  const insideAFunction = (n: any): boolean => {
+    for (let p = n.parent; p; p = p.parent) {
+      if (p.type === "function_declaration" || p.type === "method_declaration" || p.type === "func_literal") return true
+    }
+    return false
+  }
+  const scanResolvable = (n: any): void => {
+    if ((n.type === "var_spec" || n.type === "const_spec") && !insideAFunction(n)) {
+      for (let i = 0; i < n.namedChildCount; i++) {
+        const c = n.namedChild(i)
+        if (c && c.type === "identifier") {
+          resolvable.add(String(c.text ?? ""))
+          packageVars.add(String(c.text ?? ""))
+        }
+      }
+    } else if (n.type === "function_declaration") {
+      const nm = n.childForFieldName?.("name")?.text
+      if (nm) resolvable.add(String(nm))
+    }
+    for (let i = 0; i < n.namedChildCount; i++) {
+      const c = n.namedChild(i)
+      if (c) scanResolvable(c)
+    }
+  }
+  scanResolvable(root)
+
+  const out: { label: string; from: string; target: string; rt: string; direction?: string }[] = []
+  const seenSelector = new Set<string>()
+  const seenBare = new Set<string>()
+  const seenChannel = new Set<string>()
+
+  // ---- sub-surface 1: go_selector_use
+  {
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      if (n.type === "selector_expression") {
+        const field = n.childForFieldName?.("field")
+        const p = n.parent
+        const isCallee = p?.type === "call_expression" && p.childForFieldName?.("function")?.id === n.id
+        const isWrite =
+          p?.type === "inc_statement" || p?.type === "dec_statement" ||
+          (p?.type === "expression_list" && p.parent?.type === "assignment_statement" &&
+            p.parent.namedChild(0)?.id === p.id)
+        const isChannelOperand =
+          p?.type === "send_statement" || p?.type === "communication_case" ||
+          (p?.type === "unary_expression" && p.child(0)?.type === "<-") ||
+          (p?.type === "receive_statement" && p.parent?.type === "communication_case")
+        if (field && !isCallee && !isWrite && !isChannelOperand && !goInErrorRegion(n)) {
+          const src = goEnclosingFunction(n)
+          const tgt = String(field.text ?? "")
+          const key = `${src}|${tgt}`
+          if (tgt && !seenSelector.has(key)) {
+            seenSelector.add(key)
+            out.push({ label: "uses", from: src, target: tgt, rt: "go_selector_use" })
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  // ---- sub-surface 3: go_channel_operation
+  {
+    const operandOf = (n: any): any => {
+      if (n.type === "send_statement") {
+        const c = n.childForFieldName?.("channel")
+        return c && (c.type === "identifier" || c.type === "selector_expression") ? c : undefined
+      }
+      const direct = n.childForFieldName?.("operand") ?? (n.namedChildCount > 0 ? n.namedChild(0) : undefined)
+      const unwrapped =
+        direct && (direct.type === "unary_expression" || direct.type === "receive_statement")
+          ? (direct.namedChildCount > 0 ? direct.namedChild(0) : undefined)
+          : direct
+      return unwrapped && (unwrapped.type === "identifier" || unwrapped.type === "selector_expression") ? unwrapped : undefined
+    }
+    const stack: any[] = [root]
+    while (stack.length > 0) {
+      const n = stack.pop()!
+      const isRecvExpr = n.type === "unary_expression" && n.child(0)?.type === "<-"
+      if (n.type === "send_statement" || n.type === "receive_statement" || isRecvExpr) {
+        const op = operandOf(n)
+        if (op && !goInErrorRegion(n)) {
+          let name: string | undefined
+          let ok = false
+          if (op.type === "identifier") {
+            name = String(op.text ?? "")
+            ok = packageVars.has(name)
+          } else {
+            const f = op.childForFieldName?.("field")
+            name = f ? String(f.text ?? "") : undefined
+            ok = !!name
+          }
+          const dir = n.type === "send_statement" ? "send" : "receive"
+          if (name && ok) {
+            const src = goEnclosingFunction(n)
+            const key = `${src}|${name}|${dir}`
+            if (!seenChannel.has(key)) {
+              seenChannel.add(key)
+              out.push({ label: "uses", from: src, target: name, rt: "go_channel_operation", direction: dir })
+            }
+          }
+        }
+      }
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push(c)
+      }
+    }
+  }
+
+  // ---- sub-surface 2: identifier_usage, with an ORDERED lexical scope
+  {
+    const isBindingPosition = (n: any): boolean => {
+      const p = n.parent
+      if (!p) return false
+      if (p.type === "parameter_declaration" || p.type === "variadic_parameter_declaration") {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c?.id === n.id) return c.type === "identifier" || c.type === "field_identifier"
+        }
+        return false
+      }
+      if (p.type === "var_spec" || p.type === "const_spec") {
+        let seenIdent = false
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") { if (c.id === n.id) return true; seenIdent = true }
+          else if (seenIdent) return false
+        }
+        return false
+      }
+      if (p.type === "short_var_declaration" || (p.type === "expression_list" && p.parent?.type === "short_var_declaration")) {
+        const decl = p.type === "short_var_declaration" ? p : p.parent
+        const left = decl.childForFieldName?.("left") ?? (decl.namedChildCount > 0 ? decl.namedChild(0) : undefined)
+        return !!left && n.startIndex >= left.startIndex && n.endIndex <= left.endIndex
+      }
+      if (p.type === "range_clause") {
+        const first = p.namedChildCount > 0 ? p.namedChild(0) : undefined
+        if (first && first.type === "expression_list" &&
+            n.startIndex >= first.startIndex && n.endIndex <= first.endIndex) return true
+        const last = p.namedChildCount > 0 ? p.namedChild(p.namedChildCount - 1) : undefined
+        return !!last && n.endIndex <= last.startIndex
+      }
+      if (p.type === "label_name" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "goto_statement") return true
+      return false
+    }
+    const isEntityName = (n: any): boolean => {
+      const p = n.parent
+      if (!p) return false
+      if (
+        p.type === "function_declaration" || p.type === "method_declaration" ||
+        p.type === "type_spec" || p.type === "type_alias" || p.type === "field_declaration" ||
+        p.type === "package_clause" || p.type === "label_name" || p.type === "method_spec"
+      ) {
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (c && (c.type === "identifier" || c.type === "type_identifier" || c.type === "field_identifier")) {
+            return c.id === n.id
+          }
+        }
+        return true
+      }
+      if (p.type === "var_spec" || p.type === "const_spec") {
+        let seenIdent = false
+        for (let i = 0; i < p.namedChildCount; i++) {
+          const c = p.namedChild(i)
+          if (!c) continue
+          if (c.type === "identifier") { if (c.id === n.id) return true; seenIdent = true }
+          else if (seenIdent) return false
+        }
+        return false
+      }
+      if (p.type === "short_var_declaration" || (p.type === "expression_list" && p.parent?.type === "short_var_declaration")) {
+        const decl = p.type === "short_var_declaration" ? p : p.parent
+        const left = decl.childForFieldName?.("left") ?? (decl.namedChildCount > 0 ? decl.namedChild(0) : undefined)
+        return !!left && n.startIndex >= left.startIndex && n.endIndex <= left.endIndex
+      }
+      if (p.type === "goto_statement" || p.type === "break_statement" || p.type === "continue_statement" || p.type === "labeled_statement") return true
+      return false
+    }
+    const isCallCallee = (n: any): boolean => {
+      let top = n
+      let p: any = n.parent
+      while (p && (p.type === "index_expression" || p.type === "generic_type")) { top = p; p = p.parent }
+      if (!p || p.type !== "call_expression") return false
+      const fn = p.childForFieldName?.("function")
+      if (fn) return fn.startIndex === top.startIndex && fn.endIndex >= top.endIndex
+      const first = p.namedChildCount > 0 ? p.namedChild(0) : undefined
+      return !!first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex
+    }
+    const isAssignLhs = (n: any): boolean => {
+      let cur = n
+      let p: any = n.parent
+      while (p && p.type === "expression_list") {
+        const gp = p.parent
+        if (gp && gp.type === "assignment_statement") {
+          const lhs = gp.namedChildCount > 0 ? gp.namedChild(0) : undefined
+          return !!lhs && cur.startIndex >= lhs.startIndex && cur.endIndex <= lhs.endIndex
+        }
+        cur = p
+        p = p.parent
+      }
+      return false
+    }
+    const isStructLiteralKey = (n: any): boolean => {
+      let cur: any = n.parent
+      let keyed: any = null
+      while (cur) {
+        if (cur.type === "keyed_element") {
+          const first = cur.namedChildCount > 0 ? cur.namedChild(0) : null
+          if (first && n.startIndex >= first.startIndex && n.endIndex <= first.endIndex) { keyed = cur; break }
+          return false
+        }
+        if (
+          cur.type === "composite_literal" || cur.type === "call_expression" ||
+          cur.type === "field_declaration" || cur.type === "function_declaration" ||
+          cur.type === "method_declaration" || cur.type === "block"
+        ) return false
+        cur = cur.parent
+      }
+      if (!keyed) return false
+      cur = keyed.parent
+      while (cur) {
+        if (cur.type === "composite_literal") {
+          for (let i = 0; i < cur.namedChildCount; i++) {
+            const c = cur.namedChild(i)
+            if (c && c.type === "map_type") return false
+          }
+          return true
+        }
+        if (cur.type === "call_expression" || cur.type === "field_declaration" || cur.type === "function_declaration" || cur.type === "method_declaration" || cur.type === "block") return true
+        cur = cur.parent
+      }
+      return true
+    }
+    const underQualifiedType = (n: any): boolean => {
+      for (let p = n.parent; p; p = p.parent) {
+        if (p.type === "qualified_type") return true
+        if (
+          p.type === "call_expression" || p.type === "field_declaration" ||
+          p.type === "function_declaration" || p.type === "method_declaration" ||
+          p.type === "block" || p.type === "composite_literal" ||
+          p.type === "var_spec" || p.type === "const_spec" ||
+          p.type === "short_var_declaration" || p.type === "assignment_statement"
+        ) return false
+      }
+      return false
+    }
+    const isChannelOperand = (n: any): boolean => {
+      for (let cur: any = n.parent, steps = 0; cur && steps < 4; cur = cur.parent, steps++) {
+        if (cur.type === "send_statement") {
+          const ch = cur.childForFieldName?.("channel")
+          return !!ch && n.startIndex >= ch.startIndex && n.endIndex <= ch.endIndex
+        }
+        if (cur.type === "unary_expression") { const op = cur.child(0); if (op && op.type === "<-") return true }
+        if (cur.type === "receive_statement" || cur.type === "communication_case") return true
+        if (
+          cur.type === "call_expression" || cur.type === "field_declaration" ||
+          cur.type === "function_declaration" || cur.type === "method_declaration" ||
+          cur.type === "block" || cur.type === "expression_list"
+        ) return false
+      }
+      return false
+    }
+
+    const scopeStack: Set<string>[] = []
+    // ONLY the frames currently OPEN shadow a read. A `blocked` set of retired
+    // frames was carried alongside them on the theory that a later sibling read
+    // might still be shadowed — and Go's scoping says the opposite: a block's
+    // bindings die with the block, so a read after `if x { y := 1 }` does not
+    // see `y`. It cost 5 UNEXPLAINED rows in 200 files, every one a
+    // package-scope value read in a later function whose name happened to be
+    // bound earlier in the file.
+    const shadowed = (name: string): boolean => {
+      for (let i = scopeStack.length - 1; i >= 0; i--) if (scopeStack[i].has(name)) return true
+      return false
+    }
+    const stack: Array<{ node: any; exit?: boolean; frame?: Set<string> }> = [{ node: root }]
+    while (stack.length > 0) {
+      const { node: n, exit, frame } = stack.pop()!
+      if (exit) { if (frame) scopeStack.pop(); continue }
+      let newFrame: Set<string> | undefined
+      if (
+        n.type === "function_declaration" || n.type === "method_declaration" ||
+        n.type === "func_literal" || n.type === "block" ||
+        n.type === "for_statement" || n.type === "if_statement" ||
+        n.type === "function_type"
+      ) {
+        newFrame = new Set<string>()
+        scopeStack.push(newFrame)
+      }
+      // A function TYPE written in a package-scope FIELD has parameter names
+      // local to that type, so they bind even where no function frame is open.
+      // Only a package-scope var/const DECLARATION is excluded from binding,
+      // because that declaration is what a read resolves to.
+      const fnTypeOwnsParams =
+        n.type === "function_type" || n.type === "func_literal" ||
+        (n.type === "parameter_declaration" && n.parent?.parent?.type === "function_type")
+      const atPackageScope = !newFrame && scopeStack.length === 0 && !fnTypeOwnsParams
+      const top = atPackageScope ? undefined : scopeStack[scopeStack.length - 1]
+      if (top) {
+        if (n.type === "identifier" && isBindingPosition(n)) top.add(String(n.text ?? ""))
+        if (n.type === "field_identifier" && isBindingPosition(n)) top.add(String(n.text ?? ""))
+        if (n.type === "var_spec" || n.type === "const_spec" || n.type === "short_var_declaration") {
+          const seenNodes: any[] = [n]
+          while (seenNodes.length) {
+            const m = seenNodes.pop()!
+            if (m !== n && (m.type === "call_expression" || m.type === "composite_literal" || m.type === "func_literal")) continue
+            if ((m.type === "identifier" || m.type === "field_identifier") && isBindingPosition(m) && String(m.text ?? "") !== "_") {
+              top.add(String(m.text ?? ""))
+            }
+            for (let i = 0; i < m.namedChildCount; i++) { const c = m.namedChild(i); if (c) seenNodes.push(c) }
+          }
+        }
+      }
+      if (n.type === "identifier") {
+        const name = String(n.text ?? "")
+        const src = goEnclosingFunction(n)
+        const p = n.parent
+        if (
+          name && name !== "_" &&
+          resolvable.has(name) &&
+          !isEntityName(n) &&
+          !isCallCallee(n) &&
+          !isAssignLhs(n) &&
+          !isStructLiteralKey(n) &&
+          !isChannelOperand(n) &&
+          !underQualifiedType(n) &&
+          !(p && (p.type === "inc_statement" || p.type === "dec_statement")) &&
+          !goInErrorRegion(n) &&
+          !shadowed(name)
+        ) {
+          const key = `${src}|${name}`
+          if (!seenBare.has(key)) {
+            seenBare.add(key)
+            out.push({ label: "uses", from: src, target: name, rt: "identifier_usage" })
+          }
+        }
+      }
+      stack.push({ node: n, exit: true, frame: newFrame })
+      // Children are pushed in REVERSE so they POP IN SOURCE ORDER. The stack is
+      // LIFO and the shadowing rule is order-sensitive: `_, err := f()` on line
+      // 500 must be recorded BEFORE the read of `err` on line 501 is evaluated.
+      for (let i = n.namedChildCount - 1; i >= 0; i--) {
+        const c = n.namedChild(i)
+        if (c) stack.push({ node: c })
+      }
+    }
+  }
+  return out
+}
+
+// C# second-opinion oracle (csharp #264 wave). Re-derives the SAME relationship
+// set the analyzer emits, independently, so disagreements surface as
+// missing/unexplained rather than being copied. Mirrors the analyzer's
+// deterministic C# base-list rule (CSD1): a type's base_list children are
+// ordered — the FIRST entry is the base class (extends), every remaining
+// entry is an interface (implements). Instantiates comes from
+// object_creation_expression; calls come from invocation_expression leaf
+// targets (the analyzer's leaf-target M12 contract, like go/rust).
+
+// Mirror of RealCSharpAnalyzer.cleanTypeName: strip generics (`<...>`) and
+// nullable (`?`) suffixes, but KEEP the full qualified prefix (no lastSegment)
+// so the oracle's implicit-new target matches the analyzer's instantiates
+// target byte-for-byte before normTarget reduction.
+
 export function deriveGoImplements(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -14949,6 +16205,28 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
   }
   // CLJ-D6: forms whose direct list children are METHOD DEFINITIONS.
   const IMPL_PARENTS = new Set(["defrecord", "deftype", "reify", "extend-type", "extend-protocol", "proxy", "defprotocol", "definterface"])
+  // CLJ-D30/D32/D36 mirrors: the analyzer's character tests, spelled the same way
+  // so the two derivations cannot drift on a spelling.
+  const isDefLikeHead = (head: string): boolean => {
+    if (head.length < 3) return false
+    if (head.charCodeAt(0) !== 100 || head.charCodeAt(1) !== 101 || head.charCodeAt(2) !== 102) return false
+    if (head.length === 3) return true
+    const c3 = head.charCodeAt(3)
+    if (c3 !== 45 && c3 !== 95) return !(head.startsWith("default") || head.startsWith("define"))
+    return true
+  }
+  // BOTH dot positions: `Class/.member` and `Class./member`. A plain `Class/member`
+  // is a NAMESPACE-qualified call and stays one.
+  const staticInteropMember = (head: string): string | null => {
+    const slash = head.lastIndexOf("/")
+    if (slash <= 0) return null
+    const member = head.slice(slash + 1)
+    if (member.length === 0) return null
+    const afterDot = head.charCodeAt(slash + 1) === 46
+    const beforeDot = head.charCodeAt(slash - 1) === 46
+    if (!afterDot && !beforeDot) return null
+    return afterDot ? head.slice(slash + 2) : member
+  }
   // CLJ-D7: the direct list children of a libspec site are DATA.
   const LIBSITE_FORMS = new Set(["require", "use", "import", "refer", "refer-clojure"])
   let nsName = "user"
@@ -15078,9 +16356,14 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
             if (kw === "as-alias") hasAsAlias = true
           }
           // W24-mr2 mirror: `:refer [a b]` names resolve unqualified calls.
-          if (kw === "refer" && k + 1 < spec.namedChildCount) {
+          // CLJ-D21 mirror: `:only` is `:refer`'s legacy twin and means exactly
+          // the same thing, and CLJ-D21b: the name list is a LIST as often as a
+          // vector. `(:use [clojure.java.browse :only (browse-url)])` registered
+          // NO refer name here while the analyzer registered it, so every
+          // `(browse-url …)` call dangled on one side only.
+          if ((kw === "refer" || kw === "only") && k + 1 < spec.namedChildCount) {
             const refVec = spec.namedChild(k + 1)
-            if (refVec && refVec.type === "vec_lit") {
+            if (refVec && (refVec.type === "vec_lit" || refVec.type === "list_lit"))          if (refVec && refVec.type === "vec_lit") {
               for (let r = 0; r < refVec.namedChildCount; r++) {
                 const rn = refVec.namedChild(r)
                 if (rn && rn.type === "sym_lit") refers.set(symName(rn), libName)
@@ -15215,7 +16498,16 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         continue
       }
       let pushedFrame = false
-      if (form === "ns") {
+      if (form === "in-ns") {
+        // CLJ-D31 mirror: `(in-ns 'a.b)` DECLARES A NAMESPACE — it takes a
+        // QUOTED symbol, switches the namespace for the rest of the file, and
+        // emits no call. The alias/refer tables are NOT reset: `in-ns` switches
+        // namespace without re-running `ns`.
+        const arg = n.namedChild(1)
+        const inner = arg && (arg.type === "quoting_lit" || arg.type === "syn_quoting_lit") ? execHead(arg) : arg
+        const v = inner && inner.type === "sym_lit" ? symName(inner) : ""
+        if (v) nsName = v
+      } else if (form === "ns") {
         const nm = symName(n.namedChild(1))
         if (nm) nsName = nm
         // F2/F12 mirror: refer-clojure is data (never a libspec); read-cond
@@ -15336,6 +16628,23 @@ export function deriveClojureEdges(root: any): { label: string; from: string; ta
         const lastSeg = namePart.includes(".") ? namePart.slice(namePart.lastIndexOf(".") + 1) : namePart
         const c0 = lastSeg.charCodeAt(0)
         if (c0 >= 65 && c0 <= 90) push("instantiates", currentName(), resolveQualified(cls))
+      } else if (staticInteropMember(form) !== null) {
+        // CLJ-D32 mirror: `(String/.toUpperCase s)` and `(java.io.File./getName f)`
+        // are MEMBER ACCESSES, not calls to a function with that name; the
+        // analyzer emits two `uses` edges and no `calls` edge, and `uses` is
+        // audited by its own gate. Consuming the branch here is what keeps these
+        // out of `calls` — the edge `f -> String/.toUpperCase` was a dangling
+        // target that both sides agreed on.
+      } else if (isDefLikeHead(form) && n.namedChild(1)?.type === "sym_lit") {
+        // CLJ-D30 mirror: a def-like head in def position DEFINES a name, so it
+        // is a frame and a local binding, never a call. This branch only runs
+        // for a head none of the explicit cases above claimed.
+        const dn = symName(n.namedChild(1))
+        if (dn) {
+          localNames.add(dn)
+          frames.push({ name: dn, isFn: true })
+          pushedFrame = true
+        }
       } else if (form === "new") {
         // F14 mirror: `(new Class args…)` instantiates the named class.
         const clsName = symName(n.namedChild(1))
@@ -15714,6 +17023,16 @@ export function deriveCleanEdges(root: any): { label: string; from: string; targ
 // block (dead branches, the 73-of-604 member-arg misclassification, unhandled
 // `val`, no `new`-prefix instantiates); this oracle implements the SPEC, so they
 // surface as MISSING/unexplained on the lane's first honest row.
+/**
+ * SUPERSEDED — the harness no longer calls this. Kept ONLY so that
+ * script/m14/tmp/fs-oracle-edges.ts, which predates the import, still runs; that probe now
+ * prefers the lane oracle too.
+ *
+ * It is here because it was here, and that is the whole hazard: it derives six labels and not
+ * `contains`, so leaving it in a file where a reader assumes "the F# oracle" means this one
+ * guarantees that the next person re-registers a label and gets 2,159 phantom defects. Delete
+ * it once the probe no longer imports it.
+ */
 export function deriveFsharpEdges(root: any): { label: string; from: string; target: string }[] {
   const edges: { label: string; from: string; target: string }[] = []
   const seen = new Set<string>()
@@ -16411,7 +17730,20 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
         // type, and the analyzer now emits nothing for it (R7 absence) — the
         // old `?? "Self"` kept a target no symbol has.
         if (t2 === "Self") t2 = enclosingImplType(n) ?? ""
-        if (/^[A-Z]/.test(t2) && !seenCalls.has("struct:" + t2)) {
+        // RUST-MR mirror: the casing test is the WRONG discriminator for a
+        // struct literal. In Rust `Foo { .. }` is always a construction, and the
+        // grammar types the name as `type_identifier` even when the type was
+        // imported under a LOWERCASE alias — `use libc::ucred;` then
+        // `let mut ucred = ucred { pid: 0, .. }` is five live sites in tokio
+        // alone, all of which the case test dropped, so the analyzer's correct
+        // edges surfaced as UNEXPLAINED. The analyzer emits on the SHAPE; the
+        // oracle now does too. (This is the third way this oracle's
+        // `instantiates` surface was narrower than the analyzer's — after the
+        // bare uppercase callee and the scoped literal — so F5's "0
+        // unexplained" was partly arithmetic luck. Recorded as a spec decision
+        // rather than three separate patches, because the rule is one sentence:
+        // a construction is a construction whatever its type is spelled.)
+        if (t2.length > 0 && !seenCalls.has("struct:" + t2)) {
           seenCalls.add("struct:" + t2)
           edges.push({ label: "instantiates", from: "(expr)", target: t2 })
         }
@@ -16433,11 +17765,26 @@ export function deriveRustEdges(root: any): { label: string; from: string; targe
       const boundsNode = n.childForFieldName?.("bounds")
       if (nameNode && boundsNode) {
         const supers: string[] = []
-        for (const c of boundsNode.namedChildren) {
+        for (let c of boundsNode.namedChildren) {
           if (!c || c.type === "type_parameters" || c.type === "where_clause") continue
+          // RUST-MR mirror: a higher-ranked bound's text starts with the BINDER
+          // (`for<'de> Deserialize<'de>`), so the text path below took `for` and
+          // FABRICATED `extends -> "for"` — a bound no source line names, on
+          // serde's `trait DeserializeOwned: for<'de> Deserialize<'de>`. The
+          // analyzer had the mirror-image omission and published nothing, so the
+          // row surfaced as MISSING and the real supertrait was invisible on both
+          // sides. Descend to the bound TYPE, which is what both sides mean.
+          if (c.type === "higher_ranked_trait_bound") {
+            let inner: any = undefined
+            for (const kid of c.namedChildren ?? []) {
+              if (kid.type === "type_identifier" || kid.type === "scoped_type_identifier" || kid.type === "generic_type") { inner = kid; break }
+            }
+            if (!inner) continue
+            c = inner
+          }
           let bn = c.text.split("<")[0].split(":").pop() || ""
           bn = lastSegment(bn.trim())
-          if (/^[A-Za-z_]/.test(bn)) supers.push(bn)
+          if (/^[A-Za-z_]/.test(bn) && bn !== "for") supers.push(bn)
         }
         if (supers.length) supertraits[nameNode.text] = supers
       }
@@ -16752,6 +18099,43 @@ export function deriveRustBareUses(root: any): { label: string; from: string; ta
           if (fnField && fnField.startIndex === top.startIndex && fnField.endIndex >= top.endIndex) skip = true
           const first = up.namedChild(0)
           if (!skip && first && first.startIndex === top.startIndex && first.endIndex >= top.endIndex) skip = true
+        }
+        // RUST-MR mirror: a macro INVOCATION's NAME is a callee too, and the
+        // call-callee guard above cannot see it (it tests `call_expression`).
+        // Before this, the analyzer published `calls -> bail` AND `uses -> bail`
+        // for one use-imported macro at one line, and this oracle derived the
+        // `uses` row too — so F5 compared a fabrication against a fabrication and
+        // reported 0 unexplained, which is agreement on a wrong contract rather
+        // than evidence. Same reasoning as R14 (D2's mirror): the oracle mirrors
+        // the analyzer's RULED contract, and a shared blind spot is the failure
+        // mode, not a green light. The climb mirrors the callee climb so a path
+        // macro (`std::eprintln!`) is covered, and the guard is on the `macro`
+        // FIELD alone — the invocation's arguments are reads.
+        if (!skip) {
+          let mtop: any = n
+          let mup: any = p
+          while (mup && (mup.type === "scoped_identifier" || mup.type === "generic_function")) { mtop = mup; mup = mup.parent }
+          if (mup && mup.type === "macro_invocation") {
+            const mf = mup.childForFieldName?.("macro")
+            if (mf && mf.startIndex === mtop.startIndex && mf.endIndex >= mtop.endIndex) skip = true
+          }
+        }
+        // RUST-MR mirror: a DECLARATION's name is not a read. (a) a trait method
+        // signature is a `function_signature_item`, and the analyzer's
+        // declaration-position switch listed `function_item` only — the name fell
+        // through and published a `uses` SELF-EDGE when it also resolved;
+        // (b) a fn-pointer TYPE's parameter declares, and with no body there is
+        // no bound-name set to exclude it by.
+        if (!skip && p) {
+          if (p.type === "function_signature_item" || p.type === "function_item" || p.type === "const_item" || p.type === "static_item" || p.type === "struct_item" || p.type === "enum_item" || p.type === "trait_item" || p.type === "type_item" || p.type === "mod_item" || p.type === "macro_definition") {
+            const nf = p.childForFieldName?.("name") ?? p.childForFieldName?.("pattern")
+            if (nf && nf.startIndex === n.startIndex && nf.endIndex === n.endIndex) skip = true
+          }
+          if (!skip && p.type === "parameter") {
+            const params = p.parent
+            const holder = params?.parent
+            if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) skip = true
+          }
         }
       }
       if (!skip && p && p.type === "field_expression") {
@@ -17126,7 +18510,45 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       const nameNode =
         n.childForFieldName?.("name") ??
         n.namedChildren.find((c: any) => c.type === "identifier" || c.type === "type_identifier")
-      const clsName = nameNode?.text ?? "?"
+      // D4/D7 MIRRORS, via the analyzer's own rules rather than a re-derivation.
+      // These three were declared in the analyzer's CPP_ORACLE_CONTRACT with doc
+      // comments naming the F5 oracle as their reason for existing, and none of
+      // them was wired here — the same dead-contract shape that cost 387 MISSING
+      // rows for D1 and D2. `script/m14/cpp-oracle-contract.ts` is what noticed.
+      //
+      // Each fixes a way the naive `nameNode?.text` below disagrees with the
+      // analyzer, and all three are about the NAME, which is the whole content of
+      // an `extends` edge:
+      //
+      //   specifierDeclaredName   a class/struct may have a QUALIFIED name (an
+      //                            explicit specialization, `template <> struct
+      //                            fmt::formatter<T> : formatter<U> {…}`), whose
+      //                            `.text` is `fmt::formatter` while the analyzer
+      //                            publishes the LEAF `formatter` — D7's whole
+      //                            ruling, and the reason a qualified declaration
+      //                            used to publish as `anonymous`.
+      //   recoveredDeclaredName   the grammar's ERROR recovery displaces the
+      //                            `declarator` field, so the name must be read
+      //                            from beside it — D4. Without this the edge says
+      //                            `? extends X` and matches nothing.
+      //   attributeDisplacedEnumName  a C++23 `[[=attr]]` in the qualified-name
+      //                            slot is not the name; the real one sits beside
+      //                            it — D7's second arm.
+      //
+      // ORDER IS THE ANALYZER'S, and it is not incidental: it reads
+      // `recoveredDeclaredName(d) ?? (chain read)` because "the chain read is not
+      // null here (a type name is a legal identifier spelling), so the recovery
+      // has to be consulted FIRST, not as a fallback." Reading the chain first
+      // would let a displaced name win over the recovery. Scoped to cpp, since
+      // these are cpp rules and this branch is shared by every language that
+      // spells a class.
+      let clsName: string | null = null
+      if (lang === "cpp") {
+        if (n.hasError) clsName = recoveredDeclaredName(n)?.text ?? null
+        if (clsName === null && t === "enum_specifier") clsName = attributeDisplacedEnumName(n)
+        if (clsName === null) clsName = specifierDeclaredName(n)
+      }
+      if (clsName === null) clsName = nameNode?.text ?? "?"
       // extends side: superclass (classes), extends_interfaces+type_list
       // (java-style interfaces), extends_type_clause (typescript interfaces),
       // base_class_clause (cpp - flat children, access specifiers skipped)
@@ -17143,10 +18565,27 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           const typeNode =
             c.childForFieldName?.("name") ??
             c.namedChildren.find((x: any) => /type_identifier|qualified_identifier|template_type/.test(x.type)) ?? c
-          let baseName = typeNode.text
-          const lt2 = baseName.indexOf("<")
-          if (lt2 !== -1) baseName = baseName.slice(0, lt2)
-          baseName = lastSegment(baseName)
+          // D2 mirror. A class cannot inherit from itself, and the leaf clean that
+          // produces the impossible `X extends X` is the same clean that threw away
+          // the one piece of information the edge carried — WHICH class was inherited
+          // from. Two real shapes, measured at 49 rows over 1,722 C++ files:
+          //
+          //   template <unsigned N> struct priority_tag : priority_tag<N - 1> {};
+          //   //  -> a different INSTANTIATION
+          //   namespace nlohmann { namespace detail {
+          //     template <typename T> struct char_traits : std::char_traits<T> {}; }}
+          //   //  -> a DIFFERENT CLASS, in std — and the inheritance is real
+          //
+          // So the ruling is not "skip self-inheritance" but that a base whose leaf
+          // equals the class's own leaf cannot be named as an edge target. The
+          // analyzer's `extendsTargetName` states it, and its own comment explains
+          // why it exists in exactly this shape: the analyzer and the oracle spell a
+          // class differently for a good reason (`formatter` vs
+          // `formatter<std::byte, Char>`), and comparing those two literally would let
+          // `formatter<std::byte, Char> : formatter<…>` straight through. One rule,
+          // one normalization, both sides — the analyzer's override resolver already
+          // refused these bases with this exact reasoning; the EDGE did not.
+          const baseName = extendsTargetName(typeNode.text, clsName)
           if (baseName && /^[A-Za-z_]/.test(baseName)) {
             edges.push({ label: "extends", from: clsName, target: baseName })
           }
@@ -20516,6 +21955,16 @@ async function main() {
     }
     let treeEdgesTotal = 0, coveredByAnalyzer = 0, missingInAnalyzer = 0
     let analyzerEdgesTotal = 0, explainableByTree = 0, unexplainedInAnalyzer = 0
+    // Per-LABEL breakdown of `unexplained`. The single total cannot distinguish one rule
+    // firing many times from many rules firing once, and those need opposite responses: the
+    // first is one bug, the second is a design question. csharp powershell sat at unexplained=3
+    // inside a lane reporting MISSING=0 and 100% covered, with nothing saying which rule.
+    // REPORT-ONLY and additive: it is in no artifact, changes no published figure, and no gate
+    // reads it. Two attempts to obtain this from OUTSIDE the harness both failed --
+    // CSHARP_INTERFACES is module-local, so an external deriveCSharpEdges(root, undefined)
+    // under-derives truth and reported 935 phantom fabrications against the real 3. The
+    // information exists only here, where `truth` and `rels` are both in scope.
+    const unexplainedByLabel = new Map<string, number>()
     let heuristicUnexplained = 0
     // Sharpness counters (BB_F5_STRICT only). strictMissing counts truth rows the
     // written-target rule cannot match; strictMasks counts the subset the
@@ -21150,6 +22599,16 @@ async function main() {
         for (const e of deriveCCalls(root, content)) {
           ;(truth as any[]).push(e)
         }
+        // #978 RESTORED AGAIN — the FOURTH cross-lane revert of this file's c-lane work.
+        // c3e6fcca ("fix(rust): the last F5 disagreement was a name collision") deleted
+        // it: 22715 -> 22615 lines, with nothing about the C lane in its subject.
+        //   4f5df8fd  m14(csharp)  deleted #966
+        //   f4758f59  fix(rust)    deleted #969
+        //   7030c7bc  fix(ruby)    deleted #978
+        //   c3e6fcca  fix(rust)    deleted #978 again
+        for (const e of deriveCInstantiates(root, content)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "cpp") {
         // M37.9: dedicated cpp oracle — calls + member-read uses truth so the
@@ -21192,10 +22651,27 @@ async function main() {
         for (const e of deriveGoImplements(root)) {
           ;(truth as any[]).push(e)
         }
+        // GOD9/GOD10 (round 7). The go truth block has been cut back to
+        // deriveGoEdges + deriveGoImplements by other lanes FOUR times now, each time
+        // silently returning the go lane to five labels. Restored here with `imports`,
+        // the ninth label: emitted since GO18, promised by requiredKinds since the wave,
+        // compared by nobody until round 7.
+        for (const e of deriveGoDeclaredTypeRefs(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveGoContains(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveGoUses(root)) {
+          ;(truth as any[]).push(e)
+        }
+        for (const e of deriveGoImports(root, relPath)) {
+          ;(truth as any[]).push(e)
+        }
       }
       if (lang === "zig") {
-        for (const e of deriveZigEdges(root)) {
-          ;(truth as any[]).push(e)
+        for (const e of deriveZigEdgesWithSource(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
         }
         // Z3 (zig review): bare value-read uses truth — mirrors the
         // analyzer's identifier-read contract rule for rule (declaration
@@ -21203,49 +22679,34 @@ async function main() {
         // blank, preprocessor-free, LHS writes, shadowing, resolvability
         // incl. the error-type leaf rule). Name inventory comes from the
         // analyzer's own symbols (shared ground truth, not re-derived).
-        for (const e of deriveZigBareUses(root, result?.symbols ?? [])) {
+        for (const e of deriveZigBareUsesWithSource(root, result?.symbols ?? [])) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
+        // Z14: the `references` class joins the audited set. It was the analyzer's
+        // second-largest emitted class on this lane's corpora and had NO truth
+        // derivation at all, so a phantom type reference, a lost one and a corrupted
+        // one were all invisible to a lane reporting 100% coverage.
+        for (const e of deriveZigReferenceEdges(root)) {
           ;(truth as any[]).push(e)
         }
-        // M60 label-coverage sweep: three more labels this lane publishes and the
-        // allowlist dropped, whose oracles were ALREADY written and unwired. Wired
-        // with their allowlist entries in the same commit (full mirror).
+        // RESOLVED 2026-10-02 (branch consolidation): a UNION. The local side wired
+        // zig containment; the remote side wired instantiation. Imports and exports
+        // were wired by BOTH sides independently, so they are emitted once here.
+        // All four loops are kept: dropping either would leave a label published by
+        // this lane compared against nothing, which is the exact failure the label-
+        // coverage sweep was written to catch.
         for (const e of deriveZigContainment(root)) {
-          ;(truth as any[]).push(e)
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
         }
         for (const e of deriveZigImports(root)) {
-          ;(truth as any[]).push({ label: "imports", from: e.from, target: e.target })
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
+        }
+        for (const e of deriveZigInstantiation(root)) {
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
         }
         for (const e of deriveZigExports(root)) {
-          ;(truth as any[]).push({ label: "exports", from: e.from, target: e.target })
+          ;(truth as any[]).push({ label: e.label, from: e.from, target: e.target })
         }
-        // The harness reported `COMPARED WITH NO TRUTH: instantiates` for this lane:
-        // `instantiates` is in the default admitted prefix, so the analyzer's rows were
-        // being compared against nothing and every one of them read as a fabrication.
-        // The oracle was already written. This is the MIRROR of the gap the sweep
-        // started from — not an unadmitted label with no oracle, but an ADMITTED label
-        // with no oracle — and it is just as silent, because the count is small.
-        for (const e of deriveZigInstantiation(root)) {
-          ;(truth as any[]).push({ label: "instantiates", from: e.from, target: e.target })
-        }
-      }
-      if (lang === "erlang") {
-        // M60 label-coverage sweep: erlang published `contains` that the allowlist
-        // dropped. Erlang has no classes, so the module is the container; see
-        // script/m14/oracles/erlang-contains.ts for the rule and for what is
-        // deliberately NOT a member (a `-spec` restates a function's type, it is not
-        // a separate declaration). Full mirror: truth and allowance in one commit.
-        for (const e of deriveErlangContainsTruth(root)) {
-          ;(truth as any[]).push(e)
-        }
-      }
-      if (lang === "rust") {
-        // M60 label-coverage sweep: rust published `contains` that the allowlist
-        // dropped. Rust's items nest cleanly and the oracle shares no rule table with
-        // the analyzer — see script/m14/oracles/rust-contains.ts, which records the
-        // four language facts the corpus had to teach. Full mirror: truth and
-        // allowance in one commit.
-        for (const e of deriveRustContainsTruth(root)) {
-          ;(truth as any[]).push(e)
         }
       }
       if (lang === "csharp") {
@@ -21561,9 +23022,27 @@ async function main() {
         // branches, the `args:`-field method split, `val` declarations, the
         // `new`-prefix instantiates, `inherit` is always extends), which is
         // exactly what the first row is for.
-        for (const e of deriveFsharpEdges(root)) {
+        // The lane's ORACLE, imported — not the 249-line in-file copy that used to sit here.
+        //
+        // That copy derived six labels and NOT `contains`, so when `contains` entered the
+        // compared set it was scored against an oracle with no rule to find it: every
+        // `contains` edge the analyzer emitted read as UNEXPLAINED, which is how a harness
+        // that filters the analyzer side and not the truth side turns a missing rule into an
+        // accusation. 2,159 rows, none of them a defect in the analyzer.
+        //
+        // The two copies had already drifted by 523 lines. Over the same 120 files the lane
+        // oracle derives 11,718 `contains` rows and agrees with the analyzer on ALL of them —
+        // 0 missing, 0 unexplained — while the in-file copy derives none. Two implementations
+        // of one truth is not redundancy, it is a second opinion that nobody adjudicates.
+        //
+        // `result?.symbols` is passed because `contains` is the one label that is ABOUT symbols:
+        // an edge from a container to a name only exists if that name was published. Every
+        // other language at this call site already takes them the same way.
+        const { deriveFsharpEdges: deriveFsharpEdgesLane } = await import("./fsharp-truth-oracle")
+        for (const e of deriveFsharpEdgesLane(root, (result as any)?.symbols ?? [])) {
           ;(truth as any[]).push(e)
         }
+
       }
       if (lang === "svelte") {
         // Script-side truth: the svelte grammar stores script bodies as
@@ -21668,7 +23147,11 @@ async function main() {
       // sources (field_access, paren-less leading_dot_call, array_access,
       // interpolation), so the label is comparable and the lane audits groovy
       // reads for the first time.
-      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "swift" && lang !== "cpp" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
+      // RESOLVED 2026-10-02 (branch consolidation): took the REMOTE side, which is a
+      // strict superset of the exclusion: it drops `overrides` from the compared set for
+      // dart and go as well as csharp/swift/cpp. Taking the local list would have
+      // re-admitted two lanes whose override oracles were deliberately left unwired.
+      }))      .filter((r: any) => ["extends", "implements", "instantiates", ...(lang !== "csharp" && lang !== "dart" && lang !== "swift" && lang !== "cpp" && lang !== "go" ? ["overrides"] : []), ...(lang === "c" || lang === "cpp" || lang === "rust" || lang === "go" || lang === "dart" || lang === "objc" || lang === "php" || lang === "ruby" || lang === "python" || lang === "haskell" || lang === "elixir" || lang === "erlang" || lang === "java" || lang === "kotlin" || lang === "scala" || lang === "groovy" || lang === "typescript" || lang === "vue" || lang === "svelte" || lang === "javascript" || lang === "clojure" || lang === "clean" || lang === "fsharp" || lang === "bash" ? ["calls"] : []),          // Rust joins the uses-audited set (#798 R1): its read oracle now
           // exists, so the label is comparable and the corpus audits rust
           // reads for the first time. Before this, the allowlist dropped the
           // whole class from the ANALYZER side — the same harness gap the
@@ -21696,7 +23179,12 @@ async function main() {
           // comparison". A 0% coverage row is the shape this failure takes, and it
           // is indistinguishable from a catastrophic analyzer regression unless
           // you go and read the allowlist.
-          ...(lang === "zig" || lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
+          // RESOLVED 2026-10-02 (branch consolidation): a UNION of the compared-label
+          // allowlists. The remote side gives zig its full published set (calls, uses,
+          // references, imports, instantiates, exports, contains); the local side adds
+          // typescript to the references and uses sets and dart to imports/exports.
+          // Neither list is a subset of the other, so both contributions are kept.
+          ...(lang === "zig" ? ["calls", "uses", "references", "imports", "instantiates", "exports", "contains"] : lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "c" || lang === "cpp" || lang === "rust" || lang === "erlang" || lang === "bash" || lang === "powershell" ? ["calls", "uses"] : []), ...(lang === "c" || lang === "bash" ? ["references", "imports"] : []), ...(lang === "rust" || lang === "typescript" ? ["references"] : []), ...(lang === "dart" || lang === "ruby" || lang === "javascript" || lang === "groovy" || lang === "java" || lang === "typescript" ? ["uses"] : []), ...(lang === "dart" ? ["imports", "exports"] : []),
           // M60 K2 (2026-09-27): kotlin joins the uses-audited set.
           // 1,758 `uses` edges on the primary corpus, every one of them from
           // five emission sites that NO oracle derived and the allowlist dropped
@@ -21906,7 +23394,45 @@ async function main() {
         // (using directives, and now the declared-type graph) had truth that the
         // allowlist dropped from the ANALYZER side, so the new truth read as MISSING —
         // the mirror image of the #910 gap recorded below, and the same root cause.
-        ...(lang === "csharp" ? ["calls", "contains", "references", "uses"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
+        ...(lang === "go" ? ["references", "contains", "uses", "imports"] : []),   // ROUND 6/7: go audits NINE labels: the base four it shares with every lane (extends,
+   // implements, instantiates, calls), plus these four, and NOT `overrides` (GO41: the go
+   // analyzer emits zero of them, and a compared label with no rows reads like a contract
+   // rather than a hole). The base `overrides` disjunct above now excludes go for that reason. The five-label set is why 349,468 rows went unmeasured across five review rounds. `overrides` is deliberately NOT here (GO41: the go analyzer emits none, and a compared label with no rows reads like a contract). Each label is on its OWN physical line: a `//` comment on this expression runs to end of line and has now silently deleted a live entry from it three times.
+   // F#'s `contains` — the last of the four labels this lane adjudicates, and its LARGEST:
+   // 34,838 of the 36,952 symbols in the compiler corpus are reached this way.
+   //
+   // It is a line of its own because this entry has been lost FOUR times: once to another lane
+   // rewriting the shared physical line it sat on, twice more to further rewrites of that same
+   // line, and once to the 493-commit merge. Every loss had the same symptom, and the symptom
+   // is invisible from the outside — the harness does not fail, it reports a SMALLER number.
+   //
+   // That is the expensive part. This harness filters the ANALYZER side by the allowlist and
+   // does NOT filter the truth side, so a label that truth derives and the allowlist omits is
+   // not merely unmeasured, it is measured as a DEFECT. An empty allowlist therefore produces
+   // thousands of MISSING rows against an analyzer emitting thousands of edges correctly — and
+   // the compared set is a LOCAL expression in this file, not exported, so F1, F3, F4, F6 and
+   // SPEC all stayed GREEN while two oracles went unchecked.
+   //
+   // These are the labels script/m14/fsharp-truth-oracle.ts derives independently over the same
+   // grammar — a second implementation reading one tree, not a re-read of the analyzer's walk.
+   // `implements`, `instantiates` and `overrides` are unconditional earlier in the chain. `uses`
+   // is deliberately absent: the lane does not derive it, and admitting it would charge every
+   // real call edge as unexplained.
+...(lang === "fsharp" ? ["contains"] : []),
+// 2026-09-29: the compared set was FOUR labels while the oracle derived EIGHT. `extends`,
+// `implements` and `instantiates` were pushed into truth and then dropped here by the
+// allowlist, so they were derived at real cost and compared by nothing — and a lane
+// reporting "100% covered, MISSING=0" was silent about half its own labels.
+//
+// `overrides` is NOT added here, and the asymmetry is deliberate: it is excluded on BOTH
+// sides (the truth-side skip in deriveCSharpEdges, and the analyzer-side allowlist below)
+// under C923, with independent evidence in script/m60/verify-c923-interface-members.ts.
+// Adding it to this side alone would read every true edge as MISSING — the same desync the
+// truth-side comment warns about. The three labels added here measured 100% under the
+// HARNESS's own matcher before being added, so this widens what is CHECKED without
+// changing any verdict: script/m14/tmp/cs-deep-60-undercompared-labels.ts is the
+// measurement, and it is what found the gap in the first place.
+...(lang === "csharp" ? ["calls", "contains", "references", "uses", "extends", "implements", "instantiates"] : []),        ...(lang === "swift" || lang === "objc" || lang === "php" || lang === "python" || lang === "elixir" || lang === "clojure" || lang === "clean" || lang === "erlang" || lang === "fsharp" ? ["references"] : [])].includes(r.label))
         // The tree-truth oracles already emit UNIQUE (label,target) edges per
         // file (each oracle keeps a `seen` set keyed by label+target). The
         // analyzer, by contrast, emits one edge per source SEARCH HIT, so a
@@ -21967,9 +23493,13 @@ async function main() {
           if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
         } else {
           unexplainedInAnalyzer++
+          // RESOLVED 2026-10-02 (branch consolidation): a UNION. The local side adds
+          // a bounded trace of unexplained rows; the remote side adds the per-label
+          // counter the report is built from. Different purposes, same site.
           if (process.env.M14_TRACE_FILE && unexplainedInAnalyzer <= 3) {
             console.log(`    [trace] unexplained #${unexplainedInAnalyzer} at ${relPath}`)
           }
+          unexplainedByLabel.set(String(r.label), (unexplainedByLabel.get(String(r.label)) ?? 0) + 1)
           if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
@@ -22157,7 +23687,14 @@ async function main() {
     // two runs comparable at all. A lane line that omits them forces a
     // re-derivation to answer "did this grow?", which is how a rotated sample
     // gets misread as a code regression.
-    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}`)
+    console.log(`[${langRepo}] ${lang}: files=${sample.length} tree-truth=${treeEdgesTotal} covered=${coveredByAnalyzer} (${row.coveragePct}%) MISSING=${missingInAnalyzer} | analyzer-edges=${analyzerEdgesTotal} unexplained=${unexplainedInAnalyzer} (${row.fabricationPct}%) heuristic=${heuristicUnexplained} hash=${row.sampleSetHash}${
+      // Appended ONLY when there is something to attribute, so a clean lane's line is byte-identical
+      // to what it was before this existed. A breakdown that always prints is a breakdown nobody
+      // reads, and an always-changing log line breaks every parser reading these artifacts.
+      unexplainedInAnalyzer > 0
+        ? ` | unexplained-by-label: ${[...unexplainedByLabel.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}=${v}`).join(",")}`
+        : ""
+    }`)
     // CLJ1/F5-certification wave: the samples (dir/file/label/from/target)
     // were captured for exactly this purpose and then had no output path —
     // triage of a MISSING/UNEXPLAINED diff required re-deriving the lane by

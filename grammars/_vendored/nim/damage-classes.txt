@@ -1,0 +1,14 @@
+corpus=nim rev=bb85d2dda5441d4871e44ffe1ebab7c36dc02ecb files=3965 damaged=48 errorRate=1.211%
+damaged files with a BARE-CLOSING-DELIMITER error site: 0 of 48
+
+ files  sites  class
+    16     17  doPragma+negativeTest
+              first: nimsuggest/tests/t20265_1.nim:8 | y.#[!]#
+    15     40  unattributed
+              first: compiler/semobjconstr.nim:552 | if hasError: result = errorNode(c, result)
+    13     27  negativeTest
+              first: tests/cpp/tcovariancerules.nim:303 | MyPtr[out T] {.importcpp: "'0 *"}  = object
+     2      2  qualifiedType
+              first: tests/package_level_objects/tusefoo.nim:6 | mypackage.Foo = object
+     1      1  doPragma+typePragma+negativeTest
+              first: nimsuggest/tests/ttype_decl.nim:12 | OldOne {.deprecated.} = object

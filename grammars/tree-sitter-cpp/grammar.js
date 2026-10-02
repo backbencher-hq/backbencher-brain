@@ -521,6 +521,28 @@ module.exports = grammar(C, {
       alias($.operator_cast_declaration, $.declaration),
       $.friend_declaration,
       seq($.access_specifier, ':'),
+      // nlohmann's `basic_json` writes an access specifier as a MACRO:
+      //   JSON_PRIVATE_UNLESS_TESTED:
+      //     using lexer = ::nlohmann::detail::lexer_base<basic_json>;
+      // That is legal C++ and there is no other reading of a bare `NAME:` at
+      // class scope, but `access_specifier` is a keyword choice, so the
+      // grammar had no production for it: the line became an ERROR node and
+      // the ERROR swallowed the REST OF THE CLASS BODY. Measured on the
+      // pinned corpora that is the whole of the R1 loss for `basic_json` —
+      // the node ended at row 26,599 where the source's own brace balance
+      // ends at 32,291, 5,692 rows and ~934 members, in each of three files.
+      //
+      // `prec(-1)` for patch 2's reason: `identifier` alone also begins a
+      // field declaration, so the two collide and the generator must prefer
+      // one. Preferring the existing reading keeps today's parses intact —
+      // the macro label is only read where nothing else parses anyway. The
+      // `:` is mandatory and immediately follows the name, which is what
+      // keeps this from swallowing a real declaration: `MACRO x;` and
+      // `MACRO::member` both need a token this rule does not consume.
+      prec(-1, seq(
+        alias($.identifier, $.macro_access_specifier),
+        ':',
+      )),
       $.alias_declaration,
       $.using_declaration,
       $.type_definition,

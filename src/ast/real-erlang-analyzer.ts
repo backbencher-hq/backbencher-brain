@@ -185,6 +185,8 @@ interface ErlangContext {
   moduleSymbol: ASTEngine.UniversalSymbol | undefined
   /** Counts kept for the review's accounting, never for behaviour. */
   stats: { dynamicRemote: number; unresolvedNifs: number; macroHeadDecls: number }
+  /** Whole-file grammar damage: no declaration of any kind survived the parse. */
+  grammarDamaged: boolean
 }
 
 export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
@@ -216,6 +218,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       optionalCallbacks: [],
       moduleSymbol: undefined,
       stats: { dynamicRemote: 0, unresolvedNifs: 0, macroHeadDecls: 0 },
+      grammarDamaged: false,
     }
 
     // ---- pre-pass: every fact the main walk cannot derive in document order —
@@ -225,6 +228,65 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     // attributes annotate a declared function rather than minting a duplicate
     // symbol — ER-D22). ----
     this.collectPrePass(rootNode, ctx)
+
+    // WHOLE-FILE GRAMMAR DAMAGE. Some Erlang files are not Erlang to this grammar:
+    // wx's `api_gen` sources are code-GENERATION TEMPLATES whose body is markup
+    // (`<<EXPORT:SortItems sortItems/2 SortItems:EXPORT>>`), and OTP's abstract-format
+    // `-record #r{...}` is likewise unparseable. After such a construct the top level
+    // comes back as a run of ERROR nodes with loose `call`/`atom`/`ann_type`
+    // fragments between them — 32 top-level ERRORs in `wxListCtrl.erl`, and not one
+    // `fun_decl` in the file.
+    //
+    // Every edge recoverable from those fragments is FABRICATED: the line numbers and
+    // the nesting are whatever error recovery happened to produce, so
+    // `wxe_util:get_cbId@31` points at a structure the source does not have. With the
+    // ER-D32 file-path fallback in place the analyzer will happily derive them —
+    // `currentSource` no longer returns undefined, so there is nothing left to stop
+    // it. So the boundary is stated here, explicitly, and it is the same boundary the
+    // independent oracle applies: a file with NO recoverable declaration of any kind
+    // yields no symbols and no relationships, and says why through its error count.
+    //
+    // The guard is narrow on purpose. `epp_SUITE_data/mac2.erl` has no functions and
+    // no `-module`, but its four `-define` blocks ARE declarations, so it is derived
+    // normally — including the four file-scope macro references that ER-D32's edge
+    // fallback exists to publish. 12 files corpus-wide are in the damaged state.
+    const DECLARATION_FORMS = new Set([
+      "fun_decl",
+      "module_attribute",
+      "pp_define",
+      "record_decl",
+      "type_alias",
+      "opaque",
+      "nominal",
+      "import_attribute",
+      "export_attribute",
+      "export_type_attribute",
+      // `-include` / `-include_lib` are declarations too. An include-ONLY header has
+      // no symbol to publish but a real dependency to record, so calling it
+      // "grammar damaged" would be as false as calling a comment-only header
+      // damaged was.
+      "pp_include",
+      "pp_include_lib",
+    ])
+    //
+    // AND there is EVIDENCE of damage. The first version fired on the absence of
+    // declarations alone, which is not the same thing, and the unknown-symbols probe
+    // caught it by reporting such files as SUSPECT: `ms_transform.hrl` and `qlc.hrl`
+    // each hold a single `-compile({parse_transform, …})`, `enable.hrl` holds a
+    // single `-feature(…)`, and two test headers hold nothing at all. None of those
+    // is damaged — they are simply files with nothing to declare, and calling them
+    // grammar-damaged would put a false claim in the evidence artifact. The
+    // discriminator is the ERROR/MISSING nodes: damage is a parse that went wrong,
+    // not a file that had nothing to say.
+    // `rootNode.hasError`, not `ctx.errors.length`: this runs immediately after the
+    // pre-pass and BEFORE the main walk, so the error list is still empty here and a
+    // rule keyed on it silently stops firing — which is exactly what happened the
+    // first time, and it showed up as wxListCtrl.erl quietly producing 20
+    // relationships again.
+    const hasErrorNodes = rootNode.hasError === true
+    if (hasErrorNodes && !this.prePassForms(rootNode).some((f) => DECLARATION_FORMS.has(f.type))) {
+      ctx.grammarDamaged = true
+    }
 
     const stack: { node: Node; isExit?: boolean }[] = [{ node: rootNode }]
 
@@ -412,6 +474,27 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (sym) sym.complexity = 1 + branches
     }
     this.annotateNativeFunctions(ctx)
+    if (ctx.grammarDamaged) {
+      // Errors still travel: the file's own diagnostic is the honest output.
+      return {
+        language: "erlang",
+        symbols: [],
+        relationships: [],
+        imports: [],
+        exports: [],
+        errors: ctx.errors,
+        metadata: {
+          complexity: 0,
+          linesOfCode: content.split("\n").length,
+          patterns: [],
+          framework: "Erlang",
+          hasFrameworkIntelligence: false,
+          hasTypeInference: false,
+          grammarDamaged: true,
+        },
+      } as ASTEngine.ParseResult
+    }
+
     this.emitOwnership(ctx)
 
     if (ctx.moduleName) {
@@ -509,9 +592,15 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         break
       }
     }
+    // `prePassForms` is an O(forms) walk. Calling it in the loop CONDITION and
+    // again in the loop BODY made the pre-pass O(forms^2) on every file — the
+    // quadratic term the performance review could not attribute through six
+    // ablations, because the ablations were ablating semantics rather than
+    // looking at how often this function is invoked. One call, one array.
+    const forms = this.prePassForms(rootNode)
     const stack: Node[] = []
-    for (let i = this.prePassForms(rootNode).length - 1; i >= 0; i--) {
-      const top = this.prePassForms(rootNode)[i]
+    for (let i = forms.length - 1; i >= 0; i--) {
+      const top = forms[i]
       if (top) stack.push(top)
     }
     while (stack.length > 0) {
@@ -795,6 +884,7 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
     filePath: string,
     kind: ASTEngine.SymbolKind,
   ) {
+    const owner = ctx.moduleName ?? filePath
     for (let i = 0; i < node.namedChildCount; i++) {
       const child = node.namedChild(i)
       if (child?.type !== "fa") continue
@@ -808,6 +898,34 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
         kind,
         ...(kind === ASTEngine.SymbolKind.Type ? { metadata: { isTypeExport: true } } : {}),
       })
+      // ER-D40: the export declaration is a public-surface fact of its own, and it
+      // was carried only as ExportInfo on the side. `-export([f/1])` says "this is
+      // the interface"; `contains` says "this is a member" — different statements,
+      // and the store has a label for the first (`exports`) that 16 analyzers emit
+      // and this one did not, so the type was stored and compared against nothing.
+      //
+      // The line is the `fa`'s own line, not the attribute's: M60 #278 requires the
+      // name-bearing node, and the name is the `fa` inside the list.
+      //
+      // No declared-symbol guard, deliberately: `-export([f/1])` is true of the
+      // module's interface whether or not `f/1` is defined here (a parse transform
+      // or an included file can supply it), and the oracle derives the same set
+      // from the same declaration, so the two sides agree without either one
+      // having to guess.
+      this.pushRel(
+        ctx,
+        owner,
+        fa.name,
+        ASTEngine.RelationshipType.Exports,
+        1.0,
+        {
+          erlangSpecific: true,
+          arity: fa.arity,
+          exportForm: kind === ASTEngine.SymbolKind.Type ? "export_type" : "export",
+          isTypeExport: kind === ASTEngine.SymbolKind.Type,
+        },
+        fa.line,
+      )
     }
   }
 
@@ -836,6 +954,24 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
       line: modNode.startPosition.row + 1,
       isNif: false,
     })
+    // ER-D41: `imports` was the one label the module-dependency pass reads
+    // (`brain_import` rows, dependencies.ts:27-28, where `resolved_symbol_id` is
+    // routinely null and only the specifier + `is_external` flag matter). Erlang
+    // emitted only `references` for `-import`, so an Erlang `-import(lists, [map/2])`
+    // was invisible to the pass that exists to report it — 19 analyzers emit `imports`,
+    // and this one stored the fact under a label nothing was reading.
+    //
+    // Both labels stay: `imports` is the dependency, `references` is the mention.
+    // Line is the module atom's own line — M60 #278's name-bearing node.
+    this.pushRel(
+      ctx,
+      ctx.moduleName ?? filePath,
+      modNode.text,
+      ASTEngine.RelationshipType.Imports,
+      1.0,
+      { erlangSpecific: true, isModuleImport: true, importedFunctions: funcs, isExternal: true },
+      modNode.startPosition.row + 1,
+    )
     this.pushRel(
       ctx,
       ctx.moduleName ?? filePath,
@@ -897,23 +1033,34 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   private processDefine(node: Node, ctx: ErlangContext) {
     const lhs = this.getChildByType(node, "macro_lhs")
     if (!lhs) return
-    // A macro's NAME is the `var`; `var_args` holds its parameters. A
-    // function-like macro (`-define(F(X, Y), …)`) is still one Constant symbol
-    // with a parameter count — Erlang macros are not functions, so no call edge
-    // can ever resolve to one.
+    // A macro's NAME is the `var`; `var_args` holds its parameters.
+    //
+    // ER-D39: the kind splits on exactly the line the C analyzer already draws
+    // (real-c-analyzer.ts:3989 — `isFunctionLikeMacro ? Macro : Constant`).
+    // A function-like macro takes parameters, so it is not a value and the store's
+    // LSP identity list already names `macro` (lsp/identity.ts:77) as a distinct
+    // kind from `constant`; an object-like `-define(N, 3)` genuinely is a
+    // compile-time constant and stays `Constant`. Publishing both as `constant`
+    // claimed every `-define` was a value, and `macro` — one of the 25 kinds in the
+    // store's enum — was emitted by no Erlang symbol at all.
+    //
+    // Erlang macros are still not FUNCTIONS: no call edge can resolve to one, and
+    // `isFunctionLike` keeps recording that the body is a macro unit of code.
     const nameNode = this.getChildByType(lhs, "var") ?? this.getChildByType(lhs, "atom")
     if (!nameNode?.text) return
     const params = this.getChildByType(lhs, "var_args")
+    const isFunctionLike = params !== undefined
     ctx.symbols.push({
       name: nameNode.text,
-      kind: ASTEngine.SymbolKind.Constant,
+      kind: isFunctionLike ? ASTEngine.SymbolKind.Macro : ASTEngine.SymbolKind.Constant,
       range: this.nodeToRange(node),
       ownerName: this.ownerNameOf(ctx),
       ownerKind: ASTEngine.SymbolKind.Module,
       metadata: {
         nodeType: "macro_definition",
         isMacro: true,
-        isFunctionLike: params !== undefined,
+        isFunctionLike,
+        isFunctionLikeMacro: isFunctionLike,
         parameterCount: this.countArgs(params),
         line: nameNode.startPosition.row + 1,
       },
@@ -1811,7 +1958,17 @@ export class RealErlangAnalyzer implements ASTEngine.LanguageAnalyzer {
   /** The symbol every edge inside the current declaration belongs to. */
   private currentSource(ctx: ErlangContext): string | undefined {
     const top = ctx.declStack[ctx.declStack.length - 1]
-    return top?.source ?? ctx.moduleName
+    // ER-D32, applied to EDGES and not only to ownership. This fell back to the
+    // module name alone, so in a module-less include fragment a FILE-SCOPE edge had
+    // no source at all and was silently dropped. The corpus found it:
+    // `epp_SUITE_data/mac2.erl` is four `-define` blocks and one `-plupp({?p,
+    // ?'p', ?P, ?'P'})` with no `-module` and no function, so all four macro uses
+    // sat at file scope with no enclosing declaration — the analyzer published the
+    // four macro constants and their `contains` edges and then dropped the four
+    // references that say those macros are USED. `ownerNameOf` is the same fallback
+    // ownership already uses, so the two can no longer disagree about who owns a
+    // declaration that has no module.
+    return top?.source ?? this.ownerNameOf(ctx)
   }
 
   /**

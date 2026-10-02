@@ -940,10 +940,30 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       // published.
       if (!imp.module || imp.module.length === 0) continue
       relationships.push({
-        // S1.7: ONE top-level sentinel — imports join calls/instantiates on
-        // "(script)" (was "root", a third disconnected file-root node).
-        source: "(script)",
-        target: imp.module,
+// Import references are sourced at "root".
+        //
+        // This reverses S1.7, which moved imports from "root" onto "(script)" so that
+        // the whole top level would share ONE sentinel. That unification is real, but this
+        // lane's hand-audited truth is sourced at "root" -- all six `references` rows it
+        // expects cite an import and every one of them reads
+        //     root -> com.example.base.BaseService   (import com.example.base.BaseService)
+        //     root -> a.b                             (import a.b.{C, D => Renamed})
+        //     root -> x.y.Z                           (import x.y.Z as W -- full module path)
+        // so the choice of label is part of the contract the differential checks, and
+        // "(script)" made every one of them an unmatched false negative.
+        //
+        // It also removes the rewrite below: an import referenced FROM the file's primary
+        // type (`UserService -> com.example.base.BaseService`) was neither "root" nor
+        // "(script)", so it was a false positive as well. Truth expects the import at the
+        // file level, not attributed to whichever type happens to be declared first.
+        //
+        // RESOLVED 2026-10-02 during branch consolidation: the pinned hand-audited truth
+        // at validation/m12/ground-truth/scala.json carries all six `references` rows with
+        // sourceId "root" (verified by direct query), and that truth file is identical on
+        // both sides of this merge. The evidence therefore decides: "root" is correct and
+        // the local S1.7 "(script)" sentinel would have failed all six.
+        source: "root",
+        target: imp.module || "",
         type: ASTEngine.RelationshipType.References,
         confidence: 0.9,
         // M59 (#825): an import reference occurs where its TARGET is written —
@@ -962,17 +982,11 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
     // declared-type refs also resolve to the file sentinel.
     // S1.7: the unparented-file sentinel is now "(script)" (one node for the
     // whole top level), so the rewrite matches against that instead of root.
-    const primaryType = symbols.find((s) => {
-      if (s.ownerName) return false
-      return s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Interface || s.kind === ASTEngine.SymbolKind.Enum || s.kind === ASTEngine.SymbolKind.Module
-    })
-    if (primaryType) {
-      for (const rel of relationships) {
-        if (rel.type === ASTEngine.RelationshipType.References && rel.source === "(script)" && rel.metadata?.isImportDep) {
-          rel.source = primaryType.name
-        }
-      }
-    }
+    // The M14 #419 G1 rewrite (import references -> the file's primary top-level type) is
+    // REMOVED rather than retargeted. It was introduced so references would "carry a symbol
+    // identity", but the label it chose is the one truth does not expect: see the note on
+    // the import emit above. `root` is what the hand audit records for every import row.
+    void 0
 
     // Declared-type reference graph (M14): constructor params, val/var type
     // clauses, function params, return types, @throws annotations,

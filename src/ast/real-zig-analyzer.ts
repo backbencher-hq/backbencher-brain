@@ -59,6 +59,46 @@ const ZIG_VALUE_RHS = new Set([
  * edge survives a year of gates (the #916 lesson, applied to zig). The oracle
  * still derives every POSITION and every LEAF from the tree on its own.
  */
+/** Z57: the names this file declares at FILE SCOPE, derived from the tree and
+ *  memoised per root. Function-LOCALS are excluded on purpose: a local does not
+ *  shadow a builtin type, only a file-scope declaration is visible to a type
+ *  annotation written elsewhere in the file. */
+const ZIG_FILE_SCOPE_NAMES = new WeakMap<object, Set<string>>()
+export function zigFileScopeNames(root: Node): Set<string> {
+  const cached = ZIG_FILE_SCOPE_NAMES.get(root as unknown as object)
+  if (cached) return cached
+  const BARRIERS = new Set([
+    "function_declaration", "test_declaration", "block", "if_statement", "if_expression",
+    "for_statement", "for_expression", "while_statement", "while_expression",
+    "switch_statement", "switch_expression", "catch_expression", "defer_statement",
+    "expression_statement", "comptime_statement", "errdefer_statement",
+  ])
+  const out = new Set<string>()
+  const stack: Node[] = [root]
+  let guard = 0
+  while (stack.length > 0 && guard++ < 400000) {
+    const n = stack.pop()!
+    if (n.type === "variable_declaration" || n.type === "function_declaration" || n.type === "container_field") {
+      const c0 = n.namedChildCount > 0 ? n.namedChild(0) : null
+      // `field_identifier` was here for one commit and the F1 grammar audit caught it
+      // on the next run: it is NOT a node type in the pinned grammar (Z45), so the
+      // disjunct is dead -- and I had reintroduced the very leftover Z45 removed, in
+      // the very gate that reports such leftovers. A dead disjunct reads like coverage
+      // of a case that cannot occur, which is why the audit exists and why it runs.
+      if (c0 && c0.type === "identifier") {
+        let q: Node | null = n.parent
+        let fileScope = true
+        let hops = 0
+        while (q && hops++ < 40) { if (BARRIERS.has(q.type)) { fileScope = false; break } q = q.parent }
+        if (fileScope) out.add(stripZigQuoting(c0.text))
+      }
+    }
+    for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) stack.push(c) }
+  }
+  ZIG_FILE_SCOPE_NAMES.set(root as unknown as object, out)
+  return out
+}
+
 export const ZIG_DECLARED_TYPE_BUILTINS: ReadonlySet<string> = new Set([
   "void", "bool", "f16", "f32", "f64", "f80", "f128", "c_longdouble",
   "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
@@ -253,6 +293,18 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
               ) {
                 importTarget = importTarget.substring(1, importTarget.length - 1)
               }
+              // Z53: an EMPTY module path names nothing, so the `imports` record and
+              // its `references` twin would both be edges into a name no consumer can
+              // resolve. `zig/test/cases/compile_errors/invalid_identifiers.zig` has
+              // `@import("")` and `@import("\x00")`, and the second produced
+              // `references (global) -> ` with an empty target — the only empty target
+              // in 3,839 files, and the last unexplained row the full-corpus run
+              // found. Suppressed rather than published: the file is deliberately
+              // invalid, but an unresolvable edge is not a fact about anything.
+              if (!importTarget) {
+                this.pushChildren(node, walkStack, container, inFunction, anonContainer)
+                continue
+              }
               imports.push({
                 module: importTarget,
                 isDefaultImport: false,
@@ -277,19 +329,19 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
             // Z35: this branch used to swallow the BINDING, and the rule it
             // actually implemented was "an @import binding is a symbol only when
-            // the right-hand side is LONGER than the import itself" \u2014
+            // the right-hand side is LONGER than the import itself" —
             // `const std = @import("std")` published no symbol while
             // `const longer = @import("std").ArrayList` published one, in the same
             // file. That is not a rule any language has, and it cost three things:
             // the module's namespace was missing its most common declaration
             // (1,458 bindings in 400 corpus files), a `pub const X = @import(...)`
             // re-export named a binding the index could not resolve (the fixture
-            // runner\u0027s export invariant caught it), and the binding was invisible
+            // runner's export invariant caught it), and the binding was invisible
             // while the import EDGE was perfect. The fix is the REMOVAL of an early
             // exit: at file or container scope the walk falls through to the same
             // const/var handling every other declaration gets, so kind, visibility
             // and owner are decided in ONE place. Inside a function body the exit
-            // stays (Z9, and the family\u0027s LocalsAreNotSymbols rule).
+            // stays (Z9, and the family's LocalsAreNotSymbols rule).
             if (inFunction) {
               this.pushChildren(node, walkStack, container, inFunction, anonContainer)
               continue
@@ -435,6 +487,17 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
             ) {
               importTarget = importTarget.substring(1, importTarget.length - 1)
             }
+            // Z53, second site: same guard as the plain @import branch above.
+            if (!importTarget) {
+              relationships.push({
+                source: "(global)",
+                target: "@import",
+                type: ASTEngine.RelationshipType.References,
+                confidence: 1.0,
+                metadata: { relationshipType: "zig_import", isImport: true, emptyImportPath: true },
+              })
+              return
+            }
             imports.push({
               module: importTarget,
               isDefaultImport: false,
@@ -503,7 +566,22 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // no named container — they must not become file-scope functions.
         const isAnonymousContainerMember = anonContainer || (!container && inFunction)
 
-        if (fnName && fnName !== "_" && fnName.length < 100 && !isAnonymousContainerMember) {
+        // Z46: the blank-identifier refusal belongs to BINDINGS, not to declared
+        // names, and it was applied to both. `const _ = 1;` is a discard and must
+        // mint nothing (Z8/GO5, still enforced in the variable branch above) --
+        // but `pub fn _(msgid: [*:0]const u8) …` is a REAL, callable
+        // declaration: the gettext convention, and the entire i18n entry point of
+        // ghostty. Excluding it here left the analyzer publishing
+        // `calls (global) -> _` for a function it had declined to declare, which
+        // is a dangling edge: a call into a name the index will never resolve.
+        //
+        // One occurrence in 3,839 corpus files, and worth fixing anyway, because
+        // the cost of the rule is not one missing symbol but an edge that points
+        // at nothing. Reads of `_` stay suppressed by the bare-read guard
+        // (`name !== "_"`), so `_ = expr` remains a discard assignment and not a
+        // read -- the two positions are now decided separately, which is the
+        // whole of the fix.
+        if (fnName && fnName.length < 100 && !isAnonymousContainerMember) {
           const params: ASTEngine.Parameter[] = []
           const paramsNode = this.anyChild(node, (n) => n.type === "parameters")
           if (paramsNode) {
@@ -649,6 +727,16 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // `identifier` half is the only one that ever ran. A second spelling of a node
         // that does not exist is a guess that reads as a fallback.
         const nameField = node.childForFieldName?.("name")
+        // Z45: the `field_identifier` disjunct was DEAD. This grammar has no such
+        // node type -- a field's name is an `identifier` (probe-verified against
+        // the pinned wasm by zigw-dead-branches.ts), and the name of this very
+        // check is the kind of leftover that reads like coverage of a case that
+        // cannot occur. It was found by the F1 grammar audit, which flags a type
+        // literal in a comparison that the grammar does not declare, and which had
+        // been reporting `zig FAIL unknown=2` while the doc and the closure both
+        // claimed 0 unknown. The live disjunct is the first one, so removing the
+        // dead one changes no output -- which is the point: it was never load
+        // bearing, only misleading.
         const nameNode =
           nameField && nameField.type === "identifier"
             ? nameField
@@ -752,7 +840,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           // navigable one — the member's own declaration line. Omitted, never
           // written as 0, when the symbol carries no range (#820).
           ...(s.range?.startLine ? { line_number: s.range.startLine } : {}),
-          metadata: {},
+          // Z44: a reason code, so every class in this analyzer answers the same
+          // question — "why does this edge exist?" — the same way. `contains` is
+          // built from the SYMBOL TABLE at the end of the walk rather than at the
+          // member's site, which is why it carried an EMPTY metadata object and
+          // was invisible to any consumer that reads the reason. It is the
+          // largest class in the corpus (261 of the 300-file draw) and it was the
+          // one that said nothing. `zigField`/`zigEnumMember` are already on the
+          // SYMBOL; here the reason is that the edge is ownership.
+          metadata: { relationshipType: "zig_ownership" },
         })
       }
     }
@@ -772,30 +868,30 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Z30: the `imports` twin. An import names a MODULE, not a symbol: 176 of the
     // 394 distinct module targets in 400 corpus files contain a path separator
     // (`../build/gresource.zig`), which no zig declaration name can hold. 16 lanes
-    // emit the type and the graph engine, the brain\u0027s evidence enrichment and the
+    // emit the type and the graph engine, the brain's evidence enrichment and the
     // MCP handler all read it, so a lane without it has no import graph rather than
-    // a sparser one. The `references` twin STAYS \u2014 it is the edge this lane\u0027s
-    // declared-type/reference truth derives \u2014 so this ADDS a class rather than
-    // reclassifying one. Both carry the path literal\u0027s line (M60.A7).
+    // a sparser one. The `references` twin STAYS — it is the edge this lane's
+    // declared-type/reference truth derives — so this ADDS a class rather than
+    // reclassifying one. Both carry the path literal's line (M60.A7).
     this.collectZigImportSites(rootNode, imports, relationships)
 
-    // Z32: `instantiates` \u2014 the type ZIG.D.1 ruled out, on the premise that
+    // Z32: `instantiates` — the type ZIG.D.1 ruled out, on the premise that
     // generics are "monomorphized without a runtime type dispatch the analyzer can
     // attribute statically". The first half is true and the conclusion is not: a
     // generic type application is the most STATICALLY READABLE instantiation there
-    // is, because `fn \u2026 type` is a declaration in the file. Measured over 400
+    // is, because `fn … type` is a declaration in the file. Measured over 400
     // corpus files: 34 in-file type-returning functions, 82 application sites, and
-    // 101 constructions of an in-file type \u2014 the second class being exactly what
-    // ZIG.GAP.3 has wanted, and the family\u0027s mechanism for it is this very type
+    // 101 constructions of an in-file type — the second class being exactly what
+    // ZIG.GAP.3 has wanted, and the family's mechanism for it is this very type
     // (c/cpp with `isConstructor`, clojure, clean). Contract as those lanes write
     // it: source is the enclosing symbol or `(global)`, the target must be a type
-    // DECLARED IN THIS FILE (so the edge is proven, not inferred \u2014 hence
+    // DECLARED IN THIS FILE (so the edge is proven, not inferred — hence
     // confidence 1.0 and `isExternalTarget: false`), and the line is the HEAD
-    // node\u0027s, the type name\u0027s own line.
+    // node's, the type name's own line.
     this.analyzeZigInstantiation(rootNode, relationships)
 
-    // Z33: `exports` \u2014 the type the relationship census caught unclassified. Zig\u0027s
-    // `pub` IS the language\u0027s public API surface (1,465 exported declarations in
+    // Z33: `exports` — the type the relationship census caught unclassified. Zig's
+    // `pub` IS the language's public API surface (1,465 exported declarations in
     // 391 of 400 corpus files), recorded in `res.exports` and published as NO
     // relationship, so `bb_graph --type exports` returned nothing for this lane
     // while returning an API surface for 16 others. Generated FROM the export list,
@@ -809,6 +905,44 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // scope stack (params + block/payload/short bindings shadow) and
     // resolvability required (file-scope const/var/fn/enum-members only).
     this.analyzeZigBareIdentifierUses(rootNode, relationships, symbols)
+
+    // Z52: the two `uses` passes dedupe INDEPENDENTLY -- `emittedUses` in
+    // analyzeZigCodeRelationships keyed `${source}->${field}`, and a separate
+    // `emitted` in analyzeZigBareIdentifierUses keyed `${src}::uses::${name}` -- so
+    // a name derivable BOTH ways is published TWICE at the same line with
+    // conflicting metadata: `zig_field_access` @ 0.75 and `identifier_usage` @ 1.0.
+    //
+    // `zig/test/standalone/dep_mutually_recursive/test.zig:5` publishes
+    // `uses main -> foo` twice for one syntactic occurrence, because `foo` is both a
+    // field-expression leaf and a name that resolves to a file-scope value. 16 such
+    // rows at full-corpus extent (3,839 files), in 7 files -- a number a 200-file
+    // draw never reaches, which is the whole argument for having run it.
+    //
+    // A consumer cannot resolve that edge: two rows, one relationship, two
+    // confidences, no rule for which wins. Resolved once, here, after both passes:
+    // one `uses` edge per (source, target), keeping the HIGHER confidence -- which
+    // is also the more accurate, since `identifier_usage` @ 1.0 means the name
+    // RESOLVES to a file-scope value (a fact) while `zig_field_access` @ 0.75 is the
+    // inference that the leaf is a member. The winner keeps its reason code, so the
+    // edge still says which derivation it came from.
+    {
+      const bestUses = new Map<string, ASTEngine.UniversalRelationship>()
+      const order: ASTEngine.UniversalRelationship[] = []
+      for (const r of relationships) {
+        if (r.type !== ASTEngine.RelationshipType.Uses) { order.push(r); continue }
+        const key = `${r.source}|${r.target}`
+        const prior = bestUses.get(key)
+        if (!prior) {
+          bestUses.set(key, r)
+          order.push(r)
+        } else if ((r.confidence ?? 0) > (prior.confidence ?? 0)) {
+          order[order.indexOf(prior)] = r
+          bestUses.set(key, r)
+        }
+      }
+      relationships.length = 0
+      relationships.push(...order)
+    }
 
     // Declared-type reference graph (family standard — mirrors go/c/rust):
     // parameter types, return types, struct/union field types emit a
@@ -876,7 +1010,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       const { node: n, fn, inFn } = stack.pop()!
       let nextFn = fn
       let nextInFn = inFn
-      if (n.type === "function_declaration") {
+      // Z39: a named `test` is a SCOPE with a name, and the attribution here skipped
+      // it, so every call and read inside `test ParagraphStyle { const p = try
+      // ParagraphStyle.create(...); defer p.release(); }` was attributed to
+      // `(global)` — a file-scope source for work that is plainly inside one named
+      // block. Found by the source-keyed gate (zigw-uses-calls.ts), which is the
+      // only instrument that looks at this axis: the shared matcher discards the
+      // source, so three such rows in 200 files were invisible, and the class is not
+      // three rows, it is every read and call in every named test in the corpus.
+      if (n.type === "function_declaration" || n.type === "test_declaration") {
         const nameNode = this.anyChild(n, (c) => c.type === "identifier")
         if (nameNode) { nextFn = nameNode.text; nextInFn = true }
       }
@@ -944,10 +1086,47 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // carries the fact. `uses` stays reserved for runtime reads
         // (`return self.count`).
         const p = n.parent
-        const isTypePosition =
-          p?.type === "parameter" ||
-          p?.type === "container_field" ||
-          p?.type === "function_declaration"
+        // Z38: the type-position test looked only at the DIRECT parent, so it could
+        // not see a DOTTED type path. In this grammar `std.Build.LazyPath` is a
+        // chain of `field_expression` nodes, so every SEGMENT of a qualified type in
+        // a signature had a `field_expression` parent and none of them was
+        // recognised as a type position — each one was published as a `uses` READ
+        // of a type name, attributed to the function whose signature it appears in.
+        // Measured by the source-keyed gate: 645 rows over 200 corpus files, and at
+        // name level they are invisible, because the target is a real type name and
+        // the row agrees with the name-level check. It also DUPLICATED the
+        // declared-type class, which already publishes `references (declared-type) ->
+        // Build` for the same text.
+        //
+        // The fix walks the path: a field_expression is in a type position when ANY
+        // ancestor — through the dotted chain only, stopping at anything that could
+        // make it a value — is a parameter, a container field, or a function\u0027s
+        // declared return type. The walk is deliberately bounded by the value
+        // contexts the analyzer already knows (call, block, assignment,
+        // declaration-with-value, struct literal), because a type path that reaches
+        // one of those is a VALUE read whatever its base looks like.
+        const isTypePosition = (() => {
+          const VALUE_BOUNDARY = new Set([
+            "call_expression", "block", "block_expression", "arguments",
+            "assignment_expression", "assignment_statement",
+            "compound_assignment_statement", "struct_initializer",
+            "anonymous_struct_initializer", "initializer_list",
+            "composite_literal", "variable_declaration", "return_expression",
+            "if_expression", "switch_expression", "while_expression", "for_expression",
+          ])
+          let cur: Node | null = p
+          let hops = 0
+          while (cur && hops < 8) {
+            if (
+              cur.type === "parameter" || cur.type === "container_field" ||
+              cur.type === "function_declaration" || cur.type === "function_signature"
+            ) return true
+            if (VALUE_BOUNDARY.has(cur.type)) return false
+            cur = cur.parent
+            hops++
+          }
+          return false
+        })()
         if (field && notBuiltinAccess && !isAssignLhs && !isEnumLiteral && !isTypePosition) {
           const source = nextInFn && nextFn ? nextFn : "(global)"
           const k = `${source}->${field}`
@@ -1017,22 +1196,22 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Z30: every `@import("path")` / `@cImport(\u2026)` SITE, whether or not the import
+   * Z30: every `@import("path")` / `@cImport(…)` SITE, whether or not the import
    * is the whole right-hand side.
    *
    * The three shape branches each ask "is the RHS exactly an @import?", so
    * `const v = @import("build.zig.zon").version;` (a .zon manifest read),
-   * `const c = @import("c.zig").c;` (a module\u0027s C bindings) and
+   * `const c = @import("c.zig").c;` (a module's C bindings) and
    * `try @import("apple_sdk").addPaths(b, lib);` (a call ON a module, not even a
-   * declaration) fell through all of them: no fact, no edge, no symbol \u2014 460 of
+   * declaration) fell through all of them: no fact, no edge, no symbol — 460 of
    * 1,918 sites, 24% of the class. It is a SITE PASS rather than a fourth shape
    * test, which is the lesson of this wave written down: a rule that enumerates
    * the shapes it has seen keeps losing the one it has not.
    *
    * Measured shape: `builtin_function[builtin_identifier, arguments]`, the path in
-   * `arguments[string[string_content]]`. `@cImport({ @cInclude(\u2026) })` nests its
+   * `arguments[string[string_content]]`. `@cImport({ @cInclude(…) })` nests its
    * include strings and has no module path of its own, so it records the fact and
-   * publishes no edge \u2014 the same asymmetry the shape branches have.
+   * publishes no edge — the same asymmetry the shape branches have.
    *
    * Dedupe key `(line, target)` against what the branches already pushed, so a
    * site they handled is not recorded twice.
@@ -1048,7 +1227,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
     // TWO dedupe sets, one per TYPE. Keying both on "any isImport edge" was wrong
     // in a way only the fixture could see: the shape branches publish a
     // `references` twin, so every site they handled looked already-seen and the
-    // pass skipped it \u2014 including its `imports` twin, which is the edge the whole
+    // pass skipped it — including its `imports` twin, which is the edge the whole
     // class exists for. Dedupe is per LABEL, exactly as the F5 matcher compares.
     const seenRefEdges = new Set<string>()
     const seenImportEdges = new Set<string>()
@@ -1148,10 +1327,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
   }
 
   /**
-   * Z32: `instantiates` for the two statically derivable classes \u2014 a call to an
-   * in-file `fn \u2026 type`, and a construction of an in-file type (`TypeName{ \u2026 }`,
-   * bare or QUALIFIED: `Color.C{ .r = 1 }`). The inventory is the tree\u0027s own
-   * declarations, so the class needs no inference. `.{ \u2026 }` is an
+   * Z32: `instantiates` for the two statically derivable classes — a call to an
+   * in-file `fn … type`, and a construction of an in-file type (`TypeName{ … }`,
+   * bare or QUALIFIED: `Color.C{ .r = 1 }`). The inventory is the tree's own
+   * declarations, so the class needs no inference. `.{ … }` is an
    * anonymous_struct_initializer with no name and instantiates nothing (Z21).
    */
   private analyzeZigInstantiation(rootNode: Node, relationships: ASTEngine.UniversalRelationship[]): void {
@@ -1209,7 +1388,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Instantiates,
         confidence: 1.0,
         line_number: line,
-        metadata: { zigSpecific: true, isExternalTarget: false, ...md },
+        metadata: { relationshipType: "zig_instantiation", zigSpecific: true, isExternalTarget: false, ...md },
       })
     }
     const sites = (n: Node): void => {
@@ -1242,15 +1421,15 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
 
   /**
    * Z33: one `exports` relationship per exported declaration, GENERATED FROM the
-   * export list so the array and the edges cannot drift \u2014 which is the failure the
+   * export list so the array and the edges cannot drift — which is the failure the
    * `imports` twins already paid for once, when they were added to three shapes and
    * not the fourth and only a bidirectional gate caught it.
    *
    * Source is `(file)`, not `(global)`: the exporting entity is the compilation
-   * unit, and `(global)` is this lane\u0027s marker for the EXPRESSION scope that reads
+   * unit, and `(global)` is this lane's marker for the EXPRESSION scope that reads
    * and imports are attributed to. Keeping them apart lets a consumer group an API
-   * surface without guessing which convention a row used. The line is omitted \u2014
-   * never written as 0 \u2014 when a declaration carries none (#820).
+   * surface without guessing which convention a row used. The line is omitted —
+   * never written as 0 — when a declaration carries none (#820).
    */
   private emitZigExportEdges(
     relationships: ASTEngine.UniversalRelationship[],
@@ -1270,7 +1449,7 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         type: ASTEngine.RelationshipType.Exports,
         confidence: 1.0,
         ...(line > 0 ? { line_number: line } : {}),
-        metadata: { zigExport: true, exportKind: String(e.kind ?? "") },
+        metadata: { relationshipType: "zig_export", zigExport: true, exportKind: String(e.kind ?? "") },
       })
     }
   }
@@ -1486,7 +1665,12 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       const t = node.type
       let pushedScope = false
-      if (t === "function_declaration") {
+      if (t === "function_declaration" || t === "test_declaration") {
+        // Z39, second site: the bare-read pass built its `fnName` frame for
+        // `function_declaration` only, so a read inside a named TEST was
+        // attributed to `(global)` here too. Both passes now agree on what a named
+        // scope is, which is the point — two spellings of one rule is how Z24/Z25/
+        // Z29 happened.
         // Parameters bind at entry (identifiers in parameter nodes; type
         // positions are type_identifier-typed and auto-skip).
         const frame: ScopeFrame = { names: new Set<string>(), fnName: null }
@@ -1715,7 +1899,19 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
       // Zero-regex: the two remaining tests are a Set membership and a
       // character-code range.
       const head = leaf
-      if (!head || ZIG_DECLARED_TYPE_BUILTINS.has(head)) return
+      // Z57: a builtin-looking NAME that this file DECLARES is not a builtin
+      // reference. `zig/test/behavior/basic.zig` does `const @"u8" = u16;` and then
+      // `const c: @"u8" = 300;` — a user type alias whose name happens to be a
+      // builtin — and `zls/.../Interner.zig` declares `f80`. Both were invisible to
+      // the graph.
+      //
+      // The bug was SPELLING, not declaration: the quoted `@"u8"` slipped past the
+      // name filter while the plainly-spelled `f80` did not, so whether a user's own
+      // type reached the declared-type graph depended on whether they had quoted it.
+      // That is the same name-keyed blindness as #963 and the quoting family — a rule
+      // that cannot see that a name is locally declared — and it is fixed the same
+      // way, on both sides of the comparison, or the two will simply disagree.
+      if (!head || (ZIG_DECLARED_TYPE_BUILTINS.has(head) && !zigFileScopeNames(rootNode).has(head))) return
       // ≡ /^\d/ — first char is 0-9 (rejects `123abc`-style heads). A quoted
       // identifier starts with `@`, so it is exempt by construction.
       const c0 = head.charCodeAt(0)
@@ -2130,7 +2326,25 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         md.evidenceClass = md.relationshipType === "declared_type" ? "reference_qualified" : "import_based"
         continue
       }
-      if (t === "instantiates") { md.evidenceClass = md.confidence >= 0.8 && md.isConstructor ? "usage_contextual" : "structural"; continue }
+      if (t === "instantiates") {
+        // Z36: this predicate read `md.confidence` and `md.isConstructor` — fields
+        // this lane's edges never set, so it returned \"structural\" by ACCIDENT
+        // rather than by decision. It now reads the EDGE's own confidence and the
+        // marker the pass actually writes (`isConstructorApplication`), and a proven
+        // in-file instantiation is structural while a guessed one would not be.
+        md.evidenceClass = conf >= 0.9 && md.isExternalTarget === false ? "structural" : "inferred"
+        continue
+      }
+      // Z36: `imports` and `exports` fell through to the default and were published
+      // as `usage_contextual` — so a module DEPENDENCY and a published API name were
+      // both reported as usage. The family rule is explicit in ~26 analyzers
+      // (objc/c/clean/yaml all read `imports`/`exports`/`references` as
+      // `import_based`), and it matters downstream: the MCP handler's tierFor
+      // returns a STORED `evidenceClass` in preference to deriving one, so a wrong
+      // stored value wins over the type it could have derived correctly. Found by
+      // asking the question nothing was asking — does a NEW class survive the
+      // pipeline? — not by any gate on this lane.
+      if (t === "imports" || t === "exports") { md.evidenceClass = "import_based"; continue }
       md.evidenceClass = "usage_contextual"
     }
   }
