@@ -16753,9 +16753,36 @@ async function main() {
     const mutated = await runLang(m.language, mutant)
     // Caught = more failing fixtures OR more distinct problems inside
     // already-failing fixtures (a defect landing in broken code is still a defect).
-    const baseProblems = base.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
-    const mutProblems = mutated.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
-    const caught = mutated.fail > base.fail || mutProblems > baseProblems
+    // Caught = the mutant produced a problem the baseline did not, judged as a SET
+    // of `fixture :: problem` pairs rather than a COUNT of problems.
+    //
+    // The count is what made a pre-existing failure MASK every mutant that landed in
+    // the same code. With perl's two fixtures already red, a perl mutant that turned a
+    // passing assertion into a different failing one left the counts equal — base 2,
+    // mutant 2 — and the mutant was reported as a survivor when the suite had in fact
+    // caught it. The catalog's own comment here said "a defect landing in broken code
+    // is still a defect", and then implemented the opposite. A lane with one pre-existing
+    // failure had every mutant that touched that fixture masked, which is most of them.
+    //
+    // The counts are still compared, because a mutant can add a problem to a fixture
+    // without changing how many fixtures fail... which the set also catches. The count
+    // comparison is kept because it is what catches a mutant that makes an
+    // already-failing fixture fail HARDER in a way that reuses a message.
+    const problemSet = (run: any): Set<string> => {
+      const out = new Set<string>()
+      for (const d of run.details ?? []) for (const msg of d.problems ?? []) out.add(`${d.fixture} :: ${msg}`)
+      return out
+    }
+    const baseSet = problemSet(base)
+    const mutSet = problemSet(mutated)
+    const introduced = [...mutSet].filter((k) => !baseSet.has(k))
+    const baseProblems = baseSet.size
+    const mutProblems = mutSet.size
+    const caught = mutated.fail > base.fail || mutProblems > baseProblems || introduced.length > 0
+    if (introduced.length > 0 && mutated.fail === base.fail && mutProblems === baseProblems) {
+      // worth saying out loud: this is the masked case, and it was silent
+      console.log(`  (was MASKED by a pre-existing failure in the same fixture: ${introduced.length} new problem(s) inside an already-failing fixture)`)
+    }
 
     // A RETIRED mutant is not a survivor. `sql/sweep-stops-at-a-declaration-RETIRED-
     // unfixtureable` carries a long, deliberate retirement record: the pass it guards
