@@ -8,9 +8,16 @@
  * a 0.95 `base-declares-method` edge when the base declares the method, and the
  * edge DISAPPEARS when the base is present and does not.
  *
- * **No caller ever built one.** Not for Perl, and not for Python either, which
- * reads `(ctx as any)._overrideCompanion` from a channel nothing populates. So
- * the rule was written, wired, shipped, and had never run.
+ * **For a long time no caller built one for Python.** Perl's resolver had one
+ * (`context.overrideCompanion`) but Python's read `(ctx as any)._overrideCompanion`
+ * — an underscore-prefixed key nothing populates — and Python's `analyze()`
+ * stopped at three parameters, so the engine's fourth (`AnalyzeContext`, which
+ * is where the companion lives) never reached it at all. The rule was written,
+ * wired to a channel, shipped, and had never run. `parallel-indexer` meanwhile
+ * WAS calling this pass, with `language: "perl"` hardcoded, so the batch path was
+ * not absent — it was half-present, which is harder to see than either state.
+ * Fixed 2026-10-31: the batch indexer runs the pass for both lanes, and Python
+ * takes the `AnalyzeContext` the engine already passes.
  *
  * Measured over the seven corpora (5,774 files) with a companion built from one
  * pass over the same corpus:
