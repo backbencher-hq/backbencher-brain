@@ -395,6 +395,11 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         // TARGET - a type that is not a type, unresolvable by anything that reads the
         // graph. The prefix's own `name` field is the bare symbol, so read that instead
         // of the node text; it costs nothing when there is no metadata.
+        // CLJ-D54: a qualified symbol's PREFIX may carry metadata, and the metadata is
+        // not the namespace. Stripping it here is correct in principle and measured to
+        // change nothing in this corpus, so it stays as a guard rather than a claimed fix
+        // - the one metabase target that carried decoration is NOT produced by this path,
+        // which is recorded in the review instead of being patched blind.
         const nsText = ns && (ns.text ?? "").startsWith("^{")
           ? (ns.childForFieldName("name")?.text ?? ns.text)
           : (ns?.text ?? "")
