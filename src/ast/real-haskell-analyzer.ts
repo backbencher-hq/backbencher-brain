@@ -402,7 +402,11 @@ export class RealHaskellAnalyzer implements ASTEngine.LanguageAnalyzer {
     for (const s of ctx.symbols) {
       if (s.ownerName && s.ownerName !== ctx.currentModule) continue
       if (s.kind === ASTEngine.SymbolKind.Class || s.kind === ASTEngine.SymbolKind.Type ||
-          s.kind === ASTEngine.SymbolKind.TypeAlias || s.kind === ASTEngine.SymbolKind.Interface ||
+          // `TypeAlias` is a legacy ALIAS for `type` -- both members carry the value
+          // "type" (see SymbolKind in engine.ts) -- so comparing it here tested the
+          // same value twice. TypeScript collapses same-valued enum members, which is
+          // what made this comparison an error rather than a redundancy.
+          s.kind === ASTEngine.SymbolKind.Interface ||
           s.kind === ASTEngine.SymbolKind.Enum) declaredHere.add(s.name)
     }
     for (const s of ctx.symbols) {
