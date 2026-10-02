@@ -4536,18 +4536,30 @@ export async function indexProjectParallel(
       const poolWorker = (await import("./pool-worker")) as any
       const reparse = poolWorker.parseFile
       if (reparse) {
-        const passStats = await populateOverrideCompanion({
-          projectPath,
-          results,
-          language: "perl",
-          reparse: (f, p, ctx) => reparse(f, p, ctx),
-        })
-        if (passStats.owners > 0) {
-          log.info(
-            `override companion (perl): ${passStats.owners} owners, ${passStats.refiles} file(s) re-analyzed, ` +
-              `${passStats.reapplied} reapplied, ${passStats.confirmed} confirmed, ${passStats.stillGuess} still guessed, ` +
-              `${passStats.failed} failed`,
-          )
+        // Both lanes that CONSUME the companion. Perl has read it since MR14;
+        // python's resolver existed and read a channel nothing populated, so it
+        // ran with no companion and every cross-file base stayed a first-parent
+        // guess. The pass is already language-parameterised end to end (it scopes
+        // its symbols and its affected files by `r.language === language`), so
+        // running it twice is not a second design — it is the same pass under the
+        // other lane's name. Sequential on purpose: each builds its companion from
+        // the same `results` and re-parses its own subset, and interleaving two
+        // re-parse waves over one results array is a race nobody needs.
+        for (const companionLang of ["perl", "python"] as const) {
+          const passStats = await populateOverrideCompanion({
+            projectPath,
+            results,
+            language: companionLang,
+            reparse: (f, p, ctx) => reparse(f, p, ctx),
+          })
+          if (passStats.owners > 0) {
+            log.info(
+              `override companion (${companionLang}): ${passStats.owners} owners, ` +
+                `${passStats.refiles} file(s) re-analyzed, ${passStats.reapplied} reapplied, ` +
+                `${passStats.confirmed} confirmed, ${passStats.stillGuess} still a guess, ` +
+                `${passStats.failed} failed`,
+            )
+          }
         }
       }
     }
