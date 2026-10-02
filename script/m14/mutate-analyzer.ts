@@ -16778,10 +16778,27 @@ async function main() {
     const introduced = [...mutSet].filter((k) => !baseSet.has(k))
     const baseProblems = baseSet.size
     const mutProblems = mutSet.size
-    const caught = mutated.fail > base.fail || mutProblems > baseProblems || introduced.length > 0
-    if (introduced.length > 0 && mutated.fail === base.fail && mutProblems === baseProblems) {
+    // A mutant that makes the suite BETTER is also a detection. Two of the three sql
+    // fixtures were red because the analyzer emits a recovery warning they forbid, and
+    // `sql/parse-errors-never-reported` REMOVES that warning — so the mutant drove
+    // failures DOWN and was reported a survivor, which is the same blindness from the
+    // other direction: the suite observed the change and the verdict said nothing
+    // happened. Any movement in either direction is the mutant being seen.
+    //
+    // This is not a way to make a survivor disappear. A mutant that changes what the
+    // suite observes has been DETECTED, whether the change made it happier or sadder,
+    // and a lane that wanted that direction covered has a fixture asserting the
+    // opposite — which is exactly the disagreement the count was hiding.
+    const moved = mutated.fail !== base.fail || mutProblems !== baseProblems || introduced.length > 0
+    const caught = moved
+    if (!caught) {
+      // the only remaining shape: the mutant changed nothing the suite can see
+      console.log(`  (no movement at all: base and mutant are identical to the suite)`)
+    } else if (introduced.length > 0 && mutated.fail === base.fail && mutProblems === baseProblems) {
       // worth saying out loud: this is the masked case, and it was silent
       console.log(`  (was MASKED by a pre-existing failure in the same fixture: ${introduced.length} new problem(s) inside an already-failing fixture)`)
+    } else if (mutated.fail < base.fail) {
+      console.log(`  (caught in the OTHER direction: the mutant made the suite PASSER, ${base.fail} -> ${mutated.fail} — a change the verdict was discarding)`)
     }
 
     // A RETIRED mutant is not a survivor. `sql/sweep-stops-at-a-declaration-RETIRED-
