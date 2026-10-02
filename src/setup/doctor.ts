@@ -26,6 +26,7 @@ import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
 import { diagnosePoolStartupSync, findPackageRoot, type PoolDoctorReport as PoolStartupReport } from "../ast/pool-diagnostics"
 import { isEmbeddingDisabled } from "../brain/semantic/embedding-config"
+import * as embeddingDiagnosisModule from "../brain/semantic/embedding-diagnosis"
 import { SemanticEngine } from "../brain/semantic/engine"
 import { fingerprintKey } from "./setup-wizard"
 import { describeEmbeddingConfig, type TierView } from "./setup-show"
@@ -350,10 +351,18 @@ export function runDoctorChecks(opts: {
   //     instead of reading as a deliberate omission. `bb setup show --probe` is
   //     the intended caller.
   try {
-    // Sync imports: `runDoctorChecks` is sync (agent 1 made the pool probe sync
-    // because src/cli/index.ts calls it without `await`; an async import here
-    // would hand the CLI a Promise and break `report.healthy`).
-    const { buildEmbeddingDiagnosis } = require("../brain/semantic/embedding-diagnosis")
+    // `buildEmbeddingDiagnosis` is reached through a MODULE-LEVEL import rather
+    // than `require()` or a dynamic one, for two reasons found the hard way:
+    //
+    //  - `require(...)` is not defined in the bundled ESM output. It typechecked
+    //    cleanly and then threw "require is not defined" in the built CLI —
+    //    caught only by agent 6's cli-surface suite, because tsc cannot see this
+    //    class of error at all.
+    //  - a dynamic `await import()` would make this function async, and it is
+    //    sync BY CONTRACT: `src/cli/index.ts` calls it without `await`, and
+    //    `diagnosePoolStartupSync` is sync for the same reason (a Promise here
+    //    would break `report.healthy`).
+    const { buildEmbeddingDiagnosis } = embeddingDiagnosisModule
     const diagnosis = buildEmbeddingDiagnosis({ state, env: process.env })
     for (const p of diagnosis.problems ?? []) {
       // The real shape is `{ severity, envVar, message }` — no id, no fix.
@@ -376,7 +385,7 @@ export function runDoctorChecks(opts: {
       findings.push({
         id: "embedding.tier-order-disagreement",
         severity: "warn",
-        message: `embedding configuration layers disagree on precedence: ${diagnosis.tierOrderDisagreement.detail ?? diagnosis.tierOrderDisagreement.reason ?? "see bb setup show"}`,
+        message: `embedding configuration layers disagree on precedence: reports ${diagnosis.tierOrderDisagreement.reported} but resolves ${diagnosis.tierOrderDisagreement.actual} — ${diagnosis.tierOrderDisagreement.detail}`,
         fix: "run `bb setup show` to see which layer wins",
       })
     }
