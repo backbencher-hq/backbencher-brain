@@ -746,7 +746,29 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       if (spec.type === "vec_lit") {
         // [lib :as alias] | [lib :refer [a b]] | [lib] | (:import [pkg Cls1 Cls2])
-        const libNameNode = spec.namedChild(0)
+        //
+        // CLJ-D54, THE FOURTH READER, AND THE ONE THAT WAS ACTUALLY PRODUCING THE BAD
+        // TARGET. A spec may carry metadata — `^{:clj-kondo/ignore
+        // [:discouraged-namespace]} [clj-yaml.core :as yaml]` in metabase/util/yaml.clj —
+        // and the grammar merges that decoration INTO the vec, so `namedChild(0)` is the
+        // `meta_lit` and `libName` became the metadata itself. `namespaceAliases["yaml"]`
+        // was therefore the string `^{:clj-kondo/ignore [:discouraged-namespace]}`, and
+        // every later `yaml/…` resolved through it: `(extend-protocol yaml/YAMLCodec …)`
+        // at :50 published the `implements` target
+        // `^{:clj-kondo/ignore [:discouraged-namespace]}/YAMLCodec`, which is not a type.
+        //
+        // Two attempts to fix this in `symName` changed NOTHING measurable, which is what
+        // proved the pollution did not come from there. The reader that builds the table
+        // was the one at fault, and it is the reader that has to skip decoration.
+        let libNameNode = spec.namedChild(0)
+        while (libNameNode && libNameNode.type === "meta_lit") {
+          let inner: Node | null = null
+          for (let k = 0; k < libNameNode.namedChildCount; k++) {
+            const cand = libNameNode.namedChild(k)
+            if (cand && cand.type === "sym_lit") { inner = cand; break }
+          }
+          libNameNode = inner
+        }
         const libName = symName(libNameNode)
         if (!libName) return
         let alias = ""
@@ -1323,6 +1345,14 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
       } else if (node.type === "list_lit") {
         const formName = formNameOf(node)
+        // CLJ-D55, THE ANALYZER HALF. A DEFINING MACRO MAY BE NAMESPACE-QUALIFIED, and
+        // metabase uses `mu/defn` and `mu/defn-` (Malli) for thousands of its functions.
+        // Every branch below compared the WHOLE head against `"defn"`, so `mu/defn` matched
+        // nothing: no symbol, no function boundary, and a constructor inside its body
+        // attributed to the namespace instead. The truth side got this in the same wave and
+        // the analyzer did not, which is why one residual survived a fix that closed the
+        // other — the two sides were at different versions of CLJ-D55.
+        const bareForm = formName.includes("/") ? formName.slice(formName.lastIndexOf("/") + 1) : formName
 
         // ── (fn [params] ...) anonymous function form ─────────────────────
         if (formName === "fn") {
@@ -1439,8 +1469,8 @@ export class RealClojureAnalyzer implements ASTEngine.LanguageAnalyzer {
           }
         }
         // ── defn / defn- / defmacro ──────────────────────────────────────
-        else if (formName === "defn" || formName === "defn-" || formName === "defmacro" || formName === "s/defn" || formName === "mu/defn") {
-          const isMacro = formName === "defmacro"
+        else if (bareForm === "defn" || bareForm === "defn-" || bareForm === "defmacro" || bareForm === "s/defn" || formName === "mu/defn") {
+          const isMacro = bareForm === "defmacro"
           // W24-mr3: `defn-` AND `^{:private true}` / `^:private` both bind private.
           const isPrivate = formName === "defn-" || metaHasPrivate(node.namedChild(1))
           const name = symName(node.namedChild(1)) || "unknown"
