@@ -17860,7 +17860,33 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   const anonStack: any[] = []
   for (let i = 0; i < root.namedChildCount; i++) { const c = root.namedChild(i); if (c) anonStack.push(c) }
   while (anonStack.length) {
-    const x = anonStack.pop()!
+    // M60/SDJ-16: FIFO, not LIFO. The stack was drained with `pop()` and seeded
+    // in document order, so the traversal ran in REVERSE document order and the
+    // anonymous body it happened to register FIRST was the LAST one in the file.
+    // That matters because registration is guarded by `if (!decls[anonName])`:
+    // only the first body per supertype name is ever registered, so "first" has to
+    // mean first IN THE FILE for the oracle to agree with the analyzer, which
+    // numbers anonymous classes in document order (SDJ-8).
+    //
+    // Measured: cats-effect std/shared/src/main/scala/cats/effect/std/CyclicBarrier.scala
+    // has two `new CyclicBarrier` bodies — line 51 `def await: G[Unit]` and line 66
+    // `val await: F[Unit]`. LIFO registered line 66 first, so the occurrence had a
+    // `val` member and no method, and the analyzer's
+    // `anonymous_CyclicBarrier.await -> CyclicBarrier.await` had no truth row and
+    // surfaced as UNEXPLAINED FABRICATION. `shift()` makes this a pre-order DFS in
+    // document order, matching the analyzer, and clears that row and
+    // IsIterable.apply.
+    //
+    // NOT enough on its own, and the remainder is stated rather than implied: the
+    // `decls` registry is still single-valued per name, so a SECOND body with the
+    // same supertype is never registered at all. Inferencing.scala publishes
+    // `anonymous_Value#2/#3/#4.toString` overrides that no amount of reordering can
+    // reach, because the analyzer's per-file `#n` numbering has no counterpart here.
+    // Fixing that means registering every anonymous body under its numbered
+    // occurrence key AND emitting that numbered name from the BFS below, which
+    // currently strips the occurrence suffix with
+    // `occKey.slice(0, occKey.lastIndexOf("#"))`. That is the open half of SDJ-16.
+    const x = anonStack.shift()!
     anonScalaDecl(x)
     // M37.21 C30 mirror (java twin of the scala block): `new QueryHandler()
     // { public int handle(...) {...} }` — the analyzer now declares
@@ -20482,6 +20508,7 @@ async function main() {
     // the NEXT iteration, so every node reference the body takes stays valid for as long as
     // the body can use it, and the lane's peak memory stops growing with the sample size.
     let prevTree: any = null
+    const laneT0 = performance.now()
     for (const f of sample) {
       try { prevTree?.delete?.() } catch { /* an aborted instance refuses politely */ }
       prevTree = null
@@ -20516,6 +20543,10 @@ async function main() {
         }
       } catch (err) { noteSkip("analyzer-threw", relPath, err); continue }
       durations.push(performance.now() - tf0)
+      if (process.env.M14_TRACE_FILE) {
+        const el = performance.now() - laneT0
+        console.log(`    [trace] ${relPath}  analyze=${(performance.now() - tf0).toFixed(0)}ms total=${el.toFixed(0)}ms`)
+      }
 
       let truth: any[]
       try {
@@ -21819,6 +21850,9 @@ async function main() {
           if (samples.length < 300 && samplesHeuristic.length < 100) samplesHeuristic.push({ dir: "HEURISTIC", file: relPath, ...r })
         } else {
           unexplainedInAnalyzer++
+          if (process.env.M14_TRACE_FILE && unexplainedInAnalyzer <= 3) {
+            console.log(`    [trace] unexplained #${unexplainedInAnalyzer} at ${relPath}`)
+          }
           if (samples.length < 300) samples.push({ dir: "UNEXPLAINED", file: relPath, ...r })
         }
       }
