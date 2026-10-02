@@ -9219,7 +9219,7 @@ export const MUTANTS: Mutant[] = [
     id: "vue/with-defaults-drop",
     language: "vue",
     defectClass: "omission",
-    description: "F3 regression: the `withDefaults` defaults are dropped again. The macro handler visits the inner `defineProps` call and never looked one frame up at the withDefaults wrapping it, so `withDefaults(defineProps<T>(), { … })` — the documented way to give a typed prop a default — silently lost every default; measured on 98 corpus files, all of which use the NAMED form. BOTH paths are reverted in one mutant on purpose: a fixture that only pinned the per-prop `defaultValue` would be satisfied by a fix that wired the symbol path and skipped the edge, which is precisely the fix that would have looked complete and changed nothing on the real corpus. The fixture asserts `defaultKeys` (a count) as well as `defaultValue`, so neither path can be the only one checked.",
+    description: "F3 regression: the `withDefaults` defaults are dropped again. The macro handler visits the inner `defineProps` call and never looked one frame up at the withDefaults wrapping it, so `withDefaults(defineProps<T>(), { … })` — the documented way to give a typed prop a default — silently lost every default; measured on 98 corpus files, all of which use the NAMED form. BOTH paths are reverted in one mutant on purpose: a fixture that only pinned the per-prop `defaultValue` would be satisfied by a fix that wired the symbol path and skipped the edge, which is precisely the fix that would have looked in one piece and changed nothing on the real corpus. The fixture asserts `defaultKeys` (a count) as well as `defaultValue`, so neither path can be the only one checked.",
     transform: r => {
       const syms = (r.symbols ?? []).filter((s: any) => s?.metadata?.defaultValue !== undefined)
       const edges = (r.relationships ?? []).filter(
@@ -9372,6 +9372,48 @@ export const MUTANTS: Mutant[] = [
           : e,
       ),
     }),
+  },
+  {
+    id: "vue/component-name-identifier-drop",
+    language: "vue",
+    defectClass: "fabrication",
+    description: "F17 regression: a `name:` option whose value is an IDENTIFIER is published as the component's identity again — the variable's name becomes the component name. Measured on the restored corpus, option.vue published a component called `COMPONENT_NAME` with 21 edges sourced at it and select.vue one with 43: a name not written anywhere as that component's name, held by no registry, resolvable by no consumer, and strictly worse than the file-stem fallback F8 already chose on purpose. Simulated on the output as the component symbol renamed to the unresolved name it used to read. Caught by vue/component-name-identifier, whose `declaredNameUnreadable` expectation fails as well: the flag only exists because the stem was kept, so this mutant is caught on both the name AND the honesty about why.",
+    transform: r => {
+      const cls = (r.symbols ?? []).find((s: any) => s?.metadata?.declaredNameUnreadable === true)
+      if (!cls) return r
+      const bad = "COMPONENT_NAME"
+      const owner = cls.name
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).map((s: any) =>
+          s === cls ? { ...s, name: bad, metadata: { ...(s.metadata ?? {}), declaredNameUnreadable: undefined } } : s,
+        ),
+        relationships: (r.relationships ?? []).map((e: any) => ({ ...e, source: e.source === owner ? bad : e.source, target: e.target === owner ? bad : e.target })),
+      };
+    },
+  },
+  {
+    id: "vue/provide-member-shapes-drop",
+    language: "vue",
+    defectClass: "omission",
+    description:
+      "F18 regression: drop the provided members that are not `key: value` pairs — the SHORTHAND " +
+      "(`contentRef`), the SHORTHAND METHOD (`close`) and the members of a WRAPPED object " +
+      "(`reactive({ nodes, index })`). This is the defect the `contains` oracle measured across " +
+      "dropdown.vue (6 shorthand keys) and form.vue (every member of its reactive payload).",
+    transform: r => {
+      const provided = (r.symbols ?? []).filter((s: any) => s?.metadata?.isProvided === true)
+      const dropped = new Set(provided.map((s: any) => String(s.name)))
+      if (dropped.size === 0) return r
+      const owner = String(provided[0].ownerName)
+      return {
+        ...r,
+        symbols: (r.symbols ?? []).filter((s: any) => !dropped.has(String(s.name))),
+        relationships: (r.relationships ?? []).filter(
+          (e: any) => !(e?.source === owner && dropped.has(String(e?.target))),
+        ),
+      };
+    },
   },
   {
     id: "vue/component-split-identity",
@@ -11950,7 +11992,7 @@ export const MUTANTS: Mutant[] = [
     language: "php",
     defectClass: "capability-revert",
     description:
-      "M60 php F4: the PHP 8.3 typed-class-constant position in the declared-type reference graph is reverted — `const Dep X = 1;` writes no `references` edge again, which is exactly what the lane did before this round because the position sat on `phpDeclaredTypeRefs`' own 'BOUNDARIES, DISCLOSED' list with no spec decision ruling on it. Caught by php/typed-class-const ALONE, and that isolation is the point: the two pinned corpora contain 243 `const_declaration` nodes of which 81 are typed, but every one of those 81 is a `primitive_type` (`private const string PAGE_HEADER`) which is silent BY DESIGN, so a NAMED type — the only shape that produces an edge — occurs ZERO times. The capability is therefore invisible to the differential, to the depth draws, to every other fixture, and to the full-extent corpus: the absence of `const Dep` references read identically whether the rule worked or did not exist. Same class as the grouped-`use` defect that 4,139 files and 95,231 edges reported clean while missing the construct entirely — 100% coverage is a statement about the corpus, not about the language. A pin with no mutant is a comment; this is the mutant that makes php/typed-class-const evidence rather than prose.",
+      "M60 php F4: the PHP 8.3 typed-class-constant position in the declared-type reference graph is reverted — `const Dep X = 1;` writes no `references` edge again, which is exactly what the lane did before this round because the position sat on `phpDeclaredTypeRefs`' own 'BOUNDARIES, DISCLOSED' list with no spec decision ruling on it. Caught by php/typed-class-const ALONE, and that isolation is the point: the two pinned corpora contain 243 `const_declaration` nodes of which 81 are typed, but every one of those 81 is a `primitive_type` (`private const string PAGE_HEADER`) which is silent BY DESIGN, so a NAMED type — the only shape that produces an edge — occurs ZERO times. The capability is therefore invisible to the differential, to the depth draws, to every other fixture, and to the full-extent corpus: the absence of `const Dep` references read identically whether the rule worked or did not exist. Same class as the grouped-`use` defect that 4,139 files and 95,231 edges reported clean while missing the construct entirely — a full agreement on the corpus is a statement about the corpus, not about the language. A pin with no mutant is a comment; this is the mutant that makes php/typed-class-const evidence rather than prose.",
     transform: r => ({
       ...r,
       relationships: (r.relationships ?? []).filter((x: any) => {
