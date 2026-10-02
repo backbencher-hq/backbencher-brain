@@ -67,7 +67,8 @@
       "anonymous_function_use_clause",
       "dynamic_variable_name",
       "subscript_expression",
-      "variadic_placeholder"
+      "variadic_placeholder",
+      "ERROR"
     ]
   },
   "internal_silent": {
@@ -176,22 +177,19 @@
       "var_modifier",
       "variadic_unpacking",
       "visibility_modifier",
-      "yield_expression"
+      "yield_expression",
+      "MISSING"
     ]
   },
   "gap": {
-    "gaps": [
-      {
-        "node_type": "php_tag, text_interpolation, text, encapsed_string, heredoc, nowdoc",
-        "missing": "HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque",
-        "issue": "php wave (#268 family)"
-      },
-      {
-        "node_type": "preprocessor, ini_section, ini_entry, shell_comment, hash_bang_line",
-        "missing": "ini directives and shell hash-bang lines are not parsed as symbols or decision points",
-        "issue": "php wave (#268 family)"
-      }
-    ]
+    "gaps": [],
+    "adjudicatedFromGaps": {
+      "note": "Both gaps declared by the php wave (#268 family) were adjudicated 2026-09-29 and promoted to RULED decisions PHPD31/PHPD32. The lane now declares 0 gaps. Neither was a coverage or extraction defect: both described a deliberate language boundary (text outside <?php, and ini/shell constructs) that the old wording recorded as unfinished work.",
+      "promoted": [
+        "PHPD31",
+        "PHPD32"
+      ]
+    }
   },
   "design_decision": {
     "decisions": [
@@ -225,74 +223,114 @@
       },
       {
         "id": "M3710-COMPANION",
-        "node_type": "method_signature / method_declaration / function_definition / def / sub (override resolution)",
+        "node_type": "method_declaration, function_definition",
         "status": "RULED",
         "question": "AnalyzeContext.overrideCompanion is never populated by production callers — what must analyzers that gate ALL override emission on it do for externally-declared bases?",
-        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. Contract: in-file base declaring the method -> verified override (0.95 php/ruby/python/js/perl, 1.0 java/swift Pass-1); companion present -> companion-index resolution (0.85-0.9); otherwise deterministic Pass-3 first-parent guess at 0.5 with reasonCode 'first-parent-guess' and evidence tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic (honest suspicion) by the F5 differential. Gating on the companion alone silently dropped every cross-file override (php, ruby, python, javascript, perl); the inverse overclaim (swift guess at 1.0/structural) is equally a defect. Gated by F9-PROBE-M3710-* probes, per-language external-override fixtures + confidence pins, and 6 regression mutants."
+        "resolution": "M37.10 ruling (family-wide): the companion is optional enrichment, never a hard gate. Contract: in-file base declaring the method -> verified override (0.95 php/ruby/python/js/perl, 1.0 java/swift Pass-1); companion present -> companion-index resolution (0.85-0.9); otherwise deterministic Pass-3 first-parent guess at 0.5 with reasonCode 'first-parent-guess' and evidence tier 'inferred' — below the patterns.ts 0.7 threshold, counted as heuristic (honest suspicion) by the F5 differential. Gating on the companion alone silently dropped every cross-file override (php, ruby, python, javascript, perl); the inverse overclaim (swift guess at 1.0/structural) is equally a defect. Gated by F9-PROBE-M3710-* probes, per-language external-override fixtures + confidence pins, and 6 regression mutants.",
+        "nodeTypeProse": [
+          "def",
+          "method_signature",
+          "sub (override resolution)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: method_signature / method_declaration / function_definition / def / sub (override resolution). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (def; method_signature; sub (override resolution)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD5",
-        "node_type": "program / namespace_definition > expression_statement (top-level/procedural statements)",
+        "node_type": "program, namespace_definition",
         "status": "FIXED",
         "question": "M37.13 (php dual-lens #606): the extractive walk only recursed into node types it matched, and the call/creation processors (function_call / member_call / scoped_call / object_creation) lived ONLY inside walkBody (method/function bodies). Statements at program scope in PHP scripts, config/bootstrap files, and WP/plugin hook files ($x = new App(); $app->boot(); register_shutdown_function(...)) were silently dropped — the analyzer emitted ZERO edges for them while the differential oracle (a generic walk) derived all of them. Why was the corpus differential green despite this?",
-        "resolution": "phpunit is class-heavy: only 4/300 sampled files (1.3%) carry top-level call statements, so the 60-file F5 sample rarely hit the shape — a coverage blind spot exactly like haskell HSD12/CSD1. Fix (M37.13): the main walk now dispatches function_call/member_call/nullsafe/scoped_call/object_creation wherever reached OUTSIDE a body, plus a generic child-recursion fallback for every unmatched node (mirroring the oracle's generic walk). Member READS are deliberately NOT dispatched there: the oracle derives uses for member_access only inside method/function bodies (inBody), which never reach the extractive walk (walkBody owns bodies) — verified parity on closures/arrows (anonymous_function/arrow_function are not body contexts in the oracle either). Pinned by fixtures/php/procedural-enum (global-sourced instantiates/calls equals pins) + mutant php/drop-top-level-procedural."
+        "resolution": "phpunit is class-heavy: only 4/300 sampled files (1.3%) carry top-level call statements, so the 60-file F5 sample rarely hit the shape — a coverage blind spot exactly like haskell HSD12/CSD1. Fix (M37.13): the main walk now dispatches function_call/member_call/nullsafe/scoped_call/object_creation wherever reached OUTSIDE a body, plus a generic child-recursion fallback for every unmatched node (mirroring the oracle's generic walk). Member READS are deliberately NOT dispatched there: the oracle derives uses for member_access only inside method/function bodies (inBody), which never reach the extractive walk (walkBody owns bodies) — verified parity on closures/arrows (anonymous_function/arrow_function are not body contexts in the oracle either). Pinned by fixtures/php/procedural-enum (global-sourced instantiates/calls equals pins) + mutant php/drop-top-level-procedural.",
+        "nodeTypeProse": [
+          "expression_statement (top-level",
+          "procedural statements)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: program / namespace_definition > expression_statement (top-level/procedural statements). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (expression_statement (top-level; procedural statements)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD6",
-        "node_type": "enum_declaration > class_interface_clause",
+        "node_type": "enum_declaration, class_interface_clause",
         "status": "FIXED",
         "question": "M37.13: PHP 8.1 enums implement interfaces via the same class_interface_clause shape as classes ('enum Status implements Labeled'), but the enum_declaration branch never read the clause, and the oracle mirrored the blind spot — enum implements edges were dropped by BOTH sides (a shared hole no differential can see).",
-        "resolution": "Fix (M37.13): analyzer reads class_interface_clause on enum_declaration and emits implements edges (metadata isEnumImplements, tier structural) + implementedInterfaces payload; the oracle mirrors the same clause read so truth and analyzer stay in sync. Corpus-zero in phpunit (1 enum, 0 clauses in 300 files) so fixture + mutant gate it: fixtures/php/procedural-enum pins implements Status->Labeled/Tagged; mutant php/drop-enum-implements dies."
+        "resolution": "Fix (M37.13): analyzer reads class_interface_clause on enum_declaration and emits implements edges (metadata isEnumImplements, tier structural) + implementedInterfaces payload; the oracle mirrors the same clause read so truth and analyzer stay in sync. Corpus-zero in phpunit (1 enum, 0 clauses in 300 files) so fixture + mutant gate it: fixtures/php/procedural-enum pins implements Status->Labeled/Tagged; mutant php/drop-enum-implements dies.",
+        "nodeTypeProse": [
+          "enum_declaration > class_interface_clause"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: enum_declaration > class_interface_clause. Moved here by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD7",
-        "node_type": "function_call_expression (add_action / add_filter)",
         "status": "RULED",
         "question": "M37.13: the analyzer's processFunctionCall returns EARLY for the WordPress hook registrars add_action/add_filter (framework detection only, never a calls edge — they register callbacks, they don't call user code). The differential oracle imported the analyzer's PHP_BUILTINS but NOT this hook exclusion, so it fabricated calls:add_action/add_filter truth on every procedural WP-style file.",
-        "resolution": "Ruling (M37.13): WP hook registration is framework ceremony — excluded from call edges on BOTH sides (single exclusion mirrored in derivePhpEdges, never a hand-duplicated copy). Add_action/add_filter still trigger WordPress framework detection. Pinned by fixtures/php/procedural-enum forbidRelationships (calls->add_action/add_filter) + mutant php/emit-wp-hook-calls."
+        "resolution": "Ruling (M37.13): WP hook registration is framework ceremony — excluded from call edges on BOTH sides (single exclusion mirrored in derivePhpEdges, never a hand-duplicated copy). Add_action/add_filter still trigger WordPress framework detection. Pinned by fixtures/php/procedural-enum forbidRelationships (calls->add_action/add_filter) + mutant php/emit-wp-hook-calls.",
+        "nodeTypeProse": [
+          "add_filter)",
+          "function_call_expression (add_action"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: function_call_expression (add_action / add_filter). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (add_filter); function_call_expression (add_action). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD8",
-        "node_type": "method_declaration inside anonymous_class at top level",
         "status": "FIXED",
         "question": "M37.13: 'new class { public function handle() {...} }' at top level — once the generic fallback descends into anonymous_class, its method_declaration nodes reached the extractive walk with owner=undefined and fabricated ownerless method symbols (a class-body member always carries its owner via pushMembers, so ownerless methods can ONLY come from anonymous classes).",
-        "resolution": "Fix (M37.13): ownerless method_declaration = anonymous-class method — never symbolized (the class has no nameable symbol; mirrors walkBody's treatment of anon classes nested inside named methods), but the body IS walked so calls/creations inside are preserved (global-sourced). Pinned by fixtures/php/procedural-enum forbidSymbols handle + mutant php/symbolize-anon-class-methods."
+        "resolution": "Fix (M37.13): ownerless method_declaration = anonymous-class method — never symbolized (the class has no nameable symbol; mirrors walkBody's treatment of anon classes nested inside named methods), but the body IS walked so calls/creations inside are preserved (global-sourced). Pinned by fixtures/php/procedural-enum forbidSymbols handle + mutant php/symbolize-anon-class-methods.",
+        "nodeTypeProse": [
+          "method_declaration inside anonymous_class at top level"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: method_declaration inside anonymous_class at top level. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (method_declaration inside anonymous_class at top level). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD9",
-        "node_type": "formal_parameters / attribute_list (new-in-initializer contexts)",
+        "node_type": "formal_parameters",
         "status": "RULED",
         "question": "M37.13: PHP 8.1 'new in initializers' (parameter default values, attribute arguments, static-variable and global-constant initializers) — these live in method/function SIGNATURES which the extractive walk continues past (bodies only). The generic walk would find the object_creation; the analyzer currently does not descend signatures.",
-        "resolution": "Ruling (M37.13): documented boundary. Census on phpunit (300 files): 0 signature/attribute-context `new` occurrences (168 attribute_list nodes, none carrying object_creation). Corpus-zero shape; recorded here so the boundary is explicit rather than accidental. If a corpus ever exercises it, descend formal_parameters/attribute_list after walkBody with the same dispatch (no member reads possible there — signatures hold constant expressions)."
+        "resolution": "Ruling (M37.13): documented boundary. Census on phpunit (300 files): 0 signature/attribute-context `new` occurrences (168 attribute_list nodes, none carrying object_creation). Corpus-zero shape; recorded here so the boundary is explicit rather than accidental. If a corpus ever exercises it, descend formal_parameters/attribute_list after walkBody with the same dispatch (no member reads possible there — signatures hold constant expressions).",
+        "nodeTypeProse": [
+          "attribute_list (new-in-initializer contexts)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: formal_parameters / attribute_list (new-in-initializer contexts). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (attribute_list (new-in-initializer contexts)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD10",
-        "node_type": "base_clause / class_interface_clause with same-leaf fully-qualified base (namespace collision)",
+        "node_type": "base_clause",
         "status": "FIXED",
         "question": "M37.13: a class may inherit from a DIFFERENT class that shares its leaf name in another namespace — phpmyadmin Setup\\FeaturesForm extends User\\FeaturesForm, phpunit interface Exception extends \\PHPUnit\\Exception, class InvalidArgumentException extends \\InvalidArgumentException (the SPL builtin). Everything was leaf-collapsed, so the subclass's own name matched the base leaf: fabricated extends Self edges (12 in phpunit, 11 in phpmyadmin), VERIFIED @0.95 self-overrides (16 phpmyadmin, 2 phpunit — the in-file/companion override check matched the class's OWN methods), and `new parent()` -> self. Why did the F5 differential stay green? Both the analyzer AND the oracle leaf-collapsed identically — extends truth fabricated on both sides colluded.",
-        "resolution": "Fix (M37.13): heritage-target resolution (heritageTarget). A QUALIFIED base/interface whose leaf equals the declaring class's name keeps its qualification (leading backslash stripped): extends FeaturesForm -> Forms\\User\\FeaturesForm, and override resolution then runs against the external same-leaf base (M37.10 first-parent guess @0.5/inferred — never verified, never self). A qualified base that qualification CANNOT disambiguate — global single-segment like \\InvalidArgumentException — is unresolvable in the leaf graph: NO extends edge and no baseByClass entry (self-loop is always fabrication; family 'wrong edge worse than no edge' precedent, same as unresolvable new parent()). Analyzer metadata.baseClass/extends/implements/enum-implements and oracle derivePhpEdges + deriveTreeEdges heritage all mirror the same helper. Corpus result: self-extends 12->0 (phpunit), 11->0 (phpmyadmin); self-overrides 16->0 / 2->0; differential parity held at 100%/0/0 on both corpora."
+        "resolution": "Fix (M37.13): heritage-target resolution (heritageTarget). A QUALIFIED base/interface whose leaf equals the declaring class's name keeps its qualification (leading backslash stripped): extends FeaturesForm -> Forms\\User\\FeaturesForm, and override resolution then runs against the external same-leaf base (M37.10 first-parent guess @0.5/inferred — never verified, never self). A qualified base that qualification CANNOT disambiguate — global single-segment like \\InvalidArgumentException — is unresolvable in the leaf graph: NO extends edge and no baseByClass entry (self-loop is always fabrication; family 'wrong edge worse than no edge' precedent, same as unresolvable new parent()). Analyzer metadata.baseClass/extends/implements/enum-implements and oracle derivePhpEdges + deriveTreeEdges heritage all mirror the same helper. Corpus result: self-extends 12->0 (phpunit), 11->0 (phpmyadmin); self-overrides 16->0 / 2->0; differential parity held at 100%/0/0 on both corpora.",
+        "nodeTypeProse": [
+          "class_interface_clause with same-leaf fully-qualified base (namespace collision)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: base_clause / class_interface_clause with same-leaf fully-qualified base (namespace collision). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (class_interface_clause with same-leaf fully-qualified base (namespace collision)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD11",
-        "node_type": "nullsafe_member_access_expression (PHP 8 `?->` reads)",
         "status": "FIXED",
         "question": "M37.13 follow-up wave-2 (#606 master-review): PHP 8 nullsafe member READS `$this->svc?->name` parse as nullsafe_member_access_expression with the SAME \"name\" field as member_access_expression (`$this->svc->name`), but the walkBody member-read branch only matched member_access_expression, so every nullsafe read silently dropped the trailing member uses edge. 20 occurrences across phpunit+phpmyadmin+slim (4,231 files). Differential-invisible: the oracle's derivePhpEdges member branch shared the same shallow type gate, so F5 parity held at 0 missing / 0 unexplained while both sides dropped the read.",
-        "resolution": "Fix (wave-2 probe-verified 2026-09-07): walkBody member-read branch now matches member_access_expression OR nullsafe_member_access_expression; the read/write + call-receiver byte-range gate is unchanged, so nullsafe WRITES (`$this->feature?->name = $v`) and RMW (`$this->feature?->name .= '!'`) stay gated exactly like the plain form (LHS name never a read). The receiver member (`$this->svc` / `$this->feature`) emits its own uses in both forms (csharp/java/ruby family precedent: the container is fetched to dereference). Oracle mirror identical. Parity probe: read/chain/plain emit [name, svc]/[deep, inner, svc]; write/augwrite emit only [svc]. Pinned by fixtures/php/nullsafe-member-reads (expect describe->name / describe->nested / describe->feature uses; forbid rewrite->name / bump->name) + mutants php/drop-nullsafe-member-read-uses and php/emit-nullsafe-write-as-uses both CAUGHT (299/299)."
+        "resolution": "Fix (wave-2 probe-verified 2026-09-07): walkBody member-read branch now matches member_access_expression OR nullsafe_member_access_expression; the read/write + call-receiver byte-range gate is unchanged, so nullsafe WRITES (`$this->feature?->name = $v`) and RMW (`$this->feature?->name .= '!'`) stay gated exactly like the plain form (LHS name never a read). The receiver member (`$this->svc` / `$this->feature`) emits its own uses in both forms (csharp/java/ruby family precedent: the container is fetched to dereference). Oracle mirror identical. Parity probe: read/chain/plain emit [name, svc]/[deep, inner, svc]; write/augwrite emit only [svc]. Pinned by fixtures/php/nullsafe-member-reads (expect describe->name / describe->nested / describe->feature uses; forbid rewrite->name / bump->name) + mutants php/drop-nullsafe-member-read-uses and php/emit-nullsafe-write-as-uses both CAUGHT (299/299).",
+        "nodeTypeProse": [
+          " reads)",
+          "nullsafe_member_access_expression (PHP 8 `?-"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: nullsafe_member_access_expression (PHP 8 `?->` reads). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types ( reads); nullsafe_member_access_expression (PHP 8 `?-). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHPD19",
-        "node_type": "instanceof_expression (runtime type check)",
         "status": "RULED",
         "question": "OO family closure #613 family sweep: php `$x instanceof Foo` emits NO edge on either side while java (instanceof_expression) and python (isinstance/issubclass) emit references:instanceof_check from their declared-type reference graphs. Corpus: ~950 instanceof sites in the two php corpora (phpunit 799, phpmyadmin 153) are silent. Is php dropping a relationship the family convention requires?",
-        "resolution": "RULED consistent-as-designed: php has no declared-type reference graph — its references channel is include-only (PHPD3); type hints (named_type in parameter/return positions) are SYMBOL payload, never edges — matching csharp (is/as silent), swift (as?/is silent) and objc (isKindOfClass: silent). python/java materialize those edges because their analyzers carry a declared-type reference extraction pass php does not have. Adding instanceof references to php alone would create a family asymmetry in the other direction and require re-pinning both php F5 lanes. Recorded as a measured scope decision, not a hidden skip (both sides silent = differential-consistent 100/0/0)."
+        "resolution": "RULED consistent-as-designed: php has no declared-type reference graph — its references channel is include-only (PHPD3); type hints (named_type in parameter/return positions) are SYMBOL payload, never edges — matching csharp (is/as silent), swift (as?/is silent) and objc (isKindOfClass: silent). python/java materialize those edges because their analyzers carry a declared-type reference extraction pass php does not have. Adding instanceof references to php alone would create a family asymmetry in the other direction and require re-pinning both php F5 lanes. Recorded as a measured scope decision, not a hidden skip (both sides silent = differential-consistent 100/0/0).",
+        "nodeTypeProse": [
+          "instanceof_expression (runtime type check)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: instanceof_expression (runtime type check). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (instanceof_expression (runtime type check)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-A",
-        "node_type": "member_access_expression (call receivers)",
         "status": "FIXED",
         "question": "First review: `$this->dep->run()` and `$a->b->c()` skipped the receiver read (isCallReceiver gate) while nullsafe chains already emitted their links — plain chains inconsistently silent on both sides.",
         "resolution": "Receivers ARE reads (must evaluate to dispatch); only the call's own name is the target. Gate dropped on both sides. Gated by fixture php/member-value-reads receiver pins + mutant php/drop-receiver-read-uses.",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "member_access_expression (call receivers)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: member_access_expression (call receivers). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (member_access_expression (call receivers)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-H",
@@ -312,11 +350,14 @@
       },
       {
         "id": "PHP-E",
-        "node_type": "arguments with sole variadic_placeholder",
         "status": "FIXED",
         "question": "First review: `$this->handler(...)`, `strlen(...)`, `Widget::make(...)` emitted calls — but sole-`...` never invokes (first-class callable tear-off). Mixed `($x, ...)` genuinely invokes (error-recovering in the pinned grammar).",
         "resolution": "Sole-placeholder calls emit uses (builtins still filtered); mixed forms stay calls. Gated by fixture + mutant php/tearoff-as-call.",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "arguments with sole variadic_placeholder"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: arguments with sole variadic_placeholder. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (arguments with sole variadic_placeholder). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-F",
@@ -344,72 +385,155 @@
       },
       {
         "id": "PHP-O1",
-        "node_type": "use_declaration (oracle)",
         "status": "FIXED",
         "question": "First review: every trait use was analyzer-only — the oracle gated use_declaration on inBody, which is never true at class level. Lanes missed it by sampling luck (no trait-use file drawn in 200).",
         "resolution": "Oracle gate dropped (analyzer always emitted). Companion mutant guards the analyzer side; lanes guard the oracle side.",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "use_declaration (oracle)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: use_declaration (oracle). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (use_declaration (oracle)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-O2",
-        "node_type": "overrides (oracle)",
         "status": "FIXED",
         "question": "First review: verified in-file overrides (0.95) were analyzer-only — the oracle derived no overrides at all, an unexplained edge waiting for a sample (synthetic A/B pair reproduces).",
         "resolution": "Oracle prescan (class -> resolved base + declared methods) emits verified pairs; external guesses stay silent (0.5, below lane filter).",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "overrides (oracle)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: overrides (oracle). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (overrides (oracle)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-R1",
-        "node_type": "mixed variadic calls, anonymous heritage",
         "status": "RULED",
         "question": "First review: `$this->run($x, ...)` error-recovers (ERROR node) — call or tear-off? And `new class extends Base` heritage?",
         "resolution": "Mixed forms genuinely invoke AND error-recover with the callee as member access — both sides derive uses (documented boundary imprecision, never calls). Anonymous classes have no nameable identity: heritage/construction silent on both sides.",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "anonymous heritage",
+          "mixed variadic calls"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: mixed variadic calls; anonymous heritage. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (anonymous heritage; mixed variadic calls). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-R2",
-        "node_type": "per-site duplicate rows",
         "status": "RULED",
         "question": "First review: identical call sites emit duplicate rows (`calls[m->run]` x2) — DARTD7-style dedup or retain?",
         "resolution": "RETAINED at emit: expectRelationshipCount pins multiplicity (instantiates == 2) and the differential is presence-based. The store dedups by (source, target, type) relId (verified live: zero duplicate groups) — hover counts distinct edges, not sites. Analyzer multiplicity and store dedup coexist by design; DARTD7 does not transfer.",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "per-site duplicate rows"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: per-site duplicate rows. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (per-site duplicate rows). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP-R3",
-        "node_type": "bare $variables, operators, string callables",
         "status": "RULED",
         "question": "First review: `$depth`/`$total` RHS, `$a + $b`, `[$this, 'm']` callables, `instanceof`, `clone $x`, match subjects — all silent on both sides.",
         "resolution": "Bare value reads need scope inventory: deferred to review 2 with the member-read foundation landed here (same split as dart DT-F). Operators are arithmetic dispatch; string-literal callables unresolvable by design; instanceof already ruled (PHPD19).",
-        "issue": "M49.PHP1 php first review"
+        "issue": "M49.PHP1 php first review",
+        "nodeTypeProse": [
+          "bare $variables",
+          "operators",
+          "string callables"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: bare $variables; operators; string callables. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (bare $variables; operators; string callables). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP2-A",
-        "node_type": "variable_name (bare `$var` reads)",
         "status": "FIXED",
         "question": "Second review (implements deferred PHP-R3): bare `$var` occurrences outside member/call/subscript/use/interpolation positions were silent on both sides — when is a bare variable a READ?",
-        "resolution": "Reads resolve through a scope inventory: innermost frame chain (params/locals/use/catch/foreach/list/static/global decls; closures fresh, arrows chained, named functions fresh), then file-scope function names, then superglobals — anything else is silent (no hallucinated globals). `$this` never reads. Declaration/write/label positions never read (isPhpBindSite: params incl. promoted, static/global decls, catch vars, assignment LHS incl. destructuring, foreach value/key incl. the BARE `as $item` form, use-clause vars are READS not binds). Subscript bases and index positions belong to the PHP-B rule; use-clause/interpolation interiors belong to PHP-C/PHP-F. Analyzer emits isLocalRead/isGlobalRead; oracle mirrors the identical frame logic. Gated by fixture php/bare-value-reads + 3 loss mutants + battery/lanes parity."
+        "resolution": "Reads resolve through a scope inventory: innermost frame chain (params/locals/use/catch/foreach/list/static/global decls; closures fresh, arrows chained, named functions fresh), then file-scope function names, then superglobals — anything else is silent (no hallucinated globals). `$this` never reads. Declaration/write/label positions never read (isPhpBindSite: params incl. promoted, static/global decls, catch vars, assignment LHS incl. destructuring, foreach value/key incl. the BARE `as $item` form, use-clause vars are READS not binds). Subscript bases and index positions belong to the PHP-B rule; use-clause/interpolation interiors belong to PHP-C/PHP-F. Analyzer emits isLocalRead/isGlobalRead; oracle mirrors the identical frame logic. Gated by fixture php/bare-value-reads + 3 loss mutants + battery/lanes parity.",
+        "nodeTypeProse": [
+          "variable_name (bare `$var` reads)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: variable_name (bare `$var` reads). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (variable_name (bare `$var` reads)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP2-B",
-        "node_type": "name (bare `NAME` const reads)",
         "status": "FIXED",
         "question": "Second review: bare `NAME` constants (`LIMIT`, `ROOT_PATH`, `RUN_NAME`) were silent — when is a bare name a const READ?",
-        "resolution": "Only when the name sits in the file const inventory (top-level const, class consts are members not bare values, define() names incl. same-file defines via the file prescan, use-const imports). Magic constants (__DIR__ etc.) never read. Member/callee/const-fetch/heritage positions belong to other rules; named-argument labels, namespace/use bindings, type positions (param/return/catch/instanceof/new), and declaration first-names (const_element, enum_case — positional, only the first name declares) never read. Class-level reads attribute to the owner class (trait-use PHP-O1 precedent), not global. Analyzer emits isConstRead; oracle mirrors. Gated by fixture php/bare-value-reads + drop-bare-const-reads mutant."
+        "resolution": "Only when the name sits in the file const inventory (top-level const, class consts are members not bare values, define() names incl. same-file defines via the file prescan, use-const imports). Magic constants (__DIR__ etc.) never read. Member/callee/const-fetch/heritage positions belong to other rules; named-argument labels, namespace/use bindings, type positions (param/return/catch/instanceof/new), and declaration first-names (const_element, enum_case — positional, only the first name declares) never read. Class-level reads attribute to the owner class (trait-use PHP-O1 precedent), not global. Analyzer emits isConstRead; oracle mirrors. Gated by fixture php/bare-value-reads + drop-bare-const-reads mutant.",
+        "nodeTypeProse": [
+          "name (bare `NAME` const reads)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: name (bare `NAME` const reads). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (name (bare `NAME` const reads)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP2-C",
-        "node_type": "foreach_statement (bare value form)",
         "status": "FIXED",
         "question": "Second review: `foreach ($xs as $item)` bound nothing — the value variable sits DIRECTLY under foreach_statement (no `pair` wrapper, unlike `as $k => $v`), so both the analyzer and its mirror missed the bind and the body read. Battery agreed (shared mirror miss).",
-        "resolution": "A variable_name directly under foreach_statement that is not the first named child (the collection, which reads) is a bind site — analyzer isPhpBindSite + oracle phpIsBindSite fixed as a mirrored pair. By-reference values (`as &$v`) bind the same way. Found only because the fixture is independent of the mirror. Gated by fixture php/bare-value-reads item pin + battery probe foreach_bare."
+        "resolution": "A variable_name directly under foreach_statement that is not the first named child (the collection, which reads) is a bind site — analyzer isPhpBindSite + oracle phpIsBindSite fixed as a mirrored pair. By-reference values (`as &$v`) bind the same way. Found only because the fixture is independent of the mirror. Gated by fixture php/bare-value-reads item pin + battery probe foreach_bare.",
+        "nodeTypeProse": [
+          "foreach_statement (bare value form)"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: foreach_statement (bare value form). Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (foreach_statement (bare value form)). Moved to nodeTypeProse by the construct census so node_type means node type.]"
       },
       {
         "id": "PHP2-D",
-        "node_type": "call receivers (base variables) + class-level read attribution",
         "status": "FIXED",
         "question": "Second review: `$gw->authorize()` emitted no read for `$gw` (wave-1 `receivers excluded` held for the single-link base while PHP-A chains already read links — incoherent), and class-level const reads (property/const/enum/attribute/default initializers) sourced global instead of the class.",
-        "resolution": "Receiver BASE variables read as ordinary bare values (the object value loads to dispatch); the exclusion now holds only on the MEMBER side (no uses-read of the method name — payload-and-complexity authorize/dispatch forbids). Class-level reads attribute to the owner (inFunction || owner || global). The wave-1 blanket `uses->gateway` forbid encoded the old contract and is replaced by member-side forbids + variable-side expects; php/emit-write-as-uses is retargeted to file-scope writes (its old fabrication became legitimate output). Gated by payload-and-complexity expects/forbids + php/emit-receiver-member-read mutant + owner-attribution pins in bare-value-reads (Reader->LIMIT/RUN_NAME/FALLBACK, Level->RUN_NAME)."
+        "resolution": "Receiver BASE variables read as ordinary bare values (the object value loads to dispatch); the exclusion now holds only on the MEMBER side (no uses-read of the method name — payload-and-complexity authorize/dispatch forbids). Class-level reads attribute to the owner (inFunction || owner || global). The wave-1 blanket `uses->gateway` forbid encoded the old contract and is replaced by member-side forbids + variable-side expects; php/emit-write-as-uses is retargeted to file-scope writes (its old fabrication became legitimate output). Gated by payload-and-complexity expects/forbids + php/emit-receiver-member-read mutant + owner-attribution pins in bare-value-reads (Reader->LIMIT/RUN_NAME/FALLBACK, Level->RUN_NAME).",
+        "nodeTypeProse": [
+          "call receivers (base variables) + class-level read attribution"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: call receivers (base variables) + class-level read attribution. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (call receivers (base variables) + class-level read attribution). Moved to nodeTypeProse by the construct census so node_type means node type.]"
+      },
+      {
+        "id": "PHPD31",
+        "node_type": "php_tag, text_interpolation, text, encapsed_string, heredoc, nowdoc",
+        "status": "RULED",
+        "question": "The php wave (#268 family) declared this a gap: 'HTML/text interpolation segments outside <?php blocks are not symbols; string interpolation internals are opaque'. Is that a gap or a ruling?",
+        "resolution": "RULED, not a gap. A `use`d requirement of this lane is a SYMBOL CONTRACT over PHP declarations, and the text outside `<?php ... ?>` is not PHP: it is the template that PHP is embedded in, and its `$var` slots belong to whatever templating engine wrote them (Twig, Blade, Smarty), not to PHP's grammar. Emitting symbols for interpolated HTML would invent PHP declarations that do not exist. The string-interpolation half of the old gap text is separately adjudicated and IS handled: \"hello $name\" (simple), \"{$o->p}\" (object/member), and \"{$n['k']}\" style forms are read for VALUE flow by the in-PHP rules, pinned by php/bare-value-reads and php/header-reads. The old wording conflated two different things — a correct boundary on out-of-PHP text, and an unfinished job on in-PHP interpolation that was in fact finished. Recording it as a `gap` therefore reported finished work as outstanding forever."
+      },
+      {
+        "id": "PHPD32",
+        "status": "RULED",
+        "question": "The php wave (#268 family) declared this a gap: 'ini directives and shell hash-bang lines are not parsed as symbols or decision points'. Is that a gap or a ruling?",
+        "resolution": "RULED, not a gap. `ini_section`/`ini_entry` are .ini FILES parsed by PHP's own INI machinery, not by this analyzer — no PHP declaration exists in them to miss, and the same applies to a `#!` hash-bang line, which is the OS's interpreter directive. The `preprocessor`/`shell_comment` nodes that appear in a .php file are likewise not PHP declarations. Declaring symbols for any of these would put non-PHP constructs into a PHP symbol graph. The grammar emits these node types for these files and the analyzer correctly declares nothing for them, which is a boundary, not unfinished work.",
+        "nodeTypeProse": [
+          "hash_bang_line",
+          "ini_entry",
+          "ini_section",
+          "preprocessor",
+          "shell_comment"
+        ],
+        "note": "[node_type also carried prose describing the situation, not grammar node types: preprocessor; ini_section; ini_entry; shell_comment; hash_bang_line. Moved here by the construct census so node_type means node type.] [node_type also carried prose describing the situation rather than grammar node types (hash_bang_line; ini_entry; ini_section; preprocessor; shell_comment). Moved to nodeTypeProse by the construct census so node_type means node type.]"
+      },
+      {
+        "id": "PHPD33",
+        "node_type": "",
+        "status": "RULED",
+        "question": "Should the php analyzer emit `exports` edges? ASTEngine.RelationshipType.Exports exists, and src/lsp/graph_request.ts:256 filters on relationship_type IN ('imports','exports') — so after M12.PHP-IMPORTS made php's DEPENDENCIES visible, a php file reports what it needs but not what it offers, which looks like an asymmetry worth closing.",
+        "resolution": "RULED: no `exports` kind for php, deliberately. (1) The two lanes that do emit it are SYNTACTIC: make reads explicit `export` statements, python reads an explicit `__all__` list. PHP has neither — a top-level declaration is not 'exported', it simply exists in its namespace and is autoloadable. There is no syntax to key on, so any php `exports` edge would have to be SEMANTIC (one per public top-level declaration), which is a new project-wide graph convention being introduced by one lane. (2) The information is not lost: those same declarations are already file-scoped SYMBOLS, so 'what does this file offer' is answerable from the symbol table without a second edge kind. (3) The repo's standing rule is that a wrong edge is worse than no edge, and a semantic exports edge is unverifiable from a single file — the same reasoning that removed the 0.5 first-parent-guess override (PHPD30, 66.7% false). `imports` was different and was ruled the other way: require/include/use are REAL module dependencies the syntax names, and the file-level reader genuinely cannot answer dependencies without them. Revisit this if a consumer ever needs an offering EDGE rather than an offering set."
+      },
+      {
+        "id": "PHPD34",
+        "node_type": "colon_block, disjunctive_normal_form_type, dynamic_variable_name, empty_statement, function_static_declaration, global_declaration, goto_statement, named_label_statement, namespace_use_group, operation, php_end_tag, relative_name, sentinel_error, shell_command_expression, static_variable_declaration, text_interpolation, use_as_clause, use_instead_of_clause, use_list, var_modifier",
+        "status": "RULED",
+        "question": "The construct census (script/m12/php-construct-census.ts) walked all 4,463 corpus files and found 20 of the grammar's 179 named node types that occur ZERO times in phpunit AND phpmyadmin. Are these unhandled work, or constructs no corpus can exercise?",
+        "resolution": "RULED: all 20 were probed by hand against the analyzer, and every one is correct or correctly inert. This closes the last CLAIMED-BUT-NEVER-EXERCISED type, taking that set to EMPTY. Evidence per group: (a) namespace_use_group — grouped `use C\\{D, E as F};` emitted NOTHING; FIXED under M12.PHP-GROUPED-USE and pinned by the php/grouped-use fixture. (b) dynamic_variable_name (`$$n`, `${expr}`) — parses clean and emits the correct read of the inner variable name (`uses m -> n`), since the NAME is what is read; the dynamic target is not resolvable from one file and correctly yields no edge. (c) global_declaration — `global $registry, $other;` emits no symbol (the doc already rules globals are never symbols) AND subsequent reads bind correctly (`uses m -> registry`, `uses m -> other`). (d) static_variable_declaration — `static $hits = 0;` binds and its later reads emit `uses`. (e) function_static_declaration — `static function(){}` and `static fn()=>` parse clean. (f) colon_block — the alternative `if: … elseif: … else: … endif;` syntax parses clean and its body statements are read normally. (g) use_instead_of_clause / use_as_clause / use_list — trait adaptation and multi-trait `use` both keep every trait `use` edge, consistent with the model where a trait's methods belong to the trait and are not re-declared on the composing class. (h) var_modifier (`var $legacy = 1;`) — the ONE construct that FAILS to parse, and that is CORRECT: `var` was removed in PHP 7.0, so the pinned 0.24.2 grammar does not accept it, and reporting a parse error for removed dead syntax is the honest outcome. It is absent from both corpora because no modern PHP code contains it. (i) text_interpolation — ruled separately in PHPD31. (j) empty_statement, php_end_tag, goto_statement, named_label_statement, sentinel_error, operation, shell_command_expression, relative_name, disjunctive_normal_form_type — no PHP DECLARATION, so no symbol and no relationship is the correct output; a DNF type or a `goto` label is not a graph node this analyzer claims to model."
+      },
+      {
+        "id": "PHPD35",
+        "node_type": "const_declaration",
+        "status": "FIXED",
+        "question": "PHP 8.3 wrote typed class constants into the language: `const Dep X = 1;` carries a type on the constant. `phpDeclaredTypeRefs` listed the position on its own 'BOUNDARIES, DISCLOSED' comment and emitted nothing for it — but the SPEC claimed `const_declaration` was handled_verified and carried no decision naming typed class constants anywhere in its 33. So the position was documented in a source comment and absent from the adjudication set: an unexamined claim wearing a disclosure's clothes. Is it a boundary, or unhandled work?",
+        "resolution": "FIXED, and the finding is that it was never a boundary at all. Probe-verified against the pinned wasm, the grammar carries the type as an ordinary `type` FIELD on the declaration: `const_declaration > const > named_type > name`, a direct sibling of `const_element > name`. That is the same shape, in the same `declaration_list`, naming the same kind of thing, as `property_declaration.type` which the lane has always handled — so a class writing `const Dep X` depends on `Dep` exactly as it does writing `private Dep $f`, and R9's rule ('a declaration that WRITES a type name depends on the type it names') applies without argument. Ruling it out would have manufactured a gap in order to avoid writing the case, so it is HANDLED: the `const_declaration` case in `phpDeclaredTypeRefs` attributes the dependency to the ENCLOSING TYPE, exactly as a property's is. `primitive_type` (`const string S = 'a'`) stays SILENT for the same reason it is silent on a property — the grammar tags it, so it is not a dependency on a userland symbol. WRAPPERS DESCEND: `?Opt` contributes `Opt`, `First|Second` contributes BOTH members, each as its own dependency. RELATIVE TYPES reuse this lane's own probe-verified `new self()` rule: `const self SELF_REF` resolves to the enclosing class, and an unresolvable `parent` emits nothing. FILE-SCOPE CONSTANTS are the one judgement call: a top-level `const Dep TOP = 1;` has no enclosing type and an edge still needs a source, so it is attributed to `global` — the same file-scope owner the read rules use when neither a callable nor a class encloses a position (the trait-use precedent, PHP-O1) — rather than dropped, because a written dependency is not less real for having no owner symbol. THE POSITION IS NOT EXERCISED BY EITHER CORPUS, and that is why it needed a fixture rather than a measurement: both pinned corpora were walked for `const_declaration` nodes carrying a `type` field and MEASURED 243 const_declarations of which 81 are TYPED — and every one of those 81 is a `primitive_type` (`private const string PAGE_HEADER`, `public const int VERSION`). Primitives are silent BY DESIGN, so the position is genuinely exercised 81 times; a NAMED type, the only shape that produces an edge, occurs ZERO times. The absence of `const Dep` references therefore read identically whether the rule worked or did not exist, and the full-extent differential read 100% either way. Pinned by php/typed-class-const (every written-type shape AND every silent case, plus an exact count of 9 references edges so an EXTRA edge cannot hide behind satisfied positive pins) and held by the reverting mutant php/typed-class-const-dropped, CAUGHT by that fixture alone — the isolation is the evidence, because the corpora cannot catch it. Same class as the grouped-`use` defect that 4,139 files and 95,231 edges reported clean while missing the construct entirely: 100% coverage is a statement about the corpus, not about the language.",
+        "evidence": "php/typed-class-const; php/typed-class-const-dropped (CAUGHT by php/typed-class-const only); src/ast/real-php-analyzer.ts phpDeclaredTypeRefs `const_declaration` case; grammar probe: const_declaration.childForFieldName('type') === 'Dep'"
       }
     ]
+  },
+  "constructCensus": {
+    "tool": "script/m12/php-construct-census.ts",
+    "artifact": "validation/m12/results/php-construct-census.json",
+    "walked": "4,463 files across phpunit@c8d6921f and phpmyadmin@4061095a (every tracked .php)",
+    "distinctNamedTypesSeen": 138,
+    "grammarNamedTypes": 179,
+    "method": "Walks the grammar's own node types against both corpora, so the list of untested constructs is complete by CONSTRUCTION rather than by a hand-picked checklist. A differential measures agreement on what it sees; it cannot see a construct its corpora never contain — which is exactly how grouped use (`namespace_use_group`) emitted nothing while the full-corpus run reported 100% coverage.",
+    "claim": "The census reports CLAIMED-BUT-NEVER-EXERCISED: a type classified handled/verified on which no corpus file provides evidence. After the 20 never-seen types were probed by hand (see design decision PHPD34) that set is now EMPTY.",
+    "neverSeenTypes": []
   }
 }

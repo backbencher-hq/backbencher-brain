@@ -762,7 +762,37 @@ export class RealLuaAnalyzer implements ASTEngine.LanguageAnalyzer {
       const owner = symbol.ownerName
         || ((symbol as any).frameSelfName as string | undefined)
         || (symbol.scope === "global" || !symbol.scope ? "global" : (symbol.scope as string))
-      if (owner && owner !== symbol.name) {
+      // M60 LUA-37 follow-up: a blanket `owner !== symbol.name` skip dropped a real
+      // edge — `contains stack -> stack` in examples/app/libs/stack.lua, where L20 is
+      // `local stack = {}` and L22 is `function stack.stack(...)`. The method IS a
+      // member of that table and the two are distinct symbols (a variable and a
+      // method, at different ranges), so the edge is a true statement.
+      //
+      // The first attempt at fixing it — "emit a self-named edge when another symbol
+      // with the same name exists" — was wrong, and the corpus said so immediately:
+      // it added 5 false edges on kong. The failing shapes are
+      //
+      //     local function new_router(version)      -- L347, a function
+      //       local new_router, err = ...           -- L426, a local that SHADOWS it
+      //
+      // Two same-named symbols exist, but they are not a container and a member; the
+      // local at L426 merely shares the name of the function it is written inside. The
+      // same shape produced `initialize -> initialize`, `logout -> logout`,
+      // `failed -> failed` and `sleep_once_for_balancer_init -> …`.
+      //
+      // So the discriminator is not "does the name occur twice" but "WAS THE OWNER
+      // WRITTEN AS A RECEIVER". `splitMemberName` sets `owner` only for a real
+      // `function a.b` / `function a:b` receiver, and a receiver is precisely what
+      // makes the container real: the source says the method belongs to it. When the
+      // owner instead came from the enclosing frame, it is an inference about scope,
+      // and two symbols sharing that name prove nothing. `metadata.isMethod` is
+      // already set from the same `!!owner`, so no new field is needed.
+      const selfNamed = owner === symbol.name
+      const ownerWrittenAsReceiver = (symbol.metadata as any)?.isMethod === true
+      const containerExists = selfNamed && ownerWrittenAsReceiver && ctx.symbols.some(
+        (o: any) => o.name === owner && o !== symbol && (o.range?.startLine !== symbol.range?.startLine || o.kind !== symbol.kind),
+      )
+      if (owner && (owner !== symbol.name || containerExists)) {
         // M60 LUA-01: a Contains edge and the symbol it names must never
         // disagree about the line — java's declarationLineNode states the rule
         // outright ("the symbol range and its `contains` edge move together") and

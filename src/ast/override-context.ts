@@ -12,10 +12,25 @@
 // This module defines the *companion index*: a project-level map of
 // `owner type name → declared method names`, built by the CALLER from the
 // symbols of previously parsed files. The M12 differential harness builds it
-// with a pre-pass over the fixture corpus; the production indexer provides
-// the same context from its global symbol space (wired via M12.44). Both the
-// Java and Kotlin analyzers use the single shared resolver below, so the
-// override-target semantics are identical across languages:
+// with a pre-pass over the fixture corpus, and `override-companion-pass.ts`
+// builds it on demand for a re-parse (PERL-MR15). BOTH Java and Kotlin use the
+// single shared resolver below, so the override-target semantics are identical
+// across languages:
+//
+// WIRING HONESTY, corrected 2026-09-30 (vue master review, VSD26). This comment
+// used to claim "the production indexer provides the same context from its global
+// symbol space (wired via M12.44)". That was FALSE, and so was the correction
+// that replaced it. Both are now history: as of 2026-10-31 the BATCH indexer
+// builds the companion from the symbol space, via `override-companion-pass.ts`,
+// for both lanes that consume it. What it took to get there is the part worth
+// keeping — `parallel-indexer` was ALREADY calling the pass, with
+// `language: "perl"` hardcoded, so perl's resolver had a companion and the
+// claim that the batch indexer built none was wrong only about python. Python's
+// `analyze()` had stopped at three parameters, so the engine's fourth
+// (`AnalyzeContext`) never reached it, and the resolver read
+// `(ctx as any)._overrideCompanion` — an underscore-prefixed key that nothing
+// populates. The rule was written, wired to a channel, shipped, and had never
+// run, which is the same failure this file's header is about, one level down.
 //
 //   "the first ancestor in declaration order that actually declares the
 //    method; fall back to the first parent only when no ancestor declares it"

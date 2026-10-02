@@ -105,18 +105,121 @@ function teardown(f: Fixture): void {
     harness.check("update: rewrites the symbol body", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 42"))
     harness.check("update: reports a single change", res.changes.length === 1)
     // Stale bounds: change the file on disk so the indexed bounds no longer
-    // match, then update. The operation must abort loudly (no silent wrong
-    // write). M48.C2 note: this assertion previously matched "not found" —
-    // which only fired because the OLD destructive update removed the symbol
-    // from the DB. With fragment-safe updates the symbol survives, so the
-    // correct loud failure is the stale-bounds refusal.
+    // match, then update. This block used to assert that the operation ABORTS.
+    //
+    // THAT CONTRACT IS SUPERSEDED, and the old assertion was checking a
+    // superseded behaviour rather than a safety property, so it recorded a
+    // known-gap against code that is right. M59.A11 (#889) changed the contract:
+    // every other read tool refreshes a stale file within budget
+    // (BB_NO_AUTO_REFRESH), so editing refused instead. That made the FIRST
+    // symbol edit after ANY external change — another tool, a git pull, the human
+    // — a hard stop, even when the external change did not touch the symbol at
+    // all. Refusing is not safer here; re-deriving the bounds from the bytes on
+    // disk IS, because the bounds were never the problem.
+    //
+    // What replaced it is the property that actually matters, and it is stronger
+    // than "it threw": the write must land on the CURRENT bytes. Measured across
+    // the four external-change shapes, on the pre-refresh behaviour the last one
+    // below would have spliced at a byte offset that had moved, corrupting the
+    // file — a silent wrong write, which is what the old assertion was reaching
+    // for and could not see.
+    //
+    // 1. body changed externally        -> edits the NEW body, discloses the refresh
+    // 2. lines inserted before it       -> edit lands at the MOVED offset, the
+    //                                       inserted lines survive
+    // 3. symbol renamed externally      -> REFUSED, file untouched
+    // 4. symbol removed externally      -> REFUSED, file untouched
     writeFileSync(path.join(f.srcDir, "mod.ts"), `export function target(): number { return 99 }\n`)
-    await harness.rejectsAsync(
-      "update: stale index aborts (no silent wrong write)",
-      () => executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false }),
-      "stale index bounds",
-    )
-    harness.check("update: stale abort leaves the file untouched", readFileSync(path.join(f.srcDir, "mod.ts"), "utf8").includes("return 99"))
+    const staleRes = await executeEdit(f.root, f.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 42", format: false })
+    const afterStale = readFileSync(path.join(f.srcDir, "mod.ts"), "utf8")
+    harness.check("update after an external body change writes the NEW content, not the indexed one",
+      afterStale.includes("return 42") && !afterStale.includes("return 99"), afterStale.replace(/\n/g, "\\n"))
+    harness.check("update after an external change DISCLOSES that it refreshed the index",
+      (staleRes.warnings ?? []).some((w) => /refresh/i.test(w)), JSON.stringify(staleRes.warnings))
+    harness.check("update after an external body change leaves the file syntactically whole",
+      /^export function target\(\): number \{\n {2}return 42\n\}\n$/.test(afterStale), JSON.stringify(afterStale))
+
+    // The shapes where refreshing genuinely cannot save the edit, because the
+    // symbol the caller named is not the symbol in the file any more. These are
+    // the ones that MUST stay loud; a silent success here would write a body into
+    // whatever the stale bounds happened to cover.
+    //
+    // Each shape gets its OWN fixture. A refused edit still refreshes the index,
+    // so reusing one project made the next shape start from an index that had
+    // already been corrected — the removal case then failed EARLIER, on a
+    // different message, and the gate would have been asserting the wrong
+    // refusal text for the wrong reason.
+    for (const [label, external, untouched] of [
+      ["renamed", `export function renamedElsewhere(): number { return 99 }\n`, "renamedElsewhere"],
+      ["removed", `export const somethingElse = 1\n`, "somethingElse"],
+    ] as const) {
+      const g = setup(`stale-${label}`)
+      try {
+        await indexProjectParallel(g.projectId, g.root, {})
+        writeFileSync(path.join(g.srcDir, "mod.ts"), external)
+        await harness.rejectsAsync(
+          `update on a symbol ${label} externally aborts (no silent wrong write)`,
+          () => executeEdit(g.root, g.projectId, { mode: "update", symbolName: "target", filePath: "src/mod.ts", newContent: "return 1", format: false }),
+          "not found",
+        )
+        harness.check(`update on a symbol ${label} externally leaves the file untouched`,
+          readFileSync(path.join(g.srcDir, "mod.ts"), "utf8").includes(untouched),
+          readFileSync(path.join(g.srcDir, "mod.ts"), "utf8").replace(/\n/g, "\\n"))
+      } finally {
+        teardown(g)
+      }
+    }
+
+    // The byte-offset case, on `delete` — which is where byte offsets actually
+    // decide the outcome.
+    //
+    // I first wrote this on `update` and the mutation self-test showed it could
+    // not go red: with stale bounds trusted, `update` still produced a correct
+    // file. The reason is that update mode re-parses the body block from the
+    // file on disk, so it is safe by construction and the symbol's bounds are not
+    // load-bearing. Asserting it there would have been asserting a true thing
+    // that proved nothing.
+    //
+    // `delete` splices `match.byteStart .. match.byteEnd` directly, so its
+    // correctness DOES depend on those bounds being current. Measured with the
+    // refresh disabled: the splice lands at the pre-move offset, produces
+    // syntactically invalid source, and only the downstream validation step
+    // catches it — the file would have been written broken had validation not
+    // existed. With the refresh in place the delete is clean.
+    //
+    // This is the assertion that makes the refresh load-bearing rather than
+    // incidental, and it is the one the mutation turns red.
+    {
+      const g = setup("stale-moved-delete")
+      try {
+        await indexProjectParallel(g.projectId, g.root, {})
+        writeFileSync(path.join(g.srcDir, "mod.ts"), `export const inserted = 7\nexport function target(): number { return 99 }\n`)
+        // The throw is CAUGHT and recorded, not left to escape. An unguarded
+        // call turns a real defect into a crashed gate, and a crashed gate is
+        // INCONCLUSIVE: it says nothing about which assertion failed, and it
+        // takes the remaining checks with it. This block has to be able to say
+        // "the delete refused" as a named, attributable result.
+        let refused: string | null = null
+        try {
+          await executeEdit(g.root, g.projectId, { mode: "delete", symbolName: "target", filePath: "src/mod.ts", force: true, format: false })
+        } catch (e) {
+          refused = String((e as any)?.message ?? e)
+        }
+        const afterMove = readFileSync(path.join(g.srcDir, "mod.ts"), "utf8")
+        harness.check("delete after the declaration MOVED completes on the current bounds",
+          refused === null, refused === null ? "" : `it refused: ${refused.slice(0, 120)}`)
+        harness.check("delete after the declaration MOVED removes the moved declaration",
+          !afterMove.includes("target"), afterMove.replace(/\n/g, "\\n"))
+        harness.check("delete after the declaration MOVED kept the line inserted before it",
+          afterMove.includes("export const inserted = 7"), afterMove.replace(/\n/g, "\\n"))
+        const meaningful = afterMove.split("\n").map((l) => l.trim()).filter((l) => l.length > 0)
+        harness.check("delete after the declaration MOVED left no fragment of the spliced span",
+          meaningful.every((l) => l === "export const inserted = 7"),
+          `remaining lines: ${JSON.stringify(meaningful)}`)
+      } finally {
+        teardown(g)
+      }
+    }
   } finally {
     teardown(f)
   }

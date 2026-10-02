@@ -264,15 +264,61 @@ follows. It should not be quoted as though it were the corpus result.
 
 ### The corpus differential, and why its recall is not reported
 
-A second, larger instrument — `fixtures/xml/probes/corpus-differential.mts` —
-builds an **independent oracle** from the parse tree and compares class by class
-over the whole manifest. Over 7,975 files it reports the analyzer emitting 657,432
-symbols and 228,194 relationships, 228,194/228,194 of them carrying a line, 0
-symbols without an owner, 0 names containing whitespace or NUL, and 0 files
-unrouteable.
+A second, larger instrument — `script/m12/xml-corpus-differential.mts`, **now in
+this repository** — builds an **independent oracle** from the parse tree and
+compares class by class over the whole manifest. It is the only gate here that
+measures three things nothing else does: **symbol-level** agreement (including a
+`SPURIOUS` class for symbols the analyzer minted that the tree does not support),
+**type coverage across twenty relationship classes**, and **multiset** rather than
+set comparison, because XML legitimately repeats names.
 
-It also reports `contains-attribute` recall **0.910** and 76,372 spurious
-relationships, and **both numbers are the oracle's error**. On
+Its oracle is written from the grammar's own declaration with a deliberately
+different algorithm, which is what makes a disagreement a finding rather than the
+same bug counted twice. The analyzer walks an explicit worklist carrying the owner
+*down*; the oracle makes one flat pre-order sweep and reads the owner by walking
+*up* a precomputed parent map.
+
+**It was vendored, not re-measured.** The probe used to live in a sibling
+worktree at `fixtures/xml/probes/` while the artifact it produces,
+`validation/m12/results/corpus-differential.json`, was version-controlled and cited
+here — so the evidence was in the repository and the instrument was not, and a
+fresh checkout could read the number with no way to re-derive it. Only four paths
+were absolute; they are now relative and overridable (`XML_CORPUS_ROOT`,
+`XML_WASM`, `XML_DIFF_OUT`).
+
+Current run, 8,889 files over all six corpora:
+
+```
+grammarNodes 5,899,555   grammarErrorNodes 48,847   grammarMissingNodes 9
+filesWithGrammarError 177   filesUnparseableByRouter 0
+symbolsEmitted 657,432      relationshipsEmitted 230,603
+per-symbol class: 13 classes at recall 1 / precision 1
+per-relationship class: 18 of 20 at recall 1 / precision 1
+```
+
+**The 36 `SPURIOUS` this document used to quote is now 595, and that is the
+INSTRUMENT falling behind a correct analyzer rather than a regression.** M18 taught
+the analyzer that `&name;` is a use and that the five predefined entities are
+`builtin`, which added 5,350 `entity_reference` edges corpus-wide — 4,816 of them
+`builtin`. This oracle declares nineteen relationship classes and
+`entity_reference` is **not one of them**; the string does not occur in the file.
+An oracle that derives none of them calls every one spurious.
+
+The distinction is checkable rather than asserted, and it is worth stating how:
+sample the artifact's `REL_SPURIOUS` list and **every** row either carries
+`resolvable=builtin` or names an entity the document declares in its own DTD —
+including `bigentname.xml`'s 3,965-character entity, correctly published by the
+length-cap fix. A real fabrication would not look like that.
+
+Deliberately **not** fixed here. Teaching this third oracle entity references is
+real work, and the lane already has two that cover them: `deriveTreeEdges`' xml
+branch in `script/m14/differential.ts` (which section E's 0/0 row rests on) and
+`script/m12/xml-entity-accounting.mts` (the accounting identity over 11,940 sites).
+Adding a third copy of that knowledge buys no additional coverage. The gap is
+recorded in the artifact itself as `knownGapEntityReferenceCoverage`.
+
+It once reported `contains-attribute` recall **0.910** and 76,372 spurious
+relationships, and **both numbers were the oracle's error**. On
 `grails-context.xsd` its namespace histogram is `[["…XMLSchema",1],["(none)",61]]`
 — it resolved the XSD namespace for 1 of 62 elements and therefore published
 owners as `xsd:element` where the analyzer correctly published `component-scan`.
@@ -301,7 +347,78 @@ the one shown above to be wrong.
 
 ## Corpus validation
 
-- Manifest: `fixtures/xml/repositories/MANIFEST.json` — six repositories at pinned
+### Differential coverage — all six corpora
+
+The differential is **not** a single-corpus gate. `script/m12/xml-differential-gap.mts`
+runs the analyzer and the independent oracle over **all 8,889 tracked files in
+every pinned repository** and buckets every `contains` edge by the ROLE that
+emitted it:
+
+| corpus | files | oracle `contains` | corroborated | unexplained | share |
+|---|---|---|---|---|---|
+| cxf | 2,439 | 76,310 | 76,310 | 1 | 0.0% |
+| docx4j | 431 | 66,529 | 66,529 | 0 | 0.0% |
+| grails-core | 314 | 8,327 | 8,327 | 0 | 0.0% |
+| libxml2 | 1,311 | 23,652 | 23,647 | 24 | 0.1% |
+| libxslt | 1,144 | 21,499 | 21,493 | 18 | 0.1% |
+| maven | 3,250 | 53,786 | 53,786 | 0 | 0.0% |
+| **total** | **8,889** | **250,103** | **250,092** | **43** | **0.02%** |
+
+Read the columns carefully, because the two counts are of *different populations*
+and conflating them is how this table previously acquired a total that was wrong
+in the fourth digit. **`oracle` is distinct truth keys** (a `from`→`target` set, so
+one key counts once however many writings produced it): 250,103. The analyzer
+emits **250,135** `contains` edges — 250,092 corroborated + 43 unexplained — and it
+is that larger figure which is the denominator for the percentage. The oracle set is
+11 keys *smaller* than the analyzer's corroborated count, which is expected: the
+set de-duplicates while the edge count does not, and the two `xml_*` residuals
+below are exactly the files where one name has 200+ writings.
+
+All 43 are **named rather than absorbed**, enumerated by the rule that emitted them
+(`script/m12/xml-differential-gap.mts` publishes this table, with a corroborated
+count per role):
+
+| role | unexplained | reading |
+|---|---|---|
+| `pseudo_attribute` | 18 | a synthetic `xml-stylesheet` representation — an analyzer artefact rather than a fact in the tree, so the oracle correctly declines to corroborate it |
+| `dtd_content_model` | 10 | self-references such as `contains dia:group -> dia:group`, where a DTD content model admits the element it belongs to and both readings are defensible |
+| `dtd_ndata_notation` | 7 | the `NDATA`/`SYSTEM` notation of an unparsed entity; the oracle derives the entity, not its notation binding |
+| `dtd_attribute_declaration` | 4 | an `<!ATTLIST>` re-declaring an attribute the oracle counts once |
+| `xml_attribute` | 2 | the `libxml2` stress files where one name has 200+ writings |
+| `xml_element` | 2 | the same stress files, element side |
+
+18 + 10 + 7 + 4 + 2 + 2 = **43**, and none is a class the oracle claims to derive.
+Publishing the roles is what keeps the number from decaying into a tolerance: each
+row is individually falsifiable, so a new defect appears as a new row instead of
+quietly shrinking a percentage.
+
+Getting here meant fixing the **oracle**, not this analyzer: the review had
+attributed the five-corpora gap to oracle coverage on the strength of a shape
+rather than a measurement, and the measurement found six oracle defects — `id`
+read as a name attribute, XSLT node-construction read as declaration, WSDL absent,
+the whole DTD branch missing, a prefix slice where the LOCAL name was needed, and
+RELAX NG wrong in two opposite directions that caught each other. Every one of
+those is written up where it lives (the oracle's source, and
+`reviews/xml/master-review.md` owed item 8).
+
+**The pinned `grails-core` row did not move through any of the six fixes** — 100%
+covered, MISSING=0, unexplained=0 throughout — which is the signature of a fix to
+the instrument rather than to the analyzer.
+
+Two declaration-vocabulary tables are kept, in this file and in the oracle,
+**deliberately**: importing one into the other would make them agree by
+construction, and an oracle that cannot disagree is a mirror rather than a check.
+`script/m12/xml-vocab-tables.ts` is the defence against drift — it asserts the two
+cover the same **namespaces**, which is the drift that produces thousands of
+unexplained edges and an argument instead of a finding. It deliberately does not
+assert the construct lists agree, because that is a semantic judgement and forcing
+two copies to match textually would put the oracle's independence in the same
+place. Failure-proven: removing WSDL from one table exits 1.
+
+### Corpus inputs
+
+- Manifest: `validation/m12/corpus/MANIFEST.json` (vendored; the corpora themselves
+  live in the sibling worktree and are addressed by `XML_CORPUS_ROOT`) — six repositories at pinned
   revisions, 8,889 tracked files over seven globs (`*.xml`, `*.xsd`, `*.dtd`,
   `*.xsl`, `*.xslt`, `*.svg`, `*.rng`), deterministic lexicographic order.
   grails-core's 314 are 146 xml + 9 xsd + 4 dtd + 155 svg, so a lane that measured
@@ -333,18 +450,151 @@ run names files that are expected to fail and fails the run if they succeed.
 - Corpus errors: `validation/m12/results/xml-corpus-errors.json`
 - Complexity: `validation/m12/results/xml-corpus-complexity.json`
 - Shape safety: `validation/m12/results/xml-shape-safety.json`
-- Corpus differential: `fixtures/xml/out/corpus-differential.json`, runner
-  `fixtures/xml/probes/corpus-differential.mts`
+- Corpus differential: **vendored** — runner `script/m12/xml-corpus-differential.mts`,
+  artifact `validation/m12/results/corpus-differential.json`. Both are in this
+  repository and both are re-derivable from a clone (the corpus itself lives in the
+  sibling worktree and is addressed by `XML_CORPUS_ROOT`).
+  The grammar A/B probe, the conforming-parser verdict probe, the corpus manifest
+  and the pre-repair wasm are vendored too, so **no number quoted in this document
+  depends on an instrument outside version control**. What remains in the sibling
+  worktree is scratch — the `dbg*.mts` debugging probes and the per-finding
+  forensics output — which nothing cites.
 - Lane registration and per-language record: `script/m14/completeness-inventory.ts`
   → `script/m14/spec/xml-completeness.json`, emitted by
   `script/m14/emit-xml-completeness.ts`
-- M14 fixtures: `validation/m14/fixtures/xml/` (8), mutants via
-  `script/m14/mutate-analyzer.ts` (9)
+- M14 fixtures: `validation/m14/fixtures/xml/` (18 fixture pairs), mutants via
+  `script/m14/mutate-analyzer.ts` (21, all caught, 0 survivors)
+- Grammar A/B: `script/m12/xml-grammar-corpus-ab.mts` →
+  `validation/m12/results/grammar-corpus-ab.json`; both wasms in-repo
+  (`validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm`,
+  sha256 `50ad134273834d5efe37…`) — **31 improved / 2 regressed / 8,855 unchanged**
+- Grammar verdict vs a conforming parser:
+  `script/m12/xml-grammar-verdict-vs-reference.mts` →
+  `validation/m12/results/grammar-verdict-vs-reference.json` — **16 agree, 0 disagree**
+- Corpus manifest: `validation/m12/corpus/MANIFEST.json` (vendored; corpora
+  addressed by `XML_CORPUS_ROOT`)
+- Declared-name line contract: `script/m12/xml-declared-name-lines.mts` — 8,889
+  files, 52,651 declaration anchors, **0 mis-anchored**; 43 offenders and exit 1
+  with the fix reverted
+- Entity-reference accounting: `script/m12/xml-entity-accounting.mts` — 11,940
+  `EntityRef` sites, 908 collapsed edges, **11,919 accounted**; the 21-site
+  residual is declared by file and size and the gate exits 1 if any of it changes
+- Differential corpus coverage: `script/m12/xml-differential-gap.mts` — 43
+  unexplained of 250,135 `contains` edges over **8,889 files / all six corpora**
+- Vocabulary-table drift: `script/m12/xml-vocab-tables.ts` — analyzer and oracle
+  cover the same 4 namespaces; exit 1 on drift
+- Encoding recovery: `script/m12/xml-encoding-recovery.mts` — 22 files, 1,537
+  symbols, 229 relationships, **with the predicate written into the script**
 - Grammar provenance: `grammars/tree-sitter-xml/PIN.md`, verified by
   `script/m14/verify-grammar-pins.ts`
+- Grammar corpus A/B: `script/m12/xml-grammar-corpus-ab.mts`, artifact
+  `validation/m12/results/grammar-corpus-ab.json` — **both wasms now live in this
+  repository**, so the comparison cannot go dead the way it did once by pointing its
+  pre-repair arm at the patched build:
+  `validation/m12/grammar/tree-sitter-xml.PRE-REPAIR.wasm`
+  (sha256 `50ad134273834d5efe37…`, 50,008 B) and `wasm/tree-sitter-xml.wasm`.
+  Re-run: **31 improved, 2 regressed, 8,855 unchanged** over 8,888 files
+- Grammar verdict vs a conforming parser:
+  `script/m12/xml-grammar-verdict-vs-reference.mts`, artifact
+  `validation/m12/results/grammar-verdict-vs-reference.json` — **16 agree, 0
+  disagree** over 16 accept/reject cases
+- Corpus manifest: `validation/m12/corpus/MANIFEST.json` (vendored; six
+  repositories at pinned revisions, 8,889 tracked files)
 - Evidence scripts: `script/m12/xml-corpus-errors.ts`,
   `xml-corpus-measure.ts`, `xml-node-types-compare.ts`,
   `xml-contract-probe.ts`, and `regex-census.ts`
+
+## Entity references: what is a use, and of what
+
+`&name;` is a **use** of a declared entity, and the graph says so — one
+`references` edge per (owner, name), collapsed, carrying `occurrences` and `lines`.
+Two things about that are decided rather than incidental, and both were measured
+first:
+
+**Whose use it is.** A reference in element content belongs to that element. A
+reference inside an entity's own **replacement text** belongs to *that entity*:
+
+```xml
+<!ENTITY shout "&greeting; THERE">   →   shout references greeting
+```
+
+`shout` cannot be expanded without `greeting`, so the dependency is real and it is
+the entity's. Such a reference has no element above it, which is why the first
+implementation dropped all of them — **611 of a 651-site shortfall**, and
+`libxml2/test/recurse/lol_ig_content.xml` at 147 sites and 1 edge is the extreme.
+
+**Whether it can be satisfied.** Three answers, and only three:
+
+| `resolvable` | meaning | example |
+| --- | --- | --- |
+| `in-document` | the document's own DTD declares it | `&greeting;` where `<!ENTITY greeting …>` exists |
+| `builtin` | the XML specification declares it in every document | `&lt; &gt; &amp; &apos; &quot;` |
+| `unresolved` | neither — a real claim the document gets wrong | `&undefinedEntity;`, or `&nbsp;` in an XML document that never declares it |
+
+`builtin` is exactly the five predefined entities (XML 1.0 §4.6) and nothing
+else. Before that answer existed all five took `unresolved` and were stamped
+`danglingEntityReference: true` — **4,575 sites across 180 files** where the
+analyzer asserted that a well-formed document references an entity nothing
+defines. The same argument X8 settled for the `xml` and `xmlns` prefixes, and the
+same shape of knowledge as `BUILTIN_NAMESPACE_URIS`, which this analyzer already
+carried for namespaces.
+
+`&nbsp;` and `&d;` are **not** predefined, and that is the half that keeps the
+rule honest: an XML document using an undeclared HTML entity really does reference
+something undefined, and widening the builtin set until the five passed would be
+the wrong fix with nothing to catch it.
+
+There is **no length cap** on an entity name. The name is a substring of a file
+already in memory, so a cap cannot bound what the file size has not already
+bounded — and the 256 that used to be here disagreed with the uncapped
+declaration path, leaving `bigentname.xml`'s 3,965-character entity in the graph
+as a symbol with none of its uses.
+
+Gated by `script/m12/xml-entity-accounting.mts`, which asserts the accounting
+identity `sum(occurrences) == EntityRef nodes` and declares its 21-site residual
+by file and size. Pinned by fixture `xml/xsd-entity-replacement-builtin` and
+mutants `xml/predefined-entities-unresolvable` and
+`xml/entity-replacement-text-ownership-dropped`.
+
+`%pe;` is a different construct and is deliberately absent: a `PEReference`
+inside an internal subset is a `DeclSep` separator, and outside one it is a
+parameter-entity use. That distinction is recorded as owed rather than decided —
+**24 `PEReference` sites** in the corpus, and a ruling is owed.
+
+## Where a declaration's line comes from
+
+A vocabulary declaration is written in an **attribute**, and a formatted document
+routinely puts that attribute — or the value itself — on a different line from the
+tag that opens the declaration:
+
+```xml
+<xsl:with-param          ← not where the name is
+    name="content"      ← the name
+```
+
+A symbol and a `contains` edge therefore report **the line carrying the value**,
+not the line carrying the tag:
+
+| shape | anchor | example |
+| --- | --- | --- |
+| attribute and value on one line | the `Attribute` | `<xsd:attribute name="x" type="…"/>` |
+| attribute and value on different lines | the `AttValue` | `<xsd:element name=` ⏎ `"InvalidModificationFault"` (`cxf/wsn/wsdl/rp-2.xsd`) |
+| value with surrounding whitespace | the line carrying it, after the trim XSD value normalization performs | `name=" xmlns"` (`libxml2/…/spectest.xml`) |
+
+The **structural** span is not lost. `metadata.elementRange` carries the element's
+own range whenever a declared name was used, so a consumer that wants "where does
+this element start" has it and a consumer that wants "where is this name written"
+has `range`. Before this the two readings shared one field and one of them had to
+be wrong.
+
+Gated by `script/m12/xml-declared-name-lines.mts`, which reads the analyzer's
+output and goes back to the **source text** — it cannot tell a wrong line from a
+right one by agreeing with the analyzer. Pinned by fixture
+`xml/xsd-declared-name-lines` (all three shapes) and mutant
+`xml/declared-name-anchored-to-the-tag`.
+
+This is the same rule as the `ExternalID` line contract above and the `#861` web
+family finding, reached from the declaration side.
 
 ### The two grammar repairs
 

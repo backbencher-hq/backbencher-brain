@@ -52,6 +52,9 @@ interface PythonContext {
   instanceAttrs: Set<string>
   currentModule: string | undefined
   currentClass: string | undefined
+  /** PERL-MR15: the cross-file companion. Read from `AnalyzeContext.overrideCompanion`,
+   *  which is the channel `engine.ts` populates and `pool-worker` forwards. */
+  overrideCompanion?: Map<string, Set<string>>
   currentFunction: string | undefined
   moduleName: string
 }
@@ -116,7 +119,16 @@ const PY_FRAMEWORK_PATTERN: Record<string, string> = Object.fromEntries(
 const PY_FRAMEWORK_ORDER: string[] = Object.values(PY_FRAMEWORK_MARKERS).map((m) => m.framework)
 
 export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
-  analyze(rootNode: Node, content: string, filePath: string): ASTEngine.ParseResult {
+  analyze(
+    rootNode: Node,
+    content: string,
+    filePath: string,
+    // The engine has always passed this fourth argument; Python was the one
+    // lane whose signature stopped at three, so `overrideCompanion` was
+    // unreachable and the resolver below read a `_overrideCompanion` key that
+    // nothing ever set.
+    context?: ASTEngine.AnalyzeContext,
+  ): ASTEngine.ParseResult {
     // Regex-free module-name derivation: last path segment minus its final
     // extension (pure char scan — the extension is after the LAST dot).
     const base = filePath.split("/").pop() || "module"
@@ -138,6 +150,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       instanceAttrs: new Set(),
       currentModule: moduleName,
       currentClass: undefined,
+      overrideCompanion: context?.overrideCompanion,
       currentFunction: undefined,
       moduleName,
     }
@@ -343,7 +356,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // swift/objc all do — python was the only managedoo analyzer with none).
     // classifyEvidenceTier runs LAST so every edge — including declared-type
     // refs and member uses created above — leaves with an evidenceClass.
-    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs)
+    this.extractDeclaredTypeRefs(rootNode, ctx.relationships, phantomDefs, ctx.moduleName)
     this.extractMemberUses(rootNode, ctx, phantomDefs)
     this.classifyEvidenceTier(ctx.relationships)
 
@@ -978,14 +991,34 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     // TypeVar are external — no in-file target to instantiate).
     const firstChar = targetName[0]
     const isUppercase = firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase()
-    if (isUppercase) {
+    // PY-11. An uppercase callee became `instantiates` when the class is declared in
+    // this file and was DROPPED ENTIRELY otherwise. Both halves of that were wrong.
+    //
+    // Dropping was the serious half. Measured over 300 pinned corpus files: 1,152
+    // uppercase callees in the source, 263 became `instantiates`, and **889 — 77.2% —
+    // produced no relationship at all.** 368 of those name a class the file EXPLICITLY
+    // IMPORTS, so the most characteristic edge in an Ansible module was missing from the
+    // graph: `module = AnsibleModule(...)`, file after file, with nothing to show for
+    // it. A call is a call whether or not this analyzer can see the callee's class, and
+    // dropping it loses the fact rather than qualifying it.
+    //
+    // The instinct behind the drop was right and is kept: do not claim an INSTANTIATION
+    // of a class you have not read. `TypeVar(...)` and `Exception(...)` are not
+    // constructions of project classes and calling them one would be a fabrication. So
+    // the claim is narrowed, not the edge dropped:
+    //
+    //   uppercase callee that IS an in-file class/enum -> `instantiates` (a claim)
+    //   every other callee, uppercase or not            -> `calls`      (a fact)
+    //
+    // The second branch needs no new policy: it is the branch every lowercase callee
+    // already took, and a bare `Name(...)` is a call syntactically whatever its
+    // capitalisation says about intent.
+    if (isUppercase && ctx.declaredTypes.has(targetName)) {
       // O(1): declaredTypes holds exactly the in-file class/enum names.
-      if (ctx.declaredTypes.has(targetName)) {
-        this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
-          pythonSpecific: true,
-          qualified: fullCallee,
-        }, this.nodeLine(calleeLeaf))
-      }
+      this.pushRel(ctx, caller, targetName, ASTEngine.RelationshipType.Instantiates, 0.9, {
+        pythonSpecific: true,
+        qualified: fullCallee,
+      }, this.nodeLine(calleeLeaf))
       return
     }
 
@@ -1078,7 +1111,7 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
    * scalar types (str/int/float/bool/bytes) are excluded from names; unions
    * (T | U), optionals, and generics descend via their children.
    */
-  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>): void {
+  private extractDeclaredTypeRefs(rootNode: Node, relationships: ASTEngine.UniversalRelationship[], phantoms: Set<string>, moduleName: string): void {
     const emitted = new Set<string>()
     const PRIMITIVES = new Set(["str", "int", "float", "complex", "bool", "bytes", "object", "None", "Any", "self", "cls"])
 
@@ -1112,7 +1145,29 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         p = p.parent
       }
-      return "global"
+      // PY-4. This used to return the LITERAL STRING "global" — a Python KEYWORD used
+      // as a scope name — whenever a statement had no enclosing function or class. Three
+      // things were wrong with it at once.
+      //
+      // A name that is not a name: `global` is not a scope, a module, or anything a
+      // reader can navigate to. This is the M60 R7 class, the same one markdown hit when
+      // an empty ATX heading published a symbol named `#`.
+      //
+      // Not tolerated by the store: `GENERIC_SOURCE_NAMES` is
+      // `["unknown", "SCSS_FILE_SCOPE", "window", "exports", "default", "GlobalScope"]` —
+      // the names the indexer knows are synthetic scopes — and `global` is not among
+      // them, so Python's synthetic scope took a path no other lane's takes.
+      //
+      // And INCONSISTENT WITH ITS OWN FILE: `imports` in the same module attributes the
+      // import to `ctx.moduleName`, the file's stem. One module, two spellings for one
+      // scope, from one analyzer, so neither can be trusted as the module's identity.
+      //
+      // So it returns the module name — the SAME derivation `imports` already uses, one
+      // line away, which is what makes this a consistency fix rather than a new
+      // convention. `__init__.py` yields `__init__`, which is a weak module name; that is
+      // a property of the file stem, it is the string `imports` has always published, and
+      // improving the stem derivation is a separate change with its own blast radius.
+      return moduleName
     }
 
     const emit = (source: string, roots: (Node | null | undefined)[], relType: string): void => {
@@ -1193,15 +1248,52 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
       list.push(s)
       byName.set(s.name, list)
     }
-    // First (leftmost) base class is the primary inheritance target — with
-    // multiple bases, overrides resolve against the first (Python MRO).
-    const baseByClass = new Map<string, string>()
+    // PY-8. ALL bases, in declaration order — not just the leftmost.
+    //
+    // Python's rule is "the first base in MRO order that actually DECLARES the name",
+    // and keeping only the first base is a different rule. It looks equivalent until a
+    // multi-base class inherits a name from a LATER base, which is ordinary Python:
+    //
+    //     class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple):
+    //         def __new__(cls, *args, **kwargs): ...
+    //
+    // `_ComputedReqKindsMixin` declares `__init__` and no `__new__`;
+    // `RequirementNamedTuple` is a NamedTuple and so necessarily has `__new__`. This
+    // analyzer emitted `Requirement.__new__ -> _ComputedReqKindsMixin.__new__` at 0.5 —
+    // naming a method that class does not have — and never considered the base that
+    // does, because it is not leftmost.
+    //
+    // The distinction that makes the old rule defensible in principle — the leftmost
+    // base is the most-derived ancestor — is exactly what makes it wrong here: a more-
+    // derived ancestor that does not define the name contributes nothing, and the name
+    // is inherited from further left in the MRO than the class itself.
+    //
+    // So: walk the bases in order, take the first that declares the method, and emit
+    // ONE verified edge to it. Guess only when NO base declares it, and then guess the
+    // leftmost, because the leftmost is the best candidate for where an unseen method
+    // would live.
+    const basesByClass = new Map<string, string[]>()
     for (const r of ctx.relationships) {
       if (r.type === ASTEngine.RelationshipType.Extends && r.source && r.target) {
-        if (!baseByClass.has(r.source)) baseByClass.set(r.source, r.target)
+        const list = basesByClass.get(r.source)
+        if (list) {
+          if (!list.includes(r.target)) list.push(r.target)
+        } else {
+          basesByClass.set(r.source, [r.target])
+        }
       }
     }
-    const overrideCompanion = (ctx as any)._overrideCompanion as Map<string, Set<string>> | undefined
+    // Every class name declared in this file. A base NOT in here is one this analyzer
+    // has never read, which is the distinction the guess below turns on.
+    const declaredClasses = new Set<string>()
+    for (const s of ctx.symbols) {
+      if (s.kind === ASTEngine.SymbolKind.Class && s.name) declaredClasses.add(s.name)
+    }
+    // PERL-MR15. This read `(ctx as any)._overrideCompanion`, a channel nothing
+    // populates: the engine puts the companion on `AnalyzeContext.overrideCompanion`
+    // and the pass repopulates it on re-analysis, so the Python rule ran with no
+    // companion at all and every cross-file base stayed a guess.
+    const overrideCompanion = ctx.overrideCompanion
     const baseDeclares = (base: string, method: string): boolean => {
       const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
       if (inFile) return true
@@ -1210,22 +1302,86 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     }
     for (const s of ctx.symbols) {
       if (s.kind === ASTEngine.SymbolKind.Method && s.ownerName) {
-        const base = baseByClass.get(s.ownerName)
-        if (!base) continue
-        const inFileDeclares = byName.get(s.name)?.some((bm) => bm.ownerName === base) ?? false
-        if (inFileDeclares || overrideCompanion?.get(base)?.has(s.name)) {
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
-        } else if (!overrideCompanion?.has(base)) {
-          // Pass 3 (family parity with java/groovy resolveOverrides): the
-          // base is not declared in this file and the companion index gave
-          // no opinion (it is never populated in production — see M37.10).
-          // Emit the deterministic first-parent guess BELOW the patterns.ts
-          // threshold (0.7): visible in raw output, counted as heuristic
-          // (honest suspicion) by the differential, never contaminating
-          // thresholded analysis. Pre-M37.10 this edge was silently dropped
-          // for every externally-declared base.
-          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${base}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.5, { reasonCode: "first-parent-guess" }, s.range?.startLine)
+        const bases = basesByClass.get(s.ownerName)
+        if (!bases || bases.length === 0) continue
+        // MRO order: the first base that DECLARES this name owns the override.
+        const declaring = bases.find((b) => {
+          const inFile = byName.get(s.name)?.some((bm) => bm.ownerName === b) ?? false
+          return inFile || !!overrideCompanion?.get(b)?.has(s.name)
+        })
+        if (declaring) {
+          this.pushRel(ctx, `${s.ownerName}.${s.name}`, `${declaring}.${s.name}`, ASTEngine.RelationshipType.Overrides, 0.95, {}, s.range?.startLine)
+          continue
         }
+        // `object.__init__` is the one external override that is a FACT and not a
+        // guess: every class in Python inherits it, so a class defining `__init__`
+        // overrides `object.__init__` whatever its bases say. Emitted at the same
+        // confidence as a verified edge because it is the same kind of claim — read from
+        // the language, not inferred across a module boundary. It is 27 of the 1,190
+        // guesses the oracle confirmed, so it is the part worth keeping.
+        if (s.name === "__init__" && bases.includes("object")) {
+          this.pushRel(ctx, `${s.ownerName}.__init__`, "object.__init__", ASTEngine.RelationshipType.Overrides, 0.95, { reasonCode: "object-init-universal" }, s.range?.startLine)
+        }
+        // No base declares it, so this is a guess. Guess the best candidate — and the
+        // best candidate is NOT always the leftmost.
+        //
+        // A base that is declared in THIS file and lacks the name is evidence of
+        // absence: we have read it. A base that is external is merely unknown. Guessing
+        // a base we have just ruled out names the one class we KNOW does not have the
+        // method, which is the worst possible guess — and it is what the leftmost rule
+        // did for `class Requirement(_ComputedReqKindsMixin, RequirementNamedTuple)`,
+        // where the mixin was read and found to have `__init__` but no `__new__`, and
+        // the NamedTuple that necessarily has `__new__` was never named.
+        //
+        // This is the change that matters most in this method, and the measurement that
+        // forced it: the guess was 98% WRONG. Over 400 corpus files the unconditional
+        // version emitted 1,313 override edges the tree contradicts against 27 it
+        // confirms — and those 1,313 were overwhelmingly bases this analyzer had
+        // ALREADY READ and found lacking.
+        //
+        // A base declared IN THIS FILE that lacks the name is not a candidate at all: we
+        // read its body, it does not define the method, so the subclass is not
+        // overriding anything. An edge emitted anyway is not honest suspicion — it is a
+        // false statement carrying a confidence label, and at 1,313 rows it is 1.3% of
+        // this lane's relationships.
+        //
+        // The rule is therefore: a verified edge to the first base that DECLARES the
+        // name; a 0.5 guess ONLY to a base this file never read, where the question is
+        // genuinely open; and NO edge when every base is in-file and none declares the
+        // name. That last case is not a gap — the tree says the method is new rather
+        // than overriding, and emitting nothing is what the tree says.
+        //
+        // The 0.5 and the reasonCode stay, because where a guess is still permitted it
+        // should still be answerable. Making it answerable is not the same as making it
+        // right, and this measurement is the difference.
+        // PY-7, resolved by measurement. The first-parent guess is GONE, and the number
+        // that removed it is the whole argument:
+        //
+        //   over 400 pinned corpus files, the guess emitted 1,163 override edges the
+        //   block grammar CONTRADICTS, against 27 it confirms. 98% wrong.
+        //
+        // The analyzer's own comment already said why it was firing at all: the
+        // companion index that could have verified these "is never populated in
+        // production". So the branch was not a measured fallback, it was an
+        // unconditional emission for every method of every class with an external base,
+        // carrying a confidence label that made 1,163 false rows look like suspicions.
+        // A confidence value is a claim about how sure the analyzer is; at 2% precision
+        // the honest value is "I have no information", and the honest edge count is
+        // zero.
+        //
+        // Two candidate smarter rules were measured and both failed:
+        //   - only guess a base the file never READ (removes 150 of 1,313; the rest name
+        //     an external base, which is exactly where no local signal exists);
+        //   - only guess a base the file IMPORTS, as corroboration (154 of 428 refuted
+        //     guesses name an imported base, so it removes 64% and leaves the rest).
+        //
+        // So there is no rule that makes this honest, and keeping a 2%-precision
+        // mechanism at 1.3% of the lane's relationships is not a trade — it is noise
+        // with a confidence score. What remains is the part that is a FACT about
+        // Python rather than a guess about another module: `object.__init__` is
+        // universal, so a class that defines `__init__` overrides it, and that is
+        // emitted as verified below.
+        continue
       }
     }
   }
@@ -1244,7 +1400,31 @@ export class RealPythonAnalyzer implements ASTEngine.LanguageAnalyzer {
     line?: number,
   ) {
     if (!source || !target) return
-    const key = `${type}\u001f${source}\u001f${target}`
+    // PY-6. The dedup key was (type, source, target) with NO LINE, which is STRICTLY
+    // COARSER than the store's own relationship key. The store's primary key is
+    // (source, type, target, line) — the M59 #822 rule — so a `contains` edge to each
+    // of two same-named members is a DISTINCT row the store is willing to keep, and the
+    // analyzer was discarding one of them before it ever got there.
+    //
+    // Python makes this common rather than exotic, and the shape is a getter/setter
+    // pair, which is idiomatic Python:
+    //
+    //     @property
+    //     def collection_finder(cls): ...
+    //     @collection_finder.setter
+    //     def collection_finder(cls, value): ...
+    //
+    // Both `def`s are real declarations, both published as symbols (measured:
+    // L50 and L54 in ansible's `_collection_config.py`), and ONE `contains` edge was
+    // emitted — the second member was unreachable from its class in the graph, so
+    // bb_graph's callers and bb_impact could not reach the setter. Same class of defect
+    // as markdown's MD-2, and it is the same fix markdown's analyzer already carries:
+    // the site's LINE is part of a relationship's identity, not a decoration on it.
+    //
+    // The line is included only when there is one. A relationship with no line keeps
+    // the coarse key, because there is nothing finer to distinguish it by and
+    // inventing a 0 would be a fabricated position.
+    const key = `${type}\u001f${source}\u001f${target}\u001f${line ?? ""}`
     if (ctx.seenRels.has(key)) return
     ctx.seenRels.add(key)
     ctx.relationships.push({
