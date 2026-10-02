@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-30T08:20:16.434Z",
-  "commit": "c9181d764daaceb9394549cd1f81c144400043ab",
+  "generatedAt": "2026-10-02T22:15:03.377Z",
+  "commit": "0b0f906637431dbec1569e05f67a2b7158c55cfc",
   "scope": "the six functional-family lanes (clean, clojure, elixir, erlang, fsharp, haskell) plus every lane registered in this file (hcl joined 2026-09-26, M60 data/config wave); the shape extends to any lane with an entry here",
   "rule": "A pinned grammar is its wired bytes (sha256+length), its enumerable surface (id-order, type-set and field-set digests through web-tree-sitter, with the id/named/anonymous vocabularies recorded separately), the local copies those bytes are byte-identical to, the vendored source files (per-file sha256), and the authored provenance/decision record. Verification re-measures all of it and fails on ANY drift — including a vendored source edit, a vanished copy, or a name the vendored source declares that the wired wasm does not have. Regenerating the record is an explicit act (--write), never a silent side effect of verifying.",
   "lanes": {
@@ -1093,6 +1093,22 @@
             "sha256": "5596c87c1bffb0ea51d61400915323144954f587a0c9a8f19c61b85f7b34dbba",
             "bytes": 7430
           },
+          "recipeprefix/grammar.patch": {
+            "sha256": "797f31f60d59b62828f5d64893af2293fad6b2ec89d47a1a15ba2f2d4723b9d0",
+            "bytes": 5992
+          },
+          "recipeprefix/grammar.with-recipeprefix.js": {
+            "sha256": "1a7f8e5da30e9e4d882ad97da355cb3b118839a76edcce741cb4e1a9c352d9cf",
+            "bytes": 21404
+          },
+          "recipeprefix/README.md": {
+            "sha256": "e834d374d72f86a23b4108a54db83afb46723267e8dc367c34e0b17a6c53b34b",
+            "bytes": 11364
+          },
+          "recipeprefix/scanner.c": {
+            "sha256": "45d96c6a38f7fc35e95dd3a29d92c288c064c85a004e776eb219c1a2962ec676",
+            "bytes": 9533
+          },
           "src/grammar.json": {
             "sha256": "692c5256c2d805e5f7bad2f0a718b85cb63ae04451b437407992f2fb4c653078",
             "bytes": 118980
@@ -1105,6 +1121,10 @@
             "sha256": "91abfcda38bb9a800a3231c1e7846d6470c91605bde50fc43dbfa2281eb71541",
             "bytes": 1084442
           },
+          "src/scanner.c": {
+            "sha256": "3bad9e33cff50baf3ec9321f6bb9bcbf6b73a86f7c1449755d938f0d26e68cc2",
+            "bytes": 12986
+          },
           "src/tree_sitter/alloc.h": {
             "sha256": "b29c1c9fb7cc82f58c84b376df1297d6e2737a1d655fd356db0859e3c29c2fea",
             "bytes": 985
@@ -1116,10 +1136,14 @@
           "src/tree_sitter/parser.h": {
             "sha256": "180b893c8734778fd32f372dfbc27bd6ad1cd2221f26150b31256ff6716320d2",
             "bytes": 7624
+          },
+          "tree-sitter.json": {
+            "sha256": "479fd60dabddd95947cb79ae9c85a801c7d9827dc1e570209f125b0b3a233040",
+            "bytes": 646
           }
         },
-        "digest": "9a4d990a76dc49846808e6c52d04899e0a0c9f40ba6c205888163f0ea344de8d",
-        "fileCount": 13
+        "digest": "246ba2911defb09509de4fe76f2b7c90a3e9962c59cf18bb7847f3357c47c741",
+        "fileCount": 19
       },
       "sourceVsWasm": {
         "nodeTypesJson": "grammars/tree-sitter-make/src/node-types.json",
@@ -1180,16 +1204,16 @@
             "bytes": 12393
           },
           "src/grammar.json": {
-            "sha256": "e21c5f37e5be3fa2622e6f519ba49e57e4b866b5d8ce4d2afddc6b8c649b89f2",
-            "bytes": 428741
+            "sha256": "f33c888096a78c69ae7742ccff5eff055318c6c9a9868baee08ee690cf3a108a",
+            "bytes": 429277
           },
           "src/node-types.json": {
-            "sha256": "baebb67e27a04a7011ebeefb7158f3db898944f6b6e4848b7fc3c31630791f53",
-            "bytes": 148764
+            "sha256": "97babc71a7799df402578307feb8544918b14adf6c7c21eeea217f39836bd3e3",
+            "bytes": 149363
           },
           "src/parser.c": {
-            "sha256": "a32c722a0f56a475b45c740c3bd175effa3ad3f21b68fc9c99051bca7e00e874",
-            "bytes": 17521271
+            "sha256": "3f2b4e5ed06f8411977529a4f04b1ab51b4b806dd6379b0bcc8e54b3400db0cc",
+            "bytes": 17535367
           },
           "src/scanner.c": {
             "sha256": "cf60387d290271f4d2fb558d0569b2b9ef879cb72206a9df5cc73b0b1a4b20ff",
@@ -1212,7 +1236,7 @@
             "bytes": 1115
           }
         },
-        "digest": "be07930734d6aad48242eaa02b4f39be5472388adf4db43a1261dac64f855642",
+        "digest": "8f1479ff368d0c208fb7f282584f64bf3aac7f35c76086399ffd025b5acbd6b8",
         "fileCount": 12
       },
       "sourceVsWasm": {
@@ -1839,20 +1863,20 @@
     "sql": {
       "wired": {
         "file": "wasm/tree-sitter-sql.wasm",
-        "sha256": "bcb9888ec30d27adf5dccb13e5fd45ee70102927920fcd5245e9812bed577800",
-        "bytes": 2440507
+        "sha256": "848e081247247db54545d4122a394dad3c85f79bb96a5713dbd658081b8eb819",
+        "bytes": 12620599
       },
       "surface": {
-        "ids": 729,
-        "uniqueNames": 725,
-        "namedIds": 527,
-        "namedUnique": 523,
-        "anonIds": 202,
-        "anonUnique": 202,
-        "fieldCount": 53,
-        "idOrderDigest": "4254ead34d70986522e9e1f981828a409ff6732acaf8d16ca97afc229b8e1b9f",
-        "typeSetDigest": "10a1a515be13f9bb12b54fbbfc7c2ff90963a741bbbeeccfd5d937d53295c1ca",
-        "fieldSetDigest": "c63f5b80b6b87674744f6c6fc6abff7a69df25dda1d125d851d8822d581352aa"
+        "ids": 825,
+        "uniqueNames": 821,
+        "namedIds": 594,
+        "namedUnique": 590,
+        "anonIds": 231,
+        "anonUnique": 231,
+        "fieldCount": 62,
+        "idOrderDigest": "d75d65d98a2e9011d4c3748d6f17575e984ab511ac3c8f061d4a733661378516",
+        "typeSetDigest": "19f3056a971a77fde227c2dae6612847eb468cd883a7f118e893b8e62e7f1e02",
+        "fieldSetDigest": "6e6552aef40f6a89d1c9b34be84041f2813009ff7acced8429e3dfe41d08418b"
       },
       "copies": [
         {
@@ -3689,6 +3713,52 @@
           "why": "the wired bytes; they live at wasm/ and are pinned by sha here"
         }
       ]
+    }
+  },
+  "reconciliations": {
+    "2026-10-02-lanes-make-cpp-sql": {
+      "recordedBy": "bun run /tmp/opencode/reconcile-pins.ts — every measured value below was recomputed from the working tree with the gate's own measurement code (measureSurface / measureVendored, replicated verbatim); no value was typed in and no assertion was removed or weakened.",
+      "contract": "A pin is a contract, not a snapshot: each entry below records WHICH SIDE was wrong and the measurement that decides it. Where the artifact was legitimately rebuilt, the recorded value follows the artifact and the provenance says why; where the record was wrong, the record is corrected and the artifact is left untouched.",
+      "make": {
+        "sideThatWasWrong": "THE RECORD. The artifact is intact and self-consistent.",
+        "evidence": [
+          "All 13 previously recorded vendored files are present and byte-identical (sha256 verified per file).",
+          "Vendored src/node-types.json and src/grammar.json reproduce BYTE-FOR-BYTE from the vendored grammar.js under tree-sitter CLI 0.26.9, so the generated artifacts are the generator's output for this grammar, not a damaged copy.",
+          "Vendored src/parser.c differs from that regeneration by exactly 2 hunks: the header comment (it names tree-sitter v0.25.1) and a `static` qualifier on sym_word_character_set_1. All structural #defines (LANGUAGE_VERSION, STATE_COUNT, SYMBOL_COUNT, FIELD_COUNT, ...) are identical. A generator-version difference, not corruption.",
+          "The wired bytes were NOT touched by this reconciliation: wasm/tree-sitter-make.wasm and the whole recorded surface already matched, and the lane's source<->wasm proof passed 44 declared names present / 44 wasm-named types declared, 0 built-in extras, BEFORE and AFTER."
+        ],
+        "whatChanged": "The vendored file map gained the 6 files the tree acquired and the record never enumerated, and the tree digest was recomputed from the map. This is an ENUMERATION fix: the pin's promise is 'every vendored file's sha256', and 6 of 19 files were unrecorded.",
+        "newFiles": {
+          "src/scanner.c": "the wired external scanner (grammars/tree-sitter-make/recipeprefix/README.md: 'The pinned grammar keeps the scanner it was developed against at ../src/scanner.c'). Tracked in git.",
+          "tree-sitter.json": "grammar metadata, the same file kind cpp's lane already records. Tracked in git.",
+          "recipeprefix/": "the SUPERSEDED .RECIPEPREFIX attempt, kept on purpose by its own README ('This directory is kept because the sequence is the most useful part of it'), with grammar.with-recipeprefix.js, grammar.patch, scanner.c and README.md. Evidence, not wired input. All tracked in git."
+        },
+        "limitation": "The source<->wasm proof compares node-type names and fields only, so it cannot see a change confined to the external scanner. Whether the wired wasm was built against the 09-30 scanner.c or the 09-28 one it superseded is NOT established here and is not claimed; the node vocabulary it produces is identical either way, which is what the proof measures."
+      },
+      "cpp": {
+        "sideThatWasWrong": "THE ARTIFACT — the vendored tree was incomplete, so it was RESTORED, not re-pinned.",
+        "defect": "Fork patch 4 (commit 40c478ad1, 'a macro used as an access specifier') landed in the tracked grammars/tree-sitter-cpp/grammar.js as `alias($.identifier, $.macro_access_specifier)` and the wired wasm was rebuilt in the same commit — but src/node-types.json, src/grammar.json and src/parser.c were NOT regenerated. The tree therefore declared 216 named types while the wired wasm had a 217th, which is why the gate read '1 wasm-named type not declared by the vendored source: the wired bytes are NOT this source'.",
+        "restoration": [
+          "CONTROL (proves the generator reproduces this tree, so a regeneration is trustworthy): tree-sitter CLI 0.26.9 run on the PRE-patch grammar.js at 40c478ad1^ reproduced all three recorded generated files BYTE-FOR-BYTE — node-types.json baebb67e27…, grammar.json e21c5f37e5…, parser.c a32c722a0f… — i.e. exactly the shas the record carried.",
+          "REPAIR: the same CLI on the CURRENT (patched) grammar.js. The regenerated node-types.json declares 217 named types against the wired wasm's 210 named unique, with 0 declared names missing from the wasm's id space and 0 wasm-named types undeclared. The one added type is macro_access_specifier; none removed. That is positive proof the wired bytes ARE a build of the vendored source.",
+          "LANGUAGE_VERSION stays 15; the parse tables change wholesale because a rule was added (STATE_COUNT 8706 -> 8711), which is what regeneration looks like, not what damage looks like."
+        ],
+        "whatChanged": "The record now carries the three regenerated files' sha256/bytes and the tree digest recomputed from the file map.",
+        "secondDefectFixed": "The recorded vendored.digest (be07930734d6…) did not equal the digest of the record's OWN 12-file map (957e3029332a…), and the 12 recorded files were all byte-identical to disk. So that scalar was simply wrong — a hand-edit artifact of 40c478ad1, whose message claimed 'cpp pin clean'. The corrected digest is the one the measurement computes from the map, and it agrees with disk.",
+        "limitation": "grammars/tree-sitter-cpp/src/{grammar.json,node-types.json,parser.c} are matched by .gitignore:46 (grammars/tree-sitter-*/src/*) and are NOT tracked, so this restoration is a local regeneration from the tracked grammar.js and cannot be committed. A fresh clone has no src/ at all for this lane. That is pre-existing and unchanged by this reconciliation; making those generated files tracked is a repo-policy decision that was NOT taken here."
+      },
+      "sql": {
+        "sideThatWasWrong": "THE RECORD. The artifact was legitimately rebuilt and the record was never re-pinned.",
+        "evidence": [
+          "The record was internally consistent when written: its wired sha256/bytes AND all ten surface fields measure EXACTLY the 2,440,507 B build that was wired at commit a99ccb2a9 (verified by loading that commit's blob through the same measureSurface code: ids 729, uniqueNames 725, namedIds 527, namedUnique 523, anonIds 202, anonUnique 202, fieldCount 53, idOrderDigest 4254ead3…, typeSetDigest 10a1a515…, fieldSetDigest c63f5b80…). So this is not a copy-paste of the pristine A/B baseline into the wired field — the record honestly described the bytes that were wired at the time.",
+          "The bytes then moved on purpose: commit ec2d37e3a (2026-09-29) re-wired a 12,620,599 B build — sha 848e08124724…, 825 types / 62 fields — and its own message reads 'Gates on the wired bytes (sha 848e08124724, 825 types / 62 fields, re-pinned)'. The pin registry was not regenerated in that commit, so the record was left describing the previous wired build.",
+          "The re-wiring was gated, not casual: the same message reports contract battery 54/54, fixture lane 12/12, mutants 13/13 with 0 survivors, node-type gate 83 referenced / 0 dead, differential 84/84 at recall 1.000, perf gate P1-P5, typecheck 0.",
+          "The build now wired is V11 in this lane's own candidate series (plpgsql scaffolding PLUS an opaque-body fallback, the deliberate opposite of the rejected V3). This record's `copies` entry already labelled V8 as WIRED and V6 as 'the previous wired bytes'; both labels are now stale, as is decisions.sql.decision's 'The wired bytes therefore stay V2'."
+        ],
+        "whatChanged": "lanes.sql.wired and lanes.sql.surface now carry the measured values of the bytes on disk. Nothing else in the lane was touched, and no assertion was removed.",
+        "knownStaleProseIN_THIS_FILE": "decisions.sql (copied verbatim from script/m14/verify-grammar-pins.ts, which this reconciliation did not touch because the script is a harness another lane owns) still says 'The wired bytes therefore stay V2', still labels the V8/V6 copies as the wired/previous wired builds, and its patchEvidence paragraph (+57 node types, zero new field names, error files 320 -> 256) describes the PREVIOUSLY pinned build, not the one now wired. Until the script's sql prose is updated and the registry re-emitted, those sentences are false about the bytes this record now pins. This is reported, not silently repaired.",
+        "limitation": "This lane has NO offline source<->wasm proof: the patched source lives outside the repo and `tree-sitter generate` on it emits a 43,568,124-byte parser.c against the wired build's 43,456,567, so the wired bytes are pinned by sha256 + surface + provenance only. All four `copies` paths (pristine baseline, V3, V8, V6) are ABSENT on this machine, so none of them could be re-hashed and the pristine baseline's own sha could not be checked against the value quoted in provenance.localCheckout."
+      }
     }
   }
 }
