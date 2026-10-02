@@ -6,6 +6,7 @@
 //   bb version
 import { Command } from "commander"
 import { createHash } from "crypto"
+import { fileURLToPath } from "url"
 import { existsSync, mkdirSync, realpathSync, renameSync, statSync } from "fs"
 import path from "path"
 import { BrainDatabase } from "../brain/database"
@@ -836,6 +837,92 @@ Full reference: man bb, or docs/indexing/ in the repository.
       if (!report.healthy) process.exitCode = 1
     })
 
+  /**
+ * Report the upgrade path. bb installs via `npm install -g backbencher-brain`,
+ * so npm owns the files and this command deliberately does NOT replace them —
+ * a self-updater would fight the package manager and break on read-only or
+ * root-owned global prefixes.
+ *
+ * It answers the question a user actually has ("is my bb stale, and how do I
+ * update it?") and is honest when it cannot: no network is a distinct, named
+ * outcome, not a silent "you are up to date".
+ */
+async function cmdUpgrade(opts: { check?: boolean; version?: string }) {
+  const { BACKBENCHER_BRAIN_VERSION: current, PKG_NAME } = await import("../version")
+  const range = opts.version ?? "latest"
+  const spec = `${PKG_NAME}@${range}`
+  console.log(`bb ${current}`)
+
+  // 20s bound: an upgrade check that hangs is worse than one that gives up.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 20_000)
+  let latest: string | null = null
+  let registryError: string | null = null
+  try {
+    const res = await fetch(`https://registry.npmjs.org/${PKG_NAME}/latest`, {
+      signal: controller.signal,
+      headers: { accept: "application/json" },
+    })
+    if (!res.ok) {
+      registryError = `registry returned HTTP ${res.status}`
+    } else {
+      const body = (await res.json()) as { version?: string }
+      latest = typeof body.version === "string" ? body.version : null
+      if (!latest) registryError = "registry response had no version field"
+    }
+  } catch (e: any) {
+    registryError = e?.name === "AbortError" ? "registry request timed out after 20s" : (e?.message ?? String(e))
+  } finally {
+    clearTimeout(timer)
+  }
+
+  if (!latest) {
+    // Say the check did NOT succeed. Reporting "up to date" here would be a
+    // claim we cannot support — the whole point of this command is honesty
+    // about state, and an unreachable registry means the state is unknown.
+    console.log(`could not check for updates: ${registryError}`)
+    console.log(`compare manually:  npm view ${spec} version`)
+    console.log(`update with:      npm install -g ${spec}`)
+    process.exitCode = 1
+    return
+  }
+
+  if (latest === current) {
+    console.log(`✓ up to date (latest published is ${latest})`)
+    return
+  }
+
+  console.log(`update available: ${current} -> ${latest}`)
+  console.log(`update with:      npm install -g ${spec}`)
+  if (!opts.check) {
+    console.log(`\nthen re-index so the new version's analysis applies:`)
+    console.log(`  bb index --changed`)
+  }
+}
+
+program
+    .command("upgrade")
+    .description("check for a newer bb and report exactly how to install it")
+    .option("--check", "only report whether a newer version exists; change nothing")
+    .option("--version <range>", "npm dist-tag or version range to compare against (default: latest)")
+    .addHelpText(
+      "after",
+      `
+bb is installed with \`npm install -g backbencher-brain\`, so npm owns the
+install and bb does not replace its own files. This command reports the installed
+version, the newest published version, and the command to run — it never mutates
+an install behind npm's back.
+
+  $ bb upgrade --check    # is there a newer version? (no network writes)
+  $ bb upgrade            # same report, plus the exact command to run
+
+After upgrading, re-index:  $ bb index --changed
+`,
+    )
+    .action(async (opts: any) => {
+      await cmdUpgrade(opts)
+    })
+
   program
     .command("stats")
     .description("query index counts anytime: files/symbols/relationships/embeddings (default: cwd)")
@@ -952,7 +1039,43 @@ Examples:
 // M23.P3: allow running the CLI module directly (bun src/cli/index.ts <args>).
 // Without this entry the module only defines runCli, so direct invocation is a
 // silent no-op — a real trap for scripts and verifiers.
-if (import.meta.main) {
+//
+// `import.meta.main` alone is NOT sufficient. It is true under `node file.mjs` and
+// under bun, but UNDEFINED under `node --import tsx src/cli/index.ts` (measured:
+// tsx loads the entry as a child, so Node does not mark it as main). That made
+// `node --import tsx src/cli/index.ts mcp` produce no output at all and exit 13,
+// while `node bin/bb mcp` worked — the two entries silently diverged, and only
+// agent 6's cli-surface suite compared them.
+//
+// So: use `import.meta.main` when it is defined, and otherwise fall back to
+// comparing the resolved entry path against this module's own path. The second
+// test is what covers loaders that do not set `main`.
+const isDirectRun = (() => {
+  const m = import.meta as unknown as { main?: boolean; url?: string }
+  if (typeof m.main === "boolean") return m.main
+  try {
+    const entry = process.argv[1] ? path.resolve(process.argv[1]) : null
+    if (!entry) return false
+    const self = fileURLToPath(m.url ?? import.meta.url)
+    // BOTH sides go through realpath. On macOS the entry arrives as `/tmp/...`
+    // while `import.meta.url` resolves to `/private/tmp/...`, so a plain string
+    // compare says "not the entry" and the CLI silently does nothing. Measured,
+    // not assumed — the first version of this check failed for exactly that
+    // reason and reproduced the bug it was meant to fix.
+    const real = (p: string) => {
+      try {
+        return realpathSync.native(p)
+      } catch {
+        return p
+      }
+    }
+    return real(entry) === real(self)
+  } catch {
+    return false
+  }
+})()
+
+if (isDirectRun) {
   try {
     await runCli(process.argv.slice(2))
   } catch (error) {
