@@ -157,6 +157,7 @@ export interface Fixture {
  */
 export function makeTsFixture(tag: string, n: number): Fixture {
   const root = mkdtempSync(path.join(tmpdir(), `bb-idxlife-fixture-${tag}-`))
+  createdDirs.push(root)
   mkdirSync(path.join(root, "src"), { recursive: true })
   const files: string[] = []
   for (let i = 0; i < n; i++) {
@@ -532,6 +533,18 @@ export interface RawChild {
   output(): string
 }
 
+/**
+ * Every detached child spawnRaw has made. On exit each is SIGKILLed by process
+ * group, so a crashed test never leaves a `tsx` re-exec spinner behind.
+ */
+const spawnedGroups: import("node:child_process").ChildProcess[] = []
+process.on("exit", () => {
+  for (const c of spawnedGroups) {
+    if (c.pid == null || c.exitCode !== null) continue
+    try { process.kill(-c.pid, "SIGKILL") } catch { try { c.kill("SIGKILL") } catch { /* gone */ } }
+  }
+})
+
 export interface SpawnRawOptions {
   cwd?: string
   env?: NodeJS.ProcessEnv
@@ -569,6 +582,9 @@ export async function spawnRaw(code: string, opts: SpawnRawOptions = {}): Promis
   let buf = ""
   child.stdout?.on("data", (d) => { buf += String(d) })
   child.stderr?.on("data", (d) => { buf += String(d) })
+  // Safety net: a test that dies between spawn and killTree must not leave an
+  // orphaned spinner behind. Registered (not unref'd) so it runs on exit.
+  spawnedGroups.push(child)
   const handle: RawChild = { child, output: () => buf }
   if (opts.marker) {
     await new Promise<void>((resolve, reject) => {
