@@ -53,7 +53,12 @@ of doctor: every change is printed, and everything else (keys, config
 content, index) is never modified.
 .TP
 .BI search " query"
-Search the index (keyword and semantic modes).
+Search the index. Modes are
+.BR symbols " (default), " content ", " symbol ", and " file .
+There is no semantic mode: embeddings power
+.BR bb_ask ,
+not
+.BR bb_search .
 .TP
 .BI health " [dir]"
 Index health and freshness.
@@ -114,6 +119,17 @@ and
 Show help for any command.
 .SH OPTIONS
 .TP
+.B \-\-verbose
+Show diagnostics: debug logs, per-file worker and WASM lines. This is how you
+see why the worker pool did or did not start. Note there is no short form:
+.B \-v
+is
+.BR \-\-version .
+.TP
+.B \-\-quiet
+Suppress informational output; warnings and errors only. Note there is no short
+form.
+.TP
 .BR \-v ", " \-\-version
 Output the version number.
 .TP
@@ -147,3 +163,11 @@ index was built with a different embedding model than the configuration).
 .SH SEE ALSO
 The repository README and EMBEDDINGS.md document setup, diagnostics, and the
 honesty rules in full.
+.PP
+Full indexing reference, in the repository under
+.BR docs/indexing/ :
+.BR README.md " (flag semantics), " resume.md " (interrupting and resuming), "
+.BR performance.md " (measured timings), " troubleshooting.md " (the worker
+pool), and " embeddings.md " (embedding configuration).
+.B bb\ index\ \-\-help
+points at the same directory.
