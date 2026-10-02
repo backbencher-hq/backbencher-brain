@@ -338,6 +338,27 @@ async function cmdIndex(
   } else if (embModels.length === 1) {
     console.log(`  embeddings: ${embModels[0].model} (${embModels[0].dimension}d)`)
   }
+  // Vector-integrity census. `vector_dimension` is written as `vec.length`, so a
+  // corrupt vector records a dimension that agrees with itself — these counts
+  // are the only place a bad row can show up. Reported only when non-zero: a
+  // healthy index should print nothing here.
+  const integ = stats.summary?.embeddingIntegrity
+  if (integ) {
+    if (integ.unusableEmbeddings > 0) {
+      console.log(
+        `  ⚠ ${integ.unusableEmbeddings} of ${integ.total.toLocaleString()} vectors are unusable ` +
+          `(${integ.dimensionMismatches} length mismatch, ${integ.malformedVectors} malformed)`,
+      )
+      console.log(
+        `    these are counted as coverage but unreachable by search — fix: \`bb index --force\``,
+      )
+    }
+    if (integ.truncated) {
+      console.log(
+        `    (integrity census scanned ${(integ.scanned ?? 0).toLocaleString()} of ${integ.total.toLocaleString()} vectors)`,
+      )
+    }
+  }
   // Close the loop the way the product promises: say how long it took, and when
   // that is long enough that the user should suspect a hang, tell them who to
   // tell. Skipped entirely for a cancelled run — a cancelled index did not
