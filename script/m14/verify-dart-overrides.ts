@@ -78,6 +78,31 @@ class Shadow extends Wallet { final String walletId = 'x'; }`,
     why: "I wrote this case expecting NO edge, on the reasoning that a Dart field cannot be overridden by another field. That is right for STATIC members and wrong for instance ones, and the analyzer was right to publish it. Pinned because the wrong reasoning is what gets reintroduced.",
   },
   {
+    label: "a static member does not make the NEXT member static",
+    src: `class A { void first() {} void second() {} void third() {} }
+class B extends A {
+  static int helper = 0;
+  @override void first() {}
+  @override void second() {}
+  @override void third() {}
+}`,
+    expectTruth: ["B.first->A.first", "B.second->A.second", "B.third->A.third"],
+    expectAnalyzer: ["B.first->A.first", "B.second->A.second", "B.third->A.third"],
+    why: "A gate that misidentifies its subject does not fail loudly, it stops COUNTING. The `isStatic` predicate walked to `previousNamedSibling` and read that node's children, so the first `static` member rendered every member after it static as well: measured on `CupertinoClient` in ok_http, where `static Future<...> _hasData` was followed by an ordinary `_createProfile`, the index held six of the class's eight methods and `CupertinoClientWithProfile._createProfile -> CupertinoClient._createProfile` was never derived. The cascade is silent — the count is the only thing anyone reads — so the predicate is now scoped to the member's OWN subtree and this case pins all three methods, not one.",
+  },
+  {
+    label: "a static FIELD does not make the next field static",
+    src: `class A { int one = 0; int two = 0; }
+class B extends A {
+  static int s = 0;
+  @override int one = 1;
+  @override int two = 2;
+}`,
+    expectTruth: ["B.one->A.one", "B.two->A.two"],
+    expectAnalyzer: ["B.one->A.one", "B.two->A.two"],
+    why: "The same cascade through `hasStaticToken`, which had the identical previous-sibling reach: a static field would hide every field after it. An instance field DOES override an inherited getter (see the case above), so losing these two would have been a fabrication in the other direction — the analyzer emits them and the oracle would not.",
+  },
+  {
     label: "breadth, not depth: a known base lacking the member is not the end",
     src: `class AlsoPlain { const AlsoPlain(); }
 interface class HasPreferredSize { int get preferredSize; }

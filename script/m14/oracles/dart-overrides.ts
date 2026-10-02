@@ -222,13 +222,32 @@ function memberNamesOf(m: any): string[] {
   // `Shadow.connect -> HasStatic.connect` through the ordinary in-file path, with no
   // `@override` anywhere in sight, because "static" simply was not a question it
   // asked. The keyword is a token on the declaration or its signature.
+  // A STATIC MEMBER IS NOT OVERRIDABLE — the member's OWN subtree only.
+  //
+  // The first version walked to `previousNamedSibling` and scanned THAT node's
+  // children for a `static` token, which made one static member render the next
+  // member static as well, and the next, and the next: every member after the first
+  // `static` in a class silently vanished from the index. Measured on
+  // `CupertinoClient` in ok_http, whose `static Future<...> _hasData` is followed by
+  // an ordinary `HttpClientRequestProfile? _createProfile(...)` — the index held six of
+  // the class's eight methods and the override
+  // `CupertinoClientWithProfile._createProfile -> CupertinoClient._createProfile` was
+  // never derived, while the analyzer published it. A gate that misidentifies its
+  // subject does not fail loudly; it just stops counting things, and the count is the
+  // only thing anyone reads.
+  //
+  // `static` is a keyword on THIS member's own declaration or its signature wrapper.
+  // Nothing outside the member's subtree says anything about this member's storage.
   const isStatic = (node: any): boolean => {
-    for (let cur = node, hop = 0; cur && hop < 3; hop++) {
-      for (let i = 0; i < cur.childCount; i++) {
-        const c = cur.child(i)
+    for (let i = 0; i < node.childCount; i++) {
+      const c = node.child(i)
+      if (c && !c.isNamed && c.text === "static") return true
+    }
+    for (const w of named(node)) {
+      for (let i = 0; i < w.childCount; i++) {
+        const c = w.child(i)
         if (c && !c.isNamed && c.text === "static") return true
       }
-      cur = cur.previousNamedSibling
     }
     return false
   }
@@ -299,15 +318,17 @@ function hasOverrideAnnotation(m: any): boolean {
   }
   return false
 }
+/** The same rule as the oracle's `isStatic`, and for the same reason: this member's
+ *  OWN subtree only. Reading a previous sibling here had the identical cascade, and a
+ *  static FIELD would have hidden every field after it. */
 function hasStaticToken(m: any): boolean {
   for (let i = 0; i < m.childCount; i++) {
     const c = m.child(i)
     if (c && !c.isNamed && c.text === "static") return true
   }
-  const sib = m.previousNamedSibling
-  if (sib) {
-    for (let i = 0; i < sib.childCount; i++) {
-      const c = sib.child(i)
+  for (const w of named(m)) {
+    for (let i = 0; i < w.childCount; i++) {
+      const c = w.child(i)
       if (c && !c.isNamed && c.text === "static") return true
     }
   }
