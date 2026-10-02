@@ -25,6 +25,7 @@ import { createRequire } from "node:module"
 import path from "node:path"
 import { bbDataDir } from "../util/bb-data-dir"
 import { diagnosePoolStartupSync, findPackageRoot, type PoolDoctorReport as PoolStartupReport } from "../ast/pool-diagnostics"
+import { isEmbeddingDisabled } from "../brain/semantic/embedding-config"
 import { SemanticEngine } from "../brain/semantic/engine"
 import { fingerprintKey } from "./setup-wizard"
 import { describeEmbeddingConfig, type TierView } from "./setup-show"
@@ -112,6 +113,25 @@ export type DoctorReport = {
   /** models found in the project's stored embeddings, with row counts */
   storedModels: { model: string; count: number }[]
   pool: PoolDoctorSummary
+  /** The embedding layers bb would try, in order.
+   *
+   *  Exposed structurally (not only rendered) so a machine consumer can read
+   *  which layer wins without scraping prose — the same reason `pool` is a
+   *  summary object rather than a formatted string. `keyState` is presence
+   *  only; no key value ever reaches here. */
+  embeddingChain?: EmbeddingChainView[]
+}
+
+/** One layer of the embedding fallback chain, as reported. */
+export type EmbeddingChainView = {
+  order: number
+  role: string
+  label: string
+  endpoint: string
+  model: string
+  keyState: string
+  source: string
+  active: boolean
 }
 
 /**
@@ -227,6 +247,7 @@ export function runDoctorChecks(opts: {
   const state = describeEmbeddingConfig(cwd, env, dataDir)
 
   const findings: Finding[] = []
+  const embeddingChain: EmbeddingChainView[] = []
   // Read the label from the engine rather than repeating the string. The local
   // label is versioned (`local-word-vectors-v2`) because a tokenizer change
   // makes old and new vectors occupy different spaces, and a hardcoded copy
@@ -310,6 +331,96 @@ export function runDoctorChecks(opts: {
     })
   }
 
+  // 3b. EMBEDDING DIAGNOSIS. Agent 2 built the chain/failure analysis in
+  //     src/brain/semantic/embedding-diagnosis.ts; nothing called it, so a user
+  //     with a half-configured provider still saw only "No embedding
+  //     configuration / Fix: bb setup" — which is a restatement, not a
+  //     diagnosis. Wired here so the module's findings actually reach a user.
+  //
+  //     Deliberately added as a NEW section rather than a rewrite of the
+  //     existing "3." block: agent 1's pool probe and agent 2's embedding chain
+  //     both wanted this file, and the previous merge had to hold one of them
+  //     back. Appending keeps both.
+  //
+  //     NOT YET REACHABLE from here: `probeEmbeddingEndpoint`, the live HTTP
+  //     reachability probe, is exported by embedding-diagnosis but nothing calls
+  //     it — deliberately. `runDoctorChecks` is sync, and a network call would
+  //     have to be async, so wiring it here would hand the CLI a Promise and
+  //     break `report.healthy`. Labelled in source so the gap stays VISIBLE
+  //     instead of reading as a deliberate omission. `bb setup show --probe` is
+  //     the intended caller.
+  try {
+    // Sync imports: `runDoctorChecks` is sync (agent 1 made the pool probe sync
+    // because src/cli/index.ts calls it without `await`; an async import here
+    // would hand the CLI a Promise and break `report.healthy`).
+    const { buildEmbeddingDiagnosis } = require("../brain/semantic/embedding-diagnosis")
+    const diagnosis = buildEmbeddingDiagnosis({ state, env: process.env })
+    for (const p of diagnosis.problems ?? []) {
+      // The real shape is `{ severity, envVar, message }` — no id, no fix.
+      // `envVar` is the actionable half: it names the exact variable to set, so
+      // it becomes the finding id AND the remediation. Deriving both from one
+      // field keeps them from disagreeing.
+      findings.push({
+        id: p.envVar ? `embedding.${p.envVar.toLowerCase()}` : "embedding.config",
+        severity: p.severity === "error" ? "fail" : "warn",
+        message: p.message,
+        // Never echo a key value — `envVar` is a variable NAME, and the module
+        // guarantees `message` carries only presence/source, never the secret.
+        ...(p.envVar ? { fix: `set ${p.envVar} (bb setup walks through it)` } : {}),
+      })
+    }
+    // A tier-order disagreement is a configuration bug that produces confusing
+    // behaviour rather than a hard failure, so it is reported explicitly rather
+    // than left as an internal detail.
+    if (diagnosis.tierOrderDisagreement) {
+      findings.push({
+        id: "embedding.tier-order-disagreement",
+        severity: "warn",
+        message: `embedding configuration layers disagree on precedence: ${diagnosis.tierOrderDisagreement.detail ?? diagnosis.tierOrderDisagreement.reason ?? "see bb setup show"}`,
+        fix: "run `bb setup show` to see which layer wins",
+      })
+    }
+    // The chain in order, so a user can see WHICH layer bb would reach first —
+    // "no configuration" is far less actionable than "local words will be used
+    // because the primary tier is incomplete".
+    if (diagnosis.chain?.length) {
+      for (const layer of diagnosis.chain) {
+        // `label` is documented as safe to print; `keyState` is presence, never
+        // a key value, so surfacing the chain cannot leak a credential.
+        embeddingChain.push({
+          order: layer.order,
+          role: layer.role,
+          label: layer.label,
+          endpoint: layer.endpoint,
+          model: layer.model,
+          keyState: layer.keyState,
+          source: layer.source,
+          active: layer.active,
+        })
+      }
+    }
+    // The kill switch is the one embedding setting that changes behaviour
+    // silently, so report it as its own fact rather than leaving it to be
+    // inferred from a chain entry.
+    if (isEmbeddingDisabled(process.env)) {
+      findings.push({
+        id: "embedding.disabled",
+        severity: "warn",
+        message: "embeddings are DISABLED (BB_EMBEDDING_DISABLED) — semantic search will not run at all",
+        fix: "unset BB_EMBEDDING_DISABLED to enable semantic search",
+      })
+    }
+  } catch (e: any) {
+    // A diagnosis that cannot run must not take the report down with it — the
+    // pool section below is the user's other headline answer.
+    findings.push({
+      id: "embedding.diagnosis-unavailable",
+      severity: "warn",
+      message: `embedding diagnosis could not run: ${e?.message ?? e}`,
+      fix: "run `bb setup show` to inspect the embedding configuration",
+    })
+  }
+
   // 4. POOL WORKERS. The other question users arrive with, in the same shape:
   //    "it says my index is fine and it is crawling — are the workers running?"
   //
@@ -345,7 +456,14 @@ export function runDoctorChecks(opts: {
   findings.push(...poolReport.findings.filter((f) => f.severity !== "info"))
 
   const healthy = !findings.some((f) => f.severity === "fail")
-  return { findings, healthy, winner: state.winner, storedModels, pool: summarizePool(poolReport) }
+  return {
+    findings,
+    healthy,
+    winner: state.winner,
+    storedModels,
+    pool: summarizePool(poolReport),
+    ...(embeddingChain.length ? { embeddingChain } : {}),
+  }
 }
 
 /**
@@ -453,6 +571,20 @@ export function renderDoctorReport(r: DoctorReport): string {
       lines.push(`  fix ${i + 1}: ${first.trim()}`)
       for (const cont of rest) if (cont.trim()) lines.push(`         ${cont.trim()}`)
     })
+    lines.push("")
+  }
+  // The embedding chain, in the order bb resolves it. "No embedding
+  // configuration" tells a user what happened; the chain tells them which layer
+  // wins and why, which is what they need to change something. Printed after the
+  // pool answer because both are headline sentences, but only when there is a
+  // chain worth showing.
+  if (r.embeddingChain?.length) {
+    lines.push("embedding layers, in the order bb resolves them:")
+    for (const layer of r.embeddingChain) {
+      const mark = layer.active ? "→" : " "
+      const key = layer.keyState === "present" ? "key present" : `key ${layer.keyState}`
+      lines.push(`  ${mark} ${layer.order}. ${layer.label} — ${layer.model} @ ${layer.endpoint} (${key}, from ${layer.source})`)
+    }
     lines.push("")
   }
   const iconFor: Record<Severity, string> = { fail: "✗", warn: "!", info: "·" }

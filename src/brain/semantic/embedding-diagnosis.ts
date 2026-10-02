@@ -36,6 +36,7 @@ import {
 } from "./embedding-config"
 import { classifyStatus, observedEmbeddingFailures, probeEmbeddingEndpoint, type EmbeddingFailureKind } from "./openai-embed"
 import { LOCAL_VECTOR_DIMENSION } from "./local-embed"
+import { SemanticEngine } from "./engine"
 import type { SetupShowState, TierId, TierView } from "../../setup/setup-show"
 
 export type EmbeddingLayerRole = "disabled" | "primary" | "fallback" | "local"
@@ -126,7 +127,18 @@ export interface EmbeddingDiagnosis {
 }
 
 /** Where the local layer's model label lives, so the two cannot drift in text. */
-const LOCAL_LABEL_HINT = "local-word-vectors (see SemanticEngine.LOCAL_MODEL_LABEL for the exact stored label)"
+/**
+ * The stored label for the local layer.
+ *
+ * Read from the engine rather than written here: the previous value was a
+ * hand-written string, `local-word-vectors`, plus a parenthetical telling the
+ * reader to go find `SemanticEngine.LOCAL_MODEL_LABEL` for the real one. That is
+ * the exact false-claim class this codebase cares about — a label that does not
+ * match what is stored (the stored one is `local-word-vectors-v3`), printed in a
+ * field whose job is to name the model. It also drifted once already, which is
+ * why the constant is now imported rather than restated.
+ */
+const LOCAL_LABEL_HINT = SemanticEngine.LOCAL_MODEL_LABEL
 
 function sourceLabel(tier: TierId, field: "BASE_URL" | "MODEL" | "API_KEY"): string {
   return tier === "env" ? `env:BB_EMBEDDING_${field}` : `file:${tier}`
