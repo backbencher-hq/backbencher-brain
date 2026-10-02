@@ -17914,6 +17914,15 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
           }
         }
       }
+        // M60/SDJ-24: close the `decls` block HERE, so the per-occurrence
+        // registration below runs for EVERY anonymous body rather than only the first
+        // per supertype name. It was left inside the guard, which is invisible from
+        // indentation and fatal in effect: only the first `new FlagTranslation` was
+        // ever registered, so the analyzer's numbered occurrences had no truth row and
+        // the whole family surfaced as UNEXPLAINED. Measured on the full 4,008-file draw:
+        // anonymous_FlagTranslation#2.baseFlags and #3.baseFlags, plus
+        // anonymous_BuildFrom#3.newBuilder and anonymous_AbstractIterator#7.apply.
+        }
     // M49.S1 scala per-occurrence registration for the anonymous body —
     // same provenance discipline as named declarations above.
     if (lang === "scala" && !superName.includes(".")) {
@@ -17940,7 +17949,6 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       occMethods.set(occKey, ownMethods)
       if (ownSigs.size > 0) occSigs.set(occKey, ownSigs)
       occParents.push({ childOcc: occKey, childName: anonName, parentName: superName })
-    }
     }
     if (!decls[superName]) decls[superName] = { parents: [], methods: new Set(), sigs: new Map() }
     declParents.push({ child: anonName, parent: superName })
