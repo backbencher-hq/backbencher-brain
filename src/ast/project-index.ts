@@ -419,7 +419,12 @@ export async function buildProjectIndexFromDisk(
   const parsed: { path: string; tree: { rootNode: Node; hasError?: boolean } }[] = []
   for (const f of files) {
     const text = fs.readFileSync(f, "utf8")
-    parsed.push({ path: f, tree: parser.parse(text) })
+    const tree = parser.parse(text)
+    // `Parser.parse` returns `Tree | null`. Dropping a null here would make the index
+    // count fewer files than it was asked about and report the shortfall as coverage,
+    // so this fails loudly and names the file instead.
+    if (tree === null) throw new Error(`project index: ${f} produced no parse tree`)
+    parsed.push({ path: f, tree })
   }
   return buildProjectIndex(parsed, spec)
 }
@@ -538,7 +543,10 @@ export function buildResolutionTables(index: ProjectIndex): {
  */
 export async function enrichWithProjectIndex(
   files: string[],
-  parse: (file: string) => Promise<any>,
+  // The context argument is how the caller hands the index to its own parse step; the
+  // parameter type said one argument while the call below passed two. Optional, so a
+  // one-argument parser still satisfies it.
+  parse: (file: string, context?: { projectIndex?: ProjectIndex }) => Promise<any>,
   spec: DeclarationSpec = SOLIDITY_DECLARATION_SPEC,
   wasmPath?: string,
 ): Promise<{ results: any[]; index: ProjectIndex }> {
