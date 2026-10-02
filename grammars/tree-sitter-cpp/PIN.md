@@ -6,11 +6,11 @@ This directory is the **source of record** for the C++ grammar the product loads
 14 lanes total).
 
 **The wired bytes are not the published release.** They are a **local fork** of
-0.23.4 with three in-repo patches, and this file is where the fork is written
+0.23.4 with **four** in-repo patches, and this file is where the fork is written
 down. Until this pin existed the analyzer's documentation said only
 "Parser: `tree-sitter-cpp` 0.23.4 (npm, latest)", which is a version string that
 cannot express a fork — and a reader who ran `npm pack tree-sitter-cpp@0.23.4`
-and compared would have found a 118 KB difference with nothing to account for.
+and compared would have found a large difference with nothing to account for.
 
 ## Upstream
 
@@ -30,11 +30,11 @@ and compared would have found a 118 KB difference with nothing to account for.
 | `tree-sitter.json` | **byte-identical** (`ce25741b`) | the grammar's declaration. Note its `metadata.version` still reads `0.23.4` and therefore **understates** what is wired — see the fork section. |
 | `package.json` | **byte-identical** (`bfde98d5`) | the package identity. |
 | `LICENSE` | **byte-identical** (`2e0110e0`) | MIT requires the license to travel with the source. |
-| `grammar.js` | **DIFFERS** — upstream `d0242291` → here `817fc8a0`, +54/−2 | the three patches below, and nothing else. |
+| `grammar.js` | **DIFFERS** — upstream `d0242291` → here `a5637b9c` | the four patches below, and nothing else. |
 | `src/parser.c`, `src/grammar.json`, `src/node-types.json`, `src/tree_sitter/` | not vendored | **generated** from the *forked* `grammar.js`. See the note at the end — this lane's `source↔wasm` proof is `not applicable` for a specific reason, not the usual "41 MB" one. |
 | `queries/`, `bindings/`, `binding.gyp`, `prebuilds/`, `README.md`, `CHANGELOG.md` | not vendored | editor queries (the engine loads none), native bindings, and upstream docs. The provenance and the decision live in the pin record and here. |
 
-## The fork: three patches, all from #743
+## The fork: four patches
 
 ### 1. Rebuildability — `require` path
 
@@ -91,19 +91,103 @@ the header token wins purely on match length. Adding `<…>` anywhere in
 `_preproc_expression` instead would read `< B && C >` as a header name and turn
 every comparison into something else.
 
+### 4. `macro_access_specifier` — a MACRO used as an access specifier
+
+```js
+prec(-1, seq(
+  alias($.identifier, $.macro_access_specifier),
+  ':',
+)),
+```
+
+The M60 cpp review's third and largest R1 cause, and the only one that was a single
+construct rather than a family. nlohmann writes an access specifier as a macro:
+
+```cpp
+JSON_PRIVATE_UNLESS_TESTED:            // single_include/nlohmann/json.hpp:26041
+  using lexer = ::nlohmann::detail::lexer_base<basic_json>;
+```
+
+Legal C++, and at class scope a bare `NAME:` has no other reading at all — but
+`access_specifier` is a keyword choice, so the grammar had no production for it. The
+line became an `ERROR` node and **the ERROR swallowed the rest of the class body**.
+That was the entire R1 loss for `basic_json`: the node ended at row 26,599 where the
+source's own brace balance ends at 32,291.
+
+A sibling of patch 2 in the same choice, with `prec(-1)` for patch 2's reason — a bare
+`identifier` also begins a field declaration, so the generator must prefer one reading
+and today's parses must stay intact. The mandatory `:` immediately after the name is
+what keeps the rule from swallowing a real declaration: `MACRO x;` and `MACRO::member`
+both need a token this rule does not consume.
+
+| | 3 patches | 4 patches |
+| --- | --- | --- |
+| `nodeTypeCount` | 547 | **548** |
+| named ids / unique | 259 / 209 | **260 / 210** |
+| named types only here | +`macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` | + **`macro_access_specifier`** |
+| `fieldCount` / `fieldSetDigest` | 50 / `891be791…` | **50 / `891be791…` (unchanged)** |
+| `basic_json` body, single header | 200 members, ends 26,599 | **266 members, ends 27,550** |
+| ERROR nodes, single header | 381 | **367** |
+
+Across the 1,722-file six-repo corpus **exactly 6 parse trees change and all 6 contain a
+macro access-specifier label** — 0 unexplained changes.
+
+### The toolchain, because the bytes are not the release's
+
+There is no `tree-sitter-cli` dependency here, only the `web-tree-sitter` runtime, so
+the wasm was built with a CLI installed **outside** the repo. A 0.25.9 build of the
+*unmodified* `grammar.js` does **not** reproduce the previously wired bytes
+(3,516,632 vs 3,552,974) — which is exactly the situation the note at the end of this
+file warns about. What makes the rebuild trustworthy anyway is that the **entire
+recorded surface matches**, all ten fields including `idOrderDigest`, `typeSetDigest`
+and `fieldSetDigest`, and the parse trees are identical on 220/220 files. That is the
+perl lane's documented rule: *two builds of one source agree even when their bytes
+differ*, so the source is pinned and every delta after the baseline build is
+attributable to the grammar rather than to the compiler.
+
+### Patch 4 was withheld once, and why that is part of its record
+
+On first measurement patch 4 made the analyzer's output **worse** (110 `basic_json`
+members against 160) and was not landed. Recovering the class let the parser reach a
+later constructor and complete the shape by reading the **whole class as a return
+type** — patch 2 admits a class in type position, so patch 4 activated that reading:
+
+```
+function_definition[26010-27617]
+  type:       macro_prefixed_type_specifier[26010-27550]   <- the entire class
+  declarator: function_declarator[27554-27556]             <- a constructor
+  body:       compound_statement[27557-27617]
+```
+
+It fabricated a function spanning 2,540 lines of class body and turned `basic_json`
+from a `class` into a `variable`. It landed only after **both** of its dependencies
+were fixed, and neither is defensible alone:
+
+* the analyzer guard `returnTypeIsClassDefinition` — a class **definition** is never a
+  return type, so a `function_definition` whose `type` field is a class specifier
+  *with a body* is a recovery artifact. Gated by **D11**, which is corpus-based by
+  necessity: the shape reproduces in no slice, not even the full 1,608-line span
+  containing the class, the constructor and the glue, and appears only when the whole
+  32,725-row amalgamation is parsed. D11 was proved to fail (10 without the guard, 0
+  with it), and that control found 6 further sites this review had not —
+  `TEST_CASE_TEMPLATE` in Catch2, the same shape in a second family.
+* the engine's **1 MiB parse cap**, which had been cutting the 1.27 MB amalgamation at
+  row 27,085 and silently dropping 4.84% of all corpus source bytes. It masked this
+  entire effect: with the cap fixed, both files publish 110 members against 80.
+
 ## The fork is load-bearing, and that is measured
 
 | | wired (fork) | published 0.23.4 |
 | --- | --- | --- |
-| wasm bytes | **3,552,974** | 3,434,931 |
-| `nodeTypeCount` | 547 | 543 |
-| named ids / unique | 259 / 209 | 256 / 206 |
+| wasm bytes | **3,520,521** | 3,434,931 |
+| `nodeTypeCount` | 548 | 543 |
+| named ids / unique | 260 / 210 | 256 / 206 |
 | anon ids / unique | 288 / 286 | 287 / 285 |
 | `fieldCount` | 50 | 50 |
 | `fieldSetDigest` | `891be791…` | `891be791…` (**unchanged**) |
-| named types only here | `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name` | — |
+| named types only here | `macro_prefixed_type_specifier`, `macro_specifier`, `preproc_header_name`, `macro_access_specifier` | — |
 
-Three named types added, **zero fields** — so the fork extends the vocabulary
+Four named types added, **zero fields** — so the fork extends the vocabulary
 without changing any field contract the analyzer reads.
 
 Over this lane's own 28 C++ fixtures: **the fork parses 22 clean, upstream 20.**

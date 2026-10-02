@@ -51,7 +51,23 @@ const raw = await BrainDatabase.getRawInstance(projectId)
 const clean = await runIndexHealthCheck(projectId as any)
 harness.check("integrity: exactly 13 checks reported (12 + M51.A2 synthetic-container split)", clean.checks.length === 13, `got ${clean.checks.length}`)
 harness.check("integrity: every check carries a valid status", clean.checks.every((c) => ["ok", "warn", "error"].includes(c.status)), clean.checks.map((c) => c.code).join(","))
-harness.check("integrity: summary matches the checks", clean.summary.ok + clean.summary.warn + clean.summary.error === 13, JSON.stringify(clean.summary))
+// M64: the summary is now split, because the "Synthetic Container References"
+// check is informational — its status does not depend on the data, so counting
+// it added a constant +7.7 points to every project's overallHealth and put a
+// floor under the score that no real failure could cross. The invariant is
+// therefore over SCORED checks, and the derived counts are asserted as counts
+// rather than as a literal 13 that the code can drift away from.
+harness.check(
+  "integrity: summary accounts for every check (scored + informational = total)",
+  clean.summary.scored + clean.summary.informational === clean.summary.total,
+  JSON.stringify(clean.summary),
+)
+harness.check(
+  "integrity: statuses account for every SCORED check",
+  clean.summary.ok + clean.summary.warn + clean.summary.error === clean.summary.scored,
+  JSON.stringify(clean.summary),
+)
+harness.check("integrity: the informational check is excluded from the score", clean.summary.informational === 1 && clean.checks.filter((c) => c.kind === "informational").length === 1, JSON.stringify(clean.summary))
 
 // Clean fixture: byte bounds, line bounds, hash drift must be ok.
 const byName = (name: string) => clean.checks.find((c) => c.name === name)

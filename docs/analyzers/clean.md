@@ -9,6 +9,9 @@
 > **Read parse health first.** 1,656 of 2,179 files (76.0%) parse with no ERROR
 > node; 523 files carry 24,738 ERROR nodes. Every percentage below is a percentage
 > **of what parsed**, and that ceiling is the pinned grammar's, not the analyzer's.
+> **Read parse health first.** 1,656 of 2,179 files (76.0%) parse with no ERROR
+> node; 523 files carry 24,738 ERROR nodes. Every percentage below is a percentage
+> **of what parsed**, and that ceiling is the pinned grammar's, not the analyzer's.
 > The grammar moved from 1,524 files (69.9%) on 2026-09-29 — see
 > [The 2026-09-29 grammar wave](#the-2026-09-29-grammar-wave).
 
@@ -175,6 +178,23 @@ honest):
 ## Verification
 - **Corpus**: 2,179 files, 3,107,410 nodes, content-deduplicated
   (`script/m14/clean-wide-manifest.txt`) because iTasks vendors StdEnv.
+- **Honesty gate**: 63,052 symbols, 237,598 relationships, **1 violation** (the
+  single `Hanoi.icl` finding characterised under Known limitations), 0 unknown
+  kinds, 0 empty names, 0 members without an owner, 0 crash files. The count FELL
+  because the grammar wave removed 24,991 → 24,738 ERROR nodes and the reserved-name
+  guard below dropped 169 fabricated function symbols corpus-wide.
+- **M12 differential**: precision 1.000, recall 1.000, 0 FP, 0 FN against a
+  134-row hand-audited ground truth extended from 68 rows this round.
+  `script/m12/extend-clean-ground-truth.py` fails on line drift.
+- **Fixtures**: 9, all passing. Three were added because 11 handled node types had no
+  fixture behind them; `grammar-wave-2026-09` was added because the completeness
+  gate REFUSED to accept `handled_verified` for the three node types the wave
+  introduced without a fixture behind each one, which is the gate working.
+- **Differential attribution**: 0 unattributed of 484 (Clyde), 0 of 654
+  (clean-stdlib), 0 on clean-libraries, **6** on clean-ide — the residual is stated
+  in the classifier's own bucket rather than forced into one.
+- **Grammar census**: 137/137 named types classified; 99 `handled_verified` and all
+  99 now exercised by CORPUS code, not only by fixture.
 - **Honesty gate**: 63,052 symbols, 237,598 relationships, **1 violation** (the
   single `Hanoi.icl` finding characterised under Known limitations), 0 unknown
   kinds, 0 empty names, 0 members without an owner, 0 crash files. The count FELL

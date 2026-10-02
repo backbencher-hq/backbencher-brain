@@ -11,6 +11,7 @@
 import type { Node } from "web-tree-sitter"
 import * as path from "path"
 import { ASTEngine } from "./engine"
+import { treeContainsNodeType } from "./node-walk"
 
 // ============================================================================
 // BUILTIN FILTER — C#-family contract (mirrors TypeScript analyzer)
@@ -144,7 +145,23 @@ function stripWhitespace(text: string): string {
 
 // J3 (review wave): span containment against superseded duplicate bodies.
 // A node is dead when it sits inside a dead span (self or any ancestor).
+//
+// PERF (2026-09-30, measured): the ancestor walk runs BEFORE the span loop can
+// reject, so with an empty `spans` list this walked to the ROOT of the tree and
+// returned false — for every node of the file. `qcWalk` calls it once per node,
+// and on minified input that is 1,165,905 nodes at a mean depth of 25.9 (max 75),
+// so ~30 MILLION parent hops whose every answer was `false`. CPU-profiled on
+// `aspnetcore/.../RoutingSandbox/wwwroot/full.render.js` (1.89 MB, 84 lines, one
+// line 310,647 chars): this function was **44.6% of all samples**, and the
+// analyzer took 357s against the parser's 4.8s — 75x the parse, which is the
+// signature of a per-node tree walk rather than of a hard parse.
+//
+// The empty-list short-circuit below is EXACTLY equivalent: with no spans there is
+// nothing to be inside, so the answer is false for every node, and the walk cannot
+// change that. It is the whole fix for the common case, which is the common case
+// because dead spans only exist when a duplicate method body was superseded.
 function isNodeInDeadSpans(spans: { s: number; e: number }[], n: Node): boolean {
+  if (spans.length === 0) return false
   let p: Node | null = n
   while (p) {
     for (const d of spans) {
@@ -298,6 +315,13 @@ function scopeString(scopes: JSScopeEntry[]): string {
 import { isJsBuiltin, jsBuiltinHasMember } from "./js-builtin-prototypes"
 
 export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
+  /**
+   * Whether the file currently being analyzed contains any `decorator` node.
+   * Set once per `analyze` call; see the pre-pass at its assignment for the
+   * measurement that made it worth having.
+   */
+  private hasAnyDecoratorNode = false
+
   analyze(
     rootNode: Node,
     content: string,
@@ -313,6 +337,19 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
     const frameworks: Record<string, boolean> = { JavaScript: true }
     const patterns: Record<string, boolean> = {}
     const scopes: JSScopeEntry[] = [{ name: "__global__", kind: JSScopeKind.Global }]
+
+    // PERF (2026-09-30, measured): does this tree contain ANY `decorator` node?
+    //
+    // `inDecoratorPosition` answers true only when some ancestor is a decorator,
+    // so a tree with no decorator node can only ever answer false — and it was
+    // walking the ancestor chain to the enclosing boundary to discover that, once
+    // per node. On the same minified file as the `isNodeInDeadSpans` fix, the tree
+    // has **0 decorator nodes** across 1,165,905 nodes at mean depth 25.9, and this
+    // predicate was **15.0% of all CPU samples** on top of that function's 44.6%.
+    //
+    // One pre-pass with an early exit settles it, and it is exactly equivalent:
+    // the predicate's own logic is unchanged for files that do have decorators.
+    this.hasAnyDecoratorNode = treeContainsNodeType(rootNode, "decorator")
 
     const moduleName = path.basename(filePath, path.extname(filePath))
 
@@ -1834,6 +1871,10 @@ export class RealJavaScriptAnalyzer implements ASTEngine.LanguageAnalyzer {
    * the body).
    */
   private inDecoratorPosition(n: Node): boolean {
+    // PERF: no decorator node in this file means no decorator ANCESTOR either, so
+    // the walk below can only return false. Exactly equivalent, and it is the
+    // answer for every file that does not use decorator syntax.
+    if (!this.hasAnyDecoratorNode) return false
     let p: Node | null = n.parent
     while (p) {
       if (p.type === "decorator") return true

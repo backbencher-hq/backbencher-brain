@@ -833,7 +833,9 @@
       "lang": "xml",
       "present": true,
       "doc": "docs/analyzers/real-xml-analyzer.md",
-      "missingSections": [],
+      "missingSections": [
+        "## Corpus validation"
+      ],
       "ontologyGaps": []
     },
     {

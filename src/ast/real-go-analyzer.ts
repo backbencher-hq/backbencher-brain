@@ -650,7 +650,54 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         }
         case "var_spec":
         case "const_spec": {
-          emit(resolveSource(n), [n], "declared_type")
+          // GOD11 (round 7): a PACKAGE-SCOPE var/const attributed to `global`.
+          // `resolveSource` walks up for a `type_spec`/`type_alias` (GO36) or an
+          // enclosing function; a package-scope `var named Store` has neither, so
+          // it fell through to the `global` pseudo-source and published
+          //
+          //     references global -> Store
+          //
+          // — a relationship whose source names nothing, the same dangling-source
+          // class as GO36 and GO38, on the one declaration kind neither covered.
+          // It also LOST rows rather than merely mis-sourcing them: `emitted` is
+          // keyed `source|target|relType`, so every var_spec in a file that
+          // shares a type collapsed into the FIRST one's row. Measured on a
+          // six-declaration file: one row for six declarations, and the `[]Store`,
+          // `map[string]Store` and `*Store` forms were indistinguishable from it.
+          //
+          // The fix is the rule the struct-field branch above already follows: a
+          // declaration attributes to what it DECLARES. Each name is its own
+          // binding, so `var second, third Store` publishes two rows and both
+          // survive, instead of one row and one lost.
+          //
+          // FUNCTION-LOCAL is deliberately unchanged. LocalsAreNotSymbols makes a
+          // local var/const not a symbol, so attributing to its name would trade a
+          // dangling source for a different one; those keep attributing to the
+          // enclosing function, which `resolveSource` already finds.
+          const inFunction = (x: Node): boolean => {
+            for (let q: Node | null = x; q; q = q.parent) {
+              if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") return true
+            }
+            return false
+          }
+          if (!inFunction(n)) {
+            const declared: string[] = []
+            for (let i = 0; i < n.namedChildCount; i++) {
+              const c = n.namedChild(i)
+              // `_` is the BLANK identifier: the declaration is discarded, so it
+              // has no name and names no graph node. Attributing to it would
+              // trade the `global` pseudo-source for a worse one — `var _ Reader =
+              // (*Store)(nil)` became `references _ -> Reader`, which is a source
+              // that can never be resolved by anything, including a reader. The
+              // blank name falls back to `resolveSource`, i.e. `global`, which is
+              // at least honest about not knowing.
+              if (c && c.type === "identifier" && String(c.text ?? "") !== "_") declared.push(String(c.text ?? ""))
+            }
+            if (declared.length === 0) emit(resolveSource(n), [n], "declared_type")
+            else for (const name of declared) emit(name, [n], "declared_type")
+          } else {
+            emit(resolveSource(n), [n], "declared_type")
+          }
           break
         }
       }
@@ -2431,10 +2478,19 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           // never be the reason an edge was emitted. `isCtor` is still computed
           // because the INSTANTIATES rule below is the one that consults it.
           const emit = !this.isGoBuiltin(leaf) && (qualified || dotImported || declared.has(leaf))
-          if (emit && !emitted.has("call:" + leaf)) {
-            emitted.add("call:" + leaf)
+          // GOD12: the source is the DECLARATION that is doing the call, not the
+          // `global` pseudo-source — `var re = regexp.MustCompile(...)` is work the
+          // binding `re` exists to hold, and `re` is already a published symbol.
+          // The dedupe key gains the source for the same reason: keyed on the leaf
+          // alone, `var a = time.Second` and `var b = time.Second` collapsed into
+          // one row and one of the two declarations vanished, which is the lost-row
+          // half of the class GOD11 fixed on the declared-type side.
+          const callSrc = this.resolveGoWorkSource(node)
+          const callKey = `call:${callSrc}:${leaf}`
+          if (emit && !emitted.has(callKey)) {
+            emitted.add(callKey)
             relationships.push({
-              source: "global",
+              source: callSrc,
               target: leaf,
               type: ASTEngine.RelationshipType.Calls,
               confidence: 0.8,
@@ -2547,7 +2603,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
         // (map/slice/array/function) yield no named target. Builtin-guard:
         // composite literals cannot target builtins directly.
         if (target && !this.isGoBuiltin(target)) {
-          const src = this.findContainingGoFunction(node) || "global"
+          const src = this.resolveGoWorkSource(node)
           const key = `${src}.${target}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -3084,7 +3140,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           !isShadowed(name) &&
           fileValues.has(name)
         ) {
-          const src = this.findContainingGoFunction(node) || "global"
+          const src = this.resolveGoWorkSource(node)
           const key = `${src}::uses::${name}`
           if (!emitted.has(key)) {
             emitted.add(key)
@@ -3159,7 +3215,7 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
           (node.parent?.type === "unary_expression" && node.parent.child(0)?.type === "<-") ||
           (node.parent?.type === "receive_statement" && node.parent.parent?.type === "communication_case")
         if (operand && field && node.parent?.type !== "call_expression" && !isWritePos && !isChannelOperand) {
-          const src = this.findContainingGoFunction(node) || "global"
+          const src = this.resolveGoWorkSource(node)
           const tgt = field.text
           const key = `${src}.${tgt}`
           if (!seen.has(key)) {
@@ -4261,6 +4317,68 @@ export class RealGoAnalyzer implements ASTEngine.LanguageAnalyzer {
       current = current.parent
     }
     return undefined
+  }
+
+  /**
+   * GOD12 (round 7): the SOURCE for work done inside a PACKAGE-SCOPE initializer.
+   *
+   * `findContainingGoFunction` walks up for a `function_declaration` or
+   * `method_declaration` and returns undefined when there is none, and every
+   * caller turned that into the `global` pseudo-source. That is correct for a
+   * statement at file scope and wrong for the very common
+   *
+   *     var re = regexp.MustCompile(`...`)
+   *     var api = http.Client{Timeout: time.Second}
+   *     var host = os.Getenv("HOST") + ".example.com"
+   *
+   * where the call, the construction and the selector read are all work the
+   * DECLARATION is doing, for a binding the analyzer has already published as a
+   * symbol. At full extent that was 6,723 edges whose source named nothing:
+   * 3,396 `uses`, 1,391 `calls`, 985 `instantiates`, 947 `references`.
+   *
+   * The rule is the one the declared-type pass already follows: a declaration
+   * attributes to what it declares. `global` remains the answer for work that is
+   * genuinely at file scope, and a FUNCTION-LOCAL `var` deliberately does not
+   * use its name — LocalsAreNotSymbols makes a local var not a symbol, so
+   * naming it would trade one unresolvable source for another. A `func_literal`
+   * is skipped rather than treated as a stop, which is the pre-existing
+   * behaviour and is also what makes `var y = func() { f() }()` attribute to `y`.
+   */
+  private resolveGoWorkSource(node: Node): string {
+    const declaredNameOf = (spec: Node): string | undefined => {
+      // A var_spec inside a function body is a LOCAL: keep walking for the
+      // enclosing function, and if there is none, answer `global`.
+      for (let q: Node | null = spec.parent; q; q = q.parent) {
+        if (q.type === "function_declaration" || q.type === "method_declaration" || q.type === "func_literal") return undefined
+      }
+      for (let i = 0; i < spec.namedChildCount; i++) {
+        const c = spec.namedChild(i)
+        if (c && c.type === "identifier" && String(c.text ?? "") !== "_") return String(c.text ?? "")
+      }
+      return undefined
+    }
+    for (let q: Node | null = node; q; q = q.parent) {
+      if (q.type === "function_declaration" || q.type === "method_declaration") {
+        for (let i = 0; i < q.namedChildCount; i++) {
+          const c = q.namedChild(i)
+          if (!c) continue
+          if ((q.type === "method_declaration" && c.type === "field_identifier") || (q.type === "function_declaration" && c.type === "identifier")) return String(c.text ?? "")
+        }
+        return "global"
+      }
+      if (q.type === "var_spec" || q.type === "const_spec") {
+        const nm = declaredNameOf(q)
+        if (nm) return nm
+        // A function-LOCAL var_spec, or a blank name. KEEP WALKING for the
+        // enclosing function rather than stopping: `break` here answered `global`
+        // for every function-local `var x = T{}`, which regressed two existing
+        // pins (go/relationship-and-payloads expects `instantiates work -> Worker`
+        // and the round-7 convention case expects `instantiates run -> Box`).
+        // Both are function-local constructions that must keep their function as
+        // the source.
+      }
+    }
+    return "global"
   }
 
   /**

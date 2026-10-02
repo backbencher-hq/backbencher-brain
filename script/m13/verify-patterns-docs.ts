@@ -14,6 +14,7 @@
 //    labeled as planned.
 
 import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { spawnSync } from "node:child_process"
 import path from "node:path"
 import { Harness } from "./harness"
@@ -39,7 +40,20 @@ const harness = new Harness({
   ],
 })
 
-const root = path.resolve(import.meta.dir, "..", "..")
+// `import.meta.dir` is BUN-ONLY. Under Node it is undefined, so this gate died
+// with `TypeError: The "paths[0]" argument must be of type string` before running
+// a single check — it had never executed outside Bun. The `?? "."` fallback is
+// NOT enough: the scripts are invoked from the repo ROOT, so "." plus "../.."
+// climbs one level too far and the failure becomes ENOENT on a sibling path
+// instead, which reads as a missing file rather than a wrong root.
+//
+// `fileURLToPath(import.meta.url)` is the repo's existing portable idiom
+// (script/m62/verify-docs.ts, verify-consumers.ts, verify-arrival.ts and others
+// already use exactly this). It is also the only form safe on a path containing
+// a space — this repository lives under "/Users/…/Default Project/…", and
+// `new URL(import.meta.url).pathname` percent-encodes that, so the naive
+// form would break here while working everywhere else.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..")
 const RESULTS = path.join(root, "validation", "m13", "results")
 
 // ── 1. Docs accuracy ───────────────────────────────────────────────────────
@@ -75,8 +89,23 @@ if (registry) {
 
 // Generator verify mode: the tool-docs generator must validate bb_patterns.md
 // is byte-fresh from the registry.
-const gen = spawnSync("bun", ["run", "script/verify-tool-docs.ts"], { cwd: root, encoding: "utf8", timeout: 120_000 })
-harness.check("docs: generator verify mode passes (bb_patterns.md byte-fresh)", gen.status === 0, gen.status === 0 ? "" : (gen.stderr || gen.stdout || "").slice(0, 200))
+//
+// Spawns the CURRENT runtime rather than `bun`, for the reason recorded in the
+// sibling gate script/m13/verify-edit-docs.ts: a hardcoded `bun` fails with
+// ENOENT under Node and the assertion then reports STALE DOCUMENTATION for what
+// is actually a missing runtime. A freshness check that lies in the
+// regenerate direction is worse than no freshness check, because the operator's
+// correct response to it — regenerate — changes nothing.
+const runningUnderBun = typeof (globalThis as any).Bun !== "undefined"
+const generatorArgs = runningUnderBun
+  ? ["run", "script/verify-tool-docs.ts"]
+  : ["--import", "tsx", "script/verify-tool-docs.ts"]
+const gen = spawnSync(process.execPath, generatorArgs, { cwd: root, encoding: "utf8", timeout: 300_000 })
+harness.check(
+  `docs: generator verify mode passes (bb_patterns.md byte-fresh) — ${runningUnderBun ? "bun" : "node"}`,
+  gen.status === 0,
+  gen.status === 0 ? "" : `exit ${gen.status}: ${(gen.stderr || gen.stdout || "").slice(0, 200)}`,
+)
 
 // ── 2. Honesty: no stubs, planned modes honest ─────────────────────────────
 const toolsSrc = readFileSync(path.join(root, "src", "ast", "tools.ts"), "utf8")

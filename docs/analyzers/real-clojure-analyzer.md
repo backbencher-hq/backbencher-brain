@@ -166,6 +166,348 @@ a corpus data artifact, disclosed).
 
 ## Differential ground truth and evidence
 
+- Truth side: **`script/m14/clojure-truth.ts`**, read by `script/m14/tmp/clj-full-f5.ts`,
+  which OWNS the derivation rather than importing it. `differential.ts` used to supply
+  `deriveClojureEdges`, and delegating to the derived oracle from there worked twice
+  before a co-agent's commit reverted it — silently turning every measurement back into
+  a measurement of the legacy oracle while the harness printed numbers that looked
+  fine. A truth oracle belongs in a file its owner keeps; one a co-agent's commit can
+  revert is not a gate, it is a report. It imports `CLOJURE_CORE_BUILTINS` and
+  `isAnonArgShorthand` **by reference** so the core surface cannot drift.
+- **F5, four corpora at full extent** (not a 60-file draw), read with
+  `script/m14/tmp/clj-full-f5.ts`. Measured 2026-10-01 on the committed tree:
+
+  | corpus | files | truth | covered | MISSING | analyzer edges | unexplained | error nodes |
+  |---|---|---|---|---|---|---|---|
+  | `clojure/clojure` | 143 | 6,397 | 6,392 (99.92%) | 5 | 3,123 | 27 | 0 |
+  | `clj-kondo` | 444 | 7,965 | 7,837 (98.39%) | 128 | 4,433 | 111 | 2 |
+  | `core.async` | 46 | 2,005 | 1,959 (97.71%) | 46 | 1,009 | 28 | 0 |
+  | `metabase/metabase` | 4,253 | 232,780 | 230,831 (99.16%) | 1,949 | 122,500 | 2,261 | 1 |
+
+  **This table used to claim 100% coverage and zero unexplained on all four corpora.**
+  It was written against the legacy hand-rolled oracle, before `calls` was derived at
+  all, and nothing had re-measured it since — a stale number in a documentation table
+  is indistinguishable from a true one, which is the whole reason it has to be
+  measured rather than remembered. The honest reading: `calls` is near-clean on
+  `clojure` (5 missing, 27 unexplained) and has real residuals on the other three,
+  `metabase` most of all. `heuristic=0` everywhere.
+  (The cross-check has already earned its place: it is what caught a harness defect —
+  a `//` comment that had deleted the `calls` label for 17 lanes — which read as a
+  19.8% coverage red for this lane while the analyzer was correct. See
+  `reviews/clojure/deep-review-2026-09-28.md`, CLJ-H1.)
+
+- **F1 at scale**: 35 distinct node types over metabase's 4,253 files, every one classified
+  against the spec's handled/silent sets, **0 unclassified**, 0 placeholder names, 0 empty names.
+- **The core-suppression claim, measured rather than asserted**
+  (`script/m14/tmp/clj-gate-census.ts`): every emitted `calls` edge naming a real clojure.core
+  var is classified independently as FILE-DECLARED / REGION-BOUND / REFERRED / **RESIDUAL**.
+  Result on three corpora: **0 RESIDUAL** (`clojure` 2,941 + 6, `clj-kondo` 64 + 11,
+  `core.async` 27 + 2).
+- Ground truth: `validation/m12/ground-truth/clojure.json`; differential result
+  `validation/m12/results/clojure-differential.json`; corpus sample
+  `validation/m12/results/clojure-corpus-sample.txt`; complexity
+  `validation/m12/results/clojure-complexity.json`.
+- Fixtures: `validation/m14/fixtures/clojure/` (**62**); mutants: `script/m14/mutate-analyzer.ts`
+  (**102** clojure mutants, all CAUGHT, 0 survived). Both numbers verified 2026-10-01;
+  the previous values here were 42 and 63.
+
+## Regex inventory
+
+**None.** `validation/m12/results/regex-census.json` carries no entry for
+`real-clojure-analyzer.ts`, and `reviews/regex-policy.md` states **0** for the lane. The baseline
+was 2 (`/\.$/` constructor tests), both eliminated in the M12.04 grammar rewrite; the third and
+last, `/^%(\d+|&)?$/`, was removed in the M60 deep round with the equivalence proof above
+(CLJ-D20). Every remaining string surgery in the file is a char scan or a `Set` lookup, and the
+conversions carry their equivalence argument inline.
+
+## The relationship classes, and the two that had no gate
+
+The analyzer emits **seven** relationship labels: `calls`, `contains`, `references`, `uses`, `instantiates`, `implements`, `extends`. F5 compared **four** of them.
+
+`uses` and `contains` were excluded, and `script/m14/differential.ts` documents the reason exactly: *"a label the truth side does not derive cannot be compared, because every analyzer edge of that label would be counted as fabrication (the #910 lesson)."* The rule is right. Its consequence was never written down: **two of seven relationship classes had no gate, no oracle and no residual, while the lane reported 100% completeness.**
+
+`script/m14/clojure-truth.ts` derives both from the tree, so the comparison became possible without inventing a second opinion. Both are now at **zero residual in every direction**:
+
+| class | truth | emitted | covered | missed | fabricated |
+|---|---|---|---|---|---|
+| `uses` | 2,650 | 2,650 | 100.00% | 0 | 0 |
+| `contains` | 6,145 | 7,762 | 100.00% | 0 | — |
+| owner audit | — | — | — | 0 not-a-symbol / 0 not-spanning | — |
+| consistency | — | — | — | 0 target-missing / 0 line-wrong / 0 duplicated | — |
+
+On metabase (4,253 files) `uses` is **100.00% / 0 / 0** and `contains` **100.00%** with 2 residuals, recorded below.
+
+`uses` is judged **owner-free** on `(target, line, arity)` and its owner audited **separately**, because a naive walk attributes an access to the enclosing `defn` where the analyzer attributes it to a real `lambda_55_12` symbol — a disagreement about attribution, not about whether the edge exists. Neither half can see the other's failures.
+
+`contains` is checked **twice**, because a per-symbol owner makes a re-derivation tautological:
+- **(a) an independent minimum from the tree** — every def names a var, so a containment is derivable without reading the analyzer's own `ownerName`;
+- **(b) consistency against the symbol table as a second input** — the target must be a real declaration, at that exact start line, once per owner→name.
+
+The gate is **proven able to fail**: `--prove` runs ten negative proofs — a member access dropped, an edge with no access behind it, a misplaced line, a dropped arity overload, a def with no containment, a contains target missing from symbols, a contains line that is not the declaration line, a duplicated contains, `..` as a member, and the exact-match baseline. **10/10.** A gate nobody has shown can fail is not a gate.
+
+### What making the classes measurable found
+
+Nine defect classes — `CLJ-D30` … `CLJ-D38`, all in the spec — and each was found by a measurement, never by a guess. The two largest:
+
+- **`CLJ-D30`** — `defcurried` was unhandled, so **1,136 top-level definitions** across the four corpora recorded *nothing*: no symbol, no `contains`, no export. All ten of clojure/core/reducers.clj's core vars, produced zero output. The rule is general rather than a list — any def-like head in def position defines its first symbol — and it also covers 1,043 metabase sites including **local macros no per-file analyzer could be taught** (`def-aset`, `definline`, `defblockingop`) and a third-party one (`defprotocol+`). F1's node-type census is *structurally* blind to this class, because an unrecognized def form parses as an ordinary `list_lit`, i.e. a call.
+- **`CLJ-D31`** — `in-ns` is a namespace form. `(in-ns 'clojure.pprint)` left `currentNamespace` at `user`, stranding **484 definitions across 17 files** — the whole of clojure's own pretty-printer. It is an *absence*, not a wrong value, which is why no per-class claim could see it: a file with an unknown namespace still emits a full, plausible symbol table.
+
+The rest: **`D32`** static `Class/.member` emitted `calls -> String/.toUpperCase`, a target that is no symbol — a dangling edge, invisible to F5 *because* the `calls` truth derives calls and the analyzer emitted a call; **`D33`** `contains` determinism (667 edges) with a definition always displacing a forward declaration or a spec annotation; **`D34`** `user` is an ordinary namespace; **`D35`** a spec names a var, so `(s/fdef 1 :args)` minted a symbol called `1`; **`D36`** a `comment` inside a `case` shifts child parity so a *body* is dropped — and the mirror had the identical bug, so both sides agreed on a body neither walked; **`D37`** `#js` evaluates its *values* and not its keys; **`D38`** one name exported twice under two kinds.
+
+**Two of the nine were found by the fixtures while being written**, and one of those reversed a rule I had just invented: `CLJ-D34`. I had distinguished a file that *declares* `(in-ns 'user)` from one that merely *falls back* to `user`, and skipped containment for the second. The fixture pair refused it — the export pass's own invariant fired with *"export `undeclared-fn` does not resolve to a top-level symbol (membership rides Contains)"*. Withholding the membership while keeping the export is the one option that cannot be made consistent, and Clojure *does* intern into the ambient namespace, so the simpler rule is also the true one.
+
+### Which classes are enforced, and which are still reported
+
+**Enforced** — these decide the gate's verdict, and **both gates PASS**: the
+633-file lane and metabase's 4,253. Every number below was measured on the committed
+tree on 2026-10-01.
+
+| class | small (633 files) | metabase (4,253 files) |
+|---|---|---|
+| `uses` | **100.00%** — 2,685/2,685, 0/0 | **100.00%** — 6,289/6,291, 0/0 |
+| `contains` | **100.00%** — 6,145 min / 7,763, 0 missed, 0 line-mismatch | **100.00%** — 53,097 min / 60,177, 0 missed, 0 line-mismatch |
+| `implements` | **100.00%** — 444/444, 0/0 | **100.00%** — 583/583, 0/0 |
+| `extends` | **100.00%** — 39/39, 0/0 | **100.00%** — 51/51, 0/0 |
+
+`contains` consistency (target-missing / line-wrong / duplicated) is 0/0/0 on both.
+
+**Getting here took a corpus check.** Two of these were promoted to enforced on the
+633-file measurement while metabase — 15× larger — was available and failing, and the
+gate was right to fail on it throughout. The last two metabase residuals were both
+readers that treat a piece of **decoration** as part of a name: a libspec's
+`^{:clj-kondo/ignore […]}`, and a defining macro written `mu/defn`. Four separate
+readers in this codebase had the first defect. The second was the larger one — the
+analyzer was creating **no symbol at all** for `mu/defn` functions, so 1,116 functions
+that exist in the source were absent from the graph, and no residual count could see
+it: a missing symbol and a missing edge look identical in a diff.
+
+**Reported** — derived and printed with their residuals, but not yet deciding the
+verdict:
+
+| class | truth | emitted | covered | residual |
+|---|---|---|---|---|
+| `references` | 6,098 | 6,183 | 96.23% | 230 missed / 315 fabricated |
+| `instantiates` | 1,044 | 1,081 | 99.71% | 3 missed / 40 fabricated |
+
+On metabase the same two read `references` 97.32% (6,073 / 2,959) and `instantiates`
+98.37% (29 / 29).
+
+`implements` and `extends` were in this list until CLJ-D48/D51 and are now enforced:
+they started at 72.52% and 82.05% and the last six edges each were a *source*
+attribution question with the same answer. Leaving a class that measures 100.00% in
+the reported set is leaving a checked class unchecked, which is the one thing a gate
+should not do with work it has already finished.
+
+`--strict` enforces the reported two as well, for whoever is working on them.
+
+`calls` is the one label this gate does not touch: it has its own F5 differential.
+
+## CLJ-D39 / CLJ-D40 — the derived `calls` oracle
+
+`calls` is no longer described by a hand-rolled implementation. It is DERIVED from
+the parse tree in `script/m14/clojure-truth.ts` and checked against the analyzer
+in both directions. Building it is what found the last two defect classes, and
+both are about questions asked in the wrong order.
+
+**The shadow gate (CLJ-D39).** The gate asks "is this bare head the standard
+library, or a local definition?" and the order is the whole ruling: a local
+definition wins over the core list from the point its form completes; a
+definition does not reach backwards; a name in def-name position inside a quote
+or a `#_` discard binds nothing. Asking "is this core" first dropped 401 edges in
+`clojure/core.clj` — a file made almost entirely of core-named definitions.
+
+**The alias timeline (CLJ-D40).** `(require '[lib :as a])` registers the alias. The
+quote is the convention, not an exception, and a top-level require's children are
+the spec vecs themselves rather than `ns`-style clauses, so one spec reader serves
+both shapes. Before this, `jio` at `core.clj:7248`, `str/replace` and
+`ns/find-namespaces-in-dir` were the last unresolved targets in the corpus.
+
+**Special forms (CLJ-D41).** The shadow rule above has one exception that is not
+an exception at all: `clojure/core.clj:4748` is `(defmacro fn …)`, so core.clj
+redefines `fn` as a bootstrap macro and the shadow rule published every `(fn …)`
+below it as a call to the file's own var — 212 edges, all wrong. `fn` is a
+*special form*; a file defining it does not turn it into a var. The special-form
+set is closed, is consulted **before** the shadow rule rather than after it, and
+tests the whole head rather than a prefix, so `fnan?` remains an ordinary var.
+
+The 38/221 first measured for the previous hand-rolled implementation were, in
+part, this same class seen from the other side: the analyzer stays silent for
+`fn` but still emits `fn*` and `loop`, so its own special-form handling is
+partial. That asymmetry is the remaining open question, not a truth gap.
+
+**Recursion is not a call (CLJ-D42).** `recur` is a special form that transfers
+control to the enclosing `fn`/`loop`; it names no var. The analyzer used to push
+`calls: f -> f` with `isRecursion: true` on every `recur`, manufacturing 18 edges
+in `clojure/core.clj` alone — each `lambda_83_6 -> lambda_83_6` on a line whose
+head is `(recur …)`, with a *generated* name as the target, so the edge cannot even
+be navigated. Recursion stays on the symbol's `metadata.isRecursive`. Nothing reads
+that field today, which is a separate dead-capability finding.
+
+**The shadow table outranks the name lists (CLJ-D43).** The lists that answer "is
+this a macro / a binding form / a def head?" are consulted *after* the shadow table,
+so a macro the file defines is the file's own and calling it is a call. `core.clj` is
+the worst file for the opposite order because it *is* `clojure.core`: it defines
+`when-let`, `if-let`, `doseq`, `lazy-seq` and `loop`, then calls them 29, 9, 12, 41
+and 29 times. Three groups stay non-calls unconditionally — threading macros
+(transparent expansion), def heads (`CLJ-D30` owns those), and libspec or
+class-creating forms (a directive invokes nothing).
+
+**Special form or macro (CLJ-D44).** `loop`, `letfn` and `case` were in the truth's
+special-form list and are **macros**, not special forms. `core.clj` defines every one
+of them, so CLJ-D43 says a call to them is a call — the analyzer was right and the truth
+was wrong. At the same time the analyzer could not see `fn*` (a compiler intrinsic with
+no public var, so the core-list gate never reaches it) or `let` (shadowed in
+`core.clj`). Each side had the other's gaps. The analyzer now exports
+`CLOJURE_SPECIAL_FORMS` and gates its own generic-call emission on it, which is what
+makes the two comparable.
+
+**The anonymous-fn shorthand (CLJ-D45).** `#(f …)` parses as an `anon_fn_lit` whose
+children are the body *directly* — no `list_lit`, no `fn` head — so a walk that fires on
+lists never visits it. 55 residual edges were calls written this way; `core.clj` is
+written in the shorthand. The analyzer names it `lambda_<row>_<col>` from the node's own
+position, so the `fn` owner rule applies there too. `#(% 1)` is the mirror case and the
+reason the head needs a *name* test rather than a shape test: it applies its argument
+rather than calling it, with identical node shape.
+
+**The shorthand routes too (CLJ-D46).** `#(.getName %)` took the shorthand's head
+path and pushed `calls: lambda → .getName`, while plain `(.getName o)` correctly emits
+`uses: getName`. A call edge to a name that starts with a dot — not a var, not an
+export, not resolvable — and 19 of them. It was invisible to the differential because
+the truth *also* files these under `uses`: **the two implementations agreed on the
+ontology and disagreed only on whether the shorthand had been analysed at all.** That
+is why it read as an open policy question and was not one. The convention was already
+settled and already implemented on the list path; the shorthand skipped it.
+
+**An edge with no owner is still a call (CLJ-D47).** The truth's edge sink dropped
+anything whose `from` was empty — *"a relationship needs two ends"*. That silently
+deleted **43 calls**, and the silence is what made it expensive: every affected file
+simply read as a coverage gap rather than a bug. The worst was `(foo 3.14159)` at
+`test_cl_format.clj:611`, inside a `(simple-tests …)` block where the owner chain ran
+out — the edge was derived and then thrown away. The fallback is the analyzer's own
+**C8** rule, not an invention: a call outside any function attributes to the namespace
+*in force*. Where there is no `ns`, the chain continues to `user`. Pinning that second
+half matters — the obvious fix, stopping at the namespace, still drops every call in a
+file with no `ns`, which is the smallest instance and is not contrived.
+
+**Where a type relation is anchored (CLJ-D48).** The source of an `implements` /
+`extends` edge is the analyzer's `activeFunction` — the innermost enclosing *function*
+form, else the namespace. `walk`'s owner is **not** it, because that tracks `def` too
+and a `def` creates a var, not a function. So `reify` inside `(defn future-call …)`
+anchors to `future-call`, while a `proxy` inside a `def` *initializer* has no active
+function and anchors to the namespace. Both appeared as **symmetric** misses and
+fabrications — 122/122 and 7/7 — where the counts matched exactly and every key was
+wrong, which is the most misleading failure a completeness gate can have.
+
+**Aliases survive two unread shapes (CLJ-D49).** `(ns ^{:no-doc true} …)` puts
+metadata where the name is expected, and a *prefix list*
+`[clj-kondo…node [protocols :as p]]` was detected by asking whether its first child is
+a symbol — which a prefix list also has. The symptom was an alias table of size 1 where
+two aliases existed. A libspec with no dot in its first segment is **relative** and
+resolves against the requiring namespace.
+
+**A shared alias table was masking a `references` defect (open).** `aliasTableOf` is
+read by `references`, `implements` and `extends` alike, and the two care about it
+differently. Fixing prefix lists — which the fixture proves the *analyzer* does
+correctly — takes `implements` from 96.62% to **98.65%** and takes `references` from
+95.52% to **92.28%**. That is not a trade to be made on evidence: the truth was
+*wrong* about prefix lists, and the wrongness was hiding a second bug. Reverting to
+keep a metric green is the "make the gate agree with itself" failure, so the fix stays
+and the newly-exposed `references` residual is recorded instead. 471 misses now read
+`jio` at core.clj:7267 (a top-level `(require '[clojure.java.io :as jio])`, which
+CLJ-D40 taught the `calls` derivation and not this one) and
+`clojure.core.reducers/reduce` — both alias gaps of the same family, both next.
+
+**`references` reads the alias timeline, and a file with no `ns` still has a source
+(CLJ-D50).** This derivation read aliases from the `ns` form's clauses only, so a
+top-level `(require '[clojure.java.io :as jio])` was invisible and `core.clj:7267`
+published the bare `clojure.core -> jio` — CLJ-D40's defect in a derivation CLJ-D40
+never reached. It was **invisible** while the shared alias table was also wrong about
+prefix lists: two errors in the same direction cancel in a diff. And `nsAt` returns `""`
+for a file with no `ns` form, so 70 edges were published as `references||…` — a
+relationship with only one end. CLJ-D47 taught that fallback to `calls`; the halves
+drifting apart is the same lesson as the alias tables: **one language fact re-derived
+in four places, each copy drifting differently.**
+
+## Where the derived `calls` oracle stands
+
+On the 143-file clojure corpus the derivation reports **6,397 truth edges with 5
+missing and 27 unexplained**, against the 4,693 / 38 / 221 the hand-rolled
+implementation started from. Five missing and 27 unexplained across 6,397 edges.
+
+The residual is now a single question about the *analyzer*, and it is mostly
+interop routing: `Integer/valueOf`-style heads where "is this qualifier a
+namespace or a class?" is not decidable from one file, instance-interop targets
+like `.toLowerCase`, and a handful of resolved refers. `references` and
+`instantiates` are open for reasons of their own, written down below.
+
+### The residual classes, and what each one turned out to be
+
+Every one of these was a question asked in the wrong ORDER, which is why none of
+them was visible by reading the code:
+
+| ruling | the question | what it outranked | edges |
+|---|---|---|---|
+| CLJ-D39 | is this name shadowed? | the core list | 401 |
+| CLJ-D41 | is this a special form? | the shadow table | 212 |
+| CLJ-D43 | is this name shadowed? | the macro/def/libspec lists | 24 |
+| CLJ-D42 | is this `recur`? | nothing — a fabricated self-edge | 85 |
+| CLJ-D45 | is `#(f …)` a call? | nothing — the walk never visited it | 55 |
+| CLJ-D46 | does the shorthand route interop? | the list path's own routing | 19 |
+| CLJ-D47 | is a call with no owner a call? | the sink's "needs two ends" | 43 |
+| CLJ-D48/D51 | what is the source of a type relation? | `walk`'s owner | 299 |
+
+Three of them were **silent discards** — an edge derived and then thrown away, or
+a table consulted and then ignored. That is the expensive shape: a loud failure is
+a bug report, and a silent one is an apparent coverage gap that survives any amount
+of staring at the numbers. `push` dropping an empty `from` (CLJ-D47) and `??` not
+falling back on `""` (CLJ-D51) are the same defect three times in one file.
+
+### The `references` residual, diagnosed rather than measured
+
+`references` is the one class still open with a known shape, and it is worth
+recording why three fixes all made it worse.
+
+Diffing each attempt's residual against the baseline edge by edge:
+
+| attempt | fixed | broken |
+|---|---|---|
+| prefix-list alias reader | **167** | **563** |
+| …plus unaliased required libs | 167 | 869 |
+
+The broken set is almost entirely **mirror pairs at equal counts on equal sites** —
+`clj-kondo.impl.utils` 158 ↔ `utils` 158, `cljs.core.async` 69 ↔ `async` 69. That
+is the signature of the analyzer emitting **both forms**, the written lib name at
+some sites and the resolved namespace at others, and of the change resolving every
+site to the long form.
+
+So the rule is not "resolve the prefix". It is **which form this site wants**, and
+the two sites are two different derivations: a qualified *head* resolves to the
+namespace it actually reaches, while an `:require` *clause* is a statement about
+the written lib. Changing the one shared table leaked the resolution from the first
+into the second. Until those two read different tables, further tuning of the shared
+one cannot move this class.
+
+### `instantiates`: one residual that is underivable, not unsolved
+
+`RecordToTestStatics1/create` is an `instantiates` edge because `create` is that
+record's factory; `Integer/parseInt` is not, because it is an ordinary static
+method. Telling them apart requires knowing that `RecordToTestStatics1` **is** a
+record — cross-file type knowledge a per-file derivation cannot have. Adding the
+shape unconditionally measured 99.62% → 66.67% with 520 fabrications, which is the
+measurement that settles it. Recorded as CLJ-D52 rather than guessed.
+Single-pass iterative stack walk (no recursion) with explicit exit frames; `Map`/null-prototype
+lookups for the core set, aliases, refers, shadow ranges and both dedupe sets. The core-suppression
+gate's cost is one null-prototype lookup per head, and the order-aware shadow table is a linear
+scan over one or two ranges per name in practice. Two whole-tree pre-passes exist (the
+comment/core shadow scan and the refer-segment bookkeeping), both O(n) and both single-stack.
+
+Measured on the corpora of the M60 deep round (see `reviews/clojure/deep-review-2026-09-28.md`
+for the full-extent differential): metabase 4,253 files → 84,414 symbols, 579,714 relationships,
+0 thrown exceptions, 0 timeouts, 1 file with ERROR nodes (3 literal NUL bytes in the source —
+a corpus data artifact, disclosed).
+
+## Differential ground truth and evidence
+
 - Truth side: `script/m14/differential.ts` → `deriveClojureEdges`, mirroring CLJ-D1…D29
   rule for rule. It imports `CLOJURE_CORE_BUILTINS` and `isAnonArgShorthand` **by reference** so
   the core surface cannot drift between the two sides.

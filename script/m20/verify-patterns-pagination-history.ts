@@ -46,7 +46,26 @@ try {
   const mcp = await createToolHandlers().bb_patterns({ scope: "all", limit: 1, includeOrphaned: true, includeFramework: false, includeAntiPatterns: false, confidenceThreshold: 0 }, { projectPath: root, projectId } as any)
   const mcpText = mcp.content[0].text
   check("CLI and direct handler both return a patterns response", cli.includes("patterns (") && mcpText.includes("patterns ("), `${cli.slice(0, 100)} | ${mcpText.slice(0, 100)}`)
-  check("CLI and direct handler display one item", (cli.match(/orphaned_function/g) ?? []).length <= 1 && (mcpText.match(/orphaned_function/g) ?? []).length <= 1)
+  // Counted DISPLAY ROWS, not occurrences of the string "orphaned_function".
+  // The previous form was `(cli.match(/orphaned_function/g) ?? []).length <= 1`,
+  // which cannot tell a rendered finding from a rule name mentioned in a
+  // summary line — so adding an honest "[scan: N finding(s) across
+  // orphaned_function=M ...]" footer, which is the point of the fix, failed a
+  // check whose actual intent is "limit=1 shows one finding". Row shape is the
+  // thing being asserted: two leading spaces, then a [severity] tag.
+  const findingRows = (text: string): number => text.split("\n").filter((l) => /^ {2}\[\w+\] /.test(l)).length
+  check(
+    "CLI and direct handler display one item",
+    findingRows(cli) <= 1 && findingRows(mcpText) <= 1,
+    `cliRows=${findingRows(cli)} mcpRows=${findingRows(mcpText)}`,
+  )
+  // [negative] The count line names the rule; the row count must still be the
+  // page size, so a summary that mentions a type cannot inflate it.
+  check(
+    "the census line names rules without becoming a displayed finding",
+    (cli.match(/\[scan: /g) ?? []).length <= 1 && findingRows(cli) <= 1,
+    cli.slice(0, 200),
+  )
 } catch (error) {
   check("P3 verifier session", false, error instanceof Error ? error.message : String(error))
 } finally {

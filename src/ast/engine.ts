@@ -31,7 +31,76 @@ export namespace ASTEngine {
   // Each parser holds ~10-50MB WASM memory - too many cached parsers causes performance degradation
   const MAX_CONCURRENT_PARSERS = 20
   const MAX_PARSER_CACHE_SIZE = 30
-  const PARSER_TIMEOUT_MS = 10000 // 10 second timeout for parser operations
+
+  /**
+   * Largest file content handed to the parser, in bytes.
+   *
+   * This was 1 MiB, and it was the single largest source of silent data loss
+   * found in this lane. `content.substring(0, 1 MiB)` drops the tail of every
+   * larger file, so the tail is not mis-parsed — it is simply ABSENT, and
+   * nothing downstream can tell that from a file that simply ends there.
+   *
+   * MEASURED over the six pinned C++ corpora plus the wider corpus: **43 files
+   * exceed 1 MiB and 54,856,371 bytes — 4.84% of all corpus source bytes — were
+   * never parsed at all.** The worst are not marginal:
+   *
+   * | file | size | actually parsed |
+   * | --- | --- | --- |
+   * | `zig/src/codegen/x86_64/CodeGen.zig` | 10,941,553 | **10%** |
+   * | `zig/lib/compiler_rt/udivmodti4_test.zig` | 10,249,535 | **10%** |
+   * | `zig/lib/libc/include/any-windows-any/mshtml.h` | 6,847,802 | **15%** |
+   * | `nlohmann-json/single_include/nlohmann/json.hpp` | 1,270,669 | **82.5%** |
+   *
+   * That last row is the one that made this look like a GRAMMAR limitation and
+   * sent this lane looking for a tree-sitter bug that did not exist. nlohmann's
+   * single-header amalgamation is 1.27 MB, so `class basic_json` — which runs
+   * rows 26,011-32,291 — was cut at row **27,085**. The class could not be fully
+   * published no matter how the grammar parsed, and the parse's root node ended
+   * at exactly the cap: 27,085. Diagnosing that cost a bisection, three dead
+   * ends, and a grammar patch built and then withdrawn. The cap was the cause
+   * the whole time.
+   *
+   * 16 MiB covers every file in this corpus (largest 10.9 MB) with margin, and
+   * the ceiling is safe rather than arbitrary: tree-sitter is linear, and
+   * measured throughput is ~1.45 s/MB, so 16 MiB is ~23 s against a 120 s
+   * timeout (`parseWithTimeout`) and a 120 s hard self-destruct (`parseBomb`).
+   * Measured directly: the real 1.21 MB nlohmann header parses in 1,658 ms, and
+   * a synthetic 10 MB C++ file in 14,576 ms.
+   *
+   * The honest gap this leaves: a file over the cap is still truncated, and
+   * truncating is worse than failing loudly. `parseTruncation` below makes the
+   * loss countable so a gate can assert it is zero instead of the loss being
+   * invisible.
+   */
+  const MAX_PARSE_BYTES = 16 * 1024 * 1024
+
+  /**
+   * Every file whose content was truncated before parsing, with the bytes
+   * dropped. Exported so the loss is a number a gate can read.
+   *
+   * The old behaviour was `log.warn("large file detected, using truncated
+   * content")` and nothing else — a warning nobody gates, for a loss that
+   * silently removes every symbol in the dropped tail. That is the same failure
+   * this lane has been correcting all along, one layer down: a report that
+   * cannot tell a real loss from its own instrumentation has not measured
+   * anything, and neither has a warning that cannot be failed.
+   */
+  export const parseTruncation = {
+    /** how many files were truncated */
+    files: 0,
+    /** total bytes dropped before parsing */
+    bytesDropped: 0,
+    /** worst offenders, largest loss first, for a report that names names */
+    worst: [] as { filePath: string; bytesDropped: number }[],
+  }
+  function recordTruncation(filePath: string, originalBytes: number, parsedBytes: number): void {
+    const dropped = originalBytes - parsedBytes
+    parseTruncation.files++
+    parseTruncation.bytesDropped += dropped
+    parseTruncation.worst.push({ filePath, bytesDropped: dropped })
+    parseTruncation.worst.sort((a, b) => b.bytesDropped - a.bytesDropped)
+    if (parseTruncation.worst.length > 20) parseTruncation.worst.length = 20
+  }
 
   // Track total parsed files for memory monitoring
   let totalFilesParsed = 0
@@ -331,6 +400,13 @@ export namespace ASTEngine {
     Union = "union", // Zig/C union types
     Mixin = "mixin", // Dart mixin declaration
     Extension = "extension", // Dart extension declaration
+    // An INSTANCE of a class/trait, distinct from the class itself. Haskell
+    // `instance C (T x)` names its TARGET TYPE, so publishing it as a Class
+    // made the module look like it DECLARED that type. A separate kind lets
+    // the indexer keep the symbol while skipping it in the universal
+    // `contains` derivation. String-valued and appended last, so no
+    // existing kind value changes.
+    Instance = "instance",
   }
 
   export interface Parameter {
@@ -1248,7 +1324,7 @@ export namespace ASTEngine {
       parser = await getParser(language)
     }
 
-    // Protect against very large files that might hang the parser
+// Protect against very large files that might hang the parser
     //
     // PY-19. This used to be a `log.warn` and nothing else, which made the condition
     // INVISIBLE to every consumer that reads the result: the indexer stored the file's symbols
@@ -1257,21 +1333,28 @@ export namespace ASTEngine {
     // were agreement on the file. A log line is not a disclosure — it reaches a terminal, not a
     // caller, and it is gone by the time anyone asks why a number looks low.
     //
-    // So truncation is now a first-class `ParseError` on the result, alongside the syntax errors
+    // So truncation is a first-class `ParseError` on the result, alongside the syntax errors
     // a caller already has to look at, and it carries the two numbers a reader needs to judge
-    // how much of the file is missing: the original size and the size actually parsed. The
-    // threshold is unchanged — this is about making an existing decision observable, not about
-    // changing which files are truncated.
+    // how much of the file is missing: the original size and the size actually parsed.
+    //
+    // RESOLVED 2026-10-02 (branch consolidation): a UNION. The local side added the
+    // first-class `truncated` disclosure field, which the return signature requires
+    // (ParseResult.truncated, returned at :1439 and surfaced at :1806). The remote side
+    // replaced the hardcoded 1 MiB literal with the measured `MAX_PARSE_BYTES` (16 MiB)
+    // and added `recordTruncation` so the loss can be GATED rather than merely logged.
+    // Both are kept: theirs supplies the threshold and the recording, ours supplies the
+    // per-call disclosure. Using the local 1 MiB here would silently re-truncate every
+    // file the remote side deliberately stopped truncating.
     let truncated: { originalSize: number; parsedSize: number } | null = null
-    if (content.length > 1024 * 1024) {
-      // 1MB limit for parsing
+    if (content.length > MAX_PARSE_BYTES) {
       log.warn("large file detected, using truncated content", {
         filePath,
         originalSize: content.length,
-        truncatedSize: 1024 * 1024,
+        truncatedSize: MAX_PARSE_BYTES,
       })
-      truncated = { originalSize: content.length, parsedSize: 1024 * 1024 }
-      content = content.substring(0, 1024 * 1024)
+recordTruncation(filePath, content.length, MAX_PARSE_BYTES)
+      truncated = { originalSize: content.length, parsedSize: MAX_PARSE_BYTES }
+      content = content.substring(0, MAX_PARSE_BYTES)
     }
 
     // === UNIVERSAL C/C++ AST ILLUSION FIX ===
@@ -1754,9 +1837,22 @@ export namespace ASTEngine {
           ...(truncated ? { truncated } : {}),
           complexity: meta.complexity || 0,
           linesOfCode: content.split("\n").length,
-          cyclomaticComplexity: meta.cyclomaticComplexity,
+          // These two publish `undefined` as a PRESENT key when the analyzer did
+          // not set them, which is the same defect as the eight scored keys below —
+          // found by the corrected `verify-lua-published-claims` check, which
+          // compares the pipeline's keys against the analyzer's own and named
+          // `architecture` as the one a Lua file receives without producing.
+          //
+          // `framework` is DELIBERATELY left as a plain assignment, and the reason
+          // is a consumer: `script/m60/framework-surface-probe.ts` reports a lane as
+          // missing if `"framework" in meta` is false, so omitting the key would turn
+          // a language that never set it into a reported defect. That is the one
+          // place in the tree where presence is the contract, so presence is kept
+          // there and nowhere else. Making these two conditional is safe for the same
+          // reason the eight are: nothing tests them for presence (0 call sites).
+          ...(meta.cyclomaticComplexity !== undefined && { cyclomaticComplexity: meta.cyclomaticComplexity }),
           framework: meta.framework,
-          architecture: meta.architecture,
+          ...(meta.architecture !== undefined && { architecture: meta.architecture }),
           patterns: meta.patterns || [],
           // NEW: Enhanced intelligence metadata
           detectedFrameworks: meta.detectedFrameworks || [],
@@ -1777,26 +1873,59 @@ export namespace ASTEngine {
           // inference input.")
           hasTypeInference: meta.hasTypeInference ?? true,
           hasFrameworkIntelligence: meta.hasFrameworkIntelligence ?? true,
-          // M14 (#888): FORWARD the analyzer's own scored metrics. This object is
-          // a fresh literal listing fifteen keys, so anything an analyzer computes
-          // and this list omits is computed and DISCARDED — silently, because
+          // M14 (#888): FORWARD the analyzer's own scored metrics, and do it
+          // WITHOUT materialising the key for a language that did not produce it.
+          //
+          // This object is a fresh literal, so anything an analyzer computes and
+          // this list omits is computed and DISCARDED — silently, because
           // `FileMetadata` carries an index signature and the extra key
           // typechecks. The html analyzer measured exactly that: it computed
           // accessibility / semantic / performance scores, a `score` breakdown and
           // a `documentMetrics` census, none of which appeared in the parse result
-          // (verified `"accessibilityScore" in metadata === false`), and the three
-          // scores have no consumer anywhere in `src/` or `script/` besides this
-          // line. Each key below reads `undefined` for every other language, which
-          // is identical to the key being absent — so this is additive by
-          // construction, not a change to any other lane's payload.
-          accessibilityScore: (meta as any).accessibilityScore,
-          semanticScore: (meta as any).semanticScore,
-          performanceScore: (meta as any).performanceScore,
-          score: (meta as any).score,
-          documentMetrics: (meta as any).documentMetrics,
-          elementCount: (meta as any).elementCount,
-          addressableNodeCount: (meta as any).addressableNodeCount,
-          maxElementDepth: (meta as any).maxElementDepth,
+          // (`"accessibilityScore" in metadata === false`).
+          //
+          // The first version of this fix added the keys as plain assignments:
+          //
+          //     accessibilityScore: (meta as any).accessibilityScore,
+          //
+          // and justified it with "each key reads `undefined` for every other
+          // language, which is identical to the key being absent — so this is
+          // additive by construction, not a change to any other lane's payload."
+          //
+          // THAT IS FALSE, and it is worth being precise about why, because the
+          // comment three lines above it is the evidence:
+          //
+          //     { x: 1, y: undefined }  ->  "y" in obj === true,  Object.keys === ["x","y"]
+          //     { x: 1 }                ->  "y" in obj === false, Object.keys === ["x"]
+          //
+          // `undefined` is only invisible to `JSON.stringify`, which is the one
+          // operation that drops such keys. `"k" in metadata` and `Object.keys()`
+          // both see them, and a key's PRESENCE is a claim: a consumer testing
+          // `if (metadata.elementCount)` behaves identically, but one testing
+          // `"elementCount" in metadata` — the exact form this file used to prove
+          // the html lane's key was missing — now reads TRUE for every language on
+          // earth. Eight keys were added to all 44 lanes' metadata.
+          //
+          // Found by the LUA lane's `verify-lua-published-claims`, whose eleventh
+          // check asserts the pipeline does not synthesise a metadata block that was
+          // never mapped, because that is precisely the class of defect it exists to
+          // catch: a value that reaches a consumer shaped like a measurement and is
+          // not one. Before this, a Lua file's metadata reported
+          // `documentMetrics`, `elementCount`, `accessibilityScore`, `score` and four
+          // more — all undefined, all belonging to html and toml.
+          //
+          // So a key is added only when the analyzer actually produced it. html and
+          // toml keep theirs; every other language gets the object it had before
+          // #888, which is the "not a change to any other lane's payload" claim
+          // this comment originally intended to make.
+          ...(meta as any).accessibilityScore !== undefined && { accessibilityScore: (meta as any).accessibilityScore },
+          ...(meta as any).semanticScore !== undefined && { semanticScore: (meta as any).semanticScore },
+          ...(meta as any).performanceScore !== undefined && { performanceScore: (meta as any).performanceScore },
+          ...(meta as any).score !== undefined && { score: (meta as any).score },
+          ...(meta as any).documentMetrics !== undefined && { documentMetrics: (meta as any).documentMetrics },
+          ...(meta as any).elementCount !== undefined && { elementCount: (meta as any).elementCount },
+          ...(meta as any).addressableNodeCount !== undefined && { addressableNodeCount: (meta as any).addressableNodeCount },
+          ...(meta as any).maxElementDepth !== undefined && { maxElementDepth: (meta as any).maxElementDepth },
           analysisVersion: meta.analysisVersion || "m10.06-cut",
         },
       }
@@ -1947,6 +2076,20 @@ export namespace ASTEngine {
      * deliberately independent of any analyzer that reads it.
      */
     projectIndex?: import("./project-index").ProjectIndex
+     * Owner type name → (method name → its visibility), parallel to
+     * `overrideCompanion`. ADDITIVE and optional: absent means "visibility unknown",
+     * which is the pre-M60 behaviour and the reason an `overrides` edge used to be
+     * published for a `private` base method.
+     *
+     * PHP does not inherit private methods — a subclass method of the same name is a
+     * DIFFERENT method, not an override — so a name set alone cannot decide an override.
+     * A companion that carried names only therefore cannot decide one either, and the
+     * edge it produced was wrong. This channel lets a caller supply what the name set
+     * omits. Populated by the php differential (`buildPhpOverrideCompanion`, which reads
+     * modifiers off the tree) and by `run-fixtures.ts`'s opt-in cross-file path; absent
+     * in production, which is recorded as a known limitation rather than papered over.
+     */
+    overrideCompanionVisibility?: Map<string, Map<string, string>>
     [key: string]: any
   }
 

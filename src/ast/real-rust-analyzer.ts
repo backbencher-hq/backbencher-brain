@@ -4,17 +4,41 @@ import { ASTEngine } from "./engine"
 // Extract the route path from an axum-style method attribute
 // (`#[get("/users")]` → `/users`). Pure-String scan — replaces the legacy
 // `\[(?:get|post|put|delete)\("([^"]+)"\)\]` regex.
-function extractRoutePath(text: string): string | null {
-  for (const verb of ["get", "post", "put", "delete"]) {
-    const marker = `[${verb}("`
-    const start = text.indexOf(marker)
-    if (start >= 0) {
-      const rest = text.slice(start + marker.length)
-      const end = rest.indexOf('")]')
-      if (end >= 0) return rest.slice(0, end)
-    }
+// actix-web spells a route as an attribute. The GUARD that recognised the framework
+// and the EXTRACTOR that read the path used two different verb lists — six versus
+// four — so `#[head(…)]` and `#[patch(…)]` were detected as actix and then produced
+// no route at all, silently. One list, used by both, so they cannot drift again.
+// `options`, `trace` and actix's older `#[route("/p", method = "GET")]` were missing
+// from both, which cost 4 of the 7 routes in the fixture (RUST-D24).
+const ROUTE_VERBS = ["get", "post", "put", "delete", "patch", "head", "options", "trace", "route"]
+
+/**
+ * The route verb this attribute declares, or "" when it declares none.
+ * ASCII comparison, no regex; requires `(` or whitespace after the verb so
+ * `#[getter]` is never mistaken for `#[get]`.
+ */
+function routeVerbOf(text: string): string {
+  if (!text.startsWith("#[")) return ""
+  const rest = text.slice(2)
+  for (const verb of ROUTE_VERBS) {
+    if (!rest.startsWith(verb)) continue
+    const next = rest[verb.length] ?? ""
+    if (next === "(" || next === " " || next === "\t") return verb
   }
-  return null
+  return ""
+}
+
+function extractRoutePath(text: string): string | null {
+  if (!routeVerbOf(text)) return null
+  // the route is the FIRST string literal in the attribute, which is the path for
+  // both `#[get("/p")]` and `#[route("/p", method = "GET")]`
+  const open = text.indexOf("(", 2)
+  if (open < 0) return null
+  const q1 = text.indexOf('"', open)
+  if (q1 < 0) return null
+  const q2 = text.indexOf('"', q1 + 1)
+  if (q2 <= q1 + 1) return null
+  return text.slice(q1 + 1, q2)
 }
 
 // ASCII word-run membership: exact the same thing `\b(S1|S2|...)\b` decides,
@@ -75,7 +99,7 @@ interface RustContext {
   // M59.A7 (#825): the constructor candidate carries the 1-based line of the
   // node that NAMES the type it constructs — the edge is emitted in a deferred
   // pass (after the symbol table exists), long after the node is in hand.
-  pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number }>
+  pendingInstantiations: Array<{ source: string; target: string; qualified: string; line?: number; bareSpelling?: boolean }>
   // startIndex of call_expression / macro_invocation nodes that sit directly
   // inside an await_expression (`.await`). The DFS visits the inner call node
   // anyway, so the await branch must NOT push a second edge — instead it
@@ -519,6 +543,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
       for (const cand of ctx.pendingInstantiations) {
         if (!inFile.has(cand.target)) continue
+        // RUST-D30: a bare single-segment callee never resolves to a same-named
+        // local type — the prelude owns those spellings (`Ok`, `Some`, `None`,
+        // `Err`). Dropped here rather than at the candidate, so the rule sits
+        // where the ambiguity actually becomes visible.
+        if (cand.bareSpelling) continue
         ctx.relationships.push({
           source: cand.source,
           target: cand.target,
@@ -822,7 +851,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (text.includes("tracing::instrument")) detectFw("tracing")
       if (text.includes("derive(Parser")) detectFw("clap") // keep both spellings honest
     }
-    if (text.startsWith("#[get") || text.startsWith("#[post") || text.startsWith("#[put") || text.startsWith("#[delete") || text.startsWith("#[head") || text.startsWith("#[patch")) {
+    if (routeVerbOf(text)) {
       detectFw("actix_web")
       let existing: any = undefined
       if (ctx.metadata.frameworkPatterns) {
@@ -1155,7 +1184,24 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     const boundsNode = node.childForFieldName("bounds")
     if (boundsNode) {
       for (let i = 0; i < boundsNode.namedChildCount; i++) {
-        const bound = boundsNode.namedChild(i)
+        let bound = boundsNode.namedChild(i)
+        // RUST-MR: a HIGHER-RANKED bound (`for<'de> Deserialize<'de>` — the
+        // lifetime-generic supertrait idiom) wraps its type in a
+        // `higher_ranked_trait_bound` node, so the direct-child test below
+        // missed it and the supertrait edge was NEVER emitted: serde's
+        // `pub trait DeserializeOwned: for<'de> Deserialize<'de> {}` published
+        // nothing. The F5 oracle had the mirror-image bug on the same construct
+        // — it took the binder's text and FABRICATED `extends -> "for"` — so
+        // both sides were wrong in opposite directions and the row surfaced as
+        // one MISSING while the real edge never surfaced at all. Measured: 3
+        // higher-ranked bounds in 2 files across 2,598, and this is the only
+        // construct where a supertrait bound is named but unpublished.
+        if (bound?.type === "higher_ranked_trait_bound") {
+          for (let j = 0; j < bound.namedChildCount; j++) {
+            const inner = bound.namedChild(j)
+            if (inner && (inner.type === "type_identifier" || inner.type === "scoped_type_identifier" || inner.type === "generic_type")) { bound = inner; break }
+          }
+        }
         // Pinned wasm: trait_bounds children are direct type nodes -
         // 'trait_bound' does not exist here (grammar audit).
         if (bound && (bound.type === "type_identifier" || bound.type === "scoped_type_identifier" || bound.type === "generic_type")) {
@@ -1824,9 +1870,66 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Macro RULE bodies are templates, not code (CGD5 analog) — but macro
     // INVOCATION arguments are genuine reads.
     if (this.hasAncestor(node, "macro_definition", ["macro_invocation"])) return
+    // A macro INVOCATION's NAME is a CALLEE, and the calls branch owns it
+    // (RUST-D2 publishes `calls -> bail` for `bail!(…)`). The guard above covers
+    // a macro DEFINITION's body; nothing covered the invocation's own `macro`
+    // field, so a USE-IMPORTED macro published TWO edges for one name at one
+    // line — `calls -> bail` AND `uses -> bail` — while an imported FUNCTION
+    // called by name published `calls` only, because the call-callee guard below
+    // matches `call_expression` and not `macro_invocation`. Measured 269 sites
+    // over a 550-file slice of cargo/tokio/serde/hyper/ripgrep. R1's contract
+    // excludes callees, so the read was a fabrication; and the F5 `uses` oracle
+    // mirrored it (its only macro rule skips identifiers under a macro
+    // DEFINITION, stopping at `macro_invocation`), so the differential agreed
+    // with the fabrication and could not see it. The climb mirrors the
+    // call-callee climb so a PATH-qualified macro (`std::eprintln!`) is covered
+    // too, and the guard is on the `macro` FIELD alone — the invocation's
+    // arguments are reads and keep publishing.
+    {
+      let mtop: Node = node
+      let mup: Node | null = p
+      while (mup && (mup.type === "scoped_identifier" || mup.type === "generic_function")) {
+        mtop = mup
+        mup = mup.parent
+      }
+      if (mup && mup.type === "macro_invocation") {
+        const mfield = mup.childForFieldName("macro")
+        if (mfield && mfield.startIndex === mtop.startIndex && mfield.endIndex >= mtop.endIndex) return
+      }
+    }
     // Attributes (`#[derive(Foo)]`) and use paths are metadata/imports.
     if (this.hasAncestor(node, "attribute_item", ["function_item", "struct_item", "enum_item", "impl_item", "trait_item", "mod_item"])) return
     if (this.hasAncestor(node, "use_declaration", null)) return
+    // RUST-MR: a parameter of a FUNCTION-POINTER TYPE declares, it does not
+    // read. `type PasswordStore = extern "C" fn(schema: *const SecretSchema, …)`
+    // is a type alias — no body, therefore no per-function bound-name set to
+    // exclude those names by — and when such a name also resolved (a
+    // use-imported leaf or a file-visible value) the sweep published
+    // `uses -> schema`. A real function's parameters were already excluded by the
+    // bound-name set; a type's parameters had no such set. Last of the three
+    // declaration-position classes this line audit found, after the macro callee
+    // and the trait method signature.
+    if (p && p.type === "parameter") {
+      const params = p.parent
+      const holder = params?.parent
+      if (params?.type === "parameters" && holder && (holder.type === "bare_function_type" || holder.type === "function_type" || holder.type === "parenthesized_type")) return
+      // RUST-MR: a TRAIT method SIGNATURE's parameter declares too, and it is the
+      // same absence of a body: `collectFunctionBindings` collects
+      // `function_item` only, so a bodiless `function_signature_item` has NO
+      // bound-name set and its parameter names fell through to the read sweep.
+      // Found at FULL extent, not by the 550-file sample — cargo's
+      // `src/compiler/mod.rs:142-143` (`fn exec(&self, …, on_stdout_line: &mut
+      // dyn FnMut(&str) -> CargoResult<()>, …) -> CargoResult<()>;` inside a
+      // trait) published `uses -> on_stdout_line` and `uses -> on_stderr_line`.
+      // RUST-D13's fn-pointer guard was one level too shallow: a fn-pointer TYPE
+      // is a type alias and a trait SIGNATURE is a declaration, and both have
+      // no body to bind a name.
+      if (params?.type === "parameters") {
+        let owner: Node | null = params.parent
+        while (owner && owner.type !== "function_item" && owner.type !== "function_signature_item" && owner.type !== "closure_expression") owner = owner.parent
+        if (owner && owner.type === "function_signature_item") return
+      }
+    }
     // Where-bounds belong to the dedicated where branch (R8).
     if (this.hasAncestor(node, "where_predicate", null)) return
 
@@ -1929,6 +2032,18 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
   private isItemNamePosition(node: Node, parent: Node): boolean {
     switch (parent.type) {
       case "function_item":
+      // RUST-MR: a TRAIT method DECLARATION is a `function_signature_item` (no
+      // body), and the switch below listed `function_item` only — so a trait
+      // method's own NAME fell through to the read sweep. When the name also
+      // resolved (a use-imported leaf of the same name, or a file-visible value)
+      // it published a `uses` edge for its own DECLARATION, and at
+      // cargo-test-support/src/lib.rs:1477 that edge was a SELF-EDGE
+      // (`uses current_dir -> current_dir`). The IMPLEMENTATION of the same
+      // method never did, which is what made the class look like a trait quirk
+      // rather than a missing node type. 10 sites survived the macro-callee fix
+      // in the same 550-file slice; the whole class is trait method signatures
+      // whose name collides with an import.
+      case "function_signature_item":
       case "struct_item":
       case "enum_item":
       case "trait_item":
@@ -1981,7 +2096,20 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // A parent whose kind is Function/Method/Closure means we are inside a
     // function body — skip those. A parent of a function itself (the symbol
     // pushed by handleFunction) is also a body marker.
-    if (parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
+    //
+    // RUST-MR: that comment says `let`, and `let` is the only one of the three
+    // the rule is true for. A function-local `const`/`static` is not a mutable
+    // local: it is a NAMED declaration with a type, a value and a line
+    // (`const DETERMINISTIC_TIMESTAMP: u64 = 1153704088;` inside
+    // `assert_deterministic_mtime`), and it is published everywhere else — the
+    // guard was the only thing standing between the form and the graph. Measured
+    // in the corpus census: 43 function-local `const` and 22 function-local
+    // `static`, 0% covered, against 200/200 module-level `const` and 15/15
+    // associated ones. The spec lists both node types as handled_verified, so
+    // the exclusion made that claim false at the site level. `let` keeps the
+    // skip (M11.11's closure boundary, and a local binding genuinely declares
+    // nothing outside its body).
+    if (node.type === "let_declaration" && parent && (parent.kind === ASTEngine.SymbolKind.Function || parent.kind === ASTEngine.SymbolKind.Method)) {
       return
     }
 
@@ -2005,15 +2133,32 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // Family contract (JS/Java): module = path, items = imported names.
     // Pre-fix, `use std::io::{Read, Write as W}` stored the whole raw text
     // as module and comma-split garbage into items (found 2026-08-28).
-    const collect = (n: Node): { path: string; items: string[] } => {
+    const collect = (n: Node): { path: string; items: string[]; node: Node } => {
       if (n.type === "identifier" || n.type === "type_identifier") {
-        return { path: n.text, items: [n.text] }
+        return { path: n.text, items: [n.text], node: n }
+      }
+      if (n.type === "crate" || n.type === "super" || n.type === "self") {
+        // RUST-D29 follow-on: `crate::foo` and `super::util` carry a `crate`/`super`
+        // NODE in the path field, not an identifier. Restricting the FALLBACK to
+        // path-bearing nodes — so that a comment can never become a module — sent this
+        // recursion to the refuse branch and the prefix came back "", which is how
+        // `crate::foo::{bar, Baz as B}` briefly published module `::foo` instead of
+        // `crate::foo`. A path ROOT is path-bearing by definition; that was the gap
+        // in the narrower rule, and the fixture caught it on the same run.
+        return { path: n.text, items: [n.text], node: n }
       }
       if (n.type === "scoped_identifier") {
-        const path = n.childForFieldName("path") || n.namedChild(0)
+        // A LEADING `::` — an absolute path — has NO `path` field at all: the first
+        // named child IS the name (`::libc` is a scoped_identifier whose only named
+        // child is the identifier `libc`). Falling back to namedChild(0) there used
+        // the name as its own prefix and doubled it, so `use ::libc::c_int;`
+        // published module `libc::libc::c_int` and items `["c_int"]`. A missing
+        // path field means NO PREFIX, not "assume child 0", and the leading `::` is
+        // itself part of the path a consumer has to resolve, so it is kept.
+        const pathNode = n.childForFieldName("path")
         const name = n.childForFieldName("name") || n.namedChild(n.namedChildCount - 1)
-        const p = path ? collect(path).path + "::" : ""
-        return { path: p + (name ? name.text : ""), items: [name ? name.text : ""] }
+        const p = pathNode ? collect(pathNode).path + "::" : n.text.startsWith("::") ? "::" : ""
+        return { path: p + (name ? name.text : ""), items: [name ? name.text : ""], node: n }
       }
       if (n.type === "scoped_use_list") {
         const pathNode = n.namedChild(0)
@@ -2047,7 +2192,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
         }
-        return { path: base, items }
+        return { path: base, items, node: n }
       }
       if (n.type === "use_list") {
         const items: string[] = []
@@ -2064,20 +2209,32 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
             if (leaf) items.push(leaf.text)
           }
         }
-        return { path: "", items }
+        return { path: "", items, node: n }
       }
       if (n.type === "use_as_clause") {
         const path = n.childForFieldName("path") || n.namedChild(0)
         const aliasName = n.childForFieldName("alias") || n.namedChild(n.namedChildCount - 1)
-        return { path: path ? collect(path).path : n.text, items: [aliasName ? aliasName.text : (path ? collect(path).items[0] : n.text)] }
+        return { path: path ? collect(path).path : n.text, items: [aliasName ? aliasName.text : (path ? collect(path).items[0] : n.text)], node: n }
       }
       if (n.type === "use_wildcard") {
         // use super::util::* — module = path prefix, item = "*"
         const inner = n.namedChild(0)
         const path = inner ? collect(inner).path : n.text
-        return { path, items: ["*"] }
+        return { path, items: ["*"], node: n }
       }
-      return { path: n.text, items: [n.text] }
+      // RUST-D29: the fallback used to accept ANY node and publish its raw text as a
+      // module path. In a use_list that means a COMMENT or a stray separator becomes
+      // an import: `use {a ,, b}` published module `,`, `use {/* Pre-comment! */
+      // Foo, Bar}` published `/* Pre-comment! */`, and a `// FIXME` line inside a
+      // group published the whole comment sentence. 14 such rows at full extent, all
+      // in parse-recovery or rustfmt-test files — the same shape as the `str!` gap,
+      // where the grammar gives up and the recovery tree contains tokens that are not
+      // paths. A module path must be spelled from path-bearing nodes only, so the
+      // fallback is restricted to those and everything else yields no row at all.
+      if (n.type === "use_as_clause" || n.type === "scoped_use_list" || n.type === "use_list" || n.type === "scoped_identifier") {
+        return { path: n.text, items: [n.text], node: n }
+      }
+      return { path: "", items: [], node: n }
     }
 
     // Aggregate one import row per distinct module prefix. A TOP-LEVEL GROUP
@@ -2085,7 +2242,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     // shared prefix — each binding becomes its own row with its own full
     // module path (RSD6b: the pre-fix code fabricated module 'Read, File' by
     // joining items; 28 such declarations across cargo+ripgrep).
-    const rows: { path: string; items: string[] }[] = []
+    const rows: { path: string; items: string[]; node: Node }[] = []
     for (let i = 0; i < node.namedChildCount; i++) {
       const c = node.namedChild(i)
       if (!c || c.type === "visibility_modifier" || c.type === "use" || c.type === "crate") continue
@@ -2104,11 +2261,11 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (rows.length === 0) return
     // Merge rows sharing the same module (a multi-item `use std::io::{A, B}`
     // stays ONE row; wildcards never merge into item lists).
-    const mergedRows: { path: string; items: string[] }[] = []
+    const mergedRows: { path: string; items: string[]; node: Node }[] = []
     for (const r of rows) {
       const ex = mergedRows.find((m) => m.path === r.path && m.items[0] !== "*" && r.items[0] !== "*")
       if (ex) ex.items.push(...r.items)
-      else mergedRows.push({ path: r.path, items: [...r.items] })
+      else mergedRows.push({ path: r.path, items: [...r.items], node: r.node })
     }
 
     const modulePath = mergedRows[0].path
@@ -2117,11 +2274,19 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         module: row.path,
         source: row.path,
         items: row.items,
-        range: {
-          startLine: node.startPosition.row + 1, startColumn: node.startPosition.column + 1,
-          endLine: node.endPosition.row + 1, endColumn: node.endPosition.column + 1,
-          startIndex: node.startIndex, endIndex: node.endIndex,
-        },
+        // RUST-D27: the range is the PATH's, not the whole declaration's. A
+        // multi-line group (`use {\n    aho_corasick::AhoCorasick,\n    bstr,\n};`)
+        // gave every one of its rows the line of the `use` keyword, so the record
+        // pointed at a line that does not bear the path it names — 56 such records
+        // in ripgrep alone, found by the first audit ever run over this channel.
+        range: (() => {
+          const n2 = row.node ?? node
+          return {
+            startLine: n2.startPosition.row + 1, startColumn: n2.startPosition.column + 1,
+            endLine: n2.endPosition.row + 1, endColumn: n2.endPosition.column + 1,
+            startIndex: n2.startIndex, endIndex: n2.endIndex,
+          }
+        })(),
         metadata: { rustSpecific: true, isPublic },
       })
     }
@@ -2149,6 +2314,10 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
 
     let target = ""
     let qualified = ""
+    // RUST-D30: set only on the `Self(..)` path, where the callee is a single
+    // identifier but a KEYWORD with one meaning. It travels with the call because
+    // by the time the instantiation surface runs, `target` is the resolved type.
+    let selfSpelling = false
     // M59.A7 (#825): the leaf that NAMES the callee. A `field_expression`
     // starts at its VALUE (`self.repository.find()` starts at `self`) and a
     // `scoped_identifier` at its leftmost segment, so the construct-start node
@@ -2232,6 +2401,12 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
           target = resolved
           qualified = resolved
           calleeNameNode = functionNode
+          // RUST-D30: `Self(..)` reaches the instantiation branch with `target`
+          // already RESOLVED to the enclosing type, so the bare-spelling test there
+          // sees `Wrap` and cannot tell it apart from a real `Wrap(..)` call. Mark
+          // it here, where the keyword is still visible, as SPELLED evidence: `Self`
+          // is a keyword with one meaning and is never ambiguous with the prelude.
+          selfSpelling = true
         } else {
           target = functionNode.text
           qualified = target
@@ -2284,6 +2459,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
     //   D2: `Self` receivers / bare `Self(..)` construct the enclosing
     //   impl type (previously filtered as unresolvable noise).
     let instTarget: string | null = null
+    let bareSpelling = false
     if (functionNode.type === "field_expression" || functionNode.type === "scoped_identifier") {
       // Receiver TYPE: value (field_expression) or path (scoped_identifier).
       const receiver =
@@ -2300,7 +2476,21 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (leaf.length > 0 && leaf.charCodeAt(0) >= 65 && leaf.charCodeAt(0) <= 90) instTarget = leaf
       }
     } else if (target.length > 0 && target.charCodeAt(0) >= 65 && target.charCodeAt(0) <= 90) {
+      // RUST-D30: a BARE single-segment callee is ambiguous against the prelude.
+      // `Ok(())` is the prelude's variant, and with a local `struct Ok;` in the same
+      // file the deferred `inFile` filter resolved it to that struct and published
+      // `instantiates -> Ok` — an edge created by a NAME COLLISION, with no
+      // relationship to the local type because it was never mentioned. A receiver
+      // that is spelled (`LocalType { .. }`, `path::to::LocalType { .. }`, a
+      // resolvable `Self(..)`, an imported alias) is evidence; a bare name is not,
+      // and the analyzer already refuses to guess for the ambiguous `new`/`from`
+      // family, so it must refuse here too. `bareSpelling` carries that fact to the
+      // deferred pass, where the in-file filter finally runs.
       instTarget = target
+      // `Self(..)` arrives here with `target` ALREADY RESOLVED to the enclosing
+      // type, so this branch cannot see that it was a keyword rather than a
+      // same-named local identifier \u2014 which is precisely the case D30 exempts.
+      if (!selfSpelling) bareSpelling = true
     }
     if (instTarget === "Self") instTarget = this.enclosingImplType(node) ?? null
     // DEFERRED resolution: constructor candidates emit only when the type
@@ -2322,6 +2512,7 @@ export class RealRustAnalyzer implements ASTEngine.LanguageAnalyzer {
         target: instTarget,
         qualified,
         line: this.nodeLine(instNameNode),
+        bareSpelling,
       })
     }
   }

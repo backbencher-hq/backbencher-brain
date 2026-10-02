@@ -37,8 +37,29 @@ function normalizeType(t: string | null): string {
   return VULN_ALIASES[key] ?? key
 }
 
-function severityRank(s: string): number {
-  return { critical: 0, high: 1, medium: 2, low: 3 }[s] ?? 4
+// Severity is stored as a bare `TEXT NOT NULL` column with NO CHECK
+// constraint (src/brain/schema-ddl.ts:241), so a writer that emits "Critical",
+// "info" or "" lands a value outside the documented union. The old code cast it
+// straight through (`row.severity as SecurityFindingV2["severity"]`) and the
+// legacy adapter then bucketed only the five known names — so an unrecognized
+// severity appeared in `bySeverity` and in NONE of critical/high/medium/low/
+// unknown, and the handler printed "0 critical / 0 high / 0 medium / 0 low"
+// immediately above a list of findings. Normalizing at the boundary makes
+// `sum(summary.bySeverity) === summary.total` an invariant instead of a hope.
+const SEVERITIES = ["critical", "high", "medium", "low", "unknown"] as const
+
+type Severity = (typeof SEVERITIES)[number]
+
+function normalizeSeverity(value: unknown): Severity {
+  const key = typeof value === "string" ? value.trim().toLowerCase() : ""
+  return (SEVERITIES as readonly string[]).includes(key) ? (key as Severity) : "unknown"
+}
+
+// `unknown` is rank 4 (worst-order-last in a sort, best-order-first in a
+// severity count) — it is the honest bucket for a row whose severity the
+// indexer could not determine, and it must never be ranked as `low`.
+function severityRank(s: Severity): number {
+  return { critical: 0, high: 1, medium: 2, low: 3, unknown: 4 }[s]
 }
 
 function parseFlowPath(value: unknown): string[] {
@@ -96,7 +117,13 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
       "LEFT JOIN brain_file srcf ON srcf.id = src.file_id " +
       "LEFT JOIN brain_symbol snk ON snk.id = t.sink_symbol_id " +
       "LEFT JOIN brain_file snkf ON snkf.id = snk.file_id " +
-      "WHERE t.project_id = ?",
+      "WHERE t.project_id = ? " +
+      // Row order is NOT a SQLite contract — it moves with inserts, ANALYZE
+      // and VACUUM. Dedup below keeps the FIRST row of an equivalence group as
+      // the finding's `id` and overwrites its `path` with the longer of any
+      // later row, so without a total order the reported `id` (and the retained
+      // path) were a property of the storage layout rather than of the data.
+      "ORDER BY t.id",
   ).all(projectId) as TaintRow[]
 
   // M50.A2 residual: resolution used to load EVERY symbol row of the project
@@ -148,7 +175,7 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
     const row = rows[rowIndex]!
     scannedFlows++
     const vulnerabilityType = normalizeType(row.vulnerability_type)
-    const severity = (row.severity as SecurityFindingV2["severity"]) ?? "unknown"
+    const severity = normalizeSeverity(row.severity)
     const source = resolveNode(row.source_symbol_id)
     const sink = resolveNode(row.sink_symbol_id)
     const path = (pathCache[rowIndex] ?? []).map(resolveNode)
@@ -222,10 +249,23 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
   }
 
   let findings = Array.from(findingByKey.values())
+  // `id` is the final tiebreak. Without it, two findings equal on
+  // (severity, confidence, file) came out in Map-insertion order — which is now
+  // stable thanks to `ORDER BY t.id` in the query, but the comparator itself
+  // must be total for the ORDER BY to be load-bearing at all.
   findings.sort(
-    (a, b) => severityRank(a.severity) - severityRank(b.severity) || b.confidence - a.confidence || (a.file ?? "").localeCompare(b.file ?? ""),
+    (a, b) =>
+      severityRank(a.severity) - severityRank(b.severity) ||
+      b.confidence - a.confidence ||
+      (a.file ?? "").localeCompare(b.file ?? "") ||
+      a.id.localeCompare(b.id),
   )
+  // The census is the count BEFORE the cap; `total` below is the count of what
+  // is actually returned. Reporting only `total` made a capped scan
+  // indistinguishable from a small one at every call site that lacks the
+  // `provenance` envelope (the legacy adapter used to drop it entirely).
   const deduplicatedFlows = findings.length
+  const truncatedFindings = Math.max(0, deduplicatedFlows - maxResults)
   findings = findings.slice(0, maxResults)
 
   // Summary
@@ -241,30 +281,50 @@ export async function analyzeTaintFlows(projectId: string, options: SecurityOpti
   }
 
   // Hotspots: files/symbols with the most findings.
-  const fileCounts = new Map<string, { n: number; sev: string }>()
-  const symCounts = new Map<string, { n: number; sev: string }>()
-  const worse = (a: string, b: string) => (severityRank(a) <= severityRank(b) ? a : b)
+  //
+  // The accumulator seeds with `unknown` (rank 4), NOT `low` (rank 3). The old
+  // seed was `low`, and `worse()` returns the seed on a tie-or-better rank — so
+  // a hotspot whose only finding had an unrankable severity was published as
+  // `maxSeverity: "low"`, i.e. a finding the indexer could not grade was
+  // reported to the agent as a minor one. Seeding with the worst bucket makes
+  // the fold a true max over the findings that exist.
+  //
+  // SYMBOL hotspots are keyed by `file::symbol`, not by the bare name. A bare
+  // name is ambiguous by construction: measured on this repository's own index,
+  // 213 of 1,433 distinct finding symbol names spanned more than one file, and
+  // the single top hotspot was `main` with 290 critical findings drawn from 223
+  // different files. A reader told "the hotspot is `main`" learns nothing
+  // actionable, and the count inflates in proportion to how common the name is —
+  // which is exactly backwards from "where should I look first".
+  const fileCounts = new Map<string, { n: number; sev: Severity }>()
+  const symCounts = new Map<string, { n: number; sev: Severity; name: string }>()
+  const worse = (a: Severity, b: Severity) => (severityRank(a) <= severityRank(b) ? a : b)
   for (const f of findings) {
     if (f.file) {
-      const cur = fileCounts.get(f.file) ?? { n: 0, sev: "low" }
+      const cur = fileCounts.get(f.file) ?? { n: 0, sev: "unknown" as Severity }
       fileCounts.set(f.file, { n: cur.n + 1, sev: worse(cur.sev, f.severity) })
     }
     if (f.symbol) {
-      const cur = symCounts.get(f.symbol) ?? { n: 0, sev: "low" }
-      symCounts.set(f.symbol, { n: cur.n + 1, sev: worse(cur.sev, f.severity) })
+      // `file::name` disambiguates; when no file resolved the bare name is the
+      // only key available, and `::` keeps the two spaces of the keyspace apart.
+      const key = f.file ? `${f.file}::${f.symbol}` : `::${f.symbol}`
+      const cur = symCounts.get(key) ?? { n: 0, sev: "unknown" as Severity, name: f.symbol }
+      symCounts.set(key, { n: cur.n + 1, sev: worse(cur.sev, f.severity), name: cur.name })
     }
   }
   const hotspots: SecurityHotspot[] = [
-    ...Array.from(fileCounts.entries()).map(([key, v]) => ({ key, kind: "file" as const, findings: v.n, maxSeverity: v.sev as SecurityHotspot["maxSeverity"] })),
-    ...Array.from(symCounts.entries()).map(([key, v]) => ({ key, kind: "symbol" as const, findings: v.n, maxSeverity: v.sev as SecurityHotspot["maxSeverity"] })),
+    ...Array.from(fileCounts.entries()).map(([key, v]) => ({ key, kind: "file" as const, findings: v.n, maxSeverity: v.sev })),
+    // The KEY is the qualified form (that is the identity); `name` carries the
+    // bare symbol for a reader who wants to search on it.
+    ...Array.from(symCounts.entries()).map(([key, v]) => ({ key, kind: "symbol" as const, name: v.name, findings: v.n, maxSeverity: v.sev })),
   ]
     .sort((a, b) => b.findings - a.findings || severityRank(a.maxSeverity) - severityRank(b.maxSeverity))
     .slice(0, 20)
 
   return {
     findings,
-    summary: { total: findings.length, bySeverity, byType, byState, crossLanguage, scannedFlows, deduplicatedFlows },
+    summary: { total: findings.length, bySeverity, byType, byState, crossLanguage, scannedFlows, deduplicatedFlows, truncatedFindings },
     hotspots,
-    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_taint_flow", limitations: ["Static taint flows can contain false positives and false negatives and are not runtime exploit proofs."], truncated: deduplicatedFlows > maxResults }),
+    provenance: makeProvenance({ evidenceClass: "static_finding", engine: ENGINE, engineVersion: "m10.02", projectId, source: "brain_taint_flow", limitations: ["Static taint flows can contain false positives and false negatives and are not runtime exploit proofs."], truncated: truncatedFindings > 0, unknowns: truncatedFindings > 0 ? [`${truncatedFindings} deduplicated finding(s) omitted by the maxResults cap (${maxResults}); summary counts describe the returned window, deduplicatedFlows is the pre-cap census`] : [] }),
   }
 }

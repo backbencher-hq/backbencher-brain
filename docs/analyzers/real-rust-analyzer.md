@@ -36,11 +36,11 @@
 | Relationship type | Emitted? | How resolved | Confidence model |
 | --- | --- | --- | --- |
 | contains | ✅ | REAL container ownership only: trait→method, struct→property, impl→method, enum→variant (post-loop over `ownerName`). Never `global contains X` / `root contains X`. | 1.0 |
-| calls | ✅ | `call_expression` → callee leaf name (member calls `self.repository.add` → `add`, chains `values.iter().map()...` → one edge per call, macros `println!` → macro name, `::new()` → `new`); source = enclosing function/method name — the single emission path (the legacy per-function trace walk that double-emitted every call with a qualified `owner.method` source was removed) | 1.0 |
+| calls | ✅ | `call_expression` → callee leaf name (member calls `self.repository.add` → `add`, chains `values.iter().map()...` → one edge per call, macros `println!` → macro name, `::new()` → `new` for the CALL while the paired `instantiates` names the receiver type); source = enclosing function/method name — the single emission path (the legacy per-function trace walk that double-emitted every call with a qualified `owner.method` source was removed) | 1.0 |
 | uses | ✅ | non-call field access only (`self.counter`, `u.id` — `field_identifier` only; tuple indices `tuple.0` are not symbols and emit nothing); call-target field expressions skip the uses walk (the `calls` edge is the fact) — one edge per pair | 0.9 |
-| instantiates | ✅ | struct literals (`User { id, name }` → `instantiates User`) and Rust constructor calls (`::new()` → `instantiates new`, paired with `calls` — documented, same as C's malloc pair) | 0.75–0.8 |
+| instantiates | ✅ | struct literals (`User { id, name }` → `instantiates User`) and Rust constructor calls, which name the **RECEIVER TYPE** — `MemoryStorage::new()` → `instantiates MemoryStorage`, paired with `calls -> new` (the `instantiates -> new` form this doc used to claim named a *function* rather than a type and was retired; M12's rust truth carried the same stale rule and was re-grounded row by row on 2026-09-29). A constructor whose receiver is **not declared in the same file** stays silent — the deferred in-file rule, so `Vec::new()` emits `calls` and no `instantiates` | 0.75–0.8 |
 | implements | ✅ | trait impls: `impl super::Repository<User> for MemoryStorage` → `implements MemoryStorage -> Repository` (leaf trait name via `extractTraitName` — the full generic text was dropped by the production noise filter) | 1.0 |
-| extends | ✅ | trait bounds: `trait Foo: Bar` → `extends Foo -> Bar` (leaf name) | 1.0 |
+| extends | ✅ | trait bounds: `trait Foo: Bar` → `extends Foo -> Bar` (leaf name). A **higher-ranked** bound is a bound (RUST-D15): `trait DeserializeOwned: for<'de> Deserialize<'de>` publishes `extends DeserializeOwned -> Deserialize` on the bound's own line, and the `for<…>` binder is not a name (the F5 oracle used to fabricate `extends -> "for"` from it) | 1.0 |
 | imports | ✅ | `use` declarations (incl. `pub use`, `use super::`, scoped lists) → imports array — **no references edge** (Java-family contract; unlike C/C++ where `#include` targets header files) | 1.0 |
 | exports | ✅ | public free functions/structs/traits; axum route attributes → Exports edge | — |
 | overrides | — | n/a (Rust trait impls are captured as implements) | — |
@@ -57,20 +57,44 @@
 - Method calls: `self.repository.add(user)` → `calls create -> add` + `uses create -> repository` (receiver field access)
 - Call chains: `values.iter().map(...).filter(...).collect()` → one calls edge per method (iter/map/filter/collect)
 - Struct literals: `User { id, name: name.to_string() }` → `instantiates` (construction)
-- Constructors: `MemoryStorage::new()`, `Vec::new()`, `User::new(...)` → `calls` + `instantiates` pair (Rust constructor convention)
+- Constructors: `MemoryStorage::new()`, `User::new(...)` → a `calls` + `instantiates` pair, where the `calls` names the function (`new`) and the `instantiates` names the constructed TYPE (`MemoryStorage`, `User`) — the Rust constructor convention, and the split is what M12 now pins. `Vec::new()` is the control: its receiver is not declared in the file, so the `instantiates` half is silent by the deferred in-file rule
 - Macros: `println!(...)`, `format!(...)` → calls edge to the macro name
+  - **A macro invocation's NAME is a callee, not a read (RUST-D13).** The `calls`
+    edge above is the whole story: a use-imported macro used to publish
+    `uses -> bail` *beside* `calls -> bail` for one name at one line (269 sites
+    over a 550-file slice). The invocation's **arguments** are reads and still
+    publish. An imported *function* called by name never had the problem, which
+    is what made this read as a macro quirk instead of a missing guard.
+- **Declaration positions never read (RUST-D13).** Besides a macro name: a
+  **trait method declaration** (a `function_signature_item`, which carries no
+  body — its own name used to publish `uses -> current_dir -> current_dir`, a
+  self-edge, when it also resolved) and a **fn-pointer type's parameter**
+  (`type Store = extern "C" fn(schema: *const SecretSchema)` — a type alias, so
+  no bound-name set excluded the name). A real function's parameters and a real
+  method definition were already excluded; these two shapes had no such set.
+- Constants: module-level and associated `const`/`static` publish a `variable`
+  symbol; so do **function-local** ones (RUST-D17 — a local `const`/`static`
+  names a value with a type, an initializer and a line, and is owned by the
+  enclosing function), while a function-local `let` publishes nothing (M11.11's
+  closure boundary: a local binding declares nothing outside its body).
 - Closures: `values.iter().map(|v| v * 2)` — closure parameters are execution artifacts (no symbols); field access inside closures still resolves (`u.id == id` → `uses find -> id`)
 - Negative fixture: function-local `let` bindings → NO symbols; primitive types (`i32`, `String`, `&[T]`), generic params (`T`), lifetimes (`'a`) → NO type-reference edges; tuple indices (`tuple.0`) → NO uses edge; closure params → NO symbols
 
 ## Unsupported / explicit-unknown constructs
 
-- The 79 corpus `grammarErrorFiles` are cargo testsuite files using
-  `str![[r#"..."]]` — **double-bracket macro delimiters** (`m![[...]]`), a
-  modern Rust macro-invocation syntax the newest available tree-sitter-rust
-  grammar (0.24.0) cannot parse — all valid Rust, recorded honestly in the
-  manifest (precedent: C 122, C++ 124, kotlin 51, fsharp 108). The cargo
-  package manager's own test suite is the most idiomatic real-world Rust
-  corpus, but its `str!` helper exercises this grammar-edge syntax
+- The corpus `grammarErrorFiles` are cargo files using the `str!` macro —
+  **CORRECTED 2026-09-30: this was recorded for years as a double-bracket
+  delimiter gap (`str![[r#"..."]]`) and that diagnosis was WRONG.** Minimal cases
+  settle it: `str![1]` and `str!["x"]` fail to parse with EITHER bracket count,
+  while `Str![1]`, `xstr!["x"]`, `my_str![1]` and `vec![1, 2]` all parse clean.
+  `str` lexes as the **primitive-type keyword** in tree-sitter-rust, so it can
+  never be a macro name. The double-bracket form is a second, smaller gap on top.
+  `str!` is the most common macro in modern cargo code, and this one token costs
+  more than any other grammar limitation in the lane: **475 of the 476 affected
+  files parse completely after a same-length substitution** — `str!` → `Str!` are
+  both three characters, so every line and offset survives. Still valid Rust,
+  still recorded honestly in the manifest (precedent: C 122, C++ 124, kotlin 51,
+  fsharp 108). See `RUST-D23`.
 - `type Foo = Bar;` aliases, `if let`/`while let` (cyclomatic counter), and
   trait-bound node names are referenced defensively under names absent from
   both grammars (`type_alias_declaration`, `if_let_expression`,
@@ -139,6 +163,45 @@ post-loop is one pass over the symbol list. No O(n²) or per-symbol O(n) scans.
   `never_type`, −8 token/internal types, all analyzer-referenced shapes
   present — 4 dead defensive references absent from both grammars);
   differential unchanged at 1.000/1.000
+
+### Corpus validation at full extent (2026-09-30) — 13,101 real `.rs` files
+
+The record above is the 2026-08-28 M12 pass and is kept as history. The lane is
+now validated against **13,101 real `.rs` files across six pinned corpora**:
+
+| corpus | pin | `.rs` files |
+|---|---|---|
+| rust-lang/rust `src/` | `master` (library + compiler + tools, incl. rust-analyzer and clippy) | 10,505 |
+| cargo | `523e530` | 1,372 |
+| tokio | `aa18e84` | 807 |
+| serde | `6693a89` | 208 |
+| ripgrep | `3fce3b5` | 110 |
+| hyper | `e60932d` | 99 |
+
+**`tests`, `test`, `benches` and `examples` are included.** They are where
+`macro_rules` takes its strangest forms and where a declaration-position bug hides
+most easily; an audit that skips them audits a corpus nobody ships, so the skip
+list is down to non-source trees only (`.git`, `target`, `node_modules`, `vendor`).
+
+Two findings came out of that scope change, both recorded in the spec:
+
+- **RUST-D21 — a wasm tree must be released explicitly.** Sweeping this corpus
+  aborted mid-run: 4,000 files clean, 5,000 aborts in `ts_parser__reduce` →
+  `ts_malloc_default`, while **all 7,773 rustc files parse individually**. The
+  grammar rejects nothing; web-tree-sitter simply never frees a `Tree` without
+  `tree.delete()`, so one retained tree per file exhausts the wasm heap. Because
+  these tools print their report at the END, exhaustion produced **no output at
+  all** — indistinguishable from an empty corpus. The first fix (recycling the
+  parser) was wrong and the growth curve is what proved it: monotonic
+  375 → 491 → 936 MB before, flat 311 → 149 → 103 MB after. Production is immune
+  by design — `parallel-indexer`'s worker `exit` handler respawns the worker and
+  re-routes its batch, and a fresh worker's fresh heap succeeds.
+- **RUST-D19 — a trait method signature's parameters declare.** Found only at
+  full extent: cargo's `src/compiler/mod.rs:142-143` published `uses` edges for
+  `on_stdout_line`/`on_stderr_line` parameters of a bodiless
+  `function_signature_item`, because `collectFunctionBindings` collects
+  `function_item` only. Two sites in 13,101 files — the whole argument for a
+  full-extent gate as its own run rather than a larger sample.
 
 ## M14 verification (issue #261, 2026-08-28)
 
