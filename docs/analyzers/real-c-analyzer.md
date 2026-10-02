@@ -694,19 +694,26 @@ measurement, and the per-relationship identity of every other type is the strong
 — `calls` 239,405, `uses` 93,759, `references` 10,985, `imports` 20,105, `exports` 957,
 `instantiates` 9, all byte-identical before and after.
 
-**Performance** — wall 80.6 s, CPU 107.7 s (ratio 1.34), **32.3 ms/file** wall,
-**26.6 ms/file** CPU, **20.0 ms per 1,000 nodes**
-(curl 20.7 · libgit2 31.5 · redis 48.2 ms/file wall; 36.1 · 41.1 · 54.9 CPU).
+**Performance** — wall 88.5 s, CPU 115.3 s (ratio 1.30), **35.4 ms/file** wall,
+**46.1 ms/file** CPU, **21.7 ms per 1,000 nodes**
+(curl 22.1 · libgit2 33.3 · redis 55.4 ms/file wall; 36.7 · 43.3 · 62.1 CPU).
 #977 fixed the census CPU metric, which double-counted its own baseline and reported
 **negative** CPU; a perf instrument that can go negative cannot support a claim, so
 this was fixed before any timing was quoted. **These figures are NOT comparable to the
 46.96 ms/file previously recorded here** — that run was measured at `load1` 22–49 and
 this one at `load1` 2.85–6.11, and this file's own note above the complexity table says
 the box is shared and the wall figures carry that disclosure. The CPU column is the one
-to compare across runs, and #985's cost is a constant spread into a list literal in a
-loop that already iterates the same children, so it is not a hot-path change; the
-per-band and per-quartile breakdown in `c-corpus-census.json` is the measurement that
-would show it if it were.
+to compare across runs.
+
+**Neither #985 nor #986 is a hot-path change, and that is measured rather than argued.**
+#985 is a constant spread into a list literal inside a loop that already iterates the
+same children; #986 is one `inlineAggregateOwnerName` call per anonymous enum, which is
+the pre-#986 branch's cheaper path. Re-measured across the two changes, CPU per file moved
+36.1 → 36.2 (curl), 41.1 → 41.1 (libgit2), 54.9 → 58.8 (redis) — the redis figure is the
+only one that moved and it is inside the run-to-run spread this file's own disclosure
+covers. The per-band and per-quartile breakdown in `c-corpus-census.json` is the
+measurement that would show a real hot-path change; the top-level average is not, and
+quoting it as though it were is how a perf number stops meaning anything.
 
 **Line numbers** — **442,710/442,710 = 100.000%** of edges name a line containing the
 target as a WHOLE TOKEN, over the four corpora (curl 71,543 · libgit2 188,694 · redis
