@@ -10,6 +10,11 @@ import * as path from "path"
 import { fork, type ChildProcess } from "child_process"
 import { realpathSync } from "fs"
 import * as Log from "../tool/brain-log"
+import {
+  resolvePoolWorkerForkSafe,
+  poolFailureLine,
+  poolStartupTimeoutMs,
+} from "./pool-diagnostics"
 import type { ProjectID } from "../project/schema"
 import { BrainDatabase } from "../brain/database"
 import { isIndexArtifactName, isIndexArtifactNameStrict } from "./analysis-exclusions"
@@ -1243,6 +1248,8 @@ function resolvePoolWorkerFork(): { workerPath: string | null; workerArgs: strin
  * This narrows the diagnosis so the CLI can name the actual cause and the fix.
  */
 export function describePoolWorkerUnavailable(): string {
+  // Retained for callers that only want prose. The resolver below is the
+  // structured path and should be preferred.
   if (process.execPath.endsWith("node") || process.execPath.endsWith("node.exe")) {
     const moduleDir = path.dirname(require("url").fileURLToPath(import.meta.url))
     const projectRoot = path.resolve(moduleDir, "../..")
@@ -4580,22 +4587,29 @@ export async function indexProjectParallel(
     const workerStartupStart = Date.now()
     try {
       const { fork } = await import("child_process")
-      const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolvePoolWorkerFork()
-      // Guard before fork(): a null workerPath is a legitimate outcome (no tsx),
-      // not a crash. Passing it through made fork() throw a TypeError that the
-      // catch below reported as a generic pool failure, hiding the real cause.
-      if (!testWorkerPath) {
-        throw new Error(describePoolWorkerUnavailable())
+      // Use the diagnosing resolver (pool-diagnostics.ts) rather than the raw
+      // one: it returns a discriminated union, so "no tsx" / "compiled entry
+      // missing" / "disabled by env" are each named with a fix instead of all
+      // collapsing into one indistinguishable pool failure.
+      const resolution = resolvePoolWorkerForkSafe()
+      if (!resolution.ok) {
+        throw new Error(poolFailureLine(resolution))
       }
+      const { workerPath: testWorkerPath, workerArgs: testWorkerArgs } = resolution
       const testWorker = fork(testWorkerPath, testWorkerArgs, {
         env: { ...process.env, BB_POOL_WORKER: "1" },
         stdio: ["ignore", "pipe", "pipe", "ipc"],
       })
       await new Promise<void>((resolve, reject) => {
+        // Was hardcoded 60s while the pool's own startup watchdog used
+        // BB_WORKER_STARTUP_TIMEOUT_MS (default 30s) — so a slow machine could
+        // fail the real pool at 30s and then wait another 60s for a probe that
+        // was never going to pass. One knob, one value, both paths.
+        const startupMs = poolStartupTimeoutMs()
         const timeout = setTimeout(() => {
           testWorker.kill()
-          reject(new Error("worker fork test timed out after 60s"))
-        }, 60000)
+          reject(new Error(`worker fork test timed out after ${Math.round(startupMs / 1000)}s`))
+        }, startupMs)
         testWorker.on("message", (msg: any) => {
           if (msg?.type === "ready") {
             clearTimeout(timeout)
