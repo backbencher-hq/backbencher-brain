@@ -7,7 +7,7 @@
     "edges from a glued or ERROR-recovered declaration: the line is the enclosing declaration's, which is the closest truthful anchor",
     "edges whose target is a scope name rather than a token (`global`, a function-local owner)"
   ],
-  "generatedAt": "2026-10-01T22:23:46.375Z",
+  "generatedAt": "2026-10-02T00:57:42.988Z",
   "repos": [
     "curl",
     "libgit2",
