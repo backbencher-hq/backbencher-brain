@@ -2044,7 +2044,39 @@ export class RealScalaAnalyzer implements ASTEngine.LanguageAnalyzer {
       if (c === " " || c === "\t" || c === "\n" || c === "\r" || c === "\f" || c === "\v") continue
       out += c
     }
-    return out
+    // M60/SDJ-21: drop a QUALIFIER, keeping type arguments. `overrideSig` is built
+    // from these strings and compared for equality, so a member that qualifies the
+    // same type its base declares did not match, and the override was never
+    // recognised. Measured on the full 4,008-file scala3 draw:
+    //
+    //   abstract class Lifter     { def noLift(expr: Tree)(using Context): Boolean }
+    //   class LiftImpure extends Lifter { def noLift(expr: tpd.Tree)(using Context) = ... }
+    //   class LiftComplex extends Lifter { def noLift(expr: tpd.Tree)(using Context) = ... }
+    //
+    // Three real overrides in compiler/src/dotty/tools/dotc/typer/EtaExpansion.scala,
+    // none published, because `(Tree,Context)` never equalled `(tpd.Tree,Context)`.
+    // Implementing an ABSTRACT member needs no `override` keyword in Scala, so the
+    // keywordless tier was the only path and its signature match is what failed.
+    //
+    // The qualifier is dropped and the type ARGUMENTS are kept, deliberately: stripping
+    // arguments as well would collapse `f(x: List[Int])` and `f(x: List[String])`, which
+    // is a different (and unnecessary) widening. Stripping only the dotted prefix is
+    // the minimum that makes a qualified spelling compare equal to its bare one, and it
+    // matches the family `lastSegment` convention every other published target already
+    // uses. No regex — a char scan, consistent with this file's zero-regex rule.
+    let seg = ""
+    let sawDot = false
+    for (let i = 0; i < out.length; i++) {
+      const c = out[i]
+      if (c === ".") {
+        // keep the last segment only: drop everything up to and including this dot
+        sawDot = true
+        seg = ""
+        continue
+      }
+      seg += c
+    }
+    return sawDot ? seg : out
   }
 
   /** ≡ /identifier|type_identifier|_parameter$/.test(t): unanchored "identifier" ≡ includes (type_identifier is subsumed by it). NO _type disjunct — deliberately narrower than isExtensionReceiverTypeNode. */
