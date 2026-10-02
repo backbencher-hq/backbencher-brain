@@ -4382,11 +4382,40 @@ export async function resolveCrossSymbolTaints(projectId: ProjectID): Promise<nu
  * Best-effort: a failure to measure is logged and leaves the field absent, which
  * callers render as "not measured" rather than as a clean bill.
  */
+/**
+ * Relationships that SHOULD have been attached to an internal symbol but were
+ * not — the real inconsistency, and the only kind `bb index --post` can fix.
+ *
+ * The previous query was `target_symbol_id IS NULL AND target_external IS NOT
+ * NULL`, which counts EXTERNAL references — calls into third-party libraries —
+ * as failures. On this repository that reported 28,139 "unresolved
+ * relationships" and told the user to run `bb index --post` for them.
+ *
+ * Measured against the same index: 20,966 were `calls` with an external target
+ * and 7,174 were imports, all with `target_external` set. Zero internal edges
+ * had failed to resolve. Every one of those 28,139 rows is CORRECT — an
+ * external symbol has no row in brain_symbol to point at, so a null
+ * target_symbol_id is the accurate representation, not a defect.
+ *
+ * So the warning was not merely noisy, it was false: it named a remediation
+ * that cannot help and implied a broken index on a healthy one. This now counts
+ * only rows with no external fallback either — those really are unattached.
+ */
 async function measureUnresolvedRelationships(projectId: ProjectID): Promise<number | undefined> {
   try {
     const raw = await BrainDatabase.getRawInstance(projectId)
+    // Unattached on BOTH ends and with no external identity on either side.
+    // An external target/source is a legitimate, correctly-recorded edge.
     return Number(
-      (raw.prepare("SELECT COUNT(*) c FROM brain_relationship WHERE project_id = ? AND target_symbol_id IS NULL AND target_external IS NOT NULL").get(projectId) as any)?.c ?? 0,
+      (raw
+        .prepare(
+          `SELECT COUNT(*) c FROM brain_relationship
+           WHERE project_id = ?
+             AND target_symbol_id IS NULL
+             AND (target_external IS NULL OR target_external = '')
+             AND (source_external IS NULL OR source_external = '')`,
+        )
+        .get(projectId) as any)?.c ?? 0,
     )
   } catch (e: any) {
     log.warn("could not measure unresolved relationships", { error: e?.message })

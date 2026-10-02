@@ -384,12 +384,21 @@ async function cmdIndex(
       process.exitCode = 1
     }
     if (unresolved === 0) {
-      console.log("  consistency: 0 unresolved relationships — every stored relationship is attached to a symbol")
+      console.log(
+        "  consistency: every internal relationship is attached to a symbol (external references are attached to an external identity, which is correct)",
+      )
     } else if (unresolved > 0) {
       // Present as rows, absent as edges: traversal reads these as missing, so
       // they UNDER-report, and the relationship count does not show it.
+      //
+      // This counts only relationships with no symbol AND no external identity
+      // on either end. External references are excluded because a null
+      // target_symbol_id is how an external edge is correctly represented —
+      // the previous wording counted those as failures and advised `bb index
+      // --post`, which cannot resolve them. On a healthy 7,220-file index that
+      // printed 28,139 phantom "unresolved relationships".
       console.log(
-        `  consistency: ${unresolved} relationship(s) are not attached to a symbol — they are counted above but read as edges by no traversal. Run: bb index --post`,
+        `  consistency: ${unresolved} internal relationship(s) are attached to neither a symbol nor an external reference — they are counted above but read as edges by no traversal. Run: bb index --post`,
       )
     } else {
       // The count is absent (a run persisted before this measurement existed).
@@ -708,9 +717,18 @@ Examples:
   $ bb index                 # index the current directory
   $ bb index ../my-project   # index another directory
   $ bb index --changed       # reindex only changed files
+  $ bb index --resume        # continue an interrupted run from its checkpoint
   $ bb index --file src/a.ts # reindex a single file
+  $ bb index --post          # re-run derived phases only (no re-parse)
   $ bb index --force         # wipe and rebuild in place
   $ bb index import --db <path>  # adopt an existing DB for a moved project
+
+Interrupted a run? Re-run with --resume; it re-parses only what is missing or
+changed. Nothing to do? --changed costs seconds where a full run costs minutes.
+Indexing far slower than expected? Run \`bb status\` for per-phase timings and
+\`bb doctor\` to check the worker pool.
+
+Full reference: man bb, or docs/indexing/ in the repository.
 `)
     .action(async (dir: string | undefined, opts: any) => {
       await cmdIndex(dir, opts)
