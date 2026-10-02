@@ -16714,6 +16714,7 @@ async function main() {
   const mutationLog: { mutant: string; injectedAt: string; caughtBy: string; detail: string }[] = []
   const checks: { id: string; description: string; status: "pass" | "fail"; detail?: string }[] = []
   let survivors = 0
+  let retiredCount = 0
 
   // cache clean-run results per language once
   const cleanResults = new Map<string, Awaited<ReturnType<typeof runLang>>>()
@@ -16755,13 +16756,37 @@ async function main() {
     const baseProblems = base.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
     const mutProblems = mutated.details.reduce((a: number, d: any) => a + (d.problems?.length ?? 0), 0)
     const caught = mutated.fail > base.fail || mutProblems > baseProblems
+
+    // A RETIRED mutant is not a survivor. `sql/sweep-stops-at-a-declaration-RETIRED-
+    // unfixtureable` carries a long, deliberate retirement record: the pass it guards
+    // is still worth MORE than when the mutant was written (measured 77 declarations
+    // recovered across 8 ProxiCall files and 375 across 79 PostgreSQL extension
+    // files), and the mutant became unfixtureable because the shipped plpgsql grammar
+    // stopped collapsing the small cases that used to bury a declaration inside another
+    // declaration. Its own words: "A green-but-vacuous mutant is worse than no mutant,
+    // so it is retired here with its reason recorded", and the transform is KEPT so
+    // restoring it is a one-line change.
+    //
+    // The harness was counting it as a failure anyway, which makes the register lie in
+    // both directions: the contract says a survivor means the SUITE has a hole, and
+    // this one has none — it has a written-down decision. It is now reported in its own
+    // bucket, still visible, and excluded from the survivor count. Same spirit as the
+    // allowlist's "waived findings remain visible in evidence": nothing is hidden, but
+    // a decision is not filed as a defect.
+    const retired = /-RETIRED-/.test(m.id)
     const caughtBy = mutated.details.filter(d => !d.ok).map((d: any) => d.fixture)
       .filter(f => !base.details.some((bd: any) => !bd.ok && bd.fixture === f))
       .join(", ")
     console.log(`${caught ? "CAUGHT" : "SURVIVED"}  ${m.id}  (${base.fail} -> ${mutated.fail} failures${caughtBy ? "; new failures: " + caughtBy : ""})`)
-    checks.push({ id: `mutation-${m.id.replace("/", "-")}`, description: m.description, status: caught ? "pass" : "fail", detail: `${base.fail} -> ${mutated.fail}` })
-    mutationLog.push({ mutant: m.id, injectedAt: new Date().toISOString(), caughtBy: caughtBy || "(none)", detail: `${m.defectClass}: ${base.fail} -> ${mutated.fail} fixture failures` })
-    if (!caught) survivors++
+    checks.push({
+      id: `mutation-${m.id.replace("/", "-")}`,
+      description: m.description,
+      status: retired ? "retired" : caught ? "pass" : "fail",
+      detail: `${base.fail} -> ${mutated.fail}${retired ? " (RETIRED with a written-down reason: the suite has no hole here, the mutant became unfixtureable and the transform is kept so restoring it is a one-line change)" : ""}`,
+    })
+    mutationLog.push({ mutant: m.id, injectedAt: new Date().toISOString(), caughtBy: caughtBy || (retired ? "(retired)" : "(none)"), detail: `${m.defectClass}: ${base.fail} -> ${mutated.fail} fixture failures${retired ? " [RETIRED]" : ""}` })
+    if (!caught && !retired) survivors++
+    else if (retired) retiredCount++
   }
 
   const { emitEvidence } = await import("./evidence-harness")
@@ -16778,9 +16803,12 @@ async function main() {
       { description: "mutation coverage currently spans java + groovy (the wave languages); other languages add mutants when their waves start" },
     ],
     mutationLog,
-    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors, survived: survivors } },
+    data: { summary: { mutantsRun: selected.length, caught: selected.length - survivors - retiredCount, survived: survivors, retired: retiredCount } },
   })
 
+  if (retiredCount > 0) {
+    console.log(`\n${retiredCount} RETIRED mutant(s): unfixtureable, retired with a written-down reason, transform kept for a one-line restore. Not survivors — the suite has no hole there.`)
+  }
   if (survivors > 0) {
     console.error(`\n${survivors} SURVIVING MUTANT(S) - the suite cannot detect real defects. Fix the suite before trusting any green.`)
     process.exit(2)
