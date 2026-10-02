@@ -22734,10 +22734,26 @@ async function main() {
           // 250-file draw across both corpora, which is what makes it safe to put
           // `contains` in the audited set. The VUE-owned half — the component
           // containing its own contract symbols — has its own oracle
-          // (`oracles/vue-contains.ts`) but is NOT yet wired: it currently covers
-          // 59 of 163 component-owned rows, and adding it half-derived would be
-          // the dishonest widening this file's doctrine exists to prevent. Its
-          // measured gap is recorded in the ledger, not hidden.
+          // (`oracles/vue-contains.ts`), which now agrees with the analyzer on
+          // 306 of 306 component-owned rows of a 250-file draw across both
+          // corpora, but is STILL not wired, and the reason is no longer the one
+          // this comment used to give.
+          //
+          // The oracle's remaining disagreement is the analyzer's OWNERSHIP rule
+          // for a `<script setup>` body's own declarations. vue-element-admin's
+          // demo components publish 310 component-owned `contains` rows the oracle
+          // derives none of (`DragKanbanDemo -> group`, `-> list1`,
+          // `AvatarUploadDemo -> imagecropperKey`); teaching the oracle "a
+          // `<script setup>` program owns its top-level bindings" fixes that and
+          // breaks element-plus, which reads 864 truth rows with 319 MISSING —
+          // the analyzer's rule is NARROWER than that (it owns the declarations
+          // some other rule reaches, not every one), so the narrow rule has to be
+          // read off the analyzer before it can be mirrored.
+          //
+          // The analyzer-side changes that closed most of the gap stay, because
+          // they are real defects with their own fixtures: F18's four `provide()`
+          // shapes, F16/F8's single-identity re-point, and the member-synthesizing
+          // provided-key annotation.
           for (const st of subTrees) {
             for (const e of deriveTypeScriptContainsTruth(st)) {
               ;(truth as any[]).push(e)

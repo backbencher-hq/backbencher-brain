@@ -61,7 +61,7 @@
 | imports | ✅ | script `import` directives → `${modulePath}:${item}` (`vue:ref`, `./Card.vue:Card`); `defineProps`/`defineEmits` are compiler macros — no imports, no calls, no symbols | 1.0 |
 | exports | ✅ | via JS analyzer (`export default`) | 1.0 |
 | overrides | — | genuinely not emitted, and now **derived as an absence** rather than asserted: the F1 oracle derives every `extends` base the analyzer emits and vue-element-admin reads `MISSING=0 / unexplained=0` with 9 `extends` rows and 0 `overrides` rows on both sides. An override needs a base whose members the analyzer can see; the only such bases here are same-file mixin literals, which carry no method list the analyzer treats as a hierarchy | — |
-| contains | ✅ | Options-API members owned by the component (from `ownerName`); setup-scope top-levels have no owner (module scope) | 1.0 |
+| contains | ✅ | Options-API members owned by the component (from `ownerName`); every shape a `provide(key, …)` publishes — shorthand property, `key: value` pair, shorthand method, and an object wrapped in one call layer (`reactive({ … })`) — is owned too, synthesized with `metadata.synthesized` when the member has no symbol of its own; setup-scope top-levels have no owner (module scope) | 1.0 |
 | uses | ✅ | script-side identifier reads from the JS/TS delegate (**2,225 rows** on the 400-file element-plus draw below, UNAUDITED — see the honesty note), PLUS template-expression reads: `{{ count }}`, `:label`, `@click`, `v-model`, `v-if` emit `uses` from the component to its member (V2). Template tokens are a hand-written stack machine: chain roots only (`item.id` reads `item`, not `id`), string/template contents skipped, v-for loop vars and slot props shadow same-named members (V4), and an **object-literal key is not a read** (F10) | 0.95 template / delegate |
 | references | ✅ | **audited only for the component-contract family** — see the honesty note below. Measured 2026-09-30 on a 400-file element-plus draw through `ASTEngine.parseFile`: **3,275 rows, of which 315 are contract-marked and audited and 2,960 are not** — 1,774 unmarked delegate local reads, 656 `declared_type`, 317 `type_argument`, 181 `cast_target`, 25 `type_alias`, 6 `instanceof_check`, 1 `satisfies_target`. The audited family is F12/F13/F14 `defineProps`/`defineEmits` naming a declaration and F2 `provide`/`inject` naming a key | 0.8–1.0 |
 | depends | — | not emitted (covered by imports) | — |
@@ -79,9 +79,19 @@ depth — and that figure is now honestly sized. Measured 2026-09-30:
 - **Also audited, partially**: `contains`, via the lane-owned TypeScript oracle
   applied to the embedded script blocks. 216 of the label's 363 rows on a
   400-file element-plus draw — the DELEGATED half — matched 99/99, so it is in the
-  audited set. The 147 the Vue analyzer owns (component → its own contract members)
-  are **not**: an oracle exists at 141/163 (`oracles/vue-contains.ts`) and wiring it
-  half-derived would manufacture failures rather than audit anything.
+  audited set. The half the Vue analyzer owns (component → its own contract
+  members) is **not** wired, and the blocker is narrower than it was. The oracle
+  (`oracles/vue-contains.ts`) now agrees with the analyzer on **306 of 306**
+  component-owned rows of a 250-file draw across both corpora, with 0 oracle rows
+  the analyzer misses — up from 141/163, which F18 closed by teaching both sides
+  every shape a `provide(key, …)` publishes (shorthand property, shorthand method,
+  and a `reactive()`-wrapped object). It still is not wired because the
+  differential samples vue-element-admin's demo components, where the analyzer
+  publishes **310** component-owned rows the oracle derives none of. The obvious
+  repair — "a `<script setup>` program owns its top-level bindings" — fixes those
+  and breaks element-plus (864 truth rows, 319 MISSING), so the analyzer's rule is
+  strictly narrower and has to be read off the analyzer before it can be mirrored.
+  Recorded as VSD49/VSD50 in `script/m14/spec/vue-completeness.json`.
 - **Not audited**: the other **2,960** `references` rows, and `uses` in full
   (**2,225** rows, of which **1,849** are the Vue analyzer's own template reads).
   `imports` (2,789) and `exports` (2) have no oracle in the instrument at all — `deriveTypeScriptEdges` emits only `calls` and

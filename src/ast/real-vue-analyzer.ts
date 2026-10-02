@@ -362,7 +362,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // F2: keys of an inline `provide(K, { … })` value. Annotated onto the symbols
     // the sub-analyzer already emitted, never duplicated, because the store's
     // SYMBOL key excludes owner (VSD25).
-    const pendingProvided: Array<{ name: string; owner: string }> = []
+    const pendingProvided: Array<{ name: string; owner: string; line: number; column: number }> = []
     let scriptCyclomaticSum = 0
     // F7 (master review 2026-09-30): the fact the pipeline already computes.
     // `hasTypeInference` used to be the literal `false`, so every SFC reported
@@ -372,12 +372,26 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // statement about whether a TypeScript grammar was applied, not a
     // capability claim about the analyzer.
     let dispatchedToTypeScript = false
+    // Edge types whose TARGET names a member of the component rather than the
+    // component itself, and so is exempt from an identity rename.
+    const MEMBER_TARGET = new Set<ASTEngine.RelationshipType>([
+      ASTEngine.RelationshipType.Contains,
+      ASTEngine.RelationshipType.Provides,
+    ])
     // F8: when a `name:` option renames the component, every component-owned edge
     // must source the ONE symbol. The delegated rows arrive with the sub-analyzer's
     // module name as their source (it is the JS module identity), so the seam
     // re-points them — otherwise the one Class symbol would be unreachable and
     // every script edge would dangle.
     let componentIdentity = moduleName
+    // F17: a `name:` option whose value is not a string literal. Hoisted so it
+    // can be recorded whether or not a rename happens — the common case is
+    // exactly the case where NO rename happens, because the identity stays the
+    // stem and that is the whole point of the fallback.
+    let declaredNameUnread = false
+    // F16: the declared name from `defineOptions`, applied after the block loop.
+    let declaredNameFromOptions: string | undefined
+    let optionsScriptIndex = 0
     for (let bi = 0; bi < scriptTreeCount; bi++) {
       const scriptTree: Tree = context!.sfcScriptTrees![bi]
       const scriptStartLine: number = context!.sfcScriptLines![bi]
@@ -454,14 +468,32 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
         const namePair = defaultObject.namedChildren.find(
           (c: any) => c.type === "pair" && c.childForFieldName("key")?.text === "name",
         )
+        // F17 (2026-10-31): the value of `name:` is not always a string literal.
+        // It can be an IMPORTED IDENTIFIER — `name: COMPONENT_NAME`, where
+        // COMPONENT_NAME comes from another module and this lane cannot read its
+        // value without cross-file resolution it does not do. The old code took
+        // `v.text` whatever the node was, so the component's ONE identity became
+        // the VARIABLE's name: measured on the restored corpus, option.vue and
+        // select.vue published components called `COMPONENT_NAME`, with 64 edges
+        // sourced at a name that no registry holds and no reader can resolve.
+        //
+        // A component named after the variable that holds its name is a graph
+        // lie, and a worse one than the stem fallback F8 already chose
+        // deliberately: `option` and `select` are at least real, findable names.
+        // So a non-literal `name:` now keeps the stem and RECORDS that a declared
+        // name was present but unreadable, which is the distinction a consumer
+        // needs — silence would claim the component never declared a name.
+        let declaredNameUnreadable = false
         if (namePair) {
           const v = namePair.childForFieldName("value")
           // No regex: `unquote` is the file's existing quote-stripper and the
-          // value of a `name:` option is always a string literal, so stripping
+          // value of a `name:` option is a string literal, so stripping
           // surrounding quotes is the whole job. Pinned for both quote styles by
           // vue/options-rename-identity (single) and vue/component-name-double-quotes.
-          if (v) componentName = unquote(v.text)
+          if (v && v.type === "string") componentName = unquote(v.text)
+          else if (v) declaredNameUnreadable = true
         }
+        declaredNameUnread = declaredNameUnread || declaredNameUnreadable
         // F8 (master review 2026-09-30): ONE component, ONE Class symbol.
         //
         // A `name:` option used to PUSH A SECOND Class alongside the SFC's own,
@@ -484,7 +516,12 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
           const sfcSymbol = symbols.find((sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === moduleName)
           if (sfcSymbol) {
             sfcSymbol.name = componentName
-            sfcSymbol.metadata = { ...(sfcSymbol.metadata ?? {}), moduleName, isOptionsComponent: true }
+            sfcSymbol.metadata = {
+              ...(sfcSymbol.metadata ?? {}),
+              moduleName,
+              isOptionsComponent: true,
+              ...(declaredNameUnreadable ? { declaredNameUnreadable: true } : {}),
+            }
             componentIdentity = componentName
           }
         }
@@ -807,13 +844,35 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
                       lineOffset,
                     })
                     if (callee === "provide") {
-                      const value = argsNode?.namedChild(1)
-                      if (value?.type === "object") {
+                      const value = this.providedValueObject(argsNode?.namedChild(1) ?? null)
+                      if (value) {
                         for (let i = 0; i < value.namedChildCount; i++) {
                           const c = value.namedChild(i)
-                          if (!c || (c.type !== "pair" && c.type !== "method_definition")) continue
-                          const k = c.type === "pair" ? c.childForFieldName("key")?.text : c.childForFieldName("name")?.text
-                          if (k && !k.startsWith("[")) pendingProvided.push({ name: unquote(k), owner: moduleName })
+                          // F18 (2026-10-31): a SHORTHAND property is a provided
+                          // member and was skipped. `provide(k, { contentRef })`
+                          // shares the local `contentRef`, and a consumer reads it
+                          // as `inject(k).contentRef` — so the name belongs to the
+                          // provided contract exactly as a `key: value` pair's does.
+                          // Measured: dropdown.vue provides 6 shorthand keys
+                          // (contentRef, triggerId, isUsingKeyboard, onItemEnter,
+                          // onItemLeave, handleClose) plus 6 pairs, and only the
+                          // pairs were published; slider.vue and select.vue lose
+                          // theirs the same way. Found by the `contains` oracle
+                          // deriving rows the analyzer did not emit.
+                          if (!c || (c.type !== "pair" && c.type !== "method_definition" &&
+                                    c.type !== "shorthand_property_identifier")) continue
+                          const shorthand = c.type === "shorthand_property_identifier"
+                          const k = shorthand
+                            ? c.text
+                            : c.type === "pair" ? c.childForFieldName("key")?.text : c.childForFieldName("name")?.text
+                          if (k && !k.startsWith("[")) {
+                            pendingProvided.push({
+                              name: unquote(k),
+                              owner: moduleName,
+                              line: n.startPosition.row + 1 + scriptStartLine,
+                              column: n.startPosition.column + 1 + (context!.sfcScriptCols![bi] ?? 0),
+                            })
+                          }
                         }
                       }
                     }
@@ -837,60 +896,45 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // component written the modern way fell back to the FILE STEM as its identity
     // while the file plainly declares otherwise.
     //
-    // Measured, and found by the contains oracle disagreeing in a direction that
+    // Measured, and found by the `contains` oracle disagreeing in a direction that
     // pointed at the analyzer: element-plus/table/src/table-body/td-wrapper.vue and
     // splitter/src/split-bar.vue both `defineOptions({ name: 'TableTdWrapper' })`
-    // / `('ElSplitterBar')` and both were published as `td-wrapper` /
-    // `split-bar`. F8 unified the component identity but only read `name:` out of a
+    // / `('ElSplitterBar')` and both were published as `td-wrapper` / `split-bar`.
+    // F8 unified the component identity but only read `name:` out of a
     // `defineComponent({ … })` default export, so this is the same defect from the
-    // other side — and it is worse than a cosmetic stem, because every
-    // component-owned edge sources the identity and the store's symbol key is
-    // name+line, so the declared name and the published one are two different
-    // symbols.
+    // other side — and worse than a cosmetic stem, because every component-owned
+    // edge sources the identity and the store's symbol key is name+line, so the
+    // declared name and the published one are two different symbols.
+    //
+    // ONLY THE READ happens here. The rename and the re-point MUST happen after
+    // the block loop: doing them inside it left slider.vue publishing its Class as
+    // `ElSlider` while every member stayed owned by `slider`, which is precisely
+    // the split identity F8 existed to remove — reintroduced through the other
+    // door. That is only visible on a component whose name comes from
+    // `defineOptions` AND whose members are emitted after this point in the loop,
+    // and the `contains` oracle is what surfaced it.
     for (const [bi, scriptTree] of (context?.sfcScriptTrees ?? []).entries()) {
       const optsCall = this.findCallNamed(scriptTree.rootNode, "defineOptions")
       if (!optsCall) continue
       const optsObj = this.firstObjectArgument(optsCall)
       if (!optsObj) continue
-      const namePair = this.findChildByType(optsObj, "pair")
-      let declared: string | undefined
       const stack: Node[] = [optsObj]
-      while (stack.length > 0 && declared === undefined) {
+      while (stack.length > 0 && declaredNameFromOptions === undefined) {
         const n = stack.pop()!
-        if (n.type === "pair") {
-          const keyNode = this.findChildByType(n, "property_identifier")
-          if (keyNode?.text === "name") {
-            const v = this.findChildByType(n, "string")
-            if (v) declared = unquote(v.text)
-          }
+        const keyNode = this.findChildByType(n, "property_identifier")
+        if (n.type === "pair" && keyNode && keyNode.text === "name") {
+          const v = this.findChildByType(n, "string")
+          if (v) declaredNameFromOptions = unquote(v.text)
         }
         for (let i = 0; i < n.namedChildCount; i++) {
           const c = n.namedChild(i)
           if (c) stack.push(c)
         }
       }
-      if (!declared || declared === componentIdentity) continue
-      const scriptStartLine: number = context!.sfcScriptLines![bi] ?? 0
-      const scriptStartColumn: number = context!.sfcScriptCols![bi] ?? 0
-      const cls = symbols.find(
-        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === componentIdentity && sy.metadata?.isVueComponent === true,
-      )
-      if (!cls) continue
-      cls.name = declared
-      cls.metadata = { ...(cls.metadata ?? {}), moduleName: componentIdentity, isScriptSetupComponent: true }
-      cls.range = {
-        ...cls.range,
-        startLine: cls.range.startLine,
-        startColumn: cls.range.startColumn + scriptStartColumn,
+      if (declaredNameFromOptions) {
+        optionsScriptIndex = bi
+        break
       }
-      // Every component-owned edge collected so far sourced the old identity, so
-      // they must follow it — the same re-point F8 performs for `name:`.
-      for (const sym of symbols) if (sym.ownerName === componentIdentity) sym.ownerName = declared
-      for (const e of relationships) {
-        if (e.source === componentIdentity) e.source = declared
-      }
-      componentIdentity = declared
-      break
     }
 
     // The component's identity is settled only now: every `<script>` block has
@@ -908,11 +952,57 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     //
     // Measured: 124 such findings on the 400-file m60 draw, every one of them this
     // fallback, every one of them a real component.
+    // F16, applied where it is complete: after every block has been read and
+    // every symbol emitted, so the rename and the re-point cannot miss one.
+    if (declaredNameFromOptions && declaredNameFromOptions !== componentIdentity) {
+      const cls = symbols.find(
+        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === componentIdentity && sy.metadata?.isVueComponent === true,
+      )
+      if (cls) {
+        cls.metadata = {
+          ...(cls.metadata ?? {}),
+          moduleName: componentIdentity,
+          isScriptSetupComponent: true,
+        }
+        const col = context!.sfcScriptCols?.[optionsScriptIndex] ?? 0
+        cls.range = { ...cls.range, startColumn: cls.range.startColumn + col }
+        // Every component-owned symbol and every edge that sourced the OLD
+        // identity follows it — the same re-point F8 performs for `name:`.
+        //
+        // The old identity is captured BEFORE the Class is renamed, and the
+        // re-point matches EITHER that or `moduleName`. Both are needed: the
+        // emissions in this file split across `componentName` (the per-block
+        // Options local) and `componentIdentity`, and for a `<script setup>`
+        // block the former is the file stem. Matching only one of them is what
+        // left slider.vue publishing its Class as `ElSlider` while every member
+        // stayed owned by `slider`.
+        const oldIdentity = cls.name
+        for (const sym of symbols) {
+          if (sym.ownerName === oldIdentity || sym.ownerName === moduleName) sym.ownerName = declaredNameFromOptions
+          if (sym.scope === oldIdentity || sym.scope === moduleName) sym.scope = declaredNameFromOptions
+        }
+        for (const e of relationships) {
+          if (e.source === oldIdentity || e.source === moduleName) e.source = declaredNameFromOptions
+          if (e.target === oldIdentity || e.target === moduleName) e.target = declaredNameFromOptions
+        }
+        cls.name = declaredNameFromOptions
+        componentIdentity = declaredNameFromOptions
+      }
+    }
+
     {
       const cls = symbols.find(
-        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.name === moduleName && sy.metadata?.isVueComponent === true,
+        (sy) => sy.kind === ASTEngine.SymbolKind.Class && sy.metadata?.isVueComponent === true,
       )
-      if (cls) cls.metadata = { ...(cls.metadata ?? {}), synthesized: true, identityFromFileStem: true }
+      if (cls) {
+        // F16: the identity came from `defineOptions({ name: 'X' })`, which is
+        // written in the file, so it needs no declaration.
+        if (cls.name === moduleName) cls.metadata = { ...(cls.metadata ?? {}), synthesized: true, identityFromFileStem: true }
+        // F17: and the reason it is the stem is not that no name was declared —
+        // one WAS, as an identifier this lane cannot read. Silence would claim
+        // the component never named itself.
+        if (declaredNameUnread) cls.metadata = { ...(cls.metadata ?? {}), declaredNameUnreadable: true }
+      }
     }
 
     // F2: attach ownership to the symbols a provided value's keys produced.
@@ -922,15 +1012,7 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     // only non-lossing shape, and it is why `provide(tourKey, { onClose() {} })`
     // no longer publishes an unowned method indistinguishable from a
     // module-level function.
-    for (const p of pendingProvided) {
-      const sym = symbols.find((sy) => sy.name === p.name && sy.ownerName === undefined)
-      if (sym) {
-        sym.ownerName = p.owner
-        sym.ownerKind = ASTEngine.SymbolKind.Class
-        sym.scope = p.owner
-        sym.metadata = { ...(sym.metadata ?? {}), isProvided: true }
-      }
-    }
+
 
     // F2: the provide/inject edges, emitted after the merge for the same reason
     // as F12's — the store's relationship identity has no metadata component, so
@@ -1083,6 +1165,48 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
       }
     }
 
+    // F18/F2, applied HERE and not earlier. The annotation used to run before the
+    // script-side symbols existed, so it silently matched nothing for a
+    // `<script setup>` binding — and `provide(KEY, { steps })` in
+    // element-plus/steps/src/steps.vue published `addStep`, `removeStep` and
+    // `props` (declared as their own bindings) while dropping `steps`, which came
+    // from one destructuring `const { steps, addStep, removeStep } = useProvide()`.
+    // Same name, same file, same declaration, different symbol: the only
+    // difference was WHEN the lookup ran.
+    //
+    // And for a component that provides its `setup()` LOCALS (dropdown.vue's
+    // contentRef / triggerId / dropdownSize / trigger / handleClick and five more)
+    // there is no symbol to find at all, because a `<script setup>` body's
+    // locals are not emitted as component-owned symbols. Those are synthesized
+    // here, so the provided contract is published rather than dropped — ten rows
+    // the `contains` oracle derived and the analyzer never emitted.
+    //
+    // Synthesized ones carry `metadata.synthesized` for the m60 surface audit,
+    // which is the same declaration the stem fallback uses: the name is real (it
+    // is written in the file) but the SYMBOL is the analyzer's, not the
+    // sub-analyzer's, and the audit has to be able to say so.
+    for (const p of pendingProvided) {
+      const sym = symbols.find((sy) => sy.name === p.name && sy.ownerName === undefined)
+      if (sym) {
+        sym.ownerName = p.owner
+        sym.ownerKind = ASTEngine.SymbolKind.Class
+        sym.scope = p.owner
+        sym.metadata = { ...(sym.metadata ?? {}), isProvided: true }
+        continue
+      }
+      if (symbols.some((sy) => sy.name === p.name && sy.ownerName === p.owner)) continue
+      symbols.push({
+        name: p.name,
+        kind: ASTEngine.SymbolKind.Variable,
+        ownerName: p.owner,
+        ownerKind: ASTEngine.SymbolKind.Class,
+        scope: p.owner,
+        line_number: p.line,
+        range: { startLine: p.line, startColumn: p.column, endLine: p.line, endColumn: p.column + p.name.length },
+        metadata: { isProvided: true, synthesized: true },
+      })
+    }
+
     // --- 4. contains from ownerName -------------------------------------------
     // V3 (#419): the JS/TS sub-analyzer ALREADY emits contains for script-side
     // symbols (class -> method), and this pass re-emitted them — every class
@@ -1122,6 +1246,42 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     }))
 
     this.classifyEvidenceTier(relationships)
+
+    // F16, FINAL pass. The apply block above runs before some emissions, so this
+    // repeats it at the last possible moment — anything that acquired the old
+    // identity after that block is corrected here. Without it, slider.vue
+    // published its Class as `ElSlider` while all 44 of its members stayed owned
+    // by `slider`: the split identity F8 removed, reintroduced through the
+    // `defineOptions` door. Cheap, idempotent, and it is the only place that can
+    // see every symbol the analyzer is about to return.
+    //
+    // Keyed on `componentIdentity !== moduleName` rather than on which mechanism
+    // supplied the name, because BOTH supply it and both leak: `defineOptions`
+    // renamed the Class while its members kept the stem (slider.vue, 44 symbols),
+    // and a `name:` option does the same through F2's provide-ownership
+    // annotation, which records `moduleName` as the owner (dropdown.vue's
+    // contentRef / dropdownSize / trigger / triggerId and five more). Fixing the
+    // two separately left each one broken through the other's door; the invariant
+    // is simply that the component has ONE identity, so anything still carrying the
+    // stem once a real name is in force is stale.
+    if (componentIdentity !== moduleName) {
+      for (const sym of symbols) {
+        if (sym.ownerName === moduleName) sym.ownerName = componentIdentity
+        if (sym.scope === moduleName) sym.scope = componentIdentity
+      }
+      for (const e of relationships) {
+        if (e.source === moduleName) e.source = componentIdentity
+        // ONLY THE SOURCE follows the rename. A target is a MEMBER (contains,
+        // provides), a TEMPLATE TAG (`<dropzone>` instantiates nothing else), or
+        // an imported name — never the component's own identity. Rewriting
+        // targets produced two measured faults at once: steps.vue's provided
+        // member literally named `steps` became `ElSteps contains ElSteps`, and
+        // vue-element-admin's three demo components lost `instantiates ->
+        // dropzone` and gained `DropzoneDemo instantiates DropzoneDemo`.
+        // `MEMBER_TARGET` is kept for the case that motivated it — a member whose
+        // name coincides with the stem — and asserted by the F18 fixture.
+      }
+    }
 
     return {
       language: "vue",
@@ -2632,6 +2792,30 @@ export class RealVueAnalyzer implements ASTEngine.LanguageAnalyzer {
     if (indexOffset && out.startIndex !== undefined) out.startIndex += indexOffset
     if (indexOffset && out.endIndex !== undefined) out.endIndex += indexOffset
     return out
+  }
+
+  /**
+   * The object literal a `provide(key, …)` publishes, unwrapping ONE call layer.
+   *
+   * `provide(k, reactive({ a, b }))` publishes `a` and `b`, but the direct
+   * argument is a call, not an object, so reading only `args[1]` as an object
+   * found nothing. `reactive` / `readonly` / `markRaw` / `computed` all take the
+   * object as their first argument, which is why one level is enough;
+   * `form.vue`'s `provide(formContextKey, reactive({ ...toRefs(props), emit,
+   * resetFields, clearValidate, validateField }))` lost every one of those keys
+   * this way. One layer only — deeper is a shape this lane should not guess at.
+   */
+  private providedValueObject(value: Node | null): Node | null {
+    if (!value) return null
+    if (value.type === "object") return value
+    if (value.type !== "call_expression") return null
+    const args = this.findChildByType(value, "arguments")
+    if (!args) return null
+    for (let i = 0; i < args.namedChildCount; i++) {
+      const c = args.namedChild(i)
+      if (c && c.type === "object") return c
+    }
+    return null
   }
 
   private findChildByType(node: Node, type: string): Node | null {
