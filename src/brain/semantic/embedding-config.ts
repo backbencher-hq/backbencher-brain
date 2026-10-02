@@ -49,6 +49,21 @@ export interface EmbeddingRuntimeOptions {
   retryCapMs: number
   /** Optional second provider, tried only after the primary fails. */
   fallback: { baseURL: string; model: string; apiKey: string } | null
+  /**
+   * The vector width the configured model is EXPECTED to return, asserted by the
+   * client rather than requested from it. `undefined` means "whatever the model
+   * returns".
+   *
+   * Why it exists: `embedding_dimension` in a config file was plumbed all the way
+   * into `EmbeddingConfig.dimension` and then read by nobody, so declaring a
+   * dimension was a comment. An assertion turns it into a guard on the one
+   * failure that is otherwise silent and permanent — a provider or model swapped
+   * without a forced reindex writes vectors of a new width under the SAME
+   * `embedding_model` label, and every later query then compares a query vector
+   * of one width against stored rows of another and finds none of them, which
+   * reports itself only as "no matching model embeddings".
+   */
+  assertedDimension?: number
 }
 
 export type EmbeddingProblemSeverity = "error" | "warning"
@@ -124,7 +139,29 @@ export function readRuntimeOptions(env: NodeJS.ProcessEnv = process.env): Embedd
     retryBaseMs: intFromEnv(env.BB_EMBEDDING_RETRY_BASE_MS, 250, 10, 10_000),
     retryCapMs: intFromEnv(env.BB_EMBEDDING_RETRY_CAP_MS, 4_000, 100, 60_000),
     fallback: fbBase && fbModel ? { baseURL: fbBase.replace(/\/+$/, ""), model: fbModel, apiKey: fbKey } : null,
+    assertedDimension: readDimensionAssertion(env),
   }
+}
+
+/**
+ * `BB_EMBEDDING_DIMENSION` — a positive integer, or undefined.
+ *
+ * A non-numeric or non-positive value is IGNORED rather than coerced, so a typo
+ * cannot turn into an assertion that fails every request (which would degrade
+ * every batch to local vectors). `describeEmbeddingSetup` reports the bad value
+ * so it is visible instead of silently absent.
+ */
+function readDimensionAssertion(env: NodeJS.ProcessEnv): number | undefined {
+  const raw = (env.BB_EMBEDDING_DIMENSION ?? "").trim()
+  if (raw === "") return undefined
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return undefined
+  return Math.floor(n)
+}
+
+/** The raw, unvalidated dimension assertion — for reporting a rejected value. */
+export function rawDimensionAssertion(env: NodeJS.ProcessEnv = process.env): string {
+  return (env.BB_EMBEDDING_DIMENSION ?? "").trim()
 }
 
 /**
@@ -245,6 +282,18 @@ export function describeEmbeddingSetup(
   } else {
     const readiness = assessEndpoint(eff.baseURL, eff.sources.apiKey, eff.sources.apiKey)
     problems.push(...readiness.problems)
+  }
+
+  // A malformed assertion is reported rather than silently dropped: the client
+  // ignores it, so without this the user has set a knob that does nothing and no
+  // surface will say so.
+  const rawDimension = rawDimensionAssertion(env)
+  if (rawDimension !== "" && options.assertedDimension === undefined) {
+    problems.push({
+      severity: "warning",
+      envVar: "BB_EMBEDDING_DIMENSION",
+      message: `BB_EMBEDDING_DIMENSION is set to ${JSON.stringify(rawDimension)}, which is not a positive integer. The assertion is ignored — vectors of any width will be accepted.`,
+    })
   }
 
   if (options.fallback) {
