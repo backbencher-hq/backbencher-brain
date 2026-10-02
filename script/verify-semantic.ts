@@ -59,7 +59,17 @@ try {
     // tfidf-v1 has a different model label, so it can never enter the query-model scan.
     check("tfidf rows are never scanned by dense path", afterTfidf.metadata.indexModel !== "tfidf-v1")
     for (const r of afterTfidf.results) {
-      check("no result similarity is NaN", Number.isFinite(r.similarity))
+      // `Number.isFinite` alone cannot express this assertion. The keyword
+      // fallback deliberately reports `similarity: null` (a 0 would be a NUMBER
+      // and every consumer would treat it as a real score — see
+      // semantic-search.ts keywordFallback), and `Number.isFinite(null)` is
+      // false. So this check used to FAIL on a correct null while still being
+      // unable to prove the absence of NaN. Test the actual claim instead:
+      // every similarity is either a deliberate null or a finite number.
+      check(
+        "no result similarity is NaN",
+        r.similarity === null || Number.isFinite(r.similarity),
+      )
     }
   }
 
