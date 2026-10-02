@@ -1330,7 +1330,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const b = baseTypes[i]
               parents.push(b)
               relationships.push({
-                source: fullName,
+                source: this.declarationPath(scopeStack, rawName),
                 target: b,
                 type: ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
@@ -1370,7 +1370,7 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
               const looksLikeInterface = !declaredKind && (isStruct || (i === 0 && leaf.charCodeAt(0) === 73 && leaf.charCodeAt(1) >= 65 && leaf.charCodeAt(1) <= 90 && leaf.length > 2))
               const isImplements = declaredKind === ASTEngine.SymbolKind.Interface || looksLikeInterface || (i > 0 && !declaredKind)
               relationships.push({
-                source: fullName,
+                source: this.declarationPath(scopeStack, rawName),
                 target: b,
                 type: isImplements ? ASTEngine.RelationshipType.Implements : ASTEngine.RelationshipType.Extends,
                 confidence: 1.0,
@@ -3927,6 +3927,30 @@ export class RealCSharpAnalyzer implements ASTEngine.LanguageAnalyzer {
     const base = lt > 0 ? spelled.slice(0, lt) : spelled
     const q = base.indexOf("?")
     return (q > 0 ? base.slice(0, q) : base).trim()
+  }
+
+  /**
+   * A type's DECLARATION path: itself, qualified by enclosing TYPE declarations only.
+   *
+   * `buildFullName` qualifies with every enclosing scope including NAMESPACES, which is
+   * right for an FQN and wrong for a relationship source. This lane's hand-audited truth
+   * labels an extends/implements edge at the declared name — `BaseService`, `UserService`,
+   * `Shape`, `IRepository` — and for a NESTED type it keeps the enclosing type but still
+   * drops the namespace: `UserService.User -> BaseService.Entity`, not
+   * `Example.Service.UserService.User`. That is why the nested row matched before this fix
+   * and the seven top-level ones did not: `UserService.User` happens to equal the declared
+   * path while `Example.Base.BaseService` does not.
+   *
+   * So seven false negatives were a label, not a missing edge.
+   */
+  private declarationPath(scopeStack: Scope[], name: string): string {
+    const segs: string[] = []
+    for (let i = 0; i < scopeStack.length; i++) {
+      if (scopeStack[i].kind === ASTEngine.SymbolKind.Namespace) continue
+      segs.push(scopeStack[i].rawName)
+    }
+    segs.push(name)
+    return segs.join(".")
   }
 
   private buildFullName(scopeStack: { rawName: string }[], name: string): string {

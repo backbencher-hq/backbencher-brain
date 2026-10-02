@@ -1,12 +1,17 @@
 {
   "gate": "M60.G1",
   "title": "Standing rules R1–R4 and the gate that enforces them",
-  "at": "2026-09-25T16:13:50.064Z",
-  "atCommit": "d09934d98a74c0e4bfd3b31e55616cbc994dcddd",
-  "passed": 157,
-  "failed": 1,
+  "at": "2026-10-01T03:20:46.020Z",
+  "atCommit": "cb38dea02a9271b7a9b511c535c6d59906fc50a4",
+  "passed": 152,
+  "failed": 6,
   "negatives": 132,
   "failures": [
+    "R3 live: every finding-registering review doc cites an issue — m60-script-surface-typecheck.md",
+    "R1 live: every open GitHub milestone is documented in docs/ — M63",
+    "R4 live: every otherwise-ready family carries its M49 fold row — R4 cannot adjudicate: the closure result was computed at d09934d98a74c0e4bfd3b31e55616cbc994dcddd, HEAD is cb38dea02a9271b7a9b511c535c6d59906fc50a4",
+    "R7 live: every placeholder-literal site is registered, none added, none silently gone — R7: 1 unregistered placeholder site(s) — an analyzer names something with a literal instead of an absence: real-sql-analyzer.ts:62 unclassified `[ \"all\", \"alter\", \"analyze\", \"and\", \"any\", \"array\", \"as\", \"asc\", \"at\", \"authorization\", \"b`",
+    "R8 live: every framework-surface site is registered, none added, none silently gone — R8: 9 unregistered framework-surface site(s) — an analyzer publishes a capability it does not have, or names one framework twice: real-hcl-analyzer.ts:452 dominated-trigger [blockType: repeated condition] `{ if (TYPE_NAME_BLOCKS.has(blockType)) { if (labels.length >= 2) return `${labels[0]}.${la` | real-nim-analyzer.ts:1465 dominated-trigger [leaf: repeated condition] `{ if (site.type !== \"identifier\") return const leaf = site.text if (!leaf) return if (NIM_` | real-nim-analyzer.ts:1467 dominated-trigger [key: repeated condition] `{ if (site.type !== \"identifier\") return const leaf = site.text if (!leaf) return if (NIM_`",
     "R10 live: every lane's target spelling matches the register exactly (convictions and separator vocabulary) — R10: 1 lane(s) drifted from the register — cpp drifted: convictions {\"delimiter\":40} measured vs {\"delimiter\":45} recorded — a finding may only be paid down by re-writing the register"
   ],
   "verdict": "FAIL",

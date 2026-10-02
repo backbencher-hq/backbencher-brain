@@ -113,9 +113,16 @@ async function timing<T>(fn: () => Promise<T>): Promise<{ value: T; ms: number }
       ck("H3: per-language breakdown has both languages", langs.some((l) => l.language === "typescript") && langs.some((l) => l.language === "python"), langs.map((l) => l.language + ":" + l.files).join(","))
       const tsLang = langs.find((l) => l.language === "typescript")
       ck("H3: TS file counted once", tsLang ? tsLang.files === 1 : false, tsLang ? "files=" + tsLang.files : "missing ts")
-      // verbose flag is reported in the report and gated in the formatter
+      // verbose flag is reported in the report and gated in the formatter.
+      // M64: this asserted the literal "languages: typescript:1f", which
+      // assumed typescript is the FIRST language printed. The formatter's
+      // documented order is files DESC then language ASC, and here both
+      // languages have 1 file — so "python:1f/1s" legitimately comes first and
+      // the assertion was order-dependent for a reason that has nothing to do
+      // with the thing being checked. Assert each language's own cell instead.
       const verboseText = formatUnifiedHealth({ ...report, verbose: true })
-      ck("H3: verbose format includes languages section", verboseText.includes("languages: typescript:1f"))
+      ck("H3: verbose format includes the languages section", /(^|\n)languages: /.test(verboseText), verboseText.split("\n").find((l) => l.startsWith("languages:")) ?? "absent")
+      ck("H3: verbose languages section names both languages with their counts", verboseText.includes("typescript:1f/1s") && verboseText.includes("python:1f/1s"), verboseText.split("\n").find((l) => l.startsWith("languages:")) ?? "absent")
     } catch (e: any) {
       ck("H3: setup", false, (e?.message || String(e)).slice(0, 120))
     } finally {

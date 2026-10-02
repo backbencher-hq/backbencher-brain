@@ -1022,3 +1022,201 @@ one run:** measured per file with both builds in one process, the new build is *
 (`script/m59/probe-groovy-residual-classes.ts`, 3 classes), and whether the `*.groovy` corpus
 should count `grails-profiles`' GSP-style templates (8 files, `@artifact.package@`) as parse
 failures is a **policy question, left open** rather than silently excluded.
+
+## 2026-09-29 — XML lane station record (M14 master review, M18–M22)
+
+The lane had **no row in this ledger at all** while reporting 8/8 in its own
+scoped run. The two facts are consistent — a lane can be green and unrecorded —
+and the ledger's own rule is that a lane is a row here, so this section is the
+row, written from the current run rather than from the round that filed the
+findings.
+
+**Station record.** Sections **A–H 8/8** (56 types: 28 handled_verified, 25
+internal_silent, 0 gaps, 7 design decisions) · contract **103/103** · fixtures
+**15/15** · mutants **16/16 caught, 0 survivors** · differential
+`grails-core:xml` 60 files, truth 1487, covered **1487 (100%)**, MISSING **0**,
+unexplained **0**, 17.5 ms/file, pinned in `validation/m14/differential-baseline.json`
+· full 314-file grails-core sweep **0 missing / 0 unexplained** · grammar pin
+`2425a26e77dc`, 50,255 B, pre-repair and wired copies both present.
+
+**M19 — a declared name is in an ATTRIBUTE, and the line follows the name.**
+A vocabulary declaration is written in an attribute, and a formatted document
+routinely puts that attribute — or the value itself — on a different line from the
+tag that opens it. Symbol and `contains` edge were both anchored to the ELEMENT:
+4 of **19,852** declarations over the 2,500-file blast radius, in 2 files. The
+anchor is now the line carrying the value (the `Attribute` when they share a line,
+the `AttValue` when the keyword and value split), and `metadata.elementRange`
+keeps the structural span so neither reading is lost. Gate:
+`script/m12/xml-declared-name-lines.mts`, 8,889 files, 52,651 anchors,
+**0 mis-anchored**, 43 offenders and exit 1 with the fix reverted. Fixture
+`xml/xsd-declared-name-lines` covers all three shapes and is failure-proven (6
+assertions fail pre-fix); mutant `xml/declared-name-anchored-to-the-tag`.
+
+This is the **L1 family** (`#861` web family, `M59.A7`): the same rule, missed on
+the declaration side, found after L1 was fixed. It is recorded as its own row
+because the transferable lesson is about the *instruments*: every one of them asks
+the analyzer a question it can answer correctly while the line is wrong, and the
+differential compares label+target only, never the line. A defect invisible to the
+whole gate set needs its own gate.
+
+**Two false findings were the audit's, and both stay written down.** docx4j's
+`fop.xsd` writes `name = "block_properties"` with spaces around `=`; a matcher
+accepting only `name="x"` called all 38 declarations mis-anchored. And
+`spectest.xml:2596` writes `name=" xmlns"`, trimmed to `xmlns`; a matcher
+searching for `name="xmlns"` went looking and found an **unrelated**
+`<attribute name="xmlns">` twelve lines down, reporting a defect that was not
+there at a real file and line. A line-gate that cries wolf gets ignored, and then
+it is not a gate.
+
+**M18 — CLOSED, and the accounting found more than it was written for.** The
+round ended with a note that entity references were implemented but their
+collapse accounting was unverified: 12,066 sites measured, hundreds of edges
+emitted, and nothing connecting the two numbers. `script/m12/xml-entity-accounting.mts`
+states an **accounting identity** — the sum of collapsed edge `occurrences` must
+equal the `EntityRef` nodes in the tree — and is written to be cheap, because the
+first attempt accumulated every symbol and edge in one process and died on memory.
+It found three defects:
+
+  - **the five predefined entities were being called undefined.** `&lt; &gt; &amp;
+    &apos; &quot;` are declared by the specification itself in every document
+    (XML 1.0 §4.6) — the same argument X8 settled for the `xml`/`xmlns` prefixes,
+    and the same shape of knowledge as `BUILTIN_NAMESPACE_URIS`, already in the
+    analyzer. The resolver had two answers and all of them took the wrong one:
+    **4,575 sites across 180 files** stamped `resolvable: "unresolved"` with
+    `danglingEntityReference: true`. Not caution — the analyzer asserting a
+    well-formed document references an entity nothing defines. Deliberately
+    exactly five: `&nbsp;` and `&d;` are not predefined and stay unresolved, and
+    the fixture asserts both halves in one document.
+  - **an entity's replacement text is its own document.** `<!ENTITY shout
+    "&greeting; THERE">` is a real dependency, dropped because an `EntityRef` was
+    only collected under an OWNING ELEMENT and replacement text has no element
+    above it. The owner is the DECLARING ENTITY. This was **611 of the 651-site
+    shortfall**; `lol_ig_content.xml` was the extreme at 147 sites and 1 edge. The
+    first fix's `!isParameter` guard was over-broad — `t8a.xml`'s parameter entity
+    contains a predefined reference the document genuinely makes.
+  - **a 256-character cap on a name that came from the file.** `bigentname.xml`
+    names an entity **3,965 characters** long: the declaration was published
+    (uncapped) and both uses were dropped (capped), so the graph carried the
+    symbol and none of its uses.
+
+  Final: **11,940 sites · 908 collapsed edges · 11,919 accounted.** The 21-site
+  residual is **declared, pinned by file and size, and failure-proven in both
+  directions** — a changed size, an unlisted file, or a vanished entry each exit
+  1, so closing a residual later turns the gate red until its entry is removed.
+  Each entry carries a ruling rather than an excuse: 10 sites are `&lt;` inside a
+  DTD ATTLIST default (owner unadjudicated, **OWED**), 2 sit inside a namespace
+  URI that no processor expands (**RULED**: not a reference), 5 are recorded as
+  unexplained rather than explained. The transferable lesson is the gate's own
+  summary, which counted two resolvability classes and silently dropped the
+  third, so 474 + 42 read as a complete account of 885 — the defect the script
+  exists to catch, one level down.
+
+**M21 — the encoding-recovery figure was quoted three ways.** 26/1,085/187 in the
+review, 27/1,555/244 in a later re-measure, **22/1,537/229** now. These are three
+different predicates over one corpus, not three corrections of one fact, and the
+document stated none of them, so the number was unfalsifiable. The predicate now
+lives in `script/m12/xml-encoding-recovery.mts` beside the measurement. A filename
+is not evidence of an encoding: libxml2's `text-4-byte-UTF-16-BE.xml` holds
+`ff fe 3c 00 3f 00 78 00` — a UTF-16**LE** BOM and LE code units — because the name
+is the test case.
+
+**M22 — the differential now covers ALL SIX PINNED CORPORA.** It used to rest on
+`grails-core` alone — 314 of 8,889 tracked files — and the review attributed the
+other five to "oracle coverage rather than analyzer defects". That was a **belief
+supported by a shape**, not a measurement, and the two point different ways: if
+any class were the analyzer being wrong, "widen the oracle" would be the wrong
+move. `script/m12/xml-differential-gap.mts` settles it by bucketing every
+`contains` edge by **the ROLE that emitted it**, because a role is a rule and a
+rule can be right or wrong while a target's spelling is not.
+
+First measurement: **6,132 unexplained** against 244,003 corroborated, and the
+leading class was not DTD declarations at all. Six oracle defects followed, none
+of them the analyzer's:
+
+  1. **`id` is not a name attribute** (3,367 edges). In XSD a component's name is
+     `name`; `id` is the XML `id` attribute used for identity constraints and
+     annotation cross-referencing, which the W3C's own `XMLSchema.xsd` leans on
+     heavily. Reading it as the declaration minted components called
+     `string.preserve` and `boolean.whiteSpace` — names of nothing in the
+     language.
+  2. **An XSLT instruction that constructs a node does not declare one.**
+     `<xsl:element name="x">` builds a result-tree node and its `name` may be
+     computed. **The principled fix was wrong and is recorded in the source**:
+     removing XSLT from the vocabulary set wholesale made things worse, 5,952 →
+     11,687 unexplained, because `<xsl:param name="p"/>` genuinely declares. The
+     rule is per-CONSTRUCT, and `call-template` is a third reason — its `name` is
+     a static reference to a template declared elsewhere.
+  3. **WSDL was absent entirely.**
+  4. **The DTD branch the oracle's own comment admitted it lacked.**
+     `elementdecl` / `AttlistDecl` / `entitydecl` / `notationdecl` are none of them
+     `element` nodes, so every earlier phase skipped them. The owner rule is **not
+     uniform**: `<!ELEMENT>`/`<!ENTITY>`/`<!NOTATION>` are owned by the
+     **DOCTYPE's own name**, `<!ATTLIST>` by **the element it declares attributes
+     for**, a content model by **the element being declared**. Content-model
+     members nest (`(a, (b|c)*)`) so the reader descends rather than reading
+     direct children, which would silently drop every nested group.
+  5. **A table lookup used a prefix slice where it needed the LOCAL name.** Written
+     *unprefixed* under a default `xmlns` — which XSLT generating WSDL does
+     constantly — the slice yields the whole string, nothing matches, and one file
+     contributed **1,585** wrongly-renamed edges.
+  6. **RELAX NG was wrong twice in opposite directions and each caught the other.**
+     `<element name="doc">` *does* declare; `<ref name="elem"/>` does *not*.
+     Removing the vocabulary was wrong, and so was also removing
+     `element`/`attribute` — which inverted it, giving `contains start ->
+     element` against the analyzer's `contains start -> doc`. That mutual
+     falsification is the only reason the final table is right rather than merely
+     plausible.
+
+```
+corpus        files   oracle  corrob.  unexpl.  share
+cxf            2439    76310    76310        1  0.0%
+docx4j          431    66529    66529        0  0.0%
+grails-core     314     8327     8327        0  0.0%
+libxml2        1311    23652    23647       24  0.1%
+libxslt        1144    21499    21493       18  0.1%
+maven          3250    53786    53786        0  0.0%
+TOTAL          8889   250103   250060       43  0.02%
+```
+
+The 43 are named rather than absorbed: **18 `pseudo_attribute`** (a synthetic
+`xml-stylesheet` representation — an analyzer artefact rather than a tree fact, so
+the oracle correctly declines to corroborate it) and **10 `dtd_content_model`**
+self-references like `contains dia:group -> dia:group`, where a content model
+admits the element it belongs to and both readings are defensible. Neither is in a
+class the oracle claims to derive.
+
+**Two hand-maintained vocabulary tables now, deliberately, and a gate between
+them.** The analyzer and the oracle each keep their own declaration-vocabulary
+table. Importing one into the other would make them agree by construction, and an
+oracle that cannot disagree is a mirror rather than a check — so the duplication is
+intentional, and `script/m12/xml-vocab-tables.ts` is the defence against drift. It
+asserts the two cover the same **namespaces**, because that is the drift which
+produces thousands of unexplained edges and an argument instead of a finding; it
+deliberately does **not** assert the construct lists agree, because that is a
+semantic judgement and forcing two copies to match textually would put the oracle's
+independence in the same place. Failure-proven: removing WSDL from one table
+exits 1.
+
+The pinned `grails-core` row did not move through any of the six fixes — 100%
+covered, MISSING=0, unexplained=0 throughout — which is the signature of a fix to
+the **instrument** rather than to the analyzer.
+
+**Cross-lane, found because a lane is measured by shared tools.** The 229-commit
+m48-recovery merge removed the xml lane's `LANG_REPOS` entry, its
+`BB_CORPUS_ROOT` override, its whole `deriveTreeEdges` oracle branch and its
+comparable-kind allowlist entry, and stopped three shared instruments from
+parsing — `completeness-inventory.ts` (mangled `GATED_LANGS` comment, a duplicated
+block, a truncated `loadSpec`, and three stray string literals inside its `checks`
+array that crashed the printer *and* made `filter(c => c.status !== "pass")`
+count them as section failures for every lane), `mutate-analyzer.ts` (the X8
+mutant's transform spliced into a generic complexity transform's tail), and
+`run-fixtures.ts` (a nested duplicate `if` in `runLang`, duplicate `const hit` in
+two blocks, and 34 lines of orphaned `LANGS` entries stranded past the module
+entry point). Each looked like a lane that had never run. **The XML-specific
+`ERROR`/`MISSING` classification is recorded here** because it is a cross-lane
+consequence: `loadNamedNodeTypes` now appends that pair universally, so every
+lane's spec must classify them, and xml classifies `ERROR` as handled
+(`real-xml-analyzer.ts:629` reads `node.isError` to count a file's grammar errors)
+and `MISSING` as silent — the convention bash/html/java/kotlin/toml/yaml already
+follow. The other four lanes' dropped oracle branches (hcl, nim, perl, vb) are
+still owed to their owners; perl is being re-applied separately.

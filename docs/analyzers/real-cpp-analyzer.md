@@ -57,6 +57,7 @@ BB_CORPUS_ROOT=$HOME/ishaq/fixtures/repositories \
 Every class states the CONTRACT it breaks, and asserts on what the analyzer
 **publishes** — not on a tree shape, because a shape can be present and correctly
 handled. Eight gated classes, all at **0**:
+handled. Seven gated classes, all at **0**:
 
 | class | the contract | was | now |
 |---|---|---|---|
@@ -362,6 +363,12 @@ self-agreeing `uses num_bits` survived a year of gates. The same is true of
     characters). Note the old artifact recorded that as `linesOutside: 224879`, a
     CHARACTER delta in a field named for lines. The analyzer cannot invent a class
     node the grammar did not produce, so this is
+  - **R1 (reported, not gated): 715 of the corpus's classes have a grammar node
+    that ends before the source's own brace balance does.** The worst case is
+    `nlohmann-json/include/nlohmann/json.hpp`: `class basic_json` spans source
+    lines **128..6408** and its `class_specifier` covers **128..716**, so
+    **5,692 lines — 91% of the class — are walked outside the class node.** The
+    analyzer cannot invent a class node the grammar did not produce, so this is
     reported with its number rather than papered over. `script/cpp-review/class-extent.ts`
     re-derives the gap for any class. (The D5 fix removed the analyzer-side
     amplification of this: before it, one recovered `function_definition`
@@ -514,6 +521,7 @@ lookups on a 123-entry set. No O(n²) or per-symbol O(n) scans.
 
 - **R1 (23 truncated class bodies)** is a grammar limitation, not an analyzer
   defect. It was 715 until the check itself was measured — see the defect gate.
+- **R1 (715 truncated classes)** is a grammar limitation, not an analyzer defect.
   It is reported with its number on every register run. Closing it means a newer
   tree-sitter-cpp, not more analyzer code — and the analyzer-side amplification
   it caused is already fixed (D5).

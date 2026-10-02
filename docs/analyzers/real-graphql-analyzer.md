@@ -521,4 +521,4 @@ in the same process under the same conditions. See REVIEW.md §I and §I.1.
 ## Issue
 
 M12.38 / GitHub issue #177. The deep review that produced every number above is
-`script/m14/tmp/graphql/REVIEW.md`.
+`reviews/graphql/master-review.md`.

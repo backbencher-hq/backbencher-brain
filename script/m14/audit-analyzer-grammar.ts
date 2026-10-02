@@ -79,6 +79,18 @@ const LANGUAGES: { language: string; wasm: string; analyzer: string }[] = [
   { language: "perl", wasm: "tree-sitter-perl.wasm", analyzer: "real-perl-analyzer.ts" },
   { language: "php", wasm: "tree-sitter-php.wasm", analyzer: "real-php-analyzer.ts" },
   { language: "powershell", wasm: "tree-sitter-powershell.wasm", analyzer: "real-powershell-analyzer.ts" },
+  // protobuf is the lane where this row matters most and was the easiest to
+  // forget. Its grammar is the only vendored one in this repository that had to
+  // be CLONED AND PATCHED (no protobuf grammar is published on npm), and three
+  // of its eight patches added grammar fields — `name` on a group, `path` on an
+  // import, `value` on an edition — that the analyzer depends on by name. So
+  // this lane's analyzer/grammar agreement is not implied by a registry package
+  // matching upstream; it is asserted, patch by patch, and this row is what
+  // asserts it. Absent from the table, F1 did not skip protobuf quietly: the
+  // language did not appear in `data.languages` at all, and the m60 completion
+  // matrix then dropped it into "DETECTED BUT NOT ANALYZER LANES (excluded from
+  // the denominator)" — a lane that exists, is routed, and is measured by nobody.
+  { language: "protobuf", wasm: "tree-sitter-protobuf.wasm", analyzer: "real-protobuf-analyzer.ts" },
   { language: "python", wasm: "tree-sitter-python.wasm", analyzer: "real-python-analyzer.ts" },
   { language: "r", wasm: "tree-sitter-r.wasm", analyzer: "real-r-analyzer.ts" },
   { language: "ruby", wasm: "tree-sitter-ruby.wasm", analyzer: "real-ruby-analyzer.ts" },

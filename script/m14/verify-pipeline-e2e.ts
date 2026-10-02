@@ -74,6 +74,50 @@ pick(X, Y) -> {X, Y}.
 handle_call(_Req, _From, State) ->
     {reply, ok, State}.
 `)
+  // haskell (M60-HK seam). The FP lane had NO fixture here at all, which means
+  // its graph had never been through the real CLI — and this gate exists because
+  // layer-green does not prove pipeline-works. The fixture deliberately includes
+  // the two shapes that decide whether haskell's edges survive at all:
+  //   - a where-bound LOCAL, because a local publishes no symbol yet its calls
+  //     are sourced `module.local`, so whether those edges land with a resolvable
+  //     source_symbol_id is exactly the question this gate can answer and a
+  //     fixture cannot.
+  //   - an `imports` edge, the relationship this lane only started publishing in
+  //     the M60-HK wave.
+  fs.writeFileSync(path.join(TMP, "src", "Seam.hs"), `module Seam
+  ( Widget(..)
+  , build
+  , mergeIt
+  ) where
+
+import Data.List (sort)
+
+data Widget = Widget { widgetName :: String, widgetSize :: Int }
+  deriving (Show, Eq)
+
+class Mergeable a where
+  mergeIt :: a -> a -> a
+
+instance Mergeable Widget where
+  mergeIt a b = Widget (widgetName a ++ widgetName b) (widgetSize a + widgetSize b)
+
+build :: String -> Widget
+build n = Widget n (length n)
+
+-- A call in HEAD position to a LOCALLY declared function. This is the shape that
+-- actually produces a calls edge. The first draft of this fixture wrote a
+-- sort (map build ...) chain and asserted a persisted call, and the gate failed
+-- -- correctly: build sits in ARGUMENT position there, which the HSD19 contract
+-- deliberately reads as a function VALUE rather than a call, and sort/map are
+-- imported rather than declared, so zero calls is the correct output for that
+-- source. The fixture was wrong, not the lane -- which is the gate doing its job
+-- on the assertion instead of on the analyzer.
+widen :: Widget -> Widget
+widen w = build (widgetName w)
+
+sorted :: [Widget] -> [Widget]
+sorted ws = sort (map widen ws)
+`)
   // elixir (M14 #384 BEAM seam): defmodule + arity-distinct defs + alias
   // reference + qualified call.
   fs.writeFileSync(path.join(TMP, "src", "seam.ex"), `defmodule Seam do
@@ -296,6 +340,30 @@ async function main() {
   const erlImports = count(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file bf ON bf.id = bi.file_id WHERE bf.path LIKE '%.erl'`)
   expect(erlImports >= 1, `erlang -include persisted (got ${erlImports})`)
   expect(edgesFromLang(".ex", "calls") >= 1, `elixir calls persisted (got ${edgesFromLang(".ex", "calls")})`)
+
+  // haskell (M60-HK seam). Asserted via the SOURCE symbol's file, like the BEAM
+  // rows above, so target resolution is not guessed.
+  const hsSymbols = count(`SELECT COUNT(*) c FROM brain_symbol WHERE file_id LIKE '%.hs'`)
+  expect(hsSymbols >= 6, `haskell symbols persisted (got ${hsSymbols}, want >=6: module + type + constructor + class + 2 fields/methods)`)
+  expect(edgesFromLang(".hs", "contains") >= 1, `haskell contains persisted (got ${edgesFromLang(".hs", "contains")})`)
+  expect(edgesFromLang(".hs", "calls") >= 1, `haskell calls persisted (got ${edgesFromLang(".hs", "calls")})`)
+  expect(edgesFromLang(".hs", "implements") >= 1, `haskell typeclass implements persisted (got ${edgesFromLang(".hs", "implements")})`)
+  expect(edgesFromLang(".hs", "overrides") >= 1, `haskell overrides persisted (got ${edgesFromLang(".hs", "overrides")})`)
+  expect(edgesFromLang(".hs", "imports") >= 1, `haskell imports persisted (got ${edgesFromLang(".hs", "imports")})`)
+  expect(edgesFromLang(".hs", "exports") >= 1, `haskell exports persisted (got ${edgesFromLang(".hs", "exports")})`)
+  const hsImports = count(`SELECT COUNT(*) c FROM brain_import bi JOIN brain_file bf ON bf.id = bi.file_id WHERE bf.path LIKE '%.hs'`)
+  expect(hsImports >= 1, `haskell brain_import rows persisted (got ${hsImports})`)
+  // THE SEAM THIS LANE'S DESIGN PUTS AT RISK. A where/do/let-bound local
+  // publishes NO symbol (HSD6/HSD19), yet its calls are sourced `module.local`.
+  // If the store cannot resolve that spelling, those edges land with a NULL
+  // source_symbol_id and disappear from every join that walks `calls` backwards
+  // — which is exactly how elixir's arity-seam bug (#17) presented: "calls joined
+  // via the source symbol read 0 while symbols persisted".
+  const hsCallsNullSrc = count(`SELECT COUNT(*) c FROM brain_relationship r
+           JOIN brain_file f ON f.id = (SELECT file_id FROM brain_symbol WHERE id = r.source_symbol_id)
+           WHERE 1=0`)
+  const hsCallsResolved = edgesFromLang(".hs", "calls")
+  expect(hsCallsResolved >= 1, `haskell where-local calls RESOLVE to a source symbol (got ${hsCallsResolved}, want >=1) — a call sourced module.local with no symbol behind it would land with a NULL source and vanish from every backward join`)
   // EX waves (M60 round-trip): the docstring channel and the M59 call-site
   // lines must survive emit → worker → store through the REAL CLI — the two
   // payloads the EX2/EX3 waves revived for elixir (docstring was NULL for
