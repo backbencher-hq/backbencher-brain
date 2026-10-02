@@ -496,7 +496,11 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
                 confidence: 1.0,
                 metadata: { relationshipType: "zig_import", isImport: true, emptyImportPath: true },
               })
-              return
+              // `continue`, not `return`: this sits inside analyze()'s walk loop, so a
+              // bare `return` exited analyze() with `undefined` and every caller got a
+              // missing ParseResult. The intent is only "do not also record an import
+              // whose module path is unresolvable" -- i.e. finish this node and move on.
+              continue
             }
             imports.push({
               module: importTarget,
