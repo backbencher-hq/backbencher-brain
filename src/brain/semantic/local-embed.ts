@@ -6,6 +6,32 @@ const log = Log.create({ service: "local-embed" })
 // Dynamic per-project word vectors. Zero deps, zero downloads, compiled binary safe.
 const WORD_DIM = 50
 
+/**
+ * The dimension of every vector this module emits.
+ *
+ * EXPORTED, and that is the change: the local vector space's width was a private
+ * constant while three other modules had to reason about it.
+ *   - `parallel-indexer.ts` writes `vector_dimension = vec.length` per row and
+ *     never checks it, so the number that reaches the database was whatever the
+ *     vector happened to be;
+ *   - `semantic-search.ts` filters candidate rows by
+ *     `vector_dimension = queryVector.length`, so 50 IS the contract — a row
+ *     stored under any other width is invisible to the local model;
+ *   - `semantic-search.ts` also picks its similarity floor from
+ *     `queryVector.length < 200`, i.e. it identifies "local" by this number.
+ *
+ * Those two read sites are hard-coded against 50 and this module was the only
+ * place that knew it. Exporting it makes the coupling checkable instead of
+ * folklore, and it is what a caller should assert against instead of hard-coding
+ * 50 itself.
+ *
+ * The STORED LABEL lives in engine.ts (`SemanticEngine.LOCAL_MODEL_LABEL`), not
+ * here — that string is the identity of the vector space in the index and
+ * bumping it is how the model-consistency guard refuses to compare an old index
+ * against a new construction. It is deliberately not duplicated in this file.
+ */
+export const LOCAL_VECTOR_DIMENSION = WORD_DIM
+
 const BASE_WORDS = [
   "function","class","return","import","export","const","let","var","async","await",
   "if","else","for","while","switch","case","break","continue","try","catch",
@@ -37,6 +63,27 @@ const BASE_WORDS = [
 let _wordMap: Record<string, number> | null = null
 let _wordVecs: Float32Array | null = null
 
+type VectorTable = { map: Record<string, number>; vecs: Float32Array }
+
+/**
+ * Built tables, keyed by the vocabulary object they were built from.
+ *
+ * WHY THIS EXISTS. `getVectors` used to rebuild the whole table on EVERY call:
+ * `unique.length * 50` floats, which for a realistic project vocabulary (the
+ * 5000-word frequency slice) is a 1 MB `Float32Array` plus a 250k-iteration PRNG
+ * loop — once per `embedLocal` call. In `embedMany` that is once per batch, but
+ * in `embed` (the single-QUERY path that `bb_ask` uses) it is once per question,
+ * for a vector that is then compared in float32. The value is a pure function of
+ * the vocabulary, so this is a pure cache.
+ *
+ * A `WeakMap` rather than a `Map` keyed by words: `projectVocabulary` already
+ * memoizes one vocabulary object per project and hands out that SAME object on
+ * every query, so the identity key is already the project key — and the entry
+ * dies with the vocabulary instead of needing its own eviction policy.
+ */
+const tableCache = new WeakMap<object, VectorTable>()
+let baseTable: VectorTable | null = null
+
 function hashWord(w: string): number {
   let h = 0x5EED
   for (let i = 0; i < w.length; i++) { h = Math.imul(h ^ w.charCodeAt(i), 0x5bd1e995); h = Math.imul(h ^ (h >>> 15), 0x5bd1e995) }
@@ -56,6 +103,14 @@ function buildVectors(words: string[]): void {
     _wordMap[unique[i]] = i
     _wordVecs.set(wordVector(unique[i]), i * WORD_DIM)
   }
+}
+
+/** Publish a table as the module's current one (what `wordVectorForTest` reads). */
+function publish(table: VectorTable | null): VectorTable | null {
+  if (!table) return null
+  _wordMap = table.map
+  _wordVecs = table.vecs
+  return table
 }
 
 /** The unit vector for one word.
@@ -141,16 +196,30 @@ export function tokenizeForEmbedding(text: string): string[] {
  *  situation they are actually in, and the situation the previous sequential
  *  PRNG turned into silent noise.
  *
- *  Bounded because it is a per-project cache in a long-lived process. */
+ *  Bounded because it is a per-project cache in a long-lived process — an MCP
+ *  server holds one process across every project it is asked about, so the bound
+ *  is the only thing standing between 17 projects and an unbounded table. */
 const PROJECT_VOCAB_MAX = 16
 const projectVocabCache = new Map<string, Record<string, number>>()
 
 /** The vocabulary for a project, built on first use from its own symbol names.
  *  Returns null when the index cannot be read, so the caller falls back to the
- *  base vocabulary instead of failing. */
+ *  base vocabulary instead of failing.
+ *
+ *  Returns the SAME object for a given project on every call. That identity is
+ *  load-bearing twice over: it is what makes `getVectors`' WeakMap memoization a
+ *  per-project hit, and it is why a caller can rely on the vocabulary not having
+ *  been rebuilt under it. */
 export function projectVocabulary(rawDb: any, projectId: string): Record<string, number> | null {
   const cached = projectVocabCache.get(projectId)
-  if (cached) return cached
+  if (cached) {
+    // Re-insert so eviction is by LAST USE, not by insertion. A long-lived
+    // process that interleaves 20 projects would otherwise evict whichever it
+    // saw first — possibly the only one still being queried.
+    projectVocabCache.delete(projectId)
+    projectVocabCache.set(projectId, cached)
+    return cached
+  }
   const words = new Set(BASE_WORDS)
   try {
     const symbols = rawDb.prepare("SELECT DISTINCT name FROM brain_symbol WHERE project_id = ? LIMIT 80000").all(projectId) as any[]
@@ -178,8 +247,10 @@ export function projectVocabulary(rawDb: any, projectId: string): Record<string,
 }
 
 export function buildProjectVocab(rawDb: any, projectId: string): void {
-  const map = projectVocabulary(rawDb, projectId)
-  buildVectors(map ? Object.keys(map) : BASE_WORDS)
+  // Route through getVectors so the built table is memoized against the
+  // vocabulary object. Calling buildVectors directly here built a table that the
+  // next getVectors(vocabulary) call threw away and rebuilt.
+  getVectors(projectVocabulary(rawDb, projectId))
 }
 
 /** The base vocabulary, as a map. Exported so a diagnostic can measure the
@@ -193,17 +264,44 @@ export function baseVocabulary(): Record<string, number> {
   return map
 }
 
-function getVectors(vocabulary?: Record<string, number> | null): { map: Record<string, number>; vecs: Float32Array } | null {
+function getVectors(vocabulary?: Record<string, number> | null): VectorTable | null {
   if (vocabulary) {
-    // Rebuild the vector table for this vocabulary. Vectors are
+    const cached = tableCache.get(vocabulary)
+    if (cached) return publish(cached)
+    // Build the vector table for this vocabulary. Vectors are
     // position-independent, so this is a pure re-derivation of the same values
     // for shared words — only the set of covered words changes.
     buildVectors(Object.keys(vocabulary))
-    return _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
+    const table = _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
+    if (table) tableCache.set(vocabulary, table)
+    return table
   }
+  if (baseTable) return publish(baseTable)
   if (_wordMap && _wordVecs) return { map: _wordMap, vecs: _wordVecs }
   buildVectors(BASE_WORDS)
-  return _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
+  const table = _wordMap && _wordVecs ? { map: _wordMap, vecs: _wordVecs } : null
+  baseTable = table
+  return table
+}
+
+/**
+ * Is this vector the all-zero one `embedLocal` emits when no token of the text
+ * was in any vocabulary?
+ *
+ * It matters because a zero vector is NOT a weak match: cosine against it is
+ * exactly 0 for every stored row, so it does not rank low, it simply cannot
+ * discriminate. `semantic-search.ts` already special-cases it
+ * (`degenerate-query-vector`), and it is exported here so any other caller of
+ * `embedLocal` — including a diagnostic that wants to measure coverage honestly
+ * rather than report "no match" for a query it failed to represent — can make
+ * the same distinction instead of scoring it.
+ */
+export function isDegenerateVector(vector: number[] | null | undefined): boolean {
+  if (!Array.isArray(vector) || vector.length === 0) return true
+  for (const component of vector) {
+    if (component !== 0) return false
+  }
+  return true
 }
 
 export function embedLocal(texts: string[], vocabulary?: Record<string, number> | null): number[][] {
@@ -247,5 +345,60 @@ export function embedLocal(texts: string[], vocabulary?: Record<string, number> 
   return results
 }
 
+/**
+ * The same computation as `embedLocal`, plus WHY each vector is what it is.
+ *
+ * `embedLocal` cannot report this itself: a text whose every token is
+ * out-of-vocabulary yields a 50-element zero vector, which is indistinguishable
+ * from a computed vector by shape alone, and which every cosine treats as a
+ * similarity of exactly 0 against every stored row. `semantic-search.ts`
+ * catches the symptom (`degenerate-query-vector`); this reports the cause —
+ * how many tokens were represented, and which word was left over.
+ *
+ * Additive: `embedLocal` keeps its exact signature and output. Anything that
+ * needs coverage numbers calls this instead.
+ */
+export function embedLocalDetailed(
+  texts: string[],
+  vocabulary?: Record<string, number> | null,
+): { vectors: number[][]; covered: Array<{ tokens: number; covered: number; uncovered: string[]; degenerate: boolean }> } {
+  const vectors = embedLocal(texts, vocabulary)
+  const table = getVectors(vocabulary)
+  const covered = texts.map((text) => {
+    const tokens = tokenizeForEmbedding(text)
+    const uncovered: string[] = []
+    let hits = 0
+    for (const token of tokens) {
+      const inVocab = table?.map[token] !== undefined
+      const subword = !inVocab && token.length > 3 && hasSubwordIn(table, token)
+      if (inVocab || subword) hits++
+      else uncovered.push(token)
+    }
+    return {
+      tokens: tokens.length,
+      covered: hits,
+      uncovered: [...new Set(uncovered)].slice(0, 8),
+      degenerate: hits === 0,
+    }
+  })
+  return { vectors, covered }
+}
+
+function hasSubwordIn(table: VectorTable | null, token: string): boolean {
+  if (!table) return false
+  for (let i = 0; i < token.length - 3; i++) {
+    if (table.map[token.slice(i, i + 4)] !== undefined) return true
+  }
+  return false
+}
+
 export async function initLocalModel(): Promise<boolean> { return getVectors() !== null }
+
+/**
+ * The ONNX / real-local-model seam. Always false: there is no local neural
+ * embedder in the binary — the offline path is the word-vector model above,
+ * which is what `initLocalModel` reports. Kept exported because removing an
+ * export is a contract change other modules may already import, and because a
+ * future real local model plugs in here without touching the fallback chain.
+ */
 export async function initOnnxModel(): Promise<boolean> { return false }
