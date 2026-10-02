@@ -534,7 +534,11 @@ export function ensureSymbolSupertypesColumn(raw: any): void {
     if (cols.length === 0) return // table absent (fresh DB handled by DDL)
     if (cols.includes("super_types")) return
     raw.exec("ALTER TABLE brain_symbol ADD COLUMN super_types TEXT")
- * `brain_symbol.source_text` — the symbol's own body, bounded.
+  } catch {}
+}
+
+/**
+ * M60: `brain_symbol.source_text` — the symbol's own body, bounded.
  *
  * Added because a word that appears ONLY inside a function was unreachable by
  * every retrieval path. `searchContent` selects name/qualified_name/docstring,
