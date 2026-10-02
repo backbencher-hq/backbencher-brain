@@ -96,6 +96,45 @@ function scopeString(scopes: DartScopeEntry[]): string {
 // ANALYZER
 // ============================================================================
 
+/**
+ * The inheritance-closed member set for every type in a `ProjectIndex`, derived ONCE
+ * per index and shared by every file.
+ *
+ * `extractOverrideRelationships` runs per file, so deriving this inside it rebuilds
+ * the whole closure for each file: on ProxiCall/lib with `--dart-deps=direct` that is
+ * 13,846 types re-closed 2,351 times, and the differential stopped completing inside
+ * two hours. Memoised on the index object with a WeakMap, so the cost is paid once per
+ * run and a garbage-collected index takes its companion with it.
+ *
+ * The closure is what makes the two resolution paths agree — see the `exposed` comment
+ * in `extractOverrideRelationships` — so it is the one piece of cross-file state this
+ * analyzer holds, and holding it per-index rather than per-file is the difference
+ * between a lane that runs and a lane that does not.
+ */
+const DARt_COMPANION_CACHE = new WeakMap<object, Map<string, Set<string>>>()
+
+function dartCompanionFor(projectIndex: any): Map<string, Set<string>> | undefined {
+  if (!projectIndex?.typeMembers) return undefined
+  const key = projectIndex as object
+  const hit = DARt_COMPANION_CACHE.get(key)
+  if (hit) return hit
+  const out = new Map<string, Set<string>>()
+  const closure = (t: string, seen: Set<string>): Set<string> => {
+    const cached = out.get(t)
+    if (cached) return cached
+    // A cycle in the type graph must terminate with "nothing known", not hang.
+    if (seen.has(t)) return new Set<string>()
+    seen.add(t)
+    const members = new Set<string>(projectIndex.typeMembers.get(t) ?? [])
+    for (const b of projectIndex.typeBases?.get(t) ?? []) for (const m of closure(b, seen)) members.add(m)
+    out.set(t, members)
+    return members
+  }
+  for (const t of projectIndex.typeKinds?.keys() ?? []) closure(t, new Set())
+  DARt_COMPANION_CACHE.set(key, out)
+  return out
+}
+
 export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
   analyze(
     rootNode: Node,
@@ -1050,21 +1089,8 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
       list.push(s)
       byName.set(s.name, list)
     }
-    let companionForPass2: Map<string, Set<string>> | undefined = overrideCompanion
-    if (!companionForPass2 && projectIndex?.typeMembers) {
-      companionForPass2 = new Map<string, Set<string>>()
-      const closure = (t: string, seen = new Set<string>()): Set<string> => {
-        const cached = (companionForPass2 as Map<string, Set<string>>).get(t)
-        if (cached) return cached
-        if (seen.has(t)) return new Set<string>()
-        seen.add(t)
-        const out = new Set<string>(projectIndex.typeMembers.get(t) ?? [])
-        for (const b of projectIndex.typeBases?.get(t) ?? []) for (const mm of closure(b, seen)) out.add(mm)
-        ;(companionForPass2 as Map<string, Set<string>>).set(t, out)
-        return out
-      }
-      for (const t of projectIndex.typeKinds?.keys() ?? []) closure(t)
-    }
+    const companionForPass2: Map<string, Set<string>> | undefined =
+      overrideCompanion ?? dartCompanionFor(projectIndex)
 
   // DARTD16's cross-file pass is implemented, documented, and — until now —
   // unreachable: `overrideCompanion` is an OPTIONAL context field that no caller in
@@ -1096,10 +1122,70 @@ export class RealDartAnalyzer implements ASTEngine.LanguageAnalyzer {
         if (!firstHeritage.has(r.source)) firstHeritage.set(r.source, r.target)
       }
     }
-    // Base declares the member? In-file by owner, else companion.
+    // BASES ONLY. `heritageByClass` above also collects `uses`, because a read is
+    // evidence that a type is relevant to this file — but it is not a BASE, and
+    // closing the exposure of a class through a `uses` edge would make every type the
+    // file merely mentions into a supertype. The walk keeps using `heritageByClass`
+    // for breadth; this map is what "inherits from" means when the question is
+    // whether a base EXPOSES a member.
+    const basesOf = new Map<string, string[]>()
+    for (const r of relationships) {
+      const type = r.type ?? r.relationshipType ?? ""
+      if (type !== "extends" && type !== "implements") continue
+      if (!r.source || !r.target) continue
+      const list = basesOf.get(r.source) ?? []
+      if (!list.includes(r.target)) list.push(r.target)
+      basesOf.set(r.source, list)
+    }
+
+    // Does this base EXPOSE the member — its own, or one it inherits?
+    //
+    // This is the whole of a defect that survived fifteen commits because every
+    // corpus row that exposed it was read as an oracle bug. The answer CHANGED
+    // depending on whether a project index was supplied:
+    //
+    //   class A { void close() {} }
+    //   class B extends A {}
+    //   class C extends B { @override void close() {} }
+    //
+    // With no index, `declares("B", "close")` looked for a symbol named `close`
+    // OWNED BY B. B has none, so the walk continued to A and published
+    // `C.close->A.close` — a DECLARER answer. With an index the companion's
+    // `allMembers` is inheritance-closed, so B exposes `close` and the same file
+    // published `C.close->B.close` — an EXPOSER answer. The same code, two
+    // different edges, decided by the environment rather than by the language.
+    //
+    // EXPOSER is the right question for `overrides`. The edge names the base whose
+    // INTERFACE the member replaces, and a class that inherits a getter replaces
+    // that getter whether or not it re-declares it. It is also what the companion
+    // path already did, so this makes the two paths agree instead of making the
+    // no-index answer "more correct".
+    //
+    // The oracle reached the same rule independently by closing its own in-file
+    // member sets over inheritance, and the two now agree on the three-deep chain
+    // as well as on the freezed family.
+    const exposedCache = new Map<string, Set<string>>()
+    const exposing = new Set<string>()
+    const exposed = (cls: string): Set<string> => {
+      const cached = exposedCache.get(cls)
+      if (cached) return cached
+      // A cycle in the type graph must terminate with "nothing known", not hang.
+      if (exposing.has(cls)) return new Set<string>()
+      exposing.add(cls)
+      const out = new Set<string>()
+      for (const [name, syms] of byName) if (syms.some((bm) => bm.ownerName === cls)) out.add(name)
+      for (const b of basesOf.get(cls) ?? []) for (const m of exposed(b)) out.add(m)
+      exposing.delete(cls)
+      exposedCache.set(cls, out)
+      return out
+    }
+
+    // Base exposes the member? In-file closure first, then the companion. The
+    // companion is consulted even when the base is declared here, because a base can
+    // expose a member it inherits from a package — which is the freezed case, and the
+    // reason the early return here would have broken it.
     const declares = (base: string, method: string): boolean => {
-      const inFile = byName.get(method)?.some((bm) => bm.ownerName === base) ?? false
-      if (inFile) return true
+      if (exposed(base).has(method)) return true
       const companion = companionForPass2?.get(base)
       return !!companion && companion.has(method)
     }
