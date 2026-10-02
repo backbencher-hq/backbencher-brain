@@ -17499,10 +17499,31 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
   // groovy/csharp/dart style typed params). Empty/unknown -> the language keeps
   // the legacy name-only pairing (never a false negative from a missing sig).
   const extractSig = (m: any): string | undefined => {
-    const container = m.namedChildren.find((c: any) =>
+    // M60/SDJ-21: ALL parameter clauses, not just the first. `find` took the first
+    // matching container, so a scala method's SECOND clause — the `(using C)` or the
+    // second value list — was dropped from the signature entirely, and that clause is
+    // frequently the only place a TYPE VARIABLE appears. The consequence is not a
+    // missing edge but a WRONG REJECTION, and it is the whole of the lane's remaining
+    // UNEXPLAINED population.
+    //
+    // Measured, library/src/scala/collection/BuildFrom.scala. The trait declares
+    // `def fromSpecific(from: From)(it: IterableOnce[A]^)`. Its sig was read as
+    // `(From)`. An anonymous body implements
+    // `def fromSpecific(from: CC[K0, V0])(it: IterableOnce[(K, V)]^)`, read as
+    // `(CC[K0,V0])`. Neither string contains a type variable, so the compat gate
+    // `hasTypeVar(child) || hasTypeVar(parent)` was false and a GENUINE override was
+    // rejected — while the ANALYZER, whose `sigText` collects every clause, saw
+    // `IterableOnce[A]`, correctly detected the type variable, applied the ScalaD-H
+    // name-only pairing and published the edge at confidence 1.0. The two sides were
+    // not disagreeing about the language; one of them was reading half a signature.
+    //
+    // Using every clause changes nothing for a single-clause method, so this is inert
+    // for every other language that reaches it and only affects multi-clause shapes.
+    const containers = m.namedChildren.filter((c: any) =>
       /^(formal_parameters|parameters|parameter_list|parameter_clause|method_parameters|function_value_parameters)$/.test(c?.type ?? ""))
-    if (!container) return undefined
+    if (containers.length === 0) return undefined
     const types: string[] = []
+    for (const container of containers) {
     for (let i = 0; i < container.namedChildCount; i++) {
       const p = container.namedChild(i)
       if (!p) continue
@@ -17518,10 +17539,39 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
       if (!pt && lang === "kotlin" && p.type === "parameter") {
         pt = p.namedChild(p.namedChildCount - 1)
       }
-      if (pt?.text) types.push(pt.text.replace(/\s+/g, ""))
+      // SDJ-21 (oracle half): strip a QUALIFIER exactly as the analyzer's
+      // compactType now does, so a signature written `tpd.Tree` on one side and `Tree`
+      // on the other compares equal. Without this the two sides normalize the same
+      // type differently and the compat gate rejects a real override — measured as
+      // `OptionTSync.suspend -> Sync.suspend` in cats-effect
+      // kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala, which the analyzer
+      // publishes and this side did not. Type ARGUMENTS are kept, for the same reason
+      // as the analyzer half: stripping them too would collapse overloads that differ
+      // only in their arguments. Whitespace removal is a char scan, not a regex, so the
+      // oracle's zero-regex rule holds.
+      if (pt?.text) {
+        let w = ""
+        for (let ci = 0; ci < pt.text.length; ci++) {
+          const cc = pt.text[ci]
+          if (cc === " " || cc === "\t" || cc === "\n" || cc === "\r") continue
+          w += cc
+        }
+        let seg = ""
+        let sawDot = false
+        for (let ci = 0; ci < w.length; ci++) {
+          if (w[ci] === ".") { sawDot = true; seg = ""; continue }
+          seg += w[ci]
+        }
+        types.push(sawDot ? seg : w)
+      }
       else return undefined // untyped parameter form — fall back to name-only
     }
-    return types.length > 0 || container.namedChildCount === 0 ? "(" + types.join(",") + ")" : undefined
+    }
+    // SDJ-21: a parameterless method is a real signature `()`, and the old
+    // single-container form read that as "empty" — so `def f: T` matched nothing.
+    // With every clause collected, "no types" means every clause was empty.
+    const empty = containers.every((c: any) => c.namedChildCount === 0)
+    return types.length > 0 || empty ? "(" + types.join(",") + ")" : undefined
   }
   // ScalaD-E (M37.21 #610, scala3 byname-implicits-13.scala): textual sig
   // comparison is invalid when a param type is a GENERIC TYPE VARIABLE —
