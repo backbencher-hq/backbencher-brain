@@ -12,6 +12,10 @@ export type DetectedLanguage =
   | "csharp" | "vb" | "fsharp" | "r" | "sql"
   | "bash" | "powershell" | "hcl" | "objective-c"
   | "markdown" | "toml" | "xml" | "protobuf" | "make"
+  // The Solidity lane routes `.sol` below (SOL-21). Its absence here meant the route
+  // table could not satisfy its own value type, so `detectLanguageFromPath` returned a
+  // language the union did not admit -- the file was detected and then unrepresentable.
+  | "solidity"
 
 export const EXTENSION_LANGUAGE: Readonly<Record<string, DetectedLanguage>> = {
   ts: "typescript", tsx: "tsx", js: "javascript", cjs: "javascript", mjs: "javascript", jsx: "javascript",
