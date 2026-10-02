@@ -1,29 +1,32 @@
 {
-  "status": "verified",
-  "passed": 14,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 12,
+  "failed": 2,
   "negatives": {
     "planned": 3
   },
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 2,
     "mutantsCaught": 5,
     "mutantsTotal": 5,
     "ok": true
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "e1b996f66c62e22248d8393286438ce67975d9ae",
   "verifierCommand": "npx tsx script/m29/verify-wave-harness.ts",
   "evidenceFile": "V1-verify.json",
-  "generatedAt": "2026-09-20T02:47:11.684Z",
+  "generatedAt": "2026-09-30T06:49:00.925Z",
   "limitations": [
     "W2/W3 execute the runner and drift gates only; the nvim-dependent editor legs (S6) and giant-index legs (R3) are covered by their own verifiers and are out of scope here.",
     "Tamper proofs restore artifacts from a temp backup; a crash mid-tamper could leave a tampered artifact — the drift gate itself would then fail loudly until regenerated.",
     "The wiring proof reads package.json at run time; a chain edit that renames the script keys ('verify', 'verify:fast') would need this gate updated."
   ],
-  "details": [],
+  "details": [
+    "W2: R1 runner gate exits 0 (green): exit=1 ge silently conformant — {\"step\":\"S1-analyzer-conformance\",\"status\":\"blocked\",\"detail\":\"#419 SPEC ledger unreadable at validation/m14/results/M14.0.SPEC.json\"}\n",
+    "W3: restored SPEC makes the runner gate green again: exit=1"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:47:11.685Z",
-    "contentSha256": "b9351a866e587678ccbf6ba79298c6323b5d2397ea301afec8222921e5eacc50"
+    "sealedAt": "2026-09-30T06:49:00.926Z",
+    "contentSha256": "94c6e50bfcf55c6e4863275aef7fb3bbb746ca5f4864536f5fd48588c72850e6"
   }
 }

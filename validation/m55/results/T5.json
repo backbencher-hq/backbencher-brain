@@ -3,8 +3,8 @@
   "code": "T5",
   "milestone": "M55",
   "status": "verified",
-  "checks": 68,
-  "passed": 68,
+  "checks": 74,
+  "passed": 74,
   "failed": 0,
   "realFailed": 0,
   "negativeCases": 7,
@@ -12,14 +12,14 @@
     "total": 7,
     "caught": 7
   },
-  "currentCommit": "9d53dc8f3d900e24276fc2837b1bf8122a0ce70a",
+  "currentCommit": "88aac3d604c94413a9d2969faa50317f5a53626b",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-tiers.ts",
   "evidenceFile": "T5.json",
-  "generatedAt": "2026-09-19T02:54:13.841Z",
+  "generatedAt": "2026-09-30T07:02:13.576Z",
   "fixture": {
-    "workspace": "/tmp/m55-t5-ws-0jpxiI",
-    "projectId": "81a0c8fb0cce542809c489e2ca101f33ee0e66c9",
+    "workspace": "/tmp/m55-t5-ws-nOS7FF",
+    "projectId": "e8f691847b6ed8e8e0f8762ad34e9745027f7fab",
     "symbols": 7,
     "rows": 9
   },
@@ -67,7 +67,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:13.842Z",
-    "contentSha256": "205c22df1d4c110c355430b3ce5deb2b20638f079206b78ada4cccd636bd210a"
+    "sealedAt": "2026-09-30T07:02:13.577Z",
+    "contentSha256": "80199fb3dc18e8c18e9e22b46901be99bc2db8de6aa88799891f6b7383df3450"
   }
 }

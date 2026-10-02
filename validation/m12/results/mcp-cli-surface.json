@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
   "name": "m12.47-mcp-cli-surface",
-  "passed": true,
-  "advertisedLanguages": 41,
-  "corpusFiles": 97,
-  "indexedFiles": 97,
-  "toolCount": 10,
+  "passed": false,
+  "advertisedLanguages": 44,
+  "corpusFiles": 119,
+  "indexedFiles": 119,
+  "toolCount": 16,
   "capabilities": [
     "indexed",
     "queried",
@@ -224,7 +224,7 @@
       "language": "go",
       "file": "go/service.go",
       "symbol": "service",
-      "line": 1,
+      "line": 6,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -242,7 +242,7 @@
       "language": "graphql",
       "file": "graphql/Schema.graphql",
       "symbol": "User",
-      "line": 6,
+      "line": 9,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -295,7 +295,7 @@
     {
       "language": "hcl",
       "file": "hcl/Infrastructure.tf",
-      "symbol": "terraform",
+      "symbol": "Infrastructure",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -313,8 +313,8 @@
     {
       "language": "html",
       "file": "html/Page.html",
-      "symbol": "content",
-      "line": 21,
+      "symbol": "Page",
+      "line": 1,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -366,8 +366,8 @@
     },
     {
       "language": "json",
-      "file": "json/package.json",
-      "symbol": "package",
+      "file": "json/Duplicate.json",
+      "symbol": "Duplicate",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -385,8 +385,8 @@
     {
       "language": "kotlin",
       "file": "kotlin/Models.kt",
-      "symbol": "User",
-      "line": 5,
+      "symbol": "Repository",
+      "line": 7,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -421,8 +421,8 @@
     {
       "language": "make",
       "file": "make/Build.mk",
-      "symbol": "all",
-      "line": 20,
+      "symbol": "HELP",
+      "line": 10,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -440,6 +440,24 @@
       "language": "markdown",
       "file": "markdown/Changelog.md",
       "symbol": "Changelog",
+      "line": 1,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": true,
+        "edited": true,
+        "cli": true,
+        "mcp": true
+      },
+      "errors": []
+    },
+    {
+      "language": "nim",
+      "file": "nim/helpers.nim",
+      "symbol": "helper",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -600,9 +618,27 @@
     },
     {
       "language": "scala",
-      "file": "scala/Models.scala",
-      "symbol": "Point",
+      "file": "scala/BaseService.scala",
+      "symbol": "BaseService",
       "line": 3,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": true,
+        "edited": true,
+        "cli": true,
+        "mcp": true
+      },
+      "errors": []
+    },
+    {
+      "language": "scss",
+      "file": "scss/Theme.scss",
+      "symbol": "t",
+      "line": 1,
       "capabilities": {
         "indexed": true,
         "queried": true,
@@ -636,8 +672,8 @@
     },
     {
       "language": "svelte",
-      "file": "svelte/Card.svelte",
-      "symbol": "Card",
+      "file": "svelte/Button.svelte",
+      "symbol": "Button",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -671,6 +707,24 @@
       "errors": []
     },
     {
+      "language": "toml",
+      "file": "toml/Page.toml",
+      "symbol": "Page",
+      "line": 1,
+      "capabilities": {
+        "indexed": true,
+        "queried": true,
+        "analyzed": true,
+        "documented": true,
+        "migrated": true,
+        "visualized": true,
+        "edited": true,
+        "cli": true,
+        "mcp": true
+      },
+      "errors": []
+    },
+    {
       "language": "typescript",
       "file": "typescript/base.ts",
       "symbol": "Repository",
@@ -690,8 +744,8 @@
     },
     {
       "language": "vue",
-      "file": "vue/Button.vue",
-      "symbol": "Button",
+      "file": "vue/App.vue",
+      "symbol": "App",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -708,7 +762,7 @@
     },
     {
       "language": "xml",
-      "file": "xml/Doctype.xml",
+      "file": "xml/DtdDeclarations.xml",
       "symbol": "catalog",
       "line": 2,
       "capabilities": {
@@ -727,7 +781,7 @@
     {
       "language": "yaml",
       "file": "yaml/Flow.yml",
-      "symbol": "config",
+      "symbol": "Flow",
       "line": 1,
       "capabilities": {
         "indexed": true,
@@ -744,8 +798,8 @@
     },
     {
       "language": "zig",
-      "file": "zig/geometry.zig",
-      "symbol": "Point",
+      "file": "zig/storage.zig",
+      "symbol": "RingBuffer",
       "line": 9,
       "capabilities": {
         "indexed": true,
@@ -760,10 +814,5 @@
       },
       "errors": []
     }
-  ],
-  "bbSeal": {
-    "alg": "sha256",
-    "sealedAt": "2026-09-14T23:42:47.940Z",
-    "contentSha256": "d50de0a5736ed2a5503f0c3452db46de2b2cebec148ae161e3aedbb2bb64d0cf"
-  }
+  ]
 }

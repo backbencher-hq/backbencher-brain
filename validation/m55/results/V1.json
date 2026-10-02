@@ -3,31 +3,36 @@
   "code": "V1",
   "milestone": "M55",
   "status": "verified",
-  "checks": 94,
-  "passed": 94,
+  "checks": 55,
+  "passed": 55,
   "failed": 0,
   "realFailed": 0,
-  "negativeCases": 17,
+  "negativeCases": 14,
   "mutants": {
-    "total": 17,
-    "caught": 17
+    "total": 14,
+    "caught": 14
   },
-  "currentCommit": "0a613abadfafecb33045b6f66c41f49a29c45fd0",
+  "currentCommit": "a12e8e3430ebf9a047436246231bdab69bde2c3c",
   "workingTreeRelevantChanges": [],
   "verifierCommand": "npx tsx script/m55/verify-live-surface.ts",
   "evidenceFile": "V1.json",
-  "generatedAt": "2026-09-19T02:54:51.032Z",
+  "generatedAt": "2026-09-30T06:22:55.856Z",
   "live": {
     "fixture": "$HOME/bb-demo-hub",
-    "fixturePresent": true,
-    "rigAvailable": true,
-    "rigMissing": [],
-    "captureRun": "live-22",
+    "fixturePresent": false,
+    "rigAvailable": false,
+    "rigMissing": [
+      "Xvfb (display tooling)",
+      "xdotool (display tooling)",
+      "import (display tooling)",
+      "declared fixture workspace ($HOME/bb-demo-hub)"
+    ],
+    "captureRun": "owner-test-2026-09-21",
     "probeFile": "validation/m55/results/V1-probe.json",
-    "probeStatus": "read",
+    "probeStatus": "blocked",
     "blockedPathProof": "validation/m55/results/V1-blocked-path.json",
     "blockedPathStatus": "blocked",
-    "blockedPathReason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
+    "blockedPathReason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), declared fixture workspace ($HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent)"
   },
   "frameFacts": {
     "base:stats": {
@@ -39,9 +44,9 @@
         19,
         20
       ],
-      "textPixels": 3066,
-      "textFraction": 0.0015,
-      "textRows": 19
+      "textPixels": 18421,
+      "textFraction": 0.0089,
+      "textRows": 36
     },
     "hover-declaration:stats": {
       "ok": true,
@@ -52,9 +57,9 @@
         19,
         20
       ],
-      "textPixels": 6588,
-      "textFraction": 0.0032,
-      "textRows": 20
+      "textPixels": 7948,
+      "textFraction": 0.0038,
+      "textRows": 23
     },
     "open-in-graph:stats": {
       "ok": true,
@@ -71,13 +76,13 @@
     },
     "hover:diff": {
       "ok": true,
-      "changedPixels": 161577,
-      "changedFraction": 0.0779,
+      "changedPixels": 328655,
+      "changedFraction": 0.1585,
       "box": [
-        418,
+        348,
         30,
-        640,
-        309
+        1541,
+        1046
       ]
     },
     "hub:panel": {
@@ -143,13 +148,13 @@
     },
     "ctor-hover:diff": {
       "ok": true,
-      "changedPixels": 115466,
-      "changedFraction": 0.0557,
+      "changedPixels": 176585,
+      "changedFraction": 0.0852,
       "box": [
         377,
-        12,
-        1243,
-        1061
+        30,
+        1536,
+        1043
       ]
     },
     "R2: the graph opened from the constructor is its own surface (T1 U5 — the relabel was SILENT, so the two cases must not render identically)": {
@@ -178,7 +183,7 @@
     },
     "ch-click:editor-diff": {
       "ok": true,
-      "changedPixels": 123348,
+      "changedPixels": 123347,
       "changedFraction": 0.3506,
       "box": [
         0,
@@ -189,7 +194,7 @@
     },
     "ch-click:navigation": {
       "ok": true,
-      "changedPixels": 123348,
+      "changedPixels": 123347,
       "changedFraction": 0.3506,
       "box": [
         0,
@@ -200,8 +205,8 @@
     },
     "ch-click:whole-diff": {
       "ok": true,
-      "changedPixels": 466518,
-      "changedFraction": 0.225,
+      "changedPixels": 467083,
+      "changedFraction": 0.2253,
       "box": [
         48,
         35,
@@ -224,13 +229,13 @@
     },
     "zero-usage:diff": {
       "ok": true,
-      "changedPixels": 213238,
-      "changedFraction": 0.1028,
+      "changedPixels": 271802,
+      "changedFraction": 0.1311,
       "box": [
         377,
-        12,
-        1243,
-        1061
+        30,
+        1536,
+        1043
       ]
     }
   },
@@ -305,7 +310,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:51.032Z",
-    "contentSha256": "f897e9d1016d68f1dfc2d3bd43cc8c5642fa302f207d003c5528801bf42a466a"
+    "sealedAt": "2026-09-30T06:22:55.857Z",
+    "contentSha256": "fbf5ec3aca194d5587e918e4a147f14a91f530400833551d0597e6517dcb731f"
   }
 }

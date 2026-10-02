@@ -2,13 +2,15 @@
   "issue": "649",
   "code": "H1",
   "milestone": "M42",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 15,
-  "passed": 15,
-  "failed": 0,
-  "failures": [],
+  "passed": 14,
+  "failed": 1,
+  "failures": [
+    "H1/R5: warm p95 budget <= 25ms (mean over 40 steady-state calls): 27.31ms/call"
+  ],
   "verdict": {
-    "realComponentFailures": 0,
+    "realComponentFailures": 1,
     "mutantsCaught": 4,
     "mutantsTotal": 4,
     "ok": true
@@ -17,7 +19,7 @@
     "planned": 4
   },
   "fixture": {
-    "root": "$HOME/backbencher-brain/.tools/m42-h1-fixture",
+    "root": "$HOME/mcp/backbencher-brain/.tools/m42-h1-fixture",
     "file": "src/main/java/com/demo/Highlight.java",
     "expectations": {
       "declarationLine": 5,
@@ -40,17 +42,17 @@
   "budgets": {
     "highlightP95Ms": 25
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "e1b996f66c62e22248d8393286438ce67975d9ae",
   "verifierCommand": "npx tsx script/m42/verify-highlight.ts",
   "evidenceFile": "H1.json",
-  "generatedAt": "2026-09-20T02:50:16.904Z",
+  "generatedAt": "2026-09-30T06:50:58.637Z",
   "limitations": [
     "Warm-budget check uses mean-over-40 as a p95 proxy; the full E5 editor leg re-measures with the shared harness.",
     "Editor-leg (DocumentHighlight rendering + wake-up path) is asserted in the E5-pattern session at H1 acceptance; this file proves the server surface."
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:50:16.905Z",
-    "contentSha256": "a915300ce90575c3c4d778d6f3eec7d2d54487e28fecd5a7e95f7ca66aaf8b83"
+    "sealedAt": "2026-09-30T06:50:58.637Z",
+    "contentSha256": "e272acca44c8da453204885ba8524daf987f075439dec28217f2ecc05fae6287"
   }
 }

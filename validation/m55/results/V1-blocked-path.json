@@ -8,7 +8,7 @@
   },
   "editor": {
     "binary": "/usr/bin/code",
-    "version": "1.138.0",
+    "version": "1.139.1",
     "pinnedDeclared": "1.85.0 (.vscode-test)",
     "pinHonored": false
   },
@@ -19,17 +19,17 @@
     "bundleSha256": ""
   },
   "fixture": {
-    "workspace": "$HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
+    "workspace": "$HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent",
     "present": false,
     "contentHash": null,
     "indexedProjectDir": null
   },
   "flows": [],
-  "generatedAt": "2026-09-19T02:54:50.747Z",
-  "reason": "rig prerequisites absent: declared fixture workspace ($HOME/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
+  "generatedAt": "2026-09-30T06:22:53.758Z",
+  "reason": "rig prerequisites absent: Xvfb (display tooling), xdotool (display tooling), import (display tooling), declared fixture workspace ($HOME/mcp/backbencher-brain/validation/m55/.blocked-path-fixture-absent)",
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-19T02:54:50.953Z",
-    "contentSha256": "efd2cd3548e00073c0ae7d43d29a8353bede9b9f097332aa87a1713f08e3659a"
+    "sealedAt": "2026-09-30T06:22:55.395Z",
+    "contentSha256": "4a511c6fa298f286f13ab27918a628149d6c6b3d32eb5e8df978628e679ab0fc"
   }
 }
