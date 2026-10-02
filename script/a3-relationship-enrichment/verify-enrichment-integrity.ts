@@ -397,6 +397,68 @@ try {
     )
   }
 
+  // ── G9: the no-op filter must not MASK a merge that drops a key ──────────
+  // Regression guard with teeth, and the reason lives here rather than only in
+  // script/m59. The filter originally compared the ENRICHMENT-OWNED keys only,
+  // so a merge that dropped a non-enrichment key (`{ ...existing }` → `{}`,
+  // the #865 wholesale-write mutant) looked like a no-op and was skipped — the
+  // write never happened, so the analyzer keys were never destroyed, so the
+  // mutant became indistinguishable from the real pass and m59 item 4 dropped
+  // 12/12 → 11/12. Comparing the WHOLE merged object fixes it. This check
+  // convicts the enrichment-subset comparison if it ever comes back.
+  {
+    const { pid, raw } = await fixture("merge", (db, p) => {
+      insFile(db, p, `${p}:f`, "src/a.ts")
+      insSymbol(db, p, `${p}:s`, `${p}:f`, "s", "function")
+      insSymbol(db, p, `${p}:t`, `${p}:f`, "t", "function")
+      insRel(db, p, "m1", `${p}:s`, `${p}:t`, "calls", { metadata: JSON.stringify({ evidenceClass: "structural", keep: "me" }) })
+    })
+    // Real pass first: the row now carries BOTH analyzer and enrichment keys.
+    await enrichRelationships(pid as any)
+    const merged = metaOf(raw, pid, "m1")
+    check(
+      "G9a: the real pass merges analyzer keys alongside enrichment keys",
+      merged?.evidenceClass === "structural" && merged?.keep === "me" && typeof merged?.inferredAt === "number",
+      JSON.stringify(merged),
+    )
+
+    const { readFileSync, writeFileSync } = await import("node:fs")
+    const real = readFileSync(path.join(ROOT, "src/brain/brain-relationship-enrichment.ts"), "utf8")
+    const SITE = "const meta: any = { ...existing }"
+    const sites = real.split(SITE).length - 1
+    let caught = false
+    let detail = ""
+    try {
+      if (sites !== 1) throw new Error(`mutation site not unique: ${sites} occurrences of \`${SITE}\``)
+      const mutantPath = path.join(ROOT, "src/brain", `.a3-merge-mutant-${Date.now()}.ts`)
+      try {
+        // The #865 wholesale-write mutation, verbatim.
+        writeFileSync(mutantPath, real.replace(SITE, "const meta: any = {} // MUTANT: wholesale write"))
+        const mutant: any = await import(mutantPath)
+        const m = await fixture("mergemut", (db, p) => {
+          insFile(db, p, `${p}:f`, "src/a.ts")
+          insSymbol(db, p, `${p}:s`, `${p}:f`, "s", "function")
+          insSymbol(db, p, `${p}:t`, `${p}:f`, "t", "function")
+          insRel(db, p, "m1", `${p}:s`, `${p}:t`, "calls", { metadata: JSON.stringify({ evidenceClass: "structural", keep: "me" }) })
+        })
+        await mutant.enrichRelationships(m.pid as any)
+        const after = metaOf(m.raw, m.pid, "m1")
+        const destroyed = after?.evidenceClass === undefined && after?.keep === undefined
+        detail = `wholesale-write mutant left the row as ${JSON.stringify(after)}`
+        caught = destroyed
+      } finally {
+        try { rmSync(mutantPath, { force: true }) } catch {}
+      }
+    } catch (e: any) {
+      detail = `mutation could not be executed: ${e.message}`
+    }
+    check(
+      "G9b: the no-op filter does NOT skip a merge that drops an analyzer key (RED/GREEN)",
+      caught,
+      `${detail} — if this says the analyzer keys SURVIVED the wholesale write, the filter is comparing only the enrichment-owned keys again and #865's mutation gate is disarmed`,
+    )
+  }
+
   // ── LANE: the three questions asked again, as hard direct claims ─────────
   // Not a re-run of G1–G8: each of these is a whole-table equality over a graph
   // that ALREADY contains dangling edges, which is the case that matters — the
