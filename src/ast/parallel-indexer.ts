@@ -1569,12 +1569,27 @@ export async function processWithWorkerPool(
         }
       }
 
-      worker.stderr?.on("data", (data: Buffer) => {
-        process.stderr.write(`[WORKER-ERR] ${data.toString()}`)
-      })
-      worker.stdout?.on("data", (data: Buffer) => {
-        process.stderr.write(`[WORKER-OUT] ${data.toString()}`)
-      })
+      // Worker stdout/stderr is piped (never inherited), so something has to drain it
+      // or a chatty child fills the pipe buffer and deadlocks. But echoing every
+      // line verbatim turned routine INFO logging from N workers into a wall of
+      // `[WORKER-ERR] [INFO] [ast-engine] tree-sitter core initialized` noise
+      // that buried the progress line users actually read.
+      //
+      // So: drain always (required), echo only when explicitly asked, and treat
+      // the child's stderr as diagnostics rather than errors — a worker writing
+      // to stderr is normal, not a failure.
+      const echoWorkerOutput = process.env.BB_WORKER_ECHO === "1"
+      const relayWorker = (tag: string) => (data: Buffer) => {
+        if (!echoWorkerOutput) return
+        // Buffer partial lines: a single chunk can split mid-line and produce
+        // ragged, doubled output.
+        const text = data.toString()
+        for (const line of text.split("\n")) {
+          if (line.trim().length > 0) process.stderr.write(`[${tag}] ${line}\n`)
+        }
+      }
+      worker.stderr?.on("data", relayWorker("worker"))
+      worker.stdout?.on("data", relayWorker("worker-out"))
 
       worker.on("message", (msg: any) => {
         try {
@@ -5348,7 +5363,16 @@ export async function runPostProcessing(
       _log.log("  Enriching relationships with architectural context...")
       _t = Date.now()
       const enrichResult = await enrichRelationships(projectId, (step: string, pct: number) => {
-        _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+        // `\r` + erase-code only rewrites a line on a real terminal. Written to a
+        // pipe or log file it emits one unerasable fragment per step — the
+        // "Enriching: reading 0%[KEnriching: counting 0%[K..." smear. Off a TTY,
+        // report only at meaningful milestones so the log stays readable.
+        const isTTY = Boolean(process.stderr.isTTY)
+        if (isTTY) {
+          _log.write(`\r  Enriching: ${step} ${pct}%\x1b[K`)
+        } else if (pct === 100 || pct % 25 === 0) {
+          _log.write(`  enriching ${step} ${pct}%\n`)
+        }
       })
       recordPhase("enrichment", Date.now() - _t, "ok")
       _log.log(`  ✅ Enriched ${enrichResult.enriched.toLocaleString()} relationships (${enrichResult.patternsFound.toLocaleString()} patterns) in ${Date.now()-_t}ms`)
