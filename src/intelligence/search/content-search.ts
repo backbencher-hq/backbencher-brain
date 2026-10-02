@@ -266,7 +266,7 @@ async function searchContentClassic(
 
   const corpus = raw.prepare(
     "SELECT s.id, s.file_id AS fileId, s.name, s.qualified_name AS qualifiedName, " +
-      "s.docstring, s.source_text AS sourceText, s.symbol_type AS symbolType, " +
+      "s.docstring, s.symbol_type AS symbolType, " +
       "COALESCE(s.line_start, 0) AS line, COALESCE(s.line_end, 0) AS lineEnd, " +
       "COALESCE(s.complexity, 0) AS complexity, " +
       "f.relative_path AS relativePath, f.path AS filePath, " +
@@ -349,6 +349,17 @@ async function searchContentBounded(
   const pageBudget = offset + maxResults
   const cap = phaseCap(pageBudget)
   let truncated = false
+
+  // Phases 1-3 are NOT gated on the page already being full.
+  //
+  // They used to be, and that made recall a function of the page size: a symbol
+  // reachable only by a docstring or qualified-name match was in the answer for
+  // limit=200 and absent for limit=15, because the exact-name phase alone
+  // filled the 15-slot budget. Measured on phpunit, the substring set lost 995
+  // of 7,256 matches this way — the same 15-row answer that a caller would
+  // trust as complete. The phases are bounded by `cap`, which is what actually
+  // bounds the work, so gating them bought nothing and cost recall.
+  const needed = () => byId.size < pageBudget
 
   // 1. exact name (indexed via the NOCASE index).
   bump(selectJoined(raw, projectId, "s.name = ? COLLATE NOCASE" + idFilterSql, [trimmed, ...idFilterParams]), 3)
