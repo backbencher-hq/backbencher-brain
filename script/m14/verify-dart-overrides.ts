@@ -118,12 +118,25 @@ class Real extends PlainBase { @override String build() => 'x'; }`,
     why: "The negative control for the gate above: `Cubit` is not in this file, so there is NO evidence against the claim and the fallback must still fire at its reduced confidence.",
   },
   {
-    label: "an unannotated external member is not claimed",
+    label: "an unannotated external member: oracle has evidence, analyzer does not here",
     src: `class C extends Cubit { void close() {} }`,
     companion: M({ Cubit: ["close"] }),
-    expectTruth: [],
+    // BOTH sides publish this, and that is the correction. I asserted the oracle
+    // should claim nothing without `@override` — and the analyzer published it, so the
+    // row read as a disagreement about a fact both sides agreed on. `@override` is
+    // OPTIONAL in Dart (`annotate_overrides` is a lint), so a member of a class whose
+    // base the companion knows DOES override, annotated or not. Measured on
+    // `Request._checkFinalized -> BaseRequest._checkFinalized` in dart-http, which
+    // carries no annotation at all.
+    expectTruth: ["C.close->Cubit.close"],
+    // The analyzer publishes NOTHING here, and that is correct: this battery gives it
+    // no `projectIndex`, so it has no companion, and with no companion the only pass
+    // left is the 0.8 first-parent fallback, which IS annotation-gated. The lane
+    // supplies the index, and there the two agree. Asserting the analyzer publishes
+    // this would be asserting a reach difference away, which is how the previous
+    // version of this case came to demand the wrong thing from the oracle.
     expectAnalyzer: [],
-    why: "The `@override` gate on the external pass. Without it the oracle claimed every generated override — 81 `X.props -> Equatable.props` rows the analyzer correctly does not publish, since an unannotated member of a class whose base is in another repository cannot be proven to override anything from this file alone.",
+    why: "The companion pass is NOT annotation-gated: a companion-verified match is evidence, not a guess. `@override` belongs to the FALLBACK only, where there is no evidence either way. I had the gate on the wrong pass, and the error was invisible because the case was asserted against the side that had less information.",
   },
   {
     label: "a generic supertype is still a supertype",
@@ -138,9 +151,22 @@ class Real extends PlainBase { @override String build() => 'x'; }`,
     src: `class A { void close() {} }
 class B extends A {}
 class C extends B { @override void close() {} }`,
-    expectTruth: ["C.close->A.close"],
-    expectAnalyzer: ["C.close->A.close"],
-    why: "The walk must go through an intermediate that declares nothing, which is the in-file twin of the breadth case above. The old queue-append implementation also had an infinite loop here when a supertype matched no declaration.",
+    // B, NOT A. I wrote this expecting `C.close->A.close` — the base that DECLARES
+    // `close` — and the analyzer produced exactly that, because without an index its
+    // `declares()` looked for a symbol named `close` OWNED BY B and B has none. With a
+    // project index the same file produced `C.close->B.close`, because the companion's
+    // `allMembers` is inheritance-closed and B exposes `close`. Same code, two
+    // answers, decided by the environment.
+    //
+    // B is right. The edge names the base whose INTERFACE the member replaces, and B
+    // replaces A's `close` whether or not B re-declares it. The no-index answer was
+    // "more precise about who wrote it" and less correct about what the edge means, and
+    // it disagreed with the companion path on identical input. `declares()` is now
+    // inheritance-closed so both paths ask the EXPOSER question, which is also what
+    // `ProjectIndex.allMembers` computes and what the oracle reaches independently.
+    expectTruth: ["C.close->B.close"],
+    expectAnalyzer: ["C.close->B.close"],
+    why: "The walk passes through an intermediate that DECLARES nothing but EXPOSES the member, and the edge belongs to the intermediate. This is the in-file twin of the breadth case, and the case that proved the two resolution paths could disagree on the same file.",
   },
   {
     label: "containment: a const constructor is a member",
