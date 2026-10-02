@@ -1034,6 +1034,14 @@ export class RealHtmlAnalyzer implements ASTEngine.LanguageAnalyzer {
             }
           }
           if (tagName === "input") {
+            // The five literals below are HTML input-type ATTRIBUTE VALUES, not
+            // parse-tree node types, so the grammar audit correctly reports that the
+            // grammar declares no node by any of those names — and this branch is
+            // LIVE, not dead. `type` is a lowercased attribute string
+            // (`<input type="hidden">`), so the comparison is doing exactly what it
+            // says. It is waived in grammar-audit-allowlist.json with that
+            // justification rather than "fixed", because there is nothing to fix and
+            // renaming the comparison to dodge the scanner would only hide the shape.
             const type = asciiLower(attrs["type"] ?? "text")
             if (type !== "hidden" && type !== "submit" && type !== "button" && type !== "reset" && type !== "image") {
               counters.inputWithoutLabel++

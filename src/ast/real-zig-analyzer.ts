@@ -643,9 +643,14 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
         // fabricated `contains` edges in one file). An unnamed field has no name
         // to publish, and a symbol named `usize` is a fabrication, so the field
         // is read only when it is an identifier and the search is the fallback.
+        // `field_identifier` was removed here rather than waived: the grammar audit
+        // validated it against the real tree-sitter-zig wasm and the grammar declares
+        // no such node, so that half of the condition could never be true and the
+        // `identifier` half is the only one that ever ran. A second spelling of a node
+        // that does not exist is a guess that reads as a fallback.
         const nameField = node.childForFieldName?.("name")
         const nameNode =
-          nameField && (nameField.type === "identifier" || nameField.type === "field_identifier")
+          nameField && nameField.type === "identifier"
             ? nameField
             : this.anyChild(node, (n) => n.type === "identifier")
         const fieldName = nameNode ? nameNode.text : ""
@@ -1214,7 +1219,10 @@ export class RealZigAnalyzer implements ASTEngine.LanguageAnalyzer {
           push(enclosingName(n), String(callee.text), this.nodeLine(callee) ?? 0, { isGenericTypeApplication: true })
         }
       }
-      if (n.type === "struct_initializer" || n.type === "struct_literal") {
+      // `struct_literal` removed for the same reason as `field_identifier` above:
+      // the pinned zig grammar declares no such node, so the second disjunct was
+      // dead. `struct_initializer` is the real spelling.
+      if (n.type === "struct_initializer") {
         const first = n.namedChildCount > 0 ? n.namedChild(0) : null
         if (first) {
           const raw = String(first.text ?? "")
