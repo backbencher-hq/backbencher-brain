@@ -446,6 +446,39 @@ export interface ParallelIndexingStats {
      *  measurement `derivedPass` is not, and it is what decides whether the
      *  remediation is `bb index --post`. */
     unresolvedRelationships?: number
+    /** What happened to embeddings during this run.
+     *
+     *  Embeddings are produced AFTER parsing, in the background, by a drainer
+     *  that can fail long after the parse phase reported success. Those outcomes
+     *  were accumulated in `backgroundEmbedMetrics` and read NOWHERE — not by the
+     *  summary, not by the CLI — so a run could lose every vector and still print
+     *  "✓ indexed N files".
+     *
+     *  `embedded` counts vectors actually stored. `failed` includes vectors the
+     *  provider returned but which were unusable (empty, non-array, or holding a
+     *  non-finite component); those are a different fault from a short result and
+     *  are worth separating when triaging. */
+    embedOutcome?: {
+      queued: number
+      embedded: number
+      failed: number
+      skipped: number
+      dropped: number
+      /** Vectors that arrived malformed and were discarded at the write boundary. */
+      invalid: number
+    }
+    /** Distinct embedding models present in the index after this run.
+     *
+     *  More than one means the index is MIXED: when the provider dies mid-run
+     *  some chunks are written under the API model and the rest under the local
+     *  one. That is measured, not hypothetical — 100 rows `mock-1536d`/1536
+     *  alongside 160 rows `local-word-vectors-v3`/50 in a single index.
+     *
+     *  It matters because `bb_ask` reads the index under ONE model label, so the
+     *  other model's vectors become invisible with nothing on screen saying so.
+     *  Reported rather than prevented: each vector is valid for its own model,
+     *  so per-vector validation cannot stop this. */
+    embedModels?: Array<{ model: string; dimension: number; count: number }>
     /** How the files were parsed: `worker-pool` or `in-process`.
      *
      *  When the pool's fork test fails the run degrades to in-process parsing and
@@ -1893,10 +1926,51 @@ function withTimeout<T>(p: Promise<T> | T, ms: number, msg: string): Promise<T> 
   })
 }
 
+/**
+ * Which embedding models does this index actually hold?
+ *
+ * A mixed-model index is producible in a single run: when the provider dies
+ * partway, earlier chunks were written under the API model and later ones under
+ * the local fallback. Measured: 100 rows `mock-1536d`/1536 alongside 160 rows
+ * `local-word-vectors-v3`/50 in one index.
+ *
+ * This is not prevented, because each vector is individually valid for its own
+ * model — a per-vector check cannot detect a cross-vector inconsistency. It is
+ * MEASURED and reported instead, because `bb_ask` reads the index under a single
+ * model label: the other model's vectors stop being found, and without this
+ * number nothing on screen says why results got worse.
+ */
+export async function surveyEmbeddingModels(
+  projectId: ProjectID,
+): Promise<Array<{ model: string; dimension: number; count: number }>> {
+  try {
+    const raw = await BrainDatabase.getRawInstance(projectId)
+    return raw
+      .prepare(
+        `SELECT embedding_model AS model, vector_dimension AS dimension, COUNT(*) AS count
+         FROM brain_semantic_embedding
+         WHERE project_id = ?
+         GROUP BY embedding_model, vector_dimension
+         ORDER BY count DESC`,
+      )
+      .all(projectId) as Array<{ model: string; dimension: number; count: number }>
+  } catch (e: any) {
+    log.warn("could not survey embedding models", { error: e?.message })
+    return []
+  }
+}
+
 export const backgroundEmbedMetrics = {
   // M40.A9: verifier-only observability for the background queue (read by
   // script/m21 gates). Product code consumes queue state via DB rows, not
   // this counter object. Keep exported; do not call from product paths.
+  //
+  // CORRECTION (launch-readiness): that "verifier-only" framing is why a run
+  // could fail to embed every vector and still print "✓ indexed N files" —
+  // these numbers were accumulated and read by nothing a user sees. They are
+  // now copied onto the run summary (`summary.embedOutcome`) and printed by
+  // the CLI, because an embedding outage that is invisible is indistinguishable
+  // from an index that succeeded.
   /** Items accepted into the queue (cap-permitting). */
   queued: 0,
   /** Items dropped because the queue cap or batch limit was hit. */
@@ -1907,6 +1981,12 @@ export const backgroundEmbedMetrics = {
   fallback: 0,
   /** Items whose provider attempt AND fallback both failed. */
   failed: 0,
+  /** Vectors the provider RETURNED that were unusable and were discarded at the
+   *  write boundary: empty, not an array, or containing a non-finite component.
+   *  A distinct fault from `failed` (which is "nothing came back") because the
+   *  cause and the fix differ — this one points at a malformed provider response
+   *  or a corrupt upstream, not at connectivity. */
+  invalid: 0,
   /** Jobs skipped entirely because the project/db was removed. */
   skipped: 0,
 }
@@ -2059,6 +2139,11 @@ async function drainBackgroundEmbeddings() {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `)
           let missingInChunk = 0
+          // Vectors that ARRIVED but are unusable (empty, non-array, or holding
+          // a non-finite component). Counted separately from `missing` so a
+          // malformed-provider response is distinguishable from a short result —
+          // they have different causes and different fixes.
+          let invalidInChunk = 0
           const txEmbed = rawDb.transaction((rows: any) => {
             for (let k = 0; k < rows.length; k++) {
               const item = chunk[k]
@@ -2068,6 +2153,39 @@ async function drainBackgroundEmbeddings() {
               // silently skipped. Counts are applied AFTER the transaction
               // commits so a rolled-back batch is never counted as embedded.
               if (!vec) { missingInChunk++; continue }
+              // Validate the vector before it becomes a stored claim.
+              //
+              // `vector_dimension` is written as `vec.length`, so a malformed
+              // vector records a dimension that describes itself — the row then
+              // looks internally consistent while the bytes are wrong. Nothing
+              // downstream re-derives the true length, and the read path admits
+              // a blob only at the exact byte length, so a bad vector surfaces
+              // much later as a silently missing row rather than at the write.
+              //
+              // Co-agent 2 measured the cause: when the provider dies mid-run
+              // some chunks are written under the API model and some under
+              // `local-word-vectors-v3`, so ONE index can hold vectors of
+              // different dimensions and different vector spaces. Per-vector
+              // validation cannot prevent that (each vector is valid for its own
+              // model); it prevents the corrupt-vector case, which it can.
+              if (!Array.isArray(vec) || vec.length === 0) {
+                invalidInChunk++
+                continue
+              }
+              // A non-finite component makes every downstream cosine NaN, which
+              // the read path filters — so the vector silently disappears from
+              // results while the row claims a dimension.
+              let hasNonFinite = false
+              for (let j = 0; j < vec.length; j++) {
+                if (typeof vec[j] !== "number" || !Number.isFinite(vec[j])) {
+                  hasNonFinite = true
+                  break
+                }
+              }
+              if (hasNonFinite) {
+                invalidInChunk++
+                continue
+              }
               const contentHash = createHash("sha256").update(item.snippet).digest("hex")
               insertEmbed.run(
                 `${item.symbolId}:embed`,
@@ -2091,8 +2209,19 @@ async function drainBackgroundEmbeddings() {
           })
           try {
             txEmbed(chunk)
-            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk
-            backgroundEmbedMetrics.failed += missingInChunk
+            // `embedded` must count only vectors actually stored. Skipping
+            // invalidInChunk here would report a corrupt vector as a success,
+            // and the index would claim coverage it does not have.
+            backgroundEmbedMetrics.embedded += chunk.length - missingInChunk - invalidInChunk
+            backgroundEmbedMetrics.failed += missingInChunk + invalidInChunk
+            if (invalidInChunk > 0) {
+              backgroundEmbedMetrics.invalid += invalidInChunk
+              log.warn("discarded malformed embedding vectors", {
+                projectId: job.projectId,
+                count: invalidInChunk,
+                model: modelLabel,
+              })
+            }
             accounted += chunk.length
           } catch (txErr: any) {
             // Transaction rolled back: nothing durable was written for this
@@ -4550,6 +4679,11 @@ export async function indexProjectParallel(
         // the one that can carry a previous run's unfinished work. Measured 16 on
         // a cancel-then-resume, and 0 after `bb index --post`.
         unresolvedRelationships: await measureUnresolvedRelationships(projectId),
+        // Embedding state is reported on EVERY summary, including this no-op
+        // path: an index that already holds a MIX of models still does after a
+        // run that parses nothing, and that is exactly the condition a user
+        // needs told about.
+        embedModels: await surveyEmbeddingModels(projectId),
         // Nothing was parsed, so there was no parse mode to choose. Declared
         // rather than left undefined so "no parse ran" is a value and not a gap.
         parseMode: "worker-pool",
@@ -5150,6 +5284,18 @@ export async function indexProjectParallel(
     // as handed back rather than the pass that produced it.
     if (stats.summary) {
       stats.summary.unresolvedRelationships = await measureUnresolvedRelationships(projectId)
+      // Measured here, after the derived pass, because that is when the final
+      // vector population is known. A provider that died mid-run leaves the
+      // index holding two models, and the search path will read it with one.
+      stats.summary.embedModels = await surveyEmbeddingModels(projectId)
+      stats.summary.embedOutcome = {
+        queued: backgroundEmbedMetrics.queued,
+        embedded: backgroundEmbedMetrics.embedded,
+        failed: backgroundEmbedMetrics.failed,
+        skipped: backgroundEmbedMetrics.skipped,
+        dropped: backgroundEmbedMetrics.dropped,
+        invalid: backgroundEmbedMetrics.invalid,
+      }
     }
 
     Bus.publishSafe(BrainService.Event.IndexingCompleted, {

@@ -306,6 +306,38 @@ async function cmdIndex(
     console.log(`✓ indexed ${files} files, ${symbols} symbols, ${rels} relationships, ${emb} embeddings in ${secs}s`)
   }
   console.log(`  stats: ${JSON.stringify({ totalFiles: stats.totalFiles, processed: stats.processedFiles, errors: stats.errorFiles })}`)
+  // Embedding outcomes and the models present in the index.
+  //
+  // Embeddings are produced after parsing, in the background, so a provider
+  // outage can zero them out while every number above still reads clean. These
+  // counters were accumulated and printed nowhere, so "search returns nothing
+  // useful" had no visible cause. Likewise a MIXED-model index: when the
+  // provider dies partway, earlier chunks keep the API model and later ones get
+  // the local fallback, and `bb_ask` reads the index under a single label — so
+  // part of the index silently stops being searched.
+  const embOutcome = stats.summary?.embedOutcome
+  if (embOutcome && (embOutcome.failed > 0 || embOutcome.invalid > 0 || embOutcome.dropped > 0)) {
+    const parts: string[] = []
+    if (embOutcome.embedded > 0) parts.push(`${embOutcome.embedded} embedded`)
+    if (embOutcome.failed > 0) parts.push(`${embOutcome.failed} failed`)
+    if (embOutcome.invalid > 0)
+      parts.push(`${embOutcome.invalid} discarded as malformed (non-finite or empty)`)
+    if (embOutcome.dropped > 0) parts.push(`${embOutcome.dropped} dropped (queue cap)`)
+    console.log(`  embeddings incomplete: ${parts.join(", ")}`)
+    console.log(`    semantic search is degraded — run \`bb doctor\` to check the embedding provider`)
+  }
+  const embModels = stats.summary?.embedModels ?? []
+  if (embModels.length > 1) {
+    console.log(
+      `  ⚠ index holds ${embModels.length} embedding models — bb_ask searches only one, so the rest are ignored:`,
+    )
+    for (const m of embModels) {
+      console.log(`      ${m.model} (${m.dimension}d): ${m.count.toLocaleString()} vectors`)
+    }
+    console.log(`    fix: reindex with one provider — \`bb index --force\``)
+  } else if (embModels.length === 1) {
+    console.log(`  embeddings: ${embModels[0].model} (${embModels[0].dimension}d)`)
+  }
   // Close the loop the way the product promises: say how long it took, and when
   // that is long enough that the user should suspect a hang, tell them who to
   // tell. Skipped entirely for a cancelled run — a cancelled index did not
