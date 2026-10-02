@@ -1223,6 +1223,99 @@ export async function parseFile(filePath: string, projectPath: string, context?:
   }
 }
 
+/**
+ * The startup work, factored out so the IPC handshake and the self-test cannot
+ * disagree about what "started" means.
+ *
+ * Two callers, one implementation, deliberately:
+ *
+ *   - the `warmup` IPC message, which answers `ready` afterwards;
+ *   - `BB_POOL_WORKER_SELFTEST=1`, which prints a machine-readable line and
+ *     exits, so `bb doctor` can verify a worker from a SYNCHRONOUS caller
+ *     (`runDoctorChecks` is sync and src/cli/index.ts calls it without `await`).
+ *
+ * If these were written twice they would drift, and the drift would be silent
+ * and one-sided: doctor would keep reporting a healthy worker while indexing
+ * quietly fell back to regex.
+ */
+async function warmUpWorker(): Promise<{ engine: "ok" | "unavailable"; wasm: "ok" | "unavailable" }> {
+  // Pre-load the WASM registry and engine before processing.
+  // Registry loads core grammars only with 10s timeout per import.
+  //
+  // Both of these used to be `catch {}`. A failure in either one left the
+  // worker alive, holding the IPC channel, answering `ready`, and then parsing
+  // every file with regex extraction while reporting success — see the note on
+  // reportStartupProblem above. A degraded worker now SAYS SO on stderr (which
+  // the parent forwards) and in the `ready` payload (which the parent's `ready`
+  // branch ignores, so this changes no control flow).
+  let wasm: "ok" | "unavailable" = "ok"
+  try {
+    const { ensureWasmRegistry } = await import("../util/wasm")
+    await ensureWasmRegistry()
+  } catch (e: any) {
+    wasm = "unavailable"
+    reportStartupProblem("wasm registry unavailable — tree-sitter grammars may not load", e)
+  }
+
+  let engine: "ok" | "unavailable" = "ok"
+  try {
+    engineModule = await import("./engine")
+    if (!engineModule?.ASTEngine) {
+      engine = "unavailable"
+      reportStartupProblem("engine module loaded but exports no ASTEngine", new Error("ASTEngine missing"))
+    }
+  } catch (e: any) {
+    engine = "unavailable"
+    reportStartupProblem("engine module failed to load — falling back to regex extraction for EVERY file", e)
+  }
+  return { engine, wasm }
+}
+
+/** Persist startup problems where someone will find them without a terminal. */
+function persistStartupDiagnostics(): void {
+  if (startupDiagnostics.length === 0) return
+  // stderr only reaches whoever happened to be watching. Same place parse errors
+  // already go: $BB_DATA_DIR/logs/.
+  try {
+    fs.appendFileSync(
+      bbDiagnosticsLogPath("worker-startup.log"),
+      `${new Date().toISOString()} | pid=${process.pid} | node=${process.version} | ${startupDiagnostics.join(" | ")}\n`,
+    )
+  } catch {}
+}
+
+/**
+ * One-shot startup self-test: `BB_POOL_WORKER_SELFTEST=1 node <this file>`.
+ *
+ * Prints `[BB-WORKER-SELFTEST] {json}` on stdout and sets an exit code. It runs
+ * the SAME `warmUpWorker()` the IPC handshake runs, so it exercises the real
+ * module graph — a native module built for another platform, an uninstalled
+ * import, or a missing engine all show up here rather than being discovered
+ * halfway through an index run.
+ *
+ * Exits 0 when the engine and the grammars both loaded, 1 when either did not.
+ * A non-zero exit is NOT "the pool cannot start": the worker still indexes, it
+ * just indexes with regex. `diagnosePoolStartupSync` reports that as `degraded`,
+ * which is why the distinction matters.
+ *
+ * Nothing here is written to stderr on the happy path, so `bb doctor` stays
+ * quiet for a healthy install.
+ */
+async function runSelfTest(): Promise<number> {
+  const { engine, wasm } = await warmUpWorker()
+  persistStartupDiagnostics()
+  const report = {
+    ok: engine === "ok" && wasm === "ok",
+    engine,
+    wasm,
+    node: process.version,
+    pid: process.pid,
+    execPath: process.execPath,
+    diagnostics: startupDiagnostics.slice(0, 5),
+  }
+  process.stdout.write(`[BB-WORKER-SELFTEST] ${JSON.stringify(report)}\n`)
+  return report.ok ? 0 : 1
+}
 // IPC message handler
 process.on("message", async (msg: any) => {
   if (msg.type === "warmup") {
@@ -1247,35 +1340,7 @@ process.on("message", async (msg: any) => {
     }, Math.max(1, Math.round(watchdogMs / 2)))
     slowWarmNote.unref?.()
 
-    // Pre-load the WASM registry and engine before processing.
-    // Registry loads core grammars only with 10s timeout per import.
-    //
-    // Both of these used to be `catch {}`. A failure in either one left the
-    // worker alive, holding the IPC channel, answering `ready`, and then
-    // parsing every file with regex extraction while reporting success — see
-    // the note on reportStartupProblem above. A degraded worker now SAYS SO on
-    // stderr (which the parent forwards) and in the `ready` payload (which
-    // the parent's `ready` branch ignores, so this changes no control flow).
-    let wasmStatus: "ok" | "unavailable" = "ok"
-    try {
-      const { ensureWasmRegistry } = await import("../util/wasm")
-      await ensureWasmRegistry()
-    } catch (e: any) {
-      wasmStatus = "unavailable"
-      reportStartupProblem("wasm registry unavailable — tree-sitter grammars may not load", e)
-    }
-
-    let engineStatus: "ok" | "unavailable" = "ok"
-    try {
-      engineModule = await import("./engine")
-      if (!engineModule?.ASTEngine) {
-        engineStatus = "unavailable"
-        reportStartupProblem("engine module loaded but exports no ASTEngine", new Error("ASTEngine missing"))
-      }
-    } catch (e: any) {
-      engineStatus = "unavailable"
-      reportStartupProblem("engine module failed to load — falling back to regex extraction for EVERY file", e)
-    }
+    const { engine: engineStatus, wasm: wasmStatus } = await warmUpWorker()
     // The parent has always handled `engine_fail` (parallel-indexer.ts:1557):
     // it counts the worker, reports the reason, and puts it in the idle pool
     // because regex extraction still parses files. Sending it activates a dead
@@ -1309,16 +1374,7 @@ process.on("message", async (msg: any) => {
       diagnostics: startupDiagnostics.slice(0, 5),
     })
 
-    if (startupDiagnostics.length > 0) {
-      // Persistent, because stderr is only visible to whoever happened to be
-      // watching the terminal. Same place parse errors already go.
-      try {
-        fs.appendFileSync(
-          bbDiagnosticsLogPath("worker-startup.log"),
-          `${new Date().toISOString()} | pid=${process.pid} | node=${process.version} | ${startupDiagnostics.join(" | ")}\n`,
-        )
-      } catch {}
-    }
+    persistStartupDiagnostics()
   } else if (msg.type === "parse_batch") {
     const { batchId, files, projectPath, projectIndexes } = msg
     // SOL-21. A project index, when the parent built one, deserialised ONCE per worker
@@ -1458,4 +1514,24 @@ if (process.connected) {
     )
   }
   setInterval(() => {}, 1 << 30)
+}
+
+// Startup self-test: `BB_POOL_WORKER_SELFTEST=1`. Runs the same warm-up the
+// `warmup` message runs and exits, so `bb doctor` can verify a worker without an
+// IPC handshake and without making the CLI's synchronous call path async.
+//
+// Deliberately NOT top-level await: this file is bundled by tsup and a top-level
+// await in the entry would constrain the whole bundle's output shape. A promise
+// chain sets the exit code instead, which is all this needs.
+if (process.env.BB_POOL_WORKER_SELFTEST === "1" && !process.connected) {
+  runSelfTest().then(
+    (code) => {
+      process.exitCode = code
+    },
+    (e: any) => {
+      // A self-test that throws is itself a result: the worker cannot even start.
+      process.stderr.write(`[BB-WORKER-SELFTEST] failed: ${e?.message ?? String(e)}\n`)
+      process.exitCode = 1
+    },
+  )
 }
