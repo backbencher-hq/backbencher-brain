@@ -552,6 +552,23 @@ function aliasTimelineOf(root: Node): { at: number; aliases: Map<string, string>
     }
     for (let i = 0; i < n.namedChildCount; i++) { const c = n.namedChild(i); if (c) st.push(c) }
   }
+  // CLJ-D58: THE TIMELINE MUST BE SORTED BY POSITION BEFORE ANYTHING ASKS "IN FORCE".
+  //
+  // `namespaceTimeline` sorts; this did not, and the pre-pass here is a LIFO stack, so
+  // children are visited in REVERSE sibling order and a later form lands earlier in the
+  // array. `aliasesInForce` then does `if (t.at > idx) break` — finds the LATE entry
+  // first, and returns an EMPTY table for every position before it.
+  //
+  // That is not a rare shape. In metabase's hooks/clojure/core/defn.clj the timeline
+  // came out as `[{at: 2464}, {at: 0}]`, so every `str/…` and `hooks/…` in the file was
+  // published as the bare ALIAS while the analyzer published `clojure.string` and
+  // `clj-kondo.hooks-api` — 141 `metabase.util.malli`, 84 `clojure.spec.alpha`, 39 `u`,
+  // 31 `hooks`, 19 `str` among the metabase `references` residual.
+  //
+  // It is invisible on a file with ONE `ns` form, which is why the small corpora looked
+  // fine and only the 4,253-file corpus showed it. A one-entry array is sorted by
+  // accident; two is not.
+  out.sort((a, b) => a.at - b.at)
   return out
 }
 
@@ -581,6 +598,39 @@ function aliasTimelineOf(root: Node): { at: number; aliases: Map<string, string>
  *
  * A `defn`-family form takes its own name; a method-impl position takes its head.
  */
+/**
+ * IS THIS LIST A FUNCTION BOUND IN A DESTRUCTURING FORM?
+ *
+ * `(let [{:keys [a]} (f [x] …)] …)` — the binding vector's ODD children are values,
+ * and a value that is a list headed by a symbol binds that symbol to a function. The
+ * position test is the whole of it, which is why it is a separate predicate rather
+ * than another entry in a name set: no name identifies this shape.
+ */
+function isBindingFnPosition(node: Node): boolean {
+  if (node.type !== "list_lit") return false
+  const vec = node.parent
+  if (!vec || vec.type !== "vec_lit") return false
+  const form = vec.parent
+  if (!form || form.type !== "list_lit") return false
+  const fh = executionHead(form)
+  const fname = fh && fh.type === "sym_lit" ? symName(fh) : ""
+  if (!SHADOW_BINDING_VEC_HEADS.has(fname)) return false
+  // It must LOOK like a function: a binding is `(f [args] body)`, and the ARGLIST VECTOR
+  // is what separates that from an ordinary call in the same position. Without this the
+  // rule matched `(let [result (compute 1)] …)` too, and treating `compute` as the
+  // enclosing function moved every constructor in its body: metabase `implements`
+  // 100.00% -> 97.60% and the small corpora 100.00% -> 97.75%. The position test alone
+  // was not enough, which is the eighth time in this file that one sample was read as a
+  // rule - position, prefix, form name, `fn` vs `fn*`, a "def-like" head. The evidence
+  // keeps being that a SHAPE is needed and a name never is.
+  if (node.namedChild(1)?.type !== "vec_lit") return false
+  // the value position of a binding pair
+  for (let i = 1; i < vec.namedChildCount; i += 2) {
+    if (vec.namedChild(i)?.startIndex === node.startIndex) return true
+  }
+  return false
+}
+
 /** A head's name with any namespace qualifier removed: `mu/defn` -> `defn`. */
 function bareHead(head: string): string {
   return head.includes("/") ? head.slice(head.lastIndexOf("/") + 1) : head
@@ -628,6 +678,25 @@ function activeFunctionOf(root: Node): Map<number, string> {
         // is the same shape as CLJ-D51's two derivations disagreeing.
         const dn = defNameOf(n)
         if (dn) next = dn
+      } else if (isBindingFnPosition(n) && h && h.type === "sym_lit") {
+        // CLJ-D57: A FUNCTION BOUND IN A DESTRUCTURING FORM IS A FUNCTION BOUNDARY.
+        //
+        // `(let [{:keys [session-key]} (saml-request [url] (with-open [in
+        // (java.util.zip.InflaterInputStream. …)] …))] …)` binds `saml-request` to a
+        // function, and the constructors inside its body belong to it — the analyzer
+        // publishes `saml-request -> java.util.zip.InflaterInputStream` and it is right,
+        // because that IS the function being run. The truth attributed them to the
+        // enclosing `saml-logout-session-index`, i.e. to a `deftest` that is not running
+        // anything.
+        //
+        // This is CLJ-D51's rule again at a position none of the four families cover: it
+        // is not a `defn`, not a special form, not a proxy method and not an anonymous
+        // fn. A binding-position list whose head is a symbol is a function, and the
+        // binding vector's ODD children are the values, so the even/odd position is the
+        // whole test — the same parity idea as CLJ-D36's `case` constants, applied to
+        // destructuring instead.
+        const mn = symName(h)
+        if (mn) next = mn
       } else if (isMethodImplPosition(n) && h && h.type === "sym_lit") {
         const mn = symName(h)
         if (mn && !isAnonArgShorthand(mn)) next = mn
