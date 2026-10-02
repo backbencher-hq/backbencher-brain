@@ -6,22 +6,22 @@
   "reason": "windsurf CLI not found on PATH — install or record the waiver (E6 honest blocked state)",
   "os": "linux",
   "machine": {
-    "kernel": "Linux 7.1.1-76070101-generic",
-    "cpu": "Intel(R) Core(TM) i5-8365U CPU @ 1.60GHz",
+    "kernel": "Linux 7.1.5-76070105-generic",
+    "cpu": "Intel(R) Core(TM) i7-8650U CPU @ 1.90GHz",
     "ramGb": 16.6,
-    "node": "v20.19.5",
+    "node": "v22.22.1",
     "runtime": "fork-run"
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "e1b996f66c62e22248d8393286438ce67975d9ae",
   "verifierCommand": "npx tsx script/m25/run-fork-e2e.mts",
   "evidenceFile": "F-WINDSURF.json",
-  "generatedAt": "2026-09-20T02:49:13.942Z",
+  "generatedAt": "2026-09-30T06:53:13.219Z",
   "limitations": [
     "fork unavailable on this machine — claim level stays unset; no inheritance from other forks"
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:49:13.942Z",
-    "contentSha256": "37f05739796be64482dfe8e3abfebae46dc4b500b2b16b1410b00da5759cf0c2"
+    "sealedAt": "2026-09-30T06:53:13.219Z",
+    "contentSha256": "a92074461113be47e4c3d0d1e80917f53933d7f4bcb80aa82cd0bf3b0cc65d62"
   }
 }

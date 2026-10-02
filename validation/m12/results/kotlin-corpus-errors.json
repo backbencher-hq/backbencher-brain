@@ -24,7 +24,7 @@
   "crashFiles": 0,
   "pipelineMismatchCount": 0,
   "pipelineMismatchFiles": [],
-  "wallMs": 47605,
+  "wallMs": 25407,
   "missingTokens": {
     "val": 6
   },

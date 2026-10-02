@@ -2,27 +2,37 @@
   "issue": "543",
   "code": "X1",
   "milestone": "M29",
-  "status": "verified",
+  "status": "known-gap",
   "checks": 32,
-  "passed": 32,
-  "failed": 0,
-  "failures": [],
+  "passed": 23,
+  "failed": 9,
+  "failures": [
+    "X1: M24 ladder run green at HEAD: exit=1",
+    "X1: M25 ladder run green at HEAD: exit=1",
+    "X1: M26 ladder run green at HEAD: exit=1",
+    "X1: M27 ladder run green at HEAD: exit=1",
+    "X1: M28 ladder run green at HEAD: exit=1",
+    "X1: M29-R1 ladder run green at HEAD: exit=1",
+    "X1: M29-R2 ladder run green at HEAD: exit=1",
+    "X1: M29-R3 ladder run green at HEAD: exit=1",
+    "X1: M29-V1 ladder run green at HEAD: exit=1"
+  ],
   "negativeCases": 3,
   "suiteExits": {
-    "M24": 0,
-    "M25": 0,
-    "M26": 0,
-    "M27": 0,
-    "M28": 0,
-    "M29-R1": 0,
-    "M29-R2": 0,
-    "M29-R3": 0,
+    "M24": 1,
+    "M25": 1,
+    "M26": 1,
+    "M27": 1,
+    "M28": 1,
+    "M29-R1": 1,
+    "M29-R2": 1,
+    "M29-R3": 1,
     "M29-R5": 0,
     "M29-R4": 0,
-    "M29-V1": 0,
+    "M29-V1": 1,
     "M29-D1": 0
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
+  "currentCommit": "4683048c8a2c1d39ff6d2a9fbe9edce06b74a2b8",
   "verifierCommand": "npx tsx script/m29/verify-closure.ts",
   "evidenceFile": "X1.json",
   "ownerSpotCheck": {
@@ -36,7 +46,7 @@
     "verdictOwner": "owner (ishaq2321)",
     "contract": "IDE Honesty Contract §8.5 — the achieved/not-achieved verdict is the owner's, never the gate's"
   },
-  "generatedAt": "2026-09-20T02:47:14.147Z",
+  "generatedAt": "2026-09-30T06:49:10.084Z",
   "limitations": [
     "Pass 1 runs each milestone's governance gate (which itself re-runs that milestone's suite); it proves the ladder green at HEAD, not that every individual evidence file was re-stamped in this run.",
     "The OS-matrix legs (M25 E7) record honest blocked-with-reason records for macOS/Windows; only Linux has a real machine run — cross-editor verification stays per-editor.",
@@ -45,7 +55,7 @@
   ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:47:14.148Z",
-    "contentSha256": "b61e94123be65629f4f68e26ebbee1af0dd18efc5621868518fbd884eab57a85"
+    "sealedAt": "2026-09-30T06:49:10.087Z",
+    "contentSha256": "56beb10151c049570e7f3a96f5fa96931212132dc757099714ec8f5f59a18a86"
   }
 }

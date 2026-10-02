@@ -1,19 +1,25 @@
 {
-  "status": "verified",
-  "passed": 28,
-  "failed": 0,
+  "status": "known-gap",
+  "passed": 21,
+  "failed": 6,
   "negatives": {
     "planned": 6
   },
-  "currentCommit": "a871d533a736e8e38cb826d80d986d3cc84022d1",
-  "relevantInputsHash": "49b428d28e42965e261aa89e2bd731849fdf741b",
+  "currentCommit": "4683048c8a2c1d39ff6d2a9fbe9edce06b74a2b8",
+  "relevantInputsHash": "e0723ea2026f49cd97c8a749dfb074aaf8282d35",
   "verifierCommand": "npx tsx script/m29/verify-giant-repo.ts",
   "evidenceFile": "R3-verify.json",
-  "generatedAt": "2026-09-20T02:45:31.520Z",
-  "details": [],
+  "generatedAt": "2026-09-30T06:46:31.854Z",
+  "details": [
+    "R1: corpus meets the M19 giant-scale bar (files >= 50k): undefined",
+    "R1: corpus on disk matches the manifest: disk=0 manifest=undefined",
+    "R2: relevant inputs unchanged since the evidence run: evidence=49b428d28e42965e261aa89e2bd731849fdf741b vs current=e0723ea2026f49cd97c8a749dfb074aaf8282d35 — re-run giant-repo-budget.ts --reuse to refresh",
+    "R2: evidence indexed counts agree with the manifest: 59000 vs undefined",
+    "R6: live probe skipped (no persistent index — run --index-only first): declared skip, not a silent pass"
+  ],
   "bbSeal": {
     "alg": "sha256",
-    "sealedAt": "2026-09-20T02:45:31.520Z",
-    "contentSha256": "9b3358a38a4e2153afc3f173db386938620afb2228dfdb812e11b9bf8837688c"
+    "sealedAt": "2026-09-30T06:46:31.854Z",
+    "contentSha256": "a4ca4402079b1de139f7fcad2c27a4d13efb011ae7f2236a422ef141d3d7f2e7"
   }
 }
