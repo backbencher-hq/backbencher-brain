@@ -234,13 +234,10 @@ export async function enrichRelationships(
   `).get(projectId) as any
   const totalRels = countRow?.c ?? 0
 
-  if (totalRels === 0) {
-    report("done", 100)
-    return { ...zero("rowid"), durationMs: Date.now() - startTime }
-  }
-
-  // Does this build's driver expose rowid on the table? Probed once, because the
-  // fallback is not an error — it is a declared, slower pagination.
+  // Does this build's driver expose rowid on the table? Probed BEFORE the empty
+  // short-circuit so `pagination` is the paginator this pass actually used (or
+  // would have used) on every return path. The fallback is not an error — it is
+  // a declared, slower pagination.
   let rowidAvailable = true
   try {
     rawDb.prepare(`SELECT rowid FROM brain_relationship LIMIT 1`).get()
@@ -248,6 +245,11 @@ export async function enrichRelationships(
     rowidAvailable = false
   }
   const pagination: "rowid" | "offset" = rowidAvailable ? "rowid" : "offset"
+
+  if (totalRels === 0) {
+    report("done", 100)
+    return { ...zero(pagination), durationMs: Date.now() - startTime }
+  }
 
   // Pre-compute in-degree for criticality + frequency (single pass).
   // This Map is the one O(project) memory term and is bounded by the number of
