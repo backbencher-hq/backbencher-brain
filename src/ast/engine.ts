@@ -358,6 +358,16 @@ export namespace ASTEngine {
      * checks. Declared now; the index signature still carries the rest.
      */
     docstring?: string
+    // The same argument as `docstring`, for the same producers. These six were written
+    // by the Solidity lane as first-class symbol fields, read by pool-worker (which
+    // reached for them through `(s as any)` precisely because they were not declared
+    // here), and dropped otherwise. Declared so the type system can see them.
+    docstringKind?: string
+    docTags?: string[]
+    undocumentedParameters?: string[]
+    overDocumentedParameters?: string[]
+    returnDocumentedWithoutReturn?: boolean
+    stateLocation?: string
     qualified_calls?: string[] // ProxiCall-style: raw calls extracted as-is ["service.createUser", "_auth.validate"]
     apiContractPath?: string // Deterministic mapping: Exact Route URL or Fetch URL for 100% accurate cross-language links
     ownerName?: string // Parent class/namespace name for nested symbols
