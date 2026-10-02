@@ -22347,6 +22347,17 @@ async function main() {
       // classified from ten rows. The full 300-row sample set is what turns "57.7%
       // covered" into a list of named disagreement classes.
       else if (scope === "powershell") emitEvidence({ ...base, issueId: "M14.0.F5.powershell" })
+      // M60 (scala deep review): scala, by the same rule — a LITERAL branch, never
+      // a computed id. This lane had no declared artifact at all, so `--emit` refused
+      // rather than writing an orphan, and every scala measurement taken during the
+      // review existed only as console output and prose: the full-pinned-universe
+      // baseline (4,008 files, 331,417 truth rows, MISSING=1, unexplained=4) and the
+      // 2,000-file progression that closed it. Under the honesty contract that is the
+      // weakest form a real measurement can take — true, and unre-derivable by anyone
+      // but the session that took it. The scope is `--lang scala`, which is what
+      // ONLY_LANGS yields, so the artifact is `M14.0.F5.scala.json` and the canonical
+      // 43-language M14.0.F5.json stays untouched.
+      else if (scope === "scala") emitEvidence({ ...base, issueId: "M14.0.F5.scala" })
       else throw new Error(
         `differential: --emit has no declared artifact id for scope "${scope}" — add one literal emit call `
         + '(`{ ...base, issueId: "M14.0.F5.<lane>" }`) beside clean\'s, because a computed id writes an artifact that '
