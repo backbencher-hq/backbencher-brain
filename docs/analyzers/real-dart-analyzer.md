@@ -314,49 +314,72 @@ implementation, and the fixture battery pins the contract in both directions.
 
 ## Final measured state (2026-10-01)
 
-Both differential lanes, `--dart-deps=direct`, freshly measured (each run reports
-`files=`, not `RESUMED from journal`):
+Both differential lanes, `--dart-deps=direct` plus the vendored Dart SDK library
+tree, from runs reporting `files=` (never `RESUMED from journal`):
 
 | lane | coverage | MISSING | unexplained |
 |---|---|---|---|
-| proxicall:dart | 100% | 0 | **0** |
-| dart-http:dart | 100% | 0 | **0** |
+| proxicall:dart | **5532 / 5532 (100%)** | 0 | **0** |
+| dart-http:dart | **1732 / 1732 (100%)** | 0 | **0** |
 
-`--dart-deps=direct` plus the vendored Dart SDK library tree
-(`<flutter>/bin/cache/dart-sdk/lib`, 439 files, resolved from the running `dart`)
-gives 13,846 types on proxicall. Two earlier claims in this file were wrong and are
-corrected here: the SDK libraries ARE on disk, and `dart:io` is not unreachable —
-`WebSocket` simply lives in `lib/_http/websocket.dart`, an internal library, so
-indexing the `lib/` TREE rather than the `dart:io` library is what finds it.
+Every analyzer edge either corpus measures is corroborated by independently derived
+truth, and the truth publishes nothing the analyzer does not. No unexplained row and
+no missing row on either corpus.
 
-Both lanes are clean: every analyzer edge either corpus measures is corroborated by independently derived truth, and the truth publishes nothing the analyzer does not. There is no unexplained row and no missing row on either corpus.
+Fixtures **13/13**, `script/m14/verify-dart-overrides.ts` **12/12**, mutants 42/42,
+parse 0 errors on 1,294 `lib` files, 2.0 min for the full corpus.
 
-Fixtures 12/12, mutants 42/42, parse 0 errors on 1,294 `lib` files, 202.5 s.
+### The dependency index, and what it bought
 
-| dependency index | types | proxicall unexplained |
+| mode | types indexed | proxicall unexplained |
 |---|---|---|
 | `--dart-deps=none` (default) | 4,465 | 40 |
 | `--dart-deps=direct` | 11,312 | 3–7 |
 | `--dart-deps=all` | 27,784 | 4 |
+| `direct` + the SDK library tree | 13,846 | **0** |
 
-The residual rows are `overrides` claims at **confidence 0.8** against bases that no
-mode indexes — a first-parent guess, labelled as one. They are not fabrications:
-`a1c4a9d7a` removed the class where the file itself refutes the claim, and these
-are the ones nothing in reach can refute.
+The SDK libraries are NOT unreachable, and this file said otherwise for a commit: the
+SDK vendored in the Flutter SDK has them at `<flutter>/bin/cache/dart-sdk/lib` (439
+files), and `WebSocket` lives in `lib/_http/websocket.dart`, an internal library — so
+indexing the `lib/` TREE is what finds it, not "the dart:io library".
 
-### Two rulings made here rather than deferred
+### The rules the `overrides` resolution turns on
 
-**`part of` stays in `imports`.** A `part of 'b.dart';` names the file's PARENT, so
-`imports:this->b.dart:*` states the dependency backwards — the file does not reach
-*b.dart*, it IS part of it. It is kept because every module-level URI is then one
-edge class, and a consumer asking "what does this file depend on" gets one answer
-instead of three, and because 24 rows is too small to justify a second class a
-consumer must learn. The alternative is a `partOf` class, which is more precise and
-strictly more work for every reader. If a family ruling goes the other way this is
-a one-line change in the oracle plus the analyzer.
+Each is pinned by `verify-dart-overrides.ts` (12 shapes, each recording the corpus row
+that exposed the defect) and, where the rule is analyzer-side, by
+`dart/override-witness-shapes` — which carries a negative twin per rule, because
+deleting a gate removes edges and an expect-only fixture would not notice.
 
-**Record literals are not symbols.** `Point(1, 2)` is a CONSTRUCTOR CALL, so its
-positional fields are not member reads and there is nothing to contain. Treating the
-field names as declarations would publish a `contains` edge for a type the file does
-not declare, which is the class of error this lane has spent its whole life removing.
-The 249 live occurrences stay unread rather than be read as declarations.
+- **Exposer, not declarer.** A base that INHERITS a member is where the override
+  lands. The analyzer's in-file path and its companion path answered this differently,
+  so the same file got a different edge depending on whether an index was supplied.
+  `declares()` is inheritance-closed over `extends`/`implements` — not `uses`, which
+  is evidence a type is relevant, not that it is a base.
+- **Instance means overridable; static means not.** An instance field provides a
+  getter, so `final String walletId` over a base `walletId` is a real override, and so
+  is `@override String get walletId`. A static member overrides nothing: a static call
+  resolves against the static type it was written on, and `@override` is not legal
+  there.
+- **`@override` belongs to the FALLBACK only.** It is an optional lint, not a language
+  requirement. A companion-verified match is evidence and needs no annotation; the 0.8
+  first-parent guess has no evidence either way and does.
+- **Breadth, not depth.** A companion that knows a base but that lacks the member ends
+  the walk FROM THAT BASE — a flat map holds none of its bases — not the walk over the
+  other supertypes already collected.
+- **`extends` and `with` share one clause**, with the `with` list inside the
+  `superclass` node, not beside the declaration.
+- **A base the file, or the index, proves lacks the member is refuted.** Without
+  evidence the fallback may fire; against evidence it may not.
+
+### Two rulings
+
+**`part of` stays in `imports`.** It names the file's PARENT, so the edge states the
+dependency backwards. Kept anyway: every module-level URI is then one edge class, a
+consumer gets one answer instead of three, and 24 rows does not justify a class every
+reader must learn. One line in the oracle plus the analyzer to change.
+
+**Record literals are not symbols.** `Point(1, 2)` is a constructor CALL; its
+positional fields are not member reads, so there is nothing to contain. Reading the
+field names as declarations would publish a `contains` edge for a type the file never
+declares — the exact error class this lane spent its existence removing. The 249 live
+occurrences stay unread.
