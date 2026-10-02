@@ -19,7 +19,7 @@
 //
 // Run: npx tsx script/verify-pool-workers.ts
 
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { fork, type ChildProcess } from "node:child_process"
@@ -247,6 +247,25 @@ try {
     // draining: the same fork with attachWorkerOutputCapture keeps the bytes.
     const target = resolvePoolWorkerForkSafe()
     check("the resolver finds a usable target in this checkout", target.ok)
+
+    // The same worker as it SHIPS: `node dist/pool-worker.js`, no loader. Both
+    // resolver branches have to work, and they are not the same cost — measured
+    // here, the tsx target handshakes in 1.3-3.4s and the compiled one in ~0.55s,
+    // and that difference is fork-probe latency paid at the head of every index
+    // run. Skipped (loudly) when dist/ has not been built.
+    const distDir = path.resolve(import.meta.dirname, "../dist")
+    if (existsSync(path.join(distDir, "pool-worker.js"))) {
+      const compiled = await probePoolWorker(resolvePoolWorkerForkSafe({ moduleDir: distDir }), { hardTimeoutMs: 90_000 })
+      if (compiled.ok) {
+        console.log(`        compiled target, ready in ${compiled.readyMs}ms`)
+        check("the COMPILED worker handshakes too", compiled.source === "compiled-dist" && compiled.readyMs > 0)
+        check("…and it reports its engine status as well", compiled.ready?.engine === "ok", JSON.stringify(compiled.ready))
+      } else {
+        check("the COMPILED worker handshakes too", false, renderPoolDiagnosis(compiled))
+      }
+    } else {
+      console.log("        (compiled worker skipped: dist/pool-worker.js not built — run `npm run build`)")
+    }
   }
 
   section("6. warmup sent immediately is not lost (the handshake is not a race)")
