@@ -1,5 +1,28 @@
 # Retained branches — what each one still holds
 
+## `main` is the integration branch
+
+`main` is the **only** branch in this repository that work lands on, and it is
+the default branch. Everything else is archive. If you are an agent picking up
+work: branch from `main`, and open work against `main`. Do not treat any other
+branch as a source of truth — several predate the consolidation and none of them
+is the current state of the code.
+
+`main` is protected on GitHub: **force-push and deletion are both disabled.**
+That is not ceremony. Two sessions advanced this repository independently in
+September/October 2026 and one force-pushed `main`, which silently excluded 232
+commits that existed on exactly one laptop. That is why this branch is protected
+and why the "unique commits" count below exists at all.
+
+Direct pushes to `main` are still allowed (no PR or status-check requirement),
+because the established workflow here is direct commits and pushes. Force-push
+is the thing that caused the damage, and that is what is blocked.
+
+At the time of writing `main` is green on all three: `npx tsc --noEmit` reports
+zero errors, `npm run build` succeeds, and `npm test` passes.
+
+---
+
 Generated 2026-10-02 during the branch consolidation. `main` is the single
 integration branch. Every branch below is **archive-only**: it holds at least
 one commit that is NOT in `main`, so it was kept rather than deleted.
