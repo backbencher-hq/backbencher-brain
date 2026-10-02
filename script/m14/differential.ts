@@ -17917,7 +17917,10 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     // M49.S1 scala per-occurrence registration for the anonymous body —
     // same provenance discipline as named declarations above.
     if (lang === "scala" && !superName.includes(".")) {
-      const occKey = `${anonName}#0`
+      const anonIdx = anonOccCount.get(anonName) ?? 0
+      anonOccCount.set(anonName, anonIdx + 1)
+      const occKey = `${anonName}#${anonIdx}`
+      anonOccPublished.set(occKey, anonIdx === 0 ? anonName : `${anonName}#${anonIdx + 1}`)
       const ownMethods = new Set<string>()
       const ownSigs = new Map<string, Set<string>>()
       for (const m of membersOf(body)) {
@@ -18126,7 +18129,9 @@ export function deriveTreeEdges(root: any, lang: string): TreeEdge[] {
     for (const [occKey, methods] of occMethods) {
       // SDJ-16b: an ANONYMOUS occurrence publishes under its NUMBERED name, matching the
       // analyzer; a NAMED declaration keeps the stripped form.
-      const occName = occKey.slice(0, occKey.lastIndexOf("#"))
+      // SDJ-16b: an ANONYMOUS occurrence publishes under its NUMBERED name, matching the
+      // analyzer; a NAMED declaration keeps the stripped form.
+      const occName = anonOccPublished.get(occKey) ?? occKey.slice(0, occKey.lastIndexOf("#"))
       const ownSigs = occSigs.get(occKey)
       for (const m of methods) {
         const seenOcc = new Set<string>()
