@@ -215,11 +215,19 @@ export interface AnalyzeContext {
    * Project-level companion index for cross-file override-target resolution:
    * owner type name → declared method names. Built by the CALLER from the
    * symbols of previously parsed files — the M12 differential harness, and
-   * `override-companion-pass.ts` on demand. NOT built by the batch indexer, so
-   * a normal full-project run has none and every analyzer falls back to its
-   * deterministic first-parent default (corrected 2026-09-30, VSD26: this field
-   * previously claimed the production indexer provided it "via M12.44", which
-   * nothing implements).
+   * `override-companion-pass.ts`.
+   *
+   * BUILT BY THE BATCH INDEXER as of 2026-10-31, for both consuming lanes
+   * (perl, python). VSD26 recorded that this field "previously claimed the
+   * production indexer provided it via M12.44, which nothing implements", and
+   * the correction then said the batch indexer builds none — which was true of
+   * PERL only in practice: `parallel-indexer` did call the pass, but with
+   * `language: "perl"` hardcoded, and python's resolver read
+   * `(ctx as any)._overrideCompanion`, a key nothing ever set. So the honest
+   * state was neither the original claim nor the correction: the pass ran, for
+   * one lane, and the other lane's rule was dead code wearing a working
+   * signature. Both ends are fixed; absent still means "visibility unknown",
+   * which is what the deterministic first-parent default is for.
    */
   overrideCompanion?: Map<string, Set<string>>
   [key: string]: any
