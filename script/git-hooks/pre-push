@@ -19,6 +19,47 @@ while read local_ref local_sha remote_ref remote_sha; do
         range="$remote_sha..$local_sha"
       fi
 
+      # The `remote_sha` git hands a pre-push hook is the tip the CLIENT last saw,
+      # not the tip the SERVER has. Between those two facts the remote can move —
+      # and this repo's origin is pushed to concurrently, so it does. A hook that
+      # trusts `remote_sha` computes its range from a base that may no longer
+      # exist, which is a gate measuring a push that is not the push.
+      #
+      # It matters because the range is the entire basis of the NET EFFECT check.
+      # Commits that landed after the client fetched sit OUTSIDE
+      # `remote_sha..local_sha`, so a protected artifact they deleted is invisible
+      # to the hook — and a FORCE push would then remove it for real. An ordinary
+      # push cannot do that (git rejects the non-fast-forward), but the hook cannot
+      # tell an ordinary push from a forced one, and a gate that is only safe
+      # because a later component happens to refuse is not a gate.
+      #
+      # So: ask the server. On a mismatch the range is stale, and this blocks
+      # rather than re-deriving — fail closed, the same rule the missing-manifest
+      # check below already follows. `git fetch origin` and push again is a real
+      # remedy, because the hook's answer then changes.
+      live_tip="$(git ls-remote origin "refs/heads/main" 2>/dev/null | cut -f1)"
+      if [ -z "$live_tip" ]; then
+        echo "LANE PROTECTION: cannot read the live origin/main tip." >&2
+        echo "                   Refusing to push: a gate that cannot see what it" >&2
+        echo "                   is protecting cannot certify that push." >&2
+        exit 1
+      fi
+      if [ "$live_tip" != "$remote_sha" ]; then
+        echo ""
+        echo "LANE PROTECTION: push to main blocked — origin/main has moved."
+        echo "  hook was handed: $remote_sha"
+        echo "  origin/main is:  $live_tip"
+        echo ""
+        echo "This client is pushing against a stale base, so the range this gate"
+        echo "would check does not describe the push being made, and a force push"
+        echo "would remove commits this gate never looked at."
+        echo ""
+        echo "Fetch and push again:"
+        echo "  git fetch origin && git rebase origin/main   # or: git merge origin/main"
+        echo "  git push origin main"
+        exit 1
+      fi
+
       MANIFEST="$(git rev-parse --show-toplevel)/validation/lane-protection/protected-paths.json"
       if [ ! -f "$MANIFEST" ]; then
         echo "LANE PROTECTION: $MANIFEST is missing, so no protected path can be checked." >&2
