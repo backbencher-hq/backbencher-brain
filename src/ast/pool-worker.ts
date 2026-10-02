@@ -5,6 +5,11 @@ import { createRequire } from "node:module"
 import path from "path"
 import fs from "fs"
 import type { ASTEngine } from "./engine"
+// Type-only: the module itself is loaded lazily via `await import("./project-index")` so
+// a worker that cannot deserialise an index still runs per-file. Importing the type
+// costs nothing at runtime and keeps `ASTEngine.n` -- a name that never existed -- from
+// silently becoming `any` here and `ProjectIndex` at the use site.
+import type { ProjectIndex } from "./project-index"
 import { detectLanguageFromPath } from "./language-detection"
 
 const require = createRequire(import.meta.url)
@@ -1182,7 +1187,7 @@ process.on("message", async (msg: any) => {
     //
     // A worker that cannot deserialise gets NO index, which is exactly the pre-SOL-21
     // per-file behaviour. Enrichment is therefore additive and never load-bearing.
-    let indexCache: Map<string, ASTEngine.n> | null = null
+    let indexCache: Map<string, ProjectIndex> | null = null
     if (projectIndexes !== undefined && projectIndexes !== null) {
       try {
         const mod: any = await import("./project-index")

@@ -3967,8 +3967,10 @@ export class RealCAnalyzer implements ASTEngine.LanguageAnalyzer {
                   if (q.type === "pointer_declarator") return true
                   const byField = q.childForFieldName("declarator")
                   if (byField) { q = byField; continue }
-                  const kids = (q.namedChildren ?? []).filter((k: Node | null): k is Node => !!k)
-                  q = kids.find((k: Node) => !k.isError && !k.isMissing) ?? null
+                  // Annotated `Node[]` to break a circular inference: `kids` is derived from `q`, and
+                  // the loop reassigns `q` from `kids`, so TS could not infer either side.
+                  const kids: Node[] = (q.namedChildren ?? []).filter((k): k is Node => !!k)
+                  q = kids.find((k) => !k.isError && !k.isMissing) ?? null
                 }
                 return false
               }

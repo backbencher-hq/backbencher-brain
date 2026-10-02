@@ -669,7 +669,11 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       /** SOL-20 — qualified calls made from inside THIS frame. */
       qualifiedCalls: string[]
     }
-    const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false }]
+    // SOL-18/SOL-20 added `branches`, `sym` and `qualifiedCalls` to Frame, but this
+    // seed literal was never given them, so the file-scope frame did not satisfy
+    // its own interface. The values are the honest ones for file scope: no branch
+    // has been seen, no symbol owns the file, and no qualified call has been made.
+    const frames: Frame[] = [{ owner: fileName, scope: fileName, containerLine: 1, yul: false, branches: 0, sym: null, qualifiedCalls: [] }]
     const top = (): Frame => frames[frames.length - 1]
     const atFileScope = (): boolean => frames.length === 1
     const nodeKey = (n: Node): string => `${n.startIndex}:${n.endIndex}`
@@ -842,7 +846,13 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
       parameters?: ASTEngine.Parameter[],
     ): ASTEngine.UniversalSymbol | null => {
       const clean = name.trim()
-      if (clean === "") return
+      if (clean === "") return null
+      // The over/under-documented sample strings below interpolate `${fileName}:${line}`,
+      // but this function never took a line and `line` was not in scope -- the samples
+      // would have thrown a ReferenceError the first time a NatSpec mismatch was
+      // recorded, i.e. exactly when the diagnostic was most needed. The declaration's
+      // own start row is the line the sample is about.
+      const line = node.startPosition.row + 1
       // SOL-16 — documentation attaches at the SINGLE point every declaration kind
       // goes through, for the same reason SOL-14's store refusal does: a rule
       // repeated per declaration kind is a rule that will be applied to some kinds
@@ -893,7 +903,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
             returnWithoutReturnSamples.push(`${fileName}:${line} ${clean} has @return but returns nothing`)
           }
         }
-      } null
+      }
       const owner = top().owner
       const key = `${owner}\u0000${clean}\u0000${kind}`
       const existing = symbolMap.get(key)
@@ -917,7 +927,7 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
         // SOL-18 — `ownerKind` is a first-class symbol field (`pool-worker` forwards
         // it), so it is set top-level as well as in metadata, for the same reason
         // `docstring` is.
-        ...(typeof meta.ownerKind === "string" ? { ownerKind: meta.ownerKind as string } : {}),
+        ...(typeof meta.ownerKind === "string" ? { ownerKind: meta.ownerKind as ASTEngine.SymbolKind } : {}),
         // SOL-23 — top-level as well, because `parseFile` returns every symbol with
         // `metadata: undefined` (pool-worker drops the object at the worker boundary),
         // so a value only in metadata is invisible to a fixture — which is exactly how
@@ -929,18 +939,18 @@ export class RealSolidityAnalyzer implements ASTEngine.LanguageAnalyzer {
           ? { overDocumentedParameters: meta.overDocumentedParameters as string[] } : {}),
         ...(typeof meta.returnDocumentedWithoutReturn === "boolean"
           ? { returnDocumentedWithoutReturn: meta.returnDocumentedWithoutReturn } : {}),
-        ...(typeof meta.docstring === "string"
-          ? {
-            docstring: meta.docstring,
-            // Also top-level: pool-worker's parseFile return shape does not carry
-            // `metadata` on symbols at all, so anything only in metadata is invisible
-            // to every consumer of this API — which is how `docstringKind` read `-`
-            // on the first successful run of this feature.
-            docstringKind: meta.docstringKind,
-            docTags: meta.docTags,
-            comments: meta.comments,
-          }
-          : {}),
+...(typeof meta.docstring === "string" ? { docstring: meta.docstring } : {}),
+        // Each of these is read out of `meta`, which is `Record<string, unknown>`, so
+        // each is narrowed on its own rather than carried along by the docstring check:
+        // `meta.docstringKind` being a string says nothing about `meta.docTags`. The
+        // runtime shapes are unchanged -- only the proof that they hold is now stated.
+        ...(typeof meta.docstringKind === "string" ? { docstringKind: meta.docstringKind } : {}),
+        ...(Array.isArray(meta.docTags) ? { docTags: meta.docTags as string[] } : {}),
+        // Also top-level: pool-worker's parseFile return shape does not carry
+          // `metadata` on symbols at all, so anything only in metadata is invisible
+          // to every consumer of this API — which is how `docstringKind` read `-`
+          // on the first successful run of this feature.
+          ...(Array.isArray(meta.comments) ? { comments: meta.comments as string[] } : {}),
         metadata: { soliditySpecific: true, ...meta },
       }
       // The payload the STORE actually reads. pool-worker.ts drops the whole
@@ -2165,7 +2175,11 @@ const meta = modifiersOf(node)
             // would have only the target NAME — which is exactly what cannot distinguish
             // `token.transfer` from `vault.transfer`, the two calls a reader most needs
             // told apart.
-            const qObj = got.viaMember ? memberObjectName(innerCalleeOf(fn)) : ""
+            // `innerCalleeOf` returns `Node | null` and `memberObjectName` takes a `Node`. The
+            // null is reachable (a callee with no inner node), so the node is narrowed
+            // once here rather than asserted at the call.
+            const calleeNode = got.viaMember ? innerCalleeOf(fn) : null
+            const qObj = calleeNode ? memberObjectName(calleeNode) : ""
             // `abi.encode` and `type(X).y` are LANGUAGE NAMESPACES, not calls on an
             // object — publishing them as qualified calls would put `abi.encode` beside
             // `target.call` in the same list, which is the distinction a reader of this
@@ -2553,6 +2567,11 @@ const meta = modifiersOf(node)
     for (const rel of relationships) {
       if (rel.type !== ASTEngine.RelationshipType.Calls) continue
       const md = rel.metadata as Record<string, unknown>
+      // Bound once: `target` is optional on the relationship, and every branch below feeds it
+      // to a Set/Map lookup or a (target: string) predicate. `?? ""` is what already happened at
+      // runtime -- `has(undefined)` is `false`, and "" matches no member name -- so the
+      // classification is unchanged and the "external" fallback still catches it.
+      const target = rel.target ?? ""
       // The SOURCE is the enclosing scope's qualified name, so the owner is
       // everything before the final separator. A file-scope source has no owner.
       const owner = typeof md.calleeOwner === "string" ? md.calleeOwner : ""
@@ -2570,10 +2589,10 @@ const meta = modifiersOf(node)
         // A conversion's callee IS a primitive type word, which the reserved-token
         // module already recognises MECHANICALLY (`uint`/`int`/`bytes` + digits, or
         // a fixed type word) — so this needs no list of type names.
-        if (isPrimitiveTypeToken(rel.target)) return "conversion"
+        if (isPrimitiveTypeToken(target)) return "conversion"
         const obj = typeof md.calleeObject === "string" ? md.calleeObject : ""
         if (obj === "abi" || obj === "type" || obj === "super" || obj === "this") return "namespaceBuiltin"
-        if (modifierNamesInFile.has(rel.target)) return "modifierInvocation"
+        if (modifierNamesInFile.has(target)) return "modifierInvocation"
         // ORDER MATTERS, and the first draft had it wrong in a way no corpus row
         // could catch: `own` was the member CLOSURE, which already contains the
         // inherited members, so `own.has(target)` was true for an inherited call and
@@ -2586,16 +2605,16 @@ const meta = modifiersOf(node)
         // call-resolution-sol15.sol exists.
         //
         // 1. declared directly on the enclosing type — a local function
-        if (ownDirect.has(rel.target)) return "localFunction"
+        if (ownDirect.has(target)) return "localFunction"
         // 2. reachable through an in-file base — an inherited member
-        if (ownInherited.has(rel.target)) return "inheritedMember"
+        if (ownInherited.has(target)) return "inheritedMember"
         // 3. a member of SOME OTHER in-file type reached through a receiver or a
         //    `using X for T` directive. Named `inFileTypeMember` rather than
         //    `libraryFunction` because a receiver can be a CONTRACT or a STRUCT too,
         //    and calling that "library" would state something the tree does not say.
         for (const [otherOwner, set] of membersByType) {
           if (otherOwner === owner) continue
-          if (set.has(rel.target)) return "inFileTypeMember"
+          if (set.has(target)) return "inFileTypeMember"
         }
         // SOL-21 — CROSS-FILE RESOLUTION, in two grades, and the grades are NOT
         // interchangeable. The project-wide census measured the split before this was
@@ -2617,8 +2636,8 @@ const meta = modifiersOf(node)
         // to prevent.
         if (projectIndex) {
           const closed = projectAllMembers.get(owner)
-          if (closed?.has(rel.target)) return "crossFileInheritedMember"
-          const owners = projectMemberOwners.get(rel.target)
+          if (closed?.has(target)) return "crossFileInheritedMember"
+          const owners = projectMemberOwners.get(target)
           if (owners) return "projectMemberCandidate"
         }
         return "external"
@@ -2751,7 +2770,12 @@ const meta = modifiersOf(node)
         // wants: which lines of this file the parser could not handle.
         recoveryLinesList: [...recoveryLines].sort((a, b) => a - b),
         implementsCrossFileUnresolved: extendsUnresolvedAsInterface,
-      } as Partial<ASTEngine.FileMetadata>,
+      // Not `Partial<FileMetadata>`: the declared return type is
+        // `FileMetadata & Partial<FileMetadata>`, and casting to the Partial half made
+        // `complexity` optional even though it is set two lines into this literal, which
+        // is what the assignment rejected. `FileMetadata` also carries
+        // `[key: string]: any`, so the Solidity-specific keys above need no exemption.
+      } as ASTEngine.FileMetadata,
     }
   }
 
