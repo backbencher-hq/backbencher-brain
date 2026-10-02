@@ -906,6 +906,9 @@ The clang contains oracle could not read curl or libgit2, so 852/852 was a
 redis-only result and two thirds of the corpus had no independent `contains`
 evidence. #981 fixed the reach (repeatable `--extra-include` / `--define`, fed by a
 real `cmake` configure) and the first honest curl measurement is **not clean**.
+(curl's reach was later measured to be a genuine corpus limit and left closed as
+one — see the oracle section. libgit2's 0 turned out to be two harness faults and is
+now 74 records / 454 members; see #985.)
 
 At 120 offered files, 22 judged:
 
@@ -1084,20 +1087,21 @@ Recorded as such rather than left looking like fresh work.
 
 **Ruling.** Two claims with different warrant, resolved differently:
 
-1. `uses:S->chunked_encoding` is the only genuinely NEW claim here. The identifier
-   occurs in the declaration, and #908 treats macro arguments as real uses, so the
-   `uses` edge is weaker than `contains` and survives even where ownership does not.
-   It is NOT yet implemented, and it must be adjudicated against the existing choice
-   of silence rather than assumed to be free — case 4 shows a macro invocation in a
-   BODY also emits no `uses` for its argument, so a general rule would touch every
-   macro call in the corpus and needs its own measurement.
+1. `uses:S->chunked_encoding` was the only genuinely NEW claim here, and it is now
+   **REJECTED on measurement** — see the #988 section. The claim was that a `uses` edge
+   is weaker than `contains` and so survives where ownership does not; measured over 600
+   files, **83.7%** of macro arguments name something with no symbol to point at (31.5% are
+   the enclosing function's own locals, 52.2% are declared nowhere), so the edges are the
+   dangling-edge class #983 is refused on, reached from the opposite direction. The
+   reasoning was sound about the relationship and silent about the target.
 2. `contains:S->chunked_encoding` is NOT provable. `contains` asserts the struct
    OWNS the member, which is only true if `BIT` expands to a bitfield whose name is
    its argument. That expansion is exactly what C-D2 forbids, and a macro that took
    two arguments or renamed its parameter would make the edge false.
 
-So claim 1 ships, claim 2 does not. The oracle's 30 misses become a DECLARED LIMIT
-in the same shape as #963's typedef-return marker loss: real, measured, named, and
+So claim 2 does not ship and, as #988 later measured, neither does claim 1 — for a
+different reason, set out in its own section. The oracle's 30 misses become a DECLARED
+LIMIT in the same shape as #963's typedef-return marker loss: real, measured, named, and
 deliberately unclaimed rather than fabricated to close the gap. Expanding `BIT` in
 the payload would mean carrying macro definitions into every compile unit, which
 C-D2 exists to prevent.
@@ -1604,6 +1608,63 @@ question is which loss a consumer can better absorb, and that is the owner's cal
 agent's. **Not taken**, and now for a stated reason rather than a shrug: the class is
 proven, the size is measured, and the only remaining input is a preference.
 
+### #988: the macro-argument `uses` claim, measured and REJECTED
+
+`e306ab09` argues the macro-argument `uses` is **provable** where `contains` is not: a
+`uses` edge only says the enclosing function read the name, and a macro argument is
+plainly a name that was written, so the claim should survive C-D2 even though ownership
+does not. The reasoning is sound. It had never been measured, because a general rule
+touches every macro call in every file.
+
+Measured over 600 corpus files (`script/m14/tmp/c983/macro-arg-uses.ts`) — 1,585 macro
+invocations carrying an argument list, **3,662** bare-identifier arguments:
+
+| | count | share |
+| --- | --- | --- |
+| the name IS a declared symbol in the file | 597 | **16.3%** |
+| the name is bound in a function body — a **local** | 1,153 | 31.5% |
+| the name is declared **nowhere** in the file | 1,912 | 52.2% |
+| already emitted as a `uses` today | **0** | — |
+
+**83.7% of macro arguments name something with no symbol to point at.** The corpus
+examples are not edge cases, they are the ordinary shape of a macro call:
+`CPOOL_UNLOCK(cpool)`, `altsvc_free(as)`, `tcplocalhost(cf)` — in every case the argument
+is the enclosing function's own local. So the proposed edges are the **same dangling-edge
+class #983 is refused on, reached from the opposite direction**: #983 asks about reading a
+local, #988 asks about passing one, and the answer to both is the same — the target does
+not exist.
+
+That is the whole adjudication, and it is worth being explicit about why it is a
+**rejection** rather than a **deferral**. The claim was that a `uses` is weaker than a
+`contains` and therefore survives where ownership does not. That is true about the
+*relationship*, and irrelevant to the *target*: the `contains` half was refused because
+ownership is not derivable, and the `uses` half is refused because the target is not
+resolvable. Two different reasons, and the second one the claim never addressed — a
+`uses` edge whose target names nothing is a dangling edge whatever the semantics of
+`uses` are. #962 removed `instantiates -> malloc` and #963 removed `exports ->
+KERNEL_EXPORT` for exactly this, and those were relations whose targets were otherwise
+meaningful.
+
+The 16.3% that DO resolve are the genuinely defensible subset, and the shape is already
+ruled and pinned: `offsetof(struct header, sig)` — a field named inside a macro argument,
+where the field is a real member and the use is real. That is `c/field-access-offsetof-955`
+(#955), which exists, is correct, and is **not** what this ruling touches. A narrower rule
+keyed on "the argument resolves to a field symbol" would be defensible; the general rule
+proposed is not, and the difference between the two is the 83.7%.
+
+**The narrow shape #970 identified is still C-D2 and is not revived here.** A macro
+invocation that is the heading of a *generated function definition*
+(`BIT_OP(bit_band, &=)`) — `lua_bit.c:103` — needs the replacement list to tell from an
+ordinary call, and that remains ruled out. #970's measurement stands too: mirroring #908
+for every function-like macro took MISSING from 13 to **1,048**, so the analyzer does not
+pair generally, and this ruling explains why that is the right answer rather than a gap.
+
+The measurement also settles a question the doc had open in three places, consistently:
+"a macro invocation in a BODY emits `calls:f->BIT` but no `uses` for its argument" is not
+an oversight and not half an implementation. It is the correct result, for the same reason
+`#928`'s silence is correct — not because the answer is C-D2, but because the answer would
+not resolve.
+
 ### The two `uses`-side limits, stated rather than counted
 
 The `contains` verdict on libgit2 is **18 missed / 0 phantom** after #985. The phantoms
@@ -1620,7 +1681,7 @@ could be systematically wrong and this instrument would report nothing.
 
 | construct | status | why |
 | --- | --- | --- |
-| a macro invocation in a BODY: `BIT(chunked_encoding);` emits `calls:f->BIT` but no `uses` for the argument | open, unadjudicated | #908 pairs `calls` + `uses` for a real macro invocation, and #960/#961/#962/#963/#965 all move toward pairing. But #970 measured that mirroring it for every function-like macro takes MISSING from 13 to **1,048**, so the analyzer does not pair generally. The narrow shape #970 did identify (a macro invocation that is the heading of a *generated function definition*, `BIT_OP(bit_band, &=)`) needs the replacement list to distinguish, so it is C-D2. Commit `e306ab09` argues the `uses` claim is provable because a use is weaker than containment and survives where ownership does not. That argument is sound and it is **still not adjudicated** — it needs its own measurement over the corpus, because a general rule touches every macro call in every file. |
+| a macro invocation in a BODY: `BIT(chunked_encoding);` emits `calls:f->BIT` but no `uses` for the argument | **REJECTED on measurement** | see the #988 section below. The claim (e306ab09) is that a use is weaker than containment and so survives where ownership does not; measured, 83.7% of the arguments name nothing the file declares, so the edges would be the same dangling class #983 is refused on. |
 | a type-position `uses`: `T *v;` emits `references` for `T` and no `uses` | emitted as `references`, deliberately | CGD12 re-routes a type-position identifier to `references` with one contract for type usage regardless of grammar accident. Verified across five shapes including plain `T *v`. The oracle wants `uses T` for `T *v`; the analyzer's answer is the more precise kind, and the comparison is site-agnostic on label+target, so the two cannot be compared on that row. |
 | `uses` against file scope only (#983) | ruled, not taken | see the #983 section above: 99.95% of the edges would be dangling |
 
